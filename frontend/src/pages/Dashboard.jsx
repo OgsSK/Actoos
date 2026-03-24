@@ -15,7 +15,7 @@ import { formatCurrency, formatDate, getStatusLabel, formatRelative } from '../l
 import {
   LayoutDashboard, Users, Calendar, FileText, Receipt, Settings, LogOut, Menu, X,
   Search, Bell, Plus, TrendingUp, AlertTriangle, Clock, CheckCircle, ChevronRight,
-  Building2, UserCircle, ClipboardList, Wrench
+  Building2, UserCircle, ClipboardList, Wrench, CalendarDays
 } from 'lucide-react';
 
 const Sidebar = ({ open, onClose }) => {
@@ -29,6 +29,7 @@ const Sidebar = ({ open, onClose }) => {
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Tableau de bord', path: '/dashboard', admin: true },
+    { icon: CalendarDays, label: 'Planning', path: '/dashboard/planning', admin: true },
     { icon: Calendar, label: 'Interventions', path: '/dashboard/interventions', admin: true },
     { icon: Users, label: 'Clients', path: '/dashboard/clients', admin: true },
     { icon: FileText, label: 'Devis', path: '/dashboard/devis', admin: true },

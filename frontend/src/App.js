@@ -15,6 +15,7 @@ import { DevisList, DevisForm, DevisDetail } from "./pages/Devis";
 import { FacturesList, FactureDetail } from "./pages/Factures";
 import { TechniciensList } from "./pages/Techniciens";
 import { SettingsPage } from "./pages/Settings";
+import { PlanningPage } from "./pages/Planning";
 
 // Technician App
 import { TechnicianApp } from "./pages/TechnicianApp";
@@ -130,6 +131,9 @@ function App() {
             
             {/* Techniciens */}
             <Route path="techniciens" element={<TechniciensList />} />
+            
+            {/* Planning */}
+            <Route path="planning" element={<PlanningPage />} />
             
             {/* Settings */}
             <Route path="settings" element={<SettingsPage />} />
