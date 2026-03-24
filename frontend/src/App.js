@@ -1,53 +1,132 @@
-import { useEffect } from "react";
+import React from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { Toaster } from "./components/ui/sonner";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Auth Pages
+import { LoginPage, RegisterPage, ActivatePage } from "./pages/AuthPages";
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+// Dashboard Pages
+import { DashboardLayout, DashboardOverview } from "./pages/Dashboard";
+import { ClientsList, ClientForm, ClientDetail } from "./pages/Clients";
+import { InterventionsList, InterventionForm, InterventionDetail } from "./pages/Interventions";
+import { DevisList, DevisForm, DevisDetail } from "./pages/Devis";
+import { FacturesList, FactureDetail } from "./pages/Factures";
+import { TechniciensList } from "./pages/Techniciens";
+import { SettingsPage } from "./pages/Settings";
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
+// Client Portal
+import { ClientPortalDevis } from "./pages/ClientPortal";
 
+// Protected Route Component
+const ProtectedRoute = ({ children, requireAdmin = false }) => {
+  const { isAuthenticated, loading, isAdmin } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (requireAdmin && !isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+};
+
+// Dashboard Routes Wrapper
+const DashboardRoutes = () => {
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
+    <ProtectedRoute>
+      <DashboardLayout>
+        <Outlet />
+      </DashboardLayout>
+    </ProtectedRoute>
   );
+};
+
+// Home Redirect
+const HomeRedirect = () => {
+  const { isAuthenticated, loading, user } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Navigate to="/login" replace />;
 };
 
 function App() {
   return (
-    <div className="App">
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
+          {/* Home */}
+          <Route path="/" element={<HomeRedirect />} />
+
+          {/* Auth Routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/activate" element={<ActivatePage />} />
+
+          {/* Client Portal (Public) */}
+          <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />
+
+          {/* Dashboard Routes */}
+          <Route path="/dashboard" element={<DashboardRoutes />}>
+            <Route index element={<DashboardOverview />} />
+            
+            {/* Clients */}
+            <Route path="clients" element={<ClientsList />} />
+            <Route path="clients/new" element={<ClientForm />} />
+            <Route path="clients/:id" element={<ClientDetail />} />
+            <Route path="clients/:id/edit" element={<ClientForm />} />
+            
+            {/* Interventions */}
+            <Route path="interventions" element={<InterventionsList />} />
+            <Route path="interventions/new" element={<InterventionForm />} />
+            <Route path="interventions/:id" element={<InterventionDetail />} />
+            <Route path="interventions/:id/edit" element={<InterventionForm />} />
+            
+            {/* Devis */}
+            <Route path="devis" element={<DevisList />} />
+            <Route path="devis/new" element={<DevisForm />} />
+            <Route path="devis/:id" element={<DevisDetail />} />
+            <Route path="devis/:id/edit" element={<DevisForm />} />
+            
+            {/* Factures */}
+            <Route path="factures" element={<FacturesList />} />
+            <Route path="factures/:id" element={<FactureDetail />} />
+            
+            {/* Techniciens */}
+            <Route path="techniciens" element={<TechniciensList />} />
+            
+            {/* Settings */}
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
+
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
-    </div>
+      <Toaster />
+    </AuthProvider>
   );
 }
 

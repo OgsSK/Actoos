@@ -1,0 +1,712 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from '../components/ui/table';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '../components/ui/select';
+import { Calendar } from '../components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { formatDate, formatTime, formatCurrency, getStatusLabel, getPriorityLabel, priorityColors } from '../lib/utils';
+import {
+  Plus, Search, ChevronLeft, Edit, Calendar as CalendarIcon, Clock, MapPin,
+  User, Phone, Play, CheckCircle, FileText, Loader2, Camera
+} from 'lucide-react';
+
+// Intervention List Component
+export const InterventionsList = () => {
+  const [interventions, setInterventions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('');
+  const { api } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchInterventions();
+  }, [statusFilter]);
+
+  const fetchInterventions = async () => {
+    try {
+      const params = statusFilter ? { statut: statusFilter } : {};
+      const response = await api.get('/interventions', { params });
+      setInterventions(response.data);
+    } catch (error) {
+      console.error('Error fetching interventions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6" data-testid="interventions-list">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">Interventions</h1>
+          <p className="text-slate-500">Planifiez et suivez vos interventions</p>
+        </div>
+        <Button onClick={() => navigate('/dashboard/interventions/new')} data-testid="new-intervention-btn">
+          <Plus className="w-4 h-4 mr-2" />
+          Nouvelle intervention
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <Card className="border-slate-200">
+        <CardContent className="p-4">
+          <div className="flex gap-4">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]" data-testid="status-filter">
+                <SelectValue placeholder="Tous les statuts" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Tous les statuts</SelectItem>
+                <SelectItem value="planifiee">Planifiée</SelectItem>
+                <SelectItem value="en_cours">En cours</SelectItem>
+                <SelectItem value="terminee">Terminée</SelectItem>
+                <SelectItem value="annulee">Annulée</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Table */}
+      <Card className="border-slate-200">
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+            </div>
+          ) : interventions.length === 0 ? (
+            <div className="text-center py-12 text-slate-500">
+              <CalendarIcon className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+              <p>Aucune intervention trouvée</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Date/Heure</TableHead>
+                  <TableHead>Intervention</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Priorité</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {interventions.map((intervention) => (
+                  <TableRow
+                    key={intervention.id}
+                    className="cursor-pointer hover:bg-slate-50"
+                    onClick={() => navigate(`/dashboard/interventions/${intervention.id}`)}
+                    data-testid={`intervention-row-${intervention.id}`}
+                  >
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{formatDate(intervention.date_prevue)}</p>
+                        <p className="text-xs text-slate-500">{formatTime(intervention.date_prevue)}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-medium text-slate-900">{intervention.titre}</p>
+                      {intervention.adresse && (
+                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {intervention.ville}
+                        </p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm">{intervention.client?.nom || '-'}</p>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className={priorityColors[intervention.priorite]}>
+                        {getPriorityLabel(intervention.priorite)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className={`status-${intervention.statut}`}>
+                        {getStatusLabel(intervention.statut)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/dashboard/interventions/${intervention.id}/edit`);
+                        }}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Intervention Form Component
+export const InterventionForm = () => {
+  const { id } = useParams();
+  const location = useLocation();
+  const isEdit = !!id;
+  const navigate = useNavigate();
+  const { api } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [techniciens, setTechniciens] = useState([]);
+  const [formData, setFormData] = useState({
+    client_id: location.state?.client_id || '',
+    technicien_id: '',
+    titre: '',
+    description: '',
+    adresse: '',
+    ville: '',
+    code_postal: '',
+    date_prevue: new Date(),
+    duree_estimee: 60,
+    priorite: 'normale',
+    notes_internes: '',
+  });
+
+  useEffect(() => {
+    fetchClients();
+    fetchTechniciens();
+    if (isEdit) {
+      fetchIntervention();
+    }
+  }, [id]);
+
+  const fetchClients = async () => {
+    try {
+      const response = await api.get('/clients');
+      setClients(response.data);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    }
+  };
+
+  const fetchTechniciens = async () => {
+    try {
+      const response = await api.get('/users');
+      setTechniciens(response.data.filter(u => u.role === 'tech' && u.statut === 'actif'));
+    } catch (error) {
+      console.error('Error fetching techniciens:', error);
+    }
+  };
+
+  const fetchIntervention = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get(`/interventions/${id}`);
+      const data = response.data;
+      setFormData({
+        ...data,
+        date_prevue: new Date(data.date_prevue),
+      });
+    } catch (error) {
+      console.error('Error fetching intervention:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        ...formData,
+        date_prevue: formData.date_prevue.toISOString(),
+        duree_estimee: parseInt(formData.duree_estimee),
+      };
+      
+      if (isEdit) {
+        await api.put(`/interventions/${id}`, payload);
+      } else {
+        await api.post('/interventions', payload);
+      }
+      navigate('/dashboard/interventions');
+    } catch (error) {
+      console.error('Error saving intervention:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Auto-fill address from client
+  useEffect(() => {
+    if (formData.client_id && !isEdit) {
+      const client = clients.find(c => c.id === formData.client_id);
+      if (client) {
+        setFormData(prev => ({
+          ...prev,
+          adresse: client.adresse || '',
+          ville: client.ville || '',
+          code_postal: client.code_postal || '',
+        }));
+      }
+    }
+  }, [formData.client_id, clients]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6" data-testid="intervention-form">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <ChevronLeft className="w-4 h-4 mr-1" />
+          Retour
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">
+            {isEdit ? 'Modifier l\'intervention' : 'Nouvelle intervention'}
+          </h1>
+        </div>
+      </div>
+
+      <Card className="border-slate-200">
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Client */}
+            <div className="space-y-2">
+              <Label>Client *</Label>
+              <Select
+                value={formData.client_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+              >
+                <SelectTrigger data-testid="intervention-client">
+                  <SelectValue placeholder="Sélectionner un client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.nom} {client.prenom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Title */}
+            <div className="space-y-2">
+              <Label htmlFor="titre">Titre *</Label>
+              <Input
+                id="titre"
+                name="titre"
+                value={formData.titre}
+                onChange={handleChange}
+                required
+                placeholder="Ex: Réparation fuite"
+                data-testid="intervention-titre"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={3}
+                data-testid="intervention-description"
+              />
+            </div>
+
+            {/* Date & Time */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal" data-testid="intervention-date">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(formData.date_prevue, 'PPP', { locale: fr })}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.date_prevue}
+                      onSelect={(date) => date && setFormData(prev => ({ ...prev, date_prevue: date }))}
+                      locale={fr}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="time">Heure</Label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={format(formData.date_prevue, 'HH:mm')}
+                  onChange={(e) => {
+                    const [hours, minutes] = e.target.value.split(':');
+                    const newDate = new Date(formData.date_prevue);
+                    newDate.setHours(parseInt(hours), parseInt(minutes));
+                    setFormData(prev => ({ ...prev, date_prevue: newDate }));
+                  }}
+                  data-testid="intervention-time"
+                />
+              </div>
+            </div>
+
+            {/* Duration & Priority */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="duree_estimee">Durée estimée (min)</Label>
+                <Input
+                  id="duree_estimee"
+                  name="duree_estimee"
+                  type="number"
+                  min="15"
+                  step="15"
+                  value={formData.duree_estimee}
+                  onChange={handleChange}
+                  data-testid="intervention-duree"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Priorité</Label>
+                <Select
+                  value={formData.priorite}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, priorite: value }))}
+                >
+                  <SelectTrigger data-testid="intervention-priorite">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="basse">Basse</SelectItem>
+                    <SelectItem value="normale">Normale</SelectItem>
+                    <SelectItem value="haute">Haute</SelectItem>
+                    <SelectItem value="urgente">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Technician */}
+            <div className="space-y-2">
+              <Label>Technicien assigné</Label>
+              <Select
+                value={formData.technicien_id || ''}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, technicien_id: value }))}
+              >
+                <SelectTrigger data-testid="intervention-technicien">
+                  <SelectValue placeholder="Non assigné" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Non assigné</SelectItem>
+                  {techniciens.map((tech) => (
+                    <SelectItem key={tech.id} value={tech.id}>
+                      {tech.prenom} {tech.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Address */}
+            <div className="space-y-4 pt-4 border-t border-slate-200">
+              <h3 className="font-semibold text-slate-900">Lieu d'intervention</h3>
+              
+              <div className="space-y-2">
+                <Label htmlFor="adresse">Adresse</Label>
+                <Input
+                  id="adresse"
+                  name="adresse"
+                  value={formData.adresse}
+                  onChange={handleChange}
+                  data-testid="intervention-adresse"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="code_postal">Code postal</Label>
+                  <Input
+                    id="code_postal"
+                    name="code_postal"
+                    value={formData.code_postal}
+                    onChange={handleChange}
+                    data-testid="intervention-code-postal"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ville">Ville</Label>
+                  <Input
+                    id="ville"
+                    name="ville"
+                    value={formData.ville}
+                    onChange={handleChange}
+                    data-testid="intervention-ville"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="notes_internes">Notes internes</Label>
+              <Textarea
+                id="notes_internes"
+                name="notes_internes"
+                value={formData.notes_internes}
+                onChange={handleChange}
+                rows={2}
+                placeholder="Notes visibles uniquement par l'équipe"
+                data-testid="intervention-notes"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+                Annuler
+              </Button>
+              <Button type="submit" disabled={saving} data-testid="intervention-submit">
+                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                {isEdit ? 'Enregistrer' : 'Créer l\'intervention'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Intervention Detail Component
+export const InterventionDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { api, isAdmin } = useAuth();
+  const [intervention, setIntervention] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchIntervention();
+  }, [id]);
+
+  const fetchIntervention = async () => {
+    try {
+      const response = await api.get(`/interventions/${id}`);
+      setIntervention(response.data);
+    } catch (error) {
+      console.error('Error fetching intervention:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStart = async () => {
+    try {
+      await api.post(`/interventions/${id}/start`);
+      fetchIntervention();
+    } catch (error) {
+      console.error('Error starting intervention:', error);
+    }
+  };
+
+  const handleComplete = async () => {
+    try {
+      await api.post(`/interventions/${id}/complete`);
+      fetchIntervention();
+    } catch (error) {
+      console.error('Error completing intervention:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (!intervention) {
+    return <div>Intervention non trouvée</div>;
+  }
+
+  return (
+    <div className="space-y-6" data-testid="intervention-detail">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/interventions')}>
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Interventions
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">{intervention.titre}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant="secondary" className={`status-${intervention.statut}`}>
+                {getStatusLabel(intervention.statut)}
+              </Badge>
+              <Badge variant="secondary" className={priorityColors[intervention.priorite]}>
+                {getPriorityLabel(intervention.priorite)}
+              </Badge>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {intervention.statut === 'planifiee' && (
+            <Button onClick={handleStart} className="bg-blue-600 hover:bg-blue-700" data-testid="start-intervention">
+              <Play className="w-4 h-4 mr-2" />
+              Démarrer
+            </Button>
+          )}
+          {intervention.statut === 'en_cours' && (
+            <Button onClick={handleComplete} className="bg-emerald-600 hover:bg-emerald-700" data-testid="complete-intervention">
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Terminer
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => navigate(`/dashboard/interventions/${id}/edit`)}>
+            <Edit className="w-4 h-4 mr-2" />
+            Modifier
+          </Button>
+        </div>
+      </div>
+
+      {/* Info Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Details */}
+        <Card className="border-slate-200 lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Détails</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-slate-500">Date prévue</p>
+                <p className="font-medium flex items-center gap-2">
+                  <CalendarIcon className="w-4 h-4 text-slate-400" />
+                  {formatDate(intervention.date_prevue)} à {formatTime(intervention.date_prevue)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Durée estimée</p>
+                <p className="font-medium flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  {intervention.duree_estimee} min
+                </p>
+              </div>
+            </div>
+
+            {intervention.description && (
+              <div>
+                <p className="text-sm text-slate-500">Description</p>
+                <p className="text-slate-700">{intervention.description}</p>
+              </div>
+            )}
+
+            {intervention.adresse && (
+              <div>
+                <p className="text-sm text-slate-500">Adresse</p>
+                <p className="font-medium flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-slate-400" />
+                  {intervention.adresse}, {intervention.code_postal} {intervention.ville}
+                </p>
+              </div>
+            )}
+
+            {intervention.heure_debut && (
+              <div className="pt-4 border-t border-slate-200">
+                <p className="text-sm text-slate-500">Temps réel</p>
+                <p className="font-medium">
+                  Démarré à {formatTime(intervention.heure_debut)}
+                  {intervention.heure_fin && ` - Terminé à ${formatTime(intervention.heure_fin)}`}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Client */}
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-base">Client</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {intervention.client ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <User className="w-4 h-4 text-slate-400" />
+                  <span className="font-medium">{intervention.client.nom} {intervention.client.prenom}</span>
+                </div>
+                {intervention.client.telephone && (
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-4 h-4 text-slate-400" />
+                    <a href={`tel:${intervention.client.telephone}`} className="text-blue-600 hover:underline">
+                      {intervention.client.telephone}
+                    </a>
+                  </div>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-4"
+                  onClick={() => navigate(`/dashboard/clients/${intervention.client_id}`)}
+                >
+                  Voir le client
+                </Button>
+              </>
+            ) : (
+              <p className="text-slate-500">Client non trouvé</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Actions */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base">Actions</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/dashboard/devis/new', { state: { client_id: intervention.client_id, intervention_id: id } })}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Créer un devis
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};

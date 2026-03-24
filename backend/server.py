@@ -1,15 +1,30 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Query, Response, Header
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from io import BytesIO
 
+from models import (
+    Entreprise, EntrepriseCreate, User, UserCreate, UserResponse, UserLogin, UserInvite,
+    UserPasswordReset, UserSetPassword, Client, ClientCreate, ClientResponse,
+    Intervention, InterventionCreate, InterventionUpdate,
+    Devis, DevisCreate, DevisUpdate, LigneDevis,
+    Facture, FactureCreate, FactureFromDevis,
+    AuditLog, Photo, TokenResponse, RegisterRequest, SyncRequest
+)
+from auth import (
+    get_password_hash, verify_password, create_access_token, decode_token,
+    get_current_user, require_admin, create_invitation_token, create_reset_token
+)
+from storage import init_storage, put_object, get_object, get_mime_type, APP_NAME
+from pdf_generator import generate_devis_pdf, generate_facture_pdf
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,56 +34,1209 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
-
-# Create a router with the /api prefix
+# Create the main app
+app = FastAPI(title="FieldCommand API", version="1.0.0")
 api_router = APIRouter(prefix="/api")
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
+# ==================== HELPERS ====================
+def serialize_datetime(obj):
+    """Convert datetime to ISO string"""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    return obj
+
+def serialize_doc(doc: dict) -> dict:
+    """Serialize MongoDB document, converting datetimes and removing _id"""
+    if '_id' in doc:
+        del doc['_id']
+    for key, value in doc.items():
+        if isinstance(value, datetime):
+            doc[key] = value.isoformat()
+    return doc
+
+def calculate_totals(lignes: List[dict]) -> tuple:
+    """Calculate total_ht, total_tva, total_ttc from lines"""
+    total_ht = sum(l.get('quantite', 1) * l.get('prix_unitaire', 0) for l in lignes)
+    total_tva = sum(l.get('quantite', 1) * l.get('prix_unitaire', 0) * l.get('tva', 20) / 100 for l in lignes)
+    total_ttc = total_ht + total_tva
+    return round(total_ht, 2), round(total_tva, 2), round(total_ttc, 2)
+
+async def log_action(entreprise_id: str, user_id: str, action: str, entity: str, entity_id: str, details: dict = None):
+    """Log an audit action"""
+    log_entry = {
+        "id": str(uuid.uuid4()),
+        "entreprise_id": entreprise_id,
+        "user_id": user_id,
+        "action": action,
+        "entity": entity,
+        "entity_id": entity_id,
+        "details": details,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.audit_logs.insert_one(log_entry)
+
+# ==================== AUTH ROUTES ====================
+@api_router.post("/auth/register", response_model=TokenResponse)
+async def register_entreprise(data: RegisterRequest):
+    """Register a new entreprise with admin user"""
+    # Check if email already exists
+    existing = await db.users.find_one({"email": data.admin_email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
     
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
+    # Create entreprise
+    entreprise_id = str(uuid.uuid4())
+    entreprise = {
+        "id": entreprise_id,
+        "nom": data.entreprise_nom,
+        "email": data.entreprise_email,
+        "telephone": data.entreprise_telephone,
+        "sequence_devis": 1,
+        "sequence_facture": 1,
+        "couleur_primaire": "#2563EB",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.entreprises.insert_one(entreprise)
     
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
+    # Create admin user
+    user_id = str(uuid.uuid4())
+    user = {
+        "id": user_id,
+        "entreprise_id": entreprise_id,
+        "email": data.admin_email,
+        "nom": data.admin_nom,
+        "prenom": data.admin_prenom,
+        "password_hash": get_password_hash(data.admin_password),
+        "role": "admin",
+        "statut": "actif",
+        "derniere_connexion": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(user)
     
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+    # Create token
+    token = create_access_token({"sub": user_id, "ent": entreprise_id, "role": "admin"})
+    
+    await log_action(entreprise_id, user_id, "create", "entreprise", entreprise_id)
+    
+    return TokenResponse(
+        access_token=token,
+        user=UserResponse(
+            id=user_id, entreprise_id=entreprise_id, email=data.admin_email,
+            nom=data.admin_nom, prenom=data.admin_prenom, role="admin", statut="actif",
+            derniere_connexion=user["derniere_connexion"], created_at=user["created_at"]
+        ),
+        entreprise=serialize_doc(entreprise)
+    )
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
+@api_router.post("/auth/login", response_model=TokenResponse)
+async def login(data: UserLogin):
+    """Login user"""
+    user = await db.users.find_one({"email": data.email}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
+    if not verify_password(data.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     
-    return status_checks
+    if user["statut"] == "desactive":
+        raise HTTPException(status_code=401, detail="Compte désactivé")
+    
+    if user["statut"] == "invite":
+        raise HTTPException(status_code=401, detail="Veuillez d'abord activer votre compte via le lien d'invitation")
+    
+    # Update last login
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"derniere_connexion": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Get entreprise
+    entreprise = await db.entreprises.find_one({"id": user["entreprise_id"]}, {"_id": 0})
+    
+    token = create_access_token({"sub": user["id"], "ent": user["entreprise_id"], "role": user["role"]})
+    
+    return TokenResponse(
+        access_token=token,
+        user=UserResponse(
+            id=user["id"], entreprise_id=user["entreprise_id"], email=user["email"],
+            nom=user["nom"], prenom=user["prenom"], telephone=user.get("telephone"),
+            role=user["role"], statut=user["statut"],
+            derniere_connexion=datetime.now(timezone.utc).isoformat(), created_at=user["created_at"]
+        ),
+        entreprise=entreprise
+    )
 
-# Include the router in the main app
+@api_router.get("/auth/me", response_model=TokenResponse)
+async def get_me(current_user: dict = Depends(get_current_user)):
+    """Get current user info"""
+    user = await db.users.find_one({"id": current_user["user_id"]}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    
+    return TokenResponse(
+        access_token="",
+        user=UserResponse(
+            id=user["id"], entreprise_id=user["entreprise_id"], email=user["email"],
+            nom=user["nom"], prenom=user["prenom"], telephone=user.get("telephone"),
+            role=user["role"], statut=user["statut"],
+            derniere_connexion=user.get("derniere_connexion"), created_at=user["created_at"]
+        ),
+        entreprise=entreprise
+    )
+
+@api_router.post("/auth/invite")
+async def invite_technician(data: UserInvite, current_user: dict = Depends(require_admin)):
+    """Invite a technician (admin only)"""
+    existing = await db.users.find_one({"email": data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
+    
+    user_id = str(uuid.uuid4())
+    user = {
+        "id": user_id,
+        "entreprise_id": current_user["entreprise_id"],
+        "email": data.email,
+        "nom": data.nom,
+        "prenom": data.prenom,
+        "telephone": data.telephone,
+        "password_hash": "",
+        "role": "tech",
+        "statut": "invite",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(user)
+    
+    # Create invitation token
+    invite_token = create_invitation_token(user_id, current_user["entreprise_id"])
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "invite", "user", user_id)
+    
+    return {"message": "Invitation envoyée", "user_id": user_id, "invite_token": invite_token}
+
+@api_router.post("/auth/activate")
+async def activate_account(data: UserSetPassword):
+    """Activate invited account with password"""
+    try:
+        payload = decode_token(data.token)
+        if payload.get("type") != "invite":
+            raise HTTPException(status_code=400, detail="Token invalide")
+    except:
+        raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+    
+    user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0})
+    if not user or user["statut"] != "invite":
+        raise HTTPException(status_code=400, detail="Compte déjà activé ou inexistant")
+    
+    await db.users.update_one(
+        {"id": payload["sub"]},
+        {"$set": {"password_hash": get_password_hash(data.password), "statut": "actif"}}
+    )
+    
+    return {"message": "Compte activé avec succès"}
+
+@api_router.post("/auth/request-reset")
+async def request_password_reset(data: UserPasswordReset):
+    """Request password reset"""
+    user = await db.users.find_one({"email": data.email}, {"_id": 0})
+    if not user:
+        return {"message": "Si l'email existe, un lien de réinitialisation sera envoyé"}
+    
+    reset_token = create_reset_token(user["id"], user["entreprise_id"])
+    # In production, send email with reset link
+    return {"message": "Lien de réinitialisation envoyé", "reset_token": reset_token}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: UserSetPassword):
+    """Reset password with token"""
+    try:
+        payload = decode_token(data.token)
+        if payload.get("type") != "reset":
+            raise HTTPException(status_code=400, detail="Token invalide")
+    except:
+        raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+    
+    await db.users.update_one(
+        {"id": payload["sub"]},
+        {"$set": {"password_hash": get_password_hash(data.password)}}
+    )
+    
+    return {"message": "Mot de passe réinitialisé avec succès"}
+
+# ==================== USER ROUTES ====================
+@api_router.get("/users", response_model=List[UserResponse])
+async def list_users(current_user: dict = Depends(get_current_user)):
+    """List all users of the entreprise"""
+    users = await db.users.find(
+        {"entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    return [UserResponse(**serialize_doc(u)) for u in users]
+
+@api_router.get("/users/{user_id}", response_model=UserResponse)
+async def get_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific user"""
+    user = await db.users.find_one(
+        {"id": user_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0, "password_hash": 0}
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    return UserResponse(**serialize_doc(user))
+
+@api_router.put("/users/{user_id}/status")
+async def update_user_status(user_id: str, statut: str, current_user: dict = Depends(require_admin)):
+    """Update user status (admin only)"""
+    if statut not in ["actif", "desactive"]:
+        raise HTTPException(status_code=400, detail="Statut invalide")
+    
+    result = await db.users.update_one(
+        {"id": user_id, "entreprise_id": current_user["entreprise_id"]},
+        {"$set": {"statut": statut}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "update_status", "user", user_id, {"statut": statut})
+    return {"message": "Statut mis à jour"}
+
+# ==================== CLIENT ROUTES ====================
+@api_router.post("/clients", response_model=ClientResponse)
+async def create_client(data: ClientCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new client"""
+    client_dict = data.model_dump()
+    client_dict["id"] = str(uuid.uuid4())
+    client_dict["entreprise_id"] = current_user["entreprise_id"]
+    client_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.clients.insert_one(client_dict)
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "create", "client", client_dict["id"])
+    
+    return ClientResponse(**client_dict)
+
+@api_router.get("/clients", response_model=List[ClientResponse])
+async def list_clients(
+    search: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """List all clients"""
+    query = {"entreprise_id": current_user["entreprise_id"]}
+    if search:
+        query["$or"] = [
+            {"nom": {"$regex": search, "$options": "i"}},
+            {"prenom": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}},
+            {"telephone": {"$regex": search, "$options": "i"}}
+        ]
+    
+    clients = await db.clients.find(query, {"_id": 0}).to_list(1000)
+    return [ClientResponse(**serialize_doc(c)) for c in clients]
+
+@api_router.get("/clients/{client_id}", response_model=ClientResponse)
+async def get_client(client_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific client"""
+    client = await db.clients.find_one(
+        {"id": client_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    return ClientResponse(**serialize_doc(client))
+
+@api_router.put("/clients/{client_id}", response_model=ClientResponse)
+async def update_client(client_id: str, data: ClientCreate, current_user: dict = Depends(get_current_user)):
+    """Update a client"""
+    update_data = data.model_dump(exclude_unset=True)
+    result = await db.clients.update_one(
+        {"id": client_id, "entreprise_id": current_user["entreprise_id"]},
+        {"$set": update_data}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "update", "client", client_id)
+    
+    client = await db.clients.find_one({"id": client_id}, {"_id": 0})
+    return ClientResponse(**serialize_doc(client))
+
+@api_router.delete("/clients/{client_id}")
+async def delete_client(client_id: str, current_user: dict = Depends(require_admin)):
+    """Delete a client (admin only)"""
+    result = await db.clients.delete_one(
+        {"id": client_id, "entreprise_id": current_user["entreprise_id"]}
+    )
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "delete", "client", client_id)
+    return {"message": "Client supprimé"}
+
+# ==================== INTERVENTION ROUTES ====================
+@api_router.post("/interventions")
+async def create_intervention(data: InterventionCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new intervention"""
+    # Verify client exists
+    client = await db.clients.find_one({"id": data.client_id, "entreprise_id": current_user["entreprise_id"]})
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    intervention_dict = data.model_dump()
+    intervention_dict["id"] = str(uuid.uuid4())
+    intervention_dict["entreprise_id"] = current_user["entreprise_id"]
+    intervention_dict["statut"] = "planifiee"
+    intervention_dict["photos"] = []
+    intervention_dict["date_prevue"] = intervention_dict["date_prevue"].isoformat()
+    intervention_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.interventions.insert_one(intervention_dict)
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "create", "intervention", intervention_dict["id"])
+    
+    return serialize_doc(intervention_dict)
+
+@api_router.get("/interventions")
+async def list_interventions(
+    statut: Optional[str] = None,
+    technicien_id: Optional[str] = None,
+    client_id: Optional[str] = None,
+    date_debut: Optional[str] = None,
+    date_fin: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """List interventions with filters"""
+    query = {"entreprise_id": current_user["entreprise_id"]}
+    
+    # Technicians can only see their own interventions
+    if current_user["role"] == "tech":
+        query["technicien_id"] = current_user["user_id"]
+    elif technicien_id:
+        query["technicien_id"] = technicien_id
+    
+    if statut:
+        query["statut"] = statut
+    if client_id:
+        query["client_id"] = client_id
+    if date_debut:
+        query["date_prevue"] = {"$gte": date_debut}
+    if date_fin:
+        if "date_prevue" in query:
+            query["date_prevue"]["$lte"] = date_fin
+        else:
+            query["date_prevue"] = {"$lte": date_fin}
+    
+    interventions = await db.interventions.find(query, {"_id": 0}).sort("date_prevue", 1).to_list(1000)
+    return [serialize_doc(i) for i in interventions]
+
+@api_router.get("/interventions/today")
+async def get_today_interventions(current_user: dict = Depends(get_current_user)):
+    """Get today's interventions for technician"""
+    today = datetime.now(timezone.utc).date()
+    today_start = datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=timezone.utc).isoformat()
+    today_end = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc).isoformat()
+    
+    query = {
+        "entreprise_id": current_user["entreprise_id"],
+        "date_prevue": {"$gte": today_start, "$lte": today_end}
+    }
+    
+    if current_user["role"] == "tech":
+        query["technicien_id"] = current_user["user_id"]
+    
+    interventions = await db.interventions.find(query, {"_id": 0}).sort("date_prevue", 1).to_list(100)
+    
+    # Enrich with client data
+    for i in interventions:
+        client = await db.clients.find_one({"id": i["client_id"]}, {"_id": 0, "nom": 1, "prenom": 1, "telephone": 1, "adresse": 1})
+        i["client"] = serialize_doc(client) if client else None
+    
+    return [serialize_doc(i) for i in interventions]
+
+@api_router.get("/interventions/{intervention_id}")
+async def get_intervention(intervention_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific intervention"""
+    query = {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]}
+    if current_user["role"] == "tech":
+        query["technicien_id"] = current_user["user_id"]
+    
+    intervention = await db.interventions.find_one(query, {"_id": 0})
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Enrich with client data
+    client = await db.clients.find_one({"id": intervention["client_id"]}, {"_id": 0})
+    intervention["client"] = serialize_doc(client) if client else None
+    
+    return serialize_doc(intervention)
+
+@api_router.put("/interventions/{intervention_id}")
+async def update_intervention(intervention_id: str, data: InterventionUpdate, current_user: dict = Depends(get_current_user)):
+    """Update an intervention"""
+    query = {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]}
+    if current_user["role"] == "tech":
+        query["technicien_id"] = current_user["user_id"]
+    
+    update_data = data.model_dump(exclude_unset=True)
+    for key in ["date_prevue", "heure_debut", "heure_fin"]:
+        if key in update_data and update_data[key]:
+            update_data[key] = update_data[key].isoformat()
+    
+    result = await db.interventions.update_one(query, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "update", "intervention", intervention_id)
+    
+    intervention = await db.interventions.find_one({"id": intervention_id}, {"_id": 0})
+    return serialize_doc(intervention)
+
+@api_router.post("/interventions/{intervention_id}/start")
+async def start_intervention(intervention_id: str, current_user: dict = Depends(get_current_user)):
+    """Start an intervention"""
+    now = datetime.now(timezone.utc).isoformat()
+    result = await db.interventions.update_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"], "technicien_id": current_user["user_id"]},
+        {"$set": {"statut": "en_cours", "heure_debut": now}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "start", "intervention", intervention_id)
+    return {"message": "Intervention démarrée", "heure_debut": now}
+
+@api_router.post("/interventions/{intervention_id}/complete")
+async def complete_intervention(intervention_id: str, notes_terrain: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    """Complete an intervention"""
+    now = datetime.now(timezone.utc).isoformat()
+    update = {"statut": "terminee", "heure_fin": now}
+    if notes_terrain:
+        update["notes_terrain"] = notes_terrain
+    
+    result = await db.interventions.update_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"], "technicien_id": current_user["user_id"]},
+        {"$set": update}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "complete", "intervention", intervention_id)
+    return {"message": "Intervention terminée", "heure_fin": now}
+
+# ==================== DEVIS ROUTES ====================
+@api_router.post("/devis")
+async def create_devis(data: DevisCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new devis"""
+    # Verify client exists
+    client = await db.clients.find_one({"id": data.client_id, "entreprise_id": current_user["entreprise_id"]})
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    # Get next sequence number
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    seq = entreprise.get("sequence_devis", 1)
+    year = datetime.now().year
+    numero_devis = f"D{year}-{seq:05d}"
+    
+    # Update sequence
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {"$inc": {"sequence_devis": 1}}
+    )
+    
+    # Calculate totals
+    lignes = [l.model_dump() for l in data.lignes]
+    total_ht, total_tva, total_ttc = calculate_totals(lignes)
+    
+    devis_dict = data.model_dump()
+    devis_dict["lignes"] = lignes
+    devis_dict["id"] = str(uuid.uuid4())
+    devis_dict["entreprise_id"] = current_user["entreprise_id"]
+    devis_dict["technicien_id"] = current_user["user_id"] if current_user["role"] == "tech" else None
+    devis_dict["numero_devis"] = numero_devis
+    devis_dict["statut"] = "brouillon"
+    devis_dict["total_ht"] = total_ht
+    devis_dict["total_tva"] = total_tva
+    devis_dict["total_ttc"] = total_ttc
+    devis_dict["token_client"] = str(uuid.uuid4())
+    devis_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    devis_dict["date_expiration"] = (datetime.now(timezone.utc) + timedelta(days=data.validite_jours)).isoformat()
+    
+    await db.devis.insert_one(devis_dict)
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "create", "devis", devis_dict["id"])
+    
+    return serialize_doc(devis_dict)
+
+@api_router.get("/devis")
+async def list_devis(
+    statut: Optional[str] = None,
+    client_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """List all devis"""
+    query = {"entreprise_id": current_user["entreprise_id"]}
+    
+    if current_user["role"] == "tech":
+        query["technicien_id"] = current_user["user_id"]
+    
+    if statut:
+        query["statut"] = statut
+    if client_id:
+        query["client_id"] = client_id
+    
+    devis_list = await db.devis.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Enrich with client names
+    for d in devis_list:
+        client = await db.clients.find_one({"id": d["client_id"]}, {"_id": 0, "nom": 1, "prenom": 1})
+        d["client_nom"] = f"{client.get('nom', '')} {client.get('prenom', '')}" if client else ""
+    
+    return [serialize_doc(d) for d in devis_list]
+
+@api_router.get("/devis/{devis_id}")
+async def get_devis(devis_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific devis"""
+    query = {"id": devis_id, "entreprise_id": current_user["entreprise_id"]}
+    if current_user["role"] == "tech":
+        query["technicien_id"] = current_user["user_id"]
+    
+    devis = await db.devis.find_one(query, {"_id": 0})
+    if not devis:
+        raise HTTPException(status_code=404, detail="Devis non trouvé")
+    
+    client = await db.clients.find_one({"id": devis["client_id"]}, {"_id": 0})
+    devis["client"] = serialize_doc(client) if client else None
+    
+    return serialize_doc(devis)
+
+@api_router.put("/devis/{devis_id}")
+async def update_devis(devis_id: str, data: DevisUpdate, current_user: dict = Depends(get_current_user)):
+    """Update a devis"""
+    query = {"id": devis_id, "entreprise_id": current_user["entreprise_id"]}
+    
+    devis = await db.devis.find_one(query, {"_id": 0})
+    if not devis:
+        raise HTTPException(status_code=404, detail="Devis non trouvé")
+    
+    if devis["statut"] not in ["brouillon", "envoye"]:
+        raise HTTPException(status_code=400, detail="Ce devis ne peut plus être modifié")
+    
+    update_data = data.model_dump(exclude_unset=True)
+    
+    if "lignes" in update_data:
+        lignes = [l if isinstance(l, dict) else l.model_dump() for l in update_data["lignes"]]
+        update_data["lignes"] = lignes
+        total_ht, total_tva, total_ttc = calculate_totals(lignes)
+        update_data["total_ht"] = total_ht
+        update_data["total_tva"] = total_tva
+        update_data["total_ttc"] = total_ttc
+    
+    await db.devis.update_one(query, {"$set": update_data})
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "update", "devis", devis_id)
+    
+    devis = await db.devis.find_one({"id": devis_id}, {"_id": 0})
+    return serialize_doc(devis)
+
+@api_router.post("/devis/{devis_id}/send")
+async def send_devis(devis_id: str, current_user: dict = Depends(get_current_user)):
+    """Mark devis as sent"""
+    result = await db.devis.update_one(
+        {"id": devis_id, "entreprise_id": current_user["entreprise_id"], "statut": "brouillon"},
+        {"$set": {"statut": "envoye"}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Devis non trouvé ou déjà envoyé")
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "send", "devis", devis_id)
+    
+    devis = await db.devis.find_one({"id": devis_id}, {"_id": 0})
+    return {"message": "Devis envoyé", "token_client": devis["token_client"]}
+
+@api_router.post("/devis/{devis_id}/sign")
+async def sign_devis(devis_id: str, signature: str, nom_signataire: str, current_user: dict = Depends(get_current_user)):
+    """Sign a devis"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.devis.update_one(
+        {"id": devis_id, "entreprise_id": current_user["entreprise_id"], "statut": {"$in": ["brouillon", "envoye"]}},
+        {"$set": {"statut": "signe", "signature_client": signature, "nom_signataire": nom_signataire, "date_signature": now}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Devis non trouvé ou déjà signé")
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "sign", "devis", devis_id)
+    return {"message": "Devis signé", "date_signature": now}
+
+@api_router.get("/devis/{devis_id}/pdf")
+async def get_devis_pdf(devis_id: str, current_user: dict = Depends(get_current_user)):
+    """Generate and return devis PDF"""
+    devis = await db.devis.find_one({"id": devis_id, "entreprise_id": current_user["entreprise_id"]}, {"_id": 0})
+    if not devis:
+        raise HTTPException(status_code=404, detail="Devis non trouvé")
+    
+    client = await db.clients.find_one({"id": devis["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    
+    pdf_bytes = generate_devis_pdf(devis, client or {}, entreprise or {})
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=devis_{devis['numero_devis']}.pdf"}
+    )
+
+# ==================== CLIENT PORTAL ROUTES ====================
+@api_router.get("/portal/devis/{token}")
+async def get_portal_devis(token: str):
+    """Get devis for client portal (no auth required)"""
+    devis = await db.devis.find_one({"token_client": token}, {"_id": 0})
+    if not devis:
+        raise HTTPException(status_code=404, detail="Devis non trouvé")
+    
+    client = await db.clients.find_one({"id": devis["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": devis["entreprise_id"]}, {"_id": 0, "nom": 1, "adresse": 1, "telephone": 1, "email": 1, "logo_url": 1})
+    
+    return {
+        "devis": serialize_doc(devis),
+        "client": serialize_doc(client) if client else None,
+        "entreprise": serialize_doc(entreprise) if entreprise else None
+    }
+
+@api_router.post("/portal/devis/{token}/sign")
+async def sign_portal_devis(token: str, signature: str, nom_signataire: str):
+    """Sign devis from client portal (no auth required)"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.devis.update_one(
+        {"token_client": token, "statut": {"$in": ["brouillon", "envoye"]}},
+        {"$set": {"statut": "signe", "signature_client": signature, "nom_signataire": nom_signataire, "date_signature": now}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Devis non trouvé ou déjà signé")
+    
+    return {"message": "Devis signé avec succès", "date_signature": now}
+
+@api_router.get("/portal/devis/{token}/pdf")
+async def get_portal_devis_pdf(token: str):
+    """Get devis PDF from client portal (no auth required)"""
+    devis = await db.devis.find_one({"token_client": token}, {"_id": 0})
+    if not devis:
+        raise HTTPException(status_code=404, detail="Devis non trouvé")
+    
+    client = await db.clients.find_one({"id": devis["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": devis["entreprise_id"]}, {"_id": 0})
+    
+    pdf_bytes = generate_devis_pdf(devis, client or {}, entreprise or {})
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=devis_{devis['numero_devis']}.pdf"}
+    )
+
+# ==================== FACTURE ROUTES ====================
+@api_router.post("/factures")
+async def create_facture(data: FactureCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new facture"""
+    # Verify client exists
+    client = await db.clients.find_one({"id": data.client_id, "entreprise_id": current_user["entreprise_id"]})
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    # Get next sequence number
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    seq = entreprise.get("sequence_facture", 1)
+    year = datetime.now().year
+    numero_facture = f"F{year}-{seq:05d}"
+    
+    # Update sequence
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {"$inc": {"sequence_facture": 1}}
+    )
+    
+    # Calculate totals
+    lignes = [l.model_dump() for l in data.lignes]
+    total_ht, total_tva, total_ttc = calculate_totals(lignes)
+    
+    facture_dict = data.model_dump()
+    facture_dict["lignes"] = lignes
+    facture_dict["id"] = str(uuid.uuid4())
+    facture_dict["entreprise_id"] = current_user["entreprise_id"]
+    facture_dict["technicien_id"] = current_user["user_id"] if current_user["role"] == "tech" else None
+    facture_dict["numero_facture"] = numero_facture
+    facture_dict["statut"] = "brouillon"
+    facture_dict["total_ht"] = total_ht
+    facture_dict["total_tva"] = total_tva
+    facture_dict["total_ttc"] = total_ttc
+    facture_dict["montant_paye"] = 0
+    facture_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    facture_dict["date_echeance"] = (datetime.now(timezone.utc) + timedelta(days=data.echeance_jours)).isoformat()
+    
+    await db.factures.insert_one(facture_dict)
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "create", "facture", facture_dict["id"])
+    
+    return serialize_doc(facture_dict)
+
+@api_router.post("/factures/from-devis")
+async def create_facture_from_devis(data: FactureFromDevis, current_user: dict = Depends(get_current_user)):
+    """Create facture from signed devis"""
+    devis = await db.devis.find_one(
+        {"id": data.devis_id, "entreprise_id": current_user["entreprise_id"], "statut": "signe"},
+        {"_id": 0}
+    )
+    if not devis:
+        raise HTTPException(status_code=404, detail="Devis signé non trouvé")
+    
+    # Get next sequence number
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    seq = entreprise.get("sequence_facture", 1)
+    year = datetime.now().year
+    numero_facture = f"F{year}-{seq:05d}"
+    
+    # Update sequence
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {"$inc": {"sequence_facture": 1}}
+    )
+    
+    facture_dict = {
+        "id": str(uuid.uuid4()),
+        "entreprise_id": current_user["entreprise_id"],
+        "client_id": devis["client_id"],
+        "devis_id": devis["id"],
+        "intervention_id": devis.get("intervention_id"),
+        "technicien_id": devis.get("technicien_id"),
+        "numero_facture": numero_facture,
+        "lignes": devis["lignes"],
+        "statut": "emise",
+        "total_ht": devis["total_ht"],
+        "total_tva": devis["total_tva"],
+        "total_ttc": devis["total_ttc"],
+        "montant_paye": 0,
+        "conditions_paiement": "Paiement à réception de facture",
+        "echeance_jours": 30,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "date_echeance": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+    }
+    
+    await db.factures.insert_one(facture_dict)
+    
+    # Update devis status
+    await db.devis.update_one({"id": data.devis_id}, {"$set": {"statut": "facture"}})
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "create", "facture", facture_dict["id"], {"from_devis": data.devis_id})
+    
+    return serialize_doc(facture_dict)
+
+@api_router.get("/factures")
+async def list_factures(
+    statut: Optional[str] = None,
+    client_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """List all factures"""
+    query = {"entreprise_id": current_user["entreprise_id"]}
+    
+    if statut:
+        query["statut"] = statut
+    if client_id:
+        query["client_id"] = client_id
+    
+    factures = await db.factures.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Enrich with client names
+    for f in factures:
+        client = await db.clients.find_one({"id": f["client_id"]}, {"_id": 0, "nom": 1, "prenom": 1})
+        f["client_nom"] = f"{client.get('nom', '')} {client.get('prenom', '')}" if client else ""
+    
+    return [serialize_doc(f) for f in factures]
+
+@api_router.get("/factures/{facture_id}")
+async def get_facture(facture_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific facture"""
+    facture = await db.factures.find_one(
+        {"id": facture_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
+    facture["client"] = serialize_doc(client) if client else None
+    
+    return serialize_doc(facture)
+
+@api_router.post("/factures/{facture_id}/emit")
+async def emit_facture(facture_id: str, current_user: dict = Depends(get_current_user)):
+    """Emit a facture"""
+    result = await db.factures.update_one(
+        {"id": facture_id, "entreprise_id": current_user["entreprise_id"], "statut": "brouillon"},
+        {"$set": {"statut": "emise"}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Facture non trouvée ou déjà émise")
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "emit", "facture", facture_id)
+    return {"message": "Facture émise"}
+
+@api_router.post("/factures/{facture_id}/pay")
+async def mark_facture_paid(facture_id: str, montant: float, mode_paiement: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    """Mark facture as paid"""
+    facture = await db.factures.find_one(
+        {"id": facture_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    new_montant_paye = facture.get("montant_paye", 0) + montant
+    update = {
+        "montant_paye": new_montant_paye,
+        "date_paiement": datetime.now(timezone.utc).isoformat()
+    }
+    if mode_paiement:
+        update["mode_paiement"] = mode_paiement
+    
+    if new_montant_paye >= facture["total_ttc"]:
+        update["statut"] = "payee"
+    
+    await db.factures.update_one({"id": facture_id}, {"$set": update})
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "pay", "facture", facture_id, {"montant": montant})
+    
+    return {"message": "Paiement enregistré", "montant_paye": new_montant_paye, "statut": update.get("statut", facture["statut"])}
+
+@api_router.get("/factures/{facture_id}/pdf")
+async def get_facture_pdf(facture_id: str, current_user: dict = Depends(get_current_user)):
+    """Generate and return facture PDF"""
+    facture = await db.factures.find_one({"id": facture_id, "entreprise_id": current_user["entreprise_id"]}, {"_id": 0})
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    
+    pdf_bytes = generate_facture_pdf(facture, client or {}, entreprise or {})
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=facture_{facture['numero_facture']}.pdf"}
+    )
+
+# ==================== PHOTO ROUTES ====================
+@api_router.post("/interventions/{intervention_id}/photos")
+async def upload_photo(
+    intervention_id: str,
+    file: UploadFile = File(...),
+    type_photo: str = "autre",
+    description: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload photo for intervention"""
+    # Verify intervention exists and belongs to user
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Upload to storage
+    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    storage_path = f"{APP_NAME}/photos/{current_user['entreprise_id']}/{intervention_id}/{uuid.uuid4()}.{ext}"
+    data = await file.read()
+    content_type = file.content_type or get_mime_type(file.filename)
+    
+    result = put_object(storage_path, data, content_type)
+    if not result:
+        raise HTTPException(status_code=500, detail="Erreur lors du téléchargement")
+    
+    # Save to database
+    photo_dict = {
+        "id": str(uuid.uuid4()),
+        "entreprise_id": current_user["entreprise_id"],
+        "intervention_id": intervention_id,
+        "storage_path": result["path"],
+        "original_filename": file.filename,
+        "content_type": content_type,
+        "type_photo": type_photo,
+        "description": description,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "is_deleted": False
+    }
+    await db.photos.insert_one(photo_dict)
+    
+    # Update intervention photos list
+    await db.interventions.update_one(
+        {"id": intervention_id},
+        {"$push": {"photos": photo_dict["id"]}}
+    )
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "upload", "photo", photo_dict["id"])
+    
+    return serialize_doc(photo_dict)
+
+@api_router.get("/interventions/{intervention_id}/photos")
+async def list_intervention_photos(intervention_id: str, current_user: dict = Depends(get_current_user)):
+    """List photos for an intervention"""
+    photos = await db.photos.find(
+        {"intervention_id": intervention_id, "entreprise_id": current_user["entreprise_id"], "is_deleted": False},
+        {"_id": 0}
+    ).to_list(100)
+    return [serialize_doc(p) for p in photos]
+
+@api_router.get("/photos/{photo_id}")
+async def get_photo(photo_id: str, current_user: dict = Depends(get_current_user)):
+    """Download a photo"""
+    photo = await db.photos.find_one(
+        {"id": photo_id, "entreprise_id": current_user["entreprise_id"], "is_deleted": False},
+        {"_id": 0}
+    )
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo non trouvée")
+    
+    data, content_type = get_object(photo["storage_path"])
+    if not data:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    return Response(content=data, media_type=photo.get("content_type", content_type))
+
+# ==================== DASHBOARD STATS ====================
+@api_router.get("/dashboard/stats")
+async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
+    """Get dashboard statistics"""
+    ent_id = current_user["entreprise_id"]
+    today = datetime.now(timezone.utc).date()
+    today_start = datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=timezone.utc).isoformat()
+    month_start = datetime(today.year, today.month, 1, 0, 0, 0, tzinfo=timezone.utc).isoformat()
+    
+    # Count interventions
+    interventions_today = await db.interventions.count_documents({
+        "entreprise_id": ent_id,
+        "date_prevue": {"$gte": today_start}
+    })
+    interventions_en_retard = await db.interventions.count_documents({
+        "entreprise_id": ent_id,
+        "statut": "planifiee",
+        "date_prevue": {"$lt": today_start}
+    })
+    
+    # Count devis
+    devis_en_attente = await db.devis.count_documents({
+        "entreprise_id": ent_id,
+        "statut": {"$in": ["brouillon", "envoye"]}
+    })
+    devis_signes_mois = await db.devis.count_documents({
+        "entreprise_id": ent_id,
+        "statut": "signe",
+        "date_signature": {"$gte": month_start}
+    })
+    
+    # Devis amounts
+    devis_attente_pipeline = [
+        {"$match": {"entreprise_id": ent_id, "statut": {"$in": ["brouillon", "envoye"]}}},
+        {"$group": {"_id": None, "total": {"$sum": "$total_ttc"}}}
+    ]
+    devis_attente_result = await db.devis.aggregate(devis_attente_pipeline).to_list(1)
+    montant_devis_attente = devis_attente_result[0]["total"] if devis_attente_result else 0
+    
+    # Count factures
+    factures_impayees = await db.factures.count_documents({
+        "entreprise_id": ent_id,
+        "statut": {"$in": ["emise", "en_retard"]}
+    })
+    
+    # Factures amounts
+    factures_impayees_pipeline = [
+        {"$match": {"entreprise_id": ent_id, "statut": {"$in": ["emise", "en_retard"]}}},
+        {"$group": {"_id": None, "total": {"$sum": {"$subtract": ["$total_ttc", "$montant_paye"]}}}}
+    ]
+    factures_impayees_result = await db.factures.aggregate(factures_impayees_pipeline).to_list(1)
+    montant_factures_impayees = factures_impayees_result[0]["total"] if factures_impayees_result else 0
+    
+    # CA du mois
+    ca_mois_pipeline = [
+        {"$match": {"entreprise_id": ent_id, "statut": "payee", "date_paiement": {"$gte": month_start}}},
+        {"$group": {"_id": None, "total": {"$sum": "$total_ttc"}}}
+    ]
+    ca_mois_result = await db.factures.aggregate(ca_mois_pipeline).to_list(1)
+    ca_mois = ca_mois_result[0]["total"] if ca_mois_result else 0
+    
+    # Count clients
+    total_clients = await db.clients.count_documents({"entreprise_id": ent_id})
+    
+    # Count techniciens
+    total_techniciens = await db.users.count_documents({"entreprise_id": ent_id, "role": "tech", "statut": "actif"})
+    
+    return {
+        "interventions_today": interventions_today,
+        "interventions_en_retard": interventions_en_retard,
+        "devis_en_attente": devis_en_attente,
+        "devis_signes_mois": devis_signes_mois,
+        "montant_devis_attente": round(montant_devis_attente, 2),
+        "factures_impayees": factures_impayees,
+        "montant_factures_impayees": round(montant_factures_impayees, 2),
+        "ca_mois": round(ca_mois, 2),
+        "total_clients": total_clients,
+        "total_techniciens": total_techniciens
+    }
+
+@api_router.get("/dashboard/alerts")
+async def get_dashboard_alerts(current_user: dict = Depends(get_current_user)):
+    """Get dashboard alerts"""
+    ent_id = current_user["entreprise_id"]
+    today = datetime.now(timezone.utc).isoformat()
+    
+    alerts = []
+    
+    # Devis expirés
+    devis_expires = await db.devis.find(
+        {"entreprise_id": ent_id, "statut": {"$in": ["brouillon", "envoye"]}, "date_expiration": {"$lt": today}},
+        {"_id": 0, "id": 1, "numero_devis": 1, "client_id": 1}
+    ).to_list(10)
+    for d in devis_expires:
+        alerts.append({"type": "devis_expire", "severity": "warning", "message": f"Devis {d['numero_devis']} expiré", "entity_id": d["id"]})
+    
+    # Factures en retard
+    factures_retard = await db.factures.find(
+        {"entreprise_id": ent_id, "statut": "emise", "date_echeance": {"$lt": today}},
+        {"_id": 0, "id": 1, "numero_facture": 1}
+    ).to_list(10)
+    for f in factures_retard:
+        alerts.append({"type": "facture_retard", "severity": "error", "message": f"Facture {f['numero_facture']} en retard", "entity_id": f["id"]})
+        # Update status
+        await db.factures.update_one({"id": f["id"]}, {"$set": {"statut": "en_retard"}})
+    
+    # Interventions en retard
+    interventions_retard = await db.interventions.find(
+        {"entreprise_id": ent_id, "statut": "planifiee", "date_prevue": {"$lt": today}},
+        {"_id": 0, "id": 1, "titre": 1}
+    ).to_list(10)
+    for i in interventions_retard:
+        alerts.append({"type": "intervention_retard", "severity": "warning", "message": f"Intervention '{i['titre']}' en retard", "entity_id": i["id"]})
+    
+    return alerts
+
+@api_router.get("/dashboard/recent")
+async def get_dashboard_recent(current_user: dict = Depends(get_current_user)):
+    """Get recent activity"""
+    ent_id = current_user["entreprise_id"]
+    
+    # Recent devis
+    recent_devis = await db.devis.find(
+        {"entreprise_id": ent_id},
+        {"_id": 0, "id": 1, "numero_devis": 1, "statut": 1, "total_ttc": 1, "created_at": 1, "client_id": 1}
+    ).sort("created_at", -1).limit(5).to_list(5)
+    
+    for d in recent_devis:
+        client = await db.clients.find_one({"id": d["client_id"]}, {"_id": 0, "nom": 1})
+        d["client_nom"] = client.get("nom", "") if client else ""
+    
+    # Recent factures
+    recent_factures = await db.factures.find(
+        {"entreprise_id": ent_id},
+        {"_id": 0, "id": 1, "numero_facture": 1, "statut": 1, "total_ttc": 1, "created_at": 1, "client_id": 1}
+    ).sort("created_at", -1).limit(5).to_list(5)
+    
+    for f in recent_factures:
+        client = await db.clients.find_one({"id": f["client_id"]}, {"_id": 0, "nom": 1})
+        f["client_nom"] = client.get("nom", "") if client else ""
+    
+    return {
+        "devis": [serialize_doc(d) for d in recent_devis],
+        "factures": [serialize_doc(f) for f in recent_factures]
+    }
+
+# ==================== AUDIT LOGS ====================
+@api_router.get("/audit-logs")
+async def list_audit_logs(
+    entity: Optional[str] = None,
+    user_id: Optional[str] = None,
+    limit: int = 100,
+    current_user: dict = Depends(require_admin)
+):
+    """List audit logs (admin only)"""
+    query = {"entreprise_id": current_user["entreprise_id"]}
+    if entity:
+        query["entity"] = entity
+    if user_id:
+        query["user_id"] = user_id
+    
+    logs = await db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).limit(limit).to_list(limit)
+    return [serialize_doc(l) for l in logs]
+
+# ==================== ENTREPRISE SETTINGS ====================
+@api_router.get("/entreprise")
+async def get_entreprise(current_user: dict = Depends(get_current_user)):
+    """Get entreprise settings"""
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    if not entreprise:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    return serialize_doc(entreprise)
+
+@api_router.put("/entreprise")
+async def update_entreprise(data: EntrepriseCreate, current_user: dict = Depends(require_admin)):
+    """Update entreprise settings (admin only)"""
+    update_data = data.model_dump(exclude_unset=True)
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {"$set": update_data}
+    )
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "update", "entreprise", current_user["entreprise_id"])
+    
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    return serialize_doc(entreprise)
+
+# ==================== SEARCH ====================
+@api_router.get("/search")
+async def global_search(q: str, current_user: dict = Depends(get_current_user)):
+    """Global search across clients, devis, factures, interventions"""
+    ent_id = current_user["entreprise_id"]
+    results = {"clients": [], "devis": [], "factures": [], "interventions": []}
+    
+    # Search clients
+    clients = await db.clients.find(
+        {"entreprise_id": ent_id, "$or": [
+            {"nom": {"$regex": q, "$options": "i"}},
+            {"prenom": {"$regex": q, "$options": "i"}},
+            {"email": {"$regex": q, "$options": "i"}},
+            {"telephone": {"$regex": q, "$options": "i"}}
+        ]},
+        {"_id": 0}
+    ).limit(5).to_list(5)
+    results["clients"] = [serialize_doc(c) for c in clients]
+    
+    # Search devis by number
+    devis = await db.devis.find(
+        {"entreprise_id": ent_id, "numero_devis": {"$regex": q, "$options": "i"}},
+        {"_id": 0}
+    ).limit(5).to_list(5)
+    results["devis"] = [serialize_doc(d) for d in devis]
+    
+    # Search factures by number
+    factures = await db.factures.find(
+        {"entreprise_id": ent_id, "numero_facture": {"$regex": q, "$options": "i"}},
+        {"_id": 0}
+    ).limit(5).to_list(5)
+    results["factures"] = [serialize_doc(f) for f in factures]
+    
+    # Search interventions by title
+    interventions = await db.interventions.find(
+        {"entreprise_id": ent_id, "titre": {"$regex": q, "$options": "i"}},
+        {"_id": 0}
+    ).limit(5).to_list(5)
+    results["interventions"] = [serialize_doc(i) for i in interventions]
+    
+    return results
+
+# Include router
 app.include_router(api_router)
 
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -77,12 +1245,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+@app.on_event("startup")
+async def startup():
+    # Initialize storage
+    try:
+        init_storage()
+    except Exception as e:
+        logger.warning(f"Storage init failed (optional): {e}")
+    
+    # Create indexes
+    await db.users.create_index("email", unique=True)
+    await db.users.create_index("entreprise_id")
+    await db.clients.create_index("entreprise_id")
+    await db.interventions.create_index([("entreprise_id", 1), ("date_prevue", 1)])
+    await db.devis.create_index([("entreprise_id", 1), ("created_at", -1)])
+    await db.devis.create_index("token_client", unique=True)
+    await db.factures.create_index([("entreprise_id", 1), ("created_at", -1)])
+    await db.audit_logs.create_index([("entreprise_id", 1), ("timestamp", -1)])
+    await db.photos.create_index([("entreprise_id", 1), ("intervention_id", 1)])
+    
+    logger.info("FieldCommand API started")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

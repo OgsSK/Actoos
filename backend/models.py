@@ -1,0 +1,288 @@
+"""
+Pydantic Models for Field Service Management SaaS
+Multi-tenant architecture with entreprise_id isolation
+"""
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from typing import Optional, List, Literal
+from datetime import datetime, timezone
+import uuid
+
+def generate_id() -> str:
+    return str(uuid.uuid4())
+
+def now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+# ==================== ENTREPRISE ====================
+class EntrepriseBase(BaseModel):
+    nom: str
+    adresse: Optional[str] = None
+    ville: Optional[str] = None
+    code_postal: Optional[str] = None
+    telephone: Optional[str] = None
+    email: Optional[str] = None
+    siret: Optional[str] = None
+    tva_intra: Optional[str] = None
+    logo_url: Optional[str] = None
+    conditions_generales: Optional[str] = None
+    couleur_primaire: str = "#2563EB"
+
+class EntrepriseCreate(EntrepriseBase):
+    pass
+
+class Entreprise(EntrepriseBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    sequence_devis: int = 1
+    sequence_facture: int = 1
+    created_at: datetime = Field(default_factory=now_utc)
+
+# ==================== USER ====================
+class UserBase(BaseModel):
+    email: EmailStr
+    nom: str
+    prenom: str
+    telephone: Optional[str] = None
+    role: Literal["admin", "tech"] = "tech"
+
+class UserCreate(UserBase):
+    password: str
+
+class UserInvite(BaseModel):
+    email: EmailStr
+    nom: str
+    prenom: str
+    telephone: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserPasswordReset(BaseModel):
+    email: EmailStr
+
+class UserSetPassword(BaseModel):
+    token: str
+    password: str
+
+class User(UserBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    entreprise_id: str
+    password_hash: str
+    statut: Literal["actif", "invite", "desactive"] = "actif"
+    derniere_connexion: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=now_utc)
+
+class UserResponse(BaseModel):
+    id: str
+    entreprise_id: str
+    email: str
+    nom: str
+    prenom: str
+    telephone: Optional[str] = None
+    role: str
+    statut: str
+    derniere_connexion: Optional[str] = None
+    created_at: str
+
+# ==================== CLIENT ====================
+class ClientBase(BaseModel):
+    nom: str
+    prenom: Optional[str] = None
+    email: Optional[str] = None
+    telephone: Optional[str] = None
+    adresse: Optional[str] = None
+    ville: Optional[str] = None
+    code_postal: Optional[str] = None
+    type_client: Literal["particulier", "professionnel"] = "particulier"
+    notes: Optional[str] = None
+
+class ClientCreate(ClientBase):
+    pass
+
+class Client(ClientBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    entreprise_id: str
+    created_at: datetime = Field(default_factory=now_utc)
+
+class ClientResponse(ClientBase):
+    id: str
+    entreprise_id: str
+    created_at: str
+
+# ==================== INTERVENTION ====================
+class InterventionBase(BaseModel):
+    client_id: str
+    titre: str
+    description: Optional[str] = None
+    adresse: Optional[str] = None
+    ville: Optional[str] = None
+    code_postal: Optional[str] = None
+    date_prevue: datetime
+    duree_estimee: int = 60  # minutes
+    priorite: Literal["basse", "normale", "haute", "urgente"] = "normale"
+    notes_internes: Optional[str] = None
+
+class InterventionCreate(InterventionBase):
+    technicien_id: Optional[str] = None
+
+class InterventionUpdate(BaseModel):
+    titre: Optional[str] = None
+    description: Optional[str] = None
+    adresse: Optional[str] = None
+    ville: Optional[str] = None
+    code_postal: Optional[str] = None
+    date_prevue: Optional[datetime] = None
+    duree_estimee: Optional[int] = None
+    priorite: Optional[Literal["basse", "normale", "haute", "urgente"]] = None
+    statut: Optional[Literal["planifiee", "en_cours", "terminee", "annulee"]] = None
+    technicien_id: Optional[str] = None
+    notes_internes: Optional[str] = None
+    notes_terrain: Optional[str] = None
+    heure_debut: Optional[datetime] = None
+    heure_fin: Optional[datetime] = None
+
+class Intervention(InterventionBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    entreprise_id: str
+    technicien_id: Optional[str] = None
+    statut: Literal["planifiee", "en_cours", "terminee", "annulee"] = "planifiee"
+    notes_terrain: Optional[str] = None
+    photos: List[str] = []
+    heure_debut: Optional[datetime] = None
+    heure_fin: Optional[datetime] = None
+    devis_id: Optional[str] = None
+    facture_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=now_utc)
+
+# ==================== DEVIS ====================
+class LigneDevis(BaseModel):
+    description: str
+    quantite: float = 1
+    prix_unitaire: float
+    tva: float = 20.0
+
+class DevisBase(BaseModel):
+    client_id: str
+    intervention_id: Optional[str] = None
+    lignes: List[LigneDevis] = []
+    conditions: Optional[str] = None
+    validite_jours: int = 30
+    message_client: Optional[str] = None
+
+class DevisCreate(DevisBase):
+    pass
+
+class DevisUpdate(BaseModel):
+    lignes: Optional[List[LigneDevis]] = None
+    conditions: Optional[str] = None
+    validite_jours: Optional[int] = None
+    message_client: Optional[str] = None
+    statut: Optional[Literal["brouillon", "envoye", "signe", "refuse", "expire", "facture"]] = None
+
+class Devis(DevisBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    entreprise_id: str
+    technicien_id: Optional[str] = None
+    numero_devis: str = ""
+    statut: Literal["brouillon", "envoye", "signe", "refuse", "expire", "facture"] = "brouillon"
+    total_ht: float = 0
+    total_tva: float = 0
+    total_ttc: float = 0
+    token_client: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    signature_client: Optional[str] = None
+    date_signature: Optional[datetime] = None
+    nom_signataire: Optional[str] = None
+    pdf_url: Optional[str] = None
+    created_at: datetime = Field(default_factory=now_utc)
+    date_expiration: Optional[datetime] = None
+
+# ==================== FACTURE ====================
+class FactureBase(BaseModel):
+    client_id: str
+    devis_id: Optional[str] = None
+    intervention_id: Optional[str] = None
+    lignes: List[LigneDevis] = []
+    conditions_paiement: Optional[str] = None
+    echeance_jours: int = 30
+    mode_paiement: Optional[str] = None
+
+class FactureCreate(FactureBase):
+    pass
+
+class FactureFromDevis(BaseModel):
+    devis_id: str
+
+class Facture(FactureBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    entreprise_id: str
+    technicien_id: Optional[str] = None
+    numero_facture: str = ""
+    statut: Literal["brouillon", "emise", "payee", "en_retard", "annulee"] = "brouillon"
+    total_ht: float = 0
+    total_tva: float = 0
+    total_ttc: float = 0
+    montant_paye: float = 0
+    date_paiement: Optional[datetime] = None
+    pdf_url: Optional[str] = None
+    created_at: datetime = Field(default_factory=now_utc)
+    date_echeance: Optional[datetime] = None
+
+# ==================== AUDIT LOG ====================
+class AuditLog(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    entreprise_id: str
+    user_id: str
+    action: str
+    entity: str
+    entity_id: str
+    details: Optional[dict] = None
+    timestamp: datetime = Field(default_factory=now_utc)
+
+# ==================== PHOTO ====================
+class Photo(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    entreprise_id: str
+    intervention_id: str
+    storage_path: str
+    original_filename: str
+    content_type: str
+    type_photo: Literal["avant", "apres", "defaut", "autre"] = "autre"
+    description: Optional[str] = None
+    created_at: datetime = Field(default_factory=now_utc)
+    is_deleted: bool = False
+
+# ==================== SYNC ====================
+class SyncAction(BaseModel):
+    action_type: Literal["create", "update"]
+    entity: str
+    entity_id: str
+    data: dict
+    local_timestamp: datetime
+
+class SyncRequest(BaseModel):
+    actions: List[SyncAction]
+    last_sync: Optional[datetime] = None
+
+# ==================== AUTH ====================
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+    entreprise: Optional[dict] = None
+
+class RegisterRequest(BaseModel):
+    entreprise_nom: str
+    entreprise_email: Optional[str] = None
+    entreprise_telephone: Optional[str] = None
+    admin_email: EmailStr
+    admin_nom: str
+    admin_prenom: str
+    admin_password: str
