@@ -3,18 +3,19 @@
 ## Problem Statement
 SaaS multi-tenant pour entreprises de services (plomberie, électricité, maintenance) avec:
 - Dashboard Admin pour pilotage entreprise
-- Application technicien pour terrain
+- Application technicien pour terrain (PWA mobile)
 - Portail client pour signature devis
 
 ## Architecture
 
 ### Backend (FastAPI + MongoDB)
-- **server.py**: API principale avec routes auth, clients, interventions, devis, factures, emails
+- **server.py**: API principale avec routes auth, clients, interventions, devis, factures, emails, SMS
 - **models.py**: Modèles Pydantic (Entreprise, User, Client, Intervention, Devis, Facture, AuditLog)
 - **auth.py**: JWT authentication avec rôles admin/tech
 - **pdf_generator.py**: Génération PDF devis/factures avec ReportLab
 - **storage.py**: Intégration Object Storage Emergent
 - **email_service.py**: Envoi emails via Resend (devis, factures, relances)
+- **sms_service.py**: Envoi SMS via Twilio (rappels interventions, notifications)
 
 ### Frontend (React + Shadcn UI)
 - **AuthPages.jsx**: Login, Register, Activate
@@ -26,8 +27,13 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - **Techniciens.jsx**: Gestion équipe, invitations
 - **Settings.jsx**: Paramètres entreprise
 - **ClientPortal.jsx**: Portail client public (signature devis)
-- **TechnicianApp.jsx**: Application mobile technicien (agenda, photos, notes)
+- **TechnicianApp.jsx**: Application mobile technicien PWA (agenda jour/semaine, photos, notes, offline)
 - **Planning.jsx**: Calendrier drag-and-drop pour organiser les interventions
+
+### PWA / Offline Support
+- **manifest.json**: Configuration PWA (installable, standalone, icônes)
+- **sw.js**: Service Worker pour cache et mode offline
+- **OfflineContext.jsx**: Gestion état réseau et sync IndexedDB
 
 ## What's Implemented (Date: 2026-03-24)
 
@@ -69,6 +75,7 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 
 ### Phase 6 - Application Technicien ✅
 - [x] Vue agenda du jour (/tech)
+- [x] Vue agenda semaine (onglet Semaine)
 - [x] Détail intervention avec actions rapides
 - [x] Appel client / Itinéraire GPS
 - [x] Démarrer / Terminer intervention
@@ -86,37 +93,79 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - [x] Dialogue de replanification (heure + technicien)
 - [x] Légende (aujourd'hui, priorités, drag-drop)
 
+### Phase 8 - PWA & Mode Offline ✅
+- [x] Manifest PWA (installable sur mobile)
+- [x] Service Worker avec stratégies de cache
+- [x] IndexedDB pour données offline
+- [x] Synchronisation automatique des actions en attente
+- [x] Indicateur de statut réseau
+
+### Phase 9 - SMS Notifications ✅
+- [x] Service Twilio intégré
+- [x] API SMS intervention reminder
+- [x] API SMS devis notification
+- [x] API SMS facture notification
+- [x] API SMS relance paiement
+- [x] Templates SMS en français
+
+### Phase 10 - Relances Automatiques ✅
+- [x] Tâche de fond pour relances factures impayées
+- [x] Tâche de fond pour rappels interventions (J-1)
+- [x] Configuration via variable d'environnement
+- [x] Tracking des relances envoyées
+
+## Configuration requise
+
+### Variables d'environnement Backend (.env)
+```
+MONGO_URL=mongodb://...
+DB_NAME=fieldcommand
+
+# Email (Resend)
+RESEND_API_KEY=re_xxxxx
+
+# SMS (Twilio) - Optionnel
+TWILIO_ACCOUNT_SID=ACxxxxx
+TWILIO_AUTH_TOKEN=xxxxx
+TWILIO_PHONE_NUMBER=+33xxxxxxxxx
+
+# Relances automatiques
+ENABLE_AUTO_REMINDERS=true  # false pour désactiver
+```
+
+## Test Coverage
+- Backend: 100% (12/12 tests - /app/backend/tests/test_pwa_sms_features.py)
+- Frontend: 100% fonctionnel (PWA + Week View + Offline validés)
+
 ## Prioritized Backlog
 
-### P0 (Critique) - Prochaine itération
-- [ ] Service Worker pour mode offline complet (PWA)
-- [ ] Synchronisation automatique des brouillons
-- [ ] Vue semaine pour l'agenda technicien
+### P0 (Critique) - DONE
+- [x] PWA Mode offline complet ✅
+- [x] Vue semaine agenda technicien ✅
+- [x] SMS Notifications ✅
+- [x] Relances automatiques ✅
 
 ### P1 (Important)
-- [ ] SMS notifications (Twilio)
-- [ ] Relances automatiques programmées
-- [ ] Rapports/statistiques avancés
+- [ ] Statistiques et rapports avancés
+- [ ] Configuration des relances dans les paramètres
+- [ ] Export comptable (CSV/Excel)
 
 ### P2 (Nice to have)
 - [ ] Checklist d'intervention configurable
 - [ ] Catalogue prestations
-- [ ] Intégration paiement en ligne
-- [ ] Export comptable
+- [ ] Intégration paiement en ligne (Stripe)
+- [ ] Historique des SMS envoyés
 
 ### Reporté V2
 - [ ] Optimisation tournées IA
-- [ ] Chat temps réel
+- [ ] Chat temps réel technicien-admin
 - [ ] Export Sage/EBP
 - [ ] Multi-sites sophistiqué
 - [ ] Gestion stock
-
-## Test Coverage
-- Backend: 100% (16/16 tests - /app/backend/tests/test_planning_tech.py)
-- Frontend: 100% fonctionnel (Planning + TechnicianApp validés)
+- [ ] White-labeling
 
 ## Next Tasks
-1. Implémenter Service Worker pour PWA complète
-2. Ajouter vue semaine dans l'agenda technicien
-3. Implémenter notifications SMS (Twilio)
-4. Ajouter statistiques et rapports avancés
+1. Ajouter interface de configuration Twilio dans Settings
+2. Ajouter page de rapports/statistiques
+3. Implémenter export CSV des données
+4. Ajouter historique des communications (emails + SMS)
