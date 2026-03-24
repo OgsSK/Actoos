@@ -20,7 +20,7 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
     
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='RightAlign', alignment=TA_RIGHT, fontSize=10))
-    styles.add(ParagraphStyle(name='Title', alignment=TA_CENTER, fontSize=18, spaceAfter=20, fontName='Helvetica-Bold'))
+    styles.add(ParagraphStyle(name='DocTitle', alignment=TA_CENTER, fontSize=18, spaceAfter=20, fontName='Helvetica-Bold'))
     styles.add(ParagraphStyle(name='Subtitle', alignment=TA_LEFT, fontSize=12, spaceAfter=10, fontName='Helvetica-Bold'))
     styles.add(ParagraphStyle(name='Normal10', fontSize=10, leading=14))
     styles.add(ParagraphStyle(name='Small', fontSize=9, textColor=colors.grey))
@@ -40,7 +40,7 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
     elements.append(Spacer(1, 15*mm))
     
     # Title
-    elements.append(Paragraph(f"DEVIS N° {devis.get('numero_devis', '')}", styles['Title']))
+    elements.append(Paragraph(f"DEVIS N° {devis.get('numero_devis', '')}", styles['DocTitle']))
     elements.append(Spacer(1, 5*mm))
     
     # Date and validity
@@ -134,7 +134,7 @@ def generate_facture_pdf(facture: dict, client: dict, entreprise: dict) -> bytes
     
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='RightAlign', alignment=TA_RIGHT, fontSize=10))
-    styles.add(ParagraphStyle(name='Title', alignment=TA_CENTER, fontSize=18, spaceAfter=20, fontName='Helvetica-Bold'))
+    styles.add(ParagraphStyle(name='DocTitle', alignment=TA_CENTER, fontSize=18, spaceAfter=20, fontName='Helvetica-Bold'))
     styles.add(ParagraphStyle(name='Subtitle', alignment=TA_LEFT, fontSize=12, spaceAfter=10, fontName='Helvetica-Bold'))
     styles.add(ParagraphStyle(name='Normal10', fontSize=10, leading=14))
     styles.add(ParagraphStyle(name='Small', fontSize=9, textColor=colors.grey))
@@ -155,7 +155,7 @@ def generate_facture_pdf(facture: dict, client: dict, entreprise: dict) -> bytes
     elements.append(Spacer(1, 15*mm))
     
     # Title
-    elements.append(Paragraph(f"FACTURE N° {facture.get('numero_facture', '')}", styles['Title']))
+    elements.append(Paragraph(f"FACTURE N° {facture.get('numero_facture', '')}", styles['DocTitle']))
     elements.append(Spacer(1, 5*mm))
     
     # Date and due date

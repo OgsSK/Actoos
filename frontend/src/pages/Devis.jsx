@@ -19,8 +19,9 @@ import {
 import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
 import {
   Plus, Search, ChevronLeft, Edit, FileText, Send, PenTool, Download,
-  Trash2, Receipt, Loader2, X, Check
+  Trash2, Receipt, Loader2, X, Check, Mail
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Signature Pad Component
 const SignaturePad = ({ onSave, onCancel }) => {
@@ -629,10 +630,18 @@ export const DevisDetail = () => {
   const handleSend = async () => {
     setSending(true);
     try {
-      await api.post(`/devis/${id}/send`);
+      const response = await api.post(`/devis/${id}/send`);
+      if (response.data.email?.status === 'success') {
+        toast.success('Devis envoyé par email au client');
+      } else if (response.data.email?.status === 'skipped') {
+        toast.info('Devis marqué comme envoyé (client sans email)');
+      } else {
+        toast.success('Devis marqué comme envoyé');
+      }
       fetchDevis();
     } catch (error) {
       console.error('Error sending devis:', error);
+      toast.error('Erreur lors de l\'envoi');
     } finally {
       setSending(false);
     }
@@ -694,8 +703,8 @@ export const DevisDetail = () => {
         <div className="flex flex-wrap gap-2">
           {devis.statut === 'brouillon' && (
             <Button onClick={handleSend} disabled={sending} data-testid="send-devis">
-              <Send className="w-4 h-4 mr-2" />
-              {sending ? 'Envoi...' : 'Marquer envoyé'}
+              <Mail className="w-4 h-4 mr-2" />
+              {sending ? 'Envoi...' : 'Envoyer au client'}
             </Button>
           )}
           {['brouillon', 'envoye'].includes(devis.statut) && (

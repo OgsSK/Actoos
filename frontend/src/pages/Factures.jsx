@@ -17,8 +17,9 @@ import {
 } from '../components/ui/select';
 import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
 import {
-  Plus, ChevronLeft, Edit, Receipt, Download, CreditCard, Loader2
+  Plus, ChevronLeft, Edit, Receipt, Download, CreditCard, Loader2, Mail, Bell
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Factures List Component
 export const FacturesList = () => {
@@ -150,6 +151,7 @@ export const FactureDetail = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [paymentData, setPaymentData] = useState({ montant: 0, mode_paiement: '' });
   const [paying, setPaying] = useState(false);
+  const [sendingRelance, setSendingRelance] = useState(false);
 
   useEffect(() => {
     fetchFacture();
@@ -172,10 +174,33 @@ export const FactureDetail = () => {
 
   const handleEmit = async () => {
     try {
-      await api.post(`/factures/${id}/emit`);
+      const response = await api.post(`/factures/${id}/emit`);
+      if (response.data.email?.status === 'success') {
+        toast.success('Facture émise et email envoyé au client');
+      } else {
+        toast.success('Facture émise');
+      }
       fetchFacture();
     } catch (error) {
       console.error('Error emitting facture:', error);
+      toast.error('Erreur lors de l\'émission');
+    }
+  };
+
+  const handleRelance = async () => {
+    setSendingRelance(true);
+    try {
+      const response = await api.post(`/factures/${id}/relance`);
+      if (response.data.email?.status === 'success') {
+        toast.success(`Relance envoyée (${response.data.jours_retard} jours de retard)`);
+      } else {
+        toast.error(response.data.email?.message || 'Erreur lors de l\'envoi');
+      }
+    } catch (error) {
+      console.error('Error sending relance:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de l\'envoi de la relance');
+    } finally {
+      setSendingRelance(false);
     }
   };
 
@@ -234,14 +259,27 @@ export const FactureDetail = () => {
         <div className="flex flex-wrap gap-2">
           {facture.statut === 'brouillon' && (
             <Button onClick={handleEmit} data-testid="emit-facture">
-              Émettre
+              <Mail className="w-4 h-4 mr-2" />
+              Émettre et envoyer
             </Button>
           )}
           {['emise', 'en_retard'].includes(facture.statut) && (
-            <Button onClick={() => setShowPayment(true)} className="bg-emerald-600 hover:bg-emerald-700" data-testid="pay-facture">
-              <CreditCard className="w-4 h-4 mr-2" />
-              Enregistrer paiement
-            </Button>
+            <>
+              <Button onClick={() => setShowPayment(true)} className="bg-emerald-600 hover:bg-emerald-700" data-testid="pay-facture">
+                <CreditCard className="w-4 h-4 mr-2" />
+                Enregistrer paiement
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleRelance} 
+                disabled={sendingRelance}
+                className="text-amber-600 border-amber-300 hover:bg-amber-50"
+                data-testid="relance-facture"
+              >
+                {sendingRelance ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bell className="w-4 h-4 mr-2" />}
+                Envoyer relance
+              </Button>
+            </>
           )}
           <Button variant="outline" onClick={downloadPDF} data-testid="download-facture-pdf">
             <Download className="w-4 h-4 mr-2" />

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Query, Response, Header
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Query, Response, Header, Request
 from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -25,6 +25,7 @@ from auth import (
 )
 from storage import init_storage, put_object, get_object, get_mime_type, APP_NAME
 from pdf_generator import generate_devis_pdf, generate_facture_pdf
+from email_service import send_devis_email, send_facture_email, send_relance_email
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -641,19 +642,47 @@ async def update_devis(devis_id: str, data: DevisUpdate, current_user: dict = De
     return serialize_doc(devis)
 
 @api_router.post("/devis/{devis_id}/send")
-async def send_devis(devis_id: str, current_user: dict = Depends(get_current_user)):
-    """Mark devis as sent"""
-    result = await db.devis.update_one(
+async def send_devis(devis_id: str, request: Request, current_user: dict = Depends(get_current_user)):
+    """Mark devis as sent and send email to client"""
+    # Get devis before update
+    devis = await db.devis.find_one(
         {"id": devis_id, "entreprise_id": current_user["entreprise_id"], "statut": "brouillon"},
-        {"$set": {"statut": "envoye"}}
+        {"_id": 0}
     )
-    if result.matched_count == 0:
+    if not devis:
         raise HTTPException(status_code=404, detail="Devis non trouvé ou déjà envoyé")
     
-    await log_action(current_user["entreprise_id"], current_user["user_id"], "send", "devis", devis_id)
+    # Update status
+    await db.devis.update_one(
+        {"id": devis_id},
+        {"$set": {"statut": "envoye"}}
+    )
     
-    devis = await db.devis.find_one({"id": devis_id}, {"_id": 0})
-    return {"message": "Devis envoyé", "token_client": devis["token_client"]}
+    # Get client and entreprise for email
+    client = await db.clients.find_one({"id": devis["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    
+    # Generate PDF
+    pdf_bytes = generate_devis_pdf(devis, client or {}, entreprise or {})
+    
+    # Send email with PDF
+    email_result = {"status": "skipped", "message": "Email non envoyé"}
+    if client and client.get("email"):
+        # Get base URL from request
+        base_url = str(request.base_url).rstrip('/')
+        # Remove /api suffix if present
+        if '/api' in base_url:
+            base_url = base_url.rsplit('/api', 1)[0]
+        
+        email_result = await send_devis_email(devis, client, entreprise or {}, pdf_bytes, base_url)
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "send", "devis", devis_id, {"email_sent": email_result.get("status") == "success"})
+    
+    return {
+        "message": "Devis envoyé",
+        "token_client": devis["token_client"],
+        "email": email_result
+    }
 
 @api_router.post("/devis/{devis_id}/sign")
 async def sign_devis(devis_id: str, signature: str, nom_signataire: str, current_user: dict = Depends(get_current_user)):
@@ -872,16 +901,39 @@ async def get_facture(facture_id: str, current_user: dict = Depends(get_current_
 
 @api_router.post("/factures/{facture_id}/emit")
 async def emit_facture(facture_id: str, current_user: dict = Depends(get_current_user)):
-    """Emit a facture"""
-    result = await db.factures.update_one(
+    """Emit a facture and send email to client"""
+    # Get facture before update
+    facture = await db.factures.find_one(
         {"id": facture_id, "entreprise_id": current_user["entreprise_id"], "statut": "brouillon"},
-        {"$set": {"statut": "emise"}}
+        {"_id": 0}
     )
-    if result.matched_count == 0:
+    if not facture:
         raise HTTPException(status_code=404, detail="Facture non trouvée ou déjà émise")
     
-    await log_action(current_user["entreprise_id"], current_user["user_id"], "emit", "facture", facture_id)
-    return {"message": "Facture émise"}
+    # Update status
+    await db.factures.update_one(
+        {"id": facture_id},
+        {"$set": {"statut": "emise"}}
+    )
+    
+    # Get client and entreprise for email
+    client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    
+    # Generate PDF
+    pdf_bytes = generate_facture_pdf(facture, client or {}, entreprise or {})
+    
+    # Send email with PDF
+    email_result = {"status": "skipped", "message": "Email non envoyé"}
+    if client and client.get("email"):
+        email_result = await send_facture_email(facture, client, entreprise or {}, pdf_bytes)
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "emit", "facture", facture_id, {"email_sent": email_result.get("status") == "success"})
+    
+    return {
+        "message": "Facture émise",
+        "email": email_result
+    }
 
 @api_router.post("/factures/{facture_id}/pay")
 async def mark_facture_paid(facture_id: str, montant: float, mode_paiement: Optional[str] = None, current_user: dict = Depends(get_current_user)):
@@ -926,6 +978,39 @@ async def get_facture_pdf(facture_id: str, current_user: dict = Depends(get_curr
         media_type="application/pdf",
         headers={"Content-Disposition": f"inline; filename=facture_{facture['numero_facture']}.pdf"}
     )
+
+
+@api_router.post("/factures/{facture_id}/relance")
+async def send_relance(facture_id: str, current_user: dict = Depends(get_current_user)):
+    """Send payment reminder email for unpaid facture"""
+    facture = await db.factures.find_one(
+        {"id": facture_id, "entreprise_id": current_user["entreprise_id"], "statut": {"$in": ["emise", "en_retard"]}},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée ou déjà payée")
+    
+    # Calculate days overdue
+    date_echeance = datetime.fromisoformat(facture.get("date_echeance", datetime.now(timezone.utc).isoformat()).replace('Z', '+00:00'))
+    jours_retard = max(0, (datetime.now(timezone.utc) - date_echeance).days)
+    
+    # Get client and entreprise
+    client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    
+    if not client or not client.get("email"):
+        raise HTTPException(status_code=400, detail="Le client n'a pas d'adresse email")
+    
+    # Send reminder email
+    email_result = await send_relance_email(facture, client, entreprise or {}, jours_retard)
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "relance", "facture", facture_id, {"email_sent": email_result.get("status") == "success"})
+    
+    return {
+        "message": "Relance envoyée",
+        "jours_retard": jours_retard,
+        "email": email_result
+    }
 
 # ==================== PHOTO ROUTES ====================
 @api_router.post("/interventions/{intervention_id}/photos")

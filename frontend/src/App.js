@@ -16,6 +16,9 @@ import { FacturesList, FactureDetail } from "./pages/Factures";
 import { TechniciensList } from "./pages/Techniciens";
 import { SettingsPage } from "./pages/Settings";
 
+// Technician App
+import { TechnicianApp } from "./pages/TechnicianApp";
+
 // Client Portal
 import { ClientPortalDevis } from "./pages/ClientPortal";
 
@@ -66,6 +69,10 @@ const HomeRedirect = () => {
   }
 
   if (isAuthenticated) {
+    // Redirect technicians to tech app, admins to dashboard
+    if (user?.role === 'tech') {
+      return <Navigate to="/tech" replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -87,6 +94,13 @@ function App() {
 
           {/* Client Portal (Public) */}
           <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />
+
+          {/* Technician App */}
+          <Route path="/tech" element={
+            <ProtectedRoute>
+              <TechnicianApp />
+            </ProtectedRoute>
+          } />
 
           {/* Dashboard Routes */}
           <Route path="/dashboard" element={<DashboardRoutes />}>
