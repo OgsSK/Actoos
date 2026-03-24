@@ -34,7 +34,7 @@ export const FacturesList = () => {
 
   const fetchFactures = async () => {
     try {
-      const params = statusFilter ? { statut: statusFilter } : {};
+      const params = statusFilter && statusFilter !== 'all' ? { statut: statusFilter } : {};
       const response = await api.get('/factures', { params });
       setFactures(response.data);
     } catch (error) {
@@ -61,7 +61,7 @@ export const FacturesList = () => {
               <SelectValue placeholder="Tous les statuts" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tous les statuts</SelectItem>
+              <SelectItem value="all">Tous les statuts</SelectItem>
               <SelectItem value="brouillon">Brouillon</SelectItem>
               <SelectItem value="emise">Émise</SelectItem>
               <SelectItem value="payee">Payée</SelectItem>

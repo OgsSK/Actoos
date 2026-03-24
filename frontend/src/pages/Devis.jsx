@@ -218,7 +218,7 @@ export const DevisList = () => {
 
   const fetchDevis = async () => {
     try {
-      const params = statusFilter ? { statut: statusFilter } : {};
+      const params = statusFilter && statusFilter !== 'all' ? { statut: statusFilter } : {};
       const response = await api.get('/devis', { params });
       setDevisList(response.data);
     } catch (error) {
@@ -249,7 +249,7 @@ export const DevisList = () => {
               <SelectValue placeholder="Tous les statuts" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tous les statuts</SelectItem>
+              <SelectItem value="all">Tous les statuts</SelectItem>
               <SelectItem value="brouillon">Brouillon</SelectItem>
               <SelectItem value="envoye">Envoyé</SelectItem>
               <SelectItem value="signe">Signé</SelectItem>

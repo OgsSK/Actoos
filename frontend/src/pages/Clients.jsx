@@ -279,7 +279,7 @@ export const ClientForm = () => {
                 onValueChange={(value) => setFormData(prev => ({ ...prev, type_client: value }))}
               >
                 <SelectTrigger data-testid="client-type">
-                  <SelectValue />
+                  <SelectValue placeholder="Type de client" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="particulier">Particulier</SelectItem>

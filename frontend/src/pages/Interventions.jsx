@@ -37,7 +37,7 @@ export const InterventionsList = () => {
 
   const fetchInterventions = async () => {
     try {
-      const params = statusFilter ? { statut: statusFilter } : {};
+      const params = statusFilter && statusFilter !== 'all' ? { statut: statusFilter } : {};
       const response = await api.get('/interventions', { params });
       setInterventions(response.data);
     } catch (error) {
@@ -69,7 +69,7 @@ export const InterventionsList = () => {
                 <SelectValue placeholder="Tous les statuts" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous les statuts</SelectItem>
+                <SelectItem value="all">Tous les statuts</SelectItem>
                 <SelectItem value="planifiee">Planifiée</SelectItem>
                 <SelectItem value="en_cours">En cours</SelectItem>
                 <SelectItem value="terminee">Terminée</SelectItem>
@@ -421,14 +421,14 @@ export const InterventionForm = () => {
             <div className="space-y-2">
               <Label>Technicien assigné</Label>
               <Select
-                value={formData.technicien_id || ''}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, technicien_id: value }))}
+                value={formData.technicien_id || 'none'}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, technicien_id: value === 'none' ? '' : value }))}
               >
                 <SelectTrigger data-testid="intervention-technicien">
                   <SelectValue placeholder="Non assigné" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Non assigné</SelectItem>
+                  <SelectItem value="none">Non assigné</SelectItem>
                   {techniciens.map((tech) => (
                     <SelectItem key={tech.id} value={tech.id}>
                       {tech.prenom} {tech.nom}
