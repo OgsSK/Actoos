@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useOffline } from '../contexts/OfflineContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -12,6 +13,7 @@ import {
 } from '../components/ui/dialog';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { ScrollArea } from '../components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
   formatDate, formatTime, formatCurrency, getStatusLabel, getPriorityLabel,
   priorityColors, getDateLabel
@@ -19,14 +21,16 @@ import {
 import {
   Calendar, Clock, MapPin, Phone, Play, CheckCircle, FileText, Camera,
   Loader2, ChevronRight, User, Navigation, Wifi, WifiOff, RefreshCw,
-  Plus, X, Upload, Image as ImageIcon
+  Plus, X, Upload, Image as ImageIcon, ChevronLeft, CalendarDays
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 // Sync Status Component
-const SyncStatus = ({ isOnline, pendingCount, onSync }) => {
+const SyncStatus = ({ isOnline, pendingCount, isSyncing, onSync }) => {
   return (
-    <div className={`sync-indicator ${isOnline ? 'online' : 'offline'}`}>
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
       {isOnline ? (
         <>
           <Wifi className="w-3 h-3" />
@@ -39,13 +43,19 @@ const SyncStatus = ({ isOnline, pendingCount, onSync }) => {
         </>
       )}
       {pendingCount > 0 && (
-        <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-700">
-          {pendingCount} en attente
+        <Badge variant="secondary" className="ml-1 bg-amber-100 text-amber-700 h-5 px-1.5">
+          {pendingCount}
         </Badge>
       )}
       {isOnline && pendingCount > 0 && (
-        <Button variant="ghost" size="sm" onClick={onSync} className="ml-2 h-6 px-2">
-          <RefreshCw className="w-3 h-3" />
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onSync} 
+          disabled={isSyncing}
+          className="h-5 w-5 p-0 ml-1"
+        >
+          <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
         </Button>
       )}
     </div>
@@ -59,7 +69,7 @@ const InterventionCard = ({ intervention, onClick }) => {
   
   return (
     <Card
-      className={`border-slate-200 cursor-pointer card-interactive ${isUrgent ? 'border-l-4 border-l-red-500' : ''}`}
+      className={`border-slate-200 cursor-pointer hover:shadow-md transition-all ${isUrgent ? 'border-l-4 border-l-red-500' : ''}`}
       onClick={onClick}
       data-testid={`tech-intervention-${intervention.id}`}
     >
@@ -97,6 +107,49 @@ const InterventionCard = ({ intervention, onClick }) => {
         </div>
       </CardContent>
     </Card>
+  );
+};
+
+// Day Section for Week View
+const DaySection = ({ date, interventions, onInterventionClick }) => {
+  const isCurrentDay = isToday(date);
+  const dayLabel = format(date, 'EEEE d MMMM', { locale: fr });
+  
+  return (
+    <div className="mb-6">
+      <div className={`flex items-center gap-2 mb-3 pb-2 border-b ${isCurrentDay ? 'border-blue-200' : 'border-slate-200'}`}>
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${isCurrentDay ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
+          {format(date, 'd')}
+        </div>
+        <div>
+          <p className={`font-semibold capitalize ${isCurrentDay ? 'text-blue-600' : 'text-slate-900'}`}>
+            {isCurrentDay ? "Aujourd'hui" : format(date, 'EEEE', { locale: fr })}
+          </p>
+          <p className="text-xs text-slate-500">{format(date, 'd MMMM', { locale: fr })}</p>
+        </div>
+        <Badge variant="secondary" className="ml-auto">
+          {interventions.length}
+        </Badge>
+      </div>
+      
+      {interventions.length === 0 ? (
+        <div className="text-center py-4 text-sm text-slate-400">
+          Aucune intervention
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {interventions
+            .sort((a, b) => new Date(a.date_prevue) - new Date(b.date_prevue))
+            .map((intervention) => (
+              <InterventionCard
+                key={intervention.id}
+                intervention={intervention}
+                onClick={() => onInterventionClick(intervention)}
+              />
+            ))}
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -204,58 +257,89 @@ export const TechnicianApp = () => {
   const [interventions, setInterventions] = useState([]);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [pendingActions, setPendingActions] = useState([]);
   const [notes, setNotes] = useState('');
   const [photos, setPhotos] = useState([]);
+  const [activeTab, setActiveTab] = useState('today');
+  
   const { api, user, logout } = useAuth();
+  const { 
+    isOnline, pendingActions, pendingCount, isSyncing, 
+    addPendingAction, syncPendingActions, 
+    cacheInterventions, getCachedInterventions 
+  } = useOffline();
   const navigate = useNavigate();
 
-  // Network status
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  // Week data
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   // Load interventions
   useEffect(() => {
     loadInterventions();
-  }, []);
+  }, [activeTab]);
 
   const loadInterventions = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/interventions/today');
+      let response;
+      if (activeTab === 'today') {
+        response = await api.get('/interventions/today');
+      } else {
+        // Week view - fetch all interventions for the week
+        const dateDebut = format(weekStart, 'yyyy-MM-dd');
+        const dateFin = format(addDays(weekStart, 6), 'yyyy-MM-dd');
+        response = await api.get('/interventions', { 
+          params: { date_debut: dateDebut, date_fin: dateFin } 
+        });
+        
+        // Enrich with client data for week view
+        const clientIds = [...new Set(response.data.map(i => i.client_id))];
+        const clientsRes = await api.get('/clients');
+        const clientsMap = {};
+        clientsRes.data.forEach(c => { clientsMap[c.id] = c; });
+        
+        response.data = response.data.map(i => ({
+          ...i,
+          client: clientsMap[i.client_id] || null
+        }));
+      }
+      
       setInterventions(response.data);
+      // Cache for offline use
+      cacheInterventions(response.data);
     } catch (error) {
       console.error('Error loading interventions:', error);
-      // Try to load from local storage if offline
-      const cached = localStorage.getItem('cached_interventions');
-      if (cached) {
-        setInterventions(JSON.parse(cached));
-        toast.info('Données hors ligne chargées');
+      // Try to load from cache if offline
+      if (!isOnline) {
+        const cached = await getCachedInterventions();
+        if (cached.length > 0) {
+          setInterventions(cached);
+          toast.info('Données hors ligne chargées');
+        }
+      } else {
+        toast.error('Erreur lors du chargement');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // Cache interventions for offline use
-  useEffect(() => {
-    if (interventions.length > 0) {
-      localStorage.setItem('cached_interventions', JSON.stringify(interventions));
-    }
-  }, [interventions]);
-
   const handleStartIntervention = async (id) => {
+    if (!isOnline) {
+      // Queue for sync if offline
+      await addPendingAction({ type: 'start', interventionId: id });
+      toast.info('Action enregistrée pour synchronisation');
+      // Update local state optimistically
+      setInterventions(prev => prev.map(i => 
+        i.id === id ? { ...i, statut: 'en_cours', heure_debut: new Date().toISOString() } : i
+      ));
+      if (selectedIntervention?.id === id) {
+        setSelectedIntervention(prev => ({ ...prev, statut: 'en_cours' }));
+      }
+      return;
+    }
+    
     try {
       await api.post(`/interventions/${id}/start`);
       toast.success('Intervention démarrée');
@@ -266,17 +350,22 @@ export const TechnicianApp = () => {
       }
     } catch (error) {
       console.error('Error starting intervention:', error);
-      // Queue for sync if offline
-      if (!isOnline) {
-        setPendingActions(prev => [...prev, { type: 'start', id, timestamp: new Date().toISOString() }]);
-        toast.info('Action enregistrée pour synchronisation');
-      } else {
-        toast.error('Erreur lors du démarrage');
-      }
+      toast.error('Erreur lors du démarrage');
     }
   };
 
   const handleCompleteIntervention = async (id) => {
+    if (!isOnline) {
+      await addPendingAction({ type: 'complete', interventionId: id, notes });
+      toast.info('Action enregistrée pour synchronisation');
+      setInterventions(prev => prev.map(i => 
+        i.id === id ? { ...i, statut: 'terminee', heure_fin: new Date().toISOString() } : i
+      ));
+      setSelectedIntervention(null);
+      setNotes('');
+      return;
+    }
+    
     try {
       await api.post(`/interventions/${id}/complete`, null, {
         params: { notes_terrain: notes }
@@ -287,12 +376,7 @@ export const TechnicianApp = () => {
       setSelectedIntervention(null);
     } catch (error) {
       console.error('Error completing intervention:', error);
-      if (!isOnline) {
-        setPendingActions(prev => [...prev, { type: 'complete', id, notes, timestamp: new Date().toISOString() }]);
-        toast.info('Action enregistrée pour synchronisation');
-      } else {
-        toast.error('Erreur lors de la clôture');
-      }
+      toast.error('Erreur lors de la clôture');
     }
   };
 
@@ -307,6 +391,11 @@ export const TechnicianApp = () => {
 
   const handlePhotoUpload = async (file) => {
     if (!selectedIntervention) return;
+    
+    if (!isOnline) {
+      toast.error('Upload indisponible hors ligne');
+      return;
+    }
     
     const formData = new FormData();
     formData.append('file', file);
@@ -326,45 +415,48 @@ export const TechnicianApp = () => {
     }
   };
 
-  const handleSync = async () => {
-    if (pendingActions.length === 0) return;
-    
-    toast.info('Synchronisation en cours...');
-    
-    for (const action of pendingActions) {
-      try {
-        if (action.type === 'start') {
-          await api.post(`/interventions/${action.id}/start`);
-        } else if (action.type === 'complete') {
-          await api.post(`/interventions/${action.id}/complete`, null, {
-            params: { notes_terrain: action.notes }
-          });
-        }
-      } catch (error) {
-        console.error('Sync error:', error);
-      }
-    }
-    
-    setPendingActions([]);
-    loadInterventions();
-    toast.success('Synchronisation terminée');
-  };
-
   const selectIntervention = async (intervention) => {
     setSelectedIntervention(intervention);
     setNotes(intervention.notes_terrain || '');
     
     // Load photos
-    try {
-      const response = await api.get(`/interventions/${intervention.id}/photos`);
-      setPhotos(response.data);
-    } catch (error) {
+    if (isOnline) {
+      try {
+        const response = await api.get(`/interventions/${intervention.id}/photos`);
+        setPhotos(response.data);
+      } catch (error) {
+        setPhotos([]);
+      }
+    } else {
       setPhotos([]);
     }
   };
 
-  const today = new Date();
-  const dateLabel = getDateLabel(today.toISOString());
+  // Get interventions for a specific day (week view)
+  const getInterventionsForDay = (date) => {
+    return interventions.filter(i => {
+      try {
+        return isSameDay(parseISO(i.date_prevue), date);
+      } catch {
+        return false;
+      }
+    });
+  };
+
+  // Today interventions count
+  const todayInterventions = activeTab === 'today' 
+    ? interventions 
+    : interventions.filter(i => {
+        try {
+          return isSameDay(parseISO(i.date_prevue), today);
+        } catch {
+          return false;
+        }
+      });
+
+  const dateLabel = activeTab === 'today' 
+    ? getDateLabel(today.toISOString())
+    : `Semaine du ${format(weekStart, 'd MMMM', { locale: fr })}`;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col" data-testid="tech-app">
@@ -373,39 +465,78 @@ export const TechnicianApp = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-bold text-lg text-slate-900">{dateLabel}</h1>
-            <p className="text-sm text-slate-500">{interventions.length} intervention(s)</p>
+            <p className="text-sm text-slate-500">
+              {activeTab === 'today' 
+                ? `${todayInterventions.length} intervention(s)`
+                : `${interventions.length} intervention(s) cette semaine`
+              }
+            </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <SyncStatus
               isOnline={isOnline}
-              pendingCount={pendingActions.length}
-              onSync={handleSync}
+              pendingCount={pendingCount}
+              isSyncing={isSyncing}
+              onSync={syncPendingActions}
             />
-            <Button variant="ghost" size="sm" onClick={loadInterventions}>
-              <RefreshCw className="w-4 h-4" />
+            <Button variant="ghost" size="sm" onClick={loadInterventions} className="h-8 w-8 p-0">
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </div>
       </header>
 
+      {/* View Toggle */}
+      <div className="bg-white border-b border-slate-200 px-4 py-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="today" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Aujourd'hui
+            </TabsTrigger>
+            <TabsTrigger value="week" className="flex items-center gap-2" data-testid="week-tab">
+              <CalendarDays className="w-4 h-4" />
+              Semaine
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
       {/* Main Content */}
-      <main className="flex-1 p-4">
+      <main className="flex-1 p-4 pb-20">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
           </div>
-        ) : interventions.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-            <p className="text-slate-500">Aucune intervention aujourd'hui</p>
-          </div>
+        ) : activeTab === 'today' ? (
+          // Today View
+          interventions.length === 0 ? (
+            <div className="text-center py-12">
+              <Calendar className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+              <p className="text-slate-500">Aucune intervention aujourd'hui</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {interventions
+                .sort((a, b) => new Date(a.date_prevue) - new Date(b.date_prevue))
+                .map((intervention) => (
+                  <InterventionCard
+                    key={intervention.id}
+                    intervention={intervention}
+                    onClick={() => selectIntervention(intervention)}
+                  />
+                ))}
+            </div>
+          )
         ) : (
-          <div className="space-y-3">
-            {interventions.map((intervention) => (
-              <InterventionCard
-                key={intervention.id}
-                intervention={intervention}
-                onClick={() => selectIntervention(intervention)}
+          // Week View
+          <div className="space-y-2">
+            {weekDays.map((day) => (
+              <DaySection
+                key={day.toISOString()}
+                date={day}
+                interventions={getInterventionsForDay(day)}
+                onInterventionClick={selectIntervention}
               />
             ))}
           </div>
@@ -413,15 +544,15 @@ export const TechnicianApp = () => {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="bg-white border-t border-slate-200 px-4 py-2 sticky bottom-0">
-        <div className="flex justify-around">
-          <Button variant="ghost" className="flex-col h-auto py-2">
+      <nav className="bg-white border-t border-slate-200 px-4 py-2 fixed bottom-0 left-0 right-0">
+        <div className="flex justify-around max-w-lg mx-auto">
+          <Button variant="ghost" className="flex-col h-auto py-2 flex-1">
             <Calendar className="w-5 h-5 mb-1" />
             <span className="text-xs">Agenda</span>
           </Button>
           <Button
             variant="ghost"
-            className="flex-col h-auto py-2"
+            className="flex-col h-auto py-2 flex-1"
             onClick={() => navigate('/dashboard/devis/new')}
           >
             <FileText className="w-5 h-5 mb-1" />
@@ -429,7 +560,7 @@ export const TechnicianApp = () => {
           </Button>
           <Button
             variant="ghost"
-            className="flex-col h-auto py-2"
+            className="flex-col h-auto py-2 flex-1"
             onClick={logout}
           >
             <User className="w-5 h-5 mb-1" />

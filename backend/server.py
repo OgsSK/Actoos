@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Query, Response, Header, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Query, Response, Header, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -10,6 +10,7 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 from io import BytesIO
+import asyncio
 
 from models import (
     Entreprise, EntrepriseCreate, User, UserCreate, UserResponse, UserLogin, UserInvite,
@@ -26,6 +27,11 @@ from auth import (
 from storage import init_storage, put_object, get_object, get_mime_type, APP_NAME
 from pdf_generator import generate_devis_pdf, generate_facture_pdf
 from email_service import send_devis_email, send_facture_email, send_relance_email
+from sms_service import (
+    init_twilio, send_intervention_reminder, send_intervention_started,
+    send_intervention_completed, send_devis_notification, send_devis_signed_confirmation,
+    send_facture_notification, send_payment_reminder, send_payment_confirmation
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -1012,6 +1018,114 @@ async def send_relance(facture_id: str, current_user: dict = Depends(get_current
         "email": email_result
     }
 
+# ==================== SMS ROUTES ====================
+@api_router.post("/sms/intervention/{intervention_id}/reminder")
+async def send_sms_intervention_reminder(intervention_id: str, current_user: dict = Depends(get_current_user)):
+    """Send SMS reminder for an intervention"""
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    client = await db.clients.find_one({"id": intervention["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    
+    if not client or not client.get("telephone"):
+        raise HTTPException(status_code=400, detail="Le client n'a pas de numéro de téléphone")
+    
+    sms_result = await send_intervention_reminder(client, intervention, entreprise or {})
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "sms_reminder", "intervention", intervention_id)
+    
+    return {"message": "SMS envoyé", "sms": sms_result}
+
+@api_router.post("/sms/devis/{devis_id}/notification")
+async def send_sms_devis_notification(devis_id: str, request: Request, current_user: dict = Depends(get_current_user)):
+    """Send SMS notification for a quote"""
+    devis = await db.devis.find_one(
+        {"id": devis_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not devis:
+        raise HTTPException(status_code=404, detail="Devis non trouvé")
+    
+    client = await db.clients.find_one({"id": devis["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    
+    if not client or not client.get("telephone"):
+        raise HTTPException(status_code=400, detail="Le client n'a pas de numéro de téléphone")
+    
+    # Build portal URL
+    base_url = str(request.base_url).rstrip('/')
+    if '/api' in base_url:
+        base_url = base_url.rsplit('/api', 1)[0]
+    portal_url = f"{base_url}/portal/devis/{devis['token_client']}"
+    
+    sms_result = await send_devis_notification(client, devis, entreprise or {}, portal_url)
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "sms_notification", "devis", devis_id)
+    
+    return {"message": "SMS envoyé", "sms": sms_result}
+
+@api_router.post("/sms/facture/{facture_id}/notification")
+async def send_sms_facture_notification(facture_id: str, current_user: dict = Depends(get_current_user)):
+    """Send SMS notification for an invoice"""
+    facture = await db.factures.find_one(
+        {"id": facture_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    
+    if not client or not client.get("telephone"):
+        raise HTTPException(status_code=400, detail="Le client n'a pas de numéro de téléphone")
+    
+    sms_result = await send_facture_notification(client, facture, entreprise or {})
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "sms_notification", "facture", facture_id)
+    
+    return {"message": "SMS envoyé", "sms": sms_result}
+
+@api_router.post("/sms/facture/{facture_id}/reminder")
+async def send_sms_payment_reminder(facture_id: str, current_user: dict = Depends(get_current_user)):
+    """Send SMS payment reminder"""
+    facture = await db.factures.find_one(
+        {"id": facture_id, "entreprise_id": current_user["entreprise_id"], "statut": {"$in": ["emise", "en_retard"]}},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée ou déjà payée")
+    
+    client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    
+    if not client or not client.get("telephone"):
+        raise HTTPException(status_code=400, detail="Le client n'a pas de numéro de téléphone")
+    
+    # Calculate days overdue
+    date_echeance = datetime.fromisoformat(facture.get("date_echeance", datetime.now(timezone.utc).isoformat()).replace('Z', '+00:00'))
+    jours_retard = max(0, (datetime.now(timezone.utc) - date_echeance).days)
+    
+    sms_result = await send_payment_reminder(client, facture, entreprise or {}, jours_retard)
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "sms_relance", "facture", facture_id)
+    
+    return {"message": "SMS envoyé", "jours_retard": jours_retard, "sms": sms_result}
+
+@api_router.get("/sms/status")
+async def get_sms_status(current_user: dict = Depends(get_current_user)):
+    """Check if SMS (Twilio) is configured"""
+    twilio_configured = bool(os.environ.get('TWILIO_ACCOUNT_SID') and os.environ.get('TWILIO_AUTH_TOKEN'))
+    return {
+        "configured": twilio_configured,
+        "phone_number": os.environ.get('TWILIO_PHONE_NUMBER', '')[:6] + '****' if twilio_configured else None
+    }
+
 # ==================== PHOTO ROUTES ====================
 @api_router.post("/interventions/{intervention_id}/photos")
 async def upload_photo(
@@ -1330,6 +1444,99 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ==================== BACKGROUND TASKS ====================
+async def run_scheduled_reminders():
+    """Background task to send automatic payment reminders"""
+    while True:
+        try:
+            await asyncio.sleep(3600)  # Run every hour
+            
+            today = datetime.now(timezone.utc).isoformat()
+            
+            # Find overdue invoices
+            overdue_factures = await db.factures.find(
+                {"statut": "emise", "date_echeance": {"$lt": today}},
+                {"_id": 0}
+            ).to_list(100)
+            
+            for facture in overdue_factures:
+                # Check if reminder was sent recently (within 3 days)
+                last_reminder = facture.get("last_reminder_sent")
+                if last_reminder:
+                    last_reminder_date = datetime.fromisoformat(last_reminder.replace('Z', '+00:00'))
+                    if (datetime.now(timezone.utc) - last_reminder_date).days < 3:
+                        continue
+                
+                # Get client and entreprise
+                client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
+                entreprise = await db.entreprises.find_one({"id": facture["entreprise_id"]}, {"_id": 0})
+                
+                if not client or not entreprise:
+                    continue
+                
+                # Calculate days overdue
+                date_echeance = datetime.fromisoformat(facture.get("date_echeance", datetime.now(timezone.utc).isoformat()).replace('Z', '+00:00'))
+                jours_retard = max(0, (datetime.now(timezone.utc) - date_echeance).days)
+                
+                # Send SMS reminder if phone available
+                if client.get("telephone"):
+                    sms_result = await send_payment_reminder(client, facture, entreprise, jours_retard)
+                    logger.info(f"Auto SMS reminder for facture {facture['id']}: {sms_result}")
+                
+                # Send email reminder
+                if client.get("email"):
+                    email_result = await send_relance_email(facture, client, entreprise, jours_retard)
+                    logger.info(f"Auto email reminder for facture {facture['id']}: {email_result}")
+                
+                # Update facture with reminder sent timestamp and status
+                await db.factures.update_one(
+                    {"id": facture["id"]},
+                    {"$set": {
+                        "statut": "en_retard",
+                        "last_reminder_sent": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                
+        except Exception as e:
+            logger.error(f"Error in scheduled reminders: {e}")
+
+async def run_intervention_reminders():
+    """Background task to send intervention reminders"""
+    while True:
+        try:
+            await asyncio.sleep(1800)  # Run every 30 minutes
+            
+            # Find interventions scheduled for tomorrow that haven't been reminded
+            tomorrow_start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            tomorrow_end = tomorrow_start + timedelta(days=1)
+            
+            upcoming_interventions = await db.interventions.find({
+                "statut": "planifiee",
+                "date_prevue": {"$gte": tomorrow_start.isoformat(), "$lt": tomorrow_end.isoformat()},
+                "reminder_sent": {"$ne": True}
+            }, {"_id": 0}).to_list(100)
+            
+            for intervention in upcoming_interventions:
+                client = await db.clients.find_one({"id": intervention["client_id"]}, {"_id": 0})
+                entreprise = await db.entreprises.find_one({"id": intervention["entreprise_id"]}, {"_id": 0})
+                
+                if not client or not entreprise:
+                    continue
+                
+                # Send SMS reminder
+                if client.get("telephone"):
+                    sms_result = await send_intervention_reminder(client, intervention, entreprise)
+                    logger.info(f"Intervention reminder for {intervention['id']}: {sms_result}")
+                
+                # Mark as reminded
+                await db.interventions.update_one(
+                    {"id": intervention["id"]},
+                    {"$set": {"reminder_sent": True}}
+                )
+                
+        except Exception as e:
+            logger.error(f"Error in intervention reminders: {e}")
+
 @app.on_event("startup")
 async def startup():
     # Initialize storage
@@ -1337,6 +1544,12 @@ async def startup():
         init_storage()
     except Exception as e:
         logger.warning(f"Storage init failed (optional): {e}")
+    
+    # Initialize Twilio
+    try:
+        init_twilio()
+    except Exception as e:
+        logger.warning(f"Twilio init failed (optional): {e}")
     
     # Create indexes
     await db.users.create_index("email", unique=True)
@@ -1348,6 +1561,12 @@ async def startup():
     await db.factures.create_index([("entreprise_id", 1), ("created_at", -1)])
     await db.audit_logs.create_index([("entreprise_id", 1), ("timestamp", -1)])
     await db.photos.create_index([("entreprise_id", 1), ("intervention_id", 1)])
+    
+    # Start background tasks for automated reminders (only in production)
+    if os.environ.get('ENABLE_AUTO_REMINDERS', 'false').lower() == 'true':
+        asyncio.create_task(run_scheduled_reminders())
+        asyncio.create_task(run_intervention_reminders())
+        logger.info("Automated reminder tasks started")
     
     logger.info("FieldCommand API started")
 

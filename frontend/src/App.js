@@ -2,6 +2,7 @@ import React from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { OfflineProvider } from "./contexts/OfflineContext";
 import { Toaster } from "./components/ui/sonner";
 
 // Auth Pages
@@ -83,67 +84,69 @@ const HomeRedirect = () => {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Home */}
-          <Route path="/" element={<HomeRedirect />} />
+      <OfflineProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Home */}
+            <Route path="/" element={<HomeRedirect />} />
 
-          {/* Auth Routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/activate" element={<ActivatePage />} />
+            {/* Auth Routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/activate" element={<ActivatePage />} />
 
-          {/* Client Portal (Public) */}
-          <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />
+            {/* Client Portal (Public) */}
+            <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />
 
-          {/* Technician App */}
-          <Route path="/tech" element={
-            <ProtectedRoute>
-              <TechnicianApp />
-            </ProtectedRoute>
-          } />
+            {/* Technician App */}
+            <Route path="/tech" element={
+              <ProtectedRoute>
+                <TechnicianApp />
+              </ProtectedRoute>
+            } />
 
-          {/* Dashboard Routes */}
-          <Route path="/dashboard" element={<DashboardRoutes />}>
-            <Route index element={<DashboardOverview />} />
-            
-            {/* Clients */}
-            <Route path="clients" element={<ClientsList />} />
-            <Route path="clients/new" element={<ClientForm />} />
-            <Route path="clients/:id" element={<ClientDetail />} />
-            <Route path="clients/:id/edit" element={<ClientForm />} />
-            
-            {/* Interventions */}
-            <Route path="interventions" element={<InterventionsList />} />
-            <Route path="interventions/new" element={<InterventionForm />} />
-            <Route path="interventions/:id" element={<InterventionDetail />} />
-            <Route path="interventions/:id/edit" element={<InterventionForm />} />
-            
-            {/* Devis */}
-            <Route path="devis" element={<DevisList />} />
-            <Route path="devis/new" element={<DevisForm />} />
-            <Route path="devis/:id" element={<DevisDetail />} />
-            <Route path="devis/:id/edit" element={<DevisForm />} />
-            
-            {/* Factures */}
-            <Route path="factures" element={<FacturesList />} />
-            <Route path="factures/:id" element={<FactureDetail />} />
-            
-            {/* Techniciens */}
-            <Route path="techniciens" element={<TechniciensList />} />
-            
-            {/* Planning */}
-            <Route path="planning" element={<PlanningPage />} />
-            
-            {/* Settings */}
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
+            {/* Dashboard Routes */}
+            <Route path="/dashboard" element={<DashboardRoutes />}>
+              <Route index element={<DashboardOverview />} />
+              
+              {/* Clients */}
+              <Route path="clients" element={<ClientsList />} />
+              <Route path="clients/new" element={<ClientForm />} />
+              <Route path="clients/:id" element={<ClientDetail />} />
+              <Route path="clients/:id/edit" element={<ClientForm />} />
+              
+              {/* Interventions */}
+              <Route path="interventions" element={<InterventionsList />} />
+              <Route path="interventions/new" element={<InterventionForm />} />
+              <Route path="interventions/:id" element={<InterventionDetail />} />
+              <Route path="interventions/:id/edit" element={<InterventionForm />} />
+              
+              {/* Devis */}
+              <Route path="devis" element={<DevisList />} />
+              <Route path="devis/new" element={<DevisForm />} />
+              <Route path="devis/:id" element={<DevisDetail />} />
+              <Route path="devis/:id/edit" element={<DevisForm />} />
+              
+              {/* Factures */}
+              <Route path="factures" element={<FacturesList />} />
+              <Route path="factures/:id" element={<FactureDetail />} />
+              
+              {/* Techniciens */}
+              <Route path="techniciens" element={<TechniciensList />} />
+              
+              {/* Planning */}
+              <Route path="planning" element={<PlanningPage />} />
+              
+              {/* Settings */}
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
 
-          {/* Catch all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-      <Toaster />
+            {/* Catch all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+        <Toaster />
+      </OfflineProvider>
     </AuthProvider>
   );
 }
