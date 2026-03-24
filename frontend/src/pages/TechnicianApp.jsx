@@ -440,9 +440,12 @@ export const TechnicianApp = () => {
 
       {/* Intervention Detail Modal */}
       <Dialog open={!!selectedIntervention} onOpenChange={() => setSelectedIntervention(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col" aria-describedby="intervention-detail-description">
           <DialogHeader>
             <DialogTitle>{selectedIntervention?.titre}</DialogTitle>
+            <p id="intervention-detail-description" className="sr-only">
+              Détails de l'intervention et actions disponibles
+            </p>
           </DialogHeader>
           
           {selectedIntervention && (

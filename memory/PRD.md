@@ -27,6 +27,7 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - **Settings.jsx**: Paramètres entreprise
 - **ClientPortal.jsx**: Portail client public (signature devis)
 - **TechnicianApp.jsx**: Application mobile technicien (agenda, photos, notes)
+- **Planning.jsx**: Calendrier drag-and-drop pour organiser les interventions
 
 ## What's Implemented (Date: 2026-03-24)
 
@@ -76,17 +77,26 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - [x] Indicateur statut réseau (online/offline)
 - [x] Cache local pour données hors ligne
 
+### Phase 7 - Planning Calendrier ✅
+- [x] Vue calendrier hebdomadaire
+- [x] Navigation entre semaines
+- [x] Affichage interventions par jour
+- [x] Filtres par technicien et statut
+- [x] Drag-and-drop pour replanifier
+- [x] Dialogue de replanification (heure + technicien)
+- [x] Légende (aujourd'hui, priorités, drag-drop)
+
 ## Prioritized Backlog
 
 ### P0 (Critique) - Prochaine itération
 - [ ] Service Worker pour mode offline complet (PWA)
 - [ ] Synchronisation automatique des brouillons
+- [ ] Vue semaine pour l'agenda technicien
 
 ### P1 (Important)
-- [ ] Planning calendrier drag-drop
-- [ ] Rapports/statistiques avancés
 - [ ] SMS notifications (Twilio)
 - [ ] Relances automatiques programmées
+- [ ] Rapports/statistiques avancés
 
 ### P2 (Nice to have)
 - [ ] Checklist d'intervention configurable
@@ -101,8 +111,12 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - [ ] Multi-sites sophistiqué
 - [ ] Gestion stock
 
+## Test Coverage
+- Backend: 100% (16/16 tests - /app/backend/tests/test_planning_tech.py)
+- Frontend: 100% fonctionnel (Planning + TechnicianApp validés)
+
 ## Next Tasks
 1. Implémenter Service Worker pour PWA complète
-2. Ajouter planning calendrier avec drag-drop
-3. Implémenter relances automatiques programmées
-4. Ajouter statistiques et rapports
+2. Ajouter vue semaine dans l'agenda technicien
+3. Implémenter notifications SMS (Twilio)
+4. Ajouter statistiques et rapports avancés
