@@ -14,12 +14,16 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from '../components/ui/dialog';
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from '../components/ui/alert-dialog';
+import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
 import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
 import {
   Plus, Search, ChevronLeft, Edit, FileText, Send, PenTool, Download,
-  Trash2, Receipt, Loader2, X, Check, Mail
+  Trash2, Receipt, Loader2, X, Check, Mail, ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -606,7 +610,7 @@ export const DevisForm = () => {
 export const DevisDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { api, token } = useAuth();
+  const { api, token, isAdmin } = useAuth();
   const [devis, setDevis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showSignature, setShowSignature] = useState(false);
@@ -669,7 +673,24 @@ export const DevisDetail = () => {
   };
 
   const downloadPDF = () => {
-    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/devis/${id}/pdf?auth=${token}`, '_blank');
+    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/devis/${id}/pdf-download?token=${token}`, '_blank');
+  };
+
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/devis/${id}`);
+      toast.success('Devis supprimé');
+      navigate('/dashboard/devis');
+    } catch (error) {
+      console.error('Error deleting devis:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+    }
+  };
+
+  const copyPortalLink = () => {
+    const link = `${window.location.origin}/portal/devis/${devis.token_client}`;
+    navigator.clipboard.writeText(link);
+    toast.success('Lien copié dans le presse-papier');
   };
 
   if (loading) {
@@ -728,6 +749,36 @@ export const DevisDetail = () => {
               <Edit className="w-4 h-4 mr-2" />
               Modifier
             </Button>
+          )}
+          {devis.token_client && (
+            <Button variant="outline" onClick={copyPortalLink} title="Copier le lien client">
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Lien client
+            </Button>
+          )}
+          {['brouillon', 'envoye'].includes(devis.statut) && isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-red-600 hover:text-red-700">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Supprimer
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Supprimer le devis ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action est irréversible. Le devis {devis.numero_devis} sera définitivement supprimé.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                    Supprimer
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       </div>
@@ -856,6 +907,27 @@ export const DevisDetail = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Signature display if signed */}
+          {devis.statut === 'signe' && devis.signature_client && (
+            <Card className="border-slate-200 border-emerald-200 bg-emerald-50/30">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2 text-emerald-700">
+                  <Check className="w-4 h-4" />
+                  Signature
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-white border border-slate-200 rounded-lg p-2">
+                  <img 
+                    src={devis.signature_client} 
+                    alt="Signature" 
+                    className="w-full h-auto max-h-24 object-contain"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Client Portal */}
           {devis.token_client && (

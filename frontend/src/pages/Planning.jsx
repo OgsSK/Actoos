@@ -444,8 +444,8 @@ export const PlanningPage = () => {
               <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
             </div>
           ) : (
-            <ScrollArea className="w-full">
-              <div className="flex min-w-[1000px]">
+            <div className="overflow-x-auto touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="flex min-w-[700px] lg:min-w-0">
                 {weekDays.map((day) => (
                   <DayColumn
                     key={day.toISOString()}
@@ -459,7 +459,7 @@ export const PlanningPage = () => {
                   />
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           )}
         </CardContent>
       </Card>

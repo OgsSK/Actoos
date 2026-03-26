@@ -360,6 +360,31 @@ export const ClientPortalDevis = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Signature Section if signed */}
+            {devis.statut === 'signe' && devis.signature_client && (
+              <Card className="border-slate-200 border-emerald-200 bg-emerald-50/30">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2 text-emerald-700">
+                    <CheckCircle className="w-4 h-4" />
+                    Signature
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="bg-white border border-slate-200 rounded-lg p-2">
+                    <img 
+                      src={devis.signature_client} 
+                      alt="Signature" 
+                      className="w-full h-auto max-h-24 object-contain"
+                    />
+                  </div>
+                  <div className="text-sm text-slate-600">
+                    <p><strong>Signataire:</strong> {devis.nom_signataire}</p>
+                    <p><strong>Date:</strong> {formatDate(devis.date_signature)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Info */}
             <Card className="border-slate-200">
               <CardHeader>

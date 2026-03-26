@@ -13,6 +13,10 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from '../components/ui/alert-dialog';
 import { Calendar } from '../components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { format } from 'date-fns';
@@ -20,8 +24,9 @@ import { fr } from 'date-fns/locale';
 import { formatDate, formatTime, formatCurrency, getStatusLabel, getPriorityLabel, priorityColors } from '../lib/utils';
 import {
   Plus, Search, ChevronLeft, Edit, Calendar as CalendarIcon, Clock, MapPin,
-  User, Phone, Play, CheckCircle, FileText, Loader2, Camera
+  User, Phone, Play, CheckCircle, FileText, Loader2, Camera, XCircle, Trash2
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Intervention List Component
 export const InterventionsList = () => {
@@ -543,9 +548,33 @@ export const InterventionDetail = () => {
   const handleComplete = async () => {
     try {
       await api.post(`/interventions/${id}/complete`);
+      toast.success('Intervention terminée');
       fetchIntervention();
     } catch (error) {
       console.error('Error completing intervention:', error);
+      toast.error('Erreur lors de la clôture');
+    }
+  };
+
+  const handleCancel = async () => {
+    try {
+      await api.post(`/interventions/${id}/cancel`);
+      toast.success('Intervention annulée');
+      fetchIntervention();
+    } catch (error) {
+      console.error('Error canceling intervention:', error);
+      toast.error('Erreur lors de l\'annulation');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/interventions/${id}`);
+      toast.success('Intervention supprimée');
+      navigate('/dashboard/interventions');
+    } catch (error) {
+      console.error('Error deleting intervention:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
     }
   };
 
@@ -582,18 +611,54 @@ export const InterventionDetail = () => {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {intervention.statut === 'planifiee' && (
-            <Button onClick={handleStart} className="bg-blue-600 hover:bg-blue-700" data-testid="start-intervention">
-              <Play className="w-4 h-4 mr-2" />
-              Démarrer
-            </Button>
+            <>
+              <Button onClick={handleStart} className="bg-blue-600 hover:bg-blue-700" data-testid="start-intervention">
+                <Play className="w-4 h-4 mr-2" />
+                Démarrer
+              </Button>
+              <Button variant="outline" onClick={handleCancel} className="text-amber-600 hover:text-amber-700" data-testid="cancel-intervention">
+                <XCircle className="w-4 h-4 mr-2" />
+                Annuler
+              </Button>
+            </>
           )}
           {intervention.statut === 'en_cours' && (
             <Button onClick={handleComplete} className="bg-emerald-600 hover:bg-emerald-700" data-testid="complete-intervention">
               <CheckCircle className="w-4 h-4 mr-2" />
               Terminer
             </Button>
+          )}
+          {intervention.statut === 'annulee' && (
+            <Badge variant="secondary" className="bg-slate-100 text-slate-600">
+              <XCircle className="w-3 h-3 mr-1" />
+              Annulée
+            </Badge>
+          )}
+          {!['en_cours', 'terminee'].includes(intervention.statut) && isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-red-600 hover:text-red-700">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Supprimer
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Supprimer l'intervention ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action est irréversible. L'intervention sera définitivement supprimée.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                    Supprimer
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
           <Button variant="outline" onClick={() => navigate(`/dashboard/interventions/${id}/edit`)}>
             <Edit className="w-4 h-4 mr-2" />

@@ -8,10 +8,33 @@ from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+import base64
 import logging
 
 logger = logging.getLogger(__name__)
+
+def get_local_time(iso_string: str, offset_hours: int = 1) -> datetime:
+    """Convert UTC ISO string to local time (default Paris +1)"""
+    try:
+        if iso_string:
+            dt = datetime.fromisoformat(iso_string.replace('Z', '+00:00'))
+            return dt + timedelta(hours=offset_hours)
+        return datetime.now()
+    except:
+        return datetime.now()
+
+def decode_signature_image(signature_base64: str) -> BytesIO:
+    """Decode base64 signature to image BytesIO"""
+    try:
+        if signature_base64 and signature_base64.startswith('data:image'):
+            # Remove data URL prefix
+            base64_data = signature_base64.split(',')[1]
+            image_data = base64.b64decode(base64_data)
+            return BytesIO(image_data)
+    except Exception as e:
+        logger.error(f"Error decoding signature: {e}")
+    return None
 
 def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
     """Generate PDF for a devis/quote"""
@@ -44,9 +67,9 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
     elements.append(Spacer(1, 5*mm))
     
     # Date and validity
-    date_str = datetime.fromisoformat(devis.get('created_at', datetime.now().isoformat())).strftime('%d/%m/%Y')
+    date_str = get_local_time(devis.get('created_at')).strftime('%d/%m/%Y')
     exp_date = devis.get('date_expiration')
-    exp_str = datetime.fromisoformat(exp_date).strftime('%d/%m/%Y') if exp_date else ""
+    exp_str = get_local_time(exp_date).strftime('%d/%m/%Y') if exp_date else ""
     elements.append(Paragraph(f"Date: {date_str} | Validité: {exp_str}", styles['RightAlign']))
     elements.append(Spacer(1, 10*mm))
     
@@ -116,7 +139,18 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
     # Signature area
     if devis.get('statut') == 'signe' and devis.get('signature_client'):
         elements.append(Paragraph("<b>Bon pour accord - Signature client:</b>", styles['Subtitle']))
-        elements.append(Paragraph(f"Signé par: {devis.get('nom_signataire', '')} le {datetime.fromisoformat(devis.get('date_signature', datetime.now().isoformat())).strftime('%d/%m/%Y à %H:%M')}", styles['Small']))
+        sig_date = get_local_time(devis.get('date_signature'))
+        elements.append(Paragraph(f"Signé par: {devis.get('nom_signataire', '')} le {sig_date.strftime('%d/%m/%Y à %H:%M')}", styles['Small']))
+        
+        # Add signature image
+        signature_image = decode_signature_image(devis.get('signature_client'))
+        if signature_image:
+            try:
+                img = Image(signature_image, width=60*mm, height=25*mm)
+                elements.append(Spacer(1, 3*mm))
+                elements.append(img)
+            except Exception as e:
+                logger.warning(f"Could not add signature image: {e}")
     else:
         elements.append(Spacer(1, 20*mm))
         elements.append(Paragraph("Bon pour accord - Signature client:", styles['Subtitle']))
@@ -159,9 +193,9 @@ def generate_facture_pdf(facture: dict, client: dict, entreprise: dict) -> bytes
     elements.append(Spacer(1, 5*mm))
     
     # Date and due date
-    date_str = datetime.fromisoformat(facture.get('created_at', datetime.now().isoformat())).strftime('%d/%m/%Y')
+    date_str = get_local_time(facture.get('created_at')).strftime('%d/%m/%Y')
     due_date = facture.get('date_echeance')
-    due_str = datetime.fromisoformat(due_date).strftime('%d/%m/%Y') if due_date else ""
+    due_str = get_local_time(due_date).strftime('%d/%m/%Y') if due_date else ""
     elements.append(Paragraph(f"Date: {date_str} | Échéance: {due_str}", styles['RightAlign']))
     elements.append(Spacer(1, 10*mm))
     
@@ -234,7 +268,8 @@ def generate_facture_pdf(facture: dict, client: dict, entreprise: dict) -> bytes
         elements.append(Spacer(1, 10*mm))
         elements.append(Paragraph("<b>PAYÉE</b>", ParagraphStyle(name='Paid', alignment=TA_CENTER, fontSize=16, textColor=colors.HexColor('#059669'), fontName='Helvetica-Bold')))
         if facture.get('date_paiement'):
-            elements.append(Paragraph(f"Payée le {datetime.fromisoformat(facture.get('date_paiement')).strftime('%d/%m/%Y')}", styles['Small']))
+            pay_date = get_local_time(facture.get('date_paiement'))
+            elements.append(Paragraph(f"Payée le {pay_date.strftime('%d/%m/%Y')}", styles['Small']))
     
     doc.build(elements)
     return buffer.getvalue()

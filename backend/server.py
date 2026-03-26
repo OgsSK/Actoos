@@ -313,6 +313,41 @@ async def update_user_status(user_id: str, statut: str, current_user: dict = Dep
     await log_action(current_user["entreprise_id"], current_user["user_id"], "update_status", "user", user_id, {"statut": statut})
     return {"message": "Statut mis à jour"}
 
+@api_router.delete("/users/{user_id}")
+async def delete_user(user_id: str, current_user: dict = Depends(require_admin)):
+    """Delete a user (admin only, cannot delete self)"""
+    if user_id == current_user["user_id"]:
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte")
+    
+    user = await db.users.find_one(
+        {"id": user_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Check if technician has any active interventions
+    active_interventions = await db.interventions.count_documents({
+        "technicien_id": user_id,
+        "statut": {"$in": ["planifiee", "en_cours"]}
+    })
+    if active_interventions > 0:
+        raise HTTPException(status_code=400, detail=f"Ce technicien a {active_interventions} intervention(s) active(s). Réassignez-les d'abord.")
+    
+    await db.users.delete_one({"id": user_id})
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "delete", "user", user_id)
+    
+    return {"message": "Utilisateur supprimé"}
+
+@api_router.get("/techniciens")
+async def list_techniciens(current_user: dict = Depends(get_current_user)):
+    """List all technicians"""
+    users = await db.users.find(
+        {"entreprise_id": current_user["entreprise_id"], "role": "tech"},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(100)
+    return [serialize_doc(u) for u in users]
+
 # ==================== CLIENT ROUTES ====================
 @api_router.post("/clients", response_model=ClientResponse)
 async def create_client(data: ClientCreate, current_user: dict = Depends(get_current_user)):
@@ -501,6 +536,49 @@ async def update_intervention(intervention_id: str, data: InterventionUpdate, cu
     intervention = await db.interventions.find_one({"id": intervention_id}, {"_id": 0})
     return serialize_doc(intervention)
 
+@api_router.delete("/interventions/{intervention_id}")
+async def delete_intervention(intervention_id: str, current_user: dict = Depends(require_admin)):
+    """Delete an intervention (admin only)"""
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Cannot delete if already started
+    if intervention["statut"] in ["en_cours", "terminee"]:
+        raise HTTPException(status_code=400, detail="Impossible de supprimer une intervention en cours ou terminée")
+    
+    await db.interventions.delete_one({"id": intervention_id})
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "delete", "intervention", intervention_id)
+    
+    return {"message": "Intervention supprimée"}
+
+@api_router.post("/interventions/{intervention_id}/cancel")
+async def cancel_intervention(intervention_id: str, motif: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    """Cancel an intervention"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    if intervention["statut"] in ["terminee", "annulee"]:
+        raise HTTPException(status_code=400, detail="Cette intervention ne peut pas être annulée")
+    
+    update = {"statut": "annulee", "date_annulation": now}
+    if motif:
+        update["motif_annulation"] = motif
+    
+    await db.interventions.update_one({"id": intervention_id}, {"$set": update})
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "cancel", "intervention", intervention_id, {"motif": motif})
+    
+    return {"message": "Intervention annulée"}
+
 @api_router.post("/interventions/{intervention_id}/start")
 async def start_intervention(intervention_id: str, current_user: dict = Depends(get_current_user)):
     """Start an intervention"""
@@ -647,6 +725,24 @@ async def update_devis(devis_id: str, data: DevisUpdate, current_user: dict = De
     devis = await db.devis.find_one({"id": devis_id}, {"_id": 0})
     return serialize_doc(devis)
 
+@api_router.delete("/devis/{devis_id}")
+async def delete_devis(devis_id: str, current_user: dict = Depends(require_admin)):
+    """Delete a devis (admin only, only brouillon/envoye status)"""
+    devis = await db.devis.find_one(
+        {"id": devis_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not devis:
+        raise HTTPException(status_code=404, detail="Devis non trouvé")
+    
+    if devis["statut"] not in ["brouillon", "envoye"]:
+        raise HTTPException(status_code=400, detail="Impossible de supprimer un devis signé ou facturé")
+    
+    await db.devis.delete_one({"id": devis_id})
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "delete", "devis", devis_id)
+    
+    return {"message": "Devis supprimé"}
+
 @api_router.post("/devis/{devis_id}/send")
 async def send_devis(devis_id: str, request: Request, current_user: dict = Depends(get_current_user)):
     """Mark devis as sent and send email to client"""
@@ -706,7 +802,7 @@ async def sign_devis(devis_id: str, signature: str, nom_signataire: str, current
     return {"message": "Devis signé", "date_signature": now}
 
 @api_router.get("/devis/{devis_id}/pdf")
-async def get_devis_pdf(devis_id: str, current_user: dict = Depends(get_current_user)):
+async def get_devis_pdf(devis_id: str, auth: Optional[str] = None, current_user: dict = Depends(get_current_user)):
     """Generate and return devis PDF"""
     devis = await db.devis.find_one({"id": devis_id, "entreprise_id": current_user["entreprise_id"]}, {"_id": 0})
     if not devis:
@@ -721,6 +817,33 @@ async def get_devis_pdf(devis_id: str, current_user: dict = Depends(get_current_
         content=pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": f"inline; filename=devis_{devis['numero_devis']}.pdf"}
+    )
+
+@api_router.get("/devis/{devis_id}/pdf-download")
+async def download_devis_pdf(devis_id: str, token: str):
+    """Download devis PDF with token auth (for browser download)"""
+    # Verify token
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token invalide")
+    
+    user = await db.users.find_one({"id": payload.get("sub")}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
+    
+    devis = await db.devis.find_one({"id": devis_id, "entreprise_id": user["entreprise_id"]}, {"_id": 0})
+    if not devis:
+        raise HTTPException(status_code=404, detail="Devis non trouvé")
+    
+    client = await db.clients.find_one({"id": devis["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": user["entreprise_id"]}, {"_id": 0})
+    
+    pdf_bytes = generate_devis_pdf(devis, client or {}, entreprise or {})
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=devis_{devis['numero_devis']}.pdf"}
     )
 
 # ==================== CLIENT PORTAL ROUTES ====================
@@ -985,6 +1108,51 @@ async def get_facture_pdf(facture_id: str, current_user: dict = Depends(get_curr
         headers={"Content-Disposition": f"inline; filename=facture_{facture['numero_facture']}.pdf"}
     )
 
+@api_router.get("/factures/{facture_id}/pdf-download")
+async def download_facture_pdf(facture_id: str, token: str):
+    """Download facture PDF with token auth (for browser download)"""
+    # Verify token
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token invalide")
+    
+    user = await db.users.find_one({"id": payload.get("sub")}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
+    
+    facture = await db.factures.find_one({"id": facture_id, "entreprise_id": user["entreprise_id"]}, {"_id": 0})
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": user["entreprise_id"]}, {"_id": 0})
+    
+    pdf_bytes = generate_facture_pdf(facture, client or {}, entreprise or {})
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=facture_{facture['numero_facture']}.pdf"}
+    )
+
+@api_router.delete("/factures/{facture_id}")
+async def delete_facture(facture_id: str, current_user: dict = Depends(require_admin)):
+    """Delete a facture (admin only, only brouillon status)"""
+    facture = await db.factures.find_one(
+        {"id": facture_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    if facture["statut"] != "brouillon":
+        raise HTTPException(status_code=400, detail="Seules les factures en brouillon peuvent être supprimées")
+    
+    await db.factures.delete_one({"id": facture_id})
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "delete", "facture", facture_id)
+    
+    return {"message": "Facture supprimée"}
+
 
 @api_router.post("/factures/{facture_id}/relance")
 async def send_relance(facture_id: str, current_user: dict = Depends(get_current_user)):
@@ -1211,17 +1379,35 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     ent_id = current_user["entreprise_id"]
     today = datetime.now(timezone.utc).date()
     today_start = datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=timezone.utc).isoformat()
+    today_end = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc).isoformat()
     month_start = datetime(today.year, today.month, 1, 0, 0, 0, tzinfo=timezone.utc).isoformat()
     
-    # Count interventions
+    # Count interventions today (only today, not future)
     interventions_today = await db.interventions.count_documents({
         "entreprise_id": ent_id,
-        "date_prevue": {"$gte": today_start}
+        "date_prevue": {"$gte": today_start, "$lte": today_end},
+        "statut": {"$nin": ["annulee"]}
     })
+    
+    # Count overdue interventions (planned but date has passed)
     interventions_en_retard = await db.interventions.count_documents({
         "entreprise_id": ent_id,
         "statut": "planifiee",
         "date_prevue": {"$lt": today_start}
+    })
+    
+    # Count overdue devis (sent but expired)
+    devis_expires = await db.devis.count_documents({
+        "entreprise_id": ent_id,
+        "statut": "envoye",
+        "date_expiration": {"$lt": today_start}
+    })
+    
+    # Count overdue factures
+    factures_en_retard = await db.factures.count_documents({
+        "entreprise_id": ent_id,
+        "statut": "emise",
+        "date_echeance": {"$lt": today_start}
     })
     
     # Count devis
@@ -1276,8 +1462,10 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "interventions_en_retard": interventions_en_retard,
         "devis_en_attente": devis_en_attente,
         "devis_signes_mois": devis_signes_mois,
+        "devis_expires": devis_expires,
         "montant_devis_attente": round(montant_devis_attente, 2),
         "factures_impayees": factures_impayees,
+        "factures_en_retard": factures_en_retard,
         "montant_factures_impayees": round(montant_factures_impayees, 2),
         "ca_mois": round(ca_mois, 2),
         "total_clients": total_clients,
@@ -1349,6 +1537,152 @@ async def get_dashboard_recent(current_user: dict = Depends(get_current_user)):
         "devis": [serialize_doc(d) for d in recent_devis],
         "factures": [serialize_doc(f) for f in recent_factures]
     }
+
+# ==================== RAPPORTS / REPORTS ====================
+@api_router.get("/rapports/monthly-revenue")
+async def get_monthly_revenue(current_user: dict = Depends(get_current_user)):
+    """Get monthly revenue data for charts"""
+    ent_id = current_user["entreprise_id"]
+    
+    # Get last 12 months of data
+    today = datetime.now(timezone.utc)
+    months_data = []
+    
+    for i in range(11, -1, -1):
+        # Calculate month start and end
+        month_date = today - timedelta(days=i * 30)
+        month_start = datetime(month_date.year, month_date.month, 1, 0, 0, 0, tzinfo=timezone.utc)
+        if month_date.month == 12:
+            month_end = datetime(month_date.year + 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        else:
+            month_end = datetime(month_date.year, month_date.month + 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        
+        # Query revenue for this month
+        pipeline = [
+            {"$match": {
+                "entreprise_id": ent_id,
+                "statut": "payee",
+                "date_paiement": {"$gte": month_start.isoformat(), "$lt": month_end.isoformat()}
+            }},
+            {"$group": {"_id": None, "total": {"$sum": "$total_ttc"}}}
+        ]
+        result = await db.factures.aggregate(pipeline).to_list(1)
+        revenue = result[0]["total"] if result else 0
+        
+        # Get month label
+        month_names = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"]
+        month_label = month_names[month_start.month - 1]
+        
+        months_data.append({
+            "month": month_label,
+            "year": month_start.year,
+            "revenue": round(revenue, 2)
+        })
+    
+    return months_data
+
+@api_router.get("/rapports/top-clients")
+async def get_top_clients(limit: int = 10, current_user: dict = Depends(get_current_user)):
+    """Get top clients by revenue"""
+    ent_id = current_user["entreprise_id"]
+    
+    # Aggregate revenue by client from paid invoices
+    pipeline = [
+        {"$match": {"entreprise_id": ent_id, "statut": "payee"}},
+        {"$group": {
+            "_id": "$client_id",
+            "total_ca": {"$sum": "$total_ttc"},
+            "factures_count": {"$sum": 1}
+        }},
+        {"$sort": {"total_ca": -1}},
+        {"$limit": limit}
+    ]
+    
+    results = await db.factures.aggregate(pipeline).to_list(limit)
+    
+    # Enrich with client info and intervention count
+    top_clients = []
+    for r in results:
+        client = await db.clients.find_one({"id": r["_id"]}, {"_id": 0, "id": 1, "nom": 1, "prenom": 1, "email": 1})
+        if client:
+            # Count interventions for this client
+            interventions_count = await db.interventions.count_documents({
+                "entreprise_id": ent_id,
+                "client_id": r["_id"]
+            })
+            
+            top_clients.append({
+                "id": client["id"],
+                "nom": client.get("nom", ""),
+                "prenom": client.get("prenom", ""),
+                "email": client.get("email", ""),
+                "total_ca": round(r["total_ca"], 2),
+                "factures": r["factures_count"],
+                "interventions": interventions_count
+            })
+    
+    return top_clients
+
+@api_router.get("/rapports/conversion-stats")
+async def get_conversion_stats(current_user: dict = Depends(get_current_user)):
+    """Get conversion funnel statistics"""
+    ent_id = current_user["entreprise_id"]
+    
+    # Count by status
+    interventions_total = await db.interventions.count_documents({"entreprise_id": ent_id})
+    interventions_completed = await db.interventions.count_documents({"entreprise_id": ent_id, "statut": "terminee"})
+    
+    devis_total = await db.devis.count_documents({"entreprise_id": ent_id})
+    devis_signed = await db.devis.count_documents({"entreprise_id": ent_id, "statut": "signe"})
+    
+    factures_total = await db.factures.count_documents({"entreprise_id": ent_id})
+    factures_paid = await db.factures.count_documents({"entreprise_id": ent_id, "statut": "payee"})
+    
+    return {
+        "interventions": {"total": interventions_total, "completed": interventions_completed},
+        "devis": {"total": devis_total, "signed": devis_signed},
+        "factures": {"total": factures_total, "paid": factures_paid},
+        "conversion_rate": round((devis_signed / devis_total * 100) if devis_total > 0 else 0, 1),
+        "payment_rate": round((factures_paid / factures_total * 100) if factures_total > 0 else 0, 1)
+    }
+
+@api_router.get("/rapports/export/{type}")
+async def export_report(type: str, current_user: dict = Depends(get_current_user)):
+    """Export data as CSV"""
+    ent_id = current_user["entreprise_id"]
+    
+    if type == "devis":
+        items = await db.devis.find({"entreprise_id": ent_id}, {"_id": 0}).to_list(1000)
+        headers = ["numero_devis", "client_id", "statut", "total_ht", "total_ttc", "created_at", "date_signature"]
+    elif type == "factures":
+        items = await db.factures.find({"entreprise_id": ent_id}, {"_id": 0}).to_list(1000)
+        headers = ["numero_facture", "client_id", "statut", "total_ht", "total_ttc", "montant_paye", "created_at", "date_echeance"]
+    elif type == "clients":
+        items = await db.clients.find({"entreprise_id": ent_id}, {"_id": 0}).to_list(1000)
+        headers = ["id", "nom", "prenom", "email", "telephone", "ville", "created_at"]
+    elif type == "interventions":
+        items = await db.interventions.find({"entreprise_id": ent_id}, {"_id": 0}).to_list(1000)
+        headers = ["id", "titre", "client_id", "technicien_id", "statut", "date_prevue", "duree_estimee"]
+    else:
+        raise HTTPException(status_code=400, detail="Type d'export invalide")
+    
+    # Build CSV
+    import csv
+    from io import StringIO
+    
+    output = StringIO()
+    writer = csv.DictWriter(output, fieldnames=headers, extrasaction='ignore')
+    writer.writeheader()
+    for item in items:
+        writer.writerow(item)
+    
+    csv_content = output.getvalue()
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=export_{type}_{datetime.now().strftime('%Y%m%d')}.csv"}
+    )
 
 # ==================== AUDIT LOGS ====================
 @api_router.get("/audit-logs")

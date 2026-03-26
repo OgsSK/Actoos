@@ -17,6 +17,7 @@ import { FacturesList, FactureDetail } from "./pages/Factures";
 import { TechniciensList } from "./pages/Techniciens";
 import { SettingsPage } from "./pages/Settings";
 import { PlanningPage } from "./pages/Planning";
+import { RapportsPage } from "./pages/Rapports";
 
 // Technician App
 import { TechnicianApp } from "./pages/TechnicianApp";
@@ -136,6 +137,9 @@ function App() {
               
               {/* Planning */}
               <Route path="planning" element={<PlanningPage />} />
+              
+              {/* Rapports */}
+              <Route path="rapports" element={<RapportsPage />} />
               
               {/* Settings */}
               <Route path="settings" element={<SettingsPage />} />

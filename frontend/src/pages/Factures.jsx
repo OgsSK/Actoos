@@ -13,11 +13,15 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from '../components/ui/dialog';
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from '../components/ui/alert-dialog';
+import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
 import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
 import {
-  Plus, ChevronLeft, Edit, Receipt, Download, CreditCard, Loader2, Mail, Bell
+  Plus, ChevronLeft, Edit, Receipt, Download, CreditCard, Loader2, Mail, Bell, Trash2, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -145,7 +149,7 @@ export const FacturesList = () => {
 export const FactureDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { api, token } = useAuth();
+  const { api, token, isAdmin } = useAuth();
   const [facture, setFacture] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPayment, setShowPayment] = useState(false);
@@ -213,17 +217,30 @@ export const FactureDetail = () => {
           mode_paiement: paymentData.mode_paiement,
         }
       });
+      toast.success('Paiement enregistré');
       setShowPayment(false);
       fetchFacture();
     } catch (error) {
       console.error('Error recording payment:', error);
+      toast.error('Erreur lors de l\'enregistrement du paiement');
     } finally {
       setPaying(false);
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/factures/${id}`);
+      toast.success('Facture supprimée');
+      navigate('/dashboard/factures');
+    } catch (error) {
+      console.error('Error deleting facture:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+    }
+  };
+
   const downloadPDF = () => {
-    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/factures/${id}/pdf?auth=${token}`, '_blank');
+    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/factures/${id}/pdf-download?token=${token}`, '_blank');
   };
 
   if (loading) {
@@ -285,6 +302,36 @@ export const FactureDetail = () => {
             <Download className="w-4 h-4 mr-2" />
             PDF
           </Button>
+          {facture.devis_id && (
+            <Button variant="outline" onClick={() => navigate(`/dashboard/devis/${facture.devis_id}`)}>
+              <FileText className="w-4 h-4 mr-2" />
+              Voir devis
+            </Button>
+          )}
+          {facture.statut === 'brouillon' && isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-red-600 hover:text-red-700">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Supprimer
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Supprimer la facture ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action est irréversible. La facture {facture.numero_facture} sera définitivement supprimée.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                    Supprimer
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </div>
 

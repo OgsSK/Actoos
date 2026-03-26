@@ -15,7 +15,7 @@ import { formatCurrency, formatDate, getStatusLabel, formatRelative } from '../l
 import {
   LayoutDashboard, Users, Calendar, FileText, Receipt, Settings, LogOut, Menu, X,
   Search, Bell, Plus, TrendingUp, AlertTriangle, Clock, CheckCircle, ChevronRight,
-  Building2, UserCircle, ClipboardList, Wrench, CalendarDays
+  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3
 } from 'lucide-react';
 
 const Sidebar = ({ open, onClose }) => {
@@ -35,6 +35,7 @@ const Sidebar = ({ open, onClose }) => {
     { icon: FileText, label: 'Devis', path: '/dashboard/devis', admin: true },
     { icon: Receipt, label: 'Factures', path: '/dashboard/factures', admin: true },
     { icon: ClipboardList, label: 'Techniciens', path: '/dashboard/techniciens', admin: true },
+    { icon: BarChart3, label: 'Rapports', path: '/dashboard/rapports', admin: true },
     { icon: Settings, label: 'Paramètres', path: '/dashboard/settings', admin: true },
   ];
 
@@ -225,12 +226,34 @@ const KPICard = ({ title, value, subtitle, icon: Icon, trend, color = 'blue' }) 
 
 // Alert Card Component
 const AlertCard = ({ alerts }) => {
+  const navigate = useNavigate();
+  
   const getAlertIcon = (type) => {
     switch (type) {
       case 'facture_retard': return <AlertTriangle className="w-4 h-4 text-red-500" />;
       case 'devis_expire': return <Clock className="w-4 h-4 text-amber-500" />;
       case 'intervention_retard': return <Clock className="w-4 h-4 text-amber-500" />;
       default: return <AlertTriangle className="w-4 h-4 text-slate-500" />;
+    }
+  };
+
+  const handleAlertClick = (alert) => {
+    const id = alert.entity_id || alert.id;
+    switch (alert.type) {
+      case 'facture_retard':
+        if (id) navigate(`/dashboard/factures/${id}`);
+        else navigate('/dashboard/factures');
+        break;
+      case 'devis_expire':
+        if (id) navigate(`/dashboard/devis/${id}`);
+        else navigate('/dashboard/devis');
+        break;
+      case 'intervention_retard':
+        if (id) navigate(`/dashboard/interventions/${id}`);
+        else navigate('/dashboard/interventions');
+        break;
+      default:
+        break;
     }
   };
 
@@ -263,9 +286,14 @@ const AlertCard = ({ alerts }) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="space-y-3">
+        <div className="space-y-2">
           {alerts.slice(0, 5).map((alert, idx) => (
-            <div key={idx} className="flex items-center gap-3 text-sm">
+            <div 
+              key={idx} 
+              className="flex items-center gap-3 text-sm p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+              onClick={() => handleAlertClick(alert)}
+              data-testid={`alert-item-${idx}`}
+            >
               {getAlertIcon(alert.type)}
               <span className="flex-1 truncate">{alert.message}</span>
               <ChevronRight className="w-4 h-4 text-slate-400" />

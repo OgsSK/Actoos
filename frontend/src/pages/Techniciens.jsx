@@ -12,11 +12,16 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
 } from '../components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from '../components/ui/alert-dialog';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { formatDate } from '../lib/utils';
 import {
-  Plus, UserPlus, User, Mail, Phone, Copy, Check, AlertCircle, Loader2
+  Plus, UserPlus, User, Mail, Phone, Copy, Check, AlertCircle, Loader2, Trash2
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Techniciens List Component
 export const TechniciensList = () => {
@@ -62,9 +67,22 @@ export const TechniciensList = () => {
   const handleStatusChange = async (userId, newStatus) => {
     try {
       await api.put(`/users/${userId}/status`, null, { params: { statut: newStatus } });
+      toast.success(`Statut mis à jour`);
       fetchUsers();
     } catch (error) {
       console.error('Error updating user status:', error);
+      toast.error('Erreur lors de la mise à jour');
+    }
+  };
+
+  const handleDelete = async (userId, userName) => {
+    try {
+      await api.delete(`/users/${userId}`);
+      toast.success(`${userName} a été supprimé`);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
     }
   };
 
@@ -262,15 +280,43 @@ export const TechniciensList = () => {
                     </TableCell>
                     {isAdmin && (
                       <TableCell className="text-right">
-                        {user.role !== 'admin' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleStatusChange(user.id, user.statut === 'actif' ? 'desactive' : 'actif')}
-                          >
-                            {user.statut === 'actif' ? 'Désactiver' : 'Activer'}
-                          </Button>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          {user.role !== 'admin' && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleStatusChange(user.id, user.statut === 'actif' ? 'desactive' : 'actif')}
+                              >
+                                {user.statut === 'actif' ? 'Désactiver' : 'Activer'}
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Supprimer {user.prenom} {user.nom} ?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Cette action est irréversible. Si ce technicien a des interventions actives, vous devrez d'abord les réassigner.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleDelete(user.id, `${user.prenom} ${user.nom}`)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Supprimer
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
