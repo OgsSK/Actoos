@@ -3,116 +3,60 @@
 ## Problem Statement
 SaaS multi-tenant pour entreprises de services (plomberie, électricité, maintenance) avec:
 - Dashboard Admin pour pilotage entreprise
-- Application technicien pour terrain (PWA mobile)
+- Application technicien pour terrain (PWA)
 - Portail client pour signature devis
 
 ## Architecture
 
 ### Backend (FastAPI + MongoDB)
-- **server.py**: API principale avec routes auth, clients, interventions, devis, factures, emails, SMS
+- **server.py**: API principale avec routes auth, clients, interventions, devis, factures, emails, SMS, rapports
 - **models.py**: Modèles Pydantic (Entreprise, User, Client, Intervention, Devis, Facture, AuditLog)
 - **auth.py**: JWT authentication avec rôles admin/tech
-- **pdf_generator.py**: Génération PDF devis/factures avec ReportLab
+- **pdf_generator.py**: Génération PDF devis/factures avec ReportLab + signature image
 - **storage.py**: Intégration Object Storage Emergent
-- **email_service.py**: Envoi emails via Resend (devis, factures, relances)
-- **sms_service.py**: Envoi SMS via Twilio (rappels interventions, notifications)
+- **email_service.py**: Envoi emails via Resend
+- **sms_service.py**: Envoi SMS via Twilio
 
 ### Frontend (React + Shadcn UI)
-- **AuthPages.jsx**: Login, Register, Activate
-- **Dashboard.jsx**: Overview avec KPIs, alertes, éléments récents
-- **Clients.jsx**: CRUD clients
-- **Interventions.jsx**: CRUD interventions avec assignation technicien
-- **Devis.jsx**: Création devis avec lignes, signature, conversion facture
-- **Factures.jsx**: Suivi factures et paiements
-- **Techniciens.jsx**: Gestion équipe, invitations
-- **Settings.jsx**: Paramètres entreprise
-- **ClientPortal.jsx**: Portail client public (signature devis)
-- **TechnicianApp.jsx**: Application mobile technicien PWA (agenda jour/semaine, photos, notes, offline)
-- **Planning.jsx**: Calendrier drag-and-drop pour organiser les interventions
+- Pages admin: Dashboard, Clients, Interventions, Devis, Factures, Techniciens, Planning, Rapports, Settings
+- TechnicianApp: PWA mobile avec vue jour/semaine, offline mode
+- ClientPortal: Portail public pour signature devis
 
-### PWA / Offline Support
-- **manifest.json**: Configuration PWA (installable, standalone, icônes)
-- **sw.js**: Service Worker pour cache et mode offline
-- **OfflineContext.jsx**: Gestion état réseau et sync IndexedDB
+## What's Implemented (Date: 2026-03-26)
 
-## What's Implemented (Date: 2026-03-24)
-
-### Phase 1 - Fondations ✅
-- [x] Architecture multi-tenant (entreprise_id partout)
-- [x] Auth complète (register, login, invitation, activation)
-- [x] Modèles de données complets
-- [x] JWT avec rôles admin/tech
-- [x] Audit logs basiques
-
-### Phase 2 - Cœur Métier ✅
-- [x] CRUD Clients (particulier/professionnel)
-- [x] CRUD Interventions (planification, assignation, statuts)
-- [x] Devis complets (lignes, TVA, totaux automatiques)
-- [x] Numérotation légale (D2026-XXXXX, F2026-XXXXX)
-- [x] Signature client tactile
-- [x] Génération PDF devis/factures
-- [x] Portail client (accès par token)
-
-### Phase 3 - Dashboard Admin ✅
-- [x] KPIs (interventions, devis, factures, CA)
-- [x] Alertes (retards, expirés, impayés)
-- [x] Éléments récents
-- [x] Recherche globale
-- [x] Actions rapides
-
-### Phase 4 - Factures ✅
-- [x] Création depuis devis signé
-- [x] Suivi statuts (brouillon, émise, payée, en retard)
-- [x] Enregistrement paiements
-- [x] PDF factures
-
-### Phase 5 - Emails Automatiques ✅
-- [x] Envoi automatique devis par email (avec PDF)
-- [x] Envoi automatique factures par email (avec PDF)
-- [x] Relances paiement (bouton dédié)
-- [x] Templates HTML professionnels
-- [x] Lien portail client dans email devis
-
-### Phase 6 - Application Technicien ✅
-- [x] Vue agenda du jour (/tech)
-- [x] Vue agenda semaine (onglet Semaine)
-- [x] Détail intervention avec actions rapides
-- [x] Appel client / Itinéraire GPS
-- [x] Démarrer / Terminer intervention
-- [x] Notes terrain
-- [x] Upload photos
-- [x] Indicateur statut réseau (online/offline)
-- [x] Cache local pour données hors ligne
-
-### Phase 7 - Planning Calendrier ✅
-- [x] Vue calendrier hebdomadaire
-- [x] Navigation entre semaines
-- [x] Affichage interventions par jour
-- [x] Filtres par technicien et statut
-- [x] Drag-and-drop pour replanifier
-- [x] Dialogue de replanification (heure + technicien)
-- [x] Légende (aujourd'hui, priorités, drag-drop)
+### Phase 1-7 ✅ (Sessions précédentes)
+- Multi-tenant, Auth JWT, CRUD complet, PDF, Emails, Dashboard, Planning drag-drop, App Technicien
 
 ### Phase 8 - PWA & Mode Offline ✅
-- [x] Manifest PWA (installable sur mobile)
-- [x] Service Worker avec stratégies de cache
-- [x] IndexedDB pour données offline
-- [x] Synchronisation automatique des actions en attente
-- [x] Indicateur de statut réseau
+- Service Worker, Manifest PWA, IndexedDB, Sync automatique
 
 ### Phase 9 - SMS Notifications ✅
-- [x] Service Twilio intégré
-- [x] API SMS intervention reminder
-- [x] API SMS devis notification
-- [x] API SMS facture notification
-- [x] API SMS relance paiement
-- [x] Templates SMS en français
+- Service Twilio intégré (credentials configurés, numéro à ajouter)
+- API SMS pour interventions, devis, factures, relances
 
-### Phase 10 - Relances Automatiques ✅
-- [x] Tâche de fond pour relances factures impayées
-- [x] Tâche de fond pour rappels interventions (J-1)
-- [x] Configuration via variable d'environnement
-- [x] Tracking des relances envoyées
+### Phase 10 - Rapports ✅
+- Page rapports avec KPIs, graphiques CA, tunnel conversion
+- Export CSV (devis, factures, clients, interventions)
+
+### Phase 11 - Corrections & Améliorations ✅ (Session actuelle)
+
+#### Bugs corrigés
+- [x] **Téléchargement PDF** - Fonctionne avec token auth en query param
+- [x] **Signature visible** - Image signature affichée dans devis, portail client et PDF
+- [x] **Timezone** - Dates en heure locale Paris (+1h)
+- [x] **Compteur interventions dashboard** - Compte uniquement les interventions du jour
+- [x] **Planning mobile** - Scroll horizontal fonctionnel
+
+#### Nouvelles fonctionnalités
+- [x] **Suppression devis** - DELETE /api/devis/{id} (brouillon/envoyé uniquement)
+- [x] **Suppression intervention** - DELETE /api/interventions/{id} (non démarrée)
+- [x] **Annulation intervention** - POST /api/interventions/{id}/cancel → statut "annulee"
+- [x] **Suppression facture** - DELETE /api/factures/{id} (brouillon uniquement)
+- [x] **Suppression technicien** - DELETE /api/users/{id} (sans interventions actives)
+- [x] **Alertes cliquables** - Navigation vers les détails depuis le dashboard
+- [x] **Bouton "Lien client"** - Copier le lien du portail client
+- [x] **Bouton "Voir devis"** - Navigation facture → devis associé
+- [x] **Stats dashboard améliorées** - devis_expires, factures_en_retard
 
 ## Configuration requise
 
@@ -120,52 +64,57 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 ```
 MONGO_URL=mongodb://...
 DB_NAME=fieldcommand
-
-# Email (Resend)
 RESEND_API_KEY=re_xxxxx
-
-# SMS (Twilio) - Optionnel
+SENDER_EMAIL=onboarding@resend.dev
 TWILIO_ACCOUNT_SID=ACxxxxx
 TWILIO_AUTH_TOKEN=xxxxx
-TWILIO_PHONE_NUMBER=+33xxxxxxxxx
-
-# Relances automatiques
-ENABLE_AUTO_REMINDERS=true  # false pour désactiver
+TWILIO_PHONE_NUMBER=+33xxxxxxxxx  # À ajouter
+ENABLE_AUTO_REMINDERS=true
 ```
 
 ## Test Coverage
-- Backend: 100% (12/12 tests - /app/backend/tests/test_pwa_sms_features.py)
-- Frontend: 100% fonctionnel (PWA + Week View + Offline validés)
+- Backend: 100% (16/16 tests - iteration_5)
+- Frontend: 100% fonctionnel
 
 ## Prioritized Backlog
 
-### P0 (Critique) - DONE
-- [x] PWA Mode offline complet ✅
-- [x] Vue semaine agenda technicien ✅
-- [x] SMS Notifications ✅
-- [x] Relances automatiques ✅
+### P0 (Critique) - À faire
+- [ ] **Logique assignation technicien**:
+  - Assigné → seul ce technicien voit
+  - Non assigné → tous voient, premier qui prend notifie les autres
+- [ ] **Traçabilité complète** - Audit trail de toutes les actions
+- [ ] **Photos avant/après** - Envoi en un clic au client/dashboard
 
 ### P1 (Important)
-- [ ] Statistiques et rapports avancés
-- [ ] Configuration des relances dans les paramètres
-- [ ] Export comptable (CSV/Excel)
+- [ ] Localisation dynamique (timezone, formats selon pays)
+- [ ] Historique communications (emails + SMS envoyés)
+- [ ] Configuration relances automatiques dans Settings
 
 ### P2 (Nice to have)
-- [ ] Checklist d'intervention configurable
-- [ ] Catalogue prestations
+- [ ] QR Code paiement sur facture
 - [ ] Intégration paiement en ligne (Stripe)
-- [ ] Historique des SMS envoyés
+- [ ] Checklist intervention configurable
 
 ### Reporté V2
+- [ ] **Abonnements SaaS** - Tiers de prix (50€/80€/99€) avec fonctionnalités limitées
 - [ ] Optimisation tournées IA
-- [ ] Chat temps réel technicien-admin
-- [ ] Export Sage/EBP
-- [ ] Multi-sites sophistiqué
-- [ ] Gestion stock
 - [ ] White-labeling
 
+## Flux métier clarifiés
+
+### "En retard" s'applique quand:
+- **Intervention**: date_prevue passée et statut = planifiee
+- **Devis**: date_expiration passée et statut = envoye
+- **Facture**: date_echeance passée et statut = emise
+
+### Flux invitation technicien:
+1. Admin entre email + nom + prénom + téléphone
+2. Le système génère un token d'invitation
+3. Un lien d'activation est créé (à envoyer par admin)
+4. Le technicien clique sur le lien et définit son mot de passe
+5. Compte activé et prêt à l'emploi
+
 ## Next Tasks
-1. Ajouter interface de configuration Twilio dans Settings
-2. Ajouter page de rapports/statistiques
-3. Implémenter export CSV des données
-4. Ajouter historique des communications (emails + SMS)
+1. Implémenter la logique d'assignation intelligente des interventions
+2. Ajouter audit trail complet pour traçabilité
+3. Améliorer le flux photos technicien (avant/après avec envoi rapide)
