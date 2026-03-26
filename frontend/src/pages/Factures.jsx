@@ -30,7 +30,9 @@ export const FacturesList = () => {
   const [factures, setFactures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
-  const { api } = useAuth();
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [deleting, setDeleting] = useState(false);
+  const { api, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,12 +44,62 @@ export const FacturesList = () => {
       const params = statusFilter && statusFilter !== 'all' ? { statut: statusFilter } : {};
       const response = await api.get('/factures', { params });
       setFactures(response.data);
+      setSelectedIds([]);
     } catch (error) {
       console.error('Error fetching factures:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const toggleSelection = (id, e) => {
+    e.stopPropagation();
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === factures.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(factures.map(f => f.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
+    setDeleting(true);
+    let deleted = 0;
+    let errors = 0;
+    
+    for (const id of selectedIds) {
+      try {
+        await api.delete(`/factures/${id}`);
+        deleted++;
+      } catch (error) {
+        errors++;
+      }
+    }
+    
+    setDeleting(false);
+    
+    if (deleted > 0) {
+      toast.success(`${deleted} facture(s) supprimée(s)`);
+    }
+    if (errors > 0) {
+      toast.error(`${errors} facture(s) non supprimable(s) (émises ou payées)`);
+    }
+    
+    fetchFactures();
+  };
+
+  // Filter only deletable items (brouillon only)
+  const deletableSelected = selectedIds.filter(id => {
+    const facture = factures.find(f => f.id === id);
+    return facture && facture.statut === 'brouillon';
+  });
 
   return (
     <div className="space-y-6" data-testid="factures-list">
@@ -56,6 +108,35 @@ export const FacturesList = () => {
           <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">Factures</h1>
           <p className="text-slate-500">Suivez vos factures et paiements</p>
         </div>
+        {selectedIds.length > 0 && isAdmin && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="text-red-600 hover:text-red-700" disabled={deleting}>
+                {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                Supprimer ({deletableSelected.length})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Supprimer {deletableSelected.length} facture(s) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cette action est irréversible. Seules les factures en brouillon seront supprimées.
+                  {selectedIds.length !== deletableSelected.length && (
+                    <span className="block mt-2 text-amber-600">
+                      {selectedIds.length - deletableSelected.length} facture(s) émise(s)/payée(s) ne seront pas supprimées.
+                    </span>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700">
+                  Supprimer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       {/* Filters */}
@@ -93,6 +174,16 @@ export const FacturesList = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
+                  {isAdmin && (
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.length === factures.length && factures.length > 0}
+                        onChange={toggleSelectAll}
+                        className="rounded border-slate-300"
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>Numéro</TableHead>
                   <TableHead>Client</TableHead>
                   <TableHead>Date</TableHead>
@@ -106,10 +197,20 @@ export const FacturesList = () => {
                 {factures.map((facture) => (
                   <TableRow
                     key={facture.id}
-                    className="cursor-pointer hover:bg-slate-50"
+                    className={`cursor-pointer hover:bg-slate-50 ${selectedIds.includes(facture.id) ? 'bg-blue-50' : ''}`}
                     onClick={() => navigate(`/dashboard/factures/${facture.id}`)}
                     data-testid={`facture-row-${facture.id}`}
                   >
+                    {isAdmin && (
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(facture.id)}
+                          onChange={(e) => toggleSelection(facture.id, e)}
+                          className="rounded border-slate-300"
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <p className="font-mono font-medium text-slate-900">{facture.numero_facture}</p>
                     </TableCell>
@@ -239,8 +340,22 @@ export const FactureDetail = () => {
     }
   };
 
-  const downloadPDF = () => {
-    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/factures/${id}/pdf-download?token=${token}`, '_blank');
+  const downloadPDF = async () => {
+    try {
+      const response = await api.get(`/factures/${id}/pdf`, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `facture_${facture.numero_facture}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Erreur lors du téléchargement');
+    }
   };
 
   if (loading) {

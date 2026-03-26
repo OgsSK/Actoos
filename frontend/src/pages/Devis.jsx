@@ -214,7 +214,9 @@ export const DevisList = () => {
   const [devisList, setDevisList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
-  const { api } = useAuth();
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [deleting, setDeleting] = useState(false);
+  const { api, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -226,12 +228,62 @@ export const DevisList = () => {
       const params = statusFilter && statusFilter !== 'all' ? { statut: statusFilter } : {};
       const response = await api.get('/devis', { params });
       setDevisList(response.data);
+      setSelectedIds([]);
     } catch (error) {
       console.error('Error fetching devis:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const toggleSelection = (id, e) => {
+    e.stopPropagation();
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === devisList.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(devisList.map(d => d.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
+    setDeleting(true);
+    let deleted = 0;
+    let errors = 0;
+    
+    for (const id of selectedIds) {
+      try {
+        await api.delete(`/devis/${id}`);
+        deleted++;
+      } catch (error) {
+        errors++;
+      }
+    }
+    
+    setDeleting(false);
+    
+    if (deleted > 0) {
+      toast.success(`${deleted} devis supprimé(s)`);
+    }
+    if (errors > 0) {
+      toast.error(`${errors} devis non supprimable(s) (signés ou facturés)`);
+    }
+    
+    fetchDevis();
+  };
+
+  // Filter only deletable items for selection
+  const deletableSelected = selectedIds.filter(id => {
+    const devis = devisList.find(d => d.id === id);
+    return devis && ['brouillon', 'envoye'].includes(devis.statut);
+  });
 
   return (
     <div className="space-y-6" data-testid="devis-list">
@@ -240,10 +292,41 @@ export const DevisList = () => {
           <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">Devis</h1>
           <p className="text-slate-500">Gérez vos devis et propositions commerciales</p>
         </div>
-        <Button onClick={() => navigate('/dashboard/devis/new')} data-testid="new-devis-btn">
-          <Plus className="w-4 h-4 mr-2" />
-          Nouveau devis
-        </Button>
+        <div className="flex gap-2">
+          {selectedIds.length > 0 && isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-red-600 hover:text-red-700" disabled={deleting}>
+                  {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                  Supprimer ({deletableSelected.length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Supprimer {deletableSelected.length} devis ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action est irréversible. Seuls les devis en brouillon ou envoyés seront supprimés.
+                    {selectedIds.length !== deletableSelected.length && (
+                      <span className="block mt-2 text-amber-600">
+                        {selectedIds.length - deletableSelected.length} devis signé(s)/facturé(s) ne seront pas supprimés.
+                      </span>
+                    )}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700">
+                    Supprimer
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <Button onClick={() => navigate('/dashboard/devis/new')} data-testid="new-devis-btn">
+            <Plus className="w-4 h-4 mr-2" />
+            Nouveau devis
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -282,6 +365,16 @@ export const DevisList = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
+                  {isAdmin && (
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.length === devisList.length && devisList.length > 0}
+                        onChange={toggleSelectAll}
+                        className="rounded border-slate-300"
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>Numéro</TableHead>
                   <TableHead>Client</TableHead>
                   <TableHead>Date</TableHead>
@@ -294,10 +387,20 @@ export const DevisList = () => {
                 {devisList.map((devis) => (
                   <TableRow
                     key={devis.id}
-                    className="cursor-pointer hover:bg-slate-50"
+                    className={`cursor-pointer hover:bg-slate-50 ${selectedIds.includes(devis.id) ? 'bg-blue-50' : ''}`}
                     onClick={() => navigate(`/dashboard/devis/${devis.id}`)}
                     data-testid={`devis-row-${devis.id}`}
                   >
+                    {isAdmin && (
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(devis.id)}
+                          onChange={(e) => toggleSelection(devis.id, e)}
+                          className="rounded border-slate-300"
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <p className="font-mono font-medium text-slate-900">{devis.numero_devis}</p>
                     </TableCell>
@@ -666,14 +769,30 @@ export const DevisDetail = () => {
   const handleCreateFacture = async () => {
     try {
       await api.post('/factures/from-devis', { devis_id: id });
+      toast.success('Facture créée');
       navigate('/dashboard/factures');
     } catch (error) {
       console.error('Error creating facture:', error);
+      toast.error('Erreur lors de la création de la facture');
     }
   };
 
-  const downloadPDF = () => {
-    window.open(`${process.env.REACT_APP_BACKEND_URL}/api/devis/${id}/pdf-download?token=${token}`, '_blank');
+  const downloadPDF = async () => {
+    try {
+      const response = await api.get(`/devis/${id}/pdf`, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `devis_${devis.numero_devis}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Erreur lors du téléchargement');
+    }
   };
 
   const handleDelete = async () => {
