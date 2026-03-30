@@ -471,14 +471,49 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - Architecture maintenable et scalable
 - API Version 2.0.0 (Modular Architecture)
 
+### Phase 28 - API Publique pour Intégrations Tierces ✅ (Date: 2026-03-31)
+
+#### Gestion des clés API
+- [x] **Création de clés** - Génération sécurisée avec permissions granulaires
+- [x] **Révocation** - Désactivation immédiate des clés compromises
+- [x] **Permissions** - read, write, webhook, admin
+- [x] **Expiration** - Option de validité limitée (30j, 90j, 1an)
+- [x] **Tracking** - Dernière utilisation enregistrée
+
+#### Webhooks
+- [x] **13 événements** - Interventions, Devis, Factures, Clients
+- [x] **Signature HMAC-SHA256** - Sécurité des payloads
+- [x] **Test intégré** - Envoi d'événement test
+- [x] **Historique livraisons** - Logs des envois
+- [x] **Auto-désactivation** - Après 10 échecs consécutifs
+
+#### Endpoints REST externes
+- [x] `GET /api/public-api/v1/clients` - Liste clients paginée
+- [x] `GET /api/public-api/v1/interventions` - Liste interventions
+- [x] `GET /api/public-api/v1/devis` - Liste devis
+- [x] `GET /api/public-api/v1/factures` - Liste factures
+- [x] `GET /api/public-api/info` - Documentation API
+
+#### Frontend
+- [x] **Page API Settings** (`/dashboard/api-settings`) - Interface complète
+- [x] **Onglets** - Clés API, Webhooks, Documentation
+- [x] **Création clés** - Modal avec permissions
+- [x] **Création webhooks** - Sélection événements multiples
+- [x] **Test webhooks** - Bouton test intégré
+
+#### Fichiers créés
+- `/app/backend/models_api.py` - Modèles Pydantic API
+- `/app/backend/webhook_service.py` - Service envoi webhooks
+- `/app/backend/routers/public_api.py` - Router API publique
+- `/app/frontend/src/pages/APISettings.jsx` - Interface admin
+
 ### Backlog V2
 - [ ] React Native (si besoin app native)
 - [ ] Intégration calendrier Google/Outlook
-- [ ] API publique pour intégrations tierces
 
 ## Next Tasks
-1. **P1**: Intégration Google Calendar/Outlook (synchronisation planning) - Requiert credentials OAuth
-2. **P2**: API publique pour intégrations tierces (Webhooks/REST)
+1. **P1**: Intégration Google Calendar/Outlook (requiert credentials OAuth)
+2. **P2**: Amélioration de la documentation API (OpenAPI/Swagger)
 - `/app/backend/statement_generator.py` - Générateur PDF ReportLab
 - `/app/backend/routers/statements.py` - Router FastAPI
 - `/app/frontend/src/pages/Statements.jsx` - Interface React

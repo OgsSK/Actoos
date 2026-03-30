@@ -20,6 +20,7 @@ import { PlanningPage } from "./pages/Planning";
 import { RapportsPage } from "./pages/Rapports";
 import Analytics from "./pages/Analytics";
 import Statements from "./pages/Statements";
+import APISettings from "./pages/APISettings";
 
 // Technician App
 import { TechnicianApp } from "./pages/TechnicianApp";
@@ -157,6 +158,9 @@ function App() {
               
               {/* Statements */}
               <Route path="statements" element={<Statements />} />
+              
+              {/* API Settings */}
+              <Route path="api-settings" element={<APISettings />} />
               
               {/* Settings */}
               <Route path="settings" element={<SettingsPage />} />
