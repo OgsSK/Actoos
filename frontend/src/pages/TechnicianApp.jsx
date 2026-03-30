@@ -30,7 +30,7 @@ import {
   Calendar, Clock, MapPin, Phone, Play, CheckCircle, FileText, Camera,
   Loader2, ChevronRight, User, Navigation, Wifi, WifiOff, RefreshCw,
   Plus, X, Upload, Image as ImageIcon, ChevronLeft, CalendarDays,
-  LogOut, Settings, Wrench, Euro, Trash2, Bell, BellOff
+  LogOut, Settings, Wrench, Euro, Trash2, Bell, BellOff, Route, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday } from 'date-fns';
@@ -88,6 +88,150 @@ const SyncStatus = ({ isOnline, pendingCount, isSyncing, onSync, lastSyncTime })
         </span>
       )}
     </div>
+  );
+};
+
+// Route Optimization Modal
+const RouteOptimizerModal = ({ isOpen, onClose, interventions, api, onReorder }) => {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const optimizeRoute = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.post('/interventions/optimize-route', null, {
+        params: { 
+          intervention_ids: interventions.map(i => i.id).join(',')
+        }
+      });
+      setResult(response.data);
+    } catch (err) {
+      console.error('Route optimization error:', err);
+      setError(err.response?.data?.detail || 'Erreur lors de l\'optimisation');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyOrder = () => {
+    if (result?.optimized_order) {
+      onReorder(result.optimized_order);
+      toast.success('Ordre optimisé appliqué !');
+      onClose();
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-500" />
+            Optimisation de tournée IA
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          {!result && !loading && (
+            <div className="text-center py-6">
+              <Route className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-600 mb-4">
+                L'IA va analyser vos {interventions.length} interventions et suggérer l'ordre optimal pour minimiser vos trajets.
+              </p>
+              <Button onClick={optimizeRoute} className="bg-amber-500 hover:bg-amber-600">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Optimiser ma tournée
+              </Button>
+            </div>
+          )}
+
+          {loading && (
+            <div className="text-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-amber-500 mx-auto mb-4" />
+              <p className="text-slate-600">Analyse en cours...</p>
+              <p className="text-xs text-slate-400 mt-1">L'IA calcule le meilleur itinéraire</p>
+            </div>
+          )}
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {result && (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-5 h-5 text-emerald-600" />
+                  <span className="font-medium text-emerald-700">Itinéraire optimisé</span>
+                </div>
+                <p className="text-sm text-emerald-600">{result.route_summary}</p>
+                <p className="text-xs text-emerald-500 mt-1">
+                  Temps estimé: ~{result.total_estimated_time_minutes} min
+                </p>
+              </div>
+
+              {/* Optimized order */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-slate-700">Ordre suggéré:</h4>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {result.interventions?.map((inv, index) => (
+                    <div 
+                      key={inv.id}
+                      className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{inv.titre}</p>
+                        <p className="text-xs text-slate-500 truncate flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {inv.ville || inv.adresse}
+                        </p>
+                      </div>
+                      {inv.priorite === 'urgente' && (
+                        <Badge variant="secondary" className="bg-red-100 text-red-700 text-xs">
+                          Urgent
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tips */}
+              {result.tips?.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <h4 className="font-medium text-sm text-blue-700 mb-1">Conseils:</h4>
+                  <ul className="text-xs text-blue-600 space-y-1">
+                    {result.tips.map((tip, i) => (
+                      <li key={i}>• {tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Fermer
+          </Button>
+          {result && (
+            <Button onClick={applyOrder} className="bg-emerald-600 hover:bg-emerald-700">
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Appliquer cet ordre
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -809,6 +953,7 @@ export const TechnicianApp = () => {
   // Modal states
   const [showCreateIntervention, setShowCreateIntervention] = useState(false);
   const [showCreateDevis, setShowCreateDevis] = useState(false);
+  const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
   const [preselectedClientId, setPreselectedClientId] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   
@@ -939,6 +1084,26 @@ export const TechnicianApp = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Reorder interventions based on optimized order
+  const handleReorderInterventions = (optimizedOrder) => {
+    const interventionsMap = {};
+    interventions.forEach(i => { interventionsMap[i.id] = i; });
+    
+    const reordered = optimizedOrder
+      .filter(id => interventionsMap[id])
+      .map(id => interventionsMap[id]);
+    
+    // Add any interventions not in the optimized order at the end
+    const includedIds = new Set(optimizedOrder);
+    interventions.forEach(i => {
+      if (!includedIds.has(i.id)) {
+        reordered.push(i);
+      }
+    });
+    
+    setInterventions(reordered);
   };
 
   const handleStartIntervention = async (id) => {
@@ -1229,6 +1394,19 @@ export const TechnicianApp = () => {
                 )}
               </Button>
             )}
+            {/* Route Optimizer Button */}
+            {isOnline && interventions.filter(i => i.statut === 'planifiee').length >= 2 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-2 bg-amber-50 border-amber-200 hover:bg-amber-100"
+                onClick={() => setShowRouteOptimizer(true)}
+                title="Optimiser ma tournée"
+                data-testid="route-optimizer-btn"
+              >
+                <Sparkles className="w-4 h-4 text-amber-600" />
+              </Button>
+            )}
             <SyncStatus
               isOnline={isOnline}
               pendingCount={pendingCount}
@@ -1509,6 +1687,15 @@ export const TechnicianApp = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Route Optimizer Modal */}
+      <RouteOptimizerModal
+        isOpen={showRouteOptimizer}
+        onClose={() => setShowRouteOptimizer(false)}
+        interventions={interventions.filter(i => i.statut === 'planifiee')}
+        api={api}
+        onReorder={handleReorderInterventions}
+      />
     </div>
   );
 };

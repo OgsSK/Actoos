@@ -39,6 +39,7 @@ from push_service import (
     notify_new_intervention_available, notify_intervention_assigned,
     notify_devis_signed
 )
+from route_optimizer import optimize_route, get_route_suggestions, calculate_simple_route_score
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -959,6 +960,155 @@ async def get_available_interventions(current_user: dict = Depends(get_current_u
         i["client"] = serialize_doc(client) if client else None
     
     return [serialize_doc(i) for i in interventions]
+
+# ==================== ROUTE OPTIMIZATION ====================
+# NOTE: These routes MUST be defined BEFORE /interventions/{intervention_id}
+# to avoid FastAPI matching "route-score" or "optimize-route" as an intervention_id
+
+@api_router.post("/interventions/optimize-route")
+async def optimize_interventions_route(
+    date: str = None,
+    intervention_ids: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Optimize the route for interventions using AI
+    
+    Args:
+        date: Date to optimize (YYYY-MM-DD), defaults to today
+        intervention_ids: Comma-separated intervention IDs to optimize, 
+                         or all for the date if not provided
+    """
+    from datetime import date as date_type
+    
+    # Default to today
+    if not date:
+        date = date_type.today().isoformat()
+    
+    # Parse intervention_ids if provided as comma-separated string
+    ids_list = None
+    if intervention_ids:
+        ids_list = [id.strip() for id in intervention_ids.split(',') if id.strip()]
+    
+    # Build query
+    query = {"entreprise_id": current_user["entreprise_id"]}
+    
+    if ids_list:
+        query["id"] = {"$in": ids_list}
+    else:
+        # Get interventions for the date
+        query["date_prevue"] = {"$regex": f"^{date}"}
+        query["statut"] = {"$in": ["planifiee", "en_cours"]}
+    
+    # For technicians, only their interventions
+    if current_user.get("role") == "tech":
+        query["$or"] = [
+            {"technicien_id": current_user["user_id"]},
+            {"technicien_id": None}  # Also include unassigned ones they might claim
+        ]
+    
+    # Fetch interventions with client data
+    interventions = await db.interventions.find(query, {"_id": 0}).to_list(length=50)
+    
+    # Enrich with client info
+    client_ids = list(set(i.get("client_id") for i in interventions if i.get("client_id")))
+    clients_cursor = await db.clients.find({"id": {"$in": client_ids}}, {"_id": 0}).to_list(length=100)
+    clients_map = {c["id"]: c for c in clients_cursor}
+    
+    for inv in interventions:
+        inv["client"] = clients_map.get(inv.get("client_id"))
+    
+    # Optimize route
+    result = await optimize_route(interventions)
+    
+    # Add intervention details to result
+    interventions_map = {i["id"]: i for i in interventions}
+    result["interventions"] = [
+        {
+            "id": inv_id,
+            "titre": interventions_map.get(inv_id, {}).get("titre", ""),
+            "adresse": interventions_map.get(inv_id, {}).get("adresse", "") or 
+                      interventions_map.get(inv_id, {}).get("client", {}).get("adresse", ""),
+            "ville": interventions_map.get(inv_id, {}).get("ville", "") or 
+                    interventions_map.get(inv_id, {}).get("client", {}).get("ville", ""),
+            "heure_prevue": interventions_map.get(inv_id, {}).get("date_prevue", ""),
+            "priorite": interventions_map.get(inv_id, {}).get("priorite", "normale"),
+            "statut": interventions_map.get(inv_id, {}).get("statut", "")
+        }
+        for inv_id in result.get("optimized_order", [])
+    ]
+    
+    return result
+
+@api_router.get("/interventions/route-score")
+async def get_route_score(
+    date: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get a simple route efficiency score for the day's interventions
+    (No AI required - basic geographic and priority analysis)
+    """
+    from datetime import date as date_type
+    
+    if not date:
+        date = date_type.today().isoformat()
+    
+    query = {
+        "entreprise_id": current_user["entreprise_id"],
+        "date_prevue": {"$regex": f"^{date}"},
+        "statut": {"$in": ["planifiee", "en_cours"]}
+    }
+    
+    if current_user.get("role") == "tech":
+        query["technicien_id"] = current_user["user_id"]
+    
+    interventions = await db.interventions.find(query, {"_id": 0}).to_list(length=50)
+    
+    # Enrich with client info
+    client_ids = list(set(i.get("client_id") for i in interventions if i.get("client_id")))
+    if client_ids:
+        clients_cursor = await db.clients.find({"id": {"$in": client_ids}}, {"_id": 0}).to_list(length=100)
+        clients_map = {c["id"]: c for c in clients_cursor}
+        for inv in interventions:
+            inv["client"] = clients_map.get(inv.get("client_id"))
+    
+    score = calculate_simple_route_score(interventions)
+    score["date"] = date
+    score["total_interventions"] = len(interventions)
+    
+    return score
+
+@api_router.post("/interventions/apply-optimized-order")
+async def apply_optimized_order(
+    optimized_order: List[str],
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Apply the optimized order by updating intervention priorities/order field
+    """
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Seuls les admins peuvent réorganiser les interventions")
+    
+    # Update each intervention with its position in the optimized order
+    for position, intervention_id in enumerate(optimized_order):
+        await db.interventions.update_one(
+            {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+            {"$set": {"ordre_tournee": position + 1, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    
+    await log_action(
+        current_user["entreprise_id"], 
+        current_user["user_id"], 
+        "optimize_route", 
+        "interventions", 
+        f"optimized_{len(optimized_order)}_interventions"
+    )
+    
+    return {
+        "message": f"Ordre optimisé appliqué à {len(optimized_order)} interventions",
+        "order": optimized_order
+    }
 
 @api_router.get("/interventions/{intervention_id}")
 async def get_intervention(intervention_id: str, current_user: dict = Depends(get_current_user)):
