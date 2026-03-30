@@ -25,6 +25,9 @@ import { TechnicianApp } from "./pages/TechnicianApp";
 // Client Portal
 import { ClientPortalDevis } from "./pages/ClientPortal";
 
+// Pricing Pages
+import { PricingPage, SignupPage, SignupSuccessPage } from "./pages/Pricing";
+
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { isAuthenticated, loading, isAdmin } = useAuth();
@@ -95,6 +98,11 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/activate" element={<ActivatePage />} />
+
+            {/* Pricing and Signup (Public) */}
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/signup/success" element={<SignupSuccessPage />} />
 
             {/* Client Portal (Public) */}
             <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />
