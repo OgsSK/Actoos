@@ -312,6 +312,35 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - Backend: 16/16 tests passés (100%)
 - Frontend: 100% UI fonctionne
 
+### Phase 24 - Rapports & Analytics ✅ (Date: 2026-03-30)
+
+#### Fonctionnalités
+- [x] **Page Analytics** - Dashboard complet accessible depuis la sidebar
+- [x] **4 KPI Cards** - CA, Factures en attente, Interventions, Taux conversion
+- [x] **Graphique évolution CA** - Barres sur 30 jours
+- [x] **Interventions par statut** - Progress bars colorées avec pourcentages
+- [x] **Performance techniciens** - Tableau avec classement et badges
+- [x] **Top Clients** - Ranking par chiffre d'affaires
+- [x] **Cards résumé** - Devis, Clients, Factures avec détails
+- [x] **Sélecteur période** - Semaine, Mois, Trimestre, Année
+
+#### Endpoints ajoutés (admin uniquement)
+- `GET /api/analytics/revenue` - Métriques revenus et croissance
+- `GET /api/analytics/interventions` - Stats par statut/priorité/catégorie
+- `GET /api/analytics/technicians` - Performance des techniciens
+- `GET /api/analytics/clients` - Stats clients et top clients
+- `GET /api/analytics/devis` - Conversion devis et délais
+- `GET /api/analytics/trends` - Données quotidiennes pour graphiques
+- `GET /api/analytics/summary` - Résumé complet
+
+#### Fichiers ajoutés
+- `/app/backend/analytics_service.py` - Service d'analytics MongoDB
+- `/app/frontend/src/pages/Analytics.jsx` - Page dashboard
+
+#### Tests Validés
+- Backend: 18/18 tests passés (100%)
+- Frontend: 100% UI fonctionnel
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -345,6 +374,7 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] **Paiement en ligne Stripe** (portail client)
 - [x] **Support Offline Avancé** (IndexedDB/Dexie.js)
 - [x] **Optimisation Tournées IA** (GPT-4o)
+- [x] **Rapports et Analytics** (Dashboard business)
 
 ### Backlog (Nice to have)
 - [x] QR Code paiement sur facture ✅
@@ -355,14 +385,15 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] Paiement en ligne via Stripe (sur facture depuis portail) ✅
 - [x] Offline avancé (IndexedDB/Dexie.js sync) ✅
 - [x] Optimisation tournées IA ✅
+- [x] Rapports et analytics avancés ✅
 
 ### Backlog V2
 - [ ] React Native (si besoin app native)
 - [ ] Intégration calendrier Google/Outlook
 - [ ] API publique pour intégrations tierces
 - [ ] Notifications par catégorie/compétences
-- [ ] Rapports et analytics avancés
 - [ ] Multi-devises et internationalisation
+- [ ] Export PDF/Excel des rapports
 
 ## Next Tasks
 1. Intégration calendrier Google/Outlook
