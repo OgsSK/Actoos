@@ -9,11 +9,354 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import { Switch } from '../components/ui/switch';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+} from '../components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from '../components/ui/alert-dialog';
 import { 
   Building2, FileText, Check, Loader2, Bell, MessageSquare, 
-  CheckCircle, XCircle, ExternalLink, Info, Palette, Upload
+  CheckCircle, XCircle, ExternalLink, Info, Palette, Upload, 
+  Tags, Plus, Pencil, Trash2, Wrench
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Default category icons and colors
+const CATEGORY_ICONS = ['wrench', 'zap', 'sparkles', 'thermometer', 'hammer', 'cog', 'droplet', 'wind', 'home', 'tool'];
+const CATEGORY_COLORS = [
+  { name: 'Bleu', value: '#3B82F6' },
+  { name: 'Vert', value: '#10B981' },
+  { name: 'Jaune', value: '#F59E0B' },
+  { name: 'Rouge', value: '#EF4444' },
+  { name: 'Violet', value: '#8B5CF6' },
+  { name: 'Rose', value: '#EC4899' },
+  { name: 'Orange', value: '#F97316' },
+  { name: 'Cyan', value: '#06B6D4' },
+  { name: 'Gris', value: '#6B7280' },
+];
+
+// Categories Manager Component
+const CategoriesManager = ({ api }) => {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    code: '',
+    nom: '',
+    description: '',
+    icone: 'wrench',
+    couleur: '#3B82F6'
+  });
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get('/categories');
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error('Erreur lors du chargement des catégories');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      code: '',
+      nom: '',
+      description: '',
+      icone: 'wrench',
+      couleur: '#3B82F6'
+    });
+    setEditingCategory(null);
+    setShowForm(false);
+  };
+
+  const openEditForm = (category) => {
+    setFormData({
+      code: category.code,
+      nom: category.nom,
+      description: category.description || '',
+      icone: category.icone || 'wrench',
+      couleur: category.couleur || '#3B82F6'
+    });
+    setEditingCategory(category);
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.code || !formData.nom) {
+      toast.error('Le code et le nom sont obligatoires');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (editingCategory) {
+        await api.put(`/categories/${editingCategory.id}`, formData);
+        toast.success('Catégorie mise à jour');
+      } else {
+        await api.post('/categories', formData);
+        toast.success('Catégorie créée');
+      }
+      fetchCategories();
+      resetForm();
+    } catch (error) {
+      console.error('Error saving category:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (categoryId, categoryName) => {
+    try {
+      await api.delete(`/categories/${categoryId}`);
+      toast.success(`Catégorie "${categoryName}" supprimée`);
+      fetchCategories();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+    }
+  };
+
+  const categoryIcons = {
+    wrench: '🔧',
+    zap: '⚡',
+    sparkles: '✨',
+    thermometer: '🌡️',
+    hammer: '🔨',
+    cog: '⚙️',
+    droplet: '💧',
+    wind: '💨',
+    home: '🏠',
+    tool: '🛠️'
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-slate-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Catégories d'interventions</CardTitle>
+              <CardDescription>
+                Gérez les types d'interventions que vos techniciens peuvent effectuer
+              </CardDescription>
+            </div>
+            <Button onClick={() => setShowForm(true)} data-testid="add-category-btn">
+              <Plus className="w-4 h-4 mr-2" />
+              Nouvelle catégorie
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+            </div>
+          ) : categories.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">
+              <Tags className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>Aucune catégorie</p>
+              <p className="text-sm">Créez votre première catégorie pour commencer</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="p-4 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
+                  data-testid={`category-${cat.code}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-lg"
+                      style={{ backgroundColor: cat.couleur }}
+                    >
+                      {categoryIcons[cat.icone] || '📋'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-slate-900 truncate">{cat.nom}</h4>
+                      <p className="text-xs text-slate-500 truncate">{cat.code}</p>
+                      {cat.description && (
+                        <p className="text-sm text-slate-600 mt-1 line-clamp-2">{cat.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-slate-100">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => openEditForm(cat)}
+                      data-testid={`edit-category-${cat.code}`}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Supprimer {cat.nom} ?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Cette catégorie sera désactivée. Les interventions existantes ne seront pas affectées.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDelete(cat.id, cat.nom)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Supprimer
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Category Form Dialog */}
+      <Dialog open={showForm} onOpenChange={(open) => { if (!open) resetForm(); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Tags className="w-5 h-5" />
+              {editingCategory ? 'Modifier la catégorie' : 'Nouvelle catégorie'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">Code *</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') }))}
+                  placeholder="ex: plomberie"
+                  disabled={!!editingCategory}
+                  data-testid="category-code"
+                />
+                <p className="text-xs text-slate-500">Identifiant unique (non modifiable)</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nom">Nom *</Label>
+                <Input
+                  id="nom"
+                  value={formData.nom}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))}
+                  placeholder="ex: Plomberie"
+                  data-testid="category-nom"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Description optionnelle de la catégorie"
+                rows={2}
+                data-testid="category-description"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Icône</Label>
+                <div className="grid grid-cols-5 gap-2">
+                  {CATEGORY_ICONS.map((icon) => (
+                    <button
+                      key={icon}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, icone: icon }))}
+                      className={`p-2 rounded-lg text-lg transition-colors ${
+                        formData.icone === icon 
+                          ? 'bg-blue-100 ring-2 ring-blue-500' 
+                          : 'bg-slate-100 hover:bg-slate-200'
+                      }`}
+                      data-testid={`icon-${icon}`}
+                    >
+                      {categoryIcons[icon]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Couleur</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {CATEGORY_COLORS.map((color) => (
+                    <button
+                      key={color.value}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, couleur: color.value }))}
+                      className={`p-2 rounded-lg flex items-center gap-2 transition-colors ${
+                        formData.couleur === color.value 
+                          ? 'ring-2 ring-blue-500' 
+                          : 'hover:bg-slate-100'
+                      }`}
+                      data-testid={`color-${color.name}`}
+                    >
+                      <div 
+                        className="w-5 h-5 rounded-full"
+                        style={{ backgroundColor: color.value }}
+                      />
+                      <span className="text-xs">{color.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="p-4 bg-slate-50 rounded-lg">
+              <p className="text-xs text-slate-500 mb-2">Aperçu</p>
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-lg"
+                  style={{ backgroundColor: formData.couleur }}
+                >
+                  {categoryIcons[formData.icone] || '📋'}
+                </div>
+                <div>
+                  <p className="font-medium">{formData.nom || 'Nom de la catégorie'}</p>
+                  <p className="text-xs text-slate-500">{formData.code || 'code'}</p>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={resetForm}>Annuler</Button>
+              <Button type="submit" disabled={saving} data-testid="save-category-btn">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingCategory ? 'Mettre à jour' : 'Créer')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
 
 export const SettingsPage = () => {
   const { api, entreprise, user, refreshUser } = useAuth();
@@ -153,6 +496,10 @@ export const SettingsPage = () => {
             <Building2 className="w-4 h-4" />
             Entreprise
           </TabsTrigger>
+          <TabsTrigger value="categories" className="flex items-center gap-2">
+            <Tags className="w-4 h-4" />
+            Catégories
+          </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="w-4 h-4" />
             Notifications
@@ -285,6 +632,11 @@ export const SettingsPage = () => {
               </CardContent>
             </Card>
           </form>
+        </TabsContent>
+
+        {/* Categories Tab */}
+        <TabsContent value="categories">
+          <CategoriesManager api={api} />
         </TabsContent>
 
         {/* Notifications Tab */}

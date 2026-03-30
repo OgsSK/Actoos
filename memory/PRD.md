@@ -418,6 +418,7 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] Optimisation tournées IA ✅
 - [x] Rapports et analytics avancés ✅
 - [x] Skills & Categories Matching (techniciens qualifiés) ✅
+- [x] Gestion des catégories (création/édition/suppression par admin) ✅
 
 ### Backlog V2
 - [ ] React Native (si besoin app native)
