@@ -592,11 +592,54 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 
 ## Next Tasks
 1. **P1**: Intégration Google Calendar/Outlook (requiert credentials OAuth)
-2. **P2**: Support multi-sites (un client avec plusieurs adresses physiques)
-3. **P2**: Documentation UI conflits offline (Last-Write-Wins)
+2. **P2**: Documentation UI conflits offline (Last-Write-Wins)
 
 ### Backlog V2
 - [ ] React Native (si besoin app native)
 - [ ] Intégration calendrier Google/Outlook
-- [ ] Multi-site support
+
+---
+
+### Phase 31 - Support Multi-sites ✅ (Date: 2026-03-31)
+
+#### Fonctionnalités
+- [x] **Modèle Site** - Nouveau modèle pour gérer les adresses multiples d'un client
+- [x] **CRUD Sites API** - Endpoints complets pour créer, lire, modifier, supprimer des sites
+- [x] **UI Gestion Sites** - Section Sites dans la fiche client avec formulaire modal
+- [x] **Sélecteur Site** - Dans le formulaire d'intervention, choix du site si le client en a plusieurs
+- [x] **Auto-remplissage adresse** - L'adresse est pré-remplie selon le site sélectionné
+- [x] **Soft delete** - Les sites avec interventions liées sont désactivés, pas supprimés
+
+#### Structure Site
+```
+{
+  nom: string,           // "Entrepôt Nord"
+  adresse: string,
+  ville: string,
+  code_postal: string,
+  contact_nom?: string,  // Contact sur place
+  contact_telephone?: string,
+  contact_email?: string,
+  horaires_acces?: string,      // "Lun-Ven 8h-18h"
+  instructions_acces?: string,  // "Code portail: 1234"
+  notes?: string,
+  actif: boolean
+}
+```
+
+#### Endpoints API
+- `POST /api/sites` - Créer un site
+- `GET /api/sites` - Liste des sites (filtrable par client_id)
+- `GET /api/sites/client/{client_id}` - Sites actifs d'un client
+- `GET /api/sites/{site_id}` - Détail d'un site
+- `PUT /api/sites/{site_id}` - Modifier un site
+- `DELETE /api/sites/{site_id}` - Supprimer/désactiver un site
+- `POST /api/sites/{site_id}/activate` - Réactiver un site
+
+#### Fichiers modifiés/créés
+- `/app/backend/models.py` - Modèles Site, SiteCreate, SiteUpdate, SiteResponse
+- `/app/backend/routers/sites.py` - Router CRUD complet
+- `/app/backend/server.py` - Import du router sites
+- `/app/frontend/src/pages/Clients.jsx` - Section Sites + SiteForm + gestion CRUD
+- `/app/frontend/src/pages/Interventions.jsx` - Sélecteur de site dans le formulaire
 

@@ -179,9 +179,13 @@ export const InterventionForm = () => {
   const [saving, setSaving] = useState(false);
   const [clients, setClients] = useState([]);
   const [techniciens, setTechniciens] = useState([]);
+  const [sites, setSites] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     client_id: location.state?.client_id || '',
+    site_id: '',
     technicien_id: '',
+    categorie_id: '',
     titre: '',
     description: '',
     adresse: '',
@@ -196,6 +200,7 @@ export const InterventionForm = () => {
   useEffect(() => {
     fetchClients();
     fetchTechniciens();
+    fetchCategories();
     if (isEdit) {
       fetchIntervention();
     }
@@ -218,6 +223,39 @@ export const InterventionForm = () => {
       console.error('Error fetching techniciens:', error);
     }
   };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get('/categories');
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  // Fetch sites when client changes
+  const fetchSites = async (clientId) => {
+    if (!clientId) {
+      setSites([]);
+      return;
+    }
+    try {
+      const response = await api.get('/sites', { params: { client_id: clientId, actif: true } });
+      setSites(response.data);
+    } catch (error) {
+      console.error('Error fetching sites:', error);
+      setSites([]);
+    }
+  };
+
+  // Load sites when client_id changes
+  useEffect(() => {
+    if (formData.client_id) {
+      fetchSites(formData.client_id);
+    } else {
+      setSites([]);
+    }
+  }, [formData.client_id]);
 
   const fetchIntervention = async () => {
     setLoading(true);
@@ -263,20 +301,36 @@ export const InterventionForm = () => {
     }
   };
 
-  // Auto-fill address from client
+  // Auto-fill address from client or site
   useEffect(() => {
-    if (formData.client_id && !isEdit) {
-      const client = clients.find(c => c.id === formData.client_id);
-      if (client) {
-        setFormData(prev => ({
-          ...prev,
-          adresse: client.adresse || '',
-          ville: client.ville || '',
-          code_postal: client.code_postal || '',
-        }));
+    if (!isEdit) {
+      // If a site is selected, use its address
+      if (formData.site_id) {
+        const site = sites.find(s => s.id === formData.site_id);
+        if (site) {
+          setFormData(prev => ({
+            ...prev,
+            adresse: site.adresse || '',
+            ville: site.ville || '',
+            code_postal: site.code_postal || '',
+          }));
+          return;
+        }
+      }
+      // Otherwise, use client address
+      if (formData.client_id) {
+        const client = clients.find(c => c.id === formData.client_id);
+        if (client) {
+          setFormData(prev => ({
+            ...prev,
+            adresse: client.adresse || '',
+            ville: client.ville || '',
+            code_postal: client.code_postal || '',
+          }));
+        }
       }
     }
-  }, [formData.client_id, clients]);
+  }, [formData.client_id, formData.site_id, clients, sites]);
 
   if (loading) {
     return (
@@ -308,7 +362,7 @@ export const InterventionForm = () => {
               <Label>Client *</Label>
               <Select
                 value={formData.client_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value, site_id: '' }))}
               >
                 <SelectTrigger data-testid="intervention-client">
                   <SelectValue placeholder="Sélectionner un client" />
@@ -322,6 +376,68 @@ export const InterventionForm = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Site (if client has multiple sites) */}
+            {sites.length > 0 && (
+              <div className="space-y-2">
+                <Label>Site d'intervention</Label>
+                <Select
+                  value={formData.site_id || ''}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, site_id: value === 'default' ? '' : value }))}
+                >
+                  <SelectTrigger data-testid="intervention-site">
+                    <SelectValue placeholder="Adresse par défaut du client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">
+                      <span className="text-slate-500">Adresse par défaut du client</span>
+                    </SelectItem>
+                    {sites.map((site) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{site.nom}</span>
+                          <span className="text-xs text-slate-500">{site.adresse}, {site.ville}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500">
+                  Ce client a {sites.length} site(s) enregistré(s)
+                </p>
+              </div>
+            )}
+
+            {/* Categorie */}
+            {categories.length > 0 && (
+              <div className="space-y-2">
+                <Label>Catégorie</Label>
+                <Select
+                  value={formData.categorie_id || ''}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, categorie_id: value === 'none' ? '' : value }))}
+                >
+                  <SelectTrigger data-testid="intervention-categorie">
+                    <SelectValue placeholder="Sélectionner une catégorie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <span className="text-slate-500">Aucune catégorie</span>
+                    </SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: cat.couleur }}
+                          />
+                          {cat.nom}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Title */}
             <div className="space-y-2">

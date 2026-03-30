@@ -134,6 +134,50 @@ class ClientResponse(ClientBase):
     portal_token: Optional[str] = None
     created_at: str
 
+# ==================== SITE (Multi-site support) ====================
+class SiteBase(BaseModel):
+    """Site/Location belonging to a client (e.g., warehouse, factory, office)"""
+    nom: str  # e.g., "Entrepôt Nord", "Siège social"
+    adresse: str
+    ville: str
+    code_postal: str
+    contact_nom: Optional[str] = None  # On-site contact person
+    contact_telephone: Optional[str] = None
+    contact_email: Optional[str] = None
+    horaires_acces: Optional[str] = None  # e.g., "Lun-Ven 8h-18h"
+    instructions_acces: Optional[str] = None  # e.g., "Code portail: 1234"
+    notes: Optional[str] = None
+    actif: bool = True
+
+class SiteCreate(SiteBase):
+    client_id: str
+
+class SiteUpdate(BaseModel):
+    nom: Optional[str] = None
+    adresse: Optional[str] = None
+    ville: Optional[str] = None
+    code_postal: Optional[str] = None
+    contact_nom: Optional[str] = None
+    contact_telephone: Optional[str] = None
+    contact_email: Optional[str] = None
+    horaires_acces: Optional[str] = None
+    instructions_acces: Optional[str] = None
+    notes: Optional[str] = None
+    actif: Optional[bool] = None
+
+class Site(SiteBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    client_id: str
+    entreprise_id: str
+    created_at: datetime = Field(default_factory=now_utc)
+
+class SiteResponse(SiteBase):
+    id: str
+    client_id: str
+    entreprise_id: str
+    created_at: str
+
 # ==================== CATEGORIE ====================
 class ChecklistItem(BaseModel):
     id: str = Field(default_factory=generate_id)
@@ -182,6 +226,7 @@ class InterventionBase(BaseModel):
     priorite: Literal["basse", "normale", "haute", "urgente"] = "normale"
     notes_internes: Optional[str] = None
     categorie_id: Optional[str] = None
+    site_id: Optional[str] = None  # Link to specific client site
 
 class InterventionCreate(InterventionBase):
     technicien_id: Optional[str] = None
@@ -202,6 +247,7 @@ class InterventionUpdate(BaseModel):
     heure_debut: Optional[datetime] = None
     heure_fin: Optional[datetime] = None
     categorie_id: Optional[str] = None
+    site_id: Optional[str] = None  # Link to specific client site
     checklist_responses: Optional[List[ChecklistResponse]] = None
     # Geolocation
     geo_debut: Optional[dict] = None  # {"latitude": float, "longitude": float, "accuracy": float}

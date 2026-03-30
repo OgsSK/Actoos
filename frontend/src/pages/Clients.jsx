@@ -11,7 +11,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '../components/ui/table';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription
 } from '../components/ui/dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -19,8 +19,10 @@ import {
 import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
 import {
   Plus, Search, Phone, Mail, MapPin, User, Building2, ChevronLeft, 
-  Edit, Trash2, FileText, Receipt, Calendar, Loader2, ExternalLink, Copy, Check
+  Edit, Trash2, FileText, Receipt, Calendar, Loader2, ExternalLink, Copy, Check,
+  MapPinned, Clock, Info, X
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Client List Component
 export const ClientsList = () => {
@@ -403,6 +405,166 @@ export const ClientForm = () => {
   );
 };
 
+// Site Form Component
+const SiteForm = ({ initialData, onSubmit, onCancel, loading }) => {
+  const [formData, setFormData] = useState({
+    nom: initialData?.nom || '',
+    adresse: initialData?.adresse || '',
+    ville: initialData?.ville || '',
+    code_postal: initialData?.code_postal || '',
+    contact_nom: initialData?.contact_nom || '',
+    contact_telephone: initialData?.contact_telephone || '',
+    contact_email: initialData?.contact_email || '',
+    horaires_acces: initialData?.horaires_acces || '',
+    instructions_acces: initialData?.instructions_acces || '',
+    notes: initialData?.notes || ''
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.nom || !formData.adresse || !formData.ville || !formData.code_postal) {
+      return;
+    }
+    onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 gap-4">
+        <div>
+          <Label htmlFor="site-nom">Nom du site *</Label>
+          <Input
+            id="site-nom"
+            value={formData.nom}
+            onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+            placeholder="Ex: Entrepôt Nord, Siège social..."
+            required
+            data-testid="site-nom-input"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="site-adresse">Adresse *</Label>
+          <Input
+            id="site-adresse"
+            value={formData.adresse}
+            onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
+            placeholder="123 rue de l'Industrie"
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="site-code_postal">Code postal *</Label>
+            <Input
+              id="site-code_postal"
+              value={formData.code_postal}
+              onChange={(e) => setFormData({ ...formData, code_postal: e.target.value })}
+              placeholder="75001"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="site-ville">Ville *</Label>
+            <Input
+              id="site-ville"
+              value={formData.ville}
+              onChange={(e) => setFormData({ ...formData, ville: e.target.value })}
+              placeholder="Paris"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      <hr className="my-4" />
+      <p className="text-sm text-slate-500 font-medium">Contact sur site (optionnel)</p>
+
+      <div className="grid grid-cols-1 gap-4">
+        <div>
+          <Label htmlFor="site-contact_nom">Nom du contact</Label>
+          <Input
+            id="site-contact_nom"
+            value={formData.contact_nom}
+            onChange={(e) => setFormData({ ...formData, contact_nom: e.target.value })}
+            placeholder="Jean Dupont"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="site-contact_telephone">Téléphone</Label>
+            <Input
+              id="site-contact_telephone"
+              value={formData.contact_telephone}
+              onChange={(e) => setFormData({ ...formData, contact_telephone: e.target.value })}
+              placeholder="06 12 34 56 78"
+            />
+          </div>
+          <div>
+            <Label htmlFor="site-contact_email">Email</Label>
+            <Input
+              id="site-contact_email"
+              type="email"
+              value={formData.contact_email}
+              onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+              placeholder="contact@site.fr"
+            />
+          </div>
+        </div>
+      </div>
+
+      <hr className="my-4" />
+      <p className="text-sm text-slate-500 font-medium">Accès (optionnel)</p>
+
+      <div className="grid grid-cols-1 gap-4">
+        <div>
+          <Label htmlFor="site-horaires_acces">Horaires d'accès</Label>
+          <Input
+            id="site-horaires_acces"
+            value={formData.horaires_acces}
+            onChange={(e) => setFormData({ ...formData, horaires_acces: e.target.value })}
+            placeholder="Lun-Ven 8h-18h"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="site-instructions_acces">Instructions d'accès</Label>
+          <Textarea
+            id="site-instructions_acces"
+            value={formData.instructions_acces}
+            onChange={(e) => setFormData({ ...formData, instructions_acces: e.target.value })}
+            placeholder="Code portail: 1234, Badge à récupérer à l'accueil..."
+            rows={2}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="site-notes">Notes internes</Label>
+          <Textarea
+            id="site-notes"
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            placeholder="Notes pour les techniciens..."
+            rows={2}
+          />
+        </div>
+      </div>
+
+      <DialogFooter className="pt-4">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+          Annuler
+        </Button>
+        <Button type="submit" disabled={loading} data-testid="site-submit-btn">
+          {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+          {initialData ? 'Mettre à jour' : 'Créer le site'}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+};
+
 // Client Detail Component
 export const ClientDetail = () => {
   const { id } = useParams();
@@ -412,8 +574,12 @@ export const ClientDetail = () => {
   const [interventions, setInterventions] = useState([]);
   const [devis, setDevis] = useState([]);
   const [factures, setFactures] = useState([]);
+  const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showSiteDialog, setShowSiteDialog] = useState(false);
+  const [editingSite, setEditingSite] = useState(null);
+  const [siteFormLoading, setSiteFormLoading] = useState(false);
   const [portalLink, setPortalLink] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
 
@@ -423,16 +589,18 @@ export const ClientDetail = () => {
 
   const fetchData = async () => {
     try {
-      const [clientRes, interventionsRes, devisRes, facturesRes] = await Promise.all([
+      const [clientRes, interventionsRes, devisRes, facturesRes, sitesRes] = await Promise.all([
         api.get(`/clients/${id}`),
         api.get('/interventions', { params: { client_id: id } }),
         api.get('/devis', { params: { client_id: id } }),
         api.get('/factures', { params: { client_id: id } }),
+        api.get('/sites', { params: { client_id: id } }),
       ]);
       setClient(clientRes.data);
       setInterventions(interventionsRes.data);
       setDevis(devisRes.data);
       setFactures(facturesRes.data);
+      setSites(sitesRes.data);
     } catch (error) {
       console.error('Error fetching client data:', error);
     } finally {
@@ -447,6 +615,51 @@ export const ClientDetail = () => {
     } catch (error) {
       console.error('Error deleting client:', error);
     }
+  };
+
+  // Site management
+  const handleSiteSubmit = async (siteData) => {
+    setSiteFormLoading(true);
+    try {
+      if (editingSite) {
+        await api.put(`/sites/${editingSite.id}`, siteData);
+        toast.success('Site mis à jour');
+      } else {
+        await api.post('/sites', { ...siteData, client_id: id });
+        toast.success('Site créé');
+      }
+      setShowSiteDialog(false);
+      setEditingSite(null);
+      // Refresh sites
+      const sitesRes = await api.get('/sites', { params: { client_id: id } });
+      setSites(sitesRes.data);
+    } catch (error) {
+      console.error('Error saving site:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+    } finally {
+      setSiteFormLoading(false);
+    }
+  };
+
+  const handleDeleteSite = async (siteId) => {
+    try {
+      await api.delete(`/sites/${siteId}`);
+      toast.success('Site supprimé');
+      setSites(sites.filter(s => s.id !== siteId));
+    } catch (error) {
+      console.error('Error deleting site:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+    }
+  };
+
+  const openEditSite = (site) => {
+    setEditingSite(site);
+    setShowSiteDialog(true);
+  };
+
+  const openNewSite = () => {
+    setEditingSite(null);
+    setShowSiteDialog(true);
   };
 
   const getPortalLink = async () => {
@@ -644,6 +857,118 @@ export const ClientDetail = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Sites Section */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MapPinned className="w-4 h-4 text-slate-500" />
+              Sites / Adresses d'intervention
+            </CardTitle>
+            <Button variant="outline" size="sm" onClick={openNewSite} data-testid="add-site-btn">
+              <Plus className="w-4 h-4 mr-1" />
+              Ajouter un site
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {sites.length > 0 ? (
+            <div className="space-y-3">
+              {sites.map((site) => (
+                <div
+                  key={site.id}
+                  className={`p-4 rounded-lg border ${site.actif ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-60'}`}
+                  data-testid={`site-${site.id}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-slate-900">{site.nom}</h4>
+                        {!site.actif && (
+                          <Badge variant="secondary" className="bg-slate-200 text-slate-600">Inactif</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 text-sm text-slate-600">
+                        <MapPin className="w-3 h-3" />
+                        {site.adresse}, {site.code_postal} {site.ville}
+                      </div>
+                      {site.contact_nom && (
+                        <div className="flex items-center gap-1 text-sm text-slate-500">
+                          <User className="w-3 h-3" />
+                          {site.contact_nom}
+                          {site.contact_telephone && (
+                            <span className="ml-2">
+                              <Phone className="w-3 h-3 inline mr-1" />
+                              {site.contact_telephone}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {site.horaires_acces && (
+                        <div className="flex items-center gap-1 text-xs text-slate-400">
+                          <Clock className="w-3 h-3" />
+                          {site.horaires_acces}
+                        </div>
+                      )}
+                      {site.instructions_acces && (
+                        <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 rounded px-2 py-1 mt-1">
+                          <Info className="w-3 h-3" />
+                          {site.instructions_acces}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => openEditSite(site)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      {isAdmin && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-500 hover:text-red-700"
+                          onClick={() => handleDeleteSite(site.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-500">
+              <MapPinned className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+              <p className="text-sm">Aucun site enregistré</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Ajoutez des sites si ce client a plusieurs adresses d'intervention
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Site Form Dialog */}
+      <Dialog open={showSiteDialog} onOpenChange={(open) => { setShowSiteDialog(open); if (!open) setEditingSite(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPinned className="w-5 h-5" />
+              {editingSite ? 'Modifier le site' : 'Nouveau site'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingSite ? "Modifiez les informations du site" : "Ajoutez une nouvelle adresse d'intervention pour ce client"}
+            </DialogDescription>
+          </DialogHeader>
+          <SiteForm
+            initialData={editingSite}
+            onSubmit={handleSiteSubmit}
+            onCancel={() => { setShowSiteDialog(false); setEditingSite(null); }}
+            loading={siteFormLoading}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Recent Documents */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
