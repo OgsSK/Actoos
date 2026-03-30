@@ -20,7 +20,7 @@ import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
 import {
   Plus, Search, Phone, Mail, MapPin, User, Building2, ChevronLeft, 
   Edit, Trash2, FileText, Receipt, Calendar, Loader2, ExternalLink, Copy, Check,
-  MapPinned, Clock, Info, X
+  MapPinned, Clock, Info, X, Crown
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -569,7 +569,7 @@ const SiteForm = ({ initialData, onSubmit, onCancel, loading }) => {
 export const ClientDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { api, isAdmin } = useAuth();
+  const { api, isAdmin, canUseMultiSites, currentPlan } = useAuth();
   const [client, setClient] = useState(null);
   const [interventions, setInterventions] = useState([]);
   const [devis, setDevis] = useState([]);
@@ -865,15 +865,38 @@ export const ClientDetail = () => {
             <CardTitle className="text-base flex items-center gap-2">
               <MapPinned className="w-4 h-4 text-slate-500" />
               Sites / Adresses d'intervention
+              {!canUseMultiSites && (
+                <Badge variant="outline" className="text-xs ml-2 bg-purple-50 text-purple-700 border-purple-200">
+                  Enterprise
+                </Badge>
+              )}
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={openNewSite} data-testid="add-site-btn">
-              <Plus className="w-4 h-4 mr-1" />
-              Ajouter un site
-            </Button>
+            {canUseMultiSites ? (
+              <Button variant="outline" size="sm" onClick={openNewSite} data-testid="add-site-btn">
+                <Plus className="w-4 h-4 mr-1" />
+                Ajouter un site
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/dashboard/settings?tab=subscription')}
+                className="text-purple-600 border-purple-200 hover:bg-purple-50"
+              >
+                <Crown className="w-4 h-4 mr-1" />
+                Passer à Enterprise
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
-          {sites.length > 0 ? (
+          {!canUseMultiSites ? (
+            <div className="text-center py-6 text-slate-500">
+              <MapPinned className="w-10 h-10 mx-auto mb-3 text-slate-300" />
+              <p className="font-medium text-slate-700">Fonctionnalité Multi-sites</p>
+              <p className="text-sm mt-1">Gérez plusieurs adresses par client avec le plan Enterprise</p>
+            </div>
+          ) : sites.length > 0 ? (
             <div className="space-y-3">
               {sites.map((site) => (
                 <div
@@ -937,7 +960,7 @@ export const ClientDetail = () => {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : canUseMultiSites ? (
             <div className="text-center py-8 text-slate-500">
               <MapPinned className="w-8 h-8 mx-auto mb-2 text-slate-300" />
               <p className="text-sm">Aucun site enregistré</p>
@@ -945,7 +968,7 @@ export const ClientDetail = () => {
                 Ajoutez des sites si ce client a plusieurs adresses d'intervention
               </p>
             </div>
-          )}
+          ) : null}
         </CardContent>
       </Card>
 

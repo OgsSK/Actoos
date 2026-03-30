@@ -153,6 +153,29 @@ export const AuthProvider = ({ children }) => {
   
   const currencySymbol = useMemo(() => getCurrencySymbol(currency), [currency]);
 
+  // Plan feature helpers
+  const planLimits = useMemo(() => entreprise?.plan_limits || {}, [entreprise]);
+  const currentPlan = useMemo(() => entreprise?.plan || 'startup', [entreprise]);
+  
+  const hasFeature = useCallback((featureName) => {
+    return planLimits[featureName] === true;
+  }, [planLimits]);
+  
+  const getLimit = useCallback((limitName) => {
+    return planLimits[limitName] ?? 0;
+  }, [planLimits]);
+  
+  // Convenience feature checks
+  const canUseMultiSites = useMemo(() => hasFeature('multi_sites'), [hasFeature]);
+  const canUseOfflineMode = useMemo(() => hasFeature('offline_mode'), [hasFeature]);
+  const canUseGeolocation = useMemo(() => hasFeature('geolocation'), [hasFeature]);
+  const canUseAdvancedAnalytics = useMemo(() => hasFeature('advanced_analytics'), [hasFeature]);
+  const canUseAutoPdfReports = useMemo(() => hasFeature('auto_pdf_reports'), [hasFeature]);
+  const canUseAutoDevisToFacture = useMemo(() => hasFeature('auto_devis_to_facture'), [hasFeature]);
+  const canUseTeamValidation = useMemo(() => hasFeature('team_validation'), [hasFeature]);
+  const canUseWhiteLabel = useMemo(() => hasFeature('white_label'), [hasFeature]);
+  const canUseApiAccess = useMemo(() => hasFeature('api_access'), [hasFeature]);
+
   const value = {
     user,
     entreprise,
@@ -171,6 +194,20 @@ export const AuthProvider = ({ children }) => {
     currencySymbol,
     formatAmount,
     formatAmountCompact,
+    // Plan & Feature helpers
+    currentPlan,
+    planLimits,
+    hasFeature,
+    getLimit,
+    canUseMultiSites,
+    canUseOfflineMode,
+    canUseGeolocation,
+    canUseAdvancedAnalytics,
+    canUseAutoPdfReports,
+    canUseAutoDevisToFacture,
+    canUseTeamValidation,
+    canUseWhiteLabel,
+    canUseApiAccess,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

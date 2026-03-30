@@ -20,8 +20,8 @@ router = APIRouter(prefix="/export", tags=["Accounting Export"])
 
 
 async def verify_export_access(current_user: dict):
-    """Verify user has accounting_export feature (Enterprise only)"""
-    has_feature = await check_feature(db, current_user["entreprise_id"], "accounting_export")
+    """Verify user has api_access feature (Enterprise only)"""
+    has_feature = await check_feature(db, current_user["entreprise_id"], "api_access")
     if not has_feature:
         raise HTTPException(
             status_code=403,

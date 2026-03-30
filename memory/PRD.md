@@ -896,3 +896,68 @@ GOOGLE_REDIRECT_URI=https://domain.com/api/calendar/callback
 - Frontend: 100% (quiz + 4 étapes du wizard testées)
 - Iteration: `/app/test_reports/iteration_19.json`
 
+---
+
+### Phase 38 - Cohérence Flux Abonnement ↔ Catégories ↔ Skills ✅ (Date: 2026-03-31)
+
+#### Architecture des Flux Vérifiée
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          SIGNUP (/signup)                                │
+│  Plan (Startup/Pro/Enterprise) → Catégories Métier (1/4/∞)              │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CRÉATION ENTREPRISE (Backend)                         │
+│  • plan_limits stockées dans MongoDB                                     │
+│  • Catégories créées avec checklists dynamiques                          │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+            ┌────────────────────────┴────────────────────────┐
+            ▼                                                  ▼
+┌────────────────────────┐                    ┌────────────────────────────┐
+│   GATING BACKEND       │                    │    GATING FRONTEND         │
+│  ✓ check_multi_sites   │                    │  ✓ canUseMultiSites        │
+│  ✓ check_feature       │                    │  ✓ canUseAutoDevisFacture  │
+│  ✓ check_*_limit       │                    │  ✓ Badge "Enterprise"      │
+│  ✓ HTTPException 403   │                    │  ✓ Bouton "Passer à ..."   │
+└────────────────────────┘                    └────────────────────────────┘
+            │                                                  │
+            ▼                                                  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       SKILLS TECHNICIENS                                 │
+│  Admin assigne skills parmi les catégories de l'entreprise               │
+│  Technicien ne voit que les interventions matching ses skills            │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Fonctionnalités Gating Vérifiées
+
+| Feature | Startup | Pro | Enterprise | Backend Check | Frontend Display |
+|---------|---------|-----|------------|---------------|------------------|
+| Multi-sites | ❌ | ❌ | ✅ | `check_multi_sites()` | Badge + CTA upgrade |
+| Devis→Facture | ❌ | ✅ | ✅ | `check_feature('auto_devis_to_facture')` | Toast erreur |
+| Mode Offline | ❌ | ✅ | ✅ | `check_offline_mode()` | PWA conditionnel |
+| Géolocalisation | ❌ | ✅ | ✅ | `check_geolocation()` | Masqué si non dispo |
+| Export Comptable | ❌ | ❌ | ✅ | `check_feature('api_access')` | HTTP 403 |
+| Team Validation | ❌ | ✅ | ✅ | `check_feature('team_validation')` | Workflow conditionnel |
+
+#### Helpers Ajoutés dans AuthContext
+```javascript
+// Plan & Feature helpers
+currentPlan, planLimits, hasFeature(name), getLimit(name),
+canUseMultiSites, canUseOfflineMode, canUseGeolocation,
+canUseAdvancedAnalytics, canUseAutoPdfReports, canUseAutoDevisToFacture,
+canUseTeamValidation, canUseWhiteLabel, canUseApiAccess
+```
+
+#### Checklists Dynamiques par Catégorie
+Chaque catégorie métier a maintenant un template de checklist spécifique :
+- **BTP** : Zone sécurisée, matériaux vérifiés, photos avant/après
+- **Plomberie** : Coupure eau, test étanchéité, pression (bar)
+- **Électricité** : Coupure courant, tableau vérifié, tension (V)
+- **Nettoyage** : Sols, vitres, sanitaires, poubelles
+- (+ 6 autres catégories)
+
