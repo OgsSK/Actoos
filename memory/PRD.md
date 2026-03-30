@@ -94,6 +94,31 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - `/app/backend/image_utils.py` - Fonctions EXIF stripping et compression
 - `/app/backend/communication_log.py` - Service de logging des communications
 
+### Phase 16 - Stripe Onboarding SaaS ✅ (Date: 2026-03-30)
+
+#### Plans d'abonnement
+- [x] **Starter** (29€/mois) - 3 techniciens, 100 interventions/mois, 1 catégorie, support email
+- [x] **Pro** (79€/mois) - 10 techniciens, illimité, toutes catégories, 100 SMS, support prioritaire
+- [x] **Enterprise** (199€/mois) - Illimité, white-labeling, support 24/7, API accès
+
+#### Flux d'inscription
+- [x] **Page Pricing** (`/pricing`) - Affichage des 3 plans avec features et prix
+- [x] **Page Signup** (`/signup?plan=xxx`) - Formulaire nom entreprise + email admin
+- [x] **Stripe Checkout** - Paiement sécurisé via hosted checkout Stripe
+- [x] **Création automatique** - Compte entreprise + admin créés après paiement réussi
+- [x] **Email de bienvenue** - Credentials envoyés par email
+
+#### Endpoints ajoutés
+- `GET /api/plans` - Liste des plans d'abonnement (public)
+- `POST /api/checkout/session` - Créer une session Stripe Checkout
+- `GET /api/checkout/status/{session_id}` - Statut du paiement
+- `POST /api/webhook/stripe` - Webhook Stripe pour événements paiement
+- `GET /api/subscription/current` - Abonnement actuel de l'entreprise
+
+#### Fichiers créés
+- `/app/backend/subscription_service.py` - Définition des plans et limites
+- `/app/frontend/src/pages/Pricing.jsx` - Pages Pricing, Signup, Success
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -113,16 +138,14 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 
 ## Prioritized Backlog
 
-### P0 (Critique) - Complété ✅
-- [x] **Logique assignation intelligente** - Intervention sans technicien → visible par tous → premier à accepter = assigné
-
-### P1 (Important) - Complété ✅
-- [x] **Catégories/Modules** : Support multi-secteurs (BTP, Nettoyage, Maintenance) avec checklists dynamiques
-- [x] **EXIF stripping** : Suppression métadonnées GPS des photos avant upload
-- [x] **Historique communications** : Emails et SMS envoyés par client
+### P0-P1 - Complété ✅
+- [x] **Logique assignation intelligente** 
+- [x] **Catégories/Modules avec checklists**
+- [x] **EXIF stripping photos**
+- [x] **Historique communications**
+- [x] **Stripe + Onboarding SaaS**
 
 ### P2 (Nice to have) - En cours
-- [ ] **Stripe + Onboarding SaaS** : Page d'inscription publique avec plans d'abonnement
 - [ ] **White-labeling complet** : Upload logo + couleur primaire + injection CSS dynamique
 - [ ] QR Code paiement sur facture
 
@@ -132,6 +155,6 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 - [ ] React Native (si besoin natif)
 
 ## Next Tasks
-1. Stripe + Onboarding SaaS (plans d'abonnement)
-2. White-labeling complet (logo + couleurs dynamiques)
-3. QR Code paiement sur facture
+1. White-labeling complet (logo + couleurs dynamiques dans UI et PDF)
+2. QR Code paiement sur facture
+3. Amélioration du dashboard avec les nouvelles métriques
