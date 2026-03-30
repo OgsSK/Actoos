@@ -19,7 +19,8 @@ import {
 import { 
   Building2, FileText, Check, Loader2, Bell, MessageSquare, 
   CheckCircle, XCircle, ExternalLink, Info, Palette, Upload, 
-  Tags, Plus, Pencil, Trash2, Wrench, Globe, Coins, CreditCard
+  Tags, Plus, Pencil, Trash2, Wrench, Globe, Coins, CreditCard,
+  Calendar, Link2, Unlink
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PlanUsageWidget from '../components/PlanUsageWidget';
@@ -578,6 +579,10 @@ export const SettingsPage = () => {
           <TabsTrigger value="regional" className="flex items-center gap-2">
             <Globe className="w-4 h-4" />
             Régional
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="flex items-center gap-2">
+            <Link2 className="w-4 h-4" />
+            Intégrations
           </TabsTrigger>
         </TabsList>
 
@@ -1260,7 +1265,257 @@ export const SettingsPage = () => {
             </Alert>
           </div>
         </TabsContent>
+
+        {/* Integrations Tab */}
+        <TabsContent value="integrations">
+          <CalendarIntegration api={api} />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+};
+
+// Calendar Integration Component
+const CalendarIntegration = ({ api }) => {
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    checkStatus();
+    
+    // Check URL for calendar connection callback
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('calendar') === 'connected') {
+      toast.success('Google Calendar connecté avec succès !');
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+      checkStatus();
+    }
+  }, []);
+
+  const checkStatus = async () => {
+    try {
+      const response = await api.get('/calendar/status');
+      setStatus(response.data);
+    } catch (error) {
+      console.error('Error checking calendar status:', error);
+      setStatus({ configured: false, connected: false });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConnect = async () => {
+    setConnecting(true);
+    try {
+      const response = await api.get('/calendar/connect');
+      // Redirect to Google OAuth
+      window.location.href = response.data.authorization_url;
+    } catch (error) {
+      console.error('Error connecting calendar:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la connexion');
+      setConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setDisconnecting(true);
+    try {
+      await api.post('/calendar/disconnect');
+      toast.success('Google Calendar déconnecté');
+      setStatus({ ...status, connected: false, google_email: null });
+    } catch (error) {
+      console.error('Error disconnecting calendar:', error);
+      toast.error('Erreur lors de la déconnexion');
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  const handleSyncAll = async () => {
+    setSyncing(true);
+    try {
+      const response = await api.post('/calendar/sync-all');
+      toast.success(`${response.data.synced} intervention(s) synchronisée(s)`);
+      checkStatus();
+    } catch (error) {
+      console.error('Error syncing calendar:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la synchronisation');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-slate-900">Intégrations externes</h3>
+        <p className="text-sm text-slate-500 mt-1">
+          Connectez vos services externes pour synchroniser automatiquement vos données
+        </p>
+      </div>
+
+      {/* Google Calendar */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Google Calendar</CardTitle>
+                <CardDescription>
+                  Synchronisez vos interventions avec Google Calendar
+                </CardDescription>
+              </div>
+            </div>
+            {status?.connected && (
+              <Badge className="bg-green-100 text-green-700">Connecté</Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!status?.configured ? (
+            <Alert className="border-amber-200 bg-amber-50">
+              <Info className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800">
+                <strong>Configuration requise</strong>
+                <p className="mt-1 text-sm">
+                  Google Calendar n'est pas configuré. L'administrateur doit ajouter les credentials OAuth 
+                  (GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET) dans les variables d'environnement.
+                </p>
+                <a 
+                  href="https://console.cloud.google.com/apis/credentials" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-2 text-amber-700 hover:text-amber-900 underline"
+                >
+                  Google Cloud Console <ExternalLink className="w-3 h-3" />
+                </a>
+              </AlertDescription>
+            </Alert>
+          ) : status?.connected ? (
+            <>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <div>
+                  <p className="font-medium text-green-900">Connecté à Google Calendar</p>
+                  {status.google_email && (
+                    <p className="text-sm text-green-700">{status.google_email}</p>
+                  )}
+                  {status.last_sync && (
+                    <p className="text-xs text-green-600 mt-1">
+                      Dernière sync: {new Date(status.last_sync).toLocaleString('fr-FR')}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleSyncAll}
+                  disabled={syncing}
+                  className="flex-1"
+                >
+                  {syncing ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Calendar className="w-4 h-4 mr-2" />
+                  )}
+                  Synchroniser toutes les interventions
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="text-red-600 hover:text-red-700">
+                      <Unlink className="w-4 h-4 mr-2" />
+                      Déconnecter
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Déconnecter Google Calendar ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Les événements déjà synchronisés resteront dans votre calendrier, 
+                        mais les nouvelles interventions ne seront plus ajoutées automatiquement.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDisconnect}
+                        disabled={disconnecting}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        {disconnecting ? 'Déconnexion...' : 'Déconnecter'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+
+              <Alert className="bg-blue-50 border-blue-200">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800 text-sm">
+                  <strong>Synchronisation automatique</strong> : Les interventions planifiées seront 
+                  automatiquement ajoutées à votre calendrier Google avec un rappel 30 minutes avant.
+                </AlertDescription>
+              </Alert>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-slate-600">
+                Connectez votre compte Google pour synchroniser automatiquement vos interventions 
+                avec Google Calendar. Vous recevrez des rappels et pourrez voir vos rendez-vous 
+                directement dans votre calendrier.
+              </p>
+
+              <Button
+                onClick={handleConnect}
+                disabled={connecting}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {connecting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Link2 className="w-4 h-4 mr-2" />
+                )}
+                Connecter Google Calendar
+              </Button>
+
+              <p className="text-xs text-slate-500 text-center">
+                Vous serez redirigé vers Google pour autoriser l'accès à votre calendrier
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Future integrations placeholder */}
+      <Card className="border-slate-200 border-dashed opacity-60">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-slate-400" />
+            </div>
+            <div>
+              <CardTitle className="text-base text-slate-500">Microsoft Outlook</CardTitle>
+              <CardDescription>Bientôt disponible</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
     </div>
   );
 };

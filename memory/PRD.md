@@ -591,11 +591,11 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - PDF avec signature: +1161 bytes vs PDF basic
 
 ## Next Tasks
-1. **P1**: Intégration Google Calendar/Outlook (requiert credentials OAuth)
+1. **P1**: Fournir les credentials OAuth Google pour activer l'intégration Calendar (voir /app/docs/GOOGLE_CALENDAR_SETUP.md)
 
 ### Backlog V2
 - [ ] React Native (si besoin app native)
-- [ ] Intégration calendrier Google/Outlook
+- [ ] Microsoft Outlook Calendar integration
 
 ---
 
@@ -663,4 +663,40 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - `/app/frontend/src/lib/offlineDb.js` - Table syncHistory + méthodes getSyncHistory, getSyncStats, logSyncEvent
 - `/app/frontend/src/contexts/OfflineContext.jsx` - Logging des événements de sync + exposition getSyncHistory/Stats
 - `/app/frontend/src/pages/TechnicianApp.jsx` - Intégration SyncStatusPanel dans header
+
+---
+
+### Phase 33 - Intégration Google Calendar (Code prêt, credentials requis) ✅ (Date: 2026-03-31)
+
+#### Fonctionnalités
+- [x] **OAuth Flow** - Flux complet d'authentification Google
+- [x] **Token Management** - Stockage et refresh automatique des tokens
+- [x] **Sync Interventions** - Création/mise à jour d'événements Calendar
+- [x] **UI Settings** - Onglet Intégrations avec connexion/déconnexion
+- [x] **Documentation** - Guide complet de configuration
+
+#### Endpoints API
+- `GET /api/calendar/status` - Statut de connexion
+- `GET /api/calendar/connect` - Démarrer OAuth
+- `GET /api/calendar/callback` - Callback OAuth
+- `POST /api/calendar/disconnect` - Déconnexion
+- `GET /api/calendar/events` - Liste événements
+- `POST /api/calendar/sync-intervention/{id}` - Sync intervention
+- `DELETE /api/calendar/sync-intervention/{id}` - Supprimer du calendar
+- `POST /api/calendar/sync-all` - Sync toutes les interventions
+
+#### Fichiers créés
+- `/app/backend/routers/calendar.py` - Router complet (400+ lignes)
+- `/app/frontend/src/pages/Settings.jsx` - Composant CalendarIntegration
+- `/app/docs/GOOGLE_CALENDAR_SETUP.md` - Guide de configuration
+
+#### Variables d'environnement requises
+```env
+GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=xxx
+GOOGLE_REDIRECT_URI=https://domain.com/api/calendar/callback
+```
+
+#### Statut
+⚠️ **Code prêt** - En attente des credentials OAuth Google de l'utilisateur
 

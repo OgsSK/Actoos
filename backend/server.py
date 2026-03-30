@@ -40,7 +40,8 @@ from routers import (
     rapports as rapports_router,
     audit as audit_router,
     public_api as public_api_router,
-    sites as sites_router
+    sites as sites_router,
+    calendar as calendar_router
 )
 
 ROOT_DIR = Path(__file__).parent
@@ -83,6 +84,7 @@ api_router.include_router(rapports_router.router)
 api_router.include_router(audit_router.router)
 api_router.include_router(public_api_router.router)
 api_router.include_router(sites_router.router)
+api_router.include_router(calendar_router.router)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
