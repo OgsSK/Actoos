@@ -10,18 +10,18 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '../components/ui/table';
-import { formatCurrency } from '../lib/utils';
 import {
-  TrendingUp, TrendingDown, Euro, Users, FileText, Wrench,
+  TrendingUp, TrendingDown, Users, FileText, Wrench,
   Loader2, BarChart3, PieChart, ArrowUp, ArrowDown, Minus,
-  Calendar, Target, Clock, CheckCircle
+  Calendar, Target, Clock, CheckCircle, Coins, Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Analytics = () => {
-  const { api } = useAuth();
+  const { api, formatAmount, formatAmountCompact, currencySymbol } = useAuth();
   const [period, setPeriod] = useState('month');
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [data, setData] = useState(null);
   const [trends, setTrends] = useState([]);
   const [technicians, setTechnicians] = useState([]);
@@ -83,6 +83,58 @@ const Analytics = () => {
     );
   };
 
+  const handleExportCSV = async () => {
+    setExporting(true);
+    try {
+      const response = await api.get(`/analytics/export/csv?period=${period}`, {
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `analytics_${period}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Export CSV téléchargé');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Erreur lors de l\'export');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportJSON = async () => {
+    setExporting(true);
+    try {
+      const response = await api.get(`/analytics/export/json?period=${period}`);
+      
+      // Create download link
+      const dataStr = JSON.stringify(response.data, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `analytics_${period}_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Export JSON téléchargé');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Erreur lors de l\'export');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -101,17 +153,43 @@ const Analytics = () => {
           <h1 className="text-2xl font-bold text-slate-900">Rapports & Analytics</h1>
           <p className="text-slate-500">Vue d'ensemble de votre activité</p>
         </div>
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">Cette semaine</SelectItem>
-            <SelectItem value="month">Ce mois</SelectItem>
-            <SelectItem value="quarter">Ce trimestre</SelectItem>
-            <SelectItem value="year">Cette année</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-3">
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Cette semaine</SelectItem>
+              <SelectItem value="month">Ce mois</SelectItem>
+              <SelectItem value="quarter">Ce trimestre</SelectItem>
+              <SelectItem value="year">Cette année</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {/* Export Dropdown */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              disabled={exporting || loading}
+              data-testid="export-csv-btn"
+            >
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportJSON}
+              disabled={exporting || loading}
+              data-testid="export-json-btn"
+            >
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+              JSON
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -123,12 +201,12 @@ const Analytics = () => {
               <div>
                 <p className="text-sm text-slate-500">Chiffre d'affaires</p>
                 <p className="text-2xl font-bold text-slate-900">
-                  {formatCurrency(revenue?.current_revenue || 0)}
+                  {formatAmount(revenue?.current_revenue || 0)}
                 </p>
                 <GrowthIndicator value={revenue?.growth_percent || 0} />
               </div>
               <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                <Euro className="w-6 h-6 text-emerald-600" />
+                <Coins className="w-6 h-6 text-emerald-600" />
               </div>
             </div>
           </CardContent>
@@ -141,7 +219,7 @@ const Analytics = () => {
               <div>
                 <p className="text-sm text-slate-500">Factures en attente</p>
                 <p className="text-2xl font-bold text-slate-900">
-                  {formatCurrency(revenue?.pending_amount || 0)}
+                  {formatAmount(revenue?.pending_amount || 0)}
                 </p>
                 <p className="text-sm text-slate-400">
                   {revenue?.pending_count || 0} factures
@@ -214,7 +292,7 @@ const Analytics = () => {
                   <div 
                     key={index}
                     className="flex-1 flex flex-col items-center gap-1"
-                    title={`${day.label}: ${formatCurrency(day.value)}`}
+                    title={`${day.label}: ${formatAmount(day.value)}`}
                   >
                     <div 
                       className="w-full bg-emerald-500 rounded-t hover:bg-emerald-600 transition-colors cursor-pointer"
@@ -352,7 +430,7 @@ const Analytics = () => {
                       <p className="text-xs text-slate-500">{client.invoice_count} facture(s)</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-emerald-600">{formatCurrency(client.total_revenue)}</p>
+                      <p className="font-bold text-emerald-600">{formatAmount(client.total_revenue)}</p>
                     </div>
                   </div>
                 ))}
@@ -380,7 +458,7 @@ const Analytics = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-slate-500">Montant total</span>
-                <span className="font-medium">{formatCurrency(devis?.total_amount || 0)}</span>
+                <span className="font-medium">{formatAmount(devis?.total_amount || 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-slate-500">Signés</span>
@@ -430,7 +508,7 @@ const Analytics = () => {
         <Card className="border-slate-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Euro className="w-4 h-4" />
+              <Coins className="w-4 h-4" />
               Factures
             </CardTitle>
           </CardHeader>
@@ -450,7 +528,7 @@ const Analytics = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-slate-500">Montant moyen</span>
-                <span className="font-medium">{formatCurrency(revenue?.average_invoice || 0)}</span>
+                <span className="font-medium">{formatAmount(revenue?.average_invoice || 0)}</span>
               </div>
             </div>
           </CardContent>

@@ -43,10 +43,25 @@ export const formatRelative = (dateString) => {
   }
 };
 
-export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('fr-FR', {
+export const formatCurrency = (amount, currency = 'EUR') => {
+  // Map currency codes to locale and currency for Intl
+  const currencyLocales = {
+    EUR: { locale: 'fr-FR', currency: 'EUR' },
+    USD: { locale: 'en-US', currency: 'USD' },
+    GBP: { locale: 'en-GB', currency: 'GBP' },
+    CHF: { locale: 'de-CH', currency: 'CHF' },
+    CAD: { locale: 'en-CA', currency: 'CAD' },
+    XOF: { locale: 'fr-FR', currency: 'XOF' },
+    MAD: { locale: 'fr-MA', currency: 'MAD' },
+  };
+  
+  const config = currencyLocales[currency] || currencyLocales.EUR;
+  
+  return new Intl.NumberFormat(config.locale, {
     style: 'currency',
-    currency: 'EUR',
+    currency: config.currency,
+    minimumFractionDigits: currency === 'XOF' ? 0 : 2,
+    maximumFractionDigits: currency === 'XOF' ? 0 : 2,
   }).format(amount || 0);
 };
 

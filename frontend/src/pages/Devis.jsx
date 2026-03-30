@@ -20,7 +20,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
-import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
+import { formatDate, getStatusLabel } from '../lib/utils';
 import {
   Plus, Search, ChevronLeft, Edit, FileText, Send, PenTool, Download,
   Trash2, Receipt, Loader2, X, Check, Mail, ExternalLink
@@ -216,7 +216,7 @@ export const DevisList = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [deleting, setDeleting] = useState(false);
-  const { api, isAdmin } = useAuth();
+  const { api, isAdmin, formatAmount } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -406,7 +406,7 @@ export const DevisList = () => {
                     </TableCell>
                     <TableCell>{devis.client_nom}</TableCell>
                     <TableCell>{formatDate(devis.created_at)}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatCurrency(devis.total_ttc)}</TableCell>
+                    <TableCell className="text-right font-semibold">{formatAmount(devis.total_ttc)}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={`status-${devis.statut}`}>
                         {getStatusLabel(devis.statut)}
@@ -645,15 +645,15 @@ export const DevisForm = () => {
                 <div className="w-64 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Total HT</span>
-                    <span className="font-medium">{formatCurrency(parseFloat(totals.total_ht))}</span>
+                    <span className="font-medium">{formatAmount(parseFloat(totals.total_ht))}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">TVA</span>
-                    <span className="font-medium">{formatCurrency(parseFloat(totals.total_tva))}</span>
+                    <span className="font-medium">{formatAmount(parseFloat(totals.total_tva))}</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t border-slate-200 pt-2">
                     <span>Total TTC</span>
-                    <span>{formatCurrency(parseFloat(totals.total_ttc))}</span>
+                    <span>{formatAmount(parseFloat(totals.total_ttc))}</span>
                   </div>
                 </div>
               </div>
@@ -963,10 +963,10 @@ export const DevisDetail = () => {
                     <TableRow key={idx}>
                       <TableCell>{ligne.description}</TableCell>
                       <TableCell className="text-right">{ligne.quantite}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(ligne.prix_unitaire)}</TableCell>
+                      <TableCell className="text-right">{formatAmount(ligne.prix_unitaire)}</TableCell>
                       <TableCell className="text-right">{ligne.tva}%</TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatCurrency(ligne.quantite * ligne.prix_unitaire)}
+                        {formatAmount(ligne.quantite * ligne.prix_unitaire)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -979,15 +979,15 @@ export const DevisDetail = () => {
                   <div className="w-64 space-y-2">
                     <div className="flex justify-between">
                       <span className="text-slate-500">Total HT</span>
-                      <span className="font-medium">{formatCurrency(devis.total_ht)}</span>
+                      <span className="font-medium">{formatAmount(devis.total_ht)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">TVA</span>
-                      <span className="font-medium">{formatCurrency(devis.total_tva)}</span>
+                      <span className="font-medium">{formatAmount(devis.total_tva)}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold border-t border-slate-200 pt-2">
                       <span>Total TTC</span>
-                      <span>{formatCurrency(devis.total_ttc)}</span>
+                      <span>{formatAmount(devis.total_ttc)}</span>
                     </div>
                   </div>
                 </div>

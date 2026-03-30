@@ -19,7 +19,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
-import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
+import { formatDate, getStatusLabel } from '../lib/utils';
 import {
   Plus, ChevronLeft, Edit, Receipt, Download, CreditCard, Loader2, Mail, Bell, Trash2, FileText
 } from 'lucide-react';
@@ -32,7 +32,7 @@ export const FacturesList = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [deleting, setDeleting] = useState(false);
-  const { api, isAdmin } = useAuth();
+  const { api, isAdmin, formatAmount } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -217,7 +217,7 @@ export const FacturesList = () => {
                     <TableCell>{facture.client_nom}</TableCell>
                     <TableCell>{formatDate(facture.created_at)}</TableCell>
                     <TableCell>{formatDate(facture.date_echeance)}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatCurrency(facture.total_ttc)}</TableCell>
+                    <TableCell className="text-right font-semibold">{formatAmount(facture.total_ttc)}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={`status-${facture.statut}`}>
                         {getStatusLabel(facture.statut)}
@@ -469,7 +469,7 @@ export const FactureDetail = () => {
                 step="0.01"
                 data-testid="payment-amount"
               />
-              <p className="text-xs text-slate-500">Reste dû: {formatCurrency(resteDu)}</p>
+              <p className="text-xs text-slate-500">Reste dû: {formatAmount(resteDu)}</p>
             </div>
             <div className="space-y-2">
               <Label>Mode de paiement</Label>
@@ -544,10 +544,10 @@ export const FactureDetail = () => {
                     <TableRow key={idx}>
                       <TableCell>{ligne.description}</TableCell>
                       <TableCell className="text-right">{ligne.quantite}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(ligne.prix_unitaire)}</TableCell>
+                      <TableCell className="text-right">{formatAmount(ligne.prix_unitaire)}</TableCell>
                       <TableCell className="text-right">{ligne.tva}%</TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatCurrency(ligne.quantite * ligne.prix_unitaire)}
+                        {formatAmount(ligne.quantite * ligne.prix_unitaire)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -560,25 +560,25 @@ export const FactureDetail = () => {
                   <div className="w-64 space-y-2">
                     <div className="flex justify-between">
                       <span className="text-slate-500">Total HT</span>
-                      <span className="font-medium">{formatCurrency(facture.total_ht)}</span>
+                      <span className="font-medium">{formatAmount(facture.total_ht)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">TVA</span>
-                      <span className="font-medium">{formatCurrency(facture.total_tva)}</span>
+                      <span className="font-medium">{formatAmount(facture.total_tva)}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold border-t border-slate-200 pt-2">
                       <span>Total TTC</span>
-                      <span>{formatCurrency(facture.total_ttc)}</span>
+                      <span>{formatAmount(facture.total_ttc)}</span>
                     </div>
                     {facture.montant_paye > 0 && (
                       <>
                         <div className="flex justify-between text-emerald-600">
                           <span>Payé</span>
-                          <span>- {formatCurrency(facture.montant_paye)}</span>
+                          <span>- {formatAmount(facture.montant_paye)}</span>
                         </div>
                         <div className="flex justify-between font-bold">
                           <span>Reste dû</span>
-                          <span>{formatCurrency(resteDu)}</span>
+                          <span>{formatAmount(resteDu)}</span>
                         </div>
                       </>
                     )}

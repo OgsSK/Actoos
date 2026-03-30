@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
+import { formatCurrency, formatCurrencyCompact, getCurrencySymbol } from '../lib/currency';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -139,6 +140,19 @@ export const AuthProvider = ({ children }) => {
     setEntreprise(null);
   };
 
+  // Currency formatting helpers based on entreprise settings
+  const currency = useMemo(() => entreprise?.devise || 'EUR', [entreprise]);
+  
+  const formatAmount = useCallback((amount) => {
+    return formatCurrency(amount, currency);
+  }, [currency]);
+  
+  const formatAmountCompact = useCallback((amount) => {
+    return formatCurrencyCompact(amount, currency);
+  }, [currency]);
+  
+  const currencySymbol = useMemo(() => getCurrencySymbol(currency), [currency]);
+
   const value = {
     user,
     entreprise,
@@ -152,6 +166,11 @@ export const AuthProvider = ({ children }) => {
     logout,
     api,
     refreshUser: fetchUser,
+    // Currency helpers
+    currency,
+    currencySymbol,
+    formatAmount,
+    formatAmountCompact,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

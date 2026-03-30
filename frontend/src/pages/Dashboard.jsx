@@ -11,7 +11,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger
 } from '../components/ui/dropdown-menu';
-import { formatCurrency, formatDate, getStatusLabel, formatRelative } from '../lib/utils';
+import { formatDate, getStatusLabel, formatRelative } from '../lib/utils';
 import {
   LayoutDashboard, Users, Calendar, FileText, Receipt, Settings, LogOut, Menu, X,
   Search, Bell, Plus, TrendingUp, AlertTriangle, Clock, CheckCircle, ChevronRight,
@@ -305,7 +305,7 @@ const AlertCard = ({ alerts }) => {
 };
 
 // Recent Items Card Component
-const RecentItemsCard = ({ title, items, type, viewAllPath }) => {
+const RecentItemsCard = ({ title, items, type, viewAllPath, formatAmount }) => {
   const navigate = useNavigate();
 
   return (
@@ -336,7 +336,7 @@ const RecentItemsCard = ({ title, items, type, viewAllPath }) => {
                   <p className="text-xs text-slate-500 truncate">{item.client_nom}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-slate-900">{formatCurrency(item.total_ttc)}</p>
+                  <p className="text-sm font-semibold text-slate-900">{formatAmount(item.total_ttc)}</p>
                   <Badge variant="secondary" className={`status-${item.statut} text-xs`}>
                     {getStatusLabel(item.statut)}
                   </Badge>
@@ -358,7 +358,7 @@ export const DashboardOverview = () => {
   const [alerts, setAlerts] = useState([]);
   const [recent, setRecent] = useState({ devis: [], factures: [] });
   const [loading, setLoading] = useState(true);
-  const { api } = useAuth();
+  const { api, formatAmount, currencySymbol } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -409,20 +409,20 @@ export const DashboardOverview = () => {
         <KPICard
           title="Devis en attente"
           value={stats?.devis_en_attente || 0}
-          subtitle={formatCurrency(stats?.montant_devis_attente || 0)}
+          subtitle={formatAmount(stats?.montant_devis_attente || 0)}
           icon={FileText}
           color="amber"
         />
         <KPICard
           title="Factures impayées"
           value={stats?.factures_impayees || 0}
-          subtitle={formatCurrency(stats?.montant_factures_impayees || 0)}
+          subtitle={formatAmount(stats?.montant_factures_impayees || 0)}
           icon={Receipt}
           color="red"
         />
         <KPICard
           title="CA du mois"
-          value={formatCurrency(stats?.ca_mois || 0)}
+          value={formatAmount(stats?.ca_mois || 0)}
           icon={TrendingUp}
           color="green"
         />
@@ -464,12 +464,14 @@ export const DashboardOverview = () => {
           items={recent.devis}
           type="devis"
           viewAllPath="/dashboard/devis"
+          formatAmount={formatAmount}
         />
         <RecentItemsCard
           title="Dernières factures"
           items={recent.factures}
           type="factures"
           viewAllPath="/dashboard/factures"
+          formatAmount={formatAmount}
         />
       </div>
     </div>

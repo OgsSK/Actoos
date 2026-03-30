@@ -422,6 +422,8 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] Refactoring server.py Phase 1 (3716 → 2831 lignes, 7 routers créés) ✅
 - [x] Refactoring server.py Phase 2 (2831 → 2582 lignes, 11 routers total) ✅
 - [x] Multi-devises (EUR, USD, XOF, GBP, CHF, CAD, MAD) et sélecteur de locale ✅
+- [x] Formatage devise dans Dashboard, Analytics, Devis, Factures ✅
+- [x] Export CSV/JSON des rapports Analytics ✅
 
 ### Backlog V2
 - [ ] React Native (si besoin app native)
