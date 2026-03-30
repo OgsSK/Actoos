@@ -278,6 +278,40 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - Frontend: 100% (9/9 tests offline passés)
 - IndexedDB: 12 interventions, 6 catégories en cache validés
 
+### Phase 23 - Optimisation Tournées IA ✅ (Date: 2026-03-30)
+
+#### Fonctionnalités
+- [x] **Bouton optimisation** - Visible quand 2+ interventions planifiées (icône étoile amber)
+- [x] **Modal RouteOptimizerModal** - Interface pour lancer l'optimisation
+- [x] **IA GPT-4o** - Analyse adresses, priorités, créneaux et suggère ordre optimal
+- [x] **Score de tournée** - Évaluation simple sans IA (0-100)
+- [x] **Application de l'ordre** - Bouton pour appliquer la suggestion
+- [x] **Fallback gracieux** - Si IA échoue, ordre original retourné
+
+#### Endpoints ajoutés
+- `POST /api/interventions/optimize-route` - Optimisation IA
+- `GET /api/interventions/route-score` - Score de tournée simple
+- `POST /api/interventions/apply-optimized-order` - Appliquer ordre (admin)
+
+#### Fichiers ajoutés
+- `/app/backend/route_optimizer.py` - Service d'optimisation avec GPT-4o
+
+#### Format de réponse IA
+```json
+{
+  "optimized_order": ["id1", "id2", ...],
+  "total_estimated_time_minutes": 340,
+  "route_summary": "Description du parcours optimisé",
+  "tips": ["Conseil 1", "Conseil 2"],
+  "zones": [{"name": "Zone Nord", "interventions": [...]}],
+  "ai_optimized": true
+}
+```
+
+#### Tests Validés
+- Backend: 16/16 tests passés (100%)
+- Frontend: 100% UI fonctionne
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -310,6 +344,7 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] **Notifications Push PWA**
 - [x] **Paiement en ligne Stripe** (portail client)
 - [x] **Support Offline Avancé** (IndexedDB/Dexie.js)
+- [x] **Optimisation Tournées IA** (GPT-4o)
 
 ### Backlog (Nice to have)
 - [x] QR Code paiement sur facture ✅
@@ -319,14 +354,16 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] Notifications push PWA ✅
 - [x] Paiement en ligne via Stripe (sur facture depuis portail) ✅
 - [x] Offline avancé (IndexedDB/Dexie.js sync) ✅
+- [x] Optimisation tournées IA ✅
 
 ### Backlog V2
-- [ ] Optimisation tournées IA
-- [ ] React Native (si besoin natif)
+- [ ] React Native (si besoin app native)
 - [ ] Intégration calendrier Google/Outlook
 - [ ] API publique pour intégrations tierces
 - [ ] Notifications par catégorie/compétences
+- [ ] Rapports et analytics avancés
+- [ ] Multi-devises et internationalisation
 
 ## Next Tasks
-1. Optimisation tournées IA
-2. Intégration calendrier Google/Outlook
+1. Intégration calendrier Google/Outlook
+2. Rapports et analytics avancés
