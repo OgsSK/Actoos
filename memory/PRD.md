@@ -221,6 +221,31 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - Backend: 13/13 tests passés (100%)
 - Frontend: 100% tests push UI passés
 
+### Phase 21 - Paiement en ligne Stripe (Portail Client) ✅ (Date: 2026-03-30)
+
+#### Fonctionnalités
+- [x] **Bouton "Payer"** - Sur chaque facture non payée avec montant > 0
+- [x] **Montant affiché** - Bouton affiche "Payer 120,00€" avec le montant dû
+- [x] **Stripe Checkout** - Redirection vers page de paiement sécurisée
+- [x] **Traitement automatique** - Facture marquée "payée" après paiement
+- [x] **Email de confirmation** - Envoyé automatiquement au client
+- [x] **Gestion erreurs** - Factures à 0€ ou déjà payées n'affichent pas le bouton
+
+#### Endpoints ajoutés
+- `POST /api/portal/facture/{id}/pay?token=xxx` - Créer session Stripe Checkout
+- `GET /api/portal/facture/{id}/payment-status?token=xxx&session_id=xxx` - Vérifier statut
+
+#### Flux de paiement
+1. Client clique sur "Payer X€" dans le portail
+2. Redirection vers Stripe Checkout (mode test)
+3. Paiement par carte
+4. Retour au portail avec `?payment=success`
+5. Facture marquée comme payée + email de confirmation
+
+#### Tests Validés
+- Backend: 11/11 tests passés (100%)
+- Frontend: 100% tests payment UI passés
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -258,7 +283,7 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] Logo visible sur les PDF générés ✅
 - [x] Portail client web (consultation factures/devis, historique) ✅
 - [x] Notifications push PWA ✅
-- [ ] Paiement en ligne via Stripe (sur facture depuis portail)
+- [x] Paiement en ligne via Stripe (sur facture depuis portail) ✅
 
 ### Backlog V2
 - [ ] Optimisation tournées IA
@@ -266,11 +291,8 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [ ] React Native (si besoin natif)
 - [ ] Intégration calendrier Google/Outlook
 - [ ] API publique pour intégrations tierces
-
-## Next Tasks
-1. Paiement en ligne via Stripe (depuis portail client)
-2. Offline avancé (IndexedDB/SQLite sync)
+- [ ] Notifications par catégorie/compétences
 
 ## Next Tasks
 1. Offline avancé (IndexedDB/SQLite sync) pour l'app technicien
-2. Portail client web
+2. Optimisation tournées IA
