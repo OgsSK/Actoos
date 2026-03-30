@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useOffline } from '../contexts/OfflineContext';
+import usePushNotifications from '../hooks/usePushNotifications';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -29,7 +30,7 @@ import {
   Calendar, Clock, MapPin, Phone, Play, CheckCircle, FileText, Camera,
   Loader2, ChevronRight, User, Navigation, Wifi, WifiOff, RefreshCw,
   Plus, X, Upload, Image as ImageIcon, ChevronLeft, CalendarDays,
-  LogOut, Settings, Wrench, Euro, Trash2
+  LogOut, Settings, Wrench, Euro, Trash2, Bell, BellOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday } from 'date-fns';
@@ -797,6 +798,15 @@ export const TechnicianApp = () => {
     addPendingAction, syncPendingActions, 
     cacheInterventions, getCachedInterventions 
   } = useOffline();
+  const {
+    isSupported: pushSupported,
+    isSubscribed: pushSubscribed,
+    permission: pushPermission,
+    loading: pushLoading,
+    subscribe: subscribePush,
+    unsubscribe: unsubscribePush,
+    sendTestNotification
+  } = usePushNotifications();
   const navigate = useNavigate();
 
   // Week data
@@ -1124,6 +1134,40 @@ export const TechnicianApp = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Push Notification Toggle */}
+            {pushSupported && (
+              <Button
+                variant={pushSubscribed ? "default" : "outline"}
+                size="sm"
+                className={`h-8 w-8 p-0 ${pushSubscribed ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+                onClick={async () => {
+                  if (pushSubscribed) {
+                    const success = await unsubscribePush();
+                    if (success) toast.success('Notifications désactivées');
+                  } else {
+                    const success = await subscribePush();
+                    if (success) {
+                      toast.success('Notifications activées');
+                      // Send test notification
+                      setTimeout(() => sendTestNotification(), 1000);
+                    } else if (pushPermission === 'denied') {
+                      toast.error('Notifications bloquées par le navigateur');
+                    }
+                  }
+                }}
+                disabled={pushLoading}
+                title={pushSubscribed ? 'Désactiver les notifications' : 'Activer les notifications'}
+                data-testid="push-toggle-btn"
+              >
+                {pushLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : pushSubscribed ? (
+                  <Bell className="w-4 h-4" />
+                ) : (
+                  <BellOff className="w-4 h-4" />
+                )}
+              </Button>
+            )}
             <SyncStatus
               isOnline={isOnline}
               pendingCount={pendingCount}

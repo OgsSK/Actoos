@@ -1,13 +1,14 @@
-// Service Worker for FieldCommand PWA
-const CACHE_NAME = 'fieldcommand-v1';
-const API_CACHE_NAME = 'fieldcommand-api-v1';
+// Service Worker for Actoos PWA
+const CACHE_NAME = 'actoos-v2';
+const API_CACHE_NAME = 'actoos-api-v2';
 
 // Static assets to cache
 const STATIC_ASSETS = [
   '/',
   '/tech',
   '/login',
-  '/manifest.json'
+  '/manifest.json',
+  '/actoos-favicon.png'
 ];
 
 // API routes to cache for offline use
@@ -248,4 +249,81 @@ self.addEventListener('message', (event) => {
   }
 });
 
-console.log('[SW] Service worker loaded');
+// ==================== PUSH NOTIFICATIONS ====================
+// Handle push notifications
+self.addEventListener('push', (event) => {
+  console.log('[SW] Push notification received');
+  
+  let data = {
+    title: 'Actoos',
+    body: 'Nouvelle notification',
+    icon: '/actoos-favicon.png',
+    badge: '/actoos-favicon.png'
+  };
+  
+  try {
+    if (event.data) {
+      const payload = event.data.json();
+      data = {
+        title: payload.title || data.title,
+        body: payload.body || data.body,
+        icon: payload.icon || data.icon,
+        badge: payload.badge || data.badge,
+        data: payload.data || {},
+        tag: payload.tag,
+        vibrate: payload.vibrate || [200, 100, 200],
+        requireInteraction: payload.requireInteraction || false
+      };
+    }
+  } catch (e) {
+    console.error('[SW] Error parsing push data:', e);
+    data.body = event.data ? event.data.text() : data.body;
+  }
+  
+  const options = {
+    body: data.body,
+    icon: data.icon,
+    badge: data.badge,
+    vibrate: data.vibrate,
+    tag: data.tag,
+    requireInteraction: data.requireInteraction,
+    data: data.data
+  };
+  
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', (event) => {
+  console.log('[SW] Notification clicked:', event.notification.tag);
+  
+  event.notification.close();
+  
+  const urlToOpen = event.notification.data?.url || '/tech';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Check if there's already a window open
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.focus();
+          client.navigate(urlToOpen);
+          return;
+        }
+      }
+      // Open new window if none exists
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+
+// Handle notification close
+self.addEventListener('notificationclose', (event) => {
+  console.log('[SW] Notification closed:', event.notification.tag);
+});
+
+console.log('[SW] Service worker loaded with push support');

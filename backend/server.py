@@ -34,6 +34,11 @@ from sms_service import (
     send_facture_notification, send_payment_reminder, send_payment_confirmation
 )
 from subscription_service import SUBSCRIPTION_PLANS, get_plan, get_all_plans
+from push_service import (
+    get_vapid_public_key, send_push_notification, send_push_to_users,
+    notify_new_intervention_available, notify_intervention_assigned,
+    notify_devis_signed
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -281,6 +286,79 @@ async def reset_password(data: UserSetPassword):
     )
     
     return {"message": "Mot de passe réinitialisé avec succès"}
+
+# ==================== PUSH NOTIFICATION ROUTES ====================
+@api_router.get("/push/vapid-key")
+async def get_push_vapid_key():
+    """Get the VAPID public key for push subscription"""
+    return {"publicKey": get_vapid_public_key()}
+
+@api_router.post("/push/subscribe")
+async def subscribe_to_push(subscription: dict, current_user: dict = Depends(get_current_user)):
+    """Subscribe current user to push notifications"""
+    if not subscription or not subscription.get("endpoint"):
+        raise HTTPException(status_code=400, detail="Invalid subscription")
+    
+    # Check if subscription already exists
+    user = await db.users.find_one(
+        {"id": current_user["user_id"]},
+        {"_id": 0, "push_subscriptions": 1}
+    )
+    
+    existing_subscriptions = user.get("push_subscriptions", []) if user else []
+    
+    # Check if this endpoint already exists
+    for sub in existing_subscriptions:
+        if sub.get("endpoint") == subscription.get("endpoint"):
+            return {"message": "Already subscribed", "subscribed": True}
+    
+    # Add new subscription
+    await db.users.update_one(
+        {"id": current_user["user_id"]},
+        {"$push": {"push_subscriptions": subscription}}
+    )
+    
+    logger.info(f"User {current_user['user_id']} subscribed to push notifications")
+    return {"message": "Successfully subscribed", "subscribed": True}
+
+@api_router.delete("/push/unsubscribe")
+async def unsubscribe_from_push(endpoint: str, current_user: dict = Depends(get_current_user)):
+    """Unsubscribe from push notifications"""
+    await db.users.update_one(
+        {"id": current_user["user_id"]},
+        {"$pull": {"push_subscriptions": {"endpoint": endpoint}}}
+    )
+    return {"message": "Successfully unsubscribed"}
+
+@api_router.get("/push/status")
+async def get_push_status(current_user: dict = Depends(get_current_user)):
+    """Get push notification status for current user"""
+    user = await db.users.find_one(
+        {"id": current_user["user_id"]},
+        {"_id": 0, "push_subscriptions": 1}
+    )
+    
+    subscriptions = user.get("push_subscriptions", []) if user else []
+    return {
+        "subscribed": len(subscriptions) > 0,
+        "subscription_count": len(subscriptions)
+    }
+
+@api_router.post("/push/test")
+async def send_test_push(current_user: dict = Depends(get_current_user)):
+    """Send a test push notification to current user"""
+    result = await send_push_to_users(
+        db=db,
+        user_ids=[current_user["user_id"]],
+        title="🔔 Test notification",
+        body="Les notifications push fonctionnent correctement !",
+        url="/tech"
+    )
+    
+    if result["sent"] == 0:
+        raise HTTPException(status_code=400, detail="Aucune notification envoyée. Vérifiez que vous êtes abonné aux notifications.")
+    
+    return {"message": "Test notification sent", "result": result}
 
 # ==================== USER ROUTES ====================
 @api_router.get("/users", response_model=List[UserResponse])
@@ -755,12 +833,12 @@ async def create_intervention(data: InterventionCreate, background_tasks: Backgr
     return serialize_doc(intervention_dict)
 
 async def notify_available_intervention(entreprise_id: str, intervention: dict, client: dict):
-    """Notify all active technicians about a new available intervention"""
+    """Notify all active technicians about a new available intervention via SMS and Push"""
     try:
         # Get all active technicians
         technicians = await db.users.find(
             {"entreprise_id": entreprise_id, "role": "tech", "statut": "actif"},
-            {"_id": 0, "telephone": 1, "prenom": 1, "nom": 1}
+            {"_id": 0, "id": 1, "telephone": 1, "prenom": 1, "nom": 1}
         ).to_list(100)
         
         entreprise = await db.entreprises.find_one({"id": entreprise_id}, {"_id": 0, "nom": 1})
@@ -774,6 +852,10 @@ async def notify_available_intervention(entreprise_id: str, intervention: dict, 
             date_str = "bientôt"
         
         client_nom = f"{client.get('nom', '')} {client.get('prenom', '')}".strip() or "Client"
+        
+        # Send Push notifications first (faster)
+        push_result = await notify_new_intervention_available(db, entreprise_id, intervention)
+        logger.info(f"Push notifications sent: {push_result}")
         
         # Send SMS to each technician with a phone number
         for tech in technicians:
