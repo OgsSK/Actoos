@@ -204,21 +204,12 @@ class ActoosDatabase extends Dexie {
   
   async getPendingActions() {
     try {
-      return await this.pendingActions
-        .where('synced')
-        .equals(0) // false stored as 0
-        .or('synced')
-        .equals(false)
-        .toArray();
+      // Simple filter approach - more reliable than complex .where().or()
+      const all = await this.pendingActions.toArray();
+      return all.filter(a => !a.synced);
     } catch (error) {
       console.error('[OfflineDB] Failed to get pending actions:', error);
-      // Fallback: get all and filter
-      try {
-        const all = await this.pendingActions.toArray();
-        return all.filter(a => !a.synced);
-      } catch {
-        return [];
-      }
+      return [];
     }
   }
   

@@ -246,6 +246,38 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - Backend: 11/11 tests passés (100%)
 - Frontend: 100% tests payment UI passés
 
+### Phase 22 - Support Offline Avancé (IndexedDB/Dexie.js) ✅ (Date: 2026-03-30)
+
+#### Fonctionnalités
+- [x] **IndexedDB avec Dexie.js** - Base de données locale 'ActoosOfflineDB' avec 6 stores
+- [x] **Cache interventions** - Stockage automatique quand chargées
+- [x] **Cache clients/catégories** - Disponibles hors ligne
+- [x] **File d'attente actions** - pendingActions pour sync différée
+- [x] **Mises à jour optimistes** - Start/Complete intervention fonctionne offline
+- [x] **Auto-sync** - Synchronisation automatique au retour en ligne
+- [x] **SyncStatus amélioré** - Affiche temps depuis dernière sync
+
+#### Stores IndexedDB
+- `interventions` - Interventions avec indexation technicien_id, statut
+- `clients` - Liste clients avec indexation entreprise_id
+- `categories` - Catégories avec checklists
+- `pendingActions` - Actions en attente de sync
+- `pendingPhotos` - Photos à uploader
+- `syncMeta` - Métadonnées de synchronisation
+
+#### Action Types supportés
+- `start_intervention`, `complete_intervention`
+- `update_notes`, `update_checklist`
+- `claim_intervention`, `upload_photo`
+
+#### Fichiers ajoutés
+- `/app/frontend/src/lib/offlineDb.js` - Wrapper Dexie.js
+- OfflineContext.jsx entièrement réécrit avec Dexie
+
+#### Tests Validés
+- Frontend: 100% (9/9 tests offline passés)
+- IndexedDB: 12 interventions, 6 catégories en cache validés
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -276,6 +308,8 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] **White-labeling complet** (logo + couleur primaire)
 - [x] **Portail Client Web** (devis/factures/interventions)
 - [x] **Notifications Push PWA**
+- [x] **Paiement en ligne Stripe** (portail client)
+- [x] **Support Offline Avancé** (IndexedDB/Dexie.js)
 
 ### Backlog (Nice to have)
 - [x] QR Code paiement sur facture ✅
@@ -284,15 +318,15 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] Portail client web (consultation factures/devis, historique) ✅
 - [x] Notifications push PWA ✅
 - [x] Paiement en ligne via Stripe (sur facture depuis portail) ✅
+- [x] Offline avancé (IndexedDB/Dexie.js sync) ✅
 
 ### Backlog V2
 - [ ] Optimisation tournées IA
-- [ ] Offline avancé (IndexedDB/SQLite sync)
 - [ ] React Native (si besoin natif)
 - [ ] Intégration calendrier Google/Outlook
 - [ ] API publique pour intégrations tierces
 - [ ] Notifications par catégorie/compétences
 
 ## Next Tasks
-1. Offline avancé (IndexedDB/SQLite sync) pour l'app technicien
-2. Optimisation tournées IA
+1. Optimisation tournées IA
+2. Intégration calendrier Google/Outlook
