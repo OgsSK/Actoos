@@ -250,11 +250,16 @@ async def finalize_signup(
     
     # Create category documents for each selected category
     for cat_id in categories:
+        cat_details = get_category_details(cat_id)
         category_doc = {
             "id": str(uuid.uuid4()),
             "entreprise_id": entreprise["id"],
             "code": cat_id,
-            "nom": get_category_name(cat_id),
+            "nom": cat_details.get("nom", cat_id),
+            "description": cat_details.get("description", ""),
+            "icone": cat_details.get("icone", "folder"),
+            "couleur": cat_details.get("couleur", "#3B82F6"),
+            "checklist_template": cat_details.get("checklist_template", []),
             "actif": True,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
@@ -289,6 +294,160 @@ def get_category_name(cat_id: str) -> str:
         "specialises": "Services Spécialisés"
     }
     return category_names.get(cat_id, cat_id)
+
+
+def get_category_details(cat_id: str) -> dict:
+    """Get full category details including checklist template"""
+    categories = {
+        "btp": {
+            "nom": "BTP & Travaux",
+            "description": "Maçonnerie, rénovation, gros et second œuvre",
+            "icone": "hard-hat",
+            "couleur": "#F97316",
+            "checklist_template": [
+                {"id": "btp_1", "label": "Zone de travail sécurisée", "type": "checkbox", "required": True},
+                {"id": "btp_2", "label": "Matériaux vérifiés", "type": "checkbox", "required": True},
+                {"id": "btp_3", "label": "Travaux conformes au devis", "type": "checkbox", "required": True},
+                {"id": "btp_4", "label": "Nettoyage du chantier", "type": "checkbox", "required": True},
+                {"id": "btp_5", "label": "Photo avant travaux", "type": "photo", "required": False},
+                {"id": "btp_6", "label": "Photo après travaux", "type": "photo", "required": False},
+                {"id": "btp_7", "label": "Observations", "type": "text", "required": False}
+            ]
+        },
+        "nettoyage": {
+            "nom": "Nettoyage Professionnel",
+            "description": "Services de propreté et entretien",
+            "icone": "sparkles",
+            "couleur": "#14B8A6",
+            "checklist_template": [
+                {"id": "net_1", "label": "Sols nettoyés", "type": "checkbox", "required": True},
+                {"id": "net_2", "label": "Vitres nettoyées", "type": "checkbox", "required": False},
+                {"id": "net_3", "label": "Sanitaires désinfectés", "type": "checkbox", "required": True},
+                {"id": "net_4", "label": "Poubelles vidées", "type": "checkbox", "required": True},
+                {"id": "net_5", "label": "Produits utilisés", "type": "text", "required": False},
+                {"id": "net_6", "label": "Photo avant", "type": "photo", "required": False},
+                {"id": "net_7", "label": "Photo après", "type": "photo", "required": False}
+            ]
+        },
+        "maintenance": {
+            "nom": "Maintenance & SAV",
+            "description": "Contrats d'entretien et dépannage",
+            "icone": "wrench",
+            "couleur": "#3B82F6",
+            "checklist_template": [
+                {"id": "mnt_1", "label": "Diagnostic effectué", "type": "checkbox", "required": True},
+                {"id": "mnt_2", "label": "Pièces remplacées", "type": "text", "required": False},
+                {"id": "mnt_3", "label": "Tests de fonctionnement", "type": "checkbox", "required": True},
+                {"id": "mnt_4", "label": "Prochaine maintenance prévue", "type": "text", "required": False},
+                {"id": "mnt_5", "label": "Photo équipement", "type": "photo", "required": False},
+                {"id": "mnt_6", "label": "Observations techniques", "type": "text", "required": False}
+            ]
+        },
+        "decoration": {
+            "nom": "Décoration & Aménagement",
+            "description": "Design intérieur et aménagement",
+            "icone": "paint-bucket",
+            "couleur": "#EC4899",
+            "checklist_template": [
+                {"id": "dec_1", "label": "Protection des sols/meubles", "type": "checkbox", "required": True},
+                {"id": "dec_2", "label": "Préparation des surfaces", "type": "checkbox", "required": True},
+                {"id": "dec_3", "label": "Application conforme au devis", "type": "checkbox", "required": True},
+                {"id": "dec_4", "label": "Finitions vérifiées", "type": "checkbox", "required": True},
+                {"id": "dec_5", "label": "Photo avant", "type": "photo", "required": False},
+                {"id": "dec_6", "label": "Photo après", "type": "photo", "required": False},
+                {"id": "dec_7", "label": "Commentaires client", "type": "text", "required": False}
+            ]
+        },
+        "electricite": {
+            "nom": "Électricité",
+            "description": "Installation et dépannage électrique",
+            "icone": "zap",
+            "couleur": "#EAB308",
+            "checklist_template": [
+                {"id": "elec_1", "label": "Coupure du courant effectuée", "type": "checkbox", "required": True},
+                {"id": "elec_2", "label": "Vérification du tableau", "type": "checkbox", "required": True},
+                {"id": "elec_3", "label": "Test de continuité", "type": "checkbox", "required": False},
+                {"id": "elec_4", "label": "Mise à la terre vérifiée", "type": "checkbox", "required": True},
+                {"id": "elec_5", "label": "Tension mesurée (V)", "type": "number", "required": False},
+                {"id": "elec_6", "label": "Photo du tableau", "type": "photo", "required": False},
+                {"id": "elec_7", "label": "Observations", "type": "text", "required": False}
+            ]
+        },
+        "plomberie": {
+            "nom": "Plomberie & CVC",
+            "description": "Plomberie, chauffage, climatisation",
+            "icone": "droplet",
+            "couleur": "#2563EB",
+            "checklist_template": [
+                {"id": "plb_1", "label": "Coupure d'eau effectuée", "type": "checkbox", "required": True},
+                {"id": "plb_2", "label": "Fuite identifiée et réparée", "type": "checkbox", "required": True},
+                {"id": "plb_3", "label": "Test d'étanchéité réalisé", "type": "checkbox", "required": True},
+                {"id": "plb_4", "label": "Pression vérifiée (bar)", "type": "number", "required": False},
+                {"id": "plb_5", "label": "Photo avant", "type": "photo", "required": False},
+                {"id": "plb_6", "label": "Photo après", "type": "photo", "required": False},
+                {"id": "plb_7", "label": "Observations", "type": "text", "required": False}
+            ]
+        },
+        "espaces-verts": {
+            "nom": "Espaces Verts & Extérieur",
+            "description": "Jardinage et paysagisme",
+            "icone": "tree",
+            "couleur": "#22C55E",
+            "checklist_template": [
+                {"id": "ev_1", "label": "Tonte effectuée", "type": "checkbox", "required": False},
+                {"id": "ev_2", "label": "Taille des haies/arbustes", "type": "checkbox", "required": False},
+                {"id": "ev_3", "label": "Désherbage", "type": "checkbox", "required": False},
+                {"id": "ev_4", "label": "Arrosage vérifié", "type": "checkbox", "required": False},
+                {"id": "ev_5", "label": "Évacuation des déchets verts", "type": "checkbox", "required": True},
+                {"id": "ev_6", "label": "Photo du résultat", "type": "photo", "required": False},
+                {"id": "ev_7", "label": "Observations", "type": "text", "required": False}
+            ]
+        },
+        "securite": {
+            "nom": "Sécurité & Installation",
+            "description": "Alarmes et vidéosurveillance",
+            "icone": "shield",
+            "couleur": "#EF4444",
+            "checklist_template": [
+                {"id": "sec_1", "label": "Installation conforme", "type": "checkbox", "required": True},
+                {"id": "sec_2", "label": "Tests des capteurs", "type": "checkbox", "required": True},
+                {"id": "sec_3", "label": "Test de l'alarme", "type": "checkbox", "required": True},
+                {"id": "sec_4", "label": "Configuration du système", "type": "checkbox", "required": True},
+                {"id": "sec_5", "label": "Formation utilisateur", "type": "checkbox", "required": True},
+                {"id": "sec_6", "label": "Photo installation", "type": "photo", "required": False},
+                {"id": "sec_7", "label": "Codes d'accès remis", "type": "text", "required": False}
+            ]
+        },
+        "multiservices": {
+            "nom": "Services Techniques Multi-services",
+            "description": "Homme toutes mains et petits travaux",
+            "icone": "settings",
+            "couleur": "#64748B",
+            "checklist_template": [
+                {"id": "ms_1", "label": "Travaux effectués conformément à la demande", "type": "checkbox", "required": True},
+                {"id": "ms_2", "label": "Matériel/outils utilisés", "type": "text", "required": False},
+                {"id": "ms_3", "label": "Zone de travail nettoyée", "type": "checkbox", "required": True},
+                {"id": "ms_4", "label": "Photo avant", "type": "photo", "required": False},
+                {"id": "ms_5", "label": "Photo après", "type": "photo", "required": False},
+                {"id": "ms_6", "label": "Observations", "type": "text", "required": False}
+            ]
+        },
+        "specialises": {
+            "nom": "Services Spécialisés",
+            "description": "Dératisation, inspection, services niche",
+            "icone": "star",
+            "couleur": "#A855F7",
+            "checklist_template": [
+                {"id": "sp_1", "label": "Inspection initiale effectuée", "type": "checkbox", "required": True},
+                {"id": "sp_2", "label": "Traitement appliqué", "type": "text", "required": False},
+                {"id": "sp_3", "label": "Zones traitées", "type": "text", "required": False},
+                {"id": "sp_4", "label": "Recommandations client", "type": "text", "required": False},
+                {"id": "sp_5", "label": "Photo documentation", "type": "photo", "required": False},
+                {"id": "sp_6", "label": "Prochaine intervention prévue", "type": "text", "required": False}
+            ]
+        }
+    }
+    return categories.get(cat_id, {"nom": cat_id, "checklist_template": []})
 
 
 @router.get("/checkout/status/{session_id}")

@@ -59,7 +59,12 @@ const SkillsManager = ({ user, categories, onUpdate, onClose }) => {
     nettoyage: '✨',
     climatisation: '❄️',
     btp: '🏗️',
-    maintenance: '🛠️'
+    maintenance: '🛠️',
+    decoration: '🎨',
+    'espaces-verts': '🌿',
+    securite: '🔐',
+    multiservices: '🔩',
+    specialises: '⭐'
   };
 
   return (
