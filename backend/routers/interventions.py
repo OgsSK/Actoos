@@ -7,7 +7,7 @@ from datetime import datetime, timezone, date as date_type
 import uuid
 import logging
 
-from models import InterventionCreate, InterventionUpdate, ChecklistResponse
+from models import InterventionCreate, InterventionUpdate, ChecklistResponse, InterventionSignature, InterventionGeoLocation
 from auth import get_current_user, require_admin
 from dependencies import db, serialize_doc, log_action
 from route_optimizer import optimize_route, calculate_simple_route_score
@@ -516,8 +516,12 @@ async def cancel_intervention(
 
 
 @router.post("/{intervention_id}/start")
-async def start_intervention(intervention_id: str, current_user: dict = Depends(get_current_user)):
-    """Start an intervention"""
+async def start_intervention(
+    intervention_id: str,
+    geo: Optional[InterventionGeoLocation] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Start an intervention with optional geolocation"""
     now = datetime.now(timezone.utc).isoformat()
     
     # Find the intervention
@@ -544,10 +548,19 @@ async def start_intervention(intervention_id: str, current_user: dict = Depends(
     if is_unassigned and not is_admin:
         update["technicien_id"] = current_user["user_id"]
     
+    # Add geolocation if provided
+    if geo:
+        update["geo_debut"] = {
+            "latitude": geo.latitude,
+            "longitude": geo.longitude,
+            "accuracy": geo.accuracy,
+            "timestamp": geo.timestamp or now
+        }
+    
     await db.interventions.update_one({"id": intervention_id}, {"$set": update})
     await log_action(current_user["entreprise_id"], current_user["user_id"], "start", "intervention", intervention_id)
     
-    return {"message": "Intervention démarrée", "heure_debut": now}
+    return {"message": "Intervention démarrée", "heure_debut": now, "geo_debut": update.get("geo_debut")}
 
 
 @router.post("/{intervention_id}/claim")
@@ -658,3 +671,144 @@ async def update_intervention_checklist(
     
     await log_action(current_user["entreprise_id"], current_user["user_id"], "update_checklist", "intervention", intervention_id)
     return {"message": "Checklist mise à jour", "responses": responses_dict}
+
+
+@router.post("/{intervention_id}/complete-with-signature")
+async def complete_intervention_with_signature(
+    intervention_id: str,
+    data: InterventionSignature,
+    geo: Optional[InterventionGeoLocation] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Complete an intervention with client signature and optional geolocation"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Find the intervention
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Verify technician owns this intervention
+    if current_user["role"] == "tech" and intervention.get("technicien_id") != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Non autorisé")
+    
+    if intervention["statut"] != "en_cours":
+        raise HTTPException(status_code=400, detail="Cette intervention doit être en cours pour être terminée")
+    
+    # Build update
+    update = {
+        "statut": "terminee",
+        "heure_fin": now,
+        "signature_client": data.signature,
+        "nom_signataire": data.nom_signataire,
+        "date_signature": now
+    }
+    
+    if data.notes:
+        update["notes_terrain"] = data.notes
+    
+    # Add geolocation if provided
+    if geo:
+        update["geo_fin"] = {
+            "latitude": geo.latitude,
+            "longitude": geo.longitude,
+            "accuracy": geo.accuracy,
+            "timestamp": geo.timestamp or now
+        }
+    
+    await db.interventions.update_one({"id": intervention_id}, {"$set": update})
+    await log_action(
+        current_user["entreprise_id"],
+        current_user["user_id"],
+        "complete_with_signature",
+        "intervention",
+        intervention_id,
+        {"signataire": data.nom_signataire, "has_geo": geo is not None}
+    )
+    
+    return {
+        "message": "Intervention terminée et signée",
+        "heure_fin": now,
+        "signataire": data.nom_signataire,
+        "date_signature": now
+    }
+
+
+@router.post("/{intervention_id}/signature")
+async def add_signature_to_intervention(
+    intervention_id: str,
+    data: InterventionSignature,
+    current_user: dict = Depends(get_current_user)
+):
+    """Add client signature to an intervention (can be done before completion)"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Verify technician owns this intervention
+    if current_user["role"] == "tech" and intervention.get("technicien_id") != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Non autorisé")
+    
+    update = {
+        "signature_client": data.signature,
+        "nom_signataire": data.nom_signataire,
+        "date_signature": now
+    }
+    
+    await db.interventions.update_one({"id": intervention_id}, {"$set": update})
+    await log_action(
+        current_user["entreprise_id"],
+        current_user["user_id"],
+        "signature",
+        "intervention",
+        intervention_id,
+        {"signataire": data.nom_signataire}
+    )
+    
+    return {
+        "message": "Signature enregistrée",
+        "signataire": data.nom_signataire,
+        "date_signature": now
+    }
+
+
+@router.post("/{intervention_id}/geolocation")
+async def update_intervention_geolocation(
+    intervention_id: str,
+    geo: InterventionGeoLocation,
+    geo_type: str = "current",  # "debut", "fin", or "current"
+    current_user: dict = Depends(get_current_user)
+):
+    """Update geolocation for an intervention"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    geo_data = {
+        "latitude": geo.latitude,
+        "longitude": geo.longitude,
+        "accuracy": geo.accuracy,
+        "timestamp": geo.timestamp or now
+    }
+    
+    field_name = f"geo_{geo_type}" if geo_type in ["debut", "fin"] else "geo_current"
+    
+    await db.interventions.update_one(
+        {"id": intervention_id},
+        {"$set": {field_name: geo_data}}
+    )
+    
+    return {"message": "Géolocalisation mise à jour", "type": geo_type, "geo": geo_data}

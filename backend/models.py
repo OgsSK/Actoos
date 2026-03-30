@@ -203,6 +203,26 @@ class InterventionUpdate(BaseModel):
     heure_fin: Optional[datetime] = None
     categorie_id: Optional[str] = None
     checklist_responses: Optional[List[ChecklistResponse]] = None
+    # Geolocation
+    geo_debut: Optional[dict] = None  # {"latitude": float, "longitude": float, "accuracy": float}
+    geo_fin: Optional[dict] = None
+    # Client signature at completion
+    signature_client: Optional[str] = None  # Base64 image
+    nom_signataire: Optional[str] = None
+    date_signature: Optional[datetime] = None
+
+class InterventionSignature(BaseModel):
+    """Model for capturing client signature at intervention completion"""
+    signature: str = Field(..., description="Base64 encoded signature image")
+    nom_signataire: str = Field(..., description="Name of the person signing")
+    notes: Optional[str] = None
+
+class InterventionGeoLocation(BaseModel):
+    """Model for geolocation data"""
+    latitude: float
+    longitude: float
+    accuracy: Optional[float] = None
+    timestamp: Optional[str] = None
 
 class Intervention(InterventionBase):
     model_config = ConfigDict(extra="ignore")

@@ -31,11 +31,12 @@ import {
   Loader2, ChevronRight, User, Navigation, Wifi, WifiOff, RefreshCw,
   Plus, X, Upload, Image as ImageIcon, ChevronLeft, CalendarDays,
   LogOut, Settings, Wrench, Euro, Trash2, Bell, BellOff, Route, Sparkles,
-  Download, Smartphone
+  Download, Smartphone, PenTool, MapPinned
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import SignaturePad from '../components/SignaturePad';
 
 // PWA Install Prompt Component
 const InstallPrompt = () => {
@@ -1091,6 +1092,7 @@ export const TechnicianApp = () => {
   const [showCreateIntervention, setShowCreateIntervention] = useState(false);
   const [showCreateDevis, setShowCreateDevis] = useState(false);
   const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
   const [preselectedClientId, setPreselectedClientId] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   
@@ -1244,22 +1246,45 @@ export const TechnicianApp = () => {
   };
 
   const handleStartIntervention = async (id) => {
+    // Get current geolocation
+    let geoData = null;
+    try {
+      if (navigator.geolocation) {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+        geoData = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date().toISOString()
+        };
+      }
+    } catch (geoError) {
+      console.warn('Geolocation error:', geoError);
+      // Continue without geolocation
+    }
+
     if (!isOnline) {
       // Queue for sync if offline
-      await addPendingAction(ACTION_TYPES.START_INTERVENTION, { interventionId: id });
+      await addPendingAction(ACTION_TYPES.START_INTERVENTION, { interventionId: id, geo: geoData });
       toast.info('Action enregistrée pour synchronisation');
       // Update local state optimistically
       setInterventions(prev => prev.map(i => 
-        i.id === id ? { ...i, statut: 'en_cours', heure_debut: new Date().toISOString() } : i
+        i.id === id ? { ...i, statut: 'en_cours', heure_debut: new Date().toISOString(), geo_debut: geoData } : i
       ));
       if (selectedIntervention?.id === id) {
-        setSelectedIntervention(prev => ({ ...prev, statut: 'en_cours' }));
+        setSelectedIntervention(prev => ({ ...prev, statut: 'en_cours', geo_debut: geoData }));
       }
       return;
     }
     
     try {
-      await api.post(`/interventions/${id}/start`);
+      await api.post(`/interventions/${id}/start`, geoData ? { geo: geoData } : null);
       toast.success('Intervention démarrée');
       loadInterventions();
       if (selectedIntervention?.id === id) {
@@ -1272,29 +1297,90 @@ export const TechnicianApp = () => {
     }
   };
 
-  const handleCompleteIntervention = async (id) => {
+  const handleCompleteIntervention = async (id, signatureData = null) => {
+    // Get current geolocation
+    let geoData = null;
+    try {
+      if (navigator.geolocation) {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+        geoData = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date().toISOString()
+        };
+      }
+    } catch (geoError) {
+      console.warn('Geolocation error:', geoError);
+    }
+
     if (!isOnline) {
-      await addPendingAction(ACTION_TYPES.COMPLETE_INTERVENTION, { interventionId: id, notes });
+      await addPendingAction(ACTION_TYPES.COMPLETE_INTERVENTION, { 
+        interventionId: id, 
+        notes,
+        signature: signatureData,
+        geo: geoData
+      });
       toast.info('Action enregistrée pour synchronisation');
       setInterventions(prev => prev.map(i => 
-        i.id === id ? { ...i, statut: 'terminee', heure_fin: new Date().toISOString() } : i
+        i.id === id ? { 
+          ...i, 
+          statut: 'terminee', 
+          heure_fin: new Date().toISOString(),
+          signature_client: signatureData?.signature,
+          nom_signataire: signatureData?.nom_signataire,
+          geo_fin: geoData
+        } : i
       ));
       setSelectedIntervention(null);
       setNotes('');
+      setShowSignaturePad(false);
       return;
     }
     
     try {
-      await api.post(`/interventions/${id}/complete`, null, {
-        params: { notes_terrain: notes }
-      });
-      toast.success('Intervention terminée');
+      if (signatureData) {
+        // Complete with signature
+        await api.post(`/interventions/${id}/complete-with-signature`, {
+          signature: signatureData.signature,
+          nom_signataire: signatureData.nom_signataire,
+          notes: notes
+        }, {
+          params: geoData ? { geo: JSON.stringify(geoData) } : {}
+        });
+        toast.success('Intervention terminée et signée');
+      } else {
+        // Complete without signature (backwards compatibility)
+        await api.post(`/interventions/${id}/complete`, null, {
+          params: { notes_terrain: notes }
+        });
+        toast.success('Intervention terminée');
+      }
       setNotes('');
+      setShowSignaturePad(false);
       loadInterventions();
       setSelectedIntervention(null);
     } catch (error) {
       console.error('Error completing intervention:', error);
       toast.error('Erreur lors de la clôture');
+    }
+  };
+
+  // Open signature pad before completing
+  const handleRequestCompletion = (id) => {
+    setShowSignaturePad(true);
+  };
+
+  // Handle signature submission
+  const handleSignatureSubmit = async (signatureData) => {
+    if (selectedIntervention) {
+      await handleCompleteIntervention(selectedIntervention.id, signatureData);
     }
   };
 
@@ -1727,7 +1813,7 @@ export const TechnicianApp = () => {
                   onCall={() => handleCall(selectedIntervention.client?.telephone)}
                   onNavigate={() => handleNavigate(selectedIntervention)}
                   onStart={() => handleStartIntervention(selectedIntervention.id)}
-                  onComplete={() => handleCompleteIntervention(selectedIntervention.id)}
+                  onComplete={() => handleRequestCompletion(selectedIntervention.id)}
                 />
 
                 {/* Client Info */}
@@ -1832,6 +1918,15 @@ export const TechnicianApp = () => {
         interventions={interventions.filter(i => i.statut === 'planifiee')}
         api={api}
         onReorder={handleReorderInterventions}
+      />
+
+      {/* Signature Pad Modal */}
+      <SignaturePad
+        isOpen={showSignaturePad}
+        onClose={() => setShowSignaturePad(false)}
+        onSave={handleSignatureSubmit}
+        title="Signature de fin d'intervention"
+        description="Le client doit signer pour valider la fin de l'intervention"
       />
 
       {/* PWA Install Prompt */}

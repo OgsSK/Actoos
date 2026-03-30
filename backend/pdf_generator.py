@@ -88,6 +88,138 @@ def load_logo_image(logo_url: str, max_width: int = 150, max_height: int = 60) -
         logger.error(f"Error loading logo: {e}")
     return None
 
+
+def load_photo_image(photo_url: str, max_width: int = 170, max_height: int = 120) -> Image:
+    """Load intervention photo from URL and return ReportLab Image for embedding in PDF"""
+    try:
+        if not photo_url:
+            return None
+            
+        # Download image
+        response = requests.get(photo_url, timeout=10)
+        if response.status_code == 200:
+            img_buffer = BytesIO(response.content)
+            img = Image(img_buffer)
+            
+            # Scale to fit within max dimensions while maintaining aspect ratio
+            if img.imageWidth > 0 and img.imageHeight > 0:
+                aspect = img.imageWidth / img.imageHeight
+                if img.imageWidth > max_width:
+                    img.drawWidth = max_width
+                    img.drawHeight = max_width / aspect
+                if img.drawHeight > max_height:
+                    img.drawHeight = max_height
+                    img.drawWidth = max_height * aspect
+                return img
+    except Exception as e:
+        logger.error(f"Error loading photo: {e}")
+    return None
+
+
+def build_photos_section(photos: list, styles: dict, max_photos: int = 6) -> list:
+    """Build a section with intervention photos arranged in a grid"""
+    elements = []
+    
+    if not photos:
+        return elements
+    
+    # Limit number of photos
+    photos_to_include = photos[:max_photos]
+    
+    # Add section title
+    elements.append(Spacer(1, 15*mm))
+    elements.append(Paragraph("Photos de l'intervention", styles['Subtitle']))
+    elements.append(Spacer(1, 5*mm))
+    
+    # Load all photos
+    photo_images = []
+    for photo in photos_to_include:
+        photo_url = photo.get('url') or photo.get('storage_path')
+        if photo_url:
+            img = load_photo_image(photo_url, max_width=80*mm, max_height=60*mm)
+            if img:
+                caption = photo.get('type_photo', '') or photo.get('description', '')
+                photo_images.append((img, caption))
+    
+    if not photo_images:
+        return elements
+    
+    # Create 2-column grid
+    rows = []
+    for i in range(0, len(photo_images), 2):
+        row = []
+        for j in range(2):
+            if i + j < len(photo_images):
+                img, caption = photo_images[i + j]
+                cell_content = [img]
+                if caption:
+                    cell_content.append(Paragraph(f"<i>{caption}</i>", styles.get('Small', styles['Normal'])))
+                # Create a small table for each photo cell
+                cell_table = Table([[c] for c in cell_content], colWidths=[85*mm])
+                cell_table.setStyle(TableStyle([
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ]))
+                row.append(cell_table)
+            else:
+                row.append('')
+        rows.append(row)
+    
+    if rows:
+        photos_table = Table(rows, colWidths=[85*mm, 85*mm])
+        photos_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 5*mm),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5*mm),
+        ]))
+        elements.append(photos_table)
+    
+    if len(photos) > max_photos:
+        elements.append(Spacer(1, 3*mm))
+        elements.append(Paragraph(f"<i>+ {len(photos) - max_photos} autres photos disponibles dans l'application</i>", styles.get('Small', styles['Normal'])))
+    
+    return elements
+
+
+def build_signature_section(signature_data: str, signer_name: str, signature_date: str, styles: dict) -> list:
+    """Build a section with client signature"""
+    elements = []
+    
+    if not signature_data:
+        return elements
+    
+    elements.append(Spacer(1, 10*mm))
+    elements.append(Paragraph("Signature du client", styles['Subtitle']))
+    
+    # Decode and add signature image
+    sig_buffer = decode_signature_image(signature_data)
+    if sig_buffer:
+        sig_img = Image(sig_buffer)
+        # Scale signature
+        if sig_img.imageWidth > 0:
+            aspect = sig_img.imageWidth / sig_img.imageHeight
+            sig_img.drawWidth = min(60*mm, sig_img.imageWidth)
+            sig_img.drawHeight = sig_img.drawWidth / aspect
+        elements.append(sig_img)
+    
+    # Add signer info
+    sig_info = []
+    if signer_name:
+        sig_info.append(f"<b>{signer_name}</b>")
+    if signature_date:
+        try:
+            dt = get_local_time(signature_date)
+            sig_info.append(f"Signé le {dt.strftime('%d/%m/%Y à %H:%M')}")
+        except:
+            pass
+    
+    if sig_info:
+        elements.append(Spacer(1, 2*mm))
+        elements.append(Paragraph("<br/>".join(sig_info), styles.get('Small', styles['Normal'])))
+    
+    return elements
+
 def build_payment_qr_data(facture: dict, entreprise: dict, portal_url: str = None) -> str:
     """Build payment data string for QR code"""
     # If we have a portal URL, use that for easy payment
@@ -251,8 +383,15 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
     return buffer.getvalue()
 
 
-def generate_facture_pdf(facture: dict, client: dict, entreprise: dict, portal_url: str = None) -> bytes:
-    """Generate PDF for an invoice with company logo, payment QR code, and multi-currency support"""
+def generate_facture_pdf(
+    facture: dict, 
+    client: dict, 
+    entreprise: dict, 
+    portal_url: str = None,
+    intervention_photos: list = None,
+    intervention_signature: dict = None
+) -> bytes:
+    """Generate PDF for an invoice with company logo, payment QR code, photos, signature and multi-currency support"""
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20*mm, bottomMargin=20*mm, leftMargin=20*mm, rightMargin=20*mm)
     
@@ -406,6 +545,21 @@ def generate_facture_pdf(facture: dict, client: dict, entreprise: dict, portal_u
                 elements.append(qr_table)
             except Exception as e:
                 logger.warning(f"Could not add QR code: {e}")
+    
+    # Add intervention photos if provided
+    if intervention_photos:
+        photo_elements = build_photos_section(intervention_photos, styles)
+        elements.extend(photo_elements)
+    
+    # Add intervention signature if provided
+    if intervention_signature:
+        sig_elements = build_signature_section(
+            intervention_signature.get('signature_client'),
+            intervention_signature.get('nom_signataire'),
+            intervention_signature.get('date_signature'),
+            styles
+        )
+        elements.extend(sig_elements)
     
     doc.build(elements)
     return buffer.getvalue()
