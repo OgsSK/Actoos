@@ -1,72 +1,54 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import db from '../lib/offlineDb';
+import { toast } from 'sonner';
 
 const OfflineContext = createContext(null);
 
-// IndexedDB database name and version
-const DB_NAME = 'FieldCommandOffline';
-const DB_VERSION = 1;
-
-// Open IndexedDB
-const openDatabase = () => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      
-      // Store for pending actions
-      if (!db.objectStoreNames.contains('pendingActions')) {
-        db.createObjectStore('pendingActions', { keyPath: 'id', autoIncrement: true });
-      }
-      
-      // Store for cached interventions
-      if (!db.objectStoreNames.contains('cachedInterventions')) {
-        db.createObjectStore('cachedInterventions', { keyPath: 'id' });
-      }
-      
-      // Store for cached clients
-      if (!db.objectStoreNames.contains('cachedClients')) {
-        db.createObjectStore('cachedClients', { keyPath: 'id' });
-      }
-    };
-  });
+// Action types for offline queue
+export const ACTION_TYPES = {
+  START_INTERVENTION: 'start_intervention',
+  COMPLETE_INTERVENTION: 'complete_intervention',
+  UPDATE_NOTES: 'update_notes',
+  UPDATE_CHECKLIST: 'update_checklist',
+  CLAIM_INTERVENTION: 'claim_intervention',
+  UPLOAD_PHOTO: 'upload_photo'
 };
 
 export const OfflineProvider = ({ children }) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingActions, setPendingActions] = useState([]);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [db, setDb] = useState(null);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [dbStats, setDbStats] = useState(null);
+  const syncIntervalRef = useRef(null);
+  const isMountedRef = useRef(true);
 
-  // Initialize IndexedDB
+  // Load pending actions from IndexedDB on mount
   useEffect(() => {
-    openDatabase()
-      .then(database => {
-        setDb(database);
-        loadPendingActions(database);
-      })
-      .catch(error => console.error('Failed to open IndexedDB:', error));
+    loadPendingActions();
+    loadDbStats();
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   // Network status listeners
   useEffect(() => {
-    const handleOnline = () => {
+    const handleOnline = async () => {
+      console.log('[Offline] Network: Online');
       setIsOnline(true);
-      // Trigger sync when coming back online
-      if ('serviceWorker' in navigator && 'SyncManager' in window) {
-        navigator.serviceWorker.ready.then(registration => {
-          registration.sync.register('sync-pending-actions');
-        });
-      } else {
-        // Fallback: manual sync
-        syncPendingActions();
-      }
+      
+      // Auto-sync when coming back online
+      await syncPendingActions();
+      toast.success('Connexion rétablie - Synchronisation en cours...');
     };
     
-    const handleOffline = () => setIsOnline(false);
+    const handleOffline = () => {
+      console.log('[Offline] Network: Offline');
+      setIsOnline(false);
+      toast.info('Mode hors ligne activé');
+    };
     
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -77,212 +59,297 @@ export const OfflineProvider = ({ children }) => {
     };
   }, []);
 
-  // Listen for service worker messages
+  // Periodic sync when online
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data.type === 'SYNC_COMPLETE') {
-          loadPendingActions(db);
+    if (isOnline && pendingActions.length > 0) {
+      syncIntervalRef.current = setInterval(() => {
+        if (!isSyncing && pendingActions.length > 0) {
+          syncPendingActions();
         }
-      });
+      }, 30000); // Every 30 seconds
     }
-  }, [db]);
-
-  // Load pending actions from IndexedDB
-  const loadPendingActions = async (database) => {
-    if (!database) return;
     
+    return () => {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+      }
+    };
+  }, [isOnline, pendingActions.length, isSyncing]);
+
+  // Load pending actions
+  const loadPendingActions = async () => {
     try {
-      const transaction = database.transaction('pendingActions', 'readonly');
-      const store = transaction.objectStore('pendingActions');
-      const request = store.getAll();
-      
-      request.onsuccess = () => {
-        setPendingActions(request.result || []);
-      };
+      const actions = await db.getPendingActions();
+      if (isMountedRef.current) {
+        setPendingActions(actions);
+      }
     } catch (error) {
-      console.error('Failed to load pending actions:', error);
+      console.error('[Offline] Failed to load pending actions:', error);
     }
   };
 
-  // Add a pending action
-  const addPendingAction = useCallback(async (action) => {
-    if (!db) return;
-    
+  // Load database stats
+  const loadDbStats = async () => {
+    try {
+      const stats = await db.getStats();
+      if (isMountedRef.current) {
+        setDbStats(stats);
+        if (stats?.lastInterventionsSync) {
+          setLastSyncTime(stats.lastInterventionsSync);
+        }
+      }
+    } catch (error) {
+      console.error('[Offline] Failed to load DB stats:', error);
+    }
+  };
+
+  // Add a pending action to the queue
+  const addPendingAction = useCallback(async (type, data) => {
     const token = localStorage.getItem('token');
-    const actionWithToken = { ...action, token, timestamp: new Date().toISOString() };
     
-    try {
-      const transaction = db.transaction('pendingActions', 'readwrite');
-      const store = transaction.objectStore('pendingActions');
-      
-      await new Promise((resolve, reject) => {
-        const request = store.add(actionWithToken);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-      
-      loadPendingActions(db);
-    } catch (error) {
-      console.error('Failed to add pending action:', error);
-    }
-  }, [db]);
-
-  // Remove a pending action
-  const removePendingAction = useCallback(async (id) => {
-    if (!db) return;
+    const action = {
+      type,
+      data,
+      token,
+      timestamp: new Date().toISOString()
+    };
     
-    try {
-      const transaction = db.transaction('pendingActions', 'readwrite');
-      const store = transaction.objectStore('pendingActions');
-      store.delete(id);
-      loadPendingActions(db);
-    } catch (error) {
-      console.error('Failed to remove pending action:', error);
+    const id = await db.addPendingAction(action);
+    
+    if (id) {
+      await loadPendingActions();
+      
+      // If online, try to sync immediately
+      if (isOnline) {
+        setTimeout(() => syncPendingActions(), 1000);
+      }
+      
+      return id;
     }
-  }, [db]);
+    
+    return null;
+  }, [isOnline]);
 
-  // Sync pending actions manually
+  // Sync pending actions with server
   const syncPendingActions = useCallback(async () => {
-    if (!isOnline || pendingActions.length === 0 || isSyncing) return;
+    if (!isOnline || isSyncing) return;
+    
+    const actions = await db.getPendingActions();
+    if (actions.length === 0) return;
     
     setIsSyncing(true);
-    const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+    console.log(`[Offline] Syncing ${actions.length} pending actions...`);
     
-    for (const action of pendingActions) {
+    const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const action of actions) {
+      // Skip if too many retries
+      if (action.retryCount >= 5) {
+        console.log(`[Offline] Skipping action ${action.id} - too many retries`);
+        continue;
+      }
+      
       try {
-        let response;
+        const headers = {
+          'Authorization': `Bearer ${action.token}`,
+          'Content-Type': 'application/json'
+        };
         
-        if (action.type === 'start') {
-          response = await fetch(`${API_URL}/api/interventions/${action.interventionId}/start`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${action.token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-        } else if (action.type === 'complete') {
-          const params = new URLSearchParams();
-          if (action.notes) params.append('notes_terrain', action.notes);
-          
-          response = await fetch(`${API_URL}/api/interventions/${action.interventionId}/complete?${params}`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${action.token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-        } else if (action.type === 'update_notes') {
-          response = await fetch(`${API_URL}/api/interventions/${action.interventionId}`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${action.token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ notes_terrain: action.notes })
-          });
+        let response;
+        const { type, data } = action;
+        
+        switch (type) {
+          case ACTION_TYPES.START_INTERVENTION:
+            response = await fetch(`${API_URL}/api/interventions/${data.interventionId}/start`, {
+              method: 'POST',
+              headers
+            });
+            break;
+            
+          case ACTION_TYPES.COMPLETE_INTERVENTION:
+            const completeParams = new URLSearchParams();
+            if (data.notes) completeParams.append('notes_terrain', data.notes);
+            
+            response = await fetch(`${API_URL}/api/interventions/${data.interventionId}/complete?${completeParams}`, {
+              method: 'POST',
+              headers
+            });
+            break;
+            
+          case ACTION_TYPES.UPDATE_NOTES:
+            response = await fetch(`${API_URL}/api/interventions/${data.interventionId}`, {
+              method: 'PUT',
+              headers,
+              body: JSON.stringify({ notes_terrain: data.notes })
+            });
+            break;
+            
+          case ACTION_TYPES.UPDATE_CHECKLIST:
+            response = await fetch(`${API_URL}/api/interventions/${data.interventionId}/checklist`, {
+              method: 'PUT',
+              headers,
+              body: JSON.stringify(data.responses)
+            });
+            break;
+            
+          case ACTION_TYPES.CLAIM_INTERVENTION:
+            response = await fetch(`${API_URL}/api/interventions/${data.interventionId}/claim`, {
+              method: 'POST',
+              headers
+            });
+            break;
+            
+          default:
+            console.warn(`[Offline] Unknown action type: ${type}`);
+            continue;
         }
         
         if (response && response.ok) {
-          await removePendingAction(action.id);
+          await db.markActionSynced(action.id);
+          successCount++;
+          console.log(`[Offline] Synced action ${action.id}: ${type}`);
+          
+          // Update local cache with server response
+          if (type.includes('intervention')) {
+            const updatedIntervention = await response.json();
+            await db.interventions.put(updatedIntervention);
+          }
+        } else {
+          const errorText = response ? await response.text() : 'No response';
+          console.error(`[Offline] Failed to sync action ${action.id}:`, errorText);
+          await db.markActionFailed(action.id, errorText);
+          failCount++;
         }
       } catch (error) {
-        console.error('Failed to sync action:', action.id, error);
+        console.error(`[Offline] Error syncing action ${action.id}:`, error);
+        await db.markActionFailed(action.id, error.message);
+        failCount++;
       }
     }
     
+    // Clean up synced actions
+    await db.clearSyncedActions();
+    await loadPendingActions();
+    await loadDbStats();
+    
     setIsSyncing(false);
-    loadPendingActions(db);
-  }, [isOnline, pendingActions, isSyncing, db, removePendingAction]);
+    
+    if (successCount > 0) {
+      toast.success(`${successCount} action(s) synchronisée(s)`);
+    }
+    if (failCount > 0) {
+      toast.error(`${failCount} action(s) en échec`);
+    }
+    
+    console.log(`[Offline] Sync complete: ${successCount} success, ${failCount} failed`);
+  }, [isOnline, isSyncing]);
 
   // Cache interventions for offline use
   const cacheInterventions = useCallback(async (interventions) => {
-    if (!db) return;
-    
-    try {
-      const transaction = db.transaction('cachedInterventions', 'readwrite');
-      const store = transaction.objectStore('cachedInterventions');
-      
-      // Clear existing cache
-      store.clear();
-      
-      // Add new interventions
-      for (const intervention of interventions) {
-        store.add(intervention);
-      }
-    } catch (error) {
-      console.error('Failed to cache interventions:', error);
+    const success = await db.cacheInterventions(interventions);
+    if (success) {
+      await loadDbStats();
     }
-  }, [db]);
+    return success;
+  }, []);
 
   // Get cached interventions
-  const getCachedInterventions = useCallback(async () => {
-    if (!db) return [];
-    
-    try {
-      const transaction = db.transaction('cachedInterventions', 'readonly');
-      const store = transaction.objectStore('cachedInterventions');
-      
-      return new Promise((resolve, reject) => {
-        const request = store.getAll();
-        request.onsuccess = () => resolve(request.result || []);
-        request.onerror = () => reject(request.error);
-      });
-    } catch (error) {
-      console.error('Failed to get cached interventions:', error);
-      return [];
-    }
-  }, [db]);
+  const getCachedInterventions = useCallback(async (filters = {}) => {
+    return await db.getInterventions(filters);
+  }, []);
 
-  // Cache clients for offline use
+  // Get a single cached intervention
+  const getCachedIntervention = useCallback(async (id) => {
+    return await db.getIntervention(id);
+  }, []);
+
+  // Update intervention locally (optimistic update)
+  const updateInterventionLocally = useCallback(async (id, updates) => {
+    return await db.updateInterventionLocally(id, updates);
+  }, []);
+
+  // Cache clients
   const cacheClients = useCallback(async (clients) => {
-    if (!db) return;
-    
-    try {
-      const transaction = db.transaction('cachedClients', 'readwrite');
-      const store = transaction.objectStore('cachedClients');
-      
-      store.clear();
-      
-      for (const client of clients) {
-        store.add(client);
-      }
-    } catch (error) {
-      console.error('Failed to cache clients:', error);
+    const success = await db.cacheClients(clients);
+    if (success) {
+      await loadDbStats();
     }
-  }, [db]);
+    return success;
+  }, []);
 
   // Get cached clients
   const getCachedClients = useCallback(async () => {
-    if (!db) return [];
-    
-    try {
-      const transaction = db.transaction('cachedClients', 'readonly');
-      const store = transaction.objectStore('cachedClients');
-      
-      return new Promise((resolve, reject) => {
-        const request = store.getAll();
-        request.onsuccess = () => resolve(request.result || []);
-        request.onerror = () => reject(request.error);
-      });
-    } catch (error) {
-      console.error('Failed to get cached clients:', error);
-      return [];
+    return await db.getClients();
+  }, []);
+
+  // Cache categories
+  const cacheCategories = useCallback(async (categories) => {
+    return await db.cacheCategories(categories);
+  }, []);
+
+  // Get cached categories
+  const getCachedCategories = useCallback(async () => {
+    return await db.getCategories();
+  }, []);
+
+  // Add photo to upload queue
+  const queuePhotoUpload = useCallback(async (interventionId, photoData) => {
+    return await db.addPendingPhoto(interventionId, photoData);
+  }, []);
+
+  // Get pending photos for an intervention
+  const getPendingPhotos = useCallback(async (interventionId) => {
+    return await db.getPendingPhotos(interventionId);
+  }, []);
+
+  // Clear all offline data
+  const clearOfflineData = useCallback(async () => {
+    const success = await db.clearAllData();
+    if (success) {
+      setPendingActions([]);
+      setDbStats(null);
+      setLastSyncTime(null);
+      toast.success('Données hors ligne effacées');
     }
-  }, [db]);
+    return success;
+  }, []);
 
   const value = {
+    // Status
     isOnline,
+    isSyncing,
+    lastSyncTime,
+    dbStats,
+    
+    // Pending actions
     pendingActions,
     pendingCount: pendingActions.length,
-    isSyncing,
     addPendingAction,
-    removePendingAction,
     syncPendingActions,
+    
+    // Interventions cache
     cacheInterventions,
     getCachedInterventions,
+    getCachedIntervention,
+    updateInterventionLocally,
+    
+    // Clients cache
     cacheClients,
-    getCachedClients
+    getCachedClients,
+    
+    // Categories cache
+    cacheCategories,
+    getCachedCategories,
+    
+    // Photos
+    queuePhotoUpload,
+    getPendingPhotos,
+    
+    // Utilities
+    clearOfflineData,
+    refreshStats: loadDbStats
   };
 
   return (
@@ -315,8 +382,8 @@ export const registerServiceWorker = async () => {
         const newWorker = registration.installing;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New version available
             console.log('New version available!');
+            toast.info('Nouvelle version disponible - Rafraîchissez la page');
           }
         });
       });
@@ -327,3 +394,5 @@ export const registerServiceWorker = async () => {
     }
   }
 };
+
+export default OfflineContext;

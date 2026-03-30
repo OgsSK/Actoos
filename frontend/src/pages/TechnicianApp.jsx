@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useOffline } from '../contexts/OfflineContext';
+import { useOffline, ACTION_TYPES } from '../contexts/OfflineContext';
 import usePushNotifications from '../hooks/usePushNotifications';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -37,35 +37,55 @@ import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday }
 import { fr } from 'date-fns/locale';
 
 // Sync Status Component
-const SyncStatus = ({ isOnline, pendingCount, isSyncing, onSync }) => {
+const SyncStatus = ({ isOnline, pendingCount, isSyncing, onSync, lastSyncTime }) => {
+  const formatLastSync = (time) => {
+    if (!time) return null;
+    const date = new Date(time);
+    const now = new Date();
+    const diffMinutes = Math.floor((now - date) / 60000);
+    
+    if (diffMinutes < 1) return 'à l\'instant';
+    if (diffMinutes < 60) return `il y a ${diffMinutes}min`;
+    if (diffMinutes < 1440) return `il y a ${Math.floor(diffMinutes / 60)}h`;
+    return date.toLocaleDateString('fr-FR');
+  };
+
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-      {isOnline ? (
-        <>
-          <Wifi className="w-3 h-3" />
-          <span>En ligne</span>
-        </>
-      ) : (
-        <>
-          <WifiOff className="w-3 h-3" />
-          <span>Hors ligne</span>
-        </>
-      )}
-      {pendingCount > 0 && (
-        <Badge variant="secondary" className="ml-1 bg-amber-100 text-amber-700 h-5 px-1.5">
-          {pendingCount}
-        </Badge>
-      )}
+    <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+        {isOnline ? (
+          <>
+            <Wifi className="w-3 h-3" />
+            <span>En ligne</span>
+          </>
+        ) : (
+          <>
+            <WifiOff className="w-3 h-3" />
+            <span>Hors ligne</span>
+          </>
+        )}
+        {pendingCount > 0 && (
+          <Badge variant="secondary" className="ml-1 bg-amber-500 text-white h-5 px-1.5">
+            {pendingCount}
+          </Badge>
+        )}
+      </div>
       {isOnline && pendingCount > 0 && (
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={onSync} 
           disabled={isSyncing}
-          className="h-5 w-5 p-0 ml-1"
+          className="h-8 w-8 p-0"
+          title="Synchroniser"
         >
-          <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
         </Button>
+      )}
+      {!isOnline && lastSyncTime && (
+        <span className="text-xs text-slate-500" title={`Dernière sync: ${new Date(lastSyncTime).toLocaleString('fr-FR')}`}>
+          Sync: {formatLastSync(lastSyncTime)}
+        </span>
       )}
     </div>
   );
@@ -796,7 +816,10 @@ export const TechnicianApp = () => {
   const { 
     isOnline, pendingActions, pendingCount, isSyncing, 
     addPendingAction, syncPendingActions, 
-    cacheInterventions, getCachedInterventions 
+    cacheInterventions, getCachedInterventions,
+    cacheClients, getCachedClients,
+    cacheCategories, getCachedCategories,
+    lastSyncTime
   } = useOffline();
   const {
     isSupported: pushSupported,
@@ -823,60 +846,93 @@ export const TechnicianApp = () => {
 
   const loadClients = async () => {
     try {
-      const response = await api.get('/clients');
-      setClients(response.data);
+      if (isOnline) {
+        const response = await api.get('/clients');
+        setClients(response.data);
+        // Cache for offline use
+        await cacheClients(response.data);
+      } else {
+        // Load from cache when offline
+        const cached = await getCachedClients();
+        setClients(cached);
+      }
     } catch (error) {
       console.error('Error loading clients:', error);
+      // Fallback to cache on error
+      const cached = await getCachedClients();
+      if (cached.length > 0) {
+        setClients(cached);
+      }
     }
   };
 
   const loadCategories = async () => {
     try {
-      const response = await api.get('/categories');
-      setCategories(response.data);
+      if (isOnline) {
+        const response = await api.get('/categories');
+        setCategories(response.data);
+        // Cache for offline use
+        await cacheCategories(response.data);
+      } else {
+        // Load from cache when offline
+        const cached = await getCachedCategories();
+        setCategories(cached);
+      }
     } catch (error) {
       console.error('Error loading categories:', error);
+      // Fallback to cache on error
+      const cached = await getCachedCategories();
+      if (cached.length > 0) {
+        setCategories(cached);
+      }
     }
   };
 
   const loadInterventions = async () => {
     setLoading(true);
     try {
-      let response;
-      if (activeTab === 'today') {
-        response = await api.get('/interventions/today');
+      if (isOnline) {
+        let response;
+        if (activeTab === 'today') {
+          response = await api.get('/interventions/today');
+        } else {
+          // Week view - fetch all interventions for the week (including available ones)
+          const dateDebut = format(weekStart, 'yyyy-MM-dd');
+          const dateFin = format(addDays(weekStart, 6), 'yyyy-MM-dd');
+          response = await api.get('/interventions', { 
+            params: { date_debut: dateDebut, date_fin: dateFin, include_available: true } 
+          });
+          
+          // Enrich with client data for week view
+          const clientIds = [...new Set(response.data.map(i => i.client_id))];
+          const clientsRes = await api.get('/clients');
+          const clientsMap = {};
+          clientsRes.data.forEach(c => { clientsMap[c.id] = c; });
+          
+          response.data = response.data.map(i => ({
+            ...i,
+            client: clientsMap[i.client_id] || null
+          }));
+        }
+        
+        setInterventions(response.data);
+        // Cache for offline use
+        await cacheInterventions(response.data);
       } else {
-        // Week view - fetch all interventions for the week (including available ones)
-        const dateDebut = format(weekStart, 'yyyy-MM-dd');
-        const dateFin = format(addDays(weekStart, 6), 'yyyy-MM-dd');
-        response = await api.get('/interventions', { 
-          params: { date_debut: dateDebut, date_fin: dateFin, include_available: true } 
-        });
-        
-        // Enrich with client data for week view
-        const clientIds = [...new Set(response.data.map(i => i.client_id))];
-        const clientsRes = await api.get('/clients');
-        const clientsMap = {};
-        clientsRes.data.forEach(c => { clientsMap[c.id] = c; });
-        
-        response.data = response.data.map(i => ({
-          ...i,
-          client: clientsMap[i.client_id] || null
-        }));
-      }
-      
-      setInterventions(response.data);
-      // Cache for offline use
-      cacheInterventions(response.data);
-    } catch (error) {
-      console.error('Error loading interventions:', error);
-      // Try to load from cache if offline
-      if (!isOnline) {
+        // Load from cache when offline
         const cached = await getCachedInterventions();
+        setInterventions(cached);
         if (cached.length > 0) {
-          setInterventions(cached);
           toast.info('Données hors ligne chargées');
         }
+      }
+    } catch (error) {
+      console.error('Error loading interventions:', error);
+      // Fallback to cache on any error
+      const cached = await getCachedInterventions();
+      if (cached.length > 0) {
+        setInterventions(cached);
+        toast.info('Données chargées depuis le cache');
       } else {
         toast.error('Erreur lors du chargement');
       }
@@ -888,7 +944,7 @@ export const TechnicianApp = () => {
   const handleStartIntervention = async (id) => {
     if (!isOnline) {
       // Queue for sync if offline
-      await addPendingAction({ type: 'start', interventionId: id });
+      await addPendingAction(ACTION_TYPES.START_INTERVENTION, { interventionId: id });
       toast.info('Action enregistrée pour synchronisation');
       // Update local state optimistically
       setInterventions(prev => prev.map(i => 
@@ -916,7 +972,7 @@ export const TechnicianApp = () => {
 
   const handleCompleteIntervention = async (id) => {
     if (!isOnline) {
-      await addPendingAction({ type: 'complete', interventionId: id, notes });
+      await addPendingAction(ACTION_TYPES.COMPLETE_INTERVENTION, { interventionId: id, notes });
       toast.info('Action enregistrée pour synchronisation');
       setInterventions(prev => prev.map(i => 
         i.id === id ? { ...i, statut: 'terminee', heure_fin: new Date().toISOString() } : i
@@ -943,7 +999,12 @@ export const TechnicianApp = () => {
   // Claim an available intervention
   const handleClaimIntervention = async (id) => {
     if (!isOnline) {
-      toast.error('Connexion requise pour accepter une mission');
+      // Allow claiming offline with optimistic update
+      await addPendingAction(ACTION_TYPES.CLAIM_INTERVENTION, { interventionId: id });
+      toast.info('Acceptation enregistrée - sera synchronisée quand en ligne');
+      setInterventions(prev => prev.map(i => 
+        i.id === id ? { ...i, technicien_id: user?.id, _pendingClaim: true } : i
+      ));
       return;
     }
     
@@ -1173,6 +1234,7 @@ export const TechnicianApp = () => {
               pendingCount={pendingCount}
               isSyncing={isSyncing}
               onSync={syncPendingActions}
+              lastSyncTime={lastSyncTime}
             />
             <Button variant="ghost" size="sm" onClick={loadInterventions} className="h-8 w-8 p-0">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
