@@ -50,6 +50,28 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - `GET /api/interventions/today` - Modifié pour inclure les interventions disponibles pour les techs
 - `GET /api/interventions?include_available=true` - Paramètre pour inclure les disponibles
 
+### Phase 14 - Catégories avec Checklists Dynamiques ✅ (Date: 2026-03-30)
+
+#### Fonctionnalités
+- [x] **6 catégories par défaut** - Plomberie, Électricité, Nettoyage, Climatisation, BTP, Maintenance
+- [x] **Checklists dynamiques** - Chaque catégorie a son template de checklist (checkbox, text, number, photo)
+- [x] **Sélecteur de catégorie** - Dans le formulaire de création d'intervention avec couleurs
+- [x] **Affichage checklist** - Dans les détails de l'intervention avec les items à remplir
+- [x] **Sauvegarde checklist** - Les techniciens peuvent remplir et sauvegarder la checklist
+- [x] **Auto-seeding** - Les catégories sont créées automatiquement lors du premier appel
+
+#### Endpoints ajoutés
+- `GET /api/categories` - Liste les catégories de l'entreprise
+- `GET /api/categories/{id}` - Détails d'une catégorie avec son checklist_template
+- `POST /api/categories` - Créer une nouvelle catégorie (admin)
+- `PUT /api/categories/{id}` - Modifier une catégorie (admin)
+- `PUT /api/interventions/{id}/checklist` - Sauvegarder les réponses de checklist
+
+#### Modèles ajoutés
+- `Categorie` - code, nom, icone, couleur, checklist_template
+- `ChecklistItem` - id, label, type (checkbox/text/number/photo), required
+- `ChecklistResponse` - item_id, checked, value, completed_at
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -72,8 +94,10 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 ### P0 (Critique) - Complété ✅
 - [x] **Logique assignation intelligente** - Intervention sans technicien → visible par tous → premier à accepter = assigné
 
+### P1 (Important) - Complété ✅
+- [x] **Catégories/Modules** : Support multi-secteurs (BTP, Nettoyage, Maintenance) avec checklists dynamiques
+
 ### P1 (Important) - En cours
-- [ ] **Catégories/Modules** : Support multi-secteurs (BTP, Nettoyage, Maintenance) avec checklists dynamiques
 - [ ] **EXIF stripping** : Supprimer métadonnées GPS des photos avant upload
 - [ ] Historique communications (emails + SMS envoyés)
 
@@ -88,6 +112,6 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 - [ ] React Native (si besoin natif)
 
 ## Next Tasks
-1. Ajouter catégories avec checklists dynamiques (BTP, Nettoyage, Maintenance)
-2. EXIF stripping + compression photos avant upload
-3. Historique des communications (emails/SMS envoyés par client)
+1. EXIF stripping + compression photos avant upload (Pillow backend)
+2. Historique des communications (emails/SMS envoyés par client)
+3. Stripe + Onboarding SaaS (plans d'abonnement)
