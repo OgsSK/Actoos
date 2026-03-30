@@ -50,6 +50,10 @@ code, .font-mono {
         --warning: 38 92% 50%;
         --error: 0 84% 60%;
         --info: 199 89% 48%;
+        
+        /* Tenant customization defaults (overridden by AuthContext) */
+        --tenant-primary: #2563EB;
+        --tenant-primary-rgb: 37, 99, 235;
     }
 }
 
@@ -134,6 +138,26 @@ code, .font-mono {
 
 .animate-fade-in {
     animation: fade-in 0.3s ease-out;
+}
+
+/* Tenant-branded utilities */
+.bg-tenant-primary {
+    background-color: var(--tenant-primary);
+}
+.text-tenant-primary {
+    color: var(--tenant-primary);
+}
+.border-tenant-primary {
+    border-color: var(--tenant-primary);
+}
+.ring-tenant-primary {
+    --tw-ring-color: var(--tenant-primary);
+}
+.bg-tenant-primary\/10 {
+    background-color: rgba(var(--tenant-primary-rgb), 0.1);
+}
+.bg-tenant-primary\/20 {
+    background-color: rgba(var(--tenant-primary-rgb), 0.2);
 }
 
 /* Sync status indicator */

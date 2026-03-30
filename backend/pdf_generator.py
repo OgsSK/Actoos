@@ -246,8 +246,8 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
     return buffer.getvalue()
 
 
-def generate_facture_pdf(facture: dict, client: dict, entreprise: dict) -> bytes:
-    """Generate PDF for an invoice"""
+def generate_facture_pdf(facture: dict, client: dict, entreprise: dict, portal_url: str = None) -> bytes:
+    """Generate PDF for an invoice with company logo and payment QR code"""
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20*mm, bottomMargin=20*mm, leftMargin=20*mm, rightMargin=20*mm)
     
@@ -257,10 +257,13 @@ def generate_facture_pdf(facture: dict, client: dict, entreprise: dict) -> bytes
     styles.add(ParagraphStyle(name='Subtitle', alignment=TA_LEFT, fontSize=12, spaceAfter=10, fontName='Helvetica-Bold'))
     styles.add(ParagraphStyle(name='Normal10', fontSize=10, leading=14))
     styles.add(ParagraphStyle(name='Small', fontSize=9, textColor=colors.grey))
+    styles.add(ParagraphStyle(name='CenterSmall', alignment=TA_CENTER, fontSize=8, textColor=colors.grey))
     
     elements = []
     
-    # Header with company info
+    # Header with logo and company info
+    logo_img = load_logo_image(entreprise.get('logo_url'))
+    
     company_info = f"""
     <b>{entreprise.get('nom', '')}</b><br/>
     {entreprise.get('adresse', '')}<br/>
@@ -270,7 +273,21 @@ def generate_facture_pdf(facture: dict, client: dict, entreprise: dict) -> bytes
     SIRET: {entreprise.get('siret', '')}<br/>
     TVA Intra: {entreprise.get('tva_intra', '')}
     """
-    elements.append(Paragraph(company_info, styles['Normal10']))
+    
+    if logo_img:
+        # Create a table with logo on left and company info on right
+        header_table = Table([
+            [logo_img, Paragraph(company_info, styles['Normal10'])]
+        ], colWidths=[60*mm, 100*mm])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ]))
+        elements.append(header_table)
+    else:
+        elements.append(Paragraph(company_info, styles['Normal10']))
+    
     elements.append(Spacer(1, 15*mm))
     
     # Title
@@ -355,6 +372,32 @@ def generate_facture_pdf(facture: dict, client: dict, entreprise: dict) -> bytes
         if facture.get('date_paiement'):
             pay_date = get_local_time(facture.get('date_paiement'))
             elements.append(Paragraph(f"Payée le {pay_date.strftime('%d/%m/%Y')}", styles['Small']))
+    else:
+        # Add QR code for payment (only for unpaid invoices)
+        elements.append(Spacer(1, 10*mm))
+        
+        # Build payment QR data
+        qr_data = build_payment_qr_data(facture, entreprise, portal_url)
+        qr_image_buffer = generate_qr_code(qr_data, size=100)
+        
+        if qr_image_buffer:
+            try:
+                qr_img = Image(qr_image_buffer, width=30*mm, height=30*mm)
+                
+                # Create a table with QR code and payment info
+                qr_table_data = [
+                    [qr_img, Paragraph("<b>Scannez pour payer</b><br/>Ce QR code contient les informations de paiement", styles['Small'])]
+                ]
+                qr_table = Table(qr_table_data, colWidths=[35*mm, 80*mm])
+                qr_table.setStyle(TableStyle([
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+                    ('ALIGN', (1, 0), (1, 0), 'LEFT'),
+                    ('LEFTPADDING', (1, 0), (1, 0), 10),
+                ]))
+                elements.append(qr_table)
+            except Exception as e:
+                logger.warning(f"Could not add QR code: {e}")
     
     doc.build(elements)
     return buffer.getvalue()

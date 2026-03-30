@@ -58,6 +58,56 @@ export const AuthProvider = ({ children }) => {
     fetchUser();
   }, [fetchUser]);
 
+  // Apply tenant's custom primary color as CSS variable
+  useEffect(() => {
+    if (entreprise?.couleur_primaire) {
+      const root = document.documentElement;
+      const color = entreprise.couleur_primaire;
+      
+      // Set the primary color CSS variable
+      root.style.setProperty('--tenant-primary', color);
+      
+      // Calculate HSL values for Tailwind/Shadcn compatibility
+      // Convert hex to RGB
+      const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 37, g: 99, b: 235 }; // fallback to blue
+      };
+      
+      // Convert RGB to HSL
+      const rgbToHsl = (r, g, b) => {
+        r /= 255; g /= 255; b /= 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+        
+        if (max === min) {
+          h = s = 0;
+        } else {
+          const d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          switch (max) {
+            case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+            case g: h = ((b - r) / d + 2) / 6; break;
+            case b: h = ((r - g) / d + 4) / 6; break;
+            default: h = 0;
+          }
+        }
+        return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+      };
+      
+      const rgb = hexToRgb(color);
+      const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+      
+      // Set HSL components for Shadcn/Tailwind primary variable
+      root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+      root.style.setProperty('--tenant-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+    }
+  }, [entreprise?.couleur_primaire]);
+
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
     const { access_token, user: userData, entreprise: entData } = response.data;
