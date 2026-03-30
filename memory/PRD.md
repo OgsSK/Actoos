@@ -425,15 +425,40 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] Formatage devise dans Dashboard, Analytics, Devis, Factures ✅
 - [x] Export CSV/JSON des rapports Analytics ✅
 
+### Phase 26 - Exports Analytics & Relevés Mensuels ✅ (Date: 2026-03-31)
+
+#### Export Analytics
+- [x] **Export PDF Dashboard** - Génération PDF des statistiques complètes
+- [x] **Export CSV** - Export données brutes pour analyse externe
+- [x] **Sélecteur période** - Export filtré par période sélectionnée
+
+#### Relevés Mensuels (Statements)
+- [x] **Page Relevés** (`/statements`) - Interface admin complète
+- [x] **Génération par période** - Sélection mois/année avec génération batch
+- [x] **PDF par client** - Relevé détaillé avec factures, statuts, totaux
+- [x] **Téléchargement individuel** - Bouton PDF par client
+- [x] **Envoi groupé par email** - Envoi automatique avec pièce jointe PDF
+- [x] **Historique des envois** - Log des relevés envoyés
+- [x] **Support multi-devise** - Montants formatés selon devise entreprise
+
+#### Endpoints ajoutés
+- `GET /api/statements/generate` - Génère relevés pour tous clients avec factures
+- `GET /api/statements/preview/{client_id}` - Télécharge PDF d'un client
+- `POST /api/statements/send` - Envoi batch par email
+- `GET /api/statements/history` - Historique des envois
+
+#### Fichiers créés
+- `/app/backend/statement_generator.py` - Générateur PDF ReportLab
+- `/app/backend/routers/statements.py` - Router FastAPI
+- `/app/frontend/src/pages/Statements.jsx` - Interface React
+
 ### Backlog V2
 - [ ] React Native (si besoin app native)
 - [ ] Intégration calendrier Google/Outlook
 - [ ] API publique pour intégrations tierces
-- [ ] Multi-devises et internationalisation
-- [ ] Export PDF/Excel des rapports
-- [ ] Relevés mensuels automatisés pour clients
 
 ## Next Tasks
-1. Refactoring server.py en modules (routers/)
-2. Multi-devises et internationalisation
+1. **P1**: Intégration Google Calendar/Outlook (synchronisation planning)
+2. **P2**: Phase 3 refactoring server.py (routes restantes)
+3. **P2**: API publique pour intégrations tierces
 
