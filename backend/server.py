@@ -421,7 +421,7 @@ async def delete_client(client_id: str, current_user: dict = Depends(require_adm
 
 # ==================== INTERVENTION ROUTES ====================
 @api_router.post("/interventions")
-async def create_intervention(data: InterventionCreate, current_user: dict = Depends(get_current_user)):
+async def create_intervention(data: InterventionCreate, background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)):
     """Create a new intervention"""
     # Verify client exists
     client = await db.clients.find_one({"id": data.client_id, "entreprise_id": current_user["entreprise_id"]})
@@ -439,7 +439,49 @@ async def create_intervention(data: InterventionCreate, current_user: dict = Dep
     await db.interventions.insert_one(intervention_dict)
     await log_action(current_user["entreprise_id"], current_user["user_id"], "create", "intervention", intervention_dict["id"])
     
+    # If no technician assigned, notify all technicians
+    if not intervention_dict.get("technicien_id"):
+        background_tasks.add_task(
+            notify_available_intervention,
+            current_user["entreprise_id"],
+            intervention_dict,
+            client
+        )
+    
     return serialize_doc(intervention_dict)
+
+async def notify_available_intervention(entreprise_id: str, intervention: dict, client: dict):
+    """Notify all active technicians about a new available intervention"""
+    try:
+        # Get all active technicians
+        technicians = await db.users.find(
+            {"entreprise_id": entreprise_id, "role": "tech", "statut": "actif"},
+            {"_id": 0, "telephone": 1, "prenom": 1, "nom": 1}
+        ).to_list(100)
+        
+        entreprise = await db.entreprises.find_one({"id": entreprise_id}, {"_id": 0, "nom": 1})
+        entreprise_nom = entreprise.get("nom", "Votre entreprise") if entreprise else "Votre entreprise"
+        
+        # Parse date for message
+        try:
+            date_obj = datetime.fromisoformat(intervention["date_prevue"].replace('Z', '+00:00'))
+            date_str = date_obj.strftime("%d/%m à %Hh%M")
+        except:
+            date_str = "bientôt"
+        
+        client_nom = f"{client.get('nom', '')} {client.get('prenom', '')}".strip() or "Client"
+        
+        # Send SMS to each technician with a phone number
+        for tech in technicians:
+            if tech.get("telephone"):
+                try:
+                    message = f"🔔 {entreprise_nom}: Nouvelle intervention disponible!\n{intervention.get('titre', 'Intervention')}\n📍 {intervention.get('ville', '')}\n📅 {date_str}\n👤 {client_nom}\n\nOuvrez l'app pour l'accepter."
+                    from sms_service import send_sms
+                    await send_sms(tech["telephone"], message)
+                except Exception as e:
+                    logger.warning(f"Failed to send SMS to {tech.get('prenom')}: {e}")
+    except Exception as e:
+        logger.error(f"Error notifying technicians: {e}")
 
 @api_router.get("/interventions")
 async def list_interventions(
@@ -448,14 +490,22 @@ async def list_interventions(
     client_id: Optional[str] = None,
     date_debut: Optional[str] = None,
     date_fin: Optional[str] = None,
+    include_available: Optional[bool] = False,
     current_user: dict = Depends(get_current_user)
 ):
     """List interventions with filters"""
     query = {"entreprise_id": current_user["entreprise_id"]}
     
-    # Technicians can only see their own interventions
+    # Technicians see their own + optionally available interventions
     if current_user["role"] == "tech":
-        query["technicien_id"] = current_user["user_id"]
+        if include_available:
+            query["$or"] = [
+                {"technicien_id": current_user["user_id"]},
+                {"technicien_id": None},
+                {"technicien_id": {"$exists": False}}
+            ]
+        else:
+            query["technicien_id"] = current_user["user_id"]
     elif technicien_id:
         query["technicien_id"] = technicien_id
     
@@ -487,7 +537,33 @@ async def get_today_interventions(current_user: dict = Depends(get_current_user)
     }
     
     if current_user["role"] == "tech":
-        query["technicien_id"] = current_user["user_id"]
+        # Tech sees their own interventions + available (unassigned) ones
+        query["$or"] = [
+            {"technicien_id": current_user["user_id"]},
+            {"technicien_id": None},
+            {"technicien_id": {"$exists": False}}
+        ]
+    
+    interventions = await db.interventions.find(query, {"_id": 0}).sort("date_prevue", 1).to_list(100)
+    
+    # Enrich with client data
+    for i in interventions:
+        client = await db.clients.find_one({"id": i["client_id"]}, {"_id": 0, "nom": 1, "prenom": 1, "telephone": 1, "adresse": 1})
+        i["client"] = serialize_doc(client) if client else None
+    
+    return [serialize_doc(i) for i in interventions]
+
+@api_router.get("/interventions/available")
+async def get_available_interventions(current_user: dict = Depends(get_current_user)):
+    """Get available (unassigned) interventions for technicians to claim"""
+    query = {
+        "entreprise_id": current_user["entreprise_id"],
+        "statut": "planifiee",
+        "$or": [
+            {"technicien_id": None},
+            {"technicien_id": {"$exists": False}}
+        ]
+    }
     
     interventions = await db.interventions.find(query, {"_id": 0}).sort("date_prevue", 1).to_list(100)
     
@@ -612,6 +688,52 @@ async def start_intervention(intervention_id: str, current_user: dict = Depends(
     await log_action(current_user["entreprise_id"], current_user["user_id"], "start", "intervention", intervention_id)
     
     return {"message": "Intervention démarrée", "heure_debut": now}
+
+@api_router.post("/interventions/{intervention_id}/claim")
+async def claim_intervention(intervention_id: str, background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)):
+    """Claim an unassigned intervention - first tech to claim gets it"""
+    # Find the intervention
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Check if already assigned
+    if intervention.get("technicien_id"):
+        # Get the tech who has it
+        assigned_tech = await db.users.find_one({"id": intervention["technicien_id"]}, {"_id": 0, "prenom": 1, "nom": 1})
+        tech_name = f"{assigned_tech.get('prenom', '')} {assigned_tech.get('nom', '')}" if assigned_tech else "un autre technicien"
+        raise HTTPException(status_code=409, detail=f"Cette intervention a déjà été prise par {tech_name}")
+    
+    if intervention["statut"] != "planifiee":
+        raise HTTPException(status_code=400, detail="Cette intervention ne peut plus être réclamée")
+    
+    # Assign to the tech who claims it
+    now = datetime.now(timezone.utc).isoformat()
+    await db.interventions.update_one(
+        {"id": intervention_id, "technicien_id": None},  # Double-check it's still unassigned
+        {"$set": {"technicien_id": current_user["user_id"], "date_assignation": now}}
+    )
+    
+    # Verify it was actually assigned to this user (race condition check)
+    updated = await db.interventions.find_one({"id": intervention_id}, {"_id": 0, "technicien_id": 1})
+    if updated.get("technicien_id") != current_user["user_id"]:
+        raise HTTPException(status_code=409, detail="Cette intervention a été prise par un autre technicien")
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "claim", "intervention", intervention_id)
+    
+    # Get current user info for notification
+    claiming_tech = await db.users.find_one({"id": current_user["user_id"]}, {"_id": 0, "prenom": 1, "nom": 1})
+    tech_name = f"{claiming_tech.get('prenom', '')} {claiming_tech.get('nom', '')}" if claiming_tech else "Un technicien"
+    
+    return {
+        "message": "Intervention assignée avec succès",
+        "intervention_id": intervention_id,
+        "technicien_id": current_user["user_id"],
+        "technicien_nom": tech_name
+    }
 
 @api_router.post("/interventions/{intervention_id}/complete")
 async def complete_intervention(intervention_id: str, notes_terrain: Optional[str] = None, current_user: dict = Depends(get_current_user)):

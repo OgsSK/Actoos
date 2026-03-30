@@ -71,26 +71,33 @@ const SyncStatus = ({ isOnline, pendingCount, isSyncing, onSync }) => {
 };
 
 // Intervention Card for Technician
-const InterventionCard = ({ intervention, onClick }) => {
+const InterventionCard = ({ intervention, onClick, onClaim, currentUserId }) => {
   const isPast = new Date(intervention.date_prevue) < new Date();
   const isUrgent = intervention.priorite === 'urgente' || intervention.priorite === 'haute';
+  const isAvailable = !intervention.technicien_id;
+  const isAssignedToMe = intervention.technicien_id === currentUserId;
   
   return (
     <Card
-      className={`border-slate-200 cursor-pointer hover:shadow-md transition-all ${isUrgent ? 'border-l-4 border-l-red-500' : ''}`}
+      className={`border-slate-200 cursor-pointer hover:shadow-md transition-all ${isUrgent ? 'border-l-4 border-l-red-500' : ''} ${isAvailable ? 'border-l-4 border-l-amber-500 bg-amber-50/50' : ''}`}
       onClick={onClick}
       data-testid={`tech-intervention-${intervention.id}`}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="text-sm font-semibold text-slate-500">
                 {formatTime(intervention.date_prevue)}
               </span>
               <Badge variant="secondary" className={`status-${intervention.statut}`}>
                 {getStatusLabel(intervention.statut)}
               </Badge>
+              {isAvailable && (
+                <Badge variant="secondary" className="bg-amber-100 text-amber-700 animate-pulse">
+                  Disponible
+                </Badge>
+              )}
               {isUrgent && (
                 <Badge variant="secondary" className="bg-red-100 text-red-700">
                   {getPriorityLabel(intervention.priorite)}
@@ -110,6 +117,20 @@ const InterventionCard = ({ intervention, onClick }) => {
                 {intervention.adresse}, {intervention.ville}
               </p>
             )}
+            {isAvailable && (
+              <Button 
+                size="sm" 
+                className="mt-2 bg-amber-600 hover:bg-amber-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClaim(intervention.id);
+                }}
+                data-testid={`claim-intervention-${intervention.id}`}
+              >
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Accepter cette mission
+              </Button>
+            )}
           </div>
           <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
         </div>
@@ -119,7 +140,7 @@ const InterventionCard = ({ intervention, onClick }) => {
 };
 
 // Day Section for Week View
-const DaySection = ({ date, interventions, onInterventionClick }) => {
+const DaySection = ({ date, interventions, onInterventionClick, onClaim, currentUserId }) => {
   const isCurrentDay = isToday(date);
   const dayLabel = format(date, 'EEEE d MMMM', { locale: fr });
   
@@ -153,6 +174,8 @@ const DaySection = ({ date, interventions, onInterventionClick }) => {
                 key={intervention.id}
                 intervention={intervention}
                 onClick={() => onInterventionClick(intervention)}
+                onClaim={onClaim}
+                currentUserId={currentUserId}
               />
             ))}
         </div>
@@ -638,11 +661,11 @@ export const TechnicianApp = () => {
       if (activeTab === 'today') {
         response = await api.get('/interventions/today');
       } else {
-        // Week view - fetch all interventions for the week
+        // Week view - fetch all interventions for the week (including available ones)
         const dateDebut = format(weekStart, 'yyyy-MM-dd');
         const dateFin = format(addDays(weekStart, 6), 'yyyy-MM-dd');
         response = await api.get('/interventions', { 
-          params: { date_debut: dateDebut, date_fin: dateFin } 
+          params: { date_debut: dateDebut, date_fin: dateFin, include_available: true } 
         });
         
         // Enrich with client data for week view
@@ -729,6 +752,31 @@ export const TechnicianApp = () => {
     } catch (error) {
       console.error('Error completing intervention:', error);
       toast.error('Erreur lors de la clôture');
+    }
+  };
+
+  // Claim an available intervention
+  const handleClaimIntervention = async (id) => {
+    if (!isOnline) {
+      toast.error('Connexion requise pour accepter une mission');
+      return;
+    }
+    
+    try {
+      const response = await api.post(`/interventions/${id}/claim`);
+      toast.success('Mission acceptée ! Elle vous est maintenant assignée.');
+      loadInterventions();
+      // Close detail modal if open
+      if (selectedIntervention?.id === id) {
+        const updated = await api.get(`/interventions/${id}`);
+        setSelectedIntervention(updated.data);
+      }
+    } catch (error) {
+      console.error('Error claiming intervention:', error);
+      const message = error.response?.data?.detail || 'Erreur lors de l\'acceptation';
+      toast.error(message);
+      // Refresh list in case someone else claimed it
+      loadInterventions();
     }
   };
 
@@ -918,6 +966,8 @@ export const TechnicianApp = () => {
                     key={intervention.id}
                     intervention={intervention}
                     onClick={() => selectIntervention(intervention)}
+                    onClaim={handleClaimIntervention}
+                    currentUserId={user?.id}
                   />
                 ))}
             </div>
@@ -931,6 +981,8 @@ export const TechnicianApp = () => {
                 date={day}
                 interventions={getInterventionsForDay(day)}
                 onInterventionClick={selectIntervention}
+                onClaim={handleClaimIntervention}
+                currentUserId={user?.id}
               />
             ))}
           </div>
