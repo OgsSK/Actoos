@@ -27,6 +27,7 @@ Cette intégration permet de synchroniser les interventions Actoos avec Google C
    - **Nom de l'application** : Actoos
    - **Email d'assistance utilisateur** : votre email
    - **Email du développeur** : votre email
+   - **Domaine autorisé** : actoos.com
 4. Cliquez sur **Enregistrer et continuer**
 5. Dans **Champs d'application**, ajoutez :
    - `https://www.googleapis.com/auth/calendar`
@@ -42,9 +43,11 @@ Cette intégration permet de synchroniser les interventions Actoos avec Google C
 3. Type d'application : **Application Web**
 4. Nom : `Actoos Web Client`
 5. **Origines JavaScript autorisées** :
-   - `https://votre-domaine.com` (URL de votre app)
+   - `https://actoos.com`
+   - `https://www.actoos.com`
 6. **URI de redirection autorisés** :
-   - `https://votre-domaine.com/api/calendar/callback`
+   - `https://actoos.com/api/calendar/callback`
+   - `https://www.actoos.com/api/calendar/callback`
 7. Cliquez sur **Créer**
 8. **Copiez** le **Client ID** et le **Client Secret**
 
@@ -56,7 +59,7 @@ Ajoutez ces variables dans `/app/backend/.env` :
 # Google Calendar OAuth
 GOOGLE_CLIENT_ID=votre-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=votre-client-secret
-GOOGLE_REDIRECT_URI=https://votre-domaine.com/api/calendar/callback
+GOOGLE_REDIRECT_URI=https://actoos.com/api/calendar/callback
 ```
 
 Redémarrez le backend après modification :

@@ -14,7 +14,8 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 // Plan Icons
 const PlanIcons = {
-  starter: Building,
+  startup: Building,
+  starter: Building,  // Alias for backward compatibility
   pro: Zap,
   enterprise: Crown
 };

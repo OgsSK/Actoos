@@ -658,15 +658,28 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - PDF avec signature: +1161 bytes vs PDF basic
 
 ## Next Tasks
-1. **Fournir credentials OAuth Google** pour activer l'intégration Calendar
+1. **Fournir credentials OAuth Google** pour activer l'intégration Calendar (voir /app/docs/GOOGLE_CALENDAR_SETUP.md)
 
 ### Backlog V2
-- [ ] UI page pricing publique avec comparaison des plans
 - [ ] Notifications push pour validation en attente
 - [ ] React Native (si besoin app native)
 - [ ] Microsoft Outlook Calendar integration
 
 ---
+
+### Phase 37 - Page Pricing Publique ✅ (Date: 2026-03-31)
+
+#### Fonctionnalités
+- [x] **Page /pricing** - Page publique avec les 3 plans officiels
+- [x] **Plans depuis API** - Chargement dynamique depuis `/api/plans`
+- [x] **Design professionnel** - Dégradé bleu, cards avec hover, badge "POPULAIRE"
+- [x] **Prix corrects** - Startup 49€, Pro 79€, Enterprise 129€
+- [x] **Limites affichées** - Admins, techniciens, catégories par plan
+- [x] **CTA vers inscription** - Bouton "Choisir ce plan" avec navigation
+
+#### Domaine configuré
+- Production : **actoos.com**
+- Google Calendar redirect : `https://actoos.com/api/calendar/callback`
 
 ### Phase 34 - Automatisation devis → facture (Plan Pro) ✅ (Date: 2026-03-31)
 
