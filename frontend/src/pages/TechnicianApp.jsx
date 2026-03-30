@@ -9,11 +9,18 @@ import { Textarea } from '../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from '../components/ui/dialog';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '../components/ui/select';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger
+} from '../components/ui/dropdown-menu';
 import {
   formatDate, formatTime, formatCurrency, getStatusLabel, getPriorityLabel,
   priorityColors, getDateLabel
@@ -21,7 +28,8 @@ import {
 import {
   Calendar, Clock, MapPin, Phone, Play, CheckCircle, FileText, Camera,
   Loader2, ChevronRight, User, Navigation, Wifi, WifiOff, RefreshCw,
-  Plus, X, Upload, Image as ImageIcon, ChevronLeft, CalendarDays
+  Plus, X, Upload, Image as ImageIcon, ChevronLeft, CalendarDays,
+  LogOut, Settings, Wrench, Euro, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday } from 'date-fns';
@@ -252,14 +260,348 @@ const PhotoUpload = ({ interventionId, photos, onUpload, onDelete }) => {
   );
 };
 
+// Profile Menu Component
+const ProfileMenu = ({ user, onLogout }) => {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="flex-col h-auto py-2 flex-1" data-testid="profile-menu-btn">
+          <User className="w-5 h-5 mb-1" />
+          <span className="text-xs">Profil</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="px-3 py-2">
+          <p className="font-medium text-sm">{user?.prenom} {user?.nom}</p>
+          <p className="text-xs text-slate-500">{user?.email}</p>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={onLogout} data-testid="logout-btn">
+          <LogOut className="w-4 h-4 mr-2" />
+          Se déconnecter
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+// Create Intervention Form Component
+const CreateInterventionForm = ({ clients, onSubmit, onClose, loading }) => {
+  const [formData, setFormData] = useState({
+    client_id: '',
+    titre: '',
+    description: '',
+    adresse: '',
+    ville: '',
+    code_postal: '',
+    date_prevue: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    duree_estimee: 60,
+    priorite: 'normale'
+  });
+
+  const handleClientChange = (clientId) => {
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+      setFormData(prev => ({
+        ...prev,
+        client_id: clientId,
+        adresse: client.adresse || '',
+        ville: client.ville || '',
+        code_postal: client.code_postal || ''
+      }));
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.client_id || !formData.titre) {
+      toast.error('Veuillez remplir les champs obligatoires');
+      return;
+    }
+    onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label>Client *</Label>
+        <Select value={formData.client_id} onValueChange={handleClientChange}>
+          <SelectTrigger data-testid="intervention-client-select">
+            <SelectValue placeholder="Sélectionner un client" />
+          </SelectTrigger>
+          <SelectContent>
+            {clients.map(client => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.nom} {client.prenom}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Titre *</Label>
+        <Input
+          value={formData.titre}
+          onChange={e => setFormData(prev => ({ ...prev, titre: e.target.value }))}
+          placeholder="Ex: Réparation fuite"
+          data-testid="intervention-titre"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Description</Label>
+        <Textarea
+          value={formData.description}
+          onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Détails de l'intervention..."
+          rows={2}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Date et heure *</Label>
+          <Input
+            type="datetime-local"
+            value={formData.date_prevue}
+            onChange={e => setFormData(prev => ({ ...prev, date_prevue: e.target.value }))}
+            data-testid="intervention-date"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Durée (min)</Label>
+          <Input
+            type="number"
+            value={formData.duree_estimee}
+            onChange={e => setFormData(prev => ({ ...prev, duree_estimee: parseInt(e.target.value) || 60 }))}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Adresse</Label>
+        <Input
+          value={formData.adresse}
+          onChange={e => setFormData(prev => ({ ...prev, adresse: e.target.value }))}
+          placeholder="Adresse"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Ville</Label>
+          <Input
+            value={formData.ville}
+            onChange={e => setFormData(prev => ({ ...prev, ville: e.target.value }))}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Code postal</Label>
+          <Input
+            value={formData.code_postal}
+            onChange={e => setFormData(prev => ({ ...prev, code_postal: e.target.value }))}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Priorité</Label>
+        <Select value={formData.priorite} onValueChange={v => setFormData(prev => ({ ...prev, priorite: v }))}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="basse">Basse</SelectItem>
+            <SelectItem value="normale">Normale</SelectItem>
+            <SelectItem value="haute">Haute</SelectItem>
+            <SelectItem value="urgente">Urgente</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <DialogFooter className="pt-4">
+        <Button type="button" variant="outline" onClick={onClose}>Annuler</Button>
+        <Button type="submit" disabled={loading} data-testid="create-intervention-submit">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+          Créer
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+};
+
+// Create Devis Form Component (simplified for technician)
+const CreateDevisForm = ({ clients, onSubmit, onClose, loading, preselectedClient }) => {
+  const [formData, setFormData] = useState({
+    client_id: preselectedClient || '',
+    lignes: [{ description: '', quantite: 1, prix_unitaire: 0, tva: 20 }],
+    conditions: '',
+    validite_jours: 30
+  });
+
+  const addLigne = () => {
+    setFormData(prev => ({
+      ...prev,
+      lignes: [...prev.lignes, { description: '', quantite: 1, prix_unitaire: 0, tva: 20 }]
+    }));
+  };
+
+  const removeLigne = (index) => {
+    if (formData.lignes.length <= 1) return;
+    setFormData(prev => ({
+      ...prev,
+      lignes: prev.lignes.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateLigne = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      lignes: prev.lignes.map((l, i) => i === index ? { ...l, [field]: value } : l)
+    }));
+  };
+
+  const calculateTotal = () => {
+    return formData.lignes.reduce((sum, l) => {
+      const ht = l.quantite * l.prix_unitaire;
+      const tva = ht * l.tva / 100;
+      return sum + ht + tva;
+    }, 0);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.client_id) {
+      toast.error('Veuillez sélectionner un client');
+      return;
+    }
+    if (formData.lignes.some(l => !l.description || l.prix_unitaire <= 0)) {
+      toast.error('Veuillez compléter toutes les lignes du devis');
+      return;
+    }
+    onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label>Client *</Label>
+        <Select value={formData.client_id} onValueChange={v => setFormData(prev => ({ ...prev, client_id: v }))}>
+          <SelectTrigger data-testid="devis-client-select">
+            <SelectValue placeholder="Sélectionner un client" />
+          </SelectTrigger>
+          <SelectContent>
+            {clients.map(client => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.nom} {client.prenom}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label>Lignes du devis</Label>
+          <Button type="button" variant="outline" size="sm" onClick={addLigne}>
+            <Plus className="w-4 h-4 mr-1" /> Ligne
+          </Button>
+        </div>
+        
+        {formData.lignes.map((ligne, index) => (
+          <Card key={index} className="p-3 bg-slate-50">
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Description"
+                  value={ligne.description}
+                  onChange={e => updateLigne(index, 'description', e.target.value)}
+                  className="flex-1"
+                  data-testid={`devis-ligne-desc-${index}`}
+                />
+                {formData.lignes.length > 1 && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => removeLigne(index)}>
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs">Qté</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={ligne.quantite}
+                    onChange={e => updateLigne(index, 'quantite', parseFloat(e.target.value) || 1)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Prix HT (€)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={ligne.prix_unitaire}
+                    onChange={e => updateLigne(index, 'prix_unitaire', parseFloat(e.target.value) || 0)}
+                    data-testid={`devis-ligne-prix-${index}`}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">TVA (%)</Label>
+                  <Select value={String(ligne.tva)} onValueChange={v => updateLigne(index, 'tva', parseFloat(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">0%</SelectItem>
+                      <SelectItem value="5.5">5.5%</SelectItem>
+                      <SelectItem value="10">10%</SelectItem>
+                      <SelectItem value="20">20%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="bg-slate-100 rounded-lg p-3">
+        <div className="flex justify-between items-center">
+          <span className="font-medium">Total TTC</span>
+          <span className="text-lg font-bold text-blue-600" data-testid="devis-total">
+            {formatCurrency(calculateTotal())}
+          </span>
+        </div>
+      </div>
+
+      <DialogFooter className="pt-4">
+        <Button type="button" variant="outline" onClick={onClose}>Annuler</Button>
+        <Button type="submit" disabled={loading} data-testid="create-devis-submit">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileText className="w-4 h-4 mr-2" />}
+          Créer le devis
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+};
+
 // Technician App Main View
 export const TechnicianApp = () => {
   const [interventions, setInterventions] = useState([]);
+  const [clients, setClients] = useState([]);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState('');
   const [photos, setPhotos] = useState([]);
   const [activeTab, setActiveTab] = useState('today');
+  
+  // Modal states
+  const [showCreateIntervention, setShowCreateIntervention] = useState(false);
+  const [showCreateDevis, setShowCreateDevis] = useState(false);
+  const [preselectedClientId, setPreselectedClientId] = useState(null);
+  const [formLoading, setFormLoading] = useState(false);
   
   const { api, user, logout } = useAuth();
   const { 
@@ -274,10 +616,20 @@ export const TechnicianApp = () => {
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  // Load interventions
+  // Load interventions and clients
   useEffect(() => {
     loadInterventions();
+    loadClients();
   }, [activeTab]);
+
+  const loadClients = async () => {
+    try {
+      const response = await api.get('/clients');
+      setClients(response.data);
+    } catch (error) {
+      console.error('Error loading clients:', error);
+    }
+  };
 
   const loadInterventions = async () => {
     setLoading(true);
@@ -415,6 +767,48 @@ export const TechnicianApp = () => {
     }
   };
 
+  // Create intervention handler
+  const handleCreateIntervention = async (data) => {
+    setFormLoading(true);
+    try {
+      const payload = {
+        ...data,
+        date_prevue: new Date(data.date_prevue).toISOString()
+      };
+      await api.post('/interventions', payload);
+      toast.success('Intervention créée');
+      setShowCreateIntervention(false);
+      loadInterventions();
+    } catch (error) {
+      console.error('Error creating intervention:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la création');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  // Create devis handler
+  const handleCreateDevis = async (data) => {
+    setFormLoading(true);
+    try {
+      await api.post('/devis', data);
+      toast.success('Devis créé');
+      setShowCreateDevis(false);
+      setPreselectedClientId(null);
+    } catch (error) {
+      console.error('Error creating devis:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la création');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  // Open devis form with preselected client
+  const openDevisForClient = (clientId) => {
+    setPreselectedClientId(clientId);
+    setShowCreateDevis(true);
+  };
+
   const selectIntervention = async (intervention) => {
     setSelectedIntervention(intervention);
     setNotes(intervention.notes_terrain || '');
@@ -544,30 +938,82 @@ export const TechnicianApp = () => {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="bg-white border-t border-slate-200 px-4 py-2 fixed bottom-0 left-0 right-0">
+      <nav className="bg-white border-t border-slate-200 px-4 py-2 pb-12 fixed bottom-0 left-0 right-0 z-50">
         <div className="flex justify-around max-w-lg mx-auto">
-          <Button variant="ghost" className="flex-col h-auto py-2 flex-1">
+          <Button variant="ghost" className="flex-col h-auto py-2 flex-1" data-testid="nav-agenda">
             <Calendar className="w-5 h-5 mb-1" />
             <span className="text-xs">Agenda</span>
           </Button>
           <Button
             variant="ghost"
             className="flex-col h-auto py-2 flex-1"
-            onClick={() => navigate('/dashboard/devis/new')}
+            onClick={() => setShowCreateIntervention(true)}
+            data-testid="nav-new-intervention"
           >
-            <FileText className="w-5 h-5 mb-1" />
-            <span className="text-xs">Devis</span>
+            <Wrench className="w-5 h-5 mb-1" />
+            <span className="text-xs">Intervention</span>
           </Button>
           <Button
             variant="ghost"
             className="flex-col h-auto py-2 flex-1"
-            onClick={logout}
+            onClick={() => setShowCreateDevis(true)}
+            data-testid="nav-new-devis"
           >
-            <User className="w-5 h-5 mb-1" />
-            <span className="text-xs">Profil</span>
+            <FileText className="w-5 h-5 mb-1" />
+            <span className="text-xs">Devis</span>
           </Button>
+          <ProfileMenu user={user} onLogout={logout} />
         </div>
       </nav>
+
+      {/* Create Intervention Modal */}
+      <Dialog open={showCreateIntervention} onOpenChange={setShowCreateIntervention}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby="create-intervention-description">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="w-5 h-5" />
+              Nouvelle intervention
+            </DialogTitle>
+            <p id="create-intervention-description" className="sr-only">
+              Formulaire de création d'intervention
+            </p>
+          </DialogHeader>
+          <CreateInterventionForm
+            clients={clients}
+            onSubmit={handleCreateIntervention}
+            onClose={() => setShowCreateIntervention(false)}
+            loading={formLoading}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Devis Modal */}
+      <Dialog open={showCreateDevis} onOpenChange={(open) => {
+        setShowCreateDevis(open);
+        if (!open) setPreselectedClientId(null);
+      }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby="create-devis-description">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Nouveau devis
+            </DialogTitle>
+            <p id="create-devis-description" className="sr-only">
+              Formulaire de création de devis
+            </p>
+          </DialogHeader>
+          <CreateDevisForm
+            clients={clients}
+            onSubmit={handleCreateDevis}
+            onClose={() => {
+              setShowCreateDevis(false);
+              setPreselectedClientId(null);
+            }}
+            loading={formLoading}
+            preselectedClient={preselectedClientId}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Intervention Detail Modal */}
       <Dialog open={!!selectedIntervention} onOpenChange={() => setSelectedIntervention(null)}>
@@ -659,14 +1105,10 @@ export const TechnicianApp = () => {
                   variant="outline"
                   className="w-full"
                   onClick={() => {
+                    openDevisForClient(selectedIntervention.client_id);
                     setSelectedIntervention(null);
-                    navigate('/dashboard/devis/new', {
-                      state: {
-                        client_id: selectedIntervention.client_id,
-                        intervention_id: selectedIntervention.id
-                      }
-                    });
                   }}
+                  data-testid="create-devis-from-intervention"
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   Créer un devis
