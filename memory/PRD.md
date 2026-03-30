@@ -341,6 +341,37 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - Backend: 18/18 tests passés (100%)
 - Frontend: 100% UI fonctionnel
 
+### Phase 25 - Skills & Categories Matching ✅ (Date: 2026-03-30)
+
+#### Fonctionnalités
+- [x] **Champ skills sur User** - Liste de categorie_id représentant les compétences du technicien
+- [x] **Filtrage interventions** - Les techs ne voient que les interventions correspondant à leurs skills
+- [x] **Comportement polyvalent** - Un tech sans skills assignés peut voir TOUTES les interventions
+- [x] **Notifications qualifiées** - Push/SMS envoyés uniquement aux techs compétents
+- [x] **Interface Admin** - Colonne "Compétences" avec badges colorés et bouton d'édition
+- [x] **Dialog de gestion** - Multi-sélection avec checkboxes et descriptions des catégories
+- [x] **Affichage profil PWA** - "Mes compétences" visible dans le menu profil technicien
+
+#### Endpoints ajoutés
+- `PUT /api/users/{id}/skills` - Mise à jour des compétences (admin only)
+- `GET /api/users/{id}/skills` - Récupération des compétences avec détails catégories
+
+#### Modifications endpoints existants
+- `GET /api/interventions/available` - Filtré par compétences du tech
+- `GET /api/interventions/today` - Filtré par compétences du tech
+- `GET /api/interventions?include_available=true` - Filtré par compétences
+
+#### Fichiers modifiés
+- `/app/backend/models.py` - UserBase.skills, UserSkillsUpdate
+- `/app/backend/server.py` - Endpoints skills + filtrage interventions
+- `/app/backend/push_service.py` - notify_new_intervention_available_to_techs
+- `/app/frontend/src/pages/Techniciens.jsx` - SkillsManager + colonne compétences
+- `/app/frontend/src/pages/TechnicianApp.jsx` - ProfileMenu avec skills
+
+#### Tests Validés
+- Backend: 16/16 tests passés (100%)
+- Frontend: 100% UI fonctionnel
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -386,15 +417,17 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] Offline avancé (IndexedDB/Dexie.js sync) ✅
 - [x] Optimisation tournées IA ✅
 - [x] Rapports et analytics avancés ✅
+- [x] Skills & Categories Matching (techniciens qualifiés) ✅
 
 ### Backlog V2
 - [ ] React Native (si besoin app native)
 - [ ] Intégration calendrier Google/Outlook
 - [ ] API publique pour intégrations tierces
-- [ ] Notifications par catégorie/compétences
 - [ ] Multi-devises et internationalisation
 - [ ] Export PDF/Excel des rapports
+- [ ] Relevés mensuels automatisés pour clients
 
 ## Next Tasks
-1. Intégration calendrier Google/Outlook
-2. Rapports et analytics avancés
+1. Refactoring server.py en modules (routers/)
+2. Multi-devises et internationalisation
+
