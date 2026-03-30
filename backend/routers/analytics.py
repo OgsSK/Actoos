@@ -185,3 +185,44 @@ async def export_analytics_json(period: str = "month", current_user: dict = Depe
         "devis": devis,
         "trends": trends
     }
+
+
+@router.get("/export/pdf")
+async def export_analytics_pdf(period: str = "month", current_user: dict = Depends(require_admin)):
+    """Export analytics data as a professional PDF report"""
+    from analytics_pdf import generate_analytics_pdf
+    
+    # Get entreprise info
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    
+    # Get all analytics data
+    revenue = await get_revenue_analytics(db, current_user["entreprise_id"], period)
+    interventions = await get_intervention_analytics(db, current_user["entreprise_id"], period)
+    technicians = await get_technician_performance(db, current_user["entreprise_id"], period)
+    clients = await get_client_analytics(db, current_user["entreprise_id"], period)
+    devis = await get_devis_analytics(db, current_user["entreprise_id"], period)
+    trends = await get_trend_data(db, current_user["entreprise_id"], period)
+    
+    # Generate PDF
+    pdf_bytes = generate_analytics_pdf(
+        entreprise=entreprise,
+        revenue=revenue,
+        interventions=interventions,
+        technicians=technicians,
+        clients=clients,
+        devis=devis,
+        trends=trends,
+        period=period
+    )
+    
+    # Generate filename
+    filename = f"rapport_analytics_{period}_{datetime.now().strftime('%Y%m%d')}.pdf"
+    
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

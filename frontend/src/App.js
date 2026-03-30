@@ -19,6 +19,7 @@ import { SettingsPage } from "./pages/Settings";
 import { PlanningPage } from "./pages/Planning";
 import { RapportsPage } from "./pages/Rapports";
 import Analytics from "./pages/Analytics";
+import Statements from "./pages/Statements";
 
 // Technician App
 import { TechnicianApp } from "./pages/TechnicianApp";
@@ -153,6 +154,9 @@ function App() {
               
               {/* Analytics */}
               <Route path="analytics" element={<Analytics />} />
+              
+              {/* Statements */}
+              <Route path="statements" element={<Statements />} />
               
               {/* Settings */}
               <Route path="settings" element={<SettingsPage />} />

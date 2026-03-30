@@ -135,6 +135,32 @@ const Analytics = () => {
     }
   };
 
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const response = await api.get(`/analytics/export/pdf?period=${period}`, {
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `rapport_analytics_${period}_${new Date().toISOString().split('T')[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Rapport PDF téléchargé');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Erreur lors de l\'export PDF');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -168,6 +194,17 @@ const Analytics = () => {
           
           {/* Export Dropdown */}
           <div className="flex gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={exporting || loading}
+              data-testid="export-pdf-btn"
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+              PDF
+            </Button>
             <Button
               variant="outline"
               size="sm"

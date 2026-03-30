@@ -57,6 +57,7 @@ from routers import communications as communications_router
 from routers import entreprise as entreprise_router
 from routers import search as search_router
 from routers import stats as stats_router
+from routers import statements as statements_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -86,6 +87,7 @@ api_router.include_router(communications_router.router)
 api_router.include_router(entreprise_router.router)
 api_router.include_router(search_router.router)
 api_router.include_router(stats_router.router)
+api_router.include_router(statements_router.router)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
