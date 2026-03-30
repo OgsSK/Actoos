@@ -283,6 +283,142 @@ const PhotoUpload = ({ interventionId, photos, onUpload, onDelete }) => {
   );
 };
 
+// Checklist Component
+const ChecklistView = ({ categorie, responses, onChange, readOnly = false }) => {
+  if (!categorie || !categorie.checklist_template || categorie.checklist_template.length === 0) {
+    return null;
+  }
+
+  const getResponseValue = (itemId) => {
+    const response = responses?.find(r => r.item_id === itemId);
+    return response || { item_id: itemId, checked: false, value: null };
+  };
+
+  const updateResponse = (itemId, field, value) => {
+    if (readOnly) return;
+    
+    const item = categorie.checklist_template.find(i => i.id === itemId);
+    const existingIdx = responses?.findIndex(r => r.item_id === itemId) ?? -1;
+    
+    const newResponse = {
+      item_id: itemId,
+      label: item?.label || '',
+      type: item?.type || 'checkbox',
+      ...getResponseValue(itemId),
+      [field]: value
+    };
+    
+    let newResponses = [...(responses || [])];
+    if (existingIdx >= 0) {
+      newResponses[existingIdx] = newResponse;
+    } else {
+      newResponses.push(newResponse);
+    }
+    
+    onChange(newResponses);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div 
+          className="w-3 h-3 rounded-full" 
+          style={{ backgroundColor: categorie.couleur || '#3B82F6' }}
+        />
+        <Label className="font-medium">{categorie.nom} - Checklist</Label>
+      </div>
+      
+      <div className="space-y-2">
+        {categorie.checklist_template.map((item) => {
+          const response = getResponseValue(item.id);
+          
+          return (
+            <div 
+              key={item.id} 
+              className={`p-3 rounded-lg border ${response.checked || response.value ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`}
+            >
+              {item.type === 'checkbox' && (
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={response.checked || false}
+                    onChange={(e) => updateResponse(item.id, 'checked', e.target.checked)}
+                    disabled={readOnly}
+                    className="mt-0.5 h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    data-testid={`checklist-${item.id}`}
+                  />
+                  <div className="flex-1">
+                    <span className={`text-sm ${item.required ? 'font-medium' : ''}`}>
+                      {item.label}
+                      {item.required && <span className="text-red-500 ml-1">*</span>}
+                    </span>
+                    {item.description && (
+                      <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>
+                    )}
+                  </div>
+                </label>
+              )}
+              
+              {item.type === 'text' && (
+                <div className="space-y-1">
+                  <Label className="text-sm">
+                    {item.label}
+                    {item.required && <span className="text-red-500 ml-1">*</span>}
+                  </Label>
+                  <Textarea
+                    value={response.value || ''}
+                    onChange={(e) => updateResponse(item.id, 'value', e.target.value)}
+                    disabled={readOnly}
+                    rows={2}
+                    placeholder={item.description || ''}
+                    className="text-sm"
+                  />
+                </div>
+              )}
+              
+              {item.type === 'number' && (
+                <div className="space-y-1">
+                  <Label className="text-sm">
+                    {item.label}
+                    {item.required && <span className="text-red-500 ml-1">*</span>}
+                  </Label>
+                  <Input
+                    type="number"
+                    value={response.value || ''}
+                    onChange={(e) => updateResponse(item.id, 'value', e.target.value)}
+                    disabled={readOnly}
+                    placeholder={item.description || ''}
+                    className="text-sm"
+                  />
+                </div>
+              )}
+              
+              {item.type === 'photo' && (
+                <div className="space-y-1">
+                  <Label className="text-sm flex items-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    {item.label}
+                    {item.required && <span className="text-red-500 ml-1">*</span>}
+                  </Label>
+                  {response.photo_url ? (
+                    <div className="relative w-20 h-20 rounded bg-slate-100">
+                      <img src={response.photo_url} alt={item.label} className="w-full h-full object-cover rounded" />
+                    </div>
+                  ) : (
+                    <div className="text-xs text-slate-500 italic">
+                      Photo à prendre depuis la section Photos
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // Profile Menu Component
 const ProfileMenu = ({ user, onLogout }) => {
   return (
@@ -309,7 +445,7 @@ const ProfileMenu = ({ user, onLogout }) => {
 };
 
 // Create Intervention Form Component
-const CreateInterventionForm = ({ clients, onSubmit, onClose, loading }) => {
+const CreateInterventionForm = ({ clients, categories, onSubmit, onClose, loading }) => {
   const [formData, setFormData] = useState({
     client_id: '',
     titre: '',
@@ -319,7 +455,8 @@ const CreateInterventionForm = ({ clients, onSubmit, onClose, loading }) => {
     code_postal: '',
     date_prevue: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
     duree_estimee: 60,
-    priorite: 'normale'
+    priorite: 'normale',
+    categorie_id: ''
   });
 
   const handleClientChange = (clientId) => {
@@ -370,6 +507,31 @@ const CreateInterventionForm = ({ clients, onSubmit, onClose, loading }) => {
           placeholder="Ex: Réparation fuite"
           data-testid="intervention-titre"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Catégorie</Label>
+        <Select 
+          value={formData.categorie_id} 
+          onValueChange={v => setFormData(prev => ({ ...prev, categorie_id: v }))}
+        >
+          <SelectTrigger data-testid="intervention-categorie-select">
+            <SelectValue placeholder="Sélectionner une catégorie" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map(cat => (
+              <SelectItem key={cat.id} value={cat.id}>
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: cat.couleur }}
+                  />
+                  {cat.nom}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">
@@ -614,7 +776,10 @@ const CreateDevisForm = ({ clients, onSubmit, onClose, loading, preselectedClien
 export const TechnicianApp = () => {
   const [interventions, setInterventions] = useState([]);
   const [clients, setClients] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
+  const [selectedCategorie, setSelectedCategorie] = useState(null);
+  const [checklistResponses, setChecklistResponses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState('');
   const [photos, setPhotos] = useState([]);
@@ -639,10 +804,11 @@ export const TechnicianApp = () => {
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  // Load interventions and clients
+  // Load interventions, clients, and categories
   useEffect(() => {
     loadInterventions();
     loadClients();
+    loadCategories();
   }, [activeTab]);
 
   const loadClients = async () => {
@@ -651,6 +817,15 @@ export const TechnicianApp = () => {
       setClients(response.data);
     } catch (error) {
       console.error('Error loading clients:', error);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await api.get('/categories');
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Error loading categories:', error);
     }
   };
 
@@ -860,6 +1035,21 @@ export const TechnicianApp = () => {
   const selectIntervention = async (intervention) => {
     setSelectedIntervention(intervention);
     setNotes(intervention.notes_terrain || '');
+    setChecklistResponses(intervention.checklist_responses || []);
+    
+    // Load category for checklist
+    if (intervention.categorie_id && isOnline) {
+      try {
+        const catResponse = await api.get(`/categories/${intervention.categorie_id}`);
+        setSelectedCategorie(catResponse.data);
+      } catch (error) {
+        setSelectedCategorie(null);
+      }
+    } else {
+      // Find from local cache
+      const cat = categories.find(c => c.id === intervention.categorie_id);
+      setSelectedCategorie(cat || null);
+    }
     
     // Load photos
     if (isOnline) {
@@ -871,6 +1061,22 @@ export const TechnicianApp = () => {
       }
     } else {
       setPhotos([]);
+    }
+  };
+
+  // Save checklist responses
+  const handleSaveChecklist = async () => {
+    if (!selectedIntervention || !isOnline) {
+      if (!isOnline) toast.error('Connexion requise pour sauvegarder');
+      return;
+    }
+    
+    try {
+      await api.put(`/interventions/${selectedIntervention.id}/checklist`, checklistResponses);
+      toast.success('Checklist sauvegardée');
+    } catch (error) {
+      console.error('Error saving checklist:', error);
+      toast.error('Erreur lors de la sauvegarde');
     }
   };
 
@@ -1032,6 +1238,7 @@ export const TechnicianApp = () => {
           </DialogHeader>
           <CreateInterventionForm
             clients={clients}
+            categories={categories}
             onSubmit={handleCreateIntervention}
             onClose={() => setShowCreateIntervention(false)}
             loading={formLoading}
@@ -1151,6 +1358,29 @@ export const TechnicianApp = () => {
                   photos={photos}
                   onUpload={handlePhotoUpload}
                 />
+
+                {/* Checklist */}
+                {selectedCategorie && (
+                  <div className="space-y-3">
+                    <ChecklistView
+                      categorie={selectedCategorie}
+                      responses={checklistResponses}
+                      onChange={setChecklistResponses}
+                      readOnly={selectedIntervention.statut === 'terminee' || selectedIntervention.statut === 'annulee'}
+                    />
+                    {selectedIntervention.statut !== 'terminee' && selectedIntervention.statut !== 'annulee' && (
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={handleSaveChecklist}
+                        data-testid="save-checklist-btn"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Sauvegarder la checklist
+                      </Button>
+                    )}
+                  </div>
+                )}
 
                 {/* Create Devis Button */}
                 <Button

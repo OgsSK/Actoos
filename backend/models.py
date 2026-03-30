@@ -112,6 +112,41 @@ class ClientResponse(ClientBase):
     entreprise_id: str
     created_at: str
 
+# ==================== CATEGORIE ====================
+class ChecklistItem(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    label: str
+    type: Literal["checkbox", "text", "number", "photo", "signature"] = "checkbox"
+    required: bool = False
+    description: Optional[str] = None
+
+class CategorieBase(BaseModel):
+    code: str  # e.g., "plomberie", "electricite", "nettoyage"
+    nom: str
+    description: Optional[str] = None
+    icone: Optional[str] = None  # e.g., "wrench", "zap", "sparkles"
+    couleur: str = "#3B82F6"  # hex color
+    checklist_template: List[ChecklistItem] = []
+
+class CategorieCreate(CategorieBase):
+    pass
+
+class Categorie(CategorieBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    entreprise_id: str
+    active: bool = True
+    created_at: datetime = Field(default_factory=now_utc)
+
+class ChecklistResponse(BaseModel):
+    item_id: str
+    label: str
+    type: str
+    value: Optional[str] = None  # For text/number
+    checked: Optional[bool] = None  # For checkbox
+    photo_url: Optional[str] = None  # For photo type
+    completed_at: Optional[datetime] = None
+
 # ==================== INTERVENTION ====================
 class InterventionBase(BaseModel):
     client_id: str
@@ -124,6 +159,7 @@ class InterventionBase(BaseModel):
     duree_estimee: int = 60  # minutes
     priorite: Literal["basse", "normale", "haute", "urgente"] = "normale"
     notes_internes: Optional[str] = None
+    categorie_id: Optional[str] = None
 
 class InterventionCreate(InterventionBase):
     technicien_id: Optional[str] = None
@@ -143,6 +179,8 @@ class InterventionUpdate(BaseModel):
     notes_terrain: Optional[str] = None
     heure_debut: Optional[datetime] = None
     heure_fin: Optional[datetime] = None
+    categorie_id: Optional[str] = None
+    checklist_responses: Optional[List[ChecklistResponse]] = None
 
 class Intervention(InterventionBase):
     model_config = ConfigDict(extra="ignore")
@@ -156,6 +194,7 @@ class Intervention(InterventionBase):
     heure_fin: Optional[datetime] = None
     devis_id: Optional[str] = None
     facture_id: Optional[str] = None
+    checklist_responses: List[ChecklistResponse] = []
     created_at: datetime = Field(default_factory=now_utc)
 
 # ==================== DEVIS ====================
