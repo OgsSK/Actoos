@@ -176,8 +176,32 @@ async def emit_facture(facture_id: str, current_user: dict = Depends(get_current
     client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
     entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
     
-    # Generate PDF
-    pdf_bytes = generate_facture_pdf(facture, client or {}, entreprise or {})
+    # Fetch intervention photos and signature if linked
+    intervention_photos = None
+    intervention_signature = None
+    
+    if facture.get("intervention_id"):
+        intervention = await db.interventions.find_one(
+            {"id": facture["intervention_id"]},
+            {"_id": 0, "photos": 1, "signature_client": 1, "nom_signataire": 1, "date_signature": 1}
+        )
+        if intervention:
+            intervention_photos = intervention.get("photos", [])
+            if intervention.get("signature_client"):
+                intervention_signature = {
+                    "signature_client": intervention.get("signature_client"),
+                    "nom_signataire": intervention.get("nom_signataire"),
+                    "date_signature": intervention.get("date_signature")
+                }
+    
+    # Generate PDF with photos and signature
+    pdf_bytes = generate_facture_pdf(
+        facture, 
+        client or {}, 
+        entreprise or {},
+        intervention_photos=intervention_photos,
+        intervention_signature=intervention_signature
+    )
     
     # Send email with PDF
     email_result = {"status": "skipped", "message": "Email non envoyé"}
@@ -242,7 +266,7 @@ async def mark_facture_paid(
 
 @router.get("/{facture_id}/pdf")
 async def get_facture_pdf(facture_id: str, current_user: dict = Depends(get_current_user)):
-    """Generate and return facture PDF"""
+    """Generate and return facture PDF with intervention photos and signature"""
     facture = await db.factures.find_one({"id": facture_id, "entreprise_id": current_user["entreprise_id"]}, {"_id": 0})
     if not facture:
         raise HTTPException(status_code=404, detail="Facture non trouvée")
@@ -250,7 +274,31 @@ async def get_facture_pdf(facture_id: str, current_user: dict = Depends(get_curr
     client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
     entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
     
-    pdf_bytes = generate_facture_pdf(facture, client or {}, entreprise or {})
+    # Fetch intervention photos and signature if linked
+    intervention_photos = None
+    intervention_signature = None
+    
+    if facture.get("intervention_id"):
+        intervention = await db.interventions.find_one(
+            {"id": facture["intervention_id"]},
+            {"_id": 0, "photos": 1, "signature_client": 1, "nom_signataire": 1, "date_signature": 1}
+        )
+        if intervention:
+            intervention_photos = intervention.get("photos", [])
+            if intervention.get("signature_client"):
+                intervention_signature = {
+                    "signature_client": intervention.get("signature_client"),
+                    "nom_signataire": intervention.get("nom_signataire"),
+                    "date_signature": intervention.get("date_signature")
+                }
+    
+    pdf_bytes = generate_facture_pdf(
+        facture, 
+        client or {}, 
+        entreprise or {},
+        intervention_photos=intervention_photos,
+        intervention_signature=intervention_signature
+    )
     
     return Response(
         content=pdf_bytes,
@@ -278,7 +326,31 @@ async def download_facture_pdf(facture_id: str, token: str):
     client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
     entreprise = await db.entreprises.find_one({"id": user["entreprise_id"]}, {"_id": 0})
     
-    pdf_bytes = generate_facture_pdf(facture, client or {}, entreprise or {})
+    # Fetch intervention photos and signature if linked
+    intervention_photos = None
+    intervention_signature = None
+    
+    if facture.get("intervention_id"):
+        intervention = await db.interventions.find_one(
+            {"id": facture["intervention_id"]},
+            {"_id": 0, "photos": 1, "signature_client": 1, "nom_signataire": 1, "date_signature": 1}
+        )
+        if intervention:
+            intervention_photos = intervention.get("photos", [])
+            if intervention.get("signature_client"):
+                intervention_signature = {
+                    "signature_client": intervention.get("signature_client"),
+                    "nom_signataire": intervention.get("nom_signataire"),
+                    "date_signature": intervention.get("date_signature")
+                }
+    
+    pdf_bytes = generate_facture_pdf(
+        facture, 
+        client or {}, 
+        entreprise or {},
+        intervention_photos=intervention_photos,
+        intervention_signature=intervention_signature
+    )
     
     return Response(
         content=pdf_bytes,

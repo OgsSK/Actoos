@@ -171,7 +171,31 @@ async def get_portal_facture_pdf(facture_id: str, token: str):
     
     entreprise = await db.entreprises.find_one({"id": facture["entreprise_id"]}, {"_id": 0})
     
-    pdf_bytes = generate_facture_pdf(facture, client, entreprise or {})
+    # Fetch intervention photos and signature if linked
+    intervention_photos = None
+    intervention_signature = None
+    
+    if facture.get("intervention_id"):
+        intervention = await db.interventions.find_one(
+            {"id": facture["intervention_id"]},
+            {"_id": 0, "photos": 1, "signature_client": 1, "nom_signataire": 1, "date_signature": 1}
+        )
+        if intervention:
+            intervention_photos = intervention.get("photos", [])
+            if intervention.get("signature_client"):
+                intervention_signature = {
+                    "signature_client": intervention.get("signature_client"),
+                    "nom_signataire": intervention.get("nom_signataire"),
+                    "date_signature": intervention.get("date_signature")
+                }
+    
+    pdf_bytes = generate_facture_pdf(
+        facture, 
+        client, 
+        entreprise or {},
+        intervention_photos=intervention_photos,
+        intervention_signature=intervention_signature
+    )
     
     return Response(
         content=pdf_bytes,

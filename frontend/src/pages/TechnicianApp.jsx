@@ -1346,14 +1346,18 @@ export const TechnicianApp = () => {
     
     try {
       if (signatureData) {
-        // Complete with signature
+        // Complete with signature - geo sent as query params
+        const params = {};
+        if (geoData) {
+          params.geo_latitude = geoData.latitude;
+          params.geo_longitude = geoData.longitude;
+          params.geo_accuracy = geoData.accuracy;
+        }
         await api.post(`/interventions/${id}/complete-with-signature`, {
           signature: signatureData.signature,
           nom_signataire: signatureData.nom_signataire,
           notes: notes
-        }, {
-          params: geoData ? { geo: JSON.stringify(geoData) } : {}
-        });
+        }, { params });
         toast.success('Intervention terminée et signée');
       } else {
         // Complete without signature (backwards compatibility)

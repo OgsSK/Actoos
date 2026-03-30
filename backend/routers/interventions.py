@@ -1,7 +1,7 @@
 """
 Intervention routes - CRUD and workflow operations
 """
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Body, Query
 from typing import List, Optional
 from datetime import datetime, timezone, date as date_type
 import uuid
@@ -677,10 +677,12 @@ async def update_intervention_checklist(
 async def complete_intervention_with_signature(
     intervention_id: str,
     data: InterventionSignature,
-    geo: Optional[InterventionGeoLocation] = None,
+    geo_latitude: Optional[float] = Query(None),
+    geo_longitude: Optional[float] = Query(None),
+    geo_accuracy: Optional[float] = Query(None),
     current_user: dict = Depends(get_current_user)
 ):
-    """Complete an intervention with client signature and optional geolocation"""
+    """Complete an intervention with client signature and optional geolocation (via query params)"""
     now = datetime.now(timezone.utc).isoformat()
     
     # Find the intervention
@@ -710,13 +712,13 @@ async def complete_intervention_with_signature(
     if data.notes:
         update["notes_terrain"] = data.notes
     
-    # Add geolocation if provided
-    if geo:
+    # Add geolocation if provided via query params
+    if geo_latitude is not None and geo_longitude is not None:
         update["geo_fin"] = {
-            "latitude": geo.latitude,
-            "longitude": geo.longitude,
-            "accuracy": geo.accuracy,
-            "timestamp": geo.timestamp or now
+            "latitude": geo_latitude,
+            "longitude": geo_longitude,
+            "accuracy": geo_accuracy,
+            "timestamp": now
         }
     
     await db.interventions.update_one({"id": intervention_id}, {"$set": update})
@@ -726,7 +728,7 @@ async def complete_intervention_with_signature(
         "complete_with_signature",
         "intervention",
         intervention_id,
-        {"signataire": data.nom_signataire, "has_geo": geo is not None}
+        {"signataire": data.nom_signataire, "has_geo": geo_latitude is not None}
     )
     
     return {
