@@ -658,13 +658,65 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - PDF avec signature: +1161 bytes vs PDF basic
 
 ## Next Tasks
-1. **P1**: Fournir les credentials OAuth Google pour activer l'intégration Calendar (voir /app/docs/GOOGLE_CALENDAR_SETUP.md)
+1. **Fournir credentials OAuth Google** pour activer l'intégration Calendar
 
 ### Backlog V2
+- [ ] UI page pricing publique avec comparaison des plans
+- [ ] Notifications push pour validation en attente
 - [ ] React Native (si besoin app native)
 - [ ] Microsoft Outlook Calendar integration
 
 ---
+
+### Phase 34 - Automatisation devis → facture (Plan Pro) ✅ (Date: 2026-03-31)
+
+#### Fonctionnalités
+- [x] **Endpoint convert-to-facture** - Convertit un devis signé en facture
+- [x] **Vérification plan** - Disponible uniquement Plan Pro+
+- [x] **Double conversion bloquée** - Erreur si devis déjà converti
+- [x] **Statut "converti"** - Nouveau statut pour devis transformés
+- [x] **Auto-emit option** - Option pour émettre la facture immédiatement
+
+#### Endpoints
+- `POST /api/devis/{id}/convert-to-facture?auto_emit=false`
+
+---
+
+### Phase 35 - Validation chef d'équipe (Plan Pro) ✅ (Date: 2026-03-31)
+
+#### Fonctionnalités
+- [x] **Workflow de validation** - Interventions passent par "en_validation" avant "terminee"
+- [x] **Validation admin** - Endpoint pour approuver/rejeter
+- [x] **Liste pending** - Endpoint pour voir toutes les interventions en attente
+- [x] **Rejet avec motif** - Renvoi au technicien avec commentaire
+
+#### Endpoints
+- `POST /api/interventions/{id}/validate?approved=true&notes_validation=...`
+- `GET /api/interventions/pending-validation`
+
+#### Statuts intervention
+planifiee → en_cours → en_validation → terminee (ou rejet → en_cours)
+
+---
+
+### Phase 36 - Export comptable (Plan Enterprise) ✅ (Date: 2026-03-31)
+
+#### Fonctionnalités
+- [x] **Export factures CSV** - Entêtes de factures avec totaux
+- [x] **Export lignes factures** - Détail ligne par ligne
+- [x] **Export clients** - Liste complète des clients
+- [x] **Journal comptable FEC** - Format compatible logiciels comptables français
+- [x] **Résumé export** - Aperçu des données disponibles
+
+#### Endpoints (Enterprise seulement)
+- `GET /api/export/factures`
+- `GET /api/export/factures-lignes`
+- `GET /api/export/clients`
+- `GET /api/export/journal?date_debut=&date_fin=`
+- `GET /api/export/summary?date_debut=&date_fin=`
+
+#### Fichiers créés
+- `/app/backend/routers/accounting_export.py`
 
 ### Phase 31 - Support Multi-sites ✅ (Date: 2026-03-31)
 

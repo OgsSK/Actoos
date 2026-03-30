@@ -768,12 +768,22 @@ export const DevisDetail = () => {
 
   const handleCreateFacture = async () => {
     try {
-      await api.post('/factures/from-devis', { devis_id: id });
-      toast.success('Facture créée');
-      navigate('/dashboard/factures');
+      // Use the new convert-to-facture endpoint with plan check
+      const response = await api.post(`/devis/${id}/convert-to-facture`, null, {
+        params: { auto_emit: false }
+      });
+      toast.success(`Facture ${response.data.numero_facture} créée`);
+      navigate(`/dashboard/factures/${response.data.facture_id}`);
     } catch (error) {
       console.error('Error creating facture:', error);
-      toast.error('Erreur lors de la création de la facture');
+      if (error.response?.data?.detail?.error === 'feature_not_available') {
+        toast.error(error.response.data.detail.message);
+      } else if (error.response?.data?.detail?.error === 'already_converted') {
+        toast.info('Ce devis a déjà été converti');
+        navigate(`/dashboard/factures/${error.response.data.detail.facture_id}`);
+      } else {
+        toast.error(error.response?.data?.detail || 'Erreur lors de la création de la facture');
+      }
     }
   };
 

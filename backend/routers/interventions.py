@@ -683,6 +683,8 @@ async def complete_intervention_with_signature(
     current_user: dict = Depends(get_current_user)
 ):
     """Complete an intervention with client signature and optional geolocation (via query params)"""
+    from plan_limits import check_feature
+    
     now = datetime.now(timezone.utc).isoformat()
     
     # Find the intervention
@@ -700,9 +702,19 @@ async def complete_intervention_with_signature(
     if intervention["statut"] != "en_cours":
         raise HTTPException(status_code=400, detail="Cette intervention doit être en cours pour être terminée")
     
+    # Check if team_validation feature is enabled (Pro+)
+    requires_validation = await check_feature(db, current_user["entreprise_id"], "team_validation")
+    
+    # If team_validation is enabled and user is a tech, set status to "en_validation"
+    # Admins can complete directly
+    if requires_validation and current_user["role"] == "tech":
+        new_statut = "en_validation"
+    else:
+        new_statut = "terminee"
+    
     # Build update
     update = {
-        "statut": "terminee",
+        "statut": new_statut,
         "heure_fin": now,
         "signature_client": data.signature,
         "nom_signataire": data.nom_signataire,
@@ -814,3 +826,98 @@ async def update_intervention_geolocation(
     )
     
     return {"message": "Géolocalisation mise à jour", "type": geo_type, "geo": geo_data}
+
+
+@router.post("/{intervention_id}/validate")
+async def validate_intervention(
+    intervention_id: str,
+    approved: bool = True,
+    notes_validation: Optional[str] = None,
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Validate a completed intervention (Admin/Team Leader only)
+    This is required when team_validation feature is enabled (Pro+ plans)
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    if intervention["statut"] != "en_validation":
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cette intervention n'est pas en attente de validation (statut: {intervention['statut']})"
+        )
+    
+    if approved:
+        # Approve: set to terminee
+        update = {
+            "statut": "terminee",
+            "validated_by": current_user["user_id"],
+            "validated_at": now,
+            "notes_validation": notes_validation
+        }
+        action = "validate"
+        message = "Intervention validée et terminée"
+    else:
+        # Reject: send back to en_cours for fixes
+        update = {
+            "statut": "en_cours",
+            "rejected_by": current_user["user_id"],
+            "rejected_at": now,
+            "rejection_reason": notes_validation,
+            # Clear the signature so tech needs to re-complete
+            "heure_fin": None
+        }
+        action = "reject"
+        message = "Intervention rejetée - renvoyée au technicien"
+    
+    await db.interventions.update_one({"id": intervention_id}, {"$set": update})
+    
+    await log_action(
+        current_user["entreprise_id"],
+        current_user["user_id"],
+        action,
+        "intervention",
+        intervention_id,
+        {"approved": approved, "notes": notes_validation}
+    )
+    
+    # TODO: Send notification to technician about validation result
+    
+    return {
+        "message": message,
+        "approved": approved,
+        "validated_by": current_user["user_id"],
+        "timestamp": now
+    }
+
+
+@router.get("/pending-validation")
+async def get_interventions_pending_validation(
+    current_user: dict = Depends(require_admin)
+):
+    """Get all interventions pending validation (Admin only)"""
+    interventions = await db.interventions.find(
+        {
+            "entreprise_id": current_user["entreprise_id"],
+            "statut": "en_validation"
+        },
+        {"_id": 0}
+    ).sort("heure_fin", -1).to_list(100)
+    
+    # Enrich with client and technician info
+    for intervention in interventions:
+        client = await db.clients.find_one({"id": intervention["client_id"]}, {"_id": 0, "nom": 1, "prenom": 1})
+        intervention["client_nom"] = f"{client.get('nom', '')} {client.get('prenom', '')}" if client else ""
+        
+        if intervention.get("technicien_id"):
+            tech = await db.users.find_one({"id": intervention["technicien_id"]}, {"_id": 0, "prenom": 1, "nom": 1})
+            intervention["technicien_nom"] = f"{tech.get('prenom', '')} {tech.get('nom', '')}" if tech else ""
+    
+    return [serialize_doc(i) for i in interventions]

@@ -236,6 +236,142 @@ async def sign_devis(
     return {"message": "Devis signé", "date_signature": now}
 
 
+@router.post("/{devis_id}/convert-to-facture")
+async def convert_devis_to_facture(
+    devis_id: str,
+    auto_emit: bool = False,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Convert a signed devis to a facture (Pro/Enterprise feature)
+    - Creates a new facture with all the devis data
+    - Links the facture to the devis
+    - Optionally emits the facture immediately
+    """
+    from plan_limits import check_feature
+    
+    # Check if auto_devis_to_facture feature is available (Pro+)
+    has_feature = await check_feature(db, current_user["entreprise_id"], "auto_devis_to_facture")
+    if not has_feature:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "feature_not_available",
+                "message": "La conversion automatique devis → facture est disponible avec le plan Pro (79€/mois).",
+                "feature": "auto_devis_to_facture",
+                "required_plan": "pro"
+            }
+        )
+    
+    # Get the signed devis
+    devis = await db.devis.find_one({
+        "id": devis_id,
+        "entreprise_id": current_user["entreprise_id"],
+        "statut": "signe"
+    }, {"_id": 0})
+    
+    if not devis:
+        raise HTTPException(
+            status_code=404, 
+            detail="Devis non trouvé ou non signé. Seuls les devis signés peuvent être convertis."
+        )
+    
+    # Check if already converted
+    existing_facture = await db.factures.find_one({
+        "devis_id": devis_id,
+        "entreprise_id": current_user["entreprise_id"]
+    })
+    
+    if existing_facture:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "already_converted",
+                "message": "Ce devis a déjà été converti en facture.",
+                "facture_id": existing_facture["id"],
+                "numero_facture": existing_facture["numero_facture"]
+            }
+        )
+    
+    # Get next facture sequence
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    seq = entreprise.get("sequence_facture", 1)
+    year = datetime.now().year
+    numero_facture = f"F{year}-{seq:05d}"
+    
+    # Update sequence
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {"$inc": {"sequence_facture": 1}}
+    )
+    
+    # Create facture from devis data
+    facture_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc)
+    
+    facture_dict = {
+        "id": facture_id,
+        "entreprise_id": current_user["entreprise_id"],
+        "client_id": devis["client_id"],
+        "devis_id": devis_id,  # Link to original devis
+        "intervention_id": devis.get("intervention_id"),
+        "numero_facture": numero_facture,
+        "numero_devis_origine": devis["numero_devis"],
+        "lignes": devis["lignes"],
+        "total_ht": devis["total_ht"],
+        "total_tva": devis["total_tva"],
+        "total_ttc": devis["total_ttc"],
+        "statut": "brouillon",
+        "conditions_paiement": devis.get("conditions_paiement", "Paiement à réception"),
+        "notes": devis.get("notes", ""),
+        "created_at": now.isoformat(),
+        "date_echeance": (now + timedelta(days=30)).isoformat(),
+        "created_by": current_user["user_id"],
+        "converted_from_devis": True
+    }
+    
+    await db.factures.insert_one(facture_dict)
+    
+    # Update devis status to 'converti'
+    await db.devis.update_one(
+        {"id": devis_id},
+        {
+            "$set": {
+                "statut": "converti",
+                "facture_id": facture_id,
+                "converted_at": now.isoformat()
+            }
+        }
+    )
+    
+    await log_action(
+        current_user["entreprise_id"],
+        current_user["user_id"],
+        "convert_to_facture",
+        "devis",
+        devis_id,
+        {"facture_id": facture_id, "numero_facture": numero_facture}
+    )
+    
+    logger.info(f"Devis {devis['numero_devis']} converted to facture {numero_facture}")
+    
+    result = {
+        "message": f"Devis converti en facture {numero_facture}",
+        "facture_id": facture_id,
+        "numero_facture": numero_facture,
+        "devis_id": devis_id,
+        "numero_devis": devis["numero_devis"]
+    }
+    
+    # Optionally emit the facture immediately
+    if auto_emit:
+        from routers.factures import emit_facture_internal
+        emit_result = await emit_facture_internal(facture_id, current_user)
+        result["auto_emit"] = emit_result
+    
+    return result
+
+
 @router.get("/{devis_id}/pdf")
 async def get_devis_pdf(devis_id: str, auth: Optional[str] = None, current_user: dict = Depends(get_current_user)):
     """Generate and return devis PDF"""

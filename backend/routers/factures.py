@@ -158,6 +158,11 @@ async def get_facture(facture_id: str, current_user: dict = Depends(get_current_
 @router.post("/{facture_id}/emit")
 async def emit_facture(facture_id: str, current_user: dict = Depends(get_current_user)):
     """Emit a facture and send email to client"""
+    return await emit_facture_internal(facture_id, current_user)
+
+
+async def emit_facture_internal(facture_id: str, current_user: dict):
+    """Internal function to emit a facture (can be called from other modules)"""
     # Get facture before update
     facture = await db.factures.find_one(
         {"id": facture_id, "entreprise_id": current_user["entreprise_id"], "statut": "brouillon"},

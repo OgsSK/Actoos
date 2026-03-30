@@ -90,6 +90,7 @@ export const statusLabels = {
   // Interventions
   planifiee: 'Planifiée',
   en_cours: 'En cours',
+  en_validation: 'En validation',
   terminee: 'Terminée',
   annulee: 'Annulée',
   // Devis
@@ -99,6 +100,7 @@ export const statusLabels = {
   refuse: 'Refusé',
   expire: 'Expiré',
   facture: 'Facturé',
+  converti: 'Converti en facture',
   // Factures
   emise: 'Émise',
   payee: 'Payée',
