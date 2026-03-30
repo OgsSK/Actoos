@@ -28,8 +28,11 @@ import { TechnicianApp } from "./pages/TechnicianApp";
 // Client Portal
 import { ClientPortalDevis, ClientPortalDashboard } from "./pages/ClientPortal";
 
-// Pricing Pages
+// Marketing Pages (Site de vente)
 import { PricingPage, SignupPage, SignupSuccessPage } from "./pages/Pricing";
+import LandingPage from "./pages/LandingPage";
+import FeaturesPage from "./pages/FeaturesPage";
+import SectorsPage from "./pages/SectorsPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
@@ -65,7 +68,7 @@ const DashboardRoutes = () => {
   );
 };
 
-// Home Redirect
+// Home Redirect - Show landing for non-authenticated users
 const HomeRedirect = () => {
   const { isAuthenticated, loading, user } = useAuth();
 
@@ -77,15 +80,16 @@ const HomeRedirect = () => {
     );
   }
 
+  // If authenticated, redirect to appropriate dashboard
   if (isAuthenticated) {
-    // Redirect technicians to tech app, admins to dashboard
     if (user?.role === 'tech') {
       return <Navigate to="/tech" replace />;
     }
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <Navigate to="/login" replace />;
+  // Show landing page for non-authenticated users
+  return <LandingPage />;
 };
 
 function App() {
@@ -106,6 +110,10 @@ function App() {
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/signup/success" element={<SignupSuccessPage />} />
+            
+            {/* Marketing Pages (Public) */}
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/sectors" element={<SectorsPage />} />
 
             {/* Client Portal (Public) */}
             <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />
