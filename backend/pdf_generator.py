@@ -1,5 +1,6 @@
 """
 PDF Generation for Devis and Factures using ReportLab
+With QR Code payment and company logo support
 """
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -11,6 +12,8 @@ from io import BytesIO
 from datetime import datetime, timezone, timedelta
 import base64
 import logging
+import qrcode
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +39,74 @@ def decode_signature_image(signature_base64: str) -> BytesIO:
         logger.error(f"Error decoding signature: {e}")
     return None
 
+def generate_qr_code(data: str, size: int = 100) -> BytesIO:
+    """Generate QR code image from data string"""
+    try:
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=2,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+        return buffer
+    except Exception as e:
+        logger.error(f"Error generating QR code: {e}")
+        return None
+
+def load_logo_image(logo_url: str, max_width: int = 150, max_height: int = 60) -> Image:
+    """Load company logo from URL and return ReportLab Image"""
+    try:
+        if not logo_url:
+            return None
+            
+        # Download image
+        response = requests.get(logo_url, timeout=5)
+        if response.status_code == 200:
+            img_buffer = BytesIO(response.content)
+            img = Image(img_buffer)
+            
+            # Scale to fit within max dimensions while maintaining aspect ratio
+            aspect = img.imageWidth / img.imageHeight
+            if img.imageWidth > max_width:
+                img.drawWidth = max_width
+                img.drawHeight = max_width / aspect
+            if img.drawHeight > max_height:
+                img.drawHeight = max_height
+                img.drawWidth = max_height * aspect
+            
+            return img
+    except Exception as e:
+        logger.error(f"Error loading logo: {e}")
+    return None
+
+def build_payment_qr_data(facture: dict, entreprise: dict, portal_url: str = None) -> str:
+    """Build payment data string for QR code"""
+    # If we have a portal URL, use that for easy payment
+    if portal_url:
+        return portal_url
+    
+    # Otherwise, build a payment reference string
+    # Format: Company | Invoice Number | Amount | IBAN (if available)
+    parts = [
+        f"Facture: {facture.get('numero_facture', '')}",
+        f"Montant: {facture.get('total_ttc', 0):.2f} EUR",
+        f"Entreprise: {entreprise.get('nom', '')}",
+    ]
+    
+    if entreprise.get('iban'):
+        parts.append(f"IBAN: {entreprise.get('iban')}")
+    
+    return "\n".join(parts)
+
 def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
-    """Generate PDF for a devis/quote"""
+    """Generate PDF for a devis/quote with company logo"""
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20*mm, bottomMargin=20*mm, leftMargin=20*mm, rightMargin=20*mm)
     
@@ -50,7 +119,9 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
     
     elements = []
     
-    # Header with company info
+    # Header with logo and company info
+    logo_img = load_logo_image(entreprise.get('logo_url'))
+    
     company_info = f"""
     <b>{entreprise.get('nom', '')}</b><br/>
     {entreprise.get('adresse', '')}<br/>
@@ -59,7 +130,21 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
     Email: {entreprise.get('email', '')}<br/>
     SIRET: {entreprise.get('siret', '')}
     """
-    elements.append(Paragraph(company_info, styles['Normal10']))
+    
+    if logo_img:
+        # Create a table with logo on left and company info on right
+        header_table = Table([
+            [logo_img, Paragraph(company_info, styles['Normal10'])]
+        ], colWidths=[60*mm, 100*mm])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ]))
+        elements.append(header_table)
+    else:
+        elements.append(Paragraph(company_info, styles['Normal10']))
+    
     elements.append(Spacer(1, 15*mm))
     
     # Title
