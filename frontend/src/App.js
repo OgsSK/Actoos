@@ -29,7 +29,8 @@ import { TechnicianApp } from "./pages/TechnicianApp";
 import { ClientPortalDevis, ClientPortalDashboard } from "./pages/ClientPortal";
 
 // Marketing Pages (Site de vente)
-import { PricingPage, SignupSuccessPage } from "./pages/Pricing";
+import { SignupSuccessPage } from "./pages/Pricing";
+import PricingPage from "./pages/PricingPage";
 import SignupPage from "./pages/SignupPage";
 import LandingPage from "./pages/LandingPage";
 import FeaturesPage from "./pages/FeaturesPage";

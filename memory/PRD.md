@@ -840,7 +840,25 @@ GOOGLE_REDIRECT_URI=https://domain.com/api/calendar/callback
 - [x] **Landing Page** (`/`) - Hero, features, secteurs, testimonials, CTA
 - [x] **Features Page** (`/features`) - Détail des fonctionnalités
 - [x] **Sectors Page** (`/sectors`) - Secteurs d'activité supportés
-- [x] **Pricing Page** (`/pricing`) - 3 plans avec comparatif complet
+- [x] **Pricing Page PRO** (`/pricing`) - Tableau comparatif style SaaS professionnel
+
+#### Mini Quiz de Recommandation
+- [x] **4 questions rapides** - Taille équipe, activités, multi-sites, fonctionnalités
+- [x] **Système de scoring** - Points par réponse pour chaque plan
+- [x] **Recommandation intelligente** - "Nous vous recommandons le plan X"
+- [x] **Option Skip** - "Passer le quiz" toujours visible
+- [x] **Badge dynamique** - "Recommandé pour vous" sur le plan suggéré
+
+#### Tableau Comparatif Professionnel
+- [x] **8 catégories** - Utilisateurs, Gestion métier, App technicien, Automatisation, Analytics, Personnalisation, Intégrations, Support
+- [x] **Checkmarks/X** - Indicateurs visuels clairs ✓ / ✗
+- [x] **Valeurs textuelles** - "Limité", "Illimité", "Jusqu'à 4"
+- [x] **Toggle Mensuel/Annuel** - Réduction -20% sur l'annuel
+
+#### Branding Actoos
+- [x] **Logo officiel** - `/actoos-logo.jpg` utilisé partout (nav, footer)
+- [x] **Favicon** - `/actoos-favicon.png`
+- [x] **Logo avec slogan** - `/actoos-logo-slogan.png` (page login)
 
 #### Signup Flow en 4 étapes (`/signup`)
 - [x] **Étape 1 - Plan** - Sélection du plan (Startup 49€, Pro 79€, Enterprise 129€)
@@ -867,18 +885,14 @@ GOOGLE_REDIRECT_URI=https://domain.com/api/calendar/callback
 | Pro | 4 |
 | Enterprise | Illimité |
 
-#### Endpoints ajoutés
-- `POST /api/finalize-signup/{session_id}` - Finalise inscription avec catégories et mot de passe personnalisé
-
 #### Fichiers créés/modifiés
-- `/app/frontend/src/pages/SignupPage.jsx` - Wizard 4 étapes (600+ lignes)
-- `/app/frontend/src/pages/LandingPage.jsx` - Landing page marketing
-- `/app/frontend/src/pages/FeaturesPage.jsx` - Page fonctionnalités
-- `/app/frontend/src/pages/SectorsPage.jsx` - Page secteurs
+- `/app/frontend/src/pages/PricingPage.jsx` - Nouvelle page Pricing avec quiz et tableau (500+ lignes)
+- `/app/frontend/src/pages/SignupPage.jsx` - Wizard 4 étapes avec branding (600+ lignes)
+- `/app/frontend/src/pages/LandingPage.jsx` - Mise à jour avec logo officiel
 - `/app/backend/routers/subscription.py` - Endpoint finalize-signup
 
 #### Tests Validés
 - Backend: 16/16 tests passés (100%)
-- Frontend: 100% (4 étapes du wizard testées)
+- Frontend: 100% (quiz + 4 étapes du wizard testées)
 - Iteration: `/app/test_reports/iteration_19.json`
 

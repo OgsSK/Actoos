@@ -110,10 +110,7 @@ const LandingPage = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/25">
-                <span className="text-white font-bold text-lg">A</span>
-              </div>
-              <span className="font-bold text-xl text-slate-900">Actoos</span>
+              <img src="/actoos-logo.jpg" alt="Actoos" className="h-10 object-contain" />
             </Link>
 
             {/* Desktop Menu */}
@@ -483,12 +480,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                  <span className="text-white font-bold">A</span>
-                </div>
-                <span className="font-bold text-lg text-white">Actoos</span>
-              </div>
+              <img src="/actoos-logo.jpg" alt="Actoos" className="h-10 object-contain mb-4 brightness-0 invert" />
               <p className="text-slate-400 text-sm">
                 Le logiciel de gestion d'interventions terrain pour les professionnels.
               </p>
