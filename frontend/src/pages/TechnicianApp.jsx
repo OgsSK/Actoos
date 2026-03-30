@@ -30,11 +30,117 @@ import {
   Calendar, Clock, MapPin, Phone, Play, CheckCircle, FileText, Camera,
   Loader2, ChevronRight, User, Navigation, Wifi, WifiOff, RefreshCw,
   Plus, X, Upload, Image as ImageIcon, ChevronLeft, CalendarDays,
-  LogOut, Settings, Wrench, Euro, Trash2, Bell, BellOff, Route, Sparkles
+  LogOut, Settings, Wrench, Euro, Trash2, Bell, BellOff, Route, Sparkles,
+  Download, Smartphone
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+// PWA Install Prompt Component
+const InstallPrompt = () => {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+      return;
+    }
+
+    // Check localStorage for dismissed state
+    const dismissed = localStorage.getItem('pwa-install-dismissed');
+    if (dismissed) {
+      const dismissedDate = new Date(dismissed);
+      const daysSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceDismissed < 7) return; // Don't show for 7 days after dismissal
+    }
+
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowPrompt(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
+    // Check if installed via app installed event
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true);
+      setShowPrompt(false);
+      toast.success('Application installée avec succès !');
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      setShowPrompt(false);
+    }
+    setDeferredPrompt(null);
+  };
+
+  const handleDismiss = () => {
+    localStorage.setItem('pwa-install-dismissed', new Date().toISOString());
+    setShowPrompt(false);
+  };
+
+  if (isInstalled || !showPrompt) return null;
+
+  return (
+    <div className="fixed bottom-20 left-4 right-4 z-50 animate-in slide-in-from-bottom">
+      <Card className="bg-gradient-to-r from-blue-600 to-blue-700 text-white border-0 shadow-xl">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+              <Smartphone className="w-6 h-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold mb-1">Installer Actoos</h3>
+              <p className="text-sm text-blue-100 mb-3">
+                Accédez à l'app rapidement depuis votre écran d'accueil, même hors ligne !
+              </p>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={handleInstall}
+                  className="bg-white text-blue-600 hover:bg-blue-50"
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Installer
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={handleDismiss}
+                  className="text-white hover:bg-white/20"
+                >
+                  Plus tard
+                </Button>
+              </div>
+            </div>
+            <button 
+              onClick={handleDismiss}
+              className="text-white/70 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 // Sync Status Component
 const SyncStatus = ({ isOnline, pendingCount, isSyncing, onSync, lastSyncTime }) => {
@@ -1727,6 +1833,9 @@ export const TechnicianApp = () => {
         api={api}
         onReorder={handleReorderInterventions}
       />
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </div>
   );
 };

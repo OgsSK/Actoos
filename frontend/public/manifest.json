@@ -1,27 +1,46 @@
 {
   "short_name": "Actoos",
   "name": "Actoos - Gestion d'Interventions Terrain",
-  "description": "Le logiciel tout-en-un pour piloter vos opérations terrain",
+  "description": "Application terrain pour techniciens - Gestion des interventions, devis et factures",
   "icons": [
     {
       "src": "actoos-favicon.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "actoos-favicon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "actoos-favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/tech",
+  "id": "/tech",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "theme_color": "#2563EB",
   "background_color": "#F8FAFC",
   "orientation": "portrait",
   "scope": "/",
   "categories": ["business", "productivity"],
-  "lang": "fr-FR"
+  "lang": "fr-FR",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "screenshots": [
+    {
+      "src": "actoos-favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Écran d'accueil Actoos"
+    }
+  ]
 }
