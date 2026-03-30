@@ -53,6 +53,10 @@ from routers import clients as clients_router
 from routers import categories as categories_router
 from routers import push as push_router
 from routers import analytics as analytics_router
+from routers import communications as communications_router
+from routers import entreprise as entreprise_router
+from routers import search as search_router
+from routers import stats as stats_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -78,10 +82,26 @@ api_router.include_router(clients_router.router)
 api_router.include_router(categories_router.router)
 api_router.include_router(push_router.router)
 api_router.include_router(analytics_router.router)
+api_router.include_router(communications_router.router)
+api_router.include_router(entreprise_router.router)
+api_router.include_router(search_router.router)
+api_router.include_router(stats_router.router)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include the api_router in the app
+app.include_router(api_router)
 
 # ==================== HELPERS ====================
 def serialize_datetime(obj):
@@ -2267,142 +2287,6 @@ async def get_photo(photo_id: str, current_user: dict = Depends(get_current_user
     
     return Response(content=data, media_type=photo.get("content_type", content_type))
 
-# ==================== DASHBOARD STATS ====================
-@api_router.get("/dashboard/stats")
-async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
-    """Get dashboard statistics"""
-    ent_id = current_user["entreprise_id"]
-    today = datetime.now(timezone.utc).date()
-    today_start = datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=timezone.utc).isoformat()
-    today_end = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc).isoformat()
-    month_start = datetime(today.year, today.month, 1, 0, 0, 0, tzinfo=timezone.utc).isoformat()
-    
-    # Count interventions today (only today, not future)
-    interventions_today = await db.interventions.count_documents({
-        "entreprise_id": ent_id,
-        "date_prevue": {"$gte": today_start, "$lte": today_end},
-        "statut": {"$nin": ["annulee"]}
-    })
-    
-    # Count overdue interventions (planned but date has passed)
-    interventions_en_retard = await db.interventions.count_documents({
-        "entreprise_id": ent_id,
-        "statut": "planifiee",
-        "date_prevue": {"$lt": today_start}
-    })
-    
-    # Count overdue devis (sent but expired)
-    devis_expires = await db.devis.count_documents({
-        "entreprise_id": ent_id,
-        "statut": "envoye",
-        "date_expiration": {"$lt": today_start}
-    })
-    
-    # Count overdue factures
-    factures_en_retard = await db.factures.count_documents({
-        "entreprise_id": ent_id,
-        "statut": "emise",
-        "date_echeance": {"$lt": today_start}
-    })
-    
-    # Count devis
-    devis_en_attente = await db.devis.count_documents({
-        "entreprise_id": ent_id,
-        "statut": {"$in": ["brouillon", "envoye"]}
-    })
-    devis_signes_mois = await db.devis.count_documents({
-        "entreprise_id": ent_id,
-        "statut": "signe",
-        "date_signature": {"$gte": month_start}
-    })
-    
-    # Devis amounts
-    devis_attente_pipeline = [
-        {"$match": {"entreprise_id": ent_id, "statut": {"$in": ["brouillon", "envoye"]}}},
-        {"$group": {"_id": None, "total": {"$sum": "$total_ttc"}}}
-    ]
-    devis_attente_result = await db.devis.aggregate(devis_attente_pipeline).to_list(1)
-    montant_devis_attente = devis_attente_result[0]["total"] if devis_attente_result else 0
-    
-    # Count factures
-    factures_impayees = await db.factures.count_documents({
-        "entreprise_id": ent_id,
-        "statut": {"$in": ["emise", "en_retard"]}
-    })
-    
-    # Factures amounts
-    factures_impayees_pipeline = [
-        {"$match": {"entreprise_id": ent_id, "statut": {"$in": ["emise", "en_retard"]}}},
-        {"$group": {"_id": None, "total": {"$sum": {"$subtract": ["$total_ttc", "$montant_paye"]}}}}
-    ]
-    factures_impayees_result = await db.factures.aggregate(factures_impayees_pipeline).to_list(1)
-    montant_factures_impayees = factures_impayees_result[0]["total"] if factures_impayees_result else 0
-    
-    # CA du mois
-    ca_mois_pipeline = [
-        {"$match": {"entreprise_id": ent_id, "statut": "payee", "date_paiement": {"$gte": month_start}}},
-        {"$group": {"_id": None, "total": {"$sum": "$total_ttc"}}}
-    ]
-    ca_mois_result = await db.factures.aggregate(ca_mois_pipeline).to_list(1)
-    ca_mois = ca_mois_result[0]["total"] if ca_mois_result else 0
-    
-    # Count clients
-    total_clients = await db.clients.count_documents({"entreprise_id": ent_id})
-    
-    # Count techniciens
-    total_techniciens = await db.users.count_documents({"entreprise_id": ent_id, "role": "tech", "statut": "actif"})
-    
-    return {
-        "interventions_today": interventions_today,
-        "interventions_en_retard": interventions_en_retard,
-        "devis_en_attente": devis_en_attente,
-        "devis_signes_mois": devis_signes_mois,
-        "devis_expires": devis_expires,
-        "montant_devis_attente": round(montant_devis_attente, 2),
-        "factures_impayees": factures_impayees,
-        "factures_en_retard": factures_en_retard,
-        "montant_factures_impayees": round(montant_factures_impayees, 2),
-        "ca_mois": round(ca_mois, 2),
-        "total_clients": total_clients,
-        "total_techniciens": total_techniciens
-    }
-
-@api_router.get("/dashboard/alerts")
-async def get_dashboard_alerts(current_user: dict = Depends(get_current_user)):
-    """Get dashboard alerts"""
-    ent_id = current_user["entreprise_id"]
-    today = datetime.now(timezone.utc).isoformat()
-    
-    alerts = []
-    
-    # Devis expirés
-    devis_expires = await db.devis.find(
-        {"entreprise_id": ent_id, "statut": {"$in": ["brouillon", "envoye"]}, "date_expiration": {"$lt": today}},
-        {"_id": 0, "id": 1, "numero_devis": 1, "client_id": 1}
-    ).to_list(10)
-    for d in devis_expires:
-        alerts.append({"type": "devis_expire", "severity": "warning", "message": f"Devis {d['numero_devis']} expiré", "entity_id": d["id"]})
-    
-    # Factures en retard
-    factures_retard = await db.factures.find(
-        {"entreprise_id": ent_id, "statut": "emise", "date_echeance": {"$lt": today}},
-        {"_id": 0, "id": 1, "numero_facture": 1}
-    ).to_list(10)
-    for f in factures_retard:
-        alerts.append({"type": "facture_retard", "severity": "error", "message": f"Facture {f['numero_facture']} en retard", "entity_id": f["id"]})
-        # Update status
-        await db.factures.update_one({"id": f["id"]}, {"$set": {"statut": "en_retard"}})
-    
-    # Interventions en retard
-    interventions_retard = await db.interventions.find(
-        {"entreprise_id": ent_id, "statut": "planifiee", "date_prevue": {"$lt": today}},
-        {"_id": 0, "id": 1, "titre": 1}
-    ).to_list(10)
-    for i in interventions_retard:
-        alerts.append({"type": "intervention_retard", "severity": "warning", "message": f"Intervention '{i['titre']}' en retard", "entity_id": i["id"]})
-    
-    return alerts
-
 # ==================== RAPPORTS / REPORTS ====================
 @api_router.get("/rapports/monthly-revenue")
 async def get_monthly_revenue(current_user: dict = Depends(get_current_user)):
@@ -2566,139 +2450,6 @@ async def list_audit_logs(
     
     logs = await db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).limit(limit).to_list(limit)
     return [serialize_doc(l) for l in logs]
-
-# ==================== ENTREPRISE SETTINGS ====================
-@api_router.get("/entreprise")
-async def get_entreprise(current_user: dict = Depends(get_current_user)):
-    """Get entreprise settings"""
-    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
-    if not entreprise:
-        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-    return serialize_doc(entreprise)
-
-@api_router.put("/entreprise")
-async def update_entreprise(data: EntrepriseCreate, current_user: dict = Depends(require_admin)):
-    """Update entreprise settings (admin only)"""
-    update_data = data.model_dump(exclude_unset=True)
-    await db.entreprises.update_one(
-        {"id": current_user["entreprise_id"]},
-        {"$set": update_data}
-    )
-    await log_action(current_user["entreprise_id"], current_user["user_id"], "update", "entreprise", current_user["entreprise_id"])
-    
-    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
-    return serialize_doc(entreprise)
-
-@api_router.post("/entreprise/logo")
-async def upload_entreprise_logo(
-    file: UploadFile = File(...),
-    current_user: dict = Depends(require_admin)
-):
-    """Upload entreprise logo for white-labeling (admin only)"""
-    from image_utils import strip_exif_and_compress, is_valid_image
-    
-    # Read file
-    data = await file.read()
-    
-    # Validate it's an image
-    if not is_valid_image(data):
-        raise HTTPException(status_code=400, detail="Le fichier n'est pas une image valide")
-    
-    # Process image (strip EXIF, compress, max 500KB)
-    processed_data, content_type = strip_exif_and_compress(data, max_size_kb=200)
-    
-    # Upload to storage
-    storage_path = f"{APP_NAME}/logos/{current_user['entreprise_id']}/logo_{uuid.uuid4()}.jpg"
-    result = put_object(storage_path, processed_data, content_type)
-    
-    if not result:
-        raise HTTPException(status_code=500, detail="Erreur lors du téléchargement")
-    
-    # Update entreprise with logo URL
-    logo_url = result.get("url") or result.get("path")
-    await db.entreprises.update_one(
-        {"id": current_user["entreprise_id"]},
-        {"$set": {"logo_url": logo_url}}
-    )
-    
-    await log_action(current_user["entreprise_id"], current_user["user_id"], "upload_logo", "entreprise", current_user["entreprise_id"])
-    
-    return {"message": "Logo mis à jour", "logo_url": logo_url}
-
-@api_router.put("/entreprise/branding")
-async def update_entreprise_branding(
-    couleur_primaire: str,
-    current_user: dict = Depends(require_admin)
-):
-    """Update entreprise branding colors (admin only)"""
-    # Validate hex color
-    import re
-    if not re.match(r'^#[0-9A-Fa-f]{6}$', couleur_primaire):
-        raise HTTPException(status_code=400, detail="Couleur invalide. Format: #RRGGBB")
-    
-    await db.entreprises.update_one(
-        {"id": current_user["entreprise_id"]},
-        {"$set": {"couleur_primaire": couleur_primaire}}
-    )
-    
-    await log_action(current_user["entreprise_id"], current_user["user_id"], "update_branding", "entreprise", current_user["entreprise_id"])
-    
-    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
-    return {"message": "Branding mis à jour", "couleur_primaire": couleur_primaire}
-
-# ==================== SEARCH ====================
-@api_router.get("/search")
-async def global_search(q: str, current_user: dict = Depends(get_current_user)):
-    """Global search across clients, devis, factures, interventions"""
-    ent_id = current_user["entreprise_id"]
-    results = {"clients": [], "devis": [], "factures": [], "interventions": []}
-    
-    # Search clients
-    clients = await db.clients.find(
-        {"entreprise_id": ent_id, "$or": [
-            {"nom": {"$regex": q, "$options": "i"}},
-            {"prenom": {"$regex": q, "$options": "i"}},
-            {"email": {"$regex": q, "$options": "i"}},
-            {"telephone": {"$regex": q, "$options": "i"}}
-        ]},
-        {"_id": 0}
-    ).limit(5).to_list(5)
-    results["clients"] = [serialize_doc(c) for c in clients]
-    
-    # Search devis by number
-    devis = await db.devis.find(
-        {"entreprise_id": ent_id, "numero_devis": {"$regex": q, "$options": "i"}},
-        {"_id": 0}
-    ).limit(5).to_list(5)
-    results["devis"] = [serialize_doc(d) for d in devis]
-    
-    # Search factures by number
-    factures = await db.factures.find(
-        {"entreprise_id": ent_id, "numero_facture": {"$regex": q, "$options": "i"}},
-        {"_id": 0}
-    ).limit(5).to_list(5)
-    results["factures"] = [serialize_doc(f) for f in factures]
-    
-    # Search interventions by title
-    interventions = await db.interventions.find(
-        {"entreprise_id": ent_id, "titre": {"$regex": q, "$options": "i"}},
-        {"_id": 0}
-    ).limit(5).to_list(5)
-    results["interventions"] = [serialize_doc(i) for i in interventions]
-    
-    return results
-
-# Include router
-app.include_router(api_router)
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # ==================== BACKGROUND TASKS ====================
 async def run_scheduled_reminders():
