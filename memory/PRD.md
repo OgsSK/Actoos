@@ -142,6 +142,31 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - `POST /api/entreprise/logo` - Upload logo entreprise
 - `PUT /api/entreprise/branding` - Mise à jour couleur primaire
 
+### Phase 18 - PDF avec Logo/QR Code & Injection CSS Couleurs ✅ (Date: 2026-03-30)
+
+#### PDF Génération Améliorée
+- [x] **Logo entreprise sur Devis** - Le logo_url du tenant s'affiche en haut à gauche du PDF
+- [x] **Logo entreprise sur Factures** - Même affichage que les devis
+- [x] **QR Code paiement** - QR code généré sur les factures non payées (contient infos paiement)
+- [x] **Design responsive** - Tableau logo + infos entreprise pour un rendu professionnel
+- [x] **Factures payées** - Affichent "PAYÉE" en vert au lieu du QR code
+
+#### Injection CSS Dynamique (White-labeling)
+- [x] **Variables CSS** - `--tenant-primary`, `--primary` (HSL), `--tenant-primary-rgb` injectées dynamiquement
+- [x] **AuthContext hook** - useEffect surveille `entreprise.couleur_primaire` et met à jour le DOM
+- [x] **Classes utilitaires** - `.bg-tenant-primary`, `.text-tenant-primary`, `.border-tenant-primary`, etc.
+- [x] **Shadcn compatible** - La variable `--primary` est en format HSL pour compatibilité Shadcn UI
+
+#### Fonctions ajoutées (pdf_generator.py)
+- `generate_qr_code(data, size)` - Génère image QR code avec la lib `qrcode`
+- `load_logo_image(logo_url, max_width, max_height)` - Télécharge et redimensionne le logo
+- `build_payment_qr_data(facture, entreprise, portal_url)` - Construit les données de paiement
+
+#### Tests Validés
+- Backend: 11/12 tests passés (1 ignoré - pas de facture payée)
+- Frontend: 100% tests branding UI passés
+- CSS injection vérifié: --tenant-primary change après sauvegarde couleur
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -170,16 +195,19 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 - [x] **White-labeling complet** (logo + couleur primaire)
 
 ### Backlog (Nice to have)
-- [ ] QR Code paiement sur facture
-- [ ] Injection CSS dynamique des couleurs dans toute l'interface
-- [ ] Logo visible sur les PDF générés
+- [x] QR Code paiement sur facture ✅
+- [x] Injection CSS dynamique des couleurs dans toute l'interface ✅
+- [x] Logo visible sur les PDF générés ✅
+- [ ] Portail client web (consultation factures/devis, historique)
+- [ ] Notifications push PWA
 
 ### Backlog V2
 - [ ] Optimisation tournées IA
 - [ ] Offline avancé (IndexedDB/SQLite sync)
 - [ ] React Native (si besoin natif)
+- [ ] Intégration calendrier Google/Outlook
+- [ ] API publique pour intégrations tierces
 
 ## Next Tasks
-1. QR Code paiement sur facture
-2. Injection CSS dynamique des couleurs entreprise
-3. Logo entreprise sur les PDF
+1. Offline avancé (IndexedDB/SQLite sync) pour l'app technicien
+2. Portail client web
