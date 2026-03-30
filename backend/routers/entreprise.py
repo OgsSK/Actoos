@@ -5,11 +5,14 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from datetime import datetime, timezone
 import uuid
 import os
+import re
 
 from auth import get_current_user, require_admin
 from dependencies import db, serialize_doc, log_action
 from subscription_service import SUBSCRIPTION_PLANS, get_plan, get_all_plans
 from storage import put_object, get_mime_type, APP_NAME
+from models import SUPPORTED_CURRENCIES, SUPPORTED_LOCALES
+from currency_utils import get_all_currencies
 
 router = APIRouter(tags=["Entreprise"])
 
@@ -103,3 +106,59 @@ async def get_current_subscription(current_user: dict = Depends(get_current_user
         "expires_at": entreprise.get("plan_expires_at"),
         "has_stripe": bool(entreprise.get("stripe_customer_id"))
     }
+
+
+@router.get("/currencies")
+async def list_currencies():
+    """List all supported currencies"""
+    return get_all_currencies()
+
+
+@router.get("/locales")
+async def list_locales():
+    """List all supported locales"""
+    return [
+        {"code": "fr-FR", "name": "Français (France)", "flag": "🇫🇷"},
+        {"code": "fr-CA", "name": "Français (Canada)", "flag": "🇨🇦"},
+        {"code": "fr-MA", "name": "Français (Maroc)", "flag": "🇲🇦"},
+        {"code": "en-US", "name": "English (US)", "flag": "🇺🇸"},
+        {"code": "en-GB", "name": "English (UK)", "flag": "🇬🇧"},
+    ]
+
+
+@router.put("/entreprise/currency")
+async def update_entreprise_currency(
+    devise: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Update entreprise currency (admin only)"""
+    if devise not in SUPPORTED_CURRENCIES:
+        raise HTTPException(status_code=400, detail=f"Devise non supportée. Choisissez parmi: {', '.join(SUPPORTED_CURRENCIES.keys())}")
+    
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {"$set": {"devise": devise}}
+    )
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "update_currency", "entreprise", current_user["entreprise_id"], {"devise": devise})
+    
+    return {"message": "Devise mise à jour", "devise": devise}
+
+
+@router.put("/entreprise/locale")
+async def update_entreprise_locale(
+    locale: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Update entreprise locale (admin only)"""
+    if locale not in SUPPORTED_LOCALES:
+        raise HTTPException(status_code=400, detail=f"Locale non supportée. Choisissez parmi: {', '.join(SUPPORTED_LOCALES)}")
+    
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {"$set": {"locale": locale}}
+    )
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "update_locale", "entreprise", current_user["entreprise_id"], {"locale": locale})
+    
+    return {"message": "Locale mise à jour", "locale": locale}

@@ -1,6 +1,6 @@
 """
 PDF Generation for Devis and Factures using ReportLab
-With QR Code payment and company logo support
+With QR Code payment, company logo, and multi-currency support
 """
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -14,6 +14,8 @@ import base64
 import logging
 import qrcode
 import requests
+
+from currency_utils import format_currency_for_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -106,9 +108,12 @@ def build_payment_qr_data(facture: dict, entreprise: dict, portal_url: str = Non
     return "\n".join(parts)
 
 def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
-    """Generate PDF for a devis/quote with company logo"""
+    """Generate PDF for a devis/quote with company logo and multi-currency support"""
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20*mm, bottomMargin=20*mm, leftMargin=20*mm, rightMargin=20*mm)
+    
+    # Get currency from entreprise
+    devise = entreprise.get('devise', 'EUR')
     
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='RightAlign', alignment=TA_RIGHT, fontSize=10))
@@ -178,9 +183,9 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
         table_data.append([
             ligne.get('description', ''),
             str(ligne.get('quantite', 1)),
-            f"{ligne.get('prix_unitaire', 0):.2f} €",
+            format_currency_for_pdf(ligne.get('prix_unitaire', 0), devise),
             f"{ligne.get('tva', 20):.0f}%",
-            f"{total_ligne:.2f} €"
+            format_currency_for_pdf(total_ligne, devise)
         ])
     
     table = Table(table_data, colWidths=[90*mm, 15*mm, 25*mm, 15*mm, 25*mm])
@@ -199,11 +204,11 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
     elements.append(table)
     elements.append(Spacer(1, 5*mm))
     
-    # Totals
+    # Totals with currency formatting
     totals_data = [
-        ['', '', '', 'Total HT:', f"{devis.get('total_ht', 0):.2f} €"],
-        ['', '', '', 'TVA:', f"{devis.get('total_tva', 0):.2f} €"],
-        ['', '', '', 'Total TTC:', f"{devis.get('total_ttc', 0):.2f} €"],
+        ['', '', '', 'Total HT:', format_currency_for_pdf(devis.get('total_ht', 0), devise)],
+        ['', '', '', 'TVA:', format_currency_for_pdf(devis.get('total_tva', 0), devise)],
+        ['', '', '', 'Total TTC:', format_currency_for_pdf(devis.get('total_ttc', 0), devise)],
     ]
     totals_table = Table(totals_data, colWidths=[90*mm, 15*mm, 25*mm, 20*mm, 25*mm])
     totals_table.setStyle(TableStyle([
@@ -247,9 +252,12 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
 
 
 def generate_facture_pdf(facture: dict, client: dict, entreprise: dict, portal_url: str = None) -> bytes:
-    """Generate PDF for an invoice with company logo and payment QR code"""
+    """Generate PDF for an invoice with company logo, payment QR code, and multi-currency support"""
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20*mm, bottomMargin=20*mm, leftMargin=20*mm, rightMargin=20*mm)
+    
+    # Get currency from entreprise
+    devise = entreprise.get('devise', 'EUR')
     
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='RightAlign', alignment=TA_RIGHT, fontSize=10))
@@ -321,9 +329,9 @@ def generate_facture_pdf(facture: dict, client: dict, entreprise: dict, portal_u
         table_data.append([
             ligne.get('description', ''),
             str(ligne.get('quantite', 1)),
-            f"{ligne.get('prix_unitaire', 0):.2f} €",
+            format_currency_for_pdf(ligne.get('prix_unitaire', 0), devise),
             f"{ligne.get('tva', 20):.0f}%",
-            f"{total_ligne:.2f} €"
+            format_currency_for_pdf(total_ligne, devise)
         ])
     
     table = Table(table_data, colWidths=[90*mm, 15*mm, 25*mm, 15*mm, 25*mm])
@@ -342,11 +350,11 @@ def generate_facture_pdf(facture: dict, client: dict, entreprise: dict, portal_u
     elements.append(table)
     elements.append(Spacer(1, 5*mm))
     
-    # Totals
+    # Totals with currency formatting
     totals_data = [
-        ['', '', '', 'Total HT:', f"{facture.get('total_ht', 0):.2f} €"],
-        ['', '', '', 'TVA:', f"{facture.get('total_tva', 0):.2f} €"],
-        ['', '', '', 'Total TTC:', f"{facture.get('total_ttc', 0):.2f} €"],
+        ['', '', '', 'Total HT:', format_currency_for_pdf(facture.get('total_ht', 0), devise)],
+        ['', '', '', 'TVA:', format_currency_for_pdf(facture.get('total_tva', 0), devise)],
+        ['', '', '', 'Total TTC:', format_currency_for_pdf(facture.get('total_ttc', 0), devise)],
     ]
     totals_table = Table(totals_data, colWidths=[90*mm, 15*mm, 25*mm, 20*mm, 25*mm])
     totals_table.setStyle(TableStyle([

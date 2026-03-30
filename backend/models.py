@@ -14,6 +14,19 @@ def now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 # ==================== ENTREPRISE ====================
+# Supported currencies
+SUPPORTED_CURRENCIES = {
+    "EUR": {"symbol": "€", "name": "Euro", "position": "after", "decimal_separator": ",", "thousands_separator": " "},
+    "USD": {"symbol": "$", "name": "US Dollar", "position": "before", "decimal_separator": ".", "thousands_separator": ","},
+    "XOF": {"symbol": "CFA", "name": "Franc CFA", "position": "after", "decimal_separator": ",", "thousands_separator": " "},
+    "GBP": {"symbol": "£", "name": "British Pound", "position": "before", "decimal_separator": ".", "thousands_separator": ","},
+    "CHF": {"symbol": "CHF", "name": "Swiss Franc", "position": "after", "decimal_separator": ".", "thousands_separator": "'"},
+    "CAD": {"symbol": "$", "name": "Canadian Dollar", "position": "before", "decimal_separator": ".", "thousands_separator": ","},
+    "MAD": {"symbol": "DH", "name": "Dirham Marocain", "position": "after", "decimal_separator": ",", "thousands_separator": " "},
+}
+
+SUPPORTED_LOCALES = ["fr-FR", "en-US", "en-GB", "fr-CA", "fr-MA"]
+
 class EntrepriseBase(BaseModel):
     nom: str
     adresse: Optional[str] = None
@@ -26,6 +39,8 @@ class EntrepriseBase(BaseModel):
     logo_url: Optional[str] = None
     conditions_generales: Optional[str] = None
     couleur_primaire: str = "#2563EB"
+    devise: str = "EUR"  # Currency code (EUR, USD, XOF, etc.)
+    locale: str = "fr-FR"  # Locale for formatting
 
 class EntrepriseCreate(EntrepriseBase):
     pass

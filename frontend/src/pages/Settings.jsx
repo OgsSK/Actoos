@@ -19,7 +19,7 @@ import {
 import { 
   Building2, FileText, Check, Loader2, Bell, MessageSquare, 
   CheckCircle, XCircle, ExternalLink, Info, Palette, Upload, 
-  Tags, Plus, Pencil, Trash2, Wrench
+  Tags, Plus, Pencil, Trash2, Wrench, Globe, Coins
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -366,6 +366,13 @@ export const SettingsPage = () => {
   const [smsStatus, setSmsStatus] = useState({ configured: false, phone_number: null });
   const [loadingSmsStatus, setLoadingSmsStatus] = useState(true);
   
+  // Currency and locale state
+  const [currencies, setCurrencies] = useState([]);
+  const [locales, setLocales] = useState([]);
+  const [selectedCurrency, setSelectedCurrency] = useState('EUR');
+  const [selectedLocale, setSelectedLocale] = useState('fr-FR');
+  const [savingCurrency, setSavingCurrency] = useState(false);
+  
   // Branding state
   const [brandingData, setBrandingData] = useState({
     logo_url: '',
@@ -417,6 +424,10 @@ export const SettingsPage = () => {
         couleur_primaire: entreprise.couleur_primaire || '#2563EB'
       });
       
+      // Load currency and locale
+      setSelectedCurrency(entreprise.devise || 'EUR');
+      setSelectedLocale(entreprise.locale || 'fr-FR');
+      
       // Load notification settings from entreprise
       if (entreprise.notification_settings) {
         setNotifSettings(prev => ({
@@ -448,6 +459,53 @@ export const SettingsPage = () => {
 
   const handleNotifChange = (key, value) => {
     setNotifSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Load currencies and locales
+  useEffect(() => {
+    const fetchCurrenciesAndLocales = async () => {
+      try {
+        const [currRes, locRes] = await Promise.all([
+          api.get('/currencies'),
+          api.get('/locales')
+        ]);
+        setCurrencies(currRes.data);
+        setLocales(locRes.data);
+      } catch (error) {
+        console.error('Error fetching currencies/locales:', error);
+      }
+    };
+    fetchCurrenciesAndLocales();
+  }, [api]);
+
+  const handleCurrencyChange = async (devise) => {
+    setSavingCurrency(true);
+    try {
+      await api.put(`/entreprise/currency?devise=${devise}`);
+      setSelectedCurrency(devise);
+      toast.success(`Devise changée en ${devise}`);
+      refreshUser();
+    } catch (error) {
+      console.error('Error updating currency:', error);
+      toast.error('Erreur lors du changement de devise');
+    } finally {
+      setSavingCurrency(false);
+    }
+  };
+
+  const handleLocaleChange = async (locale) => {
+    setSavingCurrency(true);
+    try {
+      await api.put(`/entreprise/locale?locale=${locale}`);
+      setSelectedLocale(locale);
+      toast.success('Langue mise à jour');
+      refreshUser();
+    } catch (error) {
+      console.error('Error updating locale:', error);
+      toast.error('Erreur lors du changement de langue');
+    } finally {
+      setSavingCurrency(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -511,6 +569,10 @@ export const SettingsPage = () => {
           <TabsTrigger value="branding" className="flex items-center gap-2">
             <Palette className="w-4 h-4" />
             Personnalisation
+          </TabsTrigger>
+          <TabsTrigger value="regional" className="flex items-center gap-2">
+            <Globe className="w-4 h-4" />
+            Régional
           </TabsTrigger>
         </TabsList>
 
@@ -1101,6 +1163,92 @@ export const SettingsPage = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Regional Settings Tab */}
+        <TabsContent value="regional">
+          <div className="space-y-6">
+            <Card className="border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Coins className="w-5 h-5" />
+                  Devise
+                </CardTitle>
+                <CardDescription>
+                  Choisissez la devise utilisée pour vos devis et factures
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {currencies.map((currency) => (
+                    <button
+                      key={currency.code}
+                      type="button"
+                      onClick={() => handleCurrencyChange(currency.code)}
+                      disabled={savingCurrency}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        selectedCurrency === currency.code
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                      data-testid={`currency-${currency.code}`}
+                    >
+                      <div className="text-2xl font-bold mb-1">{currency.symbol}</div>
+                      <div className="font-medium text-slate-900">{currency.code}</div>
+                      <div className="text-xs text-slate-500">{currency.name}</div>
+                    </button>
+                  ))}
+                </div>
+                {savingCurrency && (
+                  <div className="flex items-center gap-2 mt-4 text-blue-600">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Enregistrement...</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Globe className="w-5 h-5" />
+                  Langue et Format
+                </CardTitle>
+                <CardDescription>
+                  Choisissez la langue et le format régional
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {locales.map((locale) => (
+                    <button
+                      key={locale.code}
+                      type="button"
+                      onClick={() => handleLocaleChange(locale.code)}
+                      disabled={savingCurrency}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        selectedLocale === locale.code
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                      data-testid={`locale-${locale.code}`}
+                    >
+                      <div className="text-2xl mb-1">{locale.flag}</div>
+                      <div className="font-medium text-slate-900">{locale.name}</div>
+                      <div className="text-xs text-slate-500">{locale.code}</div>
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Alert className="bg-blue-50 border-blue-200">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                Les paramètres régionaux affectent le format des montants sur vos devis, factures et dans toute l'application.
+              </AlertDescription>
+            </Alert>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
