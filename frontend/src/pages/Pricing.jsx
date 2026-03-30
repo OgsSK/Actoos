@@ -343,6 +343,7 @@ export const SignupSuccessPage = () => {
   
   const [status, setStatus] = useState('checking');
   const [attempts, setAttempts] = useState(0);
+  const [finalized, setFinalized] = useState(false);
 
   useEffect(() => {
     if (sessionId) {
@@ -360,6 +361,10 @@ export const SignupSuccessPage = () => {
       const response = await axios.get(`${API_URL}/api/checkout/status/${sessionId}`);
       
       if (response.data.payment_status === 'paid') {
+        // Finalize signup with stored data
+        if (!finalized) {
+          await finalizeSignup();
+        }
         setStatus('success');
         toast.success('Paiement réussi ! Votre compte a été créé.');
       } else if (response.data.status === 'expired') {
@@ -373,6 +378,31 @@ export const SignupSuccessPage = () => {
       console.error('Error checking status:', error);
       setAttempts(prev => prev + 1);
       setTimeout(pollPaymentStatus, 2000);
+    }
+  };
+
+  const finalizeSignup = async () => {
+    try {
+      // Get stored signup data from localStorage
+      const storedData = localStorage.getItem('signup_data');
+      if (storedData) {
+        const { categories, password, phone } = JSON.parse(storedData);
+        
+        await axios.post(`${API_URL}/api/finalize-signup/${sessionId}`, null, {
+          params: {
+            categories: categories.join(','),
+            password: password || '',
+            phone: phone || ''
+          }
+        });
+        
+        // Clear stored data
+        localStorage.removeItem('signup_data');
+        setFinalized(true);
+      }
+    } catch (error) {
+      console.error('Error finalizing signup:', error);
+      // Non-blocking error - account is still created
     }
   };
 
@@ -401,7 +431,7 @@ export const SignupSuccessPage = () => {
               </div>
               <h2 className="text-2xl font-bold text-white">Bienvenue sur Actoos !</h2>
               <p className="text-slate-300">
-                Votre compte a été créé avec succès. Vérifiez votre email pour vos identifiants de connexion.
+                Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.
               </p>
               <Button 
                 className="bg-blue-500 hover:bg-blue-600"

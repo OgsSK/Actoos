@@ -186,6 +186,111 @@ async def create_checkout_session(
     }
 
 
+@router.post("/finalize-signup/{session_id}")
+async def finalize_signup(
+    session_id: str,
+    categories: list[str] = [],
+    password: Optional[str] = None,
+    phone: Optional[str] = None
+):
+    """Finalize signup with additional data (categories, custom password, phone)"""
+    # Find the transaction
+    transaction = await db.payment_transactions.find_one({"session_id": session_id})
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    
+    if transaction.get("payment_status") != "paid":
+        raise HTTPException(status_code=400, detail="Le paiement n'a pas été confirmé")
+    
+    # Find the entreprise created from this session
+    entreprise = await db.entreprises.find_one({"stripe_session_id": session_id})
+    if not entreprise:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    # Validate categories against plan limits
+    plan = get_plan(transaction.get("plan_id", "startup"))
+    max_categories = plan.get("max_categories", 1) if plan else 1
+    
+    if max_categories != -1 and len(categories) > max_categories:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Votre plan est limité à {max_categories} catégorie(s)"
+        )
+    
+    # Update entreprise with categories
+    update_data = {
+        "categories": categories,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if phone:
+        update_data["telephone"] = phone
+    
+    await db.entreprises.update_one(
+        {"id": entreprise["id"]},
+        {"$set": update_data}
+    )
+    
+    # If custom password provided, update the admin user
+    if password:
+        admin = await db.users.find_one({
+            "entreprise_id": entreprise["id"],
+            "role": "admin"
+        })
+        if admin:
+            await db.users.update_one(
+                {"id": admin["id"]},
+                {
+                    "$set": {
+                        "password_hash": get_password_hash(password),
+                        "must_change_password": False
+                    }
+                }
+            )
+    
+    # Create category documents for each selected category
+    for cat_id in categories:
+        category_doc = {
+            "id": str(uuid.uuid4()),
+            "entreprise_id": entreprise["id"],
+            "code": cat_id,
+            "nom": get_category_name(cat_id),
+            "actif": True,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        # Upsert to avoid duplicates
+        await db.categories.update_one(
+            {"entreprise_id": entreprise["id"], "code": cat_id},
+            {"$set": category_doc},
+            upsert=True
+        )
+    
+    logger.info(f"Finalized signup for entreprise {entreprise['id']} with {len(categories)} categories")
+    
+    return {
+        "success": True,
+        "entreprise_id": entreprise["id"],
+        "categories": categories
+    }
+
+
+def get_category_name(cat_id: str) -> str:
+    """Get category name from ID"""
+    category_names = {
+        "btp": "BTP & Travaux",
+        "nettoyage": "Nettoyage Professionnel",
+        "maintenance": "Maintenance & SAV",
+        "decoration": "Décoration & Aménagement",
+        "electricite": "Électricité",
+        "plomberie": "Plomberie & CVC",
+        "espaces-verts": "Espaces Verts & Extérieur",
+        "securite": "Sécurité & Installation",
+        "multiservices": "Services Techniques Multi-services",
+        "specialises": "Services Spécialisés"
+    }
+    return category_names.get(cat_id, cat_id)
+
+
 @router.get("/checkout/status/{session_id}")
 async def get_checkout_status(session_id: str, request: Request):
     """Get status of a checkout session"""
