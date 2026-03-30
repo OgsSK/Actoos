@@ -521,6 +521,39 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - `/app/backend/routers/public_api.py` - Router API publique (22 endpoints)
 - `/app/frontend/src/pages/APISettings.jsx` - Interface admin enrichie
 
+### Phase 29 - Validation Limites Plans & Widget Usage ✅ (Date: 2026-03-31)
+
+#### Backend - Validation des limites
+- [x] **plan_limits.py** - Service central de validation des limites
+- [x] **check_technician_limit()** - Vérifie limite techniciens avant invitation
+- [x] **check_intervention_limit()** - Vérifie limite interventions/mois
+- [x] **check_category_limit()** - Vérifie limite catégories
+- [x] **get_usage_stats()** - Retourne statistiques d'usage complètes
+- [x] **Endpoint /api/usage** - Récupère usage et limites actuels
+
+#### Frontend - Widget d'usage
+- [x] **PlanUsageWidget.jsx** - Composant réutilisable
+- [x] **Mode compact** - Affichage sidebar/dashboard
+- [x] **Mode complet** - Page Settings avec tous les détails
+- [x] **Barres de progression** - Visualisation usage vs limite
+- [x] **Indicateurs couleur** - Vert/Jaune/Rouge selon usage
+- [x] **Dialog upgrade** - Comparaison des plans avec Stripe checkout
+
+#### Intégration
+- [x] **Dashboard** - Widget compact en bas de page
+- [x] **Settings** - Nouvel onglet "Abonnement" avec vue complète
+- [x] **Erreurs 403** - Messages clairs quand limite atteinte
+
+#### Fichiers créés/modifiés
+- `/app/backend/plan_limits.py` - Service validation limites
+- `/app/backend/routers/auth.py` - Validation invitation technicien
+- `/app/backend/routers/interventions.py` - Validation création intervention
+- `/app/backend/routers/categories.py` - Validation création catégorie
+- `/app/backend/routers/subscription.py` - Endpoint /usage
+- `/app/frontend/src/components/PlanUsageWidget.jsx` - Widget UI
+- `/app/frontend/src/pages/Settings.jsx` - Onglet Abonnement
+- `/app/frontend/src/pages/Dashboard.jsx` - Widget compact
+
 ### Backlog V2
 - [ ] React Native (si besoin app native)
 - [ ] Intégration calendrier Google/Outlook

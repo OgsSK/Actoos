@@ -17,6 +17,7 @@ import {
   Search, Bell, Plus, TrendingUp, AlertTriangle, Clock, CheckCircle, ChevronRight,
   Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code
 } from 'lucide-react';
+import PlanUsageWidget from '../components/PlanUsageWidget';
 
 const Sidebar = ({ open, onClose }) => {
   const { user, entreprise, logout, isAdmin } = useAuth();
@@ -475,6 +476,13 @@ export const DashboardOverview = () => {
           viewAllPath="/dashboard/factures"
           formatAmount={formatAmount}
         />
+      </div>
+
+      {/* Plan Usage Widget */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1">
+          <PlanUsageWidget compact />
+        </div>
       </div>
     </div>
   );

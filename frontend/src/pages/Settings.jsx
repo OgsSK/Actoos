@@ -19,9 +19,10 @@ import {
 import { 
   Building2, FileText, Check, Loader2, Bell, MessageSquare, 
   CheckCircle, XCircle, ExternalLink, Info, Palette, Upload, 
-  Tags, Plus, Pencil, Trash2, Wrench, Globe, Coins
+  Tags, Plus, Pencil, Trash2, Wrench, Globe, Coins, CreditCard
 } from 'lucide-react';
 import { toast } from 'sonner';
+import PlanUsageWidget from '../components/PlanUsageWidget';
 
 // Default category icons and colors
 const CATEGORY_ICONS = ['wrench', 'zap', 'sparkles', 'thermometer', 'hammer', 'cog', 'droplet', 'wind', 'home', 'tool'];
@@ -549,10 +550,14 @@ export const SettingsPage = () => {
       </div>
 
       <Tabs defaultValue="entreprise" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="entreprise" className="flex items-center gap-2">
             <Building2 className="w-4 h-4" />
             Entreprise
+          </TabsTrigger>
+          <TabsTrigger value="abonnement" className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            Abonnement
           </TabsTrigger>
           <TabsTrigger value="categories" className="flex items-center gap-2">
             <Tags className="w-4 h-4" />
@@ -575,6 +580,11 @@ export const SettingsPage = () => {
             Régional
           </TabsTrigger>
         </TabsList>
+
+        {/* Abonnement Tab */}
+        <TabsContent value="abonnement">
+          <PlanUsageWidget />
+        </TabsContent>
 
         {/* Entreprise Tab */}
         <TabsContent value="entreprise">
