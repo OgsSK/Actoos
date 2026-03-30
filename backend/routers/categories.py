@@ -9,6 +9,7 @@ import logging
 from models import CategorieCreate
 from auth import get_current_user, require_admin
 from dependencies import db, serialize_doc, log_action
+from plan_limits import check_category_limit, raise_limit_error
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +161,10 @@ async def get_categorie(categorie_id: str, current_user: dict = Depends(get_curr
 @router.post("")
 async def create_categorie(data: CategorieCreate, current_user: dict = Depends(require_admin)):
     """Create a new category (admin only)"""
+    # Check category limit
+    limit_check = await check_category_limit(db, current_user["entreprise_id"])
+    raise_limit_error(limit_check)
+    
     # Check if code already exists
     existing = await db.categories.find_one({
         "entreprise_id": current_user["entreprise_id"],

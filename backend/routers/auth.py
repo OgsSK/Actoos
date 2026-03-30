@@ -14,6 +14,7 @@ from auth import (
     get_current_user, require_admin, create_invitation_token, create_reset_token
 )
 from dependencies import db, serialize_doc, log_action
+from plan_limits import check_technician_limit, raise_limit_error
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -135,6 +136,10 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 @router.post("/invite")
 async def invite_technician(data: UserInvite, current_user: dict = Depends(require_admin)):
     """Invite a technician (admin only)"""
+    # Check technician limit
+    limit_check = await check_technician_limit(db, current_user["entreprise_id"])
+    raise_limit_error(limit_check)
+    
     existing = await db.users.find_one({"email": data.email})
     if existing:
         raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")

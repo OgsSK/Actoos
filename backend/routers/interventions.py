@@ -12,6 +12,7 @@ from auth import get_current_user, require_admin
 from dependencies import db, serialize_doc, log_action
 from route_optimizer import optimize_route, calculate_simple_route_score
 from push_service import notify_new_intervention_available_to_techs
+from plan_limits import check_intervention_limit, raise_limit_error
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,10 @@ async def create_intervention(
     current_user: dict = Depends(get_current_user)
 ):
     """Create a new intervention"""
+    # Check intervention limit
+    limit_check = await check_intervention_limit(db, current_user["entreprise_id"])
+    raise_limit_error(limit_check)
+    
     # Verify client exists
     client = await db.clients.find_one({"id": data.client_id, "entreprise_id": current_user["entreprise_id"]})
     if not client:

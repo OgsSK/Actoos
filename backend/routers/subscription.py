@@ -12,10 +12,29 @@ import logging
 from auth import get_current_user, get_password_hash
 from dependencies import db, serialize_doc
 from subscription_service import SUBSCRIPTION_PLANS, get_plan
+from plan_limits import get_usage_stats, get_entreprise_limits
+
+from plan_limits import get_usage_stats, get_entreprise_limits
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Subscription"])
+
+
+@router.get("/usage")
+async def get_plan_usage(current_user: dict = Depends(get_current_user)):
+    """Get current plan usage and limits"""
+    usage = await get_usage_stats(db, current_user["entreprise_id"])
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "plan": 1, "plan_name": 1}
+    )
+    
+    return {
+        "plan": entreprise.get("plan", "starter") if entreprise else "starter",
+        "plan_name": entreprise.get("plan_name", "Starter") if entreprise else "Starter",
+        "usage": usage
+    }
 
 
 @router.get("/plans")
