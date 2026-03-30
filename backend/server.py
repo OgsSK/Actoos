@@ -1392,6 +1392,140 @@ async def get_portal_devis_pdf(token: str):
         headers={"Content-Disposition": f"inline; filename=devis_{devis['numero_devis']}.pdf"}
     )
 
+# ==================== CLIENT PORTAL - DASHBOARD ====================
+@api_router.get("/portal/client/{token}")
+async def get_client_portal_dashboard(token: str):
+    """Get client dashboard with all their documents (no auth required)"""
+    client = await db.clients.find_one({"portal_token": token}, {"_id": 0})
+    if not client:
+        raise HTTPException(status_code=404, detail="Accès non autorisé")
+    
+    entreprise = await db.entreprises.find_one(
+        {"id": client["entreprise_id"]}, 
+        {"_id": 0, "nom": 1, "adresse": 1, "ville": 1, "code_postal": 1, "telephone": 1, "email": 1, "logo_url": 1, "couleur_primaire": 1}
+    )
+    
+    # Get all devis for this client
+    devis_cursor = db.devis.find(
+        {"client_id": client["id"]},
+        {"_id": 0, "id": 1, "numero_devis": 1, "statut": 1, "total_ttc": 1, "created_at": 1, "date_expiration": 1, "token_client": 1}
+    ).sort("created_at", -1).limit(50)
+    devis_list = await devis_cursor.to_list(length=50)
+    
+    # Get all factures for this client
+    factures_cursor = db.factures.find(
+        {"client_id": client["id"]},
+        {"_id": 0, "id": 1, "numero_facture": 1, "statut": 1, "total_ttc": 1, "montant_paye": 1, "created_at": 1, "date_echeance": 1}
+    ).sort("created_at", -1).limit(50)
+    factures_list = await factures_cursor.to_list(length=50)
+    
+    # Get recent interventions for this client
+    interventions_cursor = db.interventions.find(
+        {"client_id": client["id"]},
+        {"_id": 0, "id": 1, "titre": 1, "statut": 1, "date_debut": 1, "date_fin": 1}
+    ).sort("date_debut", -1).limit(20)
+    interventions_list = await interventions_cursor.to_list(length=20)
+    
+    # Calculate summary stats
+    total_devis = len(devis_list)
+    devis_en_attente = sum(1 for d in devis_list if d.get("statut") in ["brouillon", "envoye"])
+    devis_signes = sum(1 for d in devis_list if d.get("statut") == "signe")
+    
+    total_factures = len(factures_list)
+    factures_impayees = sum(1 for f in factures_list if f.get("statut") in ["brouillon", "emise"])
+    montant_du = sum((f.get("total_ttc", 0) - f.get("montant_paye", 0)) for f in factures_list if f.get("statut") != "payee")
+    
+    return {
+        "client": serialize_doc(client),
+        "entreprise": serialize_doc(entreprise) if entreprise else None,
+        "devis": [serialize_doc(d) for d in devis_list],
+        "factures": [serialize_doc(f) for f in factures_list],
+        "interventions": [serialize_doc(i) for i in interventions_list],
+        "summary": {
+            "total_devis": total_devis,
+            "devis_en_attente": devis_en_attente,
+            "devis_signes": devis_signes,
+            "total_factures": total_factures,
+            "factures_impayees": factures_impayees,
+            "montant_du": round(montant_du, 2)
+        }
+    }
+
+@api_router.get("/portal/facture/{facture_id}")
+async def get_portal_facture(facture_id: str, token: str):
+    """Get facture for client portal (requires client token)"""
+    client = await db.clients.find_one({"portal_token": token}, {"_id": 0})
+    if not client:
+        raise HTTPException(status_code=401, detail="Accès non autorisé")
+    
+    facture = await db.factures.find_one(
+        {"id": facture_id, "client_id": client["id"]},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    entreprise = await db.entreprises.find_one(
+        {"id": facture["entreprise_id"]}, 
+        {"_id": 0, "nom": 1, "adresse": 1, "ville": 1, "code_postal": 1, "telephone": 1, "email": 1, "logo_url": 1, "siret": 1, "tva_intra": 1}
+    )
+    
+    return {
+        "facture": serialize_doc(facture),
+        "client": serialize_doc(client),
+        "entreprise": serialize_doc(entreprise) if entreprise else None
+    }
+
+@api_router.get("/portal/facture/{facture_id}/pdf")
+async def get_portal_facture_pdf(facture_id: str, token: str):
+    """Get facture PDF from client portal (requires client token)"""
+    client = await db.clients.find_one({"portal_token": token}, {"_id": 0})
+    if not client:
+        raise HTTPException(status_code=401, detail="Accès non autorisé")
+    
+    facture = await db.factures.find_one(
+        {"id": facture_id, "client_id": client["id"]},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    entreprise = await db.entreprises.find_one({"id": facture["entreprise_id"]}, {"_id": 0})
+    
+    pdf_bytes = generate_facture_pdf(facture, client, entreprise or {})
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=facture_{facture['numero_facture']}.pdf"}
+    )
+
+@api_router.get("/clients/{client_id}/portal-link")
+async def get_client_portal_link(client_id: str, current_user: dict = Depends(get_current_user)):
+    """Get the portal link for a client (admin only)"""
+    client = await db.clients.find_one(
+        {"id": client_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0, "id": 1, "portal_token": 1, "nom": 1, "prenom": 1}
+    )
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    # Generate portal_token if not exists
+    if not client.get("portal_token"):
+        portal_token = str(uuid.uuid4())
+        await db.clients.update_one(
+            {"id": client_id},
+            {"$set": {"portal_token": portal_token}}
+        )
+        client["portal_token"] = portal_token
+    
+    return {
+        "client_id": client["id"],
+        "client_name": f"{client.get('nom', '')} {client.get('prenom', '')}".strip(),
+        "portal_token": client["portal_token"],
+        "portal_url": f"/portal/client/{client['portal_token']}"
+    }
+
 # ==================== FACTURE ROUTES ====================
 @api_router.post("/factures")
 async def create_facture(data: FactureCreate, current_user: dict = Depends(get_current_user)):

@@ -23,7 +23,7 @@ import { RapportsPage } from "./pages/Rapports";
 import { TechnicianApp } from "./pages/TechnicianApp";
 
 // Client Portal
-import { ClientPortalDevis } from "./pages/ClientPortal";
+import { ClientPortalDevis, ClientPortalDashboard } from "./pages/ClientPortal";
 
 // Pricing Pages
 import { PricingPage, SignupPage, SignupSuccessPage } from "./pages/Pricing";
@@ -106,6 +106,7 @@ function App() {
 
             {/* Client Portal (Public) */}
             <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />
+            <Route path="/portal/client/:token" element={<ClientPortalDashboard />} />
 
             {/* Technician App */}
             <Route path="/tech" element={

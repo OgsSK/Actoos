@@ -19,7 +19,7 @@ import {
 import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
 import {
   Plus, Search, Phone, Mail, MapPin, User, Building2, ChevronLeft, 
-  Edit, Trash2, FileText, Receipt, Calendar, Loader2
+  Edit, Trash2, FileText, Receipt, Calendar, Loader2, ExternalLink, Copy, Check
 } from 'lucide-react';
 
 // Client List Component
@@ -414,6 +414,8 @@ export const ClientDetail = () => {
   const [factures, setFactures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [portalLink, setPortalLink] = useState(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -444,6 +446,24 @@ export const ClientDetail = () => {
       navigate('/dashboard/clients');
     } catch (error) {
       console.error('Error deleting client:', error);
+    }
+  };
+
+  const getPortalLink = async () => {
+    try {
+      const response = await api.get(`/clients/${id}/portal-link`);
+      const fullUrl = `${window.location.origin}${response.data.portal_url}`;
+      setPortalLink(fullUrl);
+    } catch (error) {
+      console.error('Error getting portal link:', error);
+    }
+  };
+
+  const copyPortalLink = () => {
+    if (portalLink) {
+      navigator.clipboard.writeText(portalLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
     }
   };
 
@@ -584,6 +604,43 @@ export const ClientDetail = () => {
               <FileText className="w-4 h-4 mr-2" />
               Nouveau devis
             </Button>
+            <hr className="my-2" />
+            {!portalLink ? (
+              <Button
+                variant="outline"
+                className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                onClick={getPortalLink}
+                data-testid="get-portal-link-btn"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Obtenir lien portail client
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input 
+                    value={portalLink} 
+                    readOnly 
+                    className="text-xs font-mono"
+                    data-testid="portal-link-input"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={copyPortalLink}
+                    data-testid="copy-portal-link-btn"
+                  >
+                    {linkCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+                <a href={portalLink} target="_blank" rel="noopener noreferrer">
+                  <Button variant="link" size="sm" className="text-blue-600 p-0">
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    Ouvrir le portail
+                  </Button>
+                </a>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

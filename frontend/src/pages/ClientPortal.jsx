@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '../components/ui/table';
 import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
 import {
-  Building2, Phone, Mail, Download, PenTool, Check, X, Loader2, CheckCircle
+  Building2, Phone, Mail, Download, PenTool, Check, X, Loader2, CheckCircle,
+  FileText, Receipt, Calendar, Clock, Euro, ExternalLink, ArrowLeft
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -466,7 +468,406 @@ export const ClientPortalDevis = () => {
 
       {/* Footer */}
       <footer className="border-t border-slate-200 mt-12 py-6 text-center text-sm text-slate-500">
-        Propulsé par FieldCommand
+        Propulsé par Actoos
+      </footer>
+    </div>
+  );
+};
+
+// ==================== CLIENT PORTAL - DASHBOARD ====================
+export const ClientPortalDashboard = () => {
+  const { token } = useParams();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
+
+  useEffect(() => {
+    fetchDashboard();
+  }, [token]);
+
+  const fetchDashboard = async () => {
+    try {
+      const response = await axios.get(`${API}/portal/client/${token}`);
+      setData(response.data);
+    } catch (err) {
+      setError('Ce lien n\'est pas valide ou a expiré.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6">
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const { client, entreprise, devis, factures, interventions, summary } = data;
+  const primaryColor = entreprise?.couleur_primaire || '#2563EB';
+
+  return (
+    <div className="min-h-screen bg-slate-50" data-testid="client-portal-dashboard">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 py-4 px-4" style={{ borderBottomColor: primaryColor }}>
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {entreprise?.logo_url ? (
+              <img src={entreprise.logo_url} alt={entreprise.nom} className="h-10 object-contain" />
+            ) : (
+              <div 
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                style={{ backgroundColor: primaryColor }}
+              >
+                {entreprise?.nom?.charAt(0) || 'E'}
+              </div>
+            )}
+            <div>
+              <h1 className="font-bold text-slate-900">{entreprise?.nom}</h1>
+              <p className="text-xs text-slate-500">Espace client</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="font-medium text-slate-900">{client?.nom} {client?.prenom}</p>
+            <p className="text-xs text-slate-500">{client?.email}</p>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto p-4 space-y-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="border-slate-200">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{summary.total_devis}</p>
+                  <p className="text-xs text-slate-500">Devis</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{summary.devis_en_attente}</p>
+                  <p className="text-xs text-slate-500">En attente</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <Receipt className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{summary.total_factures}</p>
+                  <p className="text-xs text-slate-500">Factures</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                  <Euro className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{formatCurrency(summary.montant_du)}</p>
+                  <p className="text-xs text-slate-500">À payer</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Aperçu
+            </TabsTrigger>
+            <TabsTrigger value="devis" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Devis ({devis.length})
+            </TabsTrigger>
+            <TabsTrigger value="factures" className="flex items-center gap-2">
+              <Receipt className="w-4 h-4" />
+              Factures ({factures.length})
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Devis */}
+              <Card className="border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-base">Derniers devis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {devis.length === 0 ? (
+                    <p className="text-sm text-slate-500">Aucun devis</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {devis.slice(0, 5).map((d) => (
+                        <div key={d.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                          <div>
+                            <p className="font-medium text-sm">{d.numero_devis}</p>
+                            <p className="text-xs text-slate-500">{formatDate(d.created_at)}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge variant="secondary" className={`status-${d.statut}`}>
+                              {getStatusLabel(d.statut)}
+                            </Badge>
+                            <span className="font-medium">{formatCurrency(d.total_ttc)}</span>
+                            {d.token_client && ['brouillon', 'envoye'].includes(d.statut) && (
+                              <Link to={`/portal/devis/${d.token_client}`}>
+                                <Button size="sm" variant="outline">
+                                  <PenTool className="w-3 h-3 mr-1" />
+                                  Signer
+                                </Button>
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Recent Factures */}
+              <Card className="border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-base">Dernières factures</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {factures.length === 0 ? (
+                    <p className="text-sm text-slate-500">Aucune facture</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {factures.slice(0, 5).map((f) => (
+                        <div key={f.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                          <div>
+                            <p className="font-medium text-sm">{f.numero_facture}</p>
+                            <p className="text-xs text-slate-500">Échéance: {formatDate(f.date_echeance)}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge variant="secondary" className={`status-${f.statut}`}>
+                              {getStatusLabel(f.statut)}
+                            </Badge>
+                            <span className="font-medium">{formatCurrency(f.total_ttc)}</span>
+                            <a 
+                              href={`${API}/portal/facture/${f.id}/pdf?token=${token}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Button size="sm" variant="outline">
+                                <Download className="w-3 h-3" />
+                              </Button>
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Interventions */}
+            {interventions.length > 0 && (
+              <Card className="border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-base">Interventions récentes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {interventions.slice(0, 5).map((i) => (
+                      <div key={i.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-sm">{i.titre}</p>
+                          <p className="text-xs text-slate-500">{formatDate(i.date_debut)}</p>
+                        </div>
+                        <Badge variant="secondary" className={`status-${i.statut}`}>
+                          {getStatusLabel(i.statut)}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Devis Tab */}
+          <TabsContent value="devis">
+            <Card className="border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-base">Tous vos devis</CardTitle>
+                <CardDescription>Consultez et signez vos devis en ligne</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {devis.length === 0 ? (
+                  <p className="text-sm text-slate-500 text-center py-8">Aucun devis pour le moment</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Numéro</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Validité</TableHead>
+                        <TableHead>Montant TTC</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {devis.map((d) => (
+                        <TableRow key={d.id}>
+                          <TableCell className="font-mono">{d.numero_devis}</TableCell>
+                          <TableCell>{formatDate(d.created_at)}</TableCell>
+                          <TableCell>{formatDate(d.date_expiration)}</TableCell>
+                          <TableCell className="font-medium">{formatCurrency(d.total_ttc)}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={`status-${d.statut}`}>
+                              {getStatusLabel(d.statut)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {d.token_client && (
+                              <Link to={`/portal/devis/${d.token_client}`}>
+                                <Button size="sm" variant="outline">
+                                  <ExternalLink className="w-3 h-3 mr-1" />
+                                  Voir
+                                </Button>
+                              </Link>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Factures Tab */}
+          <TabsContent value="factures">
+            <Card className="border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-base">Toutes vos factures</CardTitle>
+                <CardDescription>Téléchargez vos factures au format PDF</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {factures.length === 0 ? (
+                  <p className="text-sm text-slate-500 text-center py-8">Aucune facture pour le moment</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Numéro</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Échéance</TableHead>
+                        <TableHead>Montant TTC</TableHead>
+                        <TableHead>Payé</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead className="text-right">PDF</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {factures.map((f) => (
+                        <TableRow key={f.id}>
+                          <TableCell className="font-mono">{f.numero_facture}</TableCell>
+                          <TableCell>{formatDate(f.created_at)}</TableCell>
+                          <TableCell>{formatDate(f.date_echeance)}</TableCell>
+                          <TableCell className="font-medium">{formatCurrency(f.total_ttc)}</TableCell>
+                          <TableCell>{formatCurrency(f.montant_paye || 0)}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={`status-${f.statut}`}>
+                              {getStatusLabel(f.statut)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <a 
+                              href={`${API}/portal/facture/${f.id}/pdf?token=${token}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Button size="sm" variant="outline">
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </a>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Contact Card */}
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-base">Besoin d'aide ?</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-6">
+              {entreprise?.telephone && (
+                <a href={`tel:${entreprise.telephone}`} className="flex items-center gap-2 text-blue-600 hover:underline">
+                  <Phone className="w-4 h-4" />
+                  {entreprise.telephone}
+                </a>
+              )}
+              {entreprise?.email && (
+                <a href={`mailto:${entreprise.email}`} className="flex items-center gap-2 text-blue-600 hover:underline">
+                  <Mail className="w-4 h-4" />
+                  {entreprise.email}
+                </a>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-200 mt-12 py-6 text-center text-sm text-slate-500">
+        Propulsé par Actoos
       </footer>
     </div>
   );

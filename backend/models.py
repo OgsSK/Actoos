@@ -105,11 +105,13 @@ class Client(ClientBase):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=generate_id)
     entreprise_id: str
+    portal_token: str = Field(default_factory=generate_id)  # Token for client portal access
     created_at: datetime = Field(default_factory=now_utc)
 
 class ClientResponse(ClientBase):
     id: str
     entreprise_id: str
+    portal_token: Optional[str] = None
     created_at: str
 
 # ==================== CATEGORIE ====================
