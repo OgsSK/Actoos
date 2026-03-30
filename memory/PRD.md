@@ -558,20 +558,45 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [ ] React Native (si besoin app native)
 - [ ] Intégration calendrier Google/Outlook
 
+### Phase 30 - Workflow E2E: Signature + Géolocalisation + Photos dans PDF ✅ (Date: 2026-03-31)
+
+#### Fonctionnalités
+- [x] **Signature client PWA** - SignaturePad avec canvas tactile pour signature manuscrite
+- [x] **Géolocalisation** - Capture GPS au démarrage et à la fin de l'intervention
+- [x] **Sauvegarde signature** - Stockage base64 PNG dans MongoDB
+- [x] **Photos d'intervention dans PDF** - Grille 2 colonnes avec légendes
+- [x] **Signature dans PDF** - Section "Signature du client" avec image et nom du signataire
+- [x] **Endpoint complete-with-signature** - Termine intervention + capture signature + geo en une requête
+
+#### Endpoints modifiés
+- `POST /api/interventions/{id}/complete-with-signature` - Body: signature + nom_signataire, Query: geo_latitude/longitude/accuracy
+- `POST /api/interventions/{id}/signature` - Sauvegarde signature seule (avant completion)
+- `GET /api/factures/{id}/pdf` - Inclut photos et signature si intervention_id lié
+- `GET /api/factures/{id}/pdf-download` - Idem avec token auth
+- `POST /api/factures/{id}/emit` - PDF envoyé par email inclut photos/signature
+
+#### Fichiers modifiés
+- `/app/backend/routers/interventions.py` - Endpoint complete-with-signature avec query params geo
+- `/app/backend/routers/factures.py` - Injection intervention_photos et intervention_signature
+- `/app/backend/routers/portal.py` - Portal PDF inclut photos/signature
+- `/app/backend/pdf_generator.py` - build_photos_section() et build_signature_section()
+- `/app/frontend/src/pages/TechnicianApp.jsx` - Envoi geo en query params
+- `/app/frontend/src/components/SignaturePad.jsx` - Composant canvas signature
+
+#### Bug corrigé
+- **422 Unprocessable Entity** sur complete-with-signature: FastAPI ne supportait pas multiple body params. Geo déplacé en query params.
+
+#### Tests
+- `/app/backend/tests/test_signature_pdf_integration.py` - 12 tests (100% pass)
+- PDF avec signature: +1161 bytes vs PDF basic
+
 ## Next Tasks
 1. **P1**: Intégration Google Calendar/Outlook (requiert credentials OAuth)
-2. **P2**: Amélioration de la documentation API (OpenAPI/Swagger)
-- `/app/backend/statement_generator.py` - Générateur PDF ReportLab
-- `/app/backend/routers/statements.py` - Router FastAPI
-- `/app/frontend/src/pages/Statements.jsx` - Interface React
+2. **P2**: Support multi-sites (un client avec plusieurs adresses physiques)
+3. **P2**: Documentation UI conflits offline (Last-Write-Wins)
 
 ### Backlog V2
 - [ ] React Native (si besoin app native)
 - [ ] Intégration calendrier Google/Outlook
-- [ ] API publique pour intégrations tierces
-
-## Next Tasks
-1. **P1**: Intégration Google Calendar/Outlook (synchronisation planning)
-2. **P2**: Phase 3 refactoring server.py (routes restantes)
-3. **P2**: API publique pour intégrations tierces
+- [ ] Multi-site support
 
