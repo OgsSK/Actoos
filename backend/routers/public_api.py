@@ -13,7 +13,8 @@ from auth import get_current_user, require_admin
 from dependencies import db, serialize_doc, log_action
 from models_api import (
     APIKeyCreate, APIKeyResponse, WebhookCreate, WebhookResponse,
-    WEBHOOK_EVENTS, API_PERMISSIONS
+    WEBHOOK_EVENTS, API_PERMISSIONS,
+    APIClientCreate, APIClientUpdate, APIInterventionCreate, APIInterventionUpdate
 )
 from webhook_service import trigger_webhooks, send_webhook
 
@@ -417,19 +418,365 @@ async def api_get_facture(facture_id: str, api_key: dict = Depends(require_permi
     return serialize_doc(facture)
 
 
+# ==================== WRITE ENDPOINTS (POST/PUT/DELETE) ====================
+
+@router.post("/v1/clients")
+async def api_create_client(
+    data: APIClientCreate,
+    api_key: dict = Depends(require_permission("write"))
+):
+    """Create a new client (External API)"""
+    # Check for duplicate external_id if provided
+    if data.external_id:
+        existing = await db.clients.find_one({
+            "entreprise_id": api_key["entreprise_id"],
+            "external_id": data.external_id
+        })
+        if existing:
+            raise HTTPException(
+                status_code=409, 
+                detail=f"Un client avec l'external_id '{data.external_id}' existe déjà"
+            )
+    
+    # Check for duplicate email if provided
+    if data.email:
+        existing = await db.clients.find_one({
+            "entreprise_id": api_key["entreprise_id"],
+            "email": data.email
+        })
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Un client avec l'email '{data.email}' existe déjà"
+            )
+    
+    client_dict = data.model_dump()
+    client_dict["id"] = str(uuid.uuid4())
+    client_dict["entreprise_id"] = api_key["entreprise_id"]
+    client_dict["portal_token"] = str(uuid.uuid4())
+    client_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    client_dict["created_via"] = "api"
+    client_dict["api_key_id"] = api_key["id"]
+    
+    await db.clients.insert_one(client_dict)
+    
+    # Trigger webhooks
+    await trigger_webhooks(
+        db,
+        api_key["entreprise_id"],
+        "client.created",
+        {"entity_type": "client", "action": "created", "entity": serialize_doc(client_dict)}
+    )
+    
+    logger.info(f"Client created via API: {client_dict['id']} by key {api_key['name']}")
+    
+    return serialize_doc(client_dict)
+
+
+@router.put("/v1/clients/{client_id}")
+async def api_update_client(
+    client_id: str,
+    data: APIClientUpdate,
+    api_key: dict = Depends(require_permission("write"))
+):
+    """Update a client (External API)"""
+    # Verify client exists
+    client = await db.clients.find_one(
+        {"id": client_id, "entreprise_id": api_key["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    # Build update data
+    update_data = data.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Aucune donnée à mettre à jour")
+    
+    # Check for duplicate email if changing
+    if data.email and data.email != client.get("email"):
+        existing = await db.clients.find_one({
+            "entreprise_id": api_key["entreprise_id"],
+            "email": data.email,
+            "id": {"$ne": client_id}
+        })
+        if existing:
+            raise HTTPException(status_code=409, detail=f"Un client avec l'email '{data.email}' existe déjà")
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_via"] = "api"
+    
+    await db.clients.update_one({"id": client_id}, {"$set": update_data})
+    
+    # Get updated client
+    updated_client = await db.clients.find_one({"id": client_id}, {"_id": 0})
+    
+    # Trigger webhooks
+    await trigger_webhooks(
+        db,
+        api_key["entreprise_id"],
+        "client.updated",
+        {"entity_type": "client", "action": "updated", "entity": serialize_doc(updated_client)}
+    )
+    
+    logger.info(f"Client updated via API: {client_id} by key {api_key['name']}")
+    
+    return serialize_doc(updated_client)
+
+
+@router.get("/v1/clients/by-external-id/{external_id}")
+async def api_get_client_by_external_id(
+    external_id: str,
+    api_key: dict = Depends(require_permission("read"))
+):
+    """Get a client by external_id (External API)"""
+    client = await db.clients.find_one(
+        {"external_id": external_id, "entreprise_id": api_key["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    return serialize_doc(client)
+
+
+@router.post("/v1/interventions")
+async def api_create_intervention(
+    data: APIInterventionCreate,
+    api_key: dict = Depends(require_permission("write"))
+):
+    """Create a new intervention (External API)"""
+    # Verify client exists
+    client = await db.clients.find_one(
+        {"id": data.client_id, "entreprise_id": api_key["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    # Verify technician if provided
+    if data.technicien_id:
+        tech = await db.users.find_one({
+            "id": data.technicien_id,
+            "entreprise_id": api_key["entreprise_id"],
+            "role": "tech"
+        })
+        if not tech:
+            raise HTTPException(status_code=404, detail="Technicien non trouvé")
+    
+    # Verify category if provided
+    if data.categorie_id:
+        category = await db.categories.find_one({
+            "id": data.categorie_id,
+            "entreprise_id": api_key["entreprise_id"]
+        })
+        if not category:
+            raise HTTPException(status_code=404, detail="Catégorie non trouvée")
+    
+    # Check for duplicate external_id if provided
+    if data.external_id:
+        existing = await db.interventions.find_one({
+            "entreprise_id": api_key["entreprise_id"],
+            "external_id": data.external_id
+        })
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Une intervention avec l'external_id '{data.external_id}' existe déjà"
+            )
+    
+    # Validate priority
+    valid_priorities = ["basse", "normale", "haute", "urgente"]
+    if data.priorite and data.priorite not in valid_priorities:
+        raise HTTPException(status_code=400, detail=f"Priorité invalide. Valeurs possibles: {valid_priorities}")
+    
+    intervention_dict = data.model_dump()
+    intervention_dict["id"] = str(uuid.uuid4())
+    intervention_dict["entreprise_id"] = api_key["entreprise_id"]
+    intervention_dict["statut"] = "planifiee"
+    intervention_dict["photos"] = []
+    intervention_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    intervention_dict["created_via"] = "api"
+    intervention_dict["api_key_id"] = api_key["id"]
+    
+    # Use client address if not provided
+    if not intervention_dict.get("adresse"):
+        intervention_dict["adresse"] = client.get("adresse")
+    if not intervention_dict.get("ville"):
+        intervention_dict["ville"] = client.get("ville")
+    if not intervention_dict.get("code_postal"):
+        intervention_dict["code_postal"] = client.get("code_postal")
+    
+    await db.interventions.insert_one(intervention_dict)
+    
+    # Trigger webhooks
+    await trigger_webhooks(
+        db,
+        api_key["entreprise_id"],
+        "intervention.created",
+        {"entity_type": "intervention", "action": "created", "entity": serialize_doc(intervention_dict)}
+    )
+    
+    logger.info(f"Intervention created via API: {intervention_dict['id']} by key {api_key['name']}")
+    
+    return serialize_doc(intervention_dict)
+
+
+@router.put("/v1/interventions/{intervention_id}")
+async def api_update_intervention(
+    intervention_id: str,
+    data: APIInterventionUpdate,
+    api_key: dict = Depends(require_permission("write"))
+):
+    """Update an intervention (External API)"""
+    # Verify intervention exists
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": api_key["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Build update data
+    update_data = data.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Aucune donnée à mettre à jour")
+    
+    # Verify technician if changing
+    if data.technicien_id:
+        tech = await db.users.find_one({
+            "id": data.technicien_id,
+            "entreprise_id": api_key["entreprise_id"],
+            "role": "tech"
+        })
+        if not tech:
+            raise HTTPException(status_code=404, detail="Technicien non trouvé")
+    
+    # Verify category if changing
+    if data.categorie_id:
+        category = await db.categories.find_one({
+            "id": data.categorie_id,
+            "entreprise_id": api_key["entreprise_id"]
+        })
+        if not category:
+            raise HTTPException(status_code=404, detail="Catégorie non trouvée")
+    
+    # Validate status if changing
+    valid_statuses = ["planifiee", "en_cours", "terminee", "annulee"]
+    if data.statut and data.statut not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Statut invalide. Valeurs possibles: {valid_statuses}")
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_via"] = "api"
+    
+    await db.interventions.update_one({"id": intervention_id}, {"$set": update_data})
+    
+    # Get updated intervention
+    updated_intervention = await db.interventions.find_one({"id": intervention_id}, {"_id": 0})
+    
+    # Trigger webhooks
+    await trigger_webhooks(
+        db,
+        api_key["entreprise_id"],
+        "intervention.updated",
+        {"entity_type": "intervention", "action": "updated", "entity": serialize_doc(updated_intervention)}
+    )
+    
+    logger.info(f"Intervention updated via API: {intervention_id} by key {api_key['name']}")
+    
+    return serialize_doc(updated_intervention)
+
+
+@router.get("/v1/interventions/by-external-id/{external_id}")
+async def api_get_intervention_by_external_id(
+    external_id: str,
+    api_key: dict = Depends(require_permission("read"))
+):
+    """Get an intervention by external_id (External API)"""
+    intervention = await db.interventions.find_one(
+        {"external_id": external_id, "entreprise_id": api_key["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    return serialize_doc(intervention)
+
+
+@router.delete("/v1/interventions/{intervention_id}")
+async def api_delete_intervention(
+    intervention_id: str,
+    api_key: dict = Depends(require_permission("write"))
+):
+    """Cancel/Delete an intervention (External API) - Only planned interventions can be cancelled"""
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": api_key["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    if intervention["statut"] not in ["planifiee"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Seules les interventions planifiées peuvent être annulées via l'API"
+        )
+    
+    # Cancel instead of delete for audit trail
+    await db.interventions.update_one(
+        {"id": intervention_id},
+        {"$set": {
+            "statut": "annulee",
+            "date_annulation": datetime.now(timezone.utc).isoformat(),
+            "motif_annulation": "Annulée via API externe",
+            "cancelled_via": "api"
+        }}
+    )
+    
+    # Trigger webhooks
+    cancelled_intervention = await db.interventions.find_one({"id": intervention_id}, {"_id": 0})
+    await trigger_webhooks(
+        db,
+        api_key["entreprise_id"],
+        "intervention.cancelled",
+        {"entity_type": "intervention", "action": "cancelled", "entity": serialize_doc(cancelled_intervention)}
+    )
+    
+    logger.info(f"Intervention cancelled via API: {intervention_id} by key {api_key['name']}")
+    
+    return {"message": "Intervention annulée", "id": intervention_id}
+
+
 # ==================== API INFO ====================
 @router.get("/info")
 async def get_api_info():
     """Get public API information"""
     return {
         "name": "Actoos Public API",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "documentation": "/docs",
         "endpoints": {
-            "clients": "/api/public-api/v1/clients",
-            "interventions": "/api/public-api/v1/interventions",
-            "devis": "/api/public-api/v1/devis",
-            "factures": "/api/public-api/v1/factures"
+            "clients": {
+                "list": "GET /api/public-api/v1/clients",
+                "get": "GET /api/public-api/v1/clients/{id}",
+                "get_by_external_id": "GET /api/public-api/v1/clients/by-external-id/{external_id}",
+                "create": "POST /api/public-api/v1/clients",
+                "update": "PUT /api/public-api/v1/clients/{id}"
+            },
+            "interventions": {
+                "list": "GET /api/public-api/v1/interventions",
+                "get": "GET /api/public-api/v1/interventions/{id}",
+                "get_by_external_id": "GET /api/public-api/v1/interventions/by-external-id/{external_id}",
+                "create": "POST /api/public-api/v1/interventions",
+                "update": "PUT /api/public-api/v1/interventions/{id}",
+                "cancel": "DELETE /api/public-api/v1/interventions/{id}"
+            },
+            "devis": {
+                "list": "GET /api/public-api/v1/devis",
+                "get": "GET /api/public-api/v1/devis/{id}"
+            },
+            "factures": {
+                "list": "GET /api/public-api/v1/factures",
+                "get": "GET /api/public-api/v1/factures/{id}"
+            }
         },
         "authentication": {
             "type": "API Key",
@@ -441,5 +788,10 @@ async def get_api_info():
             "signature_header": "X-Actoos-Signature",
             "signature_algorithm": "HMAC-SHA256"
         },
-        "permissions": API_PERMISSIONS
+        "permissions": API_PERMISSIONS,
+        "features": {
+            "external_id": "Utilisez le champ 'external_id' pour synchroniser avec votre système ERP/CRM",
+            "pagination": "Utilisez 'limit' et 'offset' pour paginer les résultats",
+            "webhooks": "Configurez des webhooks pour recevoir des notifications en temps réel"
+        }
     }

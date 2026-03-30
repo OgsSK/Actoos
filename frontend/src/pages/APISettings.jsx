@@ -445,16 +445,49 @@ const APISettings = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {/* Clients */}
                     <TableRow>
                       <TableCell><Badge>GET</Badge></TableCell>
                       <TableCell><code>/api/public-api/v1/clients</code></TableCell>
                       <TableCell>Liste des clients</TableCell>
                     </TableRow>
                     <TableRow>
+                      <TableCell><Badge className="bg-emerald-600">POST</Badge></TableCell>
+                      <TableCell><code>/api/public-api/v1/clients</code></TableCell>
+                      <TableCell>Créer un client</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><Badge className="bg-amber-600">PUT</Badge></TableCell>
+                      <TableCell><code>/api/public-api/v1/clients/{'{id}'}</code></TableCell>
+                      <TableCell>Modifier un client</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><Badge>GET</Badge></TableCell>
+                      <TableCell><code>/api/public-api/v1/clients/by-external-id/{'{external_id}'}</code></TableCell>
+                      <TableCell>Rechercher par ID externe</TableCell>
+                    </TableRow>
+                    {/* Interventions */}
+                    <TableRow>
                       <TableCell><Badge>GET</Badge></TableCell>
                       <TableCell><code>/api/public-api/v1/interventions</code></TableCell>
                       <TableCell>Liste des interventions</TableCell>
                     </TableRow>
+                    <TableRow>
+                      <TableCell><Badge className="bg-emerald-600">POST</Badge></TableCell>
+                      <TableCell><code>/api/public-api/v1/interventions</code></TableCell>
+                      <TableCell>Créer une intervention</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><Badge className="bg-amber-600">PUT</Badge></TableCell>
+                      <TableCell><code>/api/public-api/v1/interventions/{'{id}'}</code></TableCell>
+                      <TableCell>Modifier une intervention</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><Badge className="bg-red-600">DELETE</Badge></TableCell>
+                      <TableCell><code>/api/public-api/v1/interventions/{'{id}'}</code></TableCell>
+                      <TableCell>Annuler une intervention</TableCell>
+                    </TableRow>
+                    {/* Devis & Factures */}
                     <TableRow>
                       <TableCell><Badge>GET</Badge></TableCell>
                       <TableCell><code>/api/public-api/v1/devis</code></TableCell>
@@ -467,6 +500,26 @@ const APISettings = () => {
                     </TableRow>
                   </TableBody>
                 </Table>
+              </div>
+
+              {/* External ID */}
+              <div>
+                <h3 className="font-semibold mb-2">Synchronisation ERP/CRM</h3>
+                <p className="text-sm text-slate-600 mb-3">
+                  Utilisez le champ <code>external_id</code> pour lier vos données Actoos à votre système existant :
+                </p>
+                <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg text-sm overflow-x-auto">
+{`curl -X POST "https://votre-domaine/api/public-api/v1/clients" \\
+  -H "X-API-Key: actoos_votre_cle" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "nom": "Dupont",
+    "prenom": "Jean",
+    "email": "jean.dupont@email.com",
+    "telephone": "0612345678",
+    "external_id": "CRM-12345"
+  }'`}
+                </pre>
               </div>
 
               {/* Webhooks */}

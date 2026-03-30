@@ -487,25 +487,39 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] **Historique livraisons** - Logs des envois
 - [x] **Auto-désactivation** - Après 10 échecs consécutifs
 
-#### Endpoints REST externes
+#### Endpoints REST externes (v1.1.0)
+**Lecture (GET)**
 - [x] `GET /api/public-api/v1/clients` - Liste clients paginée
+- [x] `GET /api/public-api/v1/clients/{id}` - Détail client
+- [x] `GET /api/public-api/v1/clients/by-external-id/{external_id}` - Par ID externe
 - [x] `GET /api/public-api/v1/interventions` - Liste interventions
+- [x] `GET /api/public-api/v1/interventions/by-external-id/{external_id}` - Par ID externe
 - [x] `GET /api/public-api/v1/devis` - Liste devis
 - [x] `GET /api/public-api/v1/factures` - Liste factures
-- [x] `GET /api/public-api/info` - Documentation API
+
+**Écriture (POST/PUT/DELETE)**
+- [x] `POST /api/public-api/v1/clients` - Créer client
+- [x] `PUT /api/public-api/v1/clients/{id}` - Modifier client
+- [x] `POST /api/public-api/v1/interventions` - Créer intervention
+- [x] `PUT /api/public-api/v1/interventions/{id}` - Modifier intervention
+- [x] `DELETE /api/public-api/v1/interventions/{id}` - Annuler intervention
+
+#### Fonctionnalités ERP/CRM
+- [x] **external_id** - Champ de liaison avec systèmes externes
+- [x] **Détection doublons** - Vérification email et external_id
+- [x] **Tracking origine** - `created_via: api`, `api_key_id`
+- [x] **Webhooks automatiques** - Déclenchés à chaque création/modification
 
 #### Frontend
 - [x] **Page API Settings** (`/dashboard/api-settings`) - Interface complète
+- [x] **Documentation intégrée** - Tous endpoints avec exemples curl
 - [x] **Onglets** - Clés API, Webhooks, Documentation
-- [x] **Création clés** - Modal avec permissions
-- [x] **Création webhooks** - Sélection événements multiples
-- [x] **Test webhooks** - Bouton test intégré
 
-#### Fichiers créés
-- `/app/backend/models_api.py` - Modèles Pydantic API
+#### Fichiers créés/modifiés
+- `/app/backend/models_api.py` - Modèles Pydantic API (APIClientCreate, APIInterventionCreate, etc.)
 - `/app/backend/webhook_service.py` - Service envoi webhooks
-- `/app/backend/routers/public_api.py` - Router API publique
-- `/app/frontend/src/pages/APISettings.jsx` - Interface admin
+- `/app/backend/routers/public_api.py` - Router API publique (22 endpoints)
+- `/app/frontend/src/pages/APISettings.jsx` - Interface admin enrichie
 
 ### Backlog V2
 - [ ] React Native (si besoin app native)
