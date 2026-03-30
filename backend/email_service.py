@@ -303,13 +303,24 @@ async def send_devis_email(devis: dict, client: dict, entreprise: dict, pdf_byte
     html_content = get_devis_email_html(devis, client, entreprise, portal_url)
     subject = f"Devis {devis.get('numero_devis', '')} - {entreprise.get('nom', '')}"
     
-    return await send_email(
+    result = await send_email(
         to_email=client['email'],
         subject=subject,
         html_content=html_content,
         pdf_attachment=pdf_bytes,
         attachment_filename=f"devis_{devis.get('numero_devis', '')}.pdf"
     )
+    
+    # Add metadata for logging
+    result["_log_data"] = {
+        "recipient": client['email'],
+        "subject": subject,
+        "content_preview": f"Devis {devis.get('numero_devis')} envoyé au client {client.get('prenom', '')} {client.get('nom', '')}",
+        "related_entity": "devis",
+        "related_entity_id": devis.get("id")
+    }
+    
+    return result
 
 async def send_facture_email(facture: dict, client: dict, entreprise: dict, pdf_bytes: bytes) -> dict:
     """Send facture email to client with PDF attachment"""
@@ -320,13 +331,24 @@ async def send_facture_email(facture: dict, client: dict, entreprise: dict, pdf_
     html_content = get_facture_email_html(facture, client, entreprise)
     subject = f"Facture {facture.get('numero_facture', '')} - {entreprise.get('nom', '')}"
     
-    return await send_email(
+    result = await send_email(
         to_email=client['email'],
         subject=subject,
         html_content=html_content,
         pdf_attachment=pdf_bytes,
         attachment_filename=f"facture_{facture.get('numero_facture', '')}.pdf"
     )
+    
+    # Add metadata for logging
+    result["_log_data"] = {
+        "recipient": client['email'],
+        "subject": subject,
+        "content_preview": f"Facture {facture.get('numero_facture')} envoyée au client {client.get('prenom', '')} {client.get('nom', '')}",
+        "related_entity": "facture",
+        "related_entity_id": facture.get("id")
+    }
+    
+    return result
 
 async def send_relance_email(facture: dict, client: dict, entreprise: dict, jours_retard: int) -> dict:
     """Send payment reminder email to client"""
@@ -337,8 +359,19 @@ async def send_relance_email(facture: dict, client: dict, entreprise: dict, jour
     html_content = get_relance_email_html(facture, client, entreprise, jours_retard)
     subject = f"Rappel: Facture {facture.get('numero_facture', '')} en attente - {entreprise.get('nom', '')}"
     
-    return await send_email(
+    result = await send_email(
         to_email=client['email'],
         subject=subject,
         html_content=html_content
     )
+    
+    # Add metadata for logging
+    result["_log_data"] = {
+        "recipient": client['email'],
+        "subject": subject,
+        "content_preview": f"Relance paiement: Facture {facture.get('numero_facture')} ({jours_retard} jours de retard)",
+        "related_entity": "facture",
+        "related_entity_id": facture.get("id")
+    }
+    
+    return result

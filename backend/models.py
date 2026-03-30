@@ -325,3 +325,21 @@ class RegisterRequest(BaseModel):
     admin_nom: str
     admin_prenom: str
     admin_password: str
+
+# ==================== COMMUNICATION LOG ====================
+class CommunicationLog(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    entreprise_id: str
+    client_id: str
+    type: Literal["email", "sms"]
+    direction: Literal["outgoing", "incoming"] = "outgoing"
+    subject: Optional[str] = None  # For emails
+    recipient: str  # Email address or phone number
+    content_preview: Optional[str] = None  # First 200 chars of message
+    status: Literal["sent", "delivered", "failed", "pending"] = "sent"
+    error_message: Optional[str] = None
+    related_entity: Optional[str] = None  # e.g., "devis", "facture", "intervention"
+    related_entity_id: Optional[str] = None
+    sent_by: Optional[str] = None  # User ID who triggered the send
+    created_at: datetime = Field(default_factory=now_utc)

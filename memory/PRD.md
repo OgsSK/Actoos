@@ -72,6 +72,28 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - `ChecklistItem` - id, label, type (checkbox/text/number/photo), required
 - `ChecklistResponse` - item_id, checked, value, completed_at
 
+### Phase 15 - EXIF Stripping & Historique Communications ✅ (Date: 2026-03-30)
+
+#### EXIF Stripping (Confidentialité photos)
+- [x] **Suppression EXIF** - Les métadonnées GPS sont supprimées des photos avant stockage
+- [x] **Compression** - Images redimensionnées (max 1920px) et compressées (qualité 85, max 500KB)
+- [x] **Validation** - Vérification que le fichier est une image valide avant traitement
+
+#### Historique Communications
+- [x] **Logging emails** - Chaque email envoyé (devis, facture, relance) est enregistré
+- [x] **Logging SMS** - Chaque SMS envoyé est enregistré
+- [x] **Historique par client** - Vue des communications envoyées à un client
+- [x] **Statistiques** - Compteur emails/SMS envoyés, livrés, échoués
+
+#### Endpoints ajoutés
+- `GET /api/clients/{id}/communications` - Historique communications d'un client
+- `GET /api/communications` - Liste toutes les communications
+- `GET /api/communications/stats` - Statistiques des communications
+
+#### Fichiers créés
+- `/app/backend/image_utils.py` - Fonctions EXIF stripping et compression
+- `/app/backend/communication_log.py` - Service de logging des communications
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -96,12 +118,10 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 
 ### P1 (Important) - Complété ✅
 - [x] **Catégories/Modules** : Support multi-secteurs (BTP, Nettoyage, Maintenance) avec checklists dynamiques
+- [x] **EXIF stripping** : Suppression métadonnées GPS des photos avant upload
+- [x] **Historique communications** : Emails et SMS envoyés par client
 
-### P1 (Important) - En cours
-- [ ] **EXIF stripping** : Supprimer métadonnées GPS des photos avant upload
-- [ ] Historique communications (emails + SMS envoyés)
-
-### P2 (Nice to have)
+### P2 (Nice to have) - En cours
 - [ ] **Stripe + Onboarding SaaS** : Page d'inscription publique avec plans d'abonnement
 - [ ] **White-labeling complet** : Upload logo + couleur primaire + injection CSS dynamique
 - [ ] QR Code paiement sur facture
@@ -112,6 +132,6 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 - [ ] React Native (si besoin natif)
 
 ## Next Tasks
-1. EXIF stripping + compression photos avant upload (Pillow backend)
-2. Historique des communications (emails/SMS envoyés par client)
-3. Stripe + Onboarding SaaS (plans d'abonnement)
+1. Stripe + Onboarding SaaS (plans d'abonnement)
+2. White-labeling complet (logo + couleurs dynamiques)
+3. QR Code paiement sur facture

@@ -42,6 +42,10 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Initialize communication logging
+import communication_log
+communication_log.set_db(db)
+
 # Create the main app
 app = FastAPI(title="FieldCommand API", version="1.0.0")
 api_router = APIRouter(prefix="/api")
@@ -419,6 +423,101 @@ async def delete_client(client_id: str, current_user: dict = Depends(require_adm
     
     await log_action(current_user["entreprise_id"], current_user["user_id"], "delete", "client", client_id)
     return {"message": "Client supprimé"}
+
+# ==================== COMMUNICATION HISTORY ROUTES ====================
+
+@api_router.get("/clients/{client_id}/communications")
+async def get_client_communication_history(
+    client_id: str,
+    comm_type: Optional[str] = None,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get communication history for a specific client"""
+    # Verify client exists and belongs to entreprise
+    client = await db.clients.find_one(
+        {"id": client_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    query = {
+        "entreprise_id": current_user["entreprise_id"],
+        "client_id": client_id
+    }
+    
+    if comm_type and comm_type in ["email", "sms"]:
+        query["type"] = comm_type
+    
+    communications = await db.communications.find(
+        query,
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(limit)
+    
+    return [serialize_doc(c) for c in communications]
+
+@api_router.get("/communications")
+async def list_all_communications(
+    comm_type: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 100,
+    current_user: dict = Depends(get_current_user)
+):
+    """List all communications for the entreprise"""
+    query = {"entreprise_id": current_user["entreprise_id"]}
+    
+    if comm_type and comm_type in ["email", "sms"]:
+        query["type"] = comm_type
+    
+    if status and status in ["sent", "delivered", "failed", "pending"]:
+        query["status"] = status
+    
+    communications = await db.communications.find(
+        query,
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(limit)
+    
+    # Enrich with client names
+    for comm in communications:
+        client = await db.clients.find_one(
+            {"id": comm.get("client_id")},
+            {"_id": 0, "nom": 1, "prenom": 1}
+        )
+        if client:
+            comm["client_nom"] = f"{client.get('prenom', '')} {client.get('nom', '')}".strip()
+    
+    return [serialize_doc(c) for c in communications]
+
+@api_router.get("/communications/stats")
+async def get_communication_stats(current_user: dict = Depends(get_current_user)):
+    """Get communication statistics"""
+    pipeline = [
+        {"$match": {"entreprise_id": current_user["entreprise_id"]}},
+        {"$group": {
+            "_id": {"type": "$type", "status": "$status"},
+            "count": {"$sum": 1}
+        }}
+    ]
+    
+    results = await db.communications.aggregate(pipeline).to_list(100)
+    
+    stats = {
+        "emails": {"sent": 0, "delivered": 0, "failed": 0},
+        "sms": {"sent": 0, "delivered": 0, "failed": 0},
+        "total": 0
+    }
+    
+    for r in results:
+        comm_type = r["_id"]["type"]
+        status = r["_id"]["status"]
+        count = r["count"]
+        
+        if comm_type in stats and status in stats[comm_type]:
+            stats[comm_type][status] = count
+        stats["total"] += count
+    
+    return stats
 
 # ==================== CATEGORIE ROUTES ====================
 
@@ -1158,6 +1257,22 @@ async def send_devis(devis_id: str, request: Request, current_user: dict = Depen
             base_url = base_url.rsplit('/api', 1)[0]
         
         email_result = await send_devis_email(devis, client, entreprise or {}, pdf_bytes, base_url)
+        
+        # Log communication
+        if email_result.get("_log_data"):
+            log_data = email_result.pop("_log_data")
+            await communication_log.log_email(
+                entreprise_id=current_user["entreprise_id"],
+                client_id=client["id"],
+                recipient_email=log_data["recipient"],
+                subject=log_data["subject"],
+                content_preview=log_data["content_preview"],
+                status="sent" if email_result.get("status") == "success" else "failed",
+                error_message=email_result.get("message") if email_result.get("status") != "success" else None,
+                related_entity=log_data["related_entity"],
+                related_entity_id=log_data["related_entity_id"],
+                sent_by=current_user["user_id"]
+            )
     
     await log_action(current_user["entreprise_id"], current_user["user_id"], "send", "devis", devis_id, {"email_sent": email_result.get("status") == "success"})
     
@@ -1437,6 +1552,22 @@ async def emit_facture(facture_id: str, current_user: dict = Depends(get_current
     email_result = {"status": "skipped", "message": "Email non envoyé"}
     if client and client.get("email"):
         email_result = await send_facture_email(facture, client, entreprise or {}, pdf_bytes)
+        
+        # Log communication
+        if email_result.get("_log_data"):
+            log_data = email_result.pop("_log_data")
+            await communication_log.log_email(
+                entreprise_id=current_user["entreprise_id"],
+                client_id=client["id"],
+                recipient_email=log_data["recipient"],
+                subject=log_data["subject"],
+                content_preview=log_data["content_preview"],
+                status="sent" if email_result.get("status") == "success" else "failed",
+                error_message=email_result.get("message") if email_result.get("status") != "success" else None,
+                related_entity=log_data["related_entity"],
+                related_entity_id=log_data["related_entity_id"],
+                sent_by=current_user["user_id"]
+            )
     
     await log_action(current_user["entreprise_id"], current_user["user_id"], "emit", "facture", facture_id, {"email_sent": email_result.get("status") == "success"})
     
@@ -1586,6 +1717,19 @@ async def send_sms_intervention_reminder(intervention_id: str, current_user: dic
     
     sms_result = await send_intervention_reminder(client, intervention, entreprise or {})
     
+    # Log communication
+    await communication_log.log_sms(
+        entreprise_id=current_user["entreprise_id"],
+        client_id=client["id"],
+        phone_number=client["telephone"],
+        message=f"Rappel intervention: {intervention.get('titre', '')}",
+        status="sent" if sms_result.get("success") else "failed",
+        error_message=sms_result.get("error") if not sms_result.get("success") else None,
+        related_entity="intervention",
+        related_entity_id=intervention_id,
+        sent_by=current_user["user_id"]
+    )
+    
     await log_action(current_user["entreprise_id"], current_user["user_id"], "sms_reminder", "intervention", intervention_id)
     
     return {"message": "SMS envoyé", "sms": sms_result}
@@ -1613,6 +1757,19 @@ async def send_sms_devis_notification(devis_id: str, request: Request, current_u
     portal_url = f"{base_url}/portal/devis/{devis['token_client']}"
     
     sms_result = await send_devis_notification(client, devis, entreprise or {}, portal_url)
+    
+    # Log communication
+    await communication_log.log_sms(
+        entreprise_id=current_user["entreprise_id"],
+        client_id=client["id"],
+        phone_number=client["telephone"],
+        message=f"Notification devis {devis.get('numero_devis', '')}",
+        status="sent" if sms_result.get("success") else "failed",
+        error_message=sms_result.get("error") if not sms_result.get("success") else None,
+        related_entity="devis",
+        related_entity_id=devis_id,
+        sent_by=current_user["user_id"]
+    )
     
     await log_action(current_user["entreprise_id"], current_user["user_id"], "sms_notification", "devis", devis_id)
     
@@ -1684,7 +1841,9 @@ async def upload_photo(
     description: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload photo for intervention"""
+    """Upload photo for intervention with EXIF stripping and compression"""
+    from image_utils import strip_exif_and_compress, is_valid_image
+    
     # Verify intervention exists and belongs to user
     intervention = await db.interventions.find_one(
         {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
@@ -1693,13 +1852,20 @@ async def upload_photo(
     if not intervention:
         raise HTTPException(status_code=404, detail="Intervention non trouvée")
     
-    # Upload to storage
-    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-    storage_path = f"{APP_NAME}/photos/{current_user['entreprise_id']}/{intervention_id}/{uuid.uuid4()}.{ext}"
+    # Read file data
     data = await file.read()
-    content_type = file.content_type or get_mime_type(file.filename)
     
-    result = put_object(storage_path, data, content_type)
+    # Validate it's an image
+    if not is_valid_image(data):
+        raise HTTPException(status_code=400, detail="Le fichier n'est pas une image valide")
+    
+    # Process image: strip EXIF (GPS privacy) and compress
+    processed_data, content_type = strip_exif_and_compress(data, max_size_kb=500)
+    
+    # Upload to storage (always as .jpg after processing)
+    storage_path = f"{APP_NAME}/photos/{current_user['entreprise_id']}/{intervention_id}/{uuid.uuid4()}.jpg"
+    
+    result = put_object(storage_path, processed_data, content_type)
     if not result:
         raise HTTPException(status_code=500, detail="Erreur lors du téléchargement")
     
@@ -1713,6 +1879,8 @@ async def upload_photo(
         "content_type": content_type,
         "type_photo": type_photo,
         "description": description,
+        "size_bytes": len(processed_data),
+        "exif_stripped": True,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "is_deleted": False
     }
