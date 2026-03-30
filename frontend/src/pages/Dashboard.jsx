@@ -60,11 +60,9 @@ const Sidebar = ({ open, onClose }) => {
           <div className="p-4 border-b border-slate-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                  <Wrench className="w-5 h-5" />
-                </div>
+                <img src="/actoos-favicon.png" alt="Actoos" className="w-10 h-10 rounded-lg object-contain bg-white/10 p-1" />
                 <div>
-                  <h1 className="font-bold text-lg font-['Manrope']">FieldCommand</h1>
+                  <h1 className="font-bold text-lg">Actoos</h1>
                   <p className="text-xs text-slate-400 truncate max-w-[140px]">{entreprise?.nom}</p>
                 </div>
               </div>

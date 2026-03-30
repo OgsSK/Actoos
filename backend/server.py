@@ -2590,6 +2590,63 @@ async def update_entreprise(data: EntrepriseCreate, current_user: dict = Depends
     entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
     return serialize_doc(entreprise)
 
+@api_router.post("/entreprise/logo")
+async def upload_entreprise_logo(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_admin)
+):
+    """Upload entreprise logo for white-labeling (admin only)"""
+    from image_utils import strip_exif_and_compress, is_valid_image
+    
+    # Read file
+    data = await file.read()
+    
+    # Validate it's an image
+    if not is_valid_image(data):
+        raise HTTPException(status_code=400, detail="Le fichier n'est pas une image valide")
+    
+    # Process image (strip EXIF, compress, max 500KB)
+    processed_data, content_type = strip_exif_and_compress(data, max_size_kb=200)
+    
+    # Upload to storage
+    storage_path = f"{APP_NAME}/logos/{current_user['entreprise_id']}/logo_{uuid.uuid4()}.jpg"
+    result = put_object(storage_path, processed_data, content_type)
+    
+    if not result:
+        raise HTTPException(status_code=500, detail="Erreur lors du téléchargement")
+    
+    # Update entreprise with logo URL
+    logo_url = result.get("url") or result.get("path")
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {"$set": {"logo_url": logo_url}}
+    )
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "upload_logo", "entreprise", current_user["entreprise_id"])
+    
+    return {"message": "Logo mis à jour", "logo_url": logo_url}
+
+@api_router.put("/entreprise/branding")
+async def update_entreprise_branding(
+    couleur_primaire: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Update entreprise branding colors (admin only)"""
+    # Validate hex color
+    import re
+    if not re.match(r'^#[0-9A-Fa-f]{6}$', couleur_primaire):
+        raise HTTPException(status_code=400, detail="Couleur invalide. Format: #RRGGBB")
+    
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {"$set": {"couleur_primaire": couleur_primaire}}
+    )
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "update_branding", "entreprise", current_user["entreprise_id"])
+    
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    return {"message": "Branding mis à jour", "couleur_primaire": couleur_primaire}
+
 # ==================== SEARCH ====================
 @api_router.get("/search")
 async def global_search(q: str, current_user: dict = Depends(get_current_user)):

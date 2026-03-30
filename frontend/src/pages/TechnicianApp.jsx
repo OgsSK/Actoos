@@ -1111,14 +1111,17 @@ export const TechnicianApp = () => {
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-10">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-bold text-lg text-slate-900">{dateLabel}</h1>
-            <p className="text-sm text-slate-500">
-              {activeTab === 'today' 
-                ? `${todayInterventions.length} intervention(s)`
-                : `${interventions.length} intervention(s) cette semaine`
-              }
-            </p>
+          <div className="flex items-center gap-3">
+            <img src="/actoos-favicon.png" alt="Actoos" className="w-8 h-8 object-contain" />
+            <div>
+              <h1 className="font-bold text-lg text-slate-900">{dateLabel}</h1>
+              <p className="text-sm text-slate-500">
+                {activeTab === 'today' 
+                  ? `${todayInterventions.length} intervention(s)`
+                  : `${interventions.length} intervention(s) cette semaine`
+                }
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <SyncStatus

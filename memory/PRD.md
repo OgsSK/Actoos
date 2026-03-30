@@ -119,6 +119,29 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - `/app/backend/subscription_service.py` - Définition des plans et limites
 - `/app/frontend/src/pages/Pricing.jsx` - Pages Pricing, Signup, Success
 
+### Phase 17 - Branding Actoos & White-labeling ✅ (Date: 2026-03-30)
+
+#### Branding Officiel Actoos
+- [x] **Logo favicon** - "A" géométrique bleu (`/actoos-favicon.png`)
+- [x] **Logo avec texte** - Actoos (`/actoos-logo.jpg`)
+- [x] **Logo avec slogan** - "Le logiciel tout-en-un pour piloter vos opérations terrain" (`/actoos-logo-slogan.png`)
+- [x] **Manifest PWA** - Mis à jour avec icônes Actoos et couleur thème #2563EB
+
+#### Pages mises à jour
+- [x] **Login** - Logo avec slogan
+- [x] **Pricing** - Logo + slogan en hero
+- [x] **Dashboard** - Logo "A" dans la sidebar
+- [x] **App Technicien** - Logo "A" dans le header
+
+#### White-labeling (Paramètres > Personnalisation)
+- [x] **Upload logo entreprise** - Stockage cloud, EXIF stripping automatique
+- [x] **Sélecteur de couleur** - Color picker + presets (6 couleurs)
+- [x] **Aperçu en temps réel** - Prévisualisation du branding
+
+#### Endpoints ajoutés
+- `POST /api/entreprise/logo` - Upload logo entreprise
+- `PUT /api/entreprise/branding` - Mise à jour couleur primaire
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -138,16 +161,18 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 
 ## Prioritized Backlog
 
-### P0-P1 - Complété ✅
+### P0-P2 - Complété ✅
 - [x] **Logique assignation intelligente** 
 - [x] **Catégories/Modules avec checklists**
 - [x] **EXIF stripping photos**
 - [x] **Historique communications**
 - [x] **Stripe + Onboarding SaaS**
+- [x] **White-labeling complet** (logo + couleur primaire)
 
-### P2 (Nice to have) - En cours
-- [ ] **White-labeling complet** : Upload logo + couleur primaire + injection CSS dynamique
+### Backlog (Nice to have)
 - [ ] QR Code paiement sur facture
+- [ ] Injection CSS dynamique des couleurs dans toute l'interface
+- [ ] Logo visible sur les PDF générés
 
 ### Backlog V2
 - [ ] Optimisation tournées IA
@@ -155,6 +180,6 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 - [ ] React Native (si besoin natif)
 
 ## Next Tasks
-1. White-labeling complet (logo + couleurs dynamiques dans UI et PDF)
-2. QR Code paiement sur facture
-3. Amélioration du dashboard avec les nouvelles métriques
+1. QR Code paiement sur facture
+2. Injection CSS dynamique des couleurs entreprise
+3. Logo entreprise sur les PDF

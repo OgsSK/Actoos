@@ -11,7 +11,7 @@ import { Badge } from '../components/ui/badge';
 import { Switch } from '../components/ui/switch';
 import { 
   Building2, FileText, Check, Loader2, Bell, MessageSquare, 
-  CheckCircle, XCircle, ExternalLink, Info
+  CheckCircle, XCircle, ExternalLink, Info, Palette, Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,6 +22,14 @@ export const SettingsPage = () => {
   const [success, setSuccess] = useState('');
   const [smsStatus, setSmsStatus] = useState({ configured: false, phone_number: null });
   const [loadingSmsStatus, setLoadingSmsStatus] = useState(true);
+  
+  // Branding state
+  const [brandingData, setBrandingData] = useState({
+    logo_url: '',
+    couleur_primaire: '#2563EB'
+  });
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [savingBranding, setSavingBranding] = useState(false);
   
   const [formData, setFormData] = useState({
     nom: '',
@@ -58,6 +66,12 @@ export const SettingsPage = () => {
         siret: entreprise.siret || '',
         tva_intra: entreprise.tva_intra || '',
         conditions_generales: entreprise.conditions_generales || '',
+      });
+      
+      // Load branding settings
+      setBrandingData({
+        logo_url: entreprise.logo_url || '',
+        couleur_primaire: entreprise.couleur_primaire || '#2563EB'
       });
       
       // Load notification settings from entreprise
@@ -146,6 +160,10 @@ export const SettingsPage = () => {
           <TabsTrigger value="documents" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Documents
+          </TabsTrigger>
+          <TabsTrigger value="branding" className="flex items-center gap-2">
+            <Palette className="w-4 h-4" />
+            Personnalisation
           </TabsTrigger>
         </TabsList>
 
@@ -536,6 +554,201 @@ export const SettingsPage = () => {
               </CardContent>
             </Card>
           </form>
+        </TabsContent>
+
+        {/* Branding / White-label Tab */}
+        <TabsContent value="branding">
+          <Card className="border-slate-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="w-5 h-5" />
+                Personnalisation (White-label)
+              </CardTitle>
+              <CardDescription>
+                Personnalisez l'apparence de votre espace avec votre logo et vos couleurs
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Logo Upload */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Logo de votre entreprise</Label>
+                <p className="text-sm text-slate-500">
+                  Ce logo apparaîtra sur les PDF (devis, factures) et dans l'interface de vos techniciens.
+                </p>
+                
+                <div className="flex items-start gap-6">
+                  <div className="w-32 h-32 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center bg-slate-50 overflow-hidden">
+                    {brandingData.logo_url ? (
+                      <img 
+                        src={brandingData.logo_url} 
+                        alt="Logo entreprise" 
+                        className="w-full h-full object-contain p-2"
+                      />
+                    ) : (
+                      <div className="text-center text-slate-400">
+                        <Building2 className="w-10 h-10 mx-auto mb-2" />
+                        <span className="text-xs">Aucun logo</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 space-y-3">
+                    <input
+                      type="file"
+                      id="logo-upload"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        setUploadingLogo(true);
+                        try {
+                          const formData = new FormData();
+                          formData.append('file', file);
+                          
+                          const response = await api.post('/entreprise/logo', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                          });
+                          
+                          setBrandingData(prev => ({ ...prev, logo_url: response.data.logo_url }));
+                          toast.success('Logo mis à jour');
+                          refreshUser();
+                        } catch (error) {
+                          console.error('Error uploading logo:', error);
+                          toast.error(error.response?.data?.detail || 'Erreur lors du téléchargement');
+                        } finally {
+                          setUploadingLogo(false);
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('logo-upload').click()}
+                      disabled={uploadingLogo}
+                      className="w-full"
+                      data-testid="upload-logo-btn"
+                    >
+                      {uploadingLogo ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4 mr-2" />
+                      )}
+                      {uploadingLogo ? 'Téléchargement...' : 'Choisir un logo'}
+                    </Button>
+                    <p className="text-xs text-slate-500">
+                      Formats acceptés : PNG, JPG, WebP. Taille max : 2MB.
+                      Le logo sera automatiquement optimisé.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Primary Color */}
+              <div className="space-y-4 pt-6 border-t">
+                <Label className="text-base font-semibold">Couleur principale</Label>
+                <p className="text-sm text-slate-500">
+                  Cette couleur sera utilisée pour les accents dans l'interface et les documents.
+                </p>
+                
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={brandingData.couleur_primaire}
+                      onChange={(e) => setBrandingData(prev => ({ ...prev, couleur_primaire: e.target.value }))}
+                      className="w-12 h-12 rounded-lg cursor-pointer border-2 border-slate-200"
+                      data-testid="color-picker"
+                    />
+                    <Input
+                      value={brandingData.couleur_primaire}
+                      onChange={(e) => setBrandingData(prev => ({ ...prev, couleur_primaire: e.target.value }))}
+                      placeholder="#2563EB"
+                      className="w-28 font-mono uppercase"
+                    />
+                  </div>
+                  
+                  {/* Color presets */}
+                  <div className="flex gap-2">
+                    {['#2563EB', '#059669', '#DC2626', '#7C3AED', '#EA580C', '#0891B2'].map(color => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setBrandingData(prev => ({ ...prev, couleur_primaire: color }))}
+                        className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${
+                          brandingData.couleur_primaire === color ? 'border-slate-900 scale-110' : 'border-transparent'
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={async () => {
+                    setSavingBranding(true);
+                    try {
+                      await api.put('/entreprise/branding', null, {
+                        params: { couleur_primaire: brandingData.couleur_primaire }
+                      });
+                      toast.success('Couleur mise à jour');
+                      refreshUser();
+                    } catch (error) {
+                      console.error('Error saving branding:', error);
+                      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+                    } finally {
+                      setSavingBranding(false);
+                    }
+                  }}
+                  disabled={savingBranding}
+                  data-testid="save-branding-btn"
+                >
+                  {savingBranding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+                  Enregistrer la couleur
+                </Button>
+              </div>
+
+              {/* Preview */}
+              <div className="space-y-4 pt-6 border-t">
+                <Label className="text-base font-semibold">Aperçu</Label>
+                <div className="p-6 border rounded-lg bg-white">
+                  <div className="flex items-center gap-4 mb-4">
+                    {brandingData.logo_url ? (
+                      <img src={brandingData.logo_url} alt="Logo" className="h-12 object-contain" />
+                    ) : (
+                      <div 
+                        className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold"
+                        style={{ backgroundColor: brandingData.couleur_primaire }}
+                      >
+                        {entreprise?.nom?.charAt(0) || 'A'}
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="font-bold">{entreprise?.nom || 'Votre entreprise'}</h3>
+                      <p className="text-sm text-slate-500">{entreprise?.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg text-white font-medium"
+                      style={{ backgroundColor: brandingData.couleur_primaire }}
+                    >
+                      Bouton principal
+                    </button>
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg font-medium border-2"
+                      style={{ borderColor: brandingData.couleur_primaire, color: brandingData.couleur_primaire }}
+                    >
+                      Bouton secondaire
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

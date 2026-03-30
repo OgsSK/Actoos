@@ -39,11 +39,7 @@ export const LoginPage = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-slate-900 text-white mb-4">
-            <Wrench className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">FieldCommand</h1>
-          <p className="text-slate-500 mt-1">Gestion d'interventions terrain</p>
+          <img src="/actoos-logo-slogan.png" alt="Actoos" className="h-20 mx-auto mb-4 object-contain" />
         </div>
 
         <Card className="border-slate-200 shadow-sm">
