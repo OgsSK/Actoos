@@ -1,4 +1,4 @@
-# Actoos - SaaS Gestion d'Interventions Terrain (anciennement FieldCommand)
+# Actoos - SaaS Gestion d'Interventions Terrain
 
 ## Problem Statement
 SaaS multi-tenant pour entreprises de services (plomberie, électricité, maintenance, BTP, nettoyage) avec:
@@ -6,6 +6,73 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - Application technicien pour terrain (PWA)
 - Portail client pour signature devis
 - White-labeling (logo + couleurs par tenant)
+
+## Plans Officiels Actoos (Version Finale)
+
+### 🟢 STARTUP — 49€ / mois
+Pour artisans, auto-entrepreneurs et petites équipes.
+
+**Utilisateurs**: 1 admin, 3 techniciens (+5€/tech supplémentaire)
+**Catégories**: 1 seule au choix (BTP, Nettoyage, Maintenance...)
+
+**Inclus**:
+- Gestion clients, devis, factures
+- Planning interventions
+- Signature électronique
+- App PWA (missions, checklist, photos, signature)
+- Logo entreprise sur documents
+- Paiement en ligne basique
+
+**Non inclus**: Mode offline, géoloc, multi-sites, analytics avancés
+
+---
+
+### 🔵 PRO — 79€ / mois ⭐ (Recommandé)
+Pour PME en croissance.
+
+**Utilisateurs**: 3 admins, 10 techniciens (+5€/tech supplémentaire)
+**Catégories**: Jusqu'à 4
+
+**Inclus** (tout Startup +):
+- Automatisation devis → facture
+- Planning intelligent
+- Statistiques activité, gestion équipes
+- Mode hors ligne, géolocalisation
+- Photos illimitées
+- Rapports PDF auto
+- Validation chef d'équipe
+- Branding avancé (couleurs, templates, emails)
+- Paiement complet (acompte, direct)
+- Analytics: CA, rentabilité, performance
+
+**Non inclus**: Multi-sites, API, white-label complet
+
+---
+
+### 🟣 ENTERPRISE — 129€ / mois
+Entreprises structurées et multi-équipes.
+
+**Utilisateurs**: Admins et techniciens illimités
+**Catégories**: Toutes activables
+
+**Inclus** (tout Pro +):
+- **Multi-sites** ← Enterprise seulement
+- Multi-équipes
+- Permissions avancées / rôles personnalisés
+- Reporting avancé, KPI personnalisés
+- Export comptable
+- **API accès** ← Enterprise seulement
+- **White-label complet** ← Enterprise seulement
+- Workflow personnalisable
+- Formulaires dynamiques
+- Validation multi-niveau
+- Suivi GPS avancé
+- Portail client personnalisé
+- Abonnements clients finaux
+- Paiements récurrents
+- Support dédié 24/7
+
+---
 
 ## What's Implemented
 

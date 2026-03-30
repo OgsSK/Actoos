@@ -1,12 +1,13 @@
 """
 Plan Limits Service - Validates subscription limits before operations
+Based on Official Actoos Plans (Startup 49€, Pro 79€, Enterprise 129€)
 """
 from fastapi import HTTPException
 from datetime import datetime, timezone
 from typing import Optional
 import logging
 
-from subscription_service import get_plan
+from subscription_service import get_plan, has_feature
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +20,17 @@ async def get_entreprise_limits(db, entreprise_id: str) -> dict:
     )
     
     if not entreprise:
+        # Default to Startup plan limits
         return {
+            "max_admins": 1,
             "max_technicians": 3,
-            "max_interventions_month": 100,
+            "max_interventions_month": -1,
             "max_categories": 1,
+            "multi_sites": False,
+            "offline_mode": False,
+            "geolocation": False,
+            "auto_pdf_reports": False,
+            "advanced_analytics": False,
             "white_label": False,
             "api_access": False,
             "sms_included": 0
@@ -32,16 +40,26 @@ async def get_entreprise_limits(db, entreprise_id: str) -> dict:
     if entreprise.get("plan_limits"):
         return entreprise["plan_limits"]
     
-    plan = get_plan(entreprise.get("plan", "starter"))
+    plan = get_plan(entreprise.get("plan", "startup"))
     if not plan:
-        plan = get_plan("starter")
+        plan = get_plan("startup")
     
     return {
+        "max_admins": plan.get("max_admins", 1),
         "max_technicians": plan.get("max_technicians", 3),
-        "max_interventions_month": plan.get("max_interventions_month", 100),
+        "max_interventions_month": plan.get("max_interventions_month", -1),
         "max_categories": plan.get("max_categories", 1),
+        "multi_sites": plan.get("multi_sites", False),
+        "offline_mode": plan.get("offline_mode", False),
+        "geolocation": plan.get("geolocation", False),
+        "auto_pdf_reports": plan.get("auto_pdf_reports", False),
+        "advanced_analytics": plan.get("advanced_analytics", False),
         "white_label": plan.get("white_label", False),
         "api_access": plan.get("api_access", False),
+        "advanced_branding": plan.get("advanced_branding", False),
+        "smart_planning": plan.get("smart_planning", False),
+        "auto_devis_to_facture": plan.get("auto_devis_to_facture", False),
+        "team_validation": plan.get("team_validation", False),
         "sms_included": plan.get("sms_included", 0)
     }
 
@@ -117,15 +135,45 @@ async def check_category_limit(db, entreprise_id: str) -> dict:
 
 
 async def check_api_access(db, entreprise_id: str) -> bool:
-    """Check if entreprise has API access"""
+    """Check if entreprise has API access (Enterprise only)"""
     limits = await get_entreprise_limits(db, entreprise_id)
     return limits.get("api_access", False)
 
 
 async def check_white_label(db, entreprise_id: str) -> bool:
-    """Check if entreprise has white label access"""
+    """Check if entreprise has white label access (Enterprise only)"""
     limits = await get_entreprise_limits(db, entreprise_id)
     return limits.get("white_label", False)
+
+
+async def check_multi_sites(db, entreprise_id: str) -> bool:
+    """Check if entreprise has multi-sites access (Enterprise only)"""
+    limits = await get_entreprise_limits(db, entreprise_id)
+    return limits.get("multi_sites", False)
+
+
+async def check_offline_mode(db, entreprise_id: str) -> bool:
+    """Check if entreprise has offline mode access (Pro and Enterprise)"""
+    limits = await get_entreprise_limits(db, entreprise_id)
+    return limits.get("offline_mode", False)
+
+
+async def check_geolocation(db, entreprise_id: str) -> bool:
+    """Check if entreprise has geolocation access (Pro and Enterprise)"""
+    limits = await get_entreprise_limits(db, entreprise_id)
+    return limits.get("geolocation", False)
+
+
+async def check_advanced_analytics(db, entreprise_id: str) -> bool:
+    """Check if entreprise has advanced analytics (Pro and Enterprise)"""
+    limits = await get_entreprise_limits(db, entreprise_id)
+    return limits.get("advanced_analytics", False)
+
+
+async def check_feature(db, entreprise_id: str, feature: str) -> bool:
+    """Generic feature check based on plan"""
+    limits = await get_entreprise_limits(db, entreprise_id)
+    return limits.get(feature, False)
 
 
 async def get_usage_stats(db, entreprise_id: str) -> dict:
@@ -160,8 +208,8 @@ async def get_usage_stats(db, entreprise_id: str) -> dict:
         },
         "interventions_month": {
             "current": intervention_count,
-            "max": limits.get("max_interventions_month", 100),
-            "percentage": (intervention_count / limits.get("max_interventions_month", 100) * 100) if limits.get("max_interventions_month", 100) > 0 else 0
+            "max": limits.get("max_interventions_month", -1),
+            "percentage": 0  # Unlimited interventions in all plans
         },
         "categories": {
             "current": category_count,
@@ -169,6 +217,16 @@ async def get_usage_stats(db, entreprise_id: str) -> dict:
             "percentage": (category_count / limits.get("max_categories", 1) * 100) if limits.get("max_categories", 1) > 0 else 0
         },
         "features": {
+            # Plan-specific features
+            "multi_sites": limits.get("multi_sites", False),
+            "offline_mode": limits.get("offline_mode", False),
+            "geolocation": limits.get("geolocation", False),
+            "auto_pdf_reports": limits.get("auto_pdf_reports", False),
+            "advanced_analytics": limits.get("advanced_analytics", False),
+            "advanced_branding": limits.get("advanced_branding", False),
+            "smart_planning": limits.get("smart_planning", False),
+            "auto_devis_to_facture": limits.get("auto_devis_to_facture", False),
+            "team_validation": limits.get("team_validation", False),
             "white_label": limits.get("white_label", False),
             "api_access": limits.get("api_access", False),
             "sms_included": limits.get("sms_included", 0)

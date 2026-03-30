@@ -1,6 +1,7 @@
 """
 Sites routes - Multi-site support for clients
 A client can have multiple physical locations (headquarters, warehouse, factory, etc.)
+NOTE: Multi-sites feature is ENTERPRISE plan only
 """
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
@@ -11,6 +12,7 @@ import logging
 from models import SiteCreate, SiteUpdate, SiteResponse
 from auth import get_current_user, require_admin
 from dependencies import db, serialize_doc, log_action
+from plan_limits import check_multi_sites
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,20 @@ async def create_site(
     data: SiteCreate,
     current_user: dict = Depends(get_current_user)
 ):
-    """Create a new site for a client"""
+    """Create a new site for a client (Enterprise plan only)"""
+    # Check if multi-sites feature is available
+    has_multi_sites = await check_multi_sites(db, current_user["entreprise_id"])
+    if not has_multi_sites:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "feature_not_available",
+                "message": "La fonctionnalité multi-sites est disponible uniquement avec le plan Enterprise (129€/mois).",
+                "feature": "multi_sites",
+                "required_plan": "enterprise"
+            }
+        )
+    
     # Verify client exists and belongs to the same entreprise
     client = await db.clients.find_one({
         "id": data.client_id,

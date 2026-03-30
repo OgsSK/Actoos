@@ -14,9 +14,15 @@ import {
 import { toast } from 'sonner';
 
 const PLAN_FEATURES = {
-  starter: {
-    name: 'Starter',
-    price: 29,
+  startup: {
+    name: 'Startup',
+    price: 49,
+    color: 'from-slate-500 to-slate-600',
+    icon: Zap
+  },
+  starter: {  // Alias for backward compatibility
+    name: 'Startup',
+    price: 49,
     color: 'from-slate-500 to-slate-600',
     icon: Zap
   },
@@ -28,7 +34,7 @@ const PLAN_FEATURES = {
   },
   enterprise: {
     name: 'Enterprise',
-    price: 199,
+    price: 129,
     color: 'from-purple-500 to-purple-600',
     icon: Crown
   }

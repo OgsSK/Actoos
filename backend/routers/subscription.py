@@ -11,14 +11,70 @@ import logging
 
 from auth import get_current_user, get_password_hash
 from dependencies import db, serialize_doc
-from subscription_service import SUBSCRIPTION_PLANS, get_plan
-from plan_limits import get_usage_stats, get_entreprise_limits
-
+from subscription_service import SUBSCRIPTION_PLANS, get_plan, get_all_plans
 from plan_limits import get_usage_stats, get_entreprise_limits
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Subscription"])
+
+
+@router.post("/sync-plan-limits")
+async def sync_plan_limits(current_user: dict = Depends(get_current_user)):
+    """Synchronize plan_limits with current plan definition (admin action)"""
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "plan": 1}
+    )
+    
+    if not entreprise:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    plan_id = entreprise.get("plan", "startup")
+    plan = get_plan(plan_id)
+    
+    if not plan:
+        plan = get_plan("startup")
+        plan_id = "startup"
+    
+    # Build new plan_limits from plan definition
+    new_limits = {
+        "max_admins": plan.get("max_admins", 1),
+        "max_technicians": plan.get("max_technicians", 3),
+        "max_interventions_month": plan.get("max_interventions_month", -1),
+        "max_categories": plan.get("max_categories", 1),
+        "multi_sites": plan.get("multi_sites", False),
+        "offline_mode": plan.get("offline_mode", False),
+        "geolocation": plan.get("geolocation", False),
+        "auto_pdf_reports": plan.get("auto_pdf_reports", False),
+        "advanced_analytics": plan.get("advanced_analytics", False),
+        "white_label": plan.get("white_label", False),
+        "api_access": plan.get("api_access", False),
+        "advanced_branding": plan.get("advanced_branding", False),
+        "smart_planning": plan.get("smart_planning", False),
+        "auto_devis_to_facture": plan.get("auto_devis_to_facture", False),
+        "team_validation": plan.get("team_validation", False),
+        "sms_included": plan.get("sms_included", 0)
+    }
+    
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {
+            "$set": {
+                "plan": plan_id,
+                "plan_name": plan.get("name"),
+                "plan_limits": new_limits
+            }
+        }
+    )
+    
+    logger.info(f"Plan limits synced for entreprise {current_user['entreprise_id']} to plan {plan_id}")
+    
+    return {
+        "message": f"Limites synchronisées avec le plan {plan.get('name')}",
+        "plan": plan_id,
+        "limits": new_limits
+    }
 
 
 @router.get("/usage")
@@ -41,14 +97,21 @@ async def get_plan_usage(current_user: dict = Depends(get_current_user)):
 async def list_subscription_plans():
     """List all available subscription plans (public endpoint)"""
     plans = []
-    for plan_id, plan_data in SUBSCRIPTION_PLANS.items():
+    for plan_id, plan_data in get_all_plans().items():
         plans.append({
             "id": plan_id,
             "name": plan_data["name"],
             "price": plan_data["price"],
+            "price_per_extra_tech": plan_data.get("price_per_extra_tech", 5),
             "currency": plan_data["currency"],
             "description": plan_data["description"],
-            "features": plan_data["features"]
+            "features": plan_data["features"],
+            "recommended": plan_data.get("recommended", False),
+            "limits": {
+                "max_admins": plan_data.get("max_admins", 1),
+                "max_technicians": plan_data.get("max_technicians", 3),
+                "max_categories": plan_data.get("max_categories", 1)
+            }
         })
     return plans
 
