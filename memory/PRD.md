@@ -419,6 +419,7 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - [x] Rapports et analytics avancés ✅
 - [x] Skills & Categories Matching (techniciens qualifiés) ✅
 - [x] Gestion des catégories (création/édition/suppression par admin) ✅
+- [x] Refactoring server.py Phase 1 (3716 → 2831 lignes, 7 routers créés) ✅
 
 ### Backlog V2
 - [ ] React Native (si besoin app native)
