@@ -211,20 +211,67 @@ export const OfflineProvider = ({ children }) => {
           successCount++;
           console.log(`[Offline] Synced action ${action.id}: ${type}`);
           
+          // Log successful sync event
+          await db.logSyncEvent({
+            type: 'sync',
+            entityId: data.interventionId,
+            action: type,
+            result: 'success',
+            details: `Action ${type} synchronisée`
+          });
+          
           // Update local cache with server response
           if (type.includes('intervention')) {
             const updatedIntervention = await response.json();
+            
+            // Check for LWW conflict (server version is newer)
+            const localVersion = await db.getIntervention(data.interventionId);
+            if (localVersion && localVersion._localModified && 
+                new Date(updatedIntervention.updated_at) > new Date(localVersion._localModified)) {
+              // Log LWW conflict resolution
+              await db.logSyncEvent({
+                type: 'conflict',
+                entityId: data.interventionId,
+                action: type,
+                result: 'lww_resolved',
+                conflictResolved: true,
+                serverVersion: updatedIntervention.updated_at,
+                localVersion: localVersion._localModified,
+                details: 'Conflit résolu: version serveur plus récente appliquée (Last-Write-Wins)'
+              });
+            }
+            
             await db.interventions.put(updatedIntervention);
           }
         } else {
           const errorText = response ? await response.text() : 'No response';
           console.error(`[Offline] Failed to sync action ${action.id}:`, errorText);
           await db.markActionFailed(action.id, errorText);
+          
+          // Log failed sync
+          await db.logSyncEvent({
+            type: 'sync',
+            entityId: data.interventionId,
+            action: type,
+            result: 'error',
+            details: `Échec: ${errorText.substring(0, 100)}`
+          });
+          
           failCount++;
         }
       } catch (error) {
         console.error(`[Offline] Error syncing action ${action.id}:`, error);
         await db.markActionFailed(action.id, error.message);
+        
+        // Log error
+        await db.logSyncEvent({
+          type: 'sync',
+          entityId: data?.interventionId,
+          action: type,
+          result: 'error',
+          details: `Erreur: ${error.message}`
+        });
+        
         failCount++;
       }
     }
@@ -304,6 +351,16 @@ export const OfflineProvider = ({ children }) => {
     return await db.getPendingPhotos(interventionId);
   }, []);
 
+  // Get sync history
+  const getSyncHistory = useCallback(async (filters = {}) => {
+    return await db.getSyncHistory(filters);
+  }, []);
+
+  // Get sync statistics
+  const getSyncStats = useCallback(async () => {
+    return await db.getSyncStats();
+  }, []);
+
   // Clear all offline data
   const clearOfflineData = useCallback(async () => {
     const success = await db.clearAllData();
@@ -346,6 +403,10 @@ export const OfflineProvider = ({ children }) => {
     // Photos
     queuePhotoUpload,
     getPendingPhotos,
+    
+    // Sync history & stats
+    getSyncHistory,
+    getSyncStats,
     
     // Utilities
     clearOfflineData,

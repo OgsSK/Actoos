@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import SignaturePad from '../components/SignaturePad';
+import SyncStatusPanel from '../components/SyncStatusPanel';
 
 // PWA Install Prompt Component
 const InstallPrompt = () => {
@@ -144,60 +145,6 @@ const InstallPrompt = () => {
 };
 
 // Sync Status Component
-const SyncStatus = ({ isOnline, pendingCount, isSyncing, onSync, lastSyncTime }) => {
-  const formatLastSync = (time) => {
-    if (!time) return null;
-    const date = new Date(time);
-    const now = new Date();
-    const diffMinutes = Math.floor((now - date) / 60000);
-    
-    if (diffMinutes < 1) return 'à l\'instant';
-    if (diffMinutes < 60) return `il y a ${diffMinutes}min`;
-    if (diffMinutes < 1440) return `il y a ${Math.floor(diffMinutes / 60)}h`;
-    return date.toLocaleDateString('fr-FR');
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-        {isOnline ? (
-          <>
-            <Wifi className="w-3 h-3" />
-            <span>En ligne</span>
-          </>
-        ) : (
-          <>
-            <WifiOff className="w-3 h-3" />
-            <span>Hors ligne</span>
-          </>
-        )}
-        {pendingCount > 0 && (
-          <Badge variant="secondary" className="ml-1 bg-amber-500 text-white h-5 px-1.5">
-            {pendingCount}
-          </Badge>
-        )}
-      </div>
-      {isOnline && pendingCount > 0 && (
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={onSync} 
-          disabled={isSyncing}
-          className="h-8 w-8 p-0"
-          title="Synchroniser"
-        >
-          <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-        </Button>
-      )}
-      {!isOnline && lastSyncTime && (
-        <span className="text-xs text-slate-500" title={`Dernière sync: ${new Date(lastSyncTime).toLocaleString('fr-FR')}`}>
-          Sync: {formatLastSync(lastSyncTime)}
-        </span>
-      )}
-    </div>
-  );
-};
-
 // Route Optimization Modal
 const RouteOptimizerModal = ({ isOpen, onClose, interventions, api, onReorder }) => {
   const [loading, setLoading] = useState(false);
@@ -1634,13 +1581,7 @@ export const TechnicianApp = () => {
                 <Sparkles className="w-4 h-4 text-amber-600" />
               </Button>
             )}
-            <SyncStatus
-              isOnline={isOnline}
-              pendingCount={pendingCount}
-              isSyncing={isSyncing}
-              onSync={syncPendingActions}
-              lastSyncTime={lastSyncTime}
-            />
+            <SyncStatusPanel compact={true} />
             <Button variant="ghost" size="sm" onClick={loadInterventions} className="h-8 w-8 p-0">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>

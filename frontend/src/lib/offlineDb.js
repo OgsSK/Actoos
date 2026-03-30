@@ -5,7 +5,7 @@
 import Dexie from 'dexie';
 
 // Database schema version
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 class ActoosDatabase extends Dexie {
   constructor() {
@@ -28,7 +28,10 @@ class ActoosDatabase extends Dexie {
       pendingPhotos: '++id, intervention_id, timestamp, synced',
       
       // Sync metadata
-      syncMeta: 'key'
+      syncMeta: 'key',
+      
+      // Sync history log for LWW transparency
+      syncHistory: '++id, type, entityId, timestamp, result, conflictResolved'
     });
     
     // Define table types
@@ -38,6 +41,7 @@ class ActoosDatabase extends Dexie {
     this.pendingActions = this.table('pendingActions');
     this.pendingPhotos = this.table('pendingPhotos');
     this.syncMeta = this.table('syncMeta');
+    this.syncHistory = this.table('syncHistory');
   }
   
   // ==================== INTERVENTIONS ====================
@@ -377,6 +381,7 @@ class ActoosDatabase extends Dexie {
           await this.pendingActions.clear();
           await this.pendingPhotos.clear();
           await this.syncMeta.clear();
+          await this.syncHistory.clear();
         }
       );
       console.log('[OfflineDB] All data cleared');
@@ -384,6 +389,83 @@ class ActoosDatabase extends Dexie {
     } catch (error) {
       console.error('[OfflineDB] Failed to clear data:', error);
       return false;
+    }
+  }
+  
+  // ==================== SYNC HISTORY (LWW Transparency) ====================
+  
+  /**
+   * Log a sync event for transparency
+   * @param {Object} event - {type, entityId, action, result, serverVersion, localVersion, conflictResolved, details}
+   */
+  async logSyncEvent(event) {
+    try {
+      const logEntry = {
+        ...event,
+        timestamp: new Date().toISOString()
+      };
+      await this.syncHistory.add(logEntry);
+      
+      // Keep only last 200 entries
+      const count = await this.syncHistory.count();
+      if (count > 200) {
+        const oldEntries = await this.syncHistory.orderBy('id').limit(count - 200).toArray();
+        await this.syncHistory.bulkDelete(oldEntries.map(e => e.id));
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('[OfflineDB] Failed to log sync event:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Get sync history, optionally filtered
+   * @param {Object} filters - {limit, entityId, type, onlyConflicts}
+   */
+  async getSyncHistory(filters = {}) {
+    try {
+      let collection = this.syncHistory.orderBy('timestamp').reverse();
+      let results = await collection.toArray();
+      
+      if (filters.entityId) {
+        results = results.filter(e => e.entityId === filters.entityId);
+      }
+      if (filters.type) {
+        results = results.filter(e => e.type === filters.type);
+      }
+      if (filters.onlyConflicts) {
+        results = results.filter(e => e.conflictResolved);
+      }
+      
+      return results.slice(0, filters.limit || 50);
+    } catch (error) {
+      console.error('[OfflineDB] Failed to get sync history:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Get sync statistics
+   */
+  async getSyncStats() {
+    try {
+      const allHistory = await this.syncHistory.toArray();
+      const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const recent = allHistory.filter(e => e.timestamp > last24h);
+      
+      return {
+        total: allHistory.length,
+        last24h: recent.length,
+        conflicts: allHistory.filter(e => e.conflictResolved).length,
+        conflictsLast24h: recent.filter(e => e.conflictResolved).length,
+        successful: allHistory.filter(e => e.result === 'success').length,
+        failed: allHistory.filter(e => e.result === 'error').length
+      };
+    } catch (error) {
+      console.error('[OfflineDB] Failed to get sync stats:', error);
+      return { total: 0, last24h: 0, conflicts: 0, conflictsLast24h: 0, successful: 0, failed: 0 };
     }
   }
 }

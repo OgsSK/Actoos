@@ -592,7 +592,6 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 
 ## Next Tasks
 1. **P1**: Intégration Google Calendar/Outlook (requiert credentials OAuth)
-2. **P2**: Documentation UI conflits offline (Last-Write-Wins)
 
 ### Backlog V2
 - [ ] React Native (si besoin app native)
@@ -642,4 +641,26 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - `/app/backend/server.py` - Import du router sites
 - `/app/frontend/src/pages/Clients.jsx` - Section Sites + SiteForm + gestion CRUD
 - `/app/frontend/src/pages/Interventions.jsx` - Sélecteur de site dans le formulaire
+
+---
+
+### Phase 32 - Documentation UI Conflits Offline (LWW) ✅ (Date: 2026-03-31)
+
+#### Fonctionnalités
+- [x] **SyncStatusPanel** - Composant complet de gestion de synchronisation
+- [x] **Historique de sync** - Table `syncHistory` dans IndexedDB pour traçabilité
+- [x] **Statistiques de sync** - Compteurs réussies/échouées/conflits
+- [x] **Logging LWW** - Enregistrement automatique des conflits résolus
+- [x] **Onglet Aide** - Documentation utilisateur sur le mode hors ligne et LWW
+
+#### Composants UI
+- **État** : Statut connexion, dernière sync, cache local, stats
+- **Historique** : Liste chronologique des événements de sync avec indicateurs visuels
+- **Aide** : Documentation complète (Mode hors ligne, Résolution conflits LWW, Bonnes pratiques)
+
+#### Fichiers modifiés/créés
+- `/app/frontend/src/components/SyncStatusPanel.jsx` - Nouveau composant (400+ lignes)
+- `/app/frontend/src/lib/offlineDb.js` - Table syncHistory + méthodes getSyncHistory, getSyncStats, logSyncEvent
+- `/app/frontend/src/contexts/OfflineContext.jsx` - Logging des événements de sync + exposition getSyncHistory/Stats
+- `/app/frontend/src/pages/TechnicianApp.jsx` - Intégration SyncStatusPanel dans header
 
