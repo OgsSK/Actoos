@@ -1,12 +1,13 @@
-# FieldCommand - SaaS Gestion d'Interventions Terrain
+# Actoos - SaaS Gestion d'Interventions Terrain (anciennement FieldCommand)
 
 ## Problem Statement
-SaaS multi-tenant pour entreprises de services (plomberie, électricité, maintenance) avec:
+SaaS multi-tenant pour entreprises de services (plomberie, électricité, maintenance, BTP, nettoyage) avec:
 - Dashboard Admin pour pilotage entreprise
 - Application technicien pour terrain (PWA)
 - Portail client pour signature devis
+- White-labeling (logo + couleurs par tenant)
 
-## What's Implemented (Date: 2026-03-26)
+## What's Implemented
 
 ### Phases 1-10 ✅ (Sessions précédentes)
 - Multi-tenant, Auth JWT, CRUD complet
@@ -14,31 +15,24 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - Planning drag-drop, App Technicien PWA
 - SMS Twilio, Rapports, Paramètres
 
-### Phase 11 - Corrections Finales ✅ (Session actuelle)
+### Phase 11 - Corrections Finales ✅
+- [x] Téléchargement PDF (méthode blob)
+- [x] Signature visible dans devis/factures/PDF
+- [x] Timezone Paris
+- [x] Sélection multiple + batch delete
+- [x] Annulation intervention
+
+### Phase 12 - Bugs P0 App Technicien ✅ (Date: 2026-03-30)
 
 #### Bugs corrigés
-- [x] **Téléchargement PDF** - Utilise API avec Bearer token (méthode blob)
-- [x] **Signature visible** - Image affichée dans devis, portail client, PDF
-- [x] **Timezone** - Dates en heure locale Paris (+1h)
-- [x] **Compteur interventions** - Ne compte que les interventions du jour
-- [x] **Planning mobile** - Scroll horizontal fonctionnel
+- [x] **Menu Profil** - Dropdown avec nom/email utilisateur + bouton "Se déconnecter" séparé (au lieu de logout direct)
+- [x] **Création interventions/devis** - Techniciens peuvent créer interventions et devis via formulaires intégrés
+- [x] **Navigation mobile** - Padding-bottom ajouté pour éviter le badge Emergent
 
-#### Nouvelles fonctionnalités
-- [x] **Sélection multiple devis** - Cases à cocher + bouton supprimer en lot
-- [x] **Sélection multiple factures** - Cases à cocher + bouton supprimer en lot
-- [x] **Suppression individuelle** - Devis, Interventions, Factures, Techniciens
-- [x] **Annulation intervention** - Nouveau statut "annulée"
-- [x] **Alertes cliquables** - Navigation vers les détails depuis dashboard
-- [x] **Bouton "Lien client"** - Copier le lien du portail client
-- [x] **Bouton "Voir devis"** - Navigation facture → devis associé
-
-## Restrictions métier
-
-### Suppressions
-- **Devis** : Seulement brouillon ou envoyé (pas signé/facturé)
-- **Factures** : Seulement brouillon (pas émise/payée)
-- **Interventions** : Seulement planifiée ou annulée (pas en cours/terminée)
-- **Techniciens** : Pas d'interventions actives
+#### Nouveaux composants TechnicianApp
+- `ProfileMenu` - DropdownMenu avec infos utilisateur
+- `CreateInterventionForm` - Formulaire création intervention (client, titre, date, durée, priorité)
+- `CreateDevisForm` - Formulaire création devis avec lignes, calcul TVA automatique
 
 ## Configuration requise
 
@@ -50,31 +44,35 @@ RESEND_API_KEY=re_xxxxx
 SENDER_EMAIL=onboarding@resend.dev
 TWILIO_ACCOUNT_SID=ACxxxxx
 TWILIO_AUTH_TOKEN=xxxxx
-TWILIO_PHONE_NUMBER=+33xxxxxxxxx  # À ajouter
+TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 ```
+
+## Credentials Test
+- Admin: `admin@testplomberie.fr` / `password123`
+- Tech: `tech@testplomberie.fr` / `technicien123`
 
 ## Prioritized Backlog
 
-### P0 (Critique) - À faire
-- [ ] **Logique assignation technicien** : Assigné vs tous voient
+### P0 (Critique) - En cours
+- [ ] **Logique assignation intelligente** : Si intervention sans technicien → notifier tous les techs → premier à accepter = assigné
 - [ ] **Traçabilité complète** : Audit trail détaillé
-- [ ] **Photos avant/après** : Envoi rapide au client/dashboard
 
 ### P1 (Important)
-- [ ] Localisation dynamique (timezone, formats selon pays)
+- [ ] **Catégories/Modules** : Support multi-secteurs (BTP, Nettoyage, Maintenance) avec checklists dynamiques
+- [ ] **EXIF stripping** : Supprimer métadonnées GPS des photos avant upload
 - [ ] Historique communications (emails + SMS envoyés)
-- [ ] Configuration relances automatiques dans Settings
 
 ### P2 (Nice to have)
+- [ ] **Stripe + Onboarding SaaS** : Page d'inscription publique avec plans d'abonnement
+- [ ] **White-labeling complet** : Upload logo + couleur primaire + injection CSS dynamique
 - [ ] QR Code paiement sur facture
-- [ ] Intégration paiement en ligne (Stripe)
 
-### Reporté V2
-- [ ] **Abonnements SaaS** - Tiers de prix avec fonctionnalités limitées
+### Backlog V2
 - [ ] Optimisation tournées IA
-- [ ] White-labeling
+- [ ] Offline avancé (IndexedDB/SQLite sync)
+- [ ] React Native (si besoin natif)
 
 ## Next Tasks
-1. Implémenter la logique d'assignation intelligente des interventions
-2. Ajouter audit trail complet pour traçabilité
-3. Améliorer le flux photos technicien (avant/après avec envoi rapide)
+1. Implémenter la logique d'assignation intelligente (claim mission)
+2. Ajouter catégories avec checklists dynamiques
+3. Améliorer le flux photos (compression + EXIF strip)
