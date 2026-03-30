@@ -167,6 +167,30 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - Frontend: 100% tests branding UI passés
 - CSS injection vérifié: --tenant-primary change après sauvegarde couleur
 
+### Phase 19 - Portail Client Web ✅ (Date: 2026-03-30)
+
+#### Fonctionnalités
+- [x] **Dashboard client** - Page publique accessible via token unique `/portal/client/{token}`
+- [x] **Cartes résumé** - Total devis, en attente, factures, montant dû
+- [x] **Onglet Aperçu** - Vue d'ensemble avec derniers devis, factures et interventions
+- [x] **Onglet Devis** - Tableau complet avec signature en ligne via lien direct
+- [x] **Onglet Factures** - Tableau avec téléchargement PDF
+- [x] **Branding tenant** - Logo et couleur primaire affichés sur le portail
+- [x] **Génération lien portail** - Bouton sur la fiche client pour obtenir/copier le lien
+
+#### Endpoints ajoutés
+- `GET /api/portal/client/{token}` - Dashboard client complet (public)
+- `GET /api/portal/facture/{id}?token=xxx` - Détail facture (public)
+- `GET /api/portal/facture/{id}/pdf?token=xxx` - PDF facture (public)
+- `GET /api/clients/{id}/portal-link` - Obtenir/générer lien portail (auth)
+
+#### Modèle modifié
+- `Client` - Ajout du champ `portal_token` (UUID unique par client)
+
+#### Tests Validés
+- Backend: 15/15 tests passés (100%)
+- Frontend: 100% tests portal UI passés
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -198,8 +222,9 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 - [x] QR Code paiement sur facture ✅
 - [x] Injection CSS dynamique des couleurs dans toute l'interface ✅
 - [x] Logo visible sur les PDF générés ✅
-- [ ] Portail client web (consultation factures/devis, historique)
+- [x] Portail client web (consultation factures/devis, historique) ✅
 - [ ] Notifications push PWA
+- [ ] Paiement en ligne via Stripe (sur facture depuis portail)
 
 ### Backlog V2
 - [ ] Optimisation tournées IA
@@ -207,6 +232,10 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 - [ ] React Native (si besoin natif)
 - [ ] Intégration calendrier Google/Outlook
 - [ ] API publique pour intégrations tierces
+
+## Next Tasks
+1. Notifications push PWA
+2. Offline avancé (IndexedDB/SQLite sync)
 
 ## Next Tasks
 1. Offline avancé (IndexedDB/SQLite sync) pour l'app technicien
