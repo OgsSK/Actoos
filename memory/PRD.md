@@ -452,6 +452,37 @@ VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 - `/app/backend/routers/statements.py` - Router FastAPI
 - `/app/frontend/src/pages/Statements.jsx` - Interface React
 
+### Phase 27 - Refactoring server.py Phase 3 (Architecture Modulaire Complète) ✅ (Date: 2026-03-31)
+
+#### Migrations effectuées
+- [x] **Interventions** (~600 lignes) → `/app/backend/routers/interventions.py`
+- [x] **Devis** (~250 lignes) → `/app/backend/routers/devis.py`
+- [x] **Factures** (~280 lignes) → `/app/backend/routers/factures.py`
+- [x] **Portal** (~400 lignes) → `/app/backend/routers/portal.py`
+- [x] **SMS** (~130 lignes) → `/app/backend/routers/sms.py`
+- [x] **Subscription** (~320 lignes) → `/app/backend/routers/subscription.py`
+- [x] **Photos** (~70 lignes) → `/app/backend/routers/photos.py`
+- [x] **Rapports** (~150 lignes) → `/app/backend/routers/rapports.py`
+- [x] **Audit** → `/app/backend/routers/audit.py`
+
+#### Résultat
+- **server.py** réduit de ~2585 lignes à ~235 lignes (réduction de 91%)
+- **21 routers modulaires** dans `/app/backend/routers/`
+- Architecture maintenable et scalable
+- API Version 2.0.0 (Modular Architecture)
+
+### Backlog V2
+- [ ] React Native (si besoin app native)
+- [ ] Intégration calendrier Google/Outlook
+- [ ] API publique pour intégrations tierces
+
+## Next Tasks
+1. **P1**: Intégration Google Calendar/Outlook (synchronisation planning) - Requiert credentials OAuth
+2. **P2**: API publique pour intégrations tierces (Webhooks/REST)
+- `/app/backend/statement_generator.py` - Générateur PDF ReportLab
+- `/app/backend/routers/statements.py` - Router FastAPI
+- `/app/frontend/src/pages/Statements.jsx` - Interface React
+
 ### Backlog V2
 - [ ] React Native (si besoin app native)
 - [ ] Intégration calendrier Google/Outlook
