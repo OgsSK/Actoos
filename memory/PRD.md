@@ -191,6 +191,36 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - Backend: 15/15 tests passés (100%)
 - Frontend: 100% tests portal UI passés
 
+### Phase 20 - Notifications Push PWA ✅ (Date: 2026-03-30)
+
+#### Fonctionnalités
+- [x] **Service Worker push** - Réception et affichage des notifications
+- [x] **Bouton toggle** - Activer/désactiver notifications dans l'app technicien
+- [x] **VAPID keys** - Authentification sécurisée des notifications
+- [x] **Inscription push** - Stockage des subscriptions par utilisateur
+- [x] **Test notification** - Envoi de notification test pour vérification
+- [x] **Intégration Smart Assignment** - Notification auto quand nouvelle mission disponible
+
+#### Endpoints ajoutés
+- `GET /api/push/vapid-key` - Clé publique VAPID (public)
+- `POST /api/push/subscribe` - Inscription aux notifications (auth)
+- `DELETE /api/push/unsubscribe` - Désinscription (auth)
+- `GET /api/push/status` - Statut d'inscription (auth)
+- `POST /api/push/test` - Envoyer notification test (auth)
+
+#### Fichiers ajoutés
+- `/app/backend/push_service.py` - Service notifications (pywebpush)
+- `/app/frontend/src/hooks/usePushNotifications.js` - Hook React
+
+#### Service Worker (sw.js)
+- Gestionnaire `push` pour recevoir les notifications
+- Gestionnaire `notificationclick` pour ouvrir l'app au clic
+- Affichage natif avec titre, corps, icône et vibration
+
+#### Tests Validés
+- Backend: 13/13 tests passés (100%)
+- Frontend: 100% tests push UI passés
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -202,6 +232,8 @@ SENDER_EMAIL=onboarding@resend.dev
 TWILIO_ACCOUNT_SID=ACxxxxx
 TWILIO_AUTH_TOKEN=xxxxx
 TWILIO_PHONE_NUMBER=+33xxxxxxxxx
+VAPID_PUBLIC_KEY=BDEosOMy7hCZHnW...
+VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
 ```
 
 ## Credentials Test
@@ -217,13 +249,15 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 - [x] **Historique communications**
 - [x] **Stripe + Onboarding SaaS**
 - [x] **White-labeling complet** (logo + couleur primaire)
+- [x] **Portail Client Web** (devis/factures/interventions)
+- [x] **Notifications Push PWA**
 
 ### Backlog (Nice to have)
 - [x] QR Code paiement sur facture ✅
 - [x] Injection CSS dynamique des couleurs dans toute l'interface ✅
 - [x] Logo visible sur les PDF générés ✅
 - [x] Portail client web (consultation factures/devis, historique) ✅
-- [ ] Notifications push PWA
+- [x] Notifications push PWA ✅
 - [ ] Paiement en ligne via Stripe (sur facture depuis portail)
 
 ### Backlog V2
@@ -234,7 +268,7 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 - [ ] API publique pour intégrations tierces
 
 ## Next Tasks
-1. Notifications push PWA
+1. Paiement en ligne via Stripe (depuis portail client)
 2. Offline avancé (IndexedDB/SQLite sync)
 
 ## Next Tasks
