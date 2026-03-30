@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -13,9 +13,10 @@ import {
 import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
 import {
   Building2, Phone, Mail, Download, PenTool, Check, X, Loader2, CheckCircle,
-  FileText, Receipt, Calendar, Clock, Euro, ExternalLink, ArrowLeft
+  FileText, Receipt, Calendar, Clock, Euro, ExternalLink, ArrowLeft, CreditCard
 } from 'lucide-react';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -477,14 +478,24 @@ export const ClientPortalDevis = () => {
 // ==================== CLIENT PORTAL - DASHBOARD ====================
 export const ClientPortalDashboard = () => {
   const { token } = useParams();
+  const [searchParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+  const [payingFacture, setPayingFacture] = useState(null);
 
   useEffect(() => {
     fetchDashboard();
-  }, [token]);
+    
+    // Check for payment result in URL
+    const paymentResult = searchParams.get('payment');
+    if (paymentResult === 'success') {
+      toast.success('Paiement effectué avec succès !');
+    } else if (paymentResult === 'cancelled') {
+      toast.info('Paiement annulé');
+    }
+  }, [token, searchParams]);
 
   const fetchDashboard = async () => {
     try {
@@ -494,6 +505,24 @@ export const ClientPortalDashboard = () => {
       setError('Ce lien n\'est pas valide ou a expiré.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePayFacture = async (facture) => {
+    setPayingFacture(facture.id);
+    try {
+      const response = await axios.post(
+        `${API}/portal/facture/${facture.id}/pay?token=${token}`
+      );
+      // Redirect to Stripe checkout
+      if (response.data.url) {
+        window.location.href = response.data.url;
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      const message = err.response?.data?.detail || 'Erreur lors de l\'initialisation du paiement';
+      toast.error(message);
+      setPayingFacture(null);
     }
   };
 
@@ -677,29 +706,52 @@ export const ClientPortalDashboard = () => {
                     <p className="text-sm text-slate-500">Aucune facture</p>
                   ) : (
                     <div className="space-y-3">
-                      {factures.slice(0, 5).map((f) => (
-                        <div key={f.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                          <div>
-                            <p className="font-medium text-sm">{f.numero_facture}</p>
-                            <p className="text-xs text-slate-500">Échéance: {formatDate(f.date_echeance)}</p>
+                      {factures.slice(0, 5).map((f) => {
+                        const amountDue = (f.total_ttc || 0) - (f.montant_paye || 0);
+                        const canPay = f.statut !== 'payee' && amountDue > 0;
+                        
+                        return (
+                          <div key={f.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                            <div>
+                              <p className="font-medium text-sm">{f.numero_facture}</p>
+                              <p className="text-xs text-slate-500">Échéance: {formatDate(f.date_echeance)}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className={`status-${f.statut}`}>
+                                {getStatusLabel(f.statut)}
+                              </Badge>
+                              <span className="font-medium">{formatCurrency(f.total_ttc)}</span>
+                              {canPay && (
+                                <Button 
+                                  size="sm" 
+                                  className="bg-emerald-600 hover:bg-emerald-700"
+                                  onClick={() => handlePayFacture(f)}
+                                  disabled={payingFacture === f.id}
+                                  data-testid={`pay-facture-${f.id}`}
+                                >
+                                  {payingFacture === f.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <CreditCard className="w-3 h-3 mr-1" />
+                                      Payer
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                              <a 
+                                href={`${API}/portal/facture/${f.id}/pdf?token=${token}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <Button size="sm" variant="outline">
+                                  <Download className="w-3 h-3" />
+                                </Button>
+                              </a>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <Badge variant="secondary" className={`status-${f.statut}`}>
-                              {getStatusLabel(f.statut)}
-                            </Badge>
-                            <span className="font-medium">{formatCurrency(f.total_ttc)}</span>
-                            <a 
-                              href={`${API}/portal/facture/${f.id}/pdf?token=${token}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <Button size="sm" variant="outline">
-                                <Download className="w-3 h-3" />
-                              </Button>
-                            </a>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
@@ -789,7 +841,7 @@ export const ClientPortalDashboard = () => {
             <Card className="border-slate-200">
               <CardHeader>
                 <CardTitle className="text-base">Toutes vos factures</CardTitle>
-                <CardDescription>Téléchargez vos factures au format PDF</CardDescription>
+                <CardDescription>Téléchargez vos factures ou payez en ligne</CardDescription>
               </CardHeader>
               <CardContent>
                 {factures.length === 0 ? (
@@ -804,35 +856,59 @@ export const ClientPortalDashboard = () => {
                         <TableHead>Montant TTC</TableHead>
                         <TableHead>Payé</TableHead>
                         <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">PDF</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {factures.map((f) => (
-                        <TableRow key={f.id}>
-                          <TableCell className="font-mono">{f.numero_facture}</TableCell>
-                          <TableCell>{formatDate(f.created_at)}</TableCell>
-                          <TableCell>{formatDate(f.date_echeance)}</TableCell>
-                          <TableCell className="font-medium">{formatCurrency(f.total_ttc)}</TableCell>
-                          <TableCell>{formatCurrency(f.montant_paye || 0)}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className={`status-${f.statut}`}>
-                              {getStatusLabel(f.statut)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <a 
-                              href={`${API}/portal/facture/${f.id}/pdf?token=${token}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <Button size="sm" variant="outline">
-                                <Download className="w-4 h-4" />
-                              </Button>
-                            </a>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {factures.map((f) => {
+                        const amountDue = (f.total_ttc || 0) - (f.montant_paye || 0);
+                        const canPay = f.statut !== 'payee' && amountDue > 0;
+                        
+                        return (
+                          <TableRow key={f.id}>
+                            <TableCell className="font-mono">{f.numero_facture}</TableCell>
+                            <TableCell>{formatDate(f.created_at)}</TableCell>
+                            <TableCell>{formatDate(f.date_echeance)}</TableCell>
+                            <TableCell className="font-medium">{formatCurrency(f.total_ttc)}</TableCell>
+                            <TableCell>{formatCurrency(f.montant_paye || 0)}</TableCell>
+                            <TableCell>
+                              <Badge variant="secondary" className={`status-${f.statut}`}>
+                                {getStatusLabel(f.statut)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {canPay && (
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-emerald-600 hover:bg-emerald-700"
+                                    onClick={() => handlePayFacture(f)}
+                                    disabled={payingFacture === f.id}
+                                  >
+                                    {payingFacture === f.id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <>
+                                        <CreditCard className="w-3 h-3 mr-1" />
+                                        Payer {formatCurrency(amountDue)}
+                                      </>
+                                    )}
+                                  </Button>
+                                )}
+                                <a 
+                                  href={`${API}/portal/facture/${f.id}/pdf?token=${token}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Button size="sm" variant="outline">
+                                    <Download className="w-4 h-4" />
+                                  </Button>
+                                </a>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 )}

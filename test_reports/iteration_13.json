@@ -1,0 +1,157 @@
+{
+  "summary": "Completed testing of Portal Payment (Stripe) feature. All backend APIs (11/11 tests passed) and frontend UI working correctly. Pay button appears on unpaid factures with amount > 0, correctly hidden for 0€ factures, and redirects to Stripe checkout.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "test_report_links": [
+    "/app/backend/tests/test_portal_payment.py",
+    "/app/test_reports/pytest/pytest_portal_payment.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [
+    "POST /api/portal/facture/{id}/pay correctly creates Stripe checkout session and returns URL",
+    "Payment endpoint correctly rejects factures with 0€ amount (returns 400 'Aucun montant à payer')",
+    "Payment endpoint correctly rejects already paid factures (statut='payee')",
+    "Payment endpoint requires valid client portal token (returns 401 for invalid token)",
+    "GET /api/portal/facture/{id}/payment-status correctly checks payment status via Stripe API",
+    "Stripe is configured in TEST mode (session_id starts with cs_test_)",
+    "Frontend Pay button shows amount due (e.g., 'Payer 120,00 €')",
+    "Frontend correctly hides Pay button for 0€ factures (F2026-00006)",
+    "Frontend correctly hides Pay button for already paid factures",
+    "Pay button click successfully redirects to Stripe checkout page"
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_portal_payment.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "100% (all payment UI tests passed)"
+  },
+
+  "test_credentials": {
+    "client_portal_token": "888cc62b-b06f-4107-b822-b2403ce8f1c0",
+    "admin_email": "admin@testplomberie.fr",
+    "admin_password": "password123"
+  },
+
+  "seed_data_creation": "No seed data created. Used existing test factures.",
+
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "Portal Payment (Stripe) feature fully tested. Key findings: 1) POST /api/portal/facture/{id}/pay creates Stripe checkout session and returns URL, 2) Payment endpoint rejects 0€ factures with 400 error, 3) Stripe is in TEST mode (sk_test_emergent key), 4) Frontend Pay button shows amount and redirects to Stripe checkout, 5) F2026-00006 (0€) correctly has no Pay button. Test factures: F2026-00005 (120€), F2026-00004 (300€), F2026-00001 (180€), F2026-00006 (0€).",
+
+  "features_tested": {
+    "test_1_payment_endpoint_returns_stripe_url": {
+      "description": "POST /api/portal/facture/{id}/pay returns valid Stripe checkout URL",
+      "status": "PASS",
+      "evidence": "Returns {url: 'https://checkout.stripe.com/...', session_id: 'cs_test_...', amount: 120.0}"
+    },
+    "test_2_payment_rejects_zero_amount": {
+      "description": "Payment endpoint rejects factures with 0€ amount",
+      "status": "PASS",
+      "evidence": "Returns 400 with detail 'Aucun montant à payer'"
+    },
+    "test_3_payment_requires_valid_token": {
+      "description": "Payment endpoint requires valid client portal token",
+      "status": "PASS",
+      "evidence": "Returns 401 for invalid token"
+    },
+    "test_4_payment_requires_token_param": {
+      "description": "Payment endpoint requires token parameter",
+      "status": "PASS",
+      "evidence": "Returns 422 when token missing"
+    },
+    "test_5_payment_rejects_nonexistent_facture": {
+      "description": "Payment endpoint rejects non-existent facture",
+      "status": "PASS",
+      "evidence": "Returns 404 for invalid facture_id"
+    },
+    "test_6_payment_for_300_euro_facture": {
+      "description": "Payment works for 300€ facture",
+      "status": "PASS",
+      "evidence": "Returns valid Stripe URL with amount: 300.0"
+    },
+    "test_7_payment_status_requires_token": {
+      "description": "GET /api/portal/facture/{id}/payment-status requires valid token",
+      "status": "PASS",
+      "evidence": "Returns 401 for invalid token"
+    },
+    "test_8_payment_status_requires_session_id": {
+      "description": "Payment status endpoint requires session_id parameter",
+      "status": "PASS",
+      "evidence": "Returns 422 when session_id missing"
+    },
+    "test_9_portal_returns_factures_with_amounts": {
+      "description": "Client portal returns factures with amount info",
+      "status": "PASS",
+      "evidence": "Factures include total_ttc and montant_paye fields"
+    },
+    "test_10_portal_summary_includes_amount_due": {
+      "description": "Portal summary includes total amount due",
+      "status": "PASS",
+      "evidence": "Summary shows montant_du: 720.0€"
+    },
+    "test_11_stripe_configured": {
+      "description": "Stripe API key is configured in test mode",
+      "status": "PASS",
+      "evidence": "Session ID starts with cs_test_"
+    },
+    "test_12_frontend_pay_button_visible": {
+      "description": "Pay button visible on unpaid factures with amount > 0",
+      "status": "PASS",
+      "evidence": "Found 4 Pay buttons in Factures tab"
+    },
+    "test_13_frontend_pay_button_shows_amount": {
+      "description": "Pay button shows amount due (e.g., 'Payer 120,00 €')",
+      "status": "PASS",
+      "evidence": "Buttons show 'Payer 120,00 €', 'Payer 300,00 €', 'Payer 180,00 €'"
+    },
+    "test_14_frontend_no_pay_button_for_zero_amount": {
+      "description": "No Pay button for 0€ factures",
+      "status": "PASS",
+      "evidence": "F2026-00006 (0€) has no Pay button, only download button"
+    },
+    "test_15_frontend_pay_redirects_to_stripe": {
+      "description": "Pay button click redirects to Stripe checkout",
+      "status": "PASS",
+      "evidence": "Redirected to https://checkout.stripe.com/c/pay/cs_test_..."
+    }
+  },
+
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": [],
+    "note": "Stripe is in TEST mode using sk_test_emergent key - real Stripe test environment"
+  },
+
+  "payment_endpoints_summary": {
+    "endpoints_tested": [
+      "POST /api/portal/facture/{id}/pay?token=xxx - Creates Stripe checkout session",
+      "GET /api/portal/facture/{id}/payment-status?token=xxx&session_id=xxx - Checks payment status"
+    ],
+    "stripe_mode": "TEST (sk_test_emergent)",
+    "checkout_url_format": "https://checkout.stripe.com/c/pay/cs_test_..."
+  },
+
+  "factures_tested": {
+    "F2026-00005": {"amount": "120€", "status": "emise", "pay_button": true},
+    "F2026-00004": {"amount": "300€", "status": "emise", "pay_button": true},
+    "F2026-00001": {"amount": "180€", "status": "emise", "pay_button": true},
+    "F2026-00002": {"amount": "120€", "status": "brouillon", "pay_button": true},
+    "F2026-00006": {"amount": "0€", "status": "emise", "pay_button": false}
+  }
+}

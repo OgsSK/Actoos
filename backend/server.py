@@ -1608,6 +1608,245 @@ async def get_client_portal_link(client_id: str, current_user: dict = Depends(ge
         "portal_url": f"/portal/client/{client['portal_token']}"
     }
 
+# ==================== PORTAL PAYMENT (STRIPE) ====================
+@api_router.post("/portal/facture/{facture_id}/pay")
+async def create_facture_payment_session(
+    facture_id: str,
+    token: str,
+    request: Request
+):
+    """Create a Stripe checkout session to pay a facture from client portal"""
+    from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+    
+    # Verify client token
+    client = await db.clients.find_one({"portal_token": token}, {"_id": 0})
+    if not client:
+        raise HTTPException(status_code=401, detail="Accès non autorisé")
+    
+    # Get facture
+    facture = await db.factures.find_one(
+        {"id": facture_id, "client_id": client["id"]},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    # Check if already paid
+    if facture.get("statut") == "payee":
+        raise HTTPException(status_code=400, detail="Cette facture est déjà payée")
+    
+    # Get entreprise info
+    entreprise = await db.entreprises.find_one({"id": facture["entreprise_id"]}, {"_id": 0})
+    
+    # Calculate amount due
+    amount_due = facture.get("total_ttc", 0) - facture.get("montant_paye", 0)
+    if amount_due <= 0:
+        raise HTTPException(status_code=400, detail="Aucun montant à payer")
+    
+    # Get Stripe API key
+    stripe_api_key = os.environ.get('STRIPE_API_KEY')
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Paiement non configuré")
+    
+    # Build URLs - use portal URL for return
+    base_url = str(request.base_url).rstrip('/')
+    # Extract origin from referer or use base_url
+    origin = request.headers.get('origin', base_url.replace('/api', ''))
+    
+    success_url = f"{origin}/portal/client/{token}?payment=success&facture={facture_id}"
+    cancel_url = f"{origin}/portal/client/{token}?payment=cancelled&facture={facture_id}"
+    
+    # Initialize Stripe
+    webhook_url = f"{base_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url=webhook_url)
+    
+    # Create checkout session
+    checkout_request = CheckoutSessionRequest(
+        amount=float(amount_due),
+        currency="eur",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "type": "facture_payment",
+            "facture_id": facture_id,
+            "facture_numero": facture.get("numero_facture", ""),
+            "client_id": client["id"],
+            "client_name": f"{client.get('nom', '')} {client.get('prenom', '')}".strip(),
+            "entreprise_id": facture["entreprise_id"],
+            "entreprise_name": entreprise.get("nom", "") if entreprise else ""
+        }
+    )
+    
+    session = await stripe_checkout.create_checkout_session(checkout_request)
+    
+    # Create payment transaction record
+    transaction = {
+        "id": str(uuid.uuid4()),
+        "session_id": session.session_id,
+        "type": "facture_payment",
+        "facture_id": facture_id,
+        "facture_numero": facture.get("numero_facture", ""),
+        "client_id": client["id"],
+        "entreprise_id": facture["entreprise_id"],
+        "amount": amount_due,
+        "currency": "eur",
+        "status": "pending",
+        "payment_status": "initiated",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.payment_transactions.insert_one(transaction)
+    
+    logger.info(f"Created payment session for facture {facture.get('numero_facture')}: {session.session_id}")
+    
+    return {
+        "url": session.url,
+        "session_id": session.session_id,
+        "amount": amount_due
+    }
+
+@api_router.get("/portal/facture/{facture_id}/payment-status")
+async def get_facture_payment_status(facture_id: str, token: str, session_id: str, request: Request):
+    """Check payment status for a facture"""
+    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    
+    # Verify client token
+    client = await db.clients.find_one({"portal_token": token}, {"_id": 0})
+    if not client:
+        raise HTTPException(status_code=401, detail="Accès non autorisé")
+    
+    # Get facture
+    facture = await db.factures.find_one(
+        {"id": facture_id, "client_id": client["id"]},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    stripe_api_key = os.environ.get('STRIPE_API_KEY')
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Paiement non configuré")
+    
+    base_url = str(request.base_url).rstrip('/')
+    webhook_url = f"{base_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url=webhook_url)
+    
+    status = await stripe_checkout.get_checkout_status(session_id)
+    
+    # If paid, update facture
+    if status.payment_status == "paid":
+        await process_facture_payment(facture_id, session_id, status.amount_total / 100)
+    
+    return {
+        "status": status.status,
+        "payment_status": status.payment_status,
+        "facture_statut": facture.get("statut")
+    }
+
+async def process_facture_payment(facture_id: str, session_id: str, amount_paid: float):
+    """Process a successful facture payment"""
+    # Check if already processed (idempotency)
+    existing = await db.payment_transactions.find_one({
+        "session_id": session_id,
+        "payment_status": "paid"
+    })
+    if existing:
+        logger.info(f"Payment already processed for session {session_id}")
+        return
+    
+    # Get facture
+    facture = await db.factures.find_one({"id": facture_id}, {"_id": 0})
+    if not facture:
+        logger.error(f"Facture not found: {facture_id}")
+        return
+    
+    # Update facture
+    new_montant_paye = facture.get("montant_paye", 0) + amount_paid
+    total_ttc = facture.get("total_ttc", 0)
+    
+    update_data = {
+        "montant_paye": new_montant_paye,
+        "date_paiement": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Mark as paid if fully paid
+    if new_montant_paye >= total_ttc:
+        update_data["statut"] = "payee"
+    
+    await db.factures.update_one(
+        {"id": facture_id},
+        {"$set": update_data}
+    )
+    
+    # Update transaction
+    await db.payment_transactions.update_one(
+        {"session_id": session_id},
+        {"$set": {
+            "status": "complete",
+            "payment_status": "paid",
+            "paid_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Send confirmation email
+    client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": facture["entreprise_id"]}, {"_id": 0})
+    
+    if client and client.get("email"):
+        try:
+            await send_payment_confirmation_email(facture, client, entreprise, amount_paid)
+        except Exception as e:
+            logger.warning(f"Failed to send payment confirmation email: {e}")
+    
+    logger.info(f"Processed payment for facture {facture.get('numero_facture')}: {amount_paid}€")
+
+async def send_payment_confirmation_email(facture: dict, client: dict, entreprise: dict, amount: float):
+    """Send payment confirmation email to client"""
+    try:
+        from email_service import send_email
+        
+        client_name = f"{client.get('prenom', '')} {client.get('nom', '')}".strip()
+        entreprise_name = entreprise.get("nom", "L'entreprise") if entreprise else "L'entreprise"
+        
+        subject = f"Confirmation de paiement - Facture {facture.get('numero_facture')}"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">Paiement reçu</h2>
+            <p>Bonjour {client_name},</p>
+            <p>Nous avons bien reçu votre paiement de <strong>{amount:.2f}€</strong> pour la facture <strong>{facture.get('numero_facture')}</strong>.</p>
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Facture:</strong> {facture.get('numero_facture')}</p>
+                <p style="margin: 5px 0;"><strong>Montant payé:</strong> {amount:.2f}€</p>
+                <p style="margin: 5px 0;"><strong>Date:</strong> {datetime.now().strftime('%d/%m/%Y à %H:%M')}</p>
+            </div>
+            <p>Merci pour votre confiance.</p>
+            <p>Cordialement,<br/>{entreprise_name}</p>
+        </div>
+        """
+        
+        await send_email(
+            to_email=client["email"],
+            subject=subject,
+            html_content=html_content,
+            from_name=entreprise_name
+        )
+        
+        # Log communication
+        await db.communications.insert_one({
+            "id": str(uuid.uuid4()),
+            "entreprise_id": facture["entreprise_id"],
+            "client_id": client["id"],
+            "type": "email",
+            "sujet": subject,
+            "destinataire": client["email"],
+            "preview": f"Confirmation de paiement de {amount:.2f}€ pour la facture {facture.get('numero_facture')}",
+            "status": "sent",
+            "date_envoi": datetime.now(timezone.utc).isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Error sending payment confirmation email: {e}")
+
 # ==================== FACTURE ROUTES ====================
 @api_router.post("/factures")
 async def create_facture(data: FactureCreate, current_user: dict = Depends(get_current_user)):
