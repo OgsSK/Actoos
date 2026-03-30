@@ -1,0 +1,463 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Progress } from '../components/ui/progress';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '../components/ui/select';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from '../components/ui/table';
+import { formatCurrency } from '../lib/utils';
+import {
+  TrendingUp, TrendingDown, Euro, Users, FileText, Wrench,
+  Loader2, BarChart3, PieChart, ArrowUp, ArrowDown, Minus,
+  Calendar, Target, Clock, CheckCircle
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+const Analytics = () => {
+  const { api } = useAuth();
+  const [period, setPeriod] = useState('month');
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
+  const [trends, setTrends] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [period]);
+
+  const loadAnalytics = async () => {
+    setLoading(true);
+    try {
+      const [summaryRes, trendsRes, techsRes] = await Promise.all([
+        api.get('/analytics/summary', { params: { period } }),
+        api.get('/analytics/trends', { params: { metric: 'revenue', days: 30 } }),
+        api.get('/analytics/technicians', { params: { period } })
+      ]);
+      setData(summaryRes.data);
+      setTrends(trendsRes.data);
+      setTechnicians(techsRes.data);
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+      toast.error('Erreur lors du chargement des statistiques');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPeriodLabel = (p) => {
+    const labels = {
+      week: 'Cette semaine',
+      month: 'Ce mois',
+      quarter: 'Ce trimestre',
+      year: 'Cette année'
+    };
+    return labels[p] || p;
+  };
+
+  const GrowthIndicator = ({ value }) => {
+    if (value > 0) {
+      return (
+        <span className="flex items-center text-emerald-600 text-sm">
+          <ArrowUp className="w-4 h-4" />
+          {value}%
+        </span>
+      );
+    } else if (value < 0) {
+      return (
+        <span className="flex items-center text-red-600 text-sm">
+          <ArrowDown className="w-4 h-4" />
+          {Math.abs(value)}%
+        </span>
+      );
+    }
+    return (
+      <span className="flex items-center text-slate-400 text-sm">
+        <Minus className="w-4 h-4" />
+        0%
+      </span>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  const { revenue, interventions, clients, devis } = data || {};
+
+  return (
+    <div className="space-y-6" data-testid="analytics-page">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Rapports & Analytics</h1>
+          <p className="text-slate-500">Vue d'ensemble de votre activité</p>
+        </div>
+        <Select value={period} onValueChange={setPeriod}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="week">Cette semaine</SelectItem>
+            <SelectItem value="month">Ce mois</SelectItem>
+            <SelectItem value="quarter">Ce trimestre</SelectItem>
+            <SelectItem value="year">Cette année</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Revenue */}
+        <Card className="border-slate-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Chiffre d'affaires</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {formatCurrency(revenue?.current_revenue || 0)}
+                </p>
+                <GrowthIndicator value={revenue?.growth_percent || 0} />
+              </div>
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                <Euro className="w-6 h-6 text-emerald-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending Invoices */}
+        <Card className="border-slate-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Factures en attente</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {formatCurrency(revenue?.pending_amount || 0)}
+                </p>
+                <p className="text-sm text-slate-400">
+                  {revenue?.pending_count || 0} factures
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-amber-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Interventions */}
+        <Card className="border-slate-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Interventions</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {interventions?.completed || 0} / {interventions?.total || 0}
+                </p>
+                <p className="text-sm text-slate-400">
+                  {interventions?.completion_rate || 0}% terminées
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <Wrench className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Devis Conversion */}
+        <Card className="border-slate-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Taux de conversion</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {devis?.conversion_rate || 0}%
+                </p>
+                <p className="text-sm text-slate-400">
+                  {devis?.signed_count || 0} devis signés
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                <Target className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue Trend */}
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-slate-400" />
+              Évolution du CA (30 jours)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-48 flex items-end gap-1">
+              {trends.map((day, index) => {
+                const maxValue = Math.max(...trends.map(t => t.value), 1);
+                const height = (day.value / maxValue) * 100;
+                return (
+                  <div 
+                    key={index}
+                    className="flex-1 flex flex-col items-center gap-1"
+                    title={`${day.label}: ${formatCurrency(day.value)}`}
+                  >
+                    <div 
+                      className="w-full bg-emerald-500 rounded-t hover:bg-emerald-600 transition-colors cursor-pointer"
+                      style={{ height: `${Math.max(height, 2)}%` }}
+                    />
+                    {index % 5 === 0 && (
+                      <span className="text-xs text-slate-400 -rotate-45 origin-left">
+                        {day.label}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Interventions by Status */}
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <PieChart className="w-5 h-5 text-slate-400" />
+              Interventions par statut
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Object.entries(interventions?.by_status || {}).map(([status, count]) => {
+                const total = interventions?.total || 1;
+                const percent = (count / total) * 100;
+                const colors = {
+                  planifiee: 'bg-blue-500',
+                  en_cours: 'bg-amber-500',
+                  terminee: 'bg-emerald-500',
+                  facturee: 'bg-purple-500',
+                  annulee: 'bg-red-500'
+                };
+                const labels = {
+                  planifiee: 'Planifiées',
+                  en_cours: 'En cours',
+                  terminee: 'Terminées',
+                  facturee: 'Facturées',
+                  annulee: 'Annulées'
+                };
+                return (
+                  <div key={status} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">{labels[status] || status}</span>
+                      <span className="font-medium">{count} ({Math.round(percent)}%)</span>
+                    </div>
+                    <Progress value={percent} className={`h-2 ${colors[status] || 'bg-slate-500'}`} />
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Detailed Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Technician Performance */}
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-base">Performance des techniciens</CardTitle>
+            <CardDescription>Classement par interventions terminées</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {technicians.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-4">Aucun technicien</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Technicien</TableHead>
+                    <TableHead className="text-center">Terminées</TableHead>
+                    <TableHead className="text-center">Taux</TableHead>
+                    <TableHead className="text-right">Durée moy.</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {technicians.map((tech, index) => (
+                    <TableRow key={tech.technician_id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {index === 0 && <Badge className="bg-amber-500">🏆</Badge>}
+                          <span className="font-medium">{tech.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {tech.interventions_completed} / {tech.interventions_assigned}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="secondary" className={
+                          tech.completion_rate >= 80 ? 'bg-emerald-100 text-emerald-700' :
+                          tech.completion_rate >= 50 ? 'bg-amber-100 text-amber-700' :
+                          'bg-red-100 text-red-700'
+                        }>
+                          {tech.completion_rate}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {tech.avg_duration_minutes ? `${tech.avg_duration_minutes} min` : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top Clients */}
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-base">Top Clients</CardTitle>
+            <CardDescription>Par chiffre d'affaires généré</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {clients?.top_clients?.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-4">Aucune donnée</p>
+            ) : (
+              <div className="space-y-4">
+                {clients?.top_clients?.map((client, index) => (
+                  <div key={client.client_id} className="flex items-center gap-4">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
+                      index === 0 ? 'bg-amber-500' : 
+                      index === 1 ? 'bg-slate-400' : 
+                      index === 2 ? 'bg-amber-700' : 'bg-slate-300'
+                    }`}>
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{client.name}</p>
+                      <p className="text-xs text-slate-500">{client.invoice_count} facture(s)</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-emerald-600">{formatCurrency(client.total_revenue)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Devis Stats */}
+        <Card className="border-slate-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Devis
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">Total créés</span>
+                <span className="font-medium">{devis?.total_count || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">Montant total</span>
+                <span className="font-medium">{formatCurrency(devis?.total_amount || 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">Signés</span>
+                <span className="font-medium text-emerald-600">{devis?.signed_count || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">Délai moyen signature</span>
+                <span className="font-medium">
+                  {devis?.avg_days_to_sign ? `${devis.avg_days_to_sign} jours` : '-'}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Client Stats */}
+        <Card className="border-slate-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Clients
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">Total clients</span>
+                <span className="font-medium">{clients?.total_clients || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">Nouveaux ({getPeriodLabel(period).toLowerCase()})</span>
+                <span className="font-medium text-emerald-600">+{clients?.new_clients || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">Particuliers</span>
+                <span className="font-medium">{clients?.by_type?.particulier || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">Professionnels</span>
+                <span className="font-medium">{clients?.by_type?.professionnel || 0}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Factures Stats */}
+        <Card className="border-slate-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Euro className="w-4 h-4" />
+              Factures
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">Payées ({getPeriodLabel(period).toLowerCase()})</span>
+                <span className="font-medium text-emerald-600">{revenue?.current_invoices_paid || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">En attente</span>
+                <span className="font-medium text-amber-600">{revenue?.pending_count || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">En retard</span>
+                <span className="font-medium text-red-600">{revenue?.overdue_count || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-500">Montant moyen</span>
+                <span className="font-medium">{formatCurrency(revenue?.average_invoice || 0)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default Analytics;

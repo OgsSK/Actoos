@@ -18,6 +18,7 @@ import { TechniciensList } from "./pages/Techniciens";
 import { SettingsPage } from "./pages/Settings";
 import { PlanningPage } from "./pages/Planning";
 import { RapportsPage } from "./pages/Rapports";
+import Analytics from "./pages/Analytics";
 
 // Technician App
 import { TechnicianApp } from "./pages/TechnicianApp";
@@ -149,6 +150,9 @@ function App() {
               
               {/* Rapports */}
               <Route path="rapports" element={<RapportsPage />} />
+              
+              {/* Analytics */}
+              <Route path="analytics" element={<Analytics />} />
               
               {/* Settings */}
               <Route path="settings" element={<SettingsPage />} />

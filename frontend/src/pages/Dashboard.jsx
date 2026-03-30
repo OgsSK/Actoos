@@ -15,7 +15,7 @@ import { formatCurrency, formatDate, getStatusLabel, formatRelative } from '../l
 import {
   LayoutDashboard, Users, Calendar, FileText, Receipt, Settings, LogOut, Menu, X,
   Search, Bell, Plus, TrendingUp, AlertTriangle, Clock, CheckCircle, ChevronRight,
-  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3
+  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart
 } from 'lucide-react';
 
 const Sidebar = ({ open, onClose }) => {
@@ -35,6 +35,7 @@ const Sidebar = ({ open, onClose }) => {
     { icon: FileText, label: 'Devis', path: '/dashboard/devis', admin: true },
     { icon: Receipt, label: 'Factures', path: '/dashboard/factures', admin: true },
     { icon: ClipboardList, label: 'Techniciens', path: '/dashboard/techniciens', admin: true },
+    { icon: PieChart, label: 'Analytics', path: '/dashboard/analytics', admin: true },
     { icon: BarChart3, label: 'Rapports', path: '/dashboard/rapports', admin: true },
     { icon: Settings, label: 'Paramètres', path: '/dashboard/settings', admin: true },
   ];

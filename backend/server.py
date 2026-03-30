@@ -40,6 +40,10 @@ from push_service import (
     notify_devis_signed
 )
 from route_optimizer import optimize_route, get_route_suggestions, calculate_simple_route_score
+from analytics_service import (
+    get_revenue_analytics, get_intervention_analytics, get_technician_performance,
+    get_client_analytics, get_devis_analytics, get_trend_data
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -2978,6 +2982,105 @@ async def get_dashboard_alerts(current_user: dict = Depends(get_current_user)):
         alerts.append({"type": "intervention_retard", "severity": "warning", "message": f"Intervention '{i['titre']}' en retard", "entity_id": i["id"]})
     
     return alerts
+
+# ==================== ANALYTICS ROUTES ====================
+@api_router.get("/analytics/revenue")
+async def get_analytics_revenue(
+    period: str = "month",
+    current_user: dict = Depends(get_current_user)
+):
+    """Get revenue analytics for the specified period"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    return await get_revenue_analytics(db, current_user["entreprise_id"], period)
+
+@api_router.get("/analytics/interventions")
+async def get_analytics_interventions(
+    period: str = "month",
+    current_user: dict = Depends(get_current_user)
+):
+    """Get intervention analytics"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    return await get_intervention_analytics(db, current_user["entreprise_id"], period)
+
+@api_router.get("/analytics/technicians")
+async def get_analytics_technicians(
+    period: str = "month",
+    current_user: dict = Depends(get_current_user)
+):
+    """Get technician performance analytics"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    return await get_technician_performance(db, current_user["entreprise_id"], period)
+
+@api_router.get("/analytics/clients")
+async def get_analytics_clients(
+    period: str = "month",
+    current_user: dict = Depends(get_current_user)
+):
+    """Get client analytics"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    return await get_client_analytics(db, current_user["entreprise_id"], period)
+
+@api_router.get("/analytics/devis")
+async def get_analytics_devis(
+    period: str = "month",
+    current_user: dict = Depends(get_current_user)
+):
+    """Get devis/quote analytics"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    return await get_devis_analytics(db, current_user["entreprise_id"], period)
+
+@api_router.get("/analytics/trends")
+async def get_analytics_trends(
+    metric: str = "revenue",
+    days: int = 30,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get trend data for charts"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    if metric not in ["revenue", "interventions", "devis"]:
+        raise HTTPException(status_code=400, detail="Métrique invalide")
+    
+    if days < 7 or days > 365:
+        days = 30
+    
+    return await get_trend_data(db, current_user["entreprise_id"], metric, days)
+
+@api_router.get("/analytics/summary")
+async def get_analytics_summary(
+    period: str = "month",
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a comprehensive analytics summary"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    ent_id = current_user["entreprise_id"]
+    
+    # Get all analytics in parallel (simplified - could use asyncio.gather)
+    revenue = await get_revenue_analytics(db, ent_id, period)
+    interventions = await get_intervention_analytics(db, ent_id, period)
+    clients = await get_client_analytics(db, ent_id, period)
+    devis = await get_devis_analytics(db, ent_id, period)
+    
+    return {
+        "period": period,
+        "revenue": revenue,
+        "interventions": interventions,
+        "clients": clients,
+        "devis": devis
+    }
 
 @api_router.get("/dashboard/recent")
 async def get_dashboard_recent(current_user: dict = Depends(get_current_user)):
