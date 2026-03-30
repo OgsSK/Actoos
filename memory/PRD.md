@@ -832,3 +832,53 @@ GOOGLE_REDIRECT_URI=https://domain.com/api/calendar/callback
 #### Statut
 ⚠️ **Code prêt** - En attente des credentials OAuth Google de l'utilisateur
 
+---
+
+### Phase 37 - Site Marketing & Signup Complet ✅ (Date: 2026-03-31)
+
+#### Site Marketing (actoos.com)
+- [x] **Landing Page** (`/`) - Hero, features, secteurs, testimonials, CTA
+- [x] **Features Page** (`/features`) - Détail des fonctionnalités
+- [x] **Sectors Page** (`/sectors`) - Secteurs d'activité supportés
+- [x] **Pricing Page** (`/pricing`) - 3 plans avec comparatif complet
+
+#### Signup Flow en 4 étapes (`/signup`)
+- [x] **Étape 1 - Plan** - Sélection du plan (Startup 49€, Pro 79€, Enterprise 129€)
+- [x] **Étape 2 - Catégories** - 10 catégories métier avec limites strictes par plan
+- [x] **Étape 3 - Informations** - Nom entreprise, email, téléphone, mot de passe
+- [x] **Étape 4 - Récapitulatif** - Confirmation avant paiement Stripe
+
+#### 10 Catégories Métier Officielles
+1. **BTP & Travaux** - Maçonnerie, Rénovation, Gros/Second œuvre...
+2. **Nettoyage Professionnel** - Bureaux, Industriel, Fin de chantier...
+3. **Maintenance & SAV** - Technique, Industrielle, Contrats...
+4. **Décoration & Aménagement** - Intérieure, Home staging...
+5. **Électricité** - Installation, Dépannage, Domotique...
+6. **Plomberie & CVC** - Plomberie, Chauffage, Climatisation...
+7. **Espaces Verts & Extérieur** - Jardinage, Paysagisme...
+8. **Sécurité & Installation** - Alarmes, Vidéosurveillance...
+9. **Services Techniques Multi-services** - Homme toutes mains...
+10. **Services Spécialisés** - Dératisation, Inspection drone...
+
+#### Limites Catégories par Plan
+| Plan | Catégories max |
+|------|----------------|
+| Startup | 1 |
+| Pro | 4 |
+| Enterprise | Illimité |
+
+#### Endpoints ajoutés
+- `POST /api/finalize-signup/{session_id}` - Finalise inscription avec catégories et mot de passe personnalisé
+
+#### Fichiers créés/modifiés
+- `/app/frontend/src/pages/SignupPage.jsx` - Wizard 4 étapes (600+ lignes)
+- `/app/frontend/src/pages/LandingPage.jsx` - Landing page marketing
+- `/app/frontend/src/pages/FeaturesPage.jsx` - Page fonctionnalités
+- `/app/frontend/src/pages/SectorsPage.jsx` - Page secteurs
+- `/app/backend/routers/subscription.py` - Endpoint finalize-signup
+
+#### Tests Validés
+- Backend: 16/16 tests passés (100%)
+- Frontend: 100% (4 étapes du wizard testées)
+- Iteration: `/app/test_reports/iteration_19.json`
+
