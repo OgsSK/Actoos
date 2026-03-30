@@ -34,6 +34,22 @@ SaaS multi-tenant pour entreprises de services (plomberie, électricité, mainte
 - `CreateInterventionForm` - Formulaire création intervention (client, titre, date, durée, priorité)
 - `CreateDevisForm` - Formulaire création devis avec lignes, calcul TVA automatique
 
+### Phase 13 - Assignation Intelligente ✅ (Date: 2026-03-30)
+
+#### Fonctionnalités
+- [x] **Interventions disponibles** - Si technicien_id=null, l'intervention est visible par tous les techs
+- [x] **Badge "Disponible"** - Badge orange avec animation pulse sur les interventions non assignées
+- [x] **Bouton "Accepter cette mission"** - Permet au tech de réclamer l'intervention
+- [x] **Endpoint /claim** - POST /api/interventions/{id}/claim assigne au premier tech qui clique
+- [x] **Gestion des conflits** - Retourne 409 si l'intervention est déjà prise
+- [x] **Notification SMS** - Envoie SMS aux techs quand une nouvelle intervention disponible est créée (si Twilio configuré)
+
+#### Endpoints ajoutés
+- `GET /api/interventions/available` - Liste les interventions non assignées
+- `POST /api/interventions/{id}/claim` - Réclamer une intervention disponible
+- `GET /api/interventions/today` - Modifié pour inclure les interventions disponibles pour les techs
+- `GET /api/interventions?include_available=true` - Paramètre pour inclure les disponibles
+
 ## Configuration requise
 
 ### Variables d'environnement Backend (.env)
@@ -53,11 +69,10 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 
 ## Prioritized Backlog
 
-### P0 (Critique) - En cours
-- [ ] **Logique assignation intelligente** : Si intervention sans technicien → notifier tous les techs → premier à accepter = assigné
-- [ ] **Traçabilité complète** : Audit trail détaillé
+### P0 (Critique) - Complété ✅
+- [x] **Logique assignation intelligente** - Intervention sans technicien → visible par tous → premier à accepter = assigné
 
-### P1 (Important)
+### P1 (Important) - En cours
 - [ ] **Catégories/Modules** : Support multi-secteurs (BTP, Nettoyage, Maintenance) avec checklists dynamiques
 - [ ] **EXIF stripping** : Supprimer métadonnées GPS des photos avant upload
 - [ ] Historique communications (emails + SMS envoyés)
@@ -73,6 +88,6 @@ TWILIO_PHONE_NUMBER=+33xxxxxxxxx
 - [ ] React Native (si besoin natif)
 
 ## Next Tasks
-1. Implémenter la logique d'assignation intelligente (claim mission)
-2. Ajouter catégories avec checklists dynamiques
-3. Améliorer le flux photos (compression + EXIF strip)
+1. Ajouter catégories avec checklists dynamiques (BTP, Nettoyage, Maintenance)
+2. EXIF stripping + compression photos avant upload
+3. Historique des communications (emails/SMS envoyés par client)
