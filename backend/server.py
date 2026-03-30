@@ -583,14 +583,34 @@ async def cancel_intervention(intervention_id: str, motif: Optional[str] = None,
 async def start_intervention(intervention_id: str, current_user: dict = Depends(get_current_user)):
     """Start an intervention"""
     now = datetime.now(timezone.utc).isoformat()
-    result = await db.interventions.update_one(
-        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"], "technicien_id": current_user["user_id"]},
-        {"$set": {"statut": "en_cours", "heure_debut": now}}
+    
+    # Find the intervention
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
     )
-    if result.matched_count == 0:
+    if not intervention:
         raise HTTPException(status_code=404, detail="Intervention non trouvée")
     
+    # Check if user can start (admin can start any, tech can start if assigned or unassigned)
+    is_admin = current_user.get("role") == "admin"
+    is_assigned = intervention.get("technicien_id") == current_user["user_id"]
+    is_unassigned = not intervention.get("technicien_id")
+    
+    if not is_admin and not is_assigned and not is_unassigned:
+        raise HTTPException(status_code=403, detail="Vous n'êtes pas assigné à cette intervention")
+    
+    if intervention["statut"] != "planifiee":
+        raise HTTPException(status_code=400, detail="Cette intervention ne peut pas être démarrée")
+    
+    # If unassigned and tech starts, assign to them
+    update = {"statut": "en_cours", "heure_debut": now}
+    if is_unassigned and not is_admin:
+        update["technicien_id"] = current_user["user_id"]
+    
+    await db.interventions.update_one({"id": intervention_id}, {"$set": update})
     await log_action(current_user["entreprise_id"], current_user["user_id"], "start", "intervention", intervention_id)
+    
     return {"message": "Intervention démarrée", "heure_debut": now}
 
 @api_router.post("/interventions/{intervention_id}/complete")
