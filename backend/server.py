@@ -14,7 +14,7 @@ import asyncio
 
 from models import (
     Entreprise, EntrepriseCreate, User, UserCreate, UserResponse, UserLogin, UserInvite,
-    UserPasswordReset, UserSetPassword, Client, ClientCreate, ClientResponse,
+    UserPasswordReset, UserSetPassword, UserSkillsUpdate, Client, ClientCreate, ClientResponse,
     Intervention, InterventionCreate, InterventionUpdate, ChecklistResponse,
     Devis, DevisCreate, DevisUpdate, LigneDevis,
     Facture, FactureCreate, FactureFromDevis,
@@ -36,8 +36,8 @@ from sms_service import (
 from subscription_service import SUBSCRIPTION_PLANS, get_plan, get_all_plans
 from push_service import (
     get_vapid_public_key, send_push_notification, send_push_to_users,
-    notify_new_intervention_available, notify_intervention_assigned,
-    notify_devis_signed
+    notify_new_intervention_available, notify_new_intervention_available_to_techs,
+    notify_intervention_assigned, notify_devis_signed
 )
 from route_optimizer import optimize_route, get_route_suggestions, calculate_simple_route_score
 from analytics_service import (
@@ -188,7 +188,7 @@ async def login(data: UserLogin):
         user=UserResponse(
             id=user["id"], entreprise_id=user["entreprise_id"], email=user["email"],
             nom=user["nom"], prenom=user["prenom"], telephone=user.get("telephone"),
-            role=user["role"], statut=user["statut"],
+            role=user["role"], statut=user["statut"], skills=user.get("skills", []),
             derniere_connexion=datetime.now(timezone.utc).isoformat(), created_at=user["created_at"]
         ),
         entreprise=entreprise
@@ -208,7 +208,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         user=UserResponse(
             id=user["id"], entreprise_id=user["entreprise_id"], email=user["email"],
             nom=user["nom"], prenom=user["prenom"], telephone=user.get("telephone"),
-            role=user["role"], statut=user["statut"],
+            role=user["role"], statut=user["statut"], skills=user.get("skills", []),
             derniere_connexion=user.get("derniere_connexion"), created_at=user["created_at"]
         ),
         entreprise=entreprise
@@ -436,6 +436,64 @@ async def list_techniciens(current_user: dict = Depends(get_current_user)):
         {"_id": 0, "password_hash": 0}
     ).to_list(100)
     return [serialize_doc(u) for u in users]
+
+@api_router.put("/users/{user_id}/skills")
+async def update_user_skills(user_id: str, data: UserSkillsUpdate, current_user: dict = Depends(require_admin)):
+    """Update technician skills/categories (admin only)"""
+    # Verify user exists and belongs to entreprise
+    user = await db.users.find_one(
+        {"id": user_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Verify all category IDs exist
+    if data.skills:
+        valid_categories = await db.categories.count_documents({
+            "id": {"$in": data.skills},
+            "entreprise_id": current_user["entreprise_id"],
+            "active": True
+        })
+        if valid_categories != len(data.skills):
+            raise HTTPException(status_code=400, detail="Une ou plusieurs catégories sont invalides")
+    
+    # Update user skills
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"skills": data.skills}}
+    )
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "update_skills", "user", user_id, {"skills": data.skills})
+    
+    # Return updated user
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    return serialize_doc(updated_user)
+
+@api_router.get("/users/{user_id}/skills")
+async def get_user_skills(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Get technician skills with category details"""
+    user = await db.users.find_one(
+        {"id": user_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0, "skills": 1}
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    skill_ids = user.get("skills", [])
+    if not skill_ids:
+        return {"skills": [], "categories": []}
+    
+    # Get category details for each skill
+    categories = await db.categories.find(
+        {"id": {"$in": skill_ids}, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    ).to_list(100)
+    
+    return {
+        "skills": skill_ids,
+        "categories": [serialize_doc(c) for c in categories]
+    }
 
 # ==================== CLIENT ROUTES ====================
 @api_router.post("/clients", response_model=ClientResponse)
@@ -838,13 +896,30 @@ async def create_intervention(data: InterventionCreate, background_tasks: Backgr
     return serialize_doc(intervention_dict)
 
 async def notify_available_intervention(entreprise_id: str, intervention: dict, client: dict):
-    """Notify all active technicians about a new available intervention via SMS and Push"""
+    """Notify technicians about a new available intervention via SMS and Push.
+    Only notifies technicians with matching skills if the intervention has a category."""
     try:
-        # Get all active technicians
+        # Build query for technicians
+        tech_query = {"entreprise_id": entreprise_id, "role": "tech", "statut": "actif"}
+        
+        # If intervention has a category, only notify techs with that skill
+        categorie_id = intervention.get("categorie_id")
+        if categorie_id:
+            # Find techs who have this skill OR have no skills defined (can do anything)
+            tech_query["$or"] = [
+                {"skills": categorie_id},
+                {"skills": {"$exists": False}},
+                {"skills": []},
+                {"skills": None}
+            ]
+        
+        # Get matching technicians
         technicians = await db.users.find(
-            {"entreprise_id": entreprise_id, "role": "tech", "statut": "actif"},
-            {"_id": 0, "id": 1, "telephone": 1, "prenom": 1, "nom": 1}
+            tech_query,
+            {"_id": 0, "id": 1, "telephone": 1, "prenom": 1, "nom": 1, "skills": 1}
         ).to_list(100)
+        
+        logger.info(f"Notifying {len(technicians)} qualified technicians for intervention {intervention.get('id')}")
         
         entreprise = await db.entreprises.find_one({"id": entreprise_id}, {"_id": 0, "nom": 1})
         entreprise_nom = entreprise.get("nom", "Votre entreprise") if entreprise else "Votre entreprise"
@@ -858,11 +933,13 @@ async def notify_available_intervention(entreprise_id: str, intervention: dict, 
         
         client_nom = f"{client.get('nom', '')} {client.get('prenom', '')}".strip() or "Client"
         
-        # Send Push notifications first (faster)
-        push_result = await notify_new_intervention_available(db, entreprise_id, intervention)
-        logger.info(f"Push notifications sent: {push_result}")
+        # Send Push notifications to qualified techs only
+        tech_ids = [t["id"] for t in technicians]
+        if tech_ids:
+            push_result = await notify_new_intervention_available_to_techs(db, entreprise_id, intervention, tech_ids)
+            logger.info(f"Push notifications sent: {push_result}")
         
-        # Send SMS to each technician with a phone number
+        # Send SMS to each qualified technician with a phone number
         for tech in technicians:
             if tech.get("telephone"):
                 try:
@@ -884,17 +961,48 @@ async def list_interventions(
     include_available: Optional[bool] = False,
     current_user: dict = Depends(get_current_user)
 ):
-    """List interventions with filters"""
+    """List interventions with filters. Technicians only see available interventions matching their skills."""
     query = {"entreprise_id": current_user["entreprise_id"]}
     
-    # Technicians see their own + optionally available interventions
+    # Technicians see their own + optionally available interventions (skill-filtered)
     if current_user["role"] == "tech":
         if include_available:
-            query["$or"] = [
-                {"technicien_id": current_user["user_id"]},
+            # Get tech's skills
+            tech = await db.users.find_one(
+                {"id": current_user["user_id"]},
+                {"_id": 0, "skills": 1}
+            )
+            tech_skills = tech.get("skills", []) if tech else []
+            
+            # Build available intervention filter based on skills
+            available_filter = [
                 {"technicien_id": None},
                 {"technicien_id": {"$exists": False}}
             ]
+            
+            # If tech has skills, only show matching interventions or ones with no category
+            if tech_skills:
+                skill_filter = {
+                    "$and": [
+                        {"$or": available_filter},
+                        {"$or": [
+                            {"categorie_id": {"$in": tech_skills}},
+                            {"categorie_id": None},
+                            {"categorie_id": {"$exists": False}}
+                        ]}
+                    ]
+                }
+                query["$or"] = [
+                    {"technicien_id": current_user["user_id"]},
+                    skill_filter
+                ]
+            else:
+                # Tech with no skills can see all available interventions
+                query["$or"] = [
+                    {"technicien_id": current_user["user_id"]},
+                    {"technicien_id": None},
+                    {"technicien_id": {"$exists": False}}
+                ]
         else:
             query["technicien_id"] = current_user["user_id"]
     elif technicien_id:
@@ -917,7 +1025,7 @@ async def list_interventions(
 
 @api_router.get("/interventions/today")
 async def get_today_interventions(current_user: dict = Depends(get_current_user)):
-    """Get today's interventions for technician"""
+    """Get today's interventions for technician. Skill-based filtering for available missions."""
     today = datetime.now(timezone.utc).date()
     today_start = datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=timezone.utc).isoformat()
     today_end = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc).isoformat()
@@ -928,12 +1036,42 @@ async def get_today_interventions(current_user: dict = Depends(get_current_user)
     }
     
     if current_user["role"] == "tech":
-        # Tech sees their own interventions + available (unassigned) ones
-        query["$or"] = [
-            {"technicien_id": current_user["user_id"]},
+        # Get tech's skills
+        tech = await db.users.find_one(
+            {"id": current_user["user_id"]},
+            {"_id": 0, "skills": 1}
+        )
+        tech_skills = tech.get("skills", []) if tech else []
+        
+        # Build available intervention filter
+        available_filter = [
             {"technicien_id": None},
             {"technicien_id": {"$exists": False}}
         ]
+        
+        if tech_skills:
+            # Tech with skills: only see matching interventions or ones with no category
+            skill_filter = {
+                "$and": [
+                    {"$or": available_filter},
+                    {"$or": [
+                        {"categorie_id": {"$in": tech_skills}},
+                        {"categorie_id": None},
+                        {"categorie_id": {"$exists": False}}
+                    ]}
+                ]
+            }
+            query["$or"] = [
+                {"technicien_id": current_user["user_id"]},
+                skill_filter
+            ]
+        else:
+            # Tech with no skills can see all available interventions
+            query["$or"] = [
+                {"technicien_id": current_user["user_id"]},
+                {"technicien_id": None},
+                {"technicien_id": {"$exists": False}}
+            ]
     
     interventions = await db.interventions.find(query, {"_id": 0}).sort("date_prevue", 1).to_list(100)
     
@@ -946,7 +1084,16 @@ async def get_today_interventions(current_user: dict = Depends(get_current_user)
 
 @api_router.get("/interventions/available")
 async def get_available_interventions(current_user: dict = Depends(get_current_user)):
-    """Get available (unassigned) interventions for technicians to claim"""
+    """Get available (unassigned) interventions for technicians to claim. Filtered by technician skills."""
+    # Get tech's skills if tech role
+    tech_skills = []
+    if current_user["role"] == "tech":
+        tech = await db.users.find_one(
+            {"id": current_user["user_id"]},
+            {"_id": 0, "skills": 1}
+        )
+        tech_skills = tech.get("skills", []) if tech else []
+    
     query = {
         "entreprise_id": current_user["entreprise_id"],
         "statut": "planifiee",
@@ -955,6 +1102,17 @@ async def get_available_interventions(current_user: dict = Depends(get_current_u
             {"technicien_id": {"$exists": False}}
         ]
     }
+    
+    # If tech has skills, filter interventions by matching category
+    if current_user["role"] == "tech" and tech_skills:
+        query["$and"] = [
+            {"$or": query.pop("$or")},
+            {"$or": [
+                {"categorie_id": {"$in": tech_skills}},
+                {"categorie_id": None},
+                {"categorie_id": {"$exists": False}}
+            ]}
+        ]
     
     interventions = await db.interventions.find(query, {"_id": 0}).sort("date_prevue", 1).to_list(100)
     

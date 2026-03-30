@@ -44,6 +44,7 @@ class UserBase(BaseModel):
     prenom: str
     telephone: Optional[str] = None
     role: Literal["admin", "tech"] = "tech"
+    skills: List[str] = []  # List of categorie_id representing technician skills
 
 class UserCreate(UserBase):
     password: str
@@ -83,8 +84,12 @@ class UserResponse(BaseModel):
     telephone: Optional[str] = None
     role: str
     statut: str
+    skills: List[str] = []  # List of categorie_id for technician skills
     derniere_connexion: Optional[str] = None
     created_at: str
+
+class UserSkillsUpdate(BaseModel):
+    skills: List[str]  # List of categorie_id to assign
 
 # ==================== CLIENT ====================
 class ClientBase(BaseModel):

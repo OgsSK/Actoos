@@ -585,7 +585,12 @@ const ChecklistView = ({ categorie, responses, onChange, readOnly = false }) => 
 };
 
 // Profile Menu Component
-const ProfileMenu = ({ user, onLogout }) => {
+const ProfileMenu = ({ user, skills, categories, onLogout }) => {
+  // Get category details for skills
+  const userSkillCategories = (skills || [])
+    .map(skillId => categories?.find(c => c.id === skillId))
+    .filter(Boolean);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -594,10 +599,36 @@ const ProfileMenu = ({ user, onLogout }) => {
           <span className="text-xs">Profil</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-64">
         <div className="px-3 py-2">
           <p className="font-medium text-sm">{user?.prenom} {user?.nom}</p>
           <p className="text-xs text-slate-500">{user?.email}</p>
+        </div>
+        <DropdownMenuSeparator />
+        <div className="px-3 py-2">
+          <p className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1">
+            <Wrench className="w-3 h-3" />
+            Mes compétences
+          </p>
+          {userSkillCategories.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {userSkillCategories.map(cat => (
+                <span 
+                  key={cat.id}
+                  className="inline-flex items-center px-2 py-0.5 text-xs rounded-full"
+                  style={{ 
+                    backgroundColor: `${cat.couleur}20`,
+                    color: cat.couleur,
+                    border: `1px solid ${cat.couleur}40`
+                  }}
+                >
+                  {cat.nom}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400 italic">Toutes catégories</p>
+          )}
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={onLogout} data-testid="logout-btn">
@@ -1507,7 +1538,7 @@ export const TechnicianApp = () => {
             <FileText className="w-5 h-5 mb-1" />
             <span className="text-xs">Devis</span>
           </Button>
-          <ProfileMenu user={user} onLogout={logout} />
+          <ProfileMenu user={user} skills={user?.skills || []} categories={categories} onLogout={logout} />
         </div>
       </nav>
 

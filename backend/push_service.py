@@ -205,6 +205,21 @@ async def notify_new_intervention_available(db, entreprise_id: str, intervention
         data={"type": "new_intervention", "intervention_id": intervention.get("id")}
     )
 
+async def notify_new_intervention_available_to_techs(db, entreprise_id: str, intervention: dict, tech_ids: list):
+    """Notify specific qualified techs of a new available intervention (skill-based filtering)"""
+    if not tech_ids:
+        return {"sent": 0, "failed": 0, "expired": 0, "no_subscribers": True}
+    
+    return await send_push_to_users(
+        db=db,
+        user_ids=tech_ids,
+        title="🔔 Nouvelle mission disponible",
+        body=f"{intervention.get('titre', 'Nouvelle intervention')} - Cliquez pour accepter",
+        url="/tech",
+        tag=f"new-intervention-{intervention.get('id')}",
+        data={"type": "new_intervention", "intervention_id": intervention.get("id")}
+    )
+
 async def notify_intervention_assigned(db, user_id: str, intervention: dict):
     """Notify a tech that an intervention was assigned to them"""
     return await send_push_to_users(
