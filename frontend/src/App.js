@@ -35,6 +35,7 @@ import SignupPage from "./pages/SignupPage";
 import LandingPage from "./pages/LandingPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import SectorsPage from "./pages/SectorsPage";
+import DemoPage from "./pages/DemoPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
@@ -118,6 +119,7 @@ function App() {
             {/* Marketing Pages (Public) */}
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/sectors" element={<SectorsPage />} />
+            <Route path="/demo" element={<DemoPage />} />
 
             {/* Client Portal (Public) */}
             <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />

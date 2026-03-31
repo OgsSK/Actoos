@@ -779,7 +779,7 @@ const SignupPage = () => {
       <footer className="py-8 px-4 border-t bg-slate-50">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <img src="/actoos-logo.svg" alt="Actoos" className="h-8" />
-          <p className="text-sm text-slate-500">© {new Date().getFullYear()} Actoos SPRL. Tous droits réservés. Belgique · Conforme RGPD</p>
+          <p className="text-sm text-slate-500">© {new Date().getFullYear()} Actoos. Tous droits réservés.</p>
         </div>
       </footer>
     </div>

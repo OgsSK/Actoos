@@ -200,7 +200,7 @@ const LandingPage = () => {
                   size="lg" 
                   variant="outline" 
                   className="text-base"
-                  onClick={() => navigate('/features')}
+                  onClick={() => navigate('/demo')}
                 >
                   <Play className="w-4 h-4 mr-2" />
                   Voir la démo
@@ -514,12 +514,9 @@ const LandingPage = () => {
             </div>
           </div>
           
-          <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="border-t border-slate-800 pt-8 text-center">
             <p className="text-slate-400 text-sm">
-              © {new Date().getFullYear()} Actoos SPRL. Tous droits réservés.
-            </p>
-            <p className="text-slate-500 text-sm">
-              Belgique 🇧🇪 • Conforme RGPD • TVA BE0123.456.789
+              © {new Date().getFullYear()} Actoos. Tous droits réservés.
             </p>
           </div>
         </div>
