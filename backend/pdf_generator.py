@@ -96,23 +96,46 @@ def load_logo_image(logo_url: str, max_width: int = 150, max_height: int = 60) -
     try:
         if not logo_url:
             return None
-            
-        # Download image
-        response = requests.get(logo_url, timeout=5)
-        if response.status_code == 200:
-            img_buffer = BytesIO(response.content)
-            img = Image(img_buffer)
-            
-            # Scale to fit within max dimensions while maintaining aspect ratio
-            aspect = img.imageWidth / img.imageHeight
-            if img.imageWidth > max_width:
-                img.drawWidth = max_width
-                img.drawHeight = max_width / aspect
-            if img.drawHeight > max_height:
-                img.drawHeight = max_height
-                img.drawWidth = max_height * aspect
-            
-            return img
+        
+        # Check if it's an Emergent storage URL
+        if "integrations.emergentagent.com/objstore" in logo_url:
+            # Extract path from URL and use storage API
+            from storage import get_object
+            # URL format: .../objects/logos/xxx.png -> path: logos/xxx.png
+            path = logo_url.split("/objects/")[-1] if "/objects/" in logo_url else None
+            if path:
+                content, content_type = get_object(path)
+                if content:
+                    img_buffer = BytesIO(content)
+                    img = Image(img_buffer)
+                    
+                    # Scale to fit within max dimensions while maintaining aspect ratio
+                    aspect = img.imageWidth / img.imageHeight
+                    if img.imageWidth > max_width:
+                        img.drawWidth = max_width
+                        img.drawHeight = max_width / aspect
+                    if img.drawHeight > max_height:
+                        img.drawHeight = max_height
+                        img.drawWidth = max_height * aspect
+                    
+                    return img
+        else:
+            # Regular URL - download directly
+            response = requests.get(logo_url, timeout=5)
+            if response.status_code == 200:
+                img_buffer = BytesIO(response.content)
+                img = Image(img_buffer)
+                
+                # Scale to fit within max dimensions while maintaining aspect ratio
+                aspect = img.imageWidth / img.imageHeight
+                if img.imageWidth > max_width:
+                    img.drawWidth = max_width
+                    img.drawHeight = max_width / aspect
+                if img.drawHeight > max_height:
+                    img.drawHeight = max_height
+                    img.drawWidth = max_height * aspect
+                
+                return img
     except Exception as e:
         logger.error(f"Error loading logo: {e}")
     return None
@@ -123,11 +146,24 @@ def load_photo_image(photo_url: str, max_width: int = 170, max_height: int = 120
     try:
         if not photo_url:
             return None
-            
-        # Download image
-        response = requests.get(photo_url, timeout=10)
-        if response.status_code == 200:
-            img_buffer = BytesIO(response.content)
+        
+        img_buffer = None
+        
+        # Check if it's an Emergent storage URL
+        if "integrations.emergentagent.com/objstore" in photo_url:
+            from storage import get_object
+            path = photo_url.split("/objects/")[-1] if "/objects/" in photo_url else None
+            if path:
+                content, content_type = get_object(path)
+                if content:
+                    img_buffer = BytesIO(content)
+        else:
+            # Regular URL - download directly
+            response = requests.get(photo_url, timeout=10)
+            if response.status_code == 200:
+                img_buffer = BytesIO(response.content)
+        
+        if img_buffer:
             img = Image(img_buffer)
             
             # Scale to fit within max dimensions while maintaining aspect ratio
