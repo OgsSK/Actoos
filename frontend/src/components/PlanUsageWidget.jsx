@@ -176,6 +176,8 @@ const PlanUsageWidget = ({ compact = false }) => {
     
     setDeleting(true);
     try {
+      const API_URL = process.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/auth/delete-account`, {
         method: 'DELETE',
         headers: {
@@ -188,7 +190,8 @@ const PlanUsageWidget = ({ compact = false }) => {
       
       if (res.ok) {
         toast.success('Compte supprimé définitivement');
-        // Logout and redirect
+        // Clear auth and redirect
+        localStorage.removeItem('token');
         setTimeout(() => {
           window.location.href = '/';
         }, 2000);
@@ -275,7 +278,15 @@ const PlanUsageWidget = ({ compact = false }) => {
         fetchData(); // Refresh data
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur lors du changement de plan');
+      const errorMsg = error.response?.data?.detail || '';
+      // If no active subscription, redirect to checkout instead
+      if (errorMsg.includes('Aucun abonnement actif') || errorMsg.includes('souscrire')) {
+        toast.info('Redirection vers la page de paiement...');
+        setShowChangePlan(false);
+        handleUpgrade(newPlanId);
+      } else {
+        toast.error(errorMsg || 'Erreur lors du changement de plan');
+      }
     } finally {
       setChangingPlan(false);
     }

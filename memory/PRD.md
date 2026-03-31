@@ -1059,6 +1059,23 @@ Le frontend appelait `PUT /api/entreprise/branding` pour sauvegarder la couleur 
 | Load Testing (~200 entreprises) | ✅ Validé |
 | Logos SVG professionnels | ✅ Validé par utilisateur |
 
+### Phase 18 - Test Flux Abonnement (Date: 2026-03-31) ✅
+
+#### Tests validés
+- [x] **Login** - Connexion avec comptes test (Startup, Pro, Enterprise)
+- [x] **Page Abonnement** - Affichage plan actuel, utilisation, fonctionnalités
+- [x] **Modal "Changer de plan"** - Liste complète des plans disponibles
+- [x] **Modal "Passer à un plan supérieur"** - Comparatif des 3 plans avec features
+- [x] **Redirection Stripe Checkout** - Upgrade/Downgrade redirige vers Stripe
+- [x] **Dialog Annulation** - Formulaire avec raison + feedback optionnel
+- [x] **Zone dangereuse** - Bouton suppression compte visible
+
+#### Corrections effectuées
+- [x] `handleChangePlan` redirige vers checkout si pas d'abonnement Stripe actif
+- [x] `handleDeleteAccount` - Variables API_URL et token maintenant définies localement
+
+---
+
 ### 📋 ACTIONS POST-DÉPLOIEMENT REQUISES
 
 | Action | URL/Instructions |
