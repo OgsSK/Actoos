@@ -626,10 +626,12 @@ async def complete_intervention(
     if notes_terrain:
         update["notes_terrain"] = notes_terrain
     
-    result = await db.interventions.update_one(
-        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"], "technicien_id": current_user["user_id"]},
-        {"$set": update}
-    )
+    # Build query - admins can complete any intervention, techs only their own
+    query = {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]}
+    if current_user.get("role") != "admin":
+        query["technicien_id"] = current_user["user_id"]
+    
+    result = await db.interventions.update_one(query, {"$set": update})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Intervention non trouvée")
     

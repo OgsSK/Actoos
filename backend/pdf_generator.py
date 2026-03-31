@@ -507,7 +507,8 @@ def generate_facture_pdf(
     
     # Payment info
     elements.append(Paragraph("<b>Conditions de paiement:</b>", styles['Subtitle']))
-    elements.append(Paragraph(facture.get('conditions_paiement', 'Paiement à réception de facture.'), styles['Small']))
+    conditions = facture.get('conditions_paiement') or 'Paiement à réception de facture.'
+    elements.append(Paragraph(conditions, styles['Small']))
     if facture.get('mode_paiement'):
         elements.append(Paragraph(f"Mode de paiement: {facture.get('mode_paiement')}", styles['Small']))
     
