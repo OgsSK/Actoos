@@ -551,40 +551,50 @@ export const SettingsPage = () => {
       </div>
 
       <Tabs defaultValue="entreprise" className="space-y-6">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="entreprise" className="flex items-center gap-2">
-            <Building2 className="w-4 h-4" />
-            Entreprise
-          </TabsTrigger>
-          <TabsTrigger value="abonnement" className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4" />
-            Abonnement
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2">
-            <Tags className="w-4 h-4" />
-            Catégories
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="w-4 h-4" />
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Documents
-          </TabsTrigger>
-          <TabsTrigger value="branding" className="flex items-center gap-2">
-            <Palette className="w-4 h-4" />
-            Personnalisation
-          </TabsTrigger>
-          <TabsTrigger value="regional" className="flex items-center gap-2">
-            <Globe className="w-4 h-4" />
-            Régional
-          </TabsTrigger>
-          <TabsTrigger value="integrations" className="flex items-center gap-2">
-            <Link2 className="w-4 h-4" />
-            Intégrations
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 pb-2">
+          <TabsList className="inline-flex min-w-max">
+            <TabsTrigger value="entreprise" className="flex items-center gap-2 whitespace-nowrap">
+              <Building2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Entreprise</span>
+              <span className="sm:hidden">Entrep.</span>
+            </TabsTrigger>
+            <TabsTrigger value="abonnement" className="flex items-center gap-2 whitespace-nowrap">
+              <CreditCard className="w-4 h-4" />
+              <span className="hidden sm:inline">Abonnement</span>
+              <span className="sm:hidden">Abo.</span>
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-2 whitespace-nowrap">
+              <Tags className="w-4 h-4" />
+              <span className="hidden sm:inline">Catégories</span>
+              <span className="sm:hidden">Cat.</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2 whitespace-nowrap">
+              <Bell className="w-4 h-4" />
+              <span className="hidden sm:inline">Notifications</span>
+              <span className="sm:hidden">Notif.</span>
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="flex items-center gap-2 whitespace-nowrap">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Documents</span>
+              <span className="sm:hidden">Doc.</span>
+            </TabsTrigger>
+            <TabsTrigger value="branding" className="flex items-center gap-2 whitespace-nowrap">
+              <Palette className="w-4 h-4" />
+              <span className="hidden sm:inline">Personnalisation</span>
+              <span className="sm:hidden">Style</span>
+            </TabsTrigger>
+            <TabsTrigger value="regional" className="flex items-center gap-2 whitespace-nowrap">
+              <Globe className="w-4 h-4" />
+              <span className="hidden sm:inline">Régional</span>
+              <span className="sm:hidden">Rég.</span>
+            </TabsTrigger>
+            <TabsTrigger value="integrations" className="flex items-center gap-2 whitespace-nowrap">
+              <Link2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Intégrations</span>
+              <span className="sm:hidden">Intég.</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Abonnement Tab */}
         <TabsContent value="abonnement">
