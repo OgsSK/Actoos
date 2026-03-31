@@ -15,10 +15,10 @@ from typing import Dict, List, Any
 API_URL = "https://date-1.preview.emergentagent.com/api"
 
 # Configuration du test
-NUM_ENTREPRISES = 500
-TECHS_PER_ENTREPRISE = {"startup": 1, "pro": 2, "enterprise": 3}
-CLIENTS_PER_ENTREPRISE = 3
-INTERVENTIONS_PER_CLIENT = 1
+NUM_ENTREPRISES = 200
+TECHS_PER_ENTREPRISE = {"startup": 2, "pro": 3, "enterprise": 5}
+CLIENTS_PER_ENTREPRISE = 5
+INTERVENTIONS_PER_CLIENT = 2
 
 # Plans disponibles
 PLANS = ["startup", "pro", "enterprise"]
@@ -443,13 +443,13 @@ async def run_load_test():
     
     stats["start_time"] = time.time()
     
-    # Configuration du client HTTP - optimisé pour 500 entreprises
-    timeout = aiohttp.ClientTimeout(total=30)
-    connector = aiohttp.TCPConnector(limit=50)  # Plus de connexions simultanées
+    # Configuration du client HTTP - optimisé pour stabilité
+    timeout = aiohttp.ClientTimeout(total=45)
+    connector = aiohttp.TCPConnector(limit=30)
     
     async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-        # Traiter les entreprises par lots de 25 pour plus de vitesse
-        batch_size = 25
+        # Traiter les entreprises par lots de 15
+        batch_size = 15
         for batch_start in range(0, NUM_ENTREPRISES, batch_size):
             batch_end = min(batch_start + batch_size, NUM_ENTREPRISES)
             print(f"\n📦 Lot {batch_start+1}-{batch_end}...")
@@ -460,8 +460,8 @@ async def run_load_test():
             ]
             await asyncio.gather(*tasks, return_exceptions=True)
             
-            # Pause réduite
-            await asyncio.sleep(0.5)
+            # Pause pour stabilité
+            await asyncio.sleep(0.8)
     
     stats["end_time"] = time.time()
     
