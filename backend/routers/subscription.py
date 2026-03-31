@@ -527,17 +527,24 @@ async def get_checkout_status(session_id: str, request: Request):
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
         
-        # If payment is successful and not already processed
-        if status.payment_status == "paid" and transaction.get("payment_status") != "paid":
-            update_data["paid_at"] = datetime.now(timezone.utc).isoformat()
+        # Handle both paid and trialing statuses
+        should_create = (
+            status.payment_status in ("paid", "trialing", "active") and 
+            transaction.get("payment_status") not in ("paid", "trialing", "active")
+        )
+        
+        if should_create:
+            update_data["activated_at"] = datetime.now(timezone.utc).isoformat()
             
             # Create the entreprise account
             if transaction.get("entreprise_name") and transaction.get("admin_email"):
+                is_trial = status.payment_status == "trialing"
                 await create_entreprise_from_subscription(
                     transaction["entreprise_name"],
                     transaction["admin_email"],
                     transaction["plan_id"],
-                    session_id
+                    session_id,
+                    is_trial=is_trial
                 )
         
         await db.payment_transactions.update_one(
@@ -557,9 +564,10 @@ async def create_entreprise_from_subscription(
     entreprise_name: str,
     admin_email: str,
     plan_id: str,
-    session_id: str
+    session_id: str,
+    is_trial: bool = False
 ):
-    """Create entreprise and admin user after successful subscription payment"""
+    """Create entreprise and admin user after successful subscription payment or trial start"""
     # Check if already created (idempotency)
     existing = await db.entreprises.find_one({"stripe_session_id": session_id})
     if existing:
@@ -568,7 +576,27 @@ async def create_entreprise_from_subscription(
     
     # Create entreprise
     entreprise_id = str(uuid.uuid4())
-    plan = get_plan(plan_id)
+    plan = get_plan(plan_id) or get_plan("startup")
+    
+    # Build COMPLETE plan_limits from plan definition
+    plan_limits = {
+        "max_admins": plan.get("max_admins", 1),
+        "max_technicians": plan.get("max_technicians", 3),
+        "max_interventions_month": plan.get("max_interventions_month", -1),
+        "max_categories": plan.get("max_categories", 1),
+        "multi_sites": plan.get("multi_sites", False),
+        "offline_mode": plan.get("offline_mode", False),
+        "geolocation": plan.get("geolocation", False),
+        "auto_pdf_reports": plan.get("auto_pdf_reports", False),
+        "advanced_analytics": plan.get("advanced_analytics", False),
+        "white_label": plan.get("white_label", False),
+        "api_access": plan.get("api_access", False),
+        "advanced_branding": plan.get("advanced_branding", False),
+        "smart_planning": plan.get("smart_planning", False),
+        "auto_devis_to_facture": plan.get("auto_devis_to_facture", False),
+        "team_validation": plan.get("team_validation", False),
+        "sms_included": plan.get("sms_included", 0)
+    }
     
     entreprise_doc = {
         "id": entreprise_id,
@@ -576,13 +604,9 @@ async def create_entreprise_from_subscription(
         "email": admin_email,
         "plan": plan_id,
         "plan_name": plan["name"] if plan else "Starter",
-        "plan_limits": {
-            "max_technicians": plan.get("max_technicians", 3) if plan else 3,
-            "max_interventions_month": plan.get("max_interventions_month", 100) if plan else 100,
-            "max_categories": plan.get("max_categories", 1) if plan else 1
-        },
+        "plan_limits": plan_limits,
         "stripe_session_id": session_id,
-        "subscription_status": "active",
+        "subscription_status": "trialing" if is_trial else "active",
         "subscription_started_at": datetime.now(timezone.utc).isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -671,16 +695,24 @@ async def stripe_webhook(request: Request):
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 }
                 
-                if webhook_response.payment_status == "paid" and transaction.get("payment_status") != "paid":
-                    update_data["paid_at"] = datetime.now(timezone.utc).isoformat()
+                # Handle both paid and trialing statuses
+                should_create = (
+                    webhook_response.payment_status in ("paid", "trialing", "active") and 
+                    transaction.get("payment_status") not in ("paid", "trialing", "active")
+                )
+                
+                if should_create:
+                    update_data["activated_at"] = datetime.now(timezone.utc).isoformat()
                     
                     # Create entreprise if not already done
                     if transaction.get("entreprise_name") and transaction.get("admin_email"):
+                        is_trial = webhook_response.payment_status == "trialing"
                         await create_entreprise_from_subscription(
                             transaction["entreprise_name"],
                             transaction["admin_email"],
                             transaction["plan_id"],
-                            webhook_response.session_id
+                            webhook_response.session_id,
+                            is_trial=is_trial
                         )
                 
                 await db.payment_transactions.update_one(
