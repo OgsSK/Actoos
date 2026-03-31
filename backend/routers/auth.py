@@ -27,8 +27,29 @@ async def register_entreprise(data: RegisterRequest):
     if existing:
         raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
     
-    # Create entreprise
+    # Create entreprise with default trial plan
     entreprise_id = str(uuid.uuid4())
+    
+    # Default trial plan limits (same as Startup but with trial flag)
+    default_plan_limits = {
+        "max_admins": 1,
+        "max_technicians": 3,
+        "max_categories": 1,
+        "max_interventions_month": -1,
+        "multi_sites": False,
+        "offline_mode": False,
+        "geolocation": False,
+        "auto_pdf_reports": False,
+        "advanced_analytics": False,
+        "white_label": False,
+        "api_access": False,
+        "advanced_branding": False,
+        "smart_planning": False,
+        "auto_devis_to_facture": False,
+        "team_validation": False,
+        "sms_included": 0
+    }
+    
     entreprise = {
         "id": entreprise_id,
         "nom": data.entreprise_nom,
@@ -37,6 +58,9 @@ async def register_entreprise(data: RegisterRequest):
         "sequence_devis": 1,
         "sequence_facture": 1,
         "couleur_primaire": "#2563EB",
+        "plan": "startup",
+        "plan_limits": default_plan_limits,
+        "subscription_status": "trialing",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.entreprises.insert_one(entreprise)

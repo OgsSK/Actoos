@@ -20,8 +20,15 @@ router = APIRouter(tags=["Subscription"])
 
 
 @router.post("/sync-plan-limits")
-async def sync_plan_limits(current_user: dict = Depends(get_current_user)):
-    """Synchronize plan_limits with current plan definition (admin action)"""
+async def sync_plan_limits(
+    plan_override: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Synchronize plan_limits with current plan definition (admin action)
+    
+    If plan_override is provided, it will set that plan.
+    Options: startup, pro, enterprise
+    """
     entreprise = await db.entreprises.find_one(
         {"id": current_user["entreprise_id"]},
         {"_id": 0, "plan": 1}
@@ -30,7 +37,8 @@ async def sync_plan_limits(current_user: dict = Depends(get_current_user)):
     if not entreprise:
         raise HTTPException(status_code=404, detail="Entreprise non trouvée")
     
-    plan_id = entreprise.get("plan", "startup")
+    # Use override if provided, else use current plan, else default to startup
+    plan_id = plan_override or entreprise.get("plan") or "startup"
     plan = get_plan(plan_id)
     
     if not plan:
