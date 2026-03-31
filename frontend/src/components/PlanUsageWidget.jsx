@@ -9,7 +9,7 @@ import {
 } from '../components/ui/dialog';
 import {
   Users, Calendar, FolderTree, Zap, Crown, Rocket, Building2,
-  Check, X, ArrowRight, Sparkles, MessageSquare, Code, Palette
+  Check, X, ArrowRight, Sparkles, MessageSquare, Code, Palette, CreditCard
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -143,6 +143,7 @@ const PlanUsageWidget = ({ compact = false }) => {
   const { api } = useAuth();
   const [usage, setUsage] = useState(null);
   const [plans, setPlans] = useState([]);
+  const [billingSummary, setBillingSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -203,12 +204,16 @@ const PlanUsageWidget = ({ compact = false }) => {
 
   const fetchData = async () => {
     try {
-      const [usageRes, plansRes] = await Promise.all([
+      const [usageRes, plansRes, billingRes] = await Promise.all([
         api.get('/usage'),
-        api.get('/plans')
+        api.get('/plans'),
+        api.get('/billing-summary').catch(() => ({ data: null }))
       ]);
       setUsage(usageRes.data);
       setPlans(plansRes.data);
+      if (billingRes.data) {
+        setBillingSummary(billingRes.data);
+      }
     } catch (error) {
       console.error('Error fetching usage:', error);
     } finally {
@@ -414,6 +419,50 @@ const PlanUsageWidget = ({ compact = false }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Billing Summary */}
+      {billingSummary && (
+        <Card className="border-blue-100">
+          <CardHeader>
+            <CardTitle className="text-base text-slate-700 flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Résumé de facturation mensuelle
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-slate-600">Plan {billingSummary.plan_name}</span>
+                <span className="font-medium">{billingSummary.base_price}€</span>
+              </div>
+              
+              {billingSummary.technicians.extra > 0 && (
+                <div className="flex justify-between items-center py-2 border-b">
+                  <div>
+                    <span className="text-slate-600">Techniciens supplémentaires</span>
+                    <p className="text-xs text-slate-400">
+                      {billingSummary.technicians.extra} × {billingSummary.technicians.price_per_extra}€/mois
+                    </p>
+                  </div>
+                  <span className="font-medium text-blue-600">+{billingSummary.technicians.extra_cost}€</span>
+                </div>
+              )}
+              
+              <div className="flex justify-between items-center py-3 bg-slate-50 rounded-lg px-3">
+                <span className="font-semibold text-slate-900">Total mensuel</span>
+                <span className="font-bold text-lg text-slate-900">{billingSummary.total_monthly}€</span>
+              </div>
+            </div>
+            
+            <div className="text-xs text-slate-500">
+              <p>• {billingSummary.technicians.included === -1 ? 'Techniciens illimités' : `${billingSummary.technicians.included} techniciens inclus dans votre plan`}</p>
+              {billingSummary.technicians.included !== -1 && (
+                <p>• Techniciens supplémentaires : {billingSummary.technicians.price_per_extra}€/mois chacun</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Subscription Management */}
       <Card className="border-red-100">

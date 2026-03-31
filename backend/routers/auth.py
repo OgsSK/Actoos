@@ -135,10 +135,9 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 
 @router.post("/invite")
 async def invite_technician(data: UserInvite, current_user: dict = Depends(require_admin)):
-    """Invite a technician (admin only)"""
-    # Check technician limit
+    """Invite a technician (admin only) - allows extras with billing"""
+    # Check technician info (always allowed but may incur extra cost)
     limit_check = await check_technician_limit(db, current_user["entreprise_id"])
-    raise_limit_error(limit_check)
     
     existing = await db.users.find_one({"email": data.email})
     if existing:
@@ -164,7 +163,25 @@ async def invite_technician(data: UserInvite, current_user: dict = Depends(requi
     
     await log_action(current_user["entreprise_id"], current_user["user_id"], "invite", "user", user_id)
     
-    return {"message": "Invitation envoyée", "user_id": user_id, "invite_token": invite_token}
+    # Calculate if this is an extra technician
+    new_check = await check_technician_limit(db, current_user["entreprise_id"])
+    extra_count = new_check.get("extra_count", 0)
+    extra_cost = new_check.get("extra_cost", 0)
+    
+    response = {
+        "message": "Invitation envoyée", 
+        "user_id": user_id, 
+        "invite_token": invite_token
+    }
+    
+    if extra_count > 0:
+        response["billing_info"] = {
+            "extra_technicians": extra_count,
+            "extra_cost_monthly": extra_cost,
+            "notice": f"Ce technicien est facturé {new_check.get('price_per_extra', 5)}€/mois en supplément"
+        }
+    
+    return response
 
 
 @router.post("/activate")

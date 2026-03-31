@@ -860,3 +860,136 @@ async def reactivate_subscription(current_user: dict = Depends(get_current_user)
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error reactivating subscription: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Erreur Stripe: {str(e)}")
+
+
+
+@router.post("/update-extras")
+async def update_extra_technicians(current_user: dict = Depends(get_current_user)):
+    """Update subscription with extra technicians billing"""
+    import stripe
+    from plan_limits import check_technician_limit, get_entreprise_limits
+    
+    stripe_api_key = os.environ.get('STRIPE_API_KEY')
+    if not stripe_api_key:
+        # If no Stripe, just return the current count
+        tech_info = await check_technician_limit(db, current_user["entreprise_id"])
+        return {"success": True, "extra_count": tech_info.get("extra_count", 0), "extra_cost": tech_info.get("extra_cost", 0)}
+    
+    stripe.api_key = stripe_api_key
+    
+    # Get entreprise
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "stripe_subscription_id": 1, "nom": 1, "plan": 1}
+    )
+    
+    if not entreprise:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    # Calculate extra technicians
+    tech_info = await check_technician_limit(db, current_user["entreprise_id"])
+    extra_count = tech_info.get("extra_count", 0)
+    price_per_extra = tech_info.get("price_per_extra", 5)
+    
+    # Update entreprise record with extra info
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {"$set": {
+            "extra_technicians": extra_count,
+            "extra_technicians_cost": extra_count * price_per_extra,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    subscription_id = entreprise.get("stripe_subscription_id")
+    
+    if subscription_id and extra_count > 0:
+        try:
+            # Get the subscription
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            
+            # Check if there's already an extra technician line item
+            extra_item = None
+            for item in subscription.get("items", {}).get("data", []):
+                if item.get("price", {}).get("metadata", {}).get("type") == "extra_tech":
+                    extra_item = item
+                    break
+            
+            if extra_item:
+                # Update existing line item quantity
+                stripe.SubscriptionItem.modify(
+                    extra_item["id"],
+                    quantity=extra_count
+                )
+            else:
+                # Create a price for extra technicians if needed
+                extra_tech_price = stripe.Price.create(
+                    unit_amount=int(price_per_extra * 100),
+                    currency="eur",
+                    recurring={"interval": "month"},
+                    product_data={
+                        "name": "Technicien supplémentaire",
+                        "metadata": {"type": "extra_tech"}
+                    },
+                    metadata={"type": "extra_tech"}
+                )
+                
+                # Add new line item
+                stripe.SubscriptionItem.create(
+                    subscription=subscription_id,
+                    price=extra_tech_price.id,
+                    quantity=extra_count
+                )
+            
+            logger.info(f"Updated extra technicians for {entreprise.get('nom')}: {extra_count} techs")
+            
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error updating extras: {str(e)}")
+            # Non-blocking - just log the error
+    
+    return {
+        "success": True,
+        "extra_count": extra_count,
+        "extra_cost": extra_count * price_per_extra,
+        "message": f"{extra_count} technicien(s) supplémentaire(s) (+{extra_count * price_per_extra}€/mois)" if extra_count > 0 else "Aucun technicien supplémentaire"
+    }
+
+
+@router.get("/billing-summary")
+async def get_billing_summary(current_user: dict = Depends(get_current_user)):
+    """Get current billing summary including extras"""
+    from plan_limits import check_technician_limit, get_entreprise_limits
+    from subscription_service import get_plan
+    
+    # Get entreprise info
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "plan": 1, "nom": 1}
+    )
+    
+    if not entreprise:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    plan_id = entreprise.get("plan", "startup")
+    plan = get_plan(plan_id)
+    
+    # Get technician info
+    tech_info = await check_technician_limit(db, current_user["entreprise_id"])
+    
+    base_price = plan.get("price", 0) if plan else 0
+    extra_cost = tech_info.get("extra_cost", 0)
+    total_monthly = base_price + extra_cost
+    
+    return {
+        "plan_name": plan.get("name", "Startup") if plan else "Startup",
+        "base_price": base_price,
+        "technicians": {
+            "included": tech_info.get("max", 3),
+            "current": tech_info.get("current", 0),
+            "extra": tech_info.get("extra_count", 0),
+            "price_per_extra": tech_info.get("price_per_extra", 5),
+            "extra_cost": extra_cost
+        },
+        "total_monthly": total_monthly,
+        "currency": "EUR"
+    }

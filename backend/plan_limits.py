@@ -65,13 +65,10 @@ async def get_entreprise_limits(db, entreprise_id: str) -> dict:
 
 
 async def check_technician_limit(db, entreprise_id: str) -> dict:
-    """Check if entreprise can add more technicians"""
+    """Check if entreprise can add more technicians (allows extras with billing)"""
     limits = await get_entreprise_limits(db, entreprise_id)
     max_tech = limits.get("max_technicians", 3)
-    
-    # -1 means unlimited
-    if max_tech == -1:
-        return {"allowed": True, "current": 0, "max": -1}
+    price_per_extra = limits.get("price_per_extra_tech", 5)  # €5 per extra tech
     
     current_count = await db.users.count_documents({
         "entreprise_id": entreprise_id,
@@ -79,11 +76,26 @@ async def check_technician_limit(db, entreprise_id: str) -> dict:
         "statut": {"$ne": "desactive"}
     })
     
+    # -1 means unlimited (Enterprise plan)
+    if max_tech == -1:
+        return {
+            "allowed": True, 
+            "current": current_count, 
+            "max": -1,
+            "extra_count": 0,
+            "extra_cost": 0
+        }
+    
+    extra_count = max(0, current_count - max_tech)
+    
     return {
-        "allowed": current_count < max_tech,
+        "allowed": True,  # Always allow but with extra cost
         "current": current_count,
         "max": max_tech,
-        "message": f"Limite de {max_tech} techniciens atteinte. Passez à un plan supérieur pour en ajouter plus."
+        "extra_count": extra_count,
+        "extra_cost": extra_count * price_per_extra,
+        "price_per_extra": price_per_extra,
+        "message": f"Vous avez {extra_count} technicien(s) supplémentaire(s) (+{extra_count * price_per_extra}€/mois)"
     }
 
 
