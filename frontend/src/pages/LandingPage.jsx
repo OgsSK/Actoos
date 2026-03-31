@@ -271,18 +271,18 @@ const LandingPage = () => {
       {/* Social Proof Stats */}
       <section className="py-16 px-4 bg-slate-900">
         <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-3 gap-8 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
             <div>
-              <p className="text-4xl sm:text-5xl font-bold text-white mb-2">{stats.entreprises}+</p>
-              <p className="text-slate-400">Entreprises</p>
+              <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">{stats.entreprises}+</p>
+              <p className="text-slate-400 text-sm sm:text-base">Entreprises</p>
             </div>
             <div>
-              <p className="text-4xl sm:text-5xl font-bold text-white mb-2">{stats.interventions.toLocaleString()}+</p>
-              <p className="text-slate-400">Interventions</p>
+              <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">{stats.interventions.toLocaleString()}+</p>
+              <p className="text-slate-400 text-sm sm:text-base">Interventions</p>
             </div>
             <div>
-              <p className="text-4xl sm:text-5xl font-bold text-white mb-2">{stats.satisfaction}%</p>
-              <p className="text-slate-400">Satisfaction</p>
+              <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">{stats.satisfaction}%</p>
+              <p className="text-slate-400 text-sm sm:text-base">Satisfaction</p>
             </div>
           </div>
         </div>
