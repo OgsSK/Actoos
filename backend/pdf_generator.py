@@ -91,7 +91,12 @@ def generate_qr_code(data: str, size: int = 100) -> BytesIO:
         logger.error(f"Error generating QR code: {e}")
         return None
 
-def load_logo_image(logo_url: str, max_width: int = 200, max_height: int = 80) -> Image:
+def load_logo_image(logo_url: str, max_width: int = 350, max_height: int = 120) -> Image:
+    """Load company logo from URL and return ReportLab Image
+    
+    Logo sizing: 350px width max, height auto-scaled to maintain aspect ratio
+    Similar to CSS: width: 350px; height: auto; object-fit: contain;
+    """
     """Load company logo from URL and return ReportLab Image"""
     try:
         if not logo_url:
