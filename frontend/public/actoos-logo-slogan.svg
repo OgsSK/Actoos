@@ -1,22 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 70">
   <defs>
-    <linearGradient id="leftGradSlogan" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="leftG" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" style="stop-color:#5BADE8"/>
       <stop offset="100%" style="stop-color:#3498D8"/>
     </linearGradient>
-    <linearGradient id="rightGradSlogan" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="rightG" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" style="stop-color:#2B7AB8"/>
       <stop offset="100%" style="stop-color:#1E5F8F"/>
     </linearGradient>
   </defs>
-  <!-- Left parallelogram - lighter blue -->
-  <path d="M8,48 L23,5 L35,5 L26,48 Z" fill="url(#leftGradSlogan)"/>
-  <!-- Right triangle - darker blue -->
-  <path d="M20,48 L35,5 L56,48 L44,48 L35,27 L29,48 Z" fill="url(#rightGradSlogan)"/>
-  <!-- White inner triangle -->
-  <path d="M30,42 L35,31 L40,42 Z" fill="white"/>
+  <!-- Left parallelogram - lighter blue - SAME PROPORTIONS -->
+  <path d="M5,50 L18,5 L28,5 L20,50 Z" fill="url(#leftG)"/>
+  <!-- Right triangle - darker blue - SAME PROPORTIONS -->
+  <path d="M15,50 L28,5 L45,50 L35,50 L28,30 L23,50 Z" fill="url(#rightG)"/>
+  <!-- White inner triangle - SAME PROPORTIONS -->
+  <path d="M24,44 L28,34 L32,44 Z" fill="white"/>
   <!-- Text "Actoos" -->
-  <text x="68" y="38" font-family="'Poppins', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="36" font-weight="700" fill="#1E3A5F">Actoos</text>
+  <text x="55" y="40" font-family="'Poppins', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="34" font-weight="700" fill="#1E3A5F">Actoos</text>
   <!-- Slogan -->
-  <text x="8" y="62" font-family="'Poppins', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="#64748B">Le logiciel tout-en-un pour piloter vos opérations terrain.</text>
+  <text x="5" y="62" font-family="'Poppins', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#64748B">Le logiciel tout-en-un pour piloter vos opérations terrain.</text>
 </svg>
