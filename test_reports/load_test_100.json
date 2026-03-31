@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-03-31T18:11:48.170033",
+  "duration_seconds": 38.332321882247925,
+  "stats": {
+    "entreprises": 100,
+    "clients": 254,
+    "devis": 200,
+    "factures": 0,
+    "interventions": 200
+  },
+  "performance": {
+    "avg_response_ms": 609.6603973687952,
+    "total_requests": 854,
+    "requests_per_second": 22.278848712148996
+  },
+  "errors_count": 0,
+  "success_rate": 100.0
+}
