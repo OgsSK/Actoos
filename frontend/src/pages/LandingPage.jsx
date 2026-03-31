@@ -269,20 +269,24 @@ const LandingPage = () => {
       </section>
 
       {/* Social Proof Stats */}
-      <section className="py-16 px-4 bg-slate-900">
+      <section className="py-10 sm:py-16 px-4 bg-slate-900">
         <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
-            <div>
-              <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">{stats.entreprises}+</p>
-              <p className="text-slate-400 text-sm sm:text-base">Entreprises</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 md:gap-12 text-center">
+            <div className="py-2">
+              <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-1">{stats.entreprises}+</p>
+              <p className="text-slate-400 text-xs sm:text-sm">Entreprises</p>
             </div>
-            <div>
-              <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">{stats.interventions.toLocaleString()}+</p>
-              <p className="text-slate-400 text-sm sm:text-base">Interventions</p>
+            <div className="hidden sm:block w-px h-12 bg-slate-700"></div>
+            <div className="sm:hidden w-16 h-px bg-slate-700"></div>
+            <div className="py-2">
+              <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-1">{stats.interventions.toLocaleString()}+</p>
+              <p className="text-slate-400 text-xs sm:text-sm">Interventions</p>
             </div>
-            <div>
-              <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">{stats.satisfaction}%</p>
-              <p className="text-slate-400 text-sm sm:text-base">Satisfaction</p>
+            <div className="hidden sm:block w-px h-12 bg-slate-700"></div>
+            <div className="sm:hidden w-16 h-px bg-slate-700"></div>
+            <div className="py-2">
+              <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-1">{stats.satisfaction}%</p>
+              <p className="text-slate-400 text-xs sm:text-sm">Satisfaction</p>
             </div>
           </div>
         </div>
