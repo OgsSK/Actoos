@@ -997,33 +997,53 @@ Chaque catégorie métier a maintenant un template de checklist spécifique :
 
 ---
 
-## 🎯 STATUT FINAL DU PROJET
+## 🎯 STATUT FINAL DU PROJET (Mise à jour: 31 Mars 2026)
 
-### ✅ PRÊT À 100% (Ce qui fonctionne)
+### ✅ PRÊT POUR DÉPLOIEMENT PRODUCTION
 
 | Module | Statut |
 |--------|--------|
-| Site Marketing (actoos.com) | ✅ Complet |
-| Dashboard Admin (app.actoos.com) | ✅ Complet |
-| PWA Technicien (mobile.actoos.com) | ✅ Complet |
+| Site Marketing | ✅ Complet avec nouveaux logos SVG |
+| Dashboard Admin | ✅ Complet |
+| PWA Technicien (offline-first) | ✅ Complet |
 | Système d'abonnement 3 plans | ✅ Complet |
-| Feature gating | ✅ Complet |
-| Mode offline + Sync | ✅ Complet |
-| Notifications Push | ✅ Complet |
+| Feature gating strict | ✅ Complet |
+| Mode offline + Sync Dexie.js | ✅ Complet |
+| Notifications Push VAPID | ✅ Complet |
 | PDF avec photos/signatures | ✅ Complet |
-| Stripe Paiements | ✅ Complet |
+| **Stripe Paiements (LIVE MODE)** | ✅ Complet |
+| **Google Calendar OAuth** | ✅ Configuré |
+| Authentification + Mot de passe oublié | ✅ Complet |
+| Load Testing (~200 entreprises) | ✅ Validé |
+| Logos SVG professionnels | ✅ Validé par utilisateur |
 
-### ⏳ EN ATTENTE CLÉS UTILISATEUR
+### 📋 ACTIONS POST-DÉPLOIEMENT REQUISES
+
+| Action | URL/Instructions |
+|--------|------------------|
+| Webhook Stripe | Ajouter `https://actoos.com/api/webhook/stripe` dans Dashboard Stripe |
+| OAuth Google Calendar | Ajouter `https://actoos.com/api/calendar/callback` aux URIs autorisées |
+
+### ⏳ EN ATTENTE VALIDATION UTILISATEUR
 
 | Intégration | Ce qu'il manque |
 |-------------|-----------------|
-| **Resend** (Emails) | Clé API Resend |
-| **Twilio** (SMS) | Account SID + Auth Token |
-| **Google Calendar** | OAuth credentials |
+| **Resend** (Emails) | Validation domaine `actoos.com` dans Dashboard Resend |
+| **Twilio** (SMS) | Numéro belge (bundle réglementaire en attente) |
 
-### 🔴 BLOQUÉ
+### 🔴 BLOQUÉ (NON-CRITIQUE)
 
 | Feature | Raison |
 |---------|--------|
-| Optimisation IA tournées | Budget Emergent LLM Key épuisé |
+| Optimisation IA tournées | Budget Emergent LLM Key épuisé (fallback manuel actif) |
+
+---
+
+## 🚀 INSTRUCTIONS DÉPLOIEMENT
+
+1. Cliquer sur **Deploy** dans Emergent
+2. Connecter domaine `actoos.com` via **Link Domain → Entri**
+3. Configurer DNS (supprimer anciens enregistrements A)
+4. Attendre propagation DNS (5-15 min à 24h)
+5. Effectuer actions post-déploiement (Stripe webhook, Google OAuth URIs)
 
