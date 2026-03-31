@@ -1013,6 +1013,32 @@ Le frontend appelait `PUT /api/entreprise/branding` pour sauvegarder la couleur 
 
 ---
 
+### Phase 41 - Corrections Multiples ✅ (Date: 2026-03-31)
+
+#### Bugs corrigés par Testing Agent
+1. **PDF generation** - `conditions_paiement` pouvait être `None` → crash
+2. **Portal link** - Route 404 car mal positionnée 
+3. **Dashboard endpoints** - Manquants, frontend affichait des erreurs
+4. **Complete intervention** - Seul le tech pouvait compléter, pas l'admin
+
+#### Bugs corrigés manuellement
+1. **Upload logo** - `await put_object()` était appelé mais `put_object` n'est pas async
+2. **Stockage EMERGENT_LLM_KEY** - `load_dotenv()` appelé APRÈS import de storage.py
+3. **Couleur personnalisée** - Gated aux plans Pro+ (message "Fonctionnalité Pro" pour Startup)
+4. **Auto-seeding catégories** - Désactivé pour respecter les limites de plan
+5. **Devis/Factures NaN** - Frontend utilisait `numero` au lieu de `numero_devis`/`numero_facture`
+6. **Devis/Factures NaN** - Frontend utilisait `montant_ttc` au lieu de `total_ttc`
+7. **formatCurrency NaN** - Ajout protection contre null/undefined/NaN
+
+#### Tests validés
+- Dashboard: ✅ Stats s'affichent correctement
+- Devis: ✅ Numéros et montants corrects
+- Factures: ✅ Numéros et montants corrects (y compris 0,00 €)
+- Upload logo: ✅ Fonctionne avec toast de confirmation
+- Personnalisation couleur: ✅ Fonctionne pour Pro, message upgrade pour Startup
+
+---
+
 ## 🎯 STATUT FINAL DU PROJET (Mise à jour: 31 Mars 2026)
 
 ### ✅ PRÊT POUR DÉPLOIEMENT PRODUCTION

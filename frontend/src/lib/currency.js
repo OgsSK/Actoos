@@ -20,6 +20,11 @@ const CURRENCY_CONFIG = {
  * @returns {string} Formatted currency string
  */
 export function formatCurrency(amount, currencyCode = 'EUR', showSymbol = true) {
+  // Handle null/undefined/NaN
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    amount = 0;
+  }
+  
   const config = CURRENCY_CONFIG[currencyCode] || CURRENCY_CONFIG.EUR;
   
   // Handle negative numbers

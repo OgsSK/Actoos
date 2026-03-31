@@ -402,11 +402,11 @@ export const DevisList = () => {
                       </TableCell>
                     )}
                     <TableCell>
-                      <p className="font-mono font-medium text-slate-900">{devis.numero}</p>
+                      <p className="font-mono font-medium text-slate-900">{devis.numero_devis || devis.numero}</p>
                     </TableCell>
                     <TableCell>{devis.client_nom}</TableCell>
                     <TableCell>{formatDate(devis.created_at)}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatAmount(devis.montant_ttc)}</TableCell>
+                    <TableCell className="text-right font-semibold">{formatAmount(devis.total_ttc || devis.montant_ttc)}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={`status-${devis.statut}`}>
                         {getStatusLabel(devis.statut)}
@@ -794,7 +794,7 @@ export const DevisDetail = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `devis_${devis.numero}.pdf`;
+      link.download = `devis_${devis.numero_devis || devis.numero}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -844,7 +844,7 @@ export const DevisDetail = () => {
             Devis
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">{devis.numero}</h1>
+            <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">{devis.numero_devis || devis.numero}</h1>
             <Badge variant="secondary" className={`status-${devis.statut}`}>
               {getStatusLabel(devis.statut)}
             </Badge>
@@ -897,7 +897,7 @@ export const DevisDetail = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Supprimer le devis ?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Cette action est irréversible. Le devis {devis.numero} sera définitivement supprimé.
+                    Cette action est irréversible. Le devis {devis.numero_devis || devis.numero} sera définitivement supprimé.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -997,7 +997,7 @@ export const DevisDetail = () => {
                     </div>
                     <div className="flex justify-between text-lg font-bold border-t border-slate-200 pt-2">
                       <span>Total TTC</span>
-                      <span>{formatAmount(devis.montant_ttc)}</span>
+                      <span>{formatAmount(devis.total_ttc || devis.montant_ttc)}</span>
                     </div>
                   </div>
                 </div>
