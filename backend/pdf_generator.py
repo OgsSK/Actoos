@@ -32,14 +32,43 @@ def get_local_time(iso_string: str, offset_hours: int = 1) -> datetime:
 def decode_signature_image(signature_base64: str) -> BytesIO:
     """Decode base64 signature to image BytesIO"""
     try:
-        if signature_base64 and signature_base64.startswith('data:image'):
+        if not signature_base64:
+            return None
+            
+        if signature_base64.startswith('data:image'):
             # Remove data URL prefix
             base64_data = signature_base64.split(',')[1]
-            image_data = base64.b64decode(base64_data)
-            return BytesIO(image_data)
+        else:
+            base64_data = signature_base64
+            
+        image_data = base64.b64decode(base64_data)
+        
+        # Validate the image is readable
+        from PIL import Image as PILImage
+        img_buffer = BytesIO(image_data)
+        pil_img = PILImage.open(img_buffer)
+        
+        # Convert to RGB if necessary (removes alpha channel issues)
+        if pil_img.mode in ('RGBA', 'LA', 'P'):
+            # Create white background
+            background = PILImage.new('RGB', pil_img.size, (255, 255, 255))
+            if pil_img.mode == 'P':
+                pil_img = pil_img.convert('RGBA')
+            if pil_img.mode in ('RGBA', 'LA'):
+                background.paste(pil_img, mask=pil_img.split()[-1])
+            pil_img = background
+        elif pil_img.mode != 'RGB':
+            pil_img = pil_img.convert('RGB')
+        
+        # Save to new buffer as PNG
+        output_buffer = BytesIO()
+        pil_img.save(output_buffer, format='PNG')
+        output_buffer.seek(0)
+        return output_buffer
+        
     except Exception as e:
-        logger.error(f"Error decoding signature: {e}")
-    return None
+        logger.warning(f"Error decoding signature: {e}")
+        return None
 
 def generate_qr_code(data: str, size: int = 100) -> BytesIO:
     """Generate QR code image from data string"""
