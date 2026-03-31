@@ -1,7 +1,7 @@
 """
 Authentication routes: login, register, invite, password reset
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
 import uuid
 
@@ -189,16 +189,46 @@ async def activate_account(data: UserSetPassword):
     return {"message": "Compte activé avec succès"}
 
 
-@router.post("/request-reset")
-async def request_password_reset(data: UserPasswordReset):
+@router.post("/request-password-reset")
+async def request_password_reset(data: UserPasswordReset, request: Request):
     """Request password reset"""
     user = await db.users.find_one({"email": data.email}, {"_id": 0})
     if not user:
         return {"message": "Si l'email existe, un lien de réinitialisation sera envoyé"}
     
     reset_token = create_reset_token(user["id"], user["entreprise_id"])
-    # In production, send email with reset link
-    return {"message": "Lien de réinitialisation envoyé", "reset_token": reset_token}
+    
+    # Build reset URL
+    origin = request.headers.get("origin", "https://actoos.com")
+    reset_url = f"{origin}/reset-password?token={reset_token}"
+    
+    # Send email with reset link
+    try:
+        from email_service import send_email
+        await send_email(
+            to_email=data.email,
+            subject="Réinitialisation de votre mot de passe Actoos",
+            html_content=f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #3B82F6;">Réinitialisation de mot de passe</h2>
+                <p>Bonjour {user.get('prenom', '')},</p>
+                <p>Vous avez demandé la réinitialisation de votre mot de passe Actoos.</p>
+                <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe :</p>
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_url}" style="background: #3B82F6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                        Réinitialiser mon mot de passe
+                    </a>
+                </p>
+                <p style="color: #666; font-size: 14px;">
+                    Ce lien expire dans 1 heure. Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
+                </p>
+            </div>
+            """
+        )
+    except Exception as e:
+        logger.error(f"Failed to send reset email: {e}")
+    
+    return {"message": "Si l'email existe, un lien de réinitialisation sera envoyé"}
 
 
 @router.post("/reset-password")
@@ -213,7 +243,7 @@ async def reset_password(data: UserSetPassword):
     
     await db.users.update_one(
         {"id": payload["sub"]},
-        {"$set": {"password_hash": get_password_hash(data.password)}}
+        {"$set": {"password_hash": get_password_hash(data.new_password)}}
     )
     
     return {"message": "Mot de passe réinitialisé avec succès"}

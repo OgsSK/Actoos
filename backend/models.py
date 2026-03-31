@@ -79,7 +79,7 @@ class UserPasswordReset(BaseModel):
 
 class UserSetPassword(BaseModel):
     token: str
-    password: str
+    new_password: str
 
 class User(UserBase):
     model_config = ConfigDict(extra="ignore")

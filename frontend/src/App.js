@@ -6,7 +6,7 @@ import { OfflineProvider } from "./contexts/OfflineContext";
 import { Toaster } from "./components/ui/sonner";
 
 // Auth Pages
-import { LoginPage, RegisterPage, ActivatePage } from "./pages/AuthPages";
+import { LoginPage, RegisterPage, ActivatePage, ForgotPasswordPage, ResetPasswordPage } from "./pages/AuthPages";
 
 // Dashboard Pages
 import { DashboardLayout, DashboardOverview } from "./pages/Dashboard";
@@ -105,6 +105,8 @@ function App() {
 
             {/* Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/activate" element={<ActivatePage />} />
 
