@@ -4,6 +4,9 @@ Authentication routes: login, register, invite, password reset
 from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 from models import (
     UserResponse, UserLogin, UserInvite, UserPasswordReset, 
@@ -100,10 +103,13 @@ async def register_entreprise(data: RegisterRequest):
 @router.post("/login", response_model=TokenResponse)
 async def login(data: UserLogin):
     """Login user"""
+    logger.error(f"LOGIN ATTEMPT: email={data.email}")
     user = await db.users.find_one({"email": data.email}, {"_id": 0})
+    logger.error(f"USER FOUND: {user is not None}")
     if not user:
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     
+    logger.error(f"VERIFYING PASSWORD...")
     if not verify_password(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     
