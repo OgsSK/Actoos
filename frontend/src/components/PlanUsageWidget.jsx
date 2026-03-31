@@ -145,6 +145,57 @@ const PlanUsageWidget = ({ compact = false }) => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelFeedback, setCancelFeedback] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+
+  // Raisons de résiliation
+  const cancelReasons = [
+    { value: 'too_expensive', label: 'Trop cher pour mon budget' },
+    { value: 'not_using', label: 'Je n\'utilise pas assez le service' },
+    { value: 'missing_features', label: 'Il manque des fonctionnalités' },
+    { value: 'switching', label: 'Je passe à un autre logiciel' },
+    { value: 'closing_business', label: 'Je ferme mon activité' },
+    { value: 'temporary', label: 'Pause temporaire' },
+    { value: 'other', label: 'Autre raison' }
+  ];
+
+  const handleCancelSubscription = async () => {
+    if (!cancelReason) {
+      toast.error('Veuillez sélectionner une raison');
+      return;
+    }
+    
+    setCancelling(true);
+    try {
+      const API_URL = process.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/subscription/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          reason: cancelReason,
+          feedback: cancelFeedback
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || 'Abonnement annulé');
+        setShowCancelDialog(false);
+        fetchData(); // Refresh data
+      } else {
+        toast.error(data.detail || 'Erreur lors de l\'annulation');
+      }
+    } catch (err) {
+      toast.error('Erreur de connexion');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -385,36 +436,74 @@ const PlanUsageWidget = ({ compact = false }) => {
             <Button
               variant="outline"
               className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
-              onClick={async () => {
-                if (!window.confirm('Êtes-vous sûr de vouloir annuler votre abonnement ? Vous conserverez l\'accès jusqu\'à la fin de la période en cours.')) {
-                  return;
-                }
-                try {
-                  const API_URL = process.env.REACT_APP_BACKEND_URL;
-                  const token = localStorage.getItem('token');
-                  const res = await fetch(`${API_URL}/api/subscription/cancel`, {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json'
-                    }
-                  });
-                  const data = await res.json();
-                  if (res.ok) {
-                    toast.success(data.message || 'Abonnement annulé');
-                  } else {
-                    toast.error(data.detail || 'Erreur lors de l\'annulation');
-                  }
-                } catch (err) {
-                  toast.error('Erreur de connexion');
-                }
-              }}
+              onClick={() => setShowCancelDialog(true)}
             >
               Annuler mon abonnement
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Cancel Subscription Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Annuler votre abonnement</DialogTitle>
+            <DialogDescription>
+              Nous sommes désolés de vous voir partir. Aidez-nous à nous améliorer en partageant votre feedback.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                Pourquoi souhaitez-vous annuler ? *
+              </label>
+              <select
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">Sélectionnez une raison...</option>
+                {cancelReasons.map(reason => (
+                  <option key={reason.value} value={reason.value}>{reason.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                Des commentaires supplémentaires ? (optionnel)
+              </label>
+              <textarea
+                value={cancelFeedback}
+                onChange={(e) => setCancelFeedback(e.target.value)}
+                placeholder="Dites-nous comment nous pourrions nous améliorer..."
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+              />
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm text-amber-800">
+                <strong>Important :</strong> Vous conserverez l'accès à toutes les fonctionnalités jusqu'à la fin de votre période de facturation en cours.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+              Annuler
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleCancelSubscription}
+              disabled={cancelling}
+            >
+              {cancelling ? 'Annulation...' : 'Confirmer l\'annulation'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Upgrade Dialog */}
       <Dialog open={showUpgrade} onOpenChange={setShowUpgrade}>

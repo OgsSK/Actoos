@@ -731,9 +731,21 @@ async def get_current_subscription(current_user: dict = Depends(get_current_user
 
 
 @router.post("/cancel")
-async def cancel_subscription(current_user: dict = Depends(get_current_user)):
-    """Cancel the current subscription"""
+async def cancel_subscription(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Cancel the current subscription with feedback"""
     import stripe
+    
+    # Parse request body for feedback
+    try:
+        body = await request.json()
+        cancel_reason = body.get("reason", "")
+        cancel_feedback = body.get("feedback", "")
+    except:
+        cancel_reason = ""
+        cancel_feedback = ""
     
     stripe_api_key = os.environ.get('STRIPE_API_KEY')
     if not stripe_api_key:
@@ -744,13 +756,26 @@ async def cancel_subscription(current_user: dict = Depends(get_current_user)):
     # Get entreprise
     entreprise = await db.entreprises.find_one(
         {"id": current_user["entreprise_id"]},
-        {"_id": 0, "stripe_subscription_id": 1, "nom": 1}
+        {"_id": 0, "stripe_subscription_id": 1, "nom": 1, "email": 1}
     )
     
     if not entreprise:
         raise HTTPException(status_code=404, detail="Entreprise non trouvée")
     
     subscription_id = entreprise.get("stripe_subscription_id")
+    
+    # Save cancellation feedback
+    await db.cancellation_feedback.insert_one({
+        "id": str(uuid.uuid4()),
+        "entreprise_id": current_user["entreprise_id"],
+        "entreprise_nom": entreprise.get("nom"),
+        "user_email": current_user.get("email"),
+        "reason": cancel_reason,
+        "feedback": cancel_feedback,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    logger.info(f"Cancellation feedback saved: {cancel_reason} - {entreprise.get('nom')}")
     
     if not subscription_id:
         raise HTTPException(status_code=400, detail="Aucun abonnement actif trouvé")

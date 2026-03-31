@@ -137,8 +137,20 @@ const SignupPage = () => {
     adminEmail: '',
     adminPassword: '',
     adminPasswordConfirm: '',
-    phone: ''
+    phone: '',
+    referralSource: ''
   });
+  
+  // Sources de découverte
+  const referralSources = [
+    { value: 'google', label: 'Recherche Google' },
+    { value: 'social', label: 'Réseaux sociaux (Facebook, LinkedIn...)' },
+    { value: 'recommendation', label: 'Recommandation d\'un collègue/ami' },
+    { value: 'ads', label: 'Publicité en ligne' },
+    { value: 'article', label: 'Article de blog / Presse' },
+    { value: 'event', label: 'Salon / Événement professionnel' },
+    { value: 'other', label: 'Autre' }
+  ];
   
   // État UI
   const [plans, setPlans] = useState([]);
@@ -599,11 +611,27 @@ const SignupPage = () => {
                       <Input
                         id="phone"
                         type="tel"
-                        placeholder="06 12 34 56 78"
+                        placeholder="+32 470 12 34 56"
                         value={formData.phone}
                         onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                         data-testid="signup-phone"
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="referralSource">Comment avez-vous connu Actoos ?</Label>
+                      <select
+                        id="referralSource"
+                        value={formData.referralSource}
+                        onChange={e => setFormData(prev => ({ ...prev, referralSource: e.target.value }))}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        data-testid="signup-referral"
+                      >
+                        <option value="">Sélectionnez...</option>
+                        {referralSources.map(source => (
+                          <option key={source.value} value={source.value}>{source.label}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
