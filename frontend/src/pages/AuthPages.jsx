@@ -39,7 +39,7 @@ export const LoginPage = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/actoos-logo-slogan.png" alt="Actoos" className="h-20 mx-auto mb-4 object-contain" />
+          <img src="/actoos-logo-slogan.svg" alt="Actoos" className="h-16 mx-auto mb-4" />
         </div>
 
         <Card className="border-slate-200 shadow-sm">
@@ -495,7 +495,7 @@ export const ForgotPasswordPage = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/actoos-logo-slogan.png" alt="Actoos" className="h-20 mx-auto mb-4 object-contain" />
+          <img src="/actoos-logo-slogan.svg" alt="Actoos" className="h-16 mx-auto mb-4" />
         </div>
 
         <Card className="border-slate-200 shadow-sm">
@@ -644,7 +644,7 @@ export const ResetPasswordPage = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/actoos-logo-slogan.png" alt="Actoos" className="h-20 mx-auto mb-4 object-contain" />
+          <img src="/actoos-logo-slogan.svg" alt="Actoos" className="h-16 mx-auto mb-4" />
         </div>
 
         <Card className="border-slate-200 shadow-sm">
