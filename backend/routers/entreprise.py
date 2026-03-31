@@ -12,7 +12,7 @@ from dependencies import db, serialize_doc, log_action
 from subscription_service import SUBSCRIPTION_PLANS, get_plan, get_all_plans
 from storage import put_object, get_mime_type, APP_NAME
 from models import SUPPORTED_CURRENCIES, SUPPORTED_LOCALES
-from currency_utils import get_all_currencies
+from currency_utils import get_all_currencies, EXCHANGE_RATES, convert_amount, get_exchange_rate
 
 router = APIRouter(tags=["Entreprise"])
 
@@ -118,8 +118,38 @@ async def get_current_subscription(current_user: dict = Depends(get_current_user
 
 @router.get("/currencies")
 async def list_currencies():
-    """List all supported currencies"""
-    return get_all_currencies()
+    """List all supported currencies with exchange rates"""
+    currencies = get_all_currencies()
+    # Add exchange rates to each currency
+    for c in currencies:
+        c["rate"] = EXCHANGE_RATES.get(c["code"], 1.0)
+    return currencies
+
+
+@router.get("/exchange-rates")
+async def get_exchange_rates():
+    """Get all exchange rates (base: EUR)"""
+    return {
+        "base": "EUR",
+        "rates": EXCHANGE_RATES
+    }
+
+
+@router.get("/convert")
+async def convert_currency(
+    amount: float,
+    from_currency: str = "EUR",
+    to_currency: str = "EUR"
+):
+    """Convert amount between currencies"""
+    converted = convert_amount(amount, from_currency, to_currency)
+    return {
+        "original": amount,
+        "from": from_currency,
+        "to": to_currency,
+        "converted": converted,
+        "rate": get_exchange_rate(from_currency, to_currency)
+    }
 
 
 @router.get("/locales")

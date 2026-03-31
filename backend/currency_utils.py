@@ -1,7 +1,57 @@
 """
-Currency formatting utilities for multi-currency support
+Currency formatting utilities for multi-currency support with conversion
 """
 from models import SUPPORTED_CURRENCIES
+
+# Taux de change par rapport à l'EUR (base)
+# Ces taux sont approximatifs - en production, utiliser une API comme exchangerate-api.com
+EXCHANGE_RATES = {
+    "EUR": 1.0,
+    "USD": 1.08,      # 1 EUR = 1.08 USD
+    "XOF": 655.96,    # 1 EUR = 655.96 XOF (CFA)
+    "GBP": 0.86,      # 1 EUR = 0.86 GBP
+    "CHF": 0.97,      # 1 EUR = 0.97 CHF
+    "CAD": 1.47,      # 1 EUR = 1.47 CAD
+    "MAD": 10.85      # 1 EUR = 10.85 MAD
+}
+
+def convert_amount(amount: float, from_currency: str = "EUR", to_currency: str = "EUR") -> float:
+    """
+    Convert an amount from one currency to another
+    
+    Args:
+        amount: The amount to convert
+        from_currency: Source currency code
+        to_currency: Target currency code
+    
+    Returns:
+        Converted amount
+    """
+    if from_currency == to_currency:
+        return amount
+    
+    # Convert to EUR first (base currency)
+    from_rate = EXCHANGE_RATES.get(from_currency, 1.0)
+    to_rate = EXCHANGE_RATES.get(to_currency, 1.0)
+    
+    # amount in EUR = amount / from_rate
+    # amount in target = amount_eur * to_rate
+    amount_eur = amount / from_rate
+    converted = amount_eur * to_rate
+    
+    return round(converted, 2)
+
+
+def get_exchange_rate(from_currency: str = "EUR", to_currency: str = "EUR") -> float:
+    """Get exchange rate between two currencies"""
+    if from_currency == to_currency:
+        return 1.0
+    
+    from_rate = EXCHANGE_RATES.get(from_currency, 1.0)
+    to_rate = EXCHANGE_RATES.get(to_currency, 1.0)
+    
+    return to_rate / from_rate
+
 
 def format_currency(amount: float, currency_code: str = "EUR", show_symbol: bool = True) -> str:
     """

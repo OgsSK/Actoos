@@ -1,5 +1,5 @@
 /**
- * Currency formatting utilities for multi-currency support
+ * Currency formatting utilities with conversion support
  */
 
 const CURRENCY_CONFIG = {
@@ -12,18 +12,42 @@ const CURRENCY_CONFIG = {
   MAD: { symbol: 'DH', position: 'after', decimalSeparator: ',', thousandsSeparator: ' ' },
 };
 
+// Exchange rates (base: EUR)
+const EXCHANGE_RATES = {
+  EUR: 1.0,
+  USD: 1.08,
+  XOF: 655.96,
+  GBP: 0.86,
+  CHF: 0.97,
+  CAD: 1.47,
+  MAD: 10.85
+};
+
 /**
- * Format a number as currency
- * @param {number} amount - The amount to format
- * @param {string} currencyCode - The currency code (EUR, USD, XOF, etc.)
+ * Convert amount from EUR to target currency
+ */
+export function convertFromEUR(amount, toCurrency = 'EUR') {
+  if (!amount || toCurrency === 'EUR') return amount;
+  const rate = EXCHANGE_RATES[toCurrency] || 1.0;
+  return Math.round(amount * rate * 100) / 100;
+}
+
+/**
+ * Format a number as currency (with automatic conversion from EUR)
+ * @param {number} amountInEUR - The amount in EUR (base currency)
+ * @param {string} currencyCode - The target currency code
  * @param {boolean} showSymbol - Whether to show the currency symbol
+ * @param {boolean} convert - Whether to convert from EUR (default true)
  * @returns {string} Formatted currency string
  */
-export function formatCurrency(amount, currencyCode = 'EUR', showSymbol = true) {
+export function formatCurrency(amountInEUR, currencyCode = 'EUR', showSymbol = true, convert = true) {
   // Handle null/undefined/NaN
-  if (amount === null || amount === undefined || isNaN(amount)) {
-    amount = 0;
+  if (amountInEUR === null || amountInEUR === undefined || isNaN(amountInEUR)) {
+    amountInEUR = 0;
   }
+  
+  // Convert from EUR if needed
+  let amount = convert ? convertFromEUR(amountInEUR, currencyCode) : amountInEUR;
   
   const config = CURRENCY_CONFIG[currencyCode] || CURRENCY_CONFIG.EUR;
   
@@ -65,20 +89,23 @@ export function formatCurrency(amount, currencyCode = 'EUR', showSymbol = true) 
 
 /**
  * Format a number as compact currency (for dashboards)
- * @param {number} amount - The amount to format
+ * @param {number} amountInEUR - The amount in EUR
  * @param {string} currencyCode - The currency code
  * @returns {string} Compact formatted currency
  */
-export function formatCurrencyCompact(amount, currencyCode = 'EUR') {
+export function formatCurrencyCompact(amountInEUR, currencyCode = 'EUR') {
   const config = CURRENCY_CONFIG[currencyCode] || CURRENCY_CONFIG.EUR;
   
+  // Convert from EUR
+  const amount = convertFromEUR(amountInEUR, currencyCode);
+  
   let formatted;
-  if (amount >= 1000000) {
+  if (Math.abs(amount) >= 1000000) {
     formatted = `${(amount / 1000000).toFixed(1)}M`;
-  } else if (amount >= 1000) {
+  } else if (Math.abs(amount) >= 1000) {
     formatted = `${(amount / 1000).toFixed(1)}k`;
   } else {
-    formatted = formatCurrency(amount, currencyCode, false);
+    formatted = formatCurrency(amountInEUR, currencyCode, false);
   }
   
   if (config.position === 'before') {
@@ -97,8 +124,18 @@ export function getCurrencySymbol(currencyCode = 'EUR') {
   return CURRENCY_CONFIG[currencyCode]?.symbol || '€';
 }
 
+/**
+ * Get exchange rate from EUR to target currency
+ */
+export function getExchangeRate(currencyCode = 'EUR') {
+  return EXCHANGE_RATES[currencyCode] || 1.0;
+}
+
 export default {
   formatCurrency,
   formatCurrencyCompact,
   getCurrencySymbol,
+  convertFromEUR,
+  getExchangeRate,
+  EXCHANGE_RATES,
 };

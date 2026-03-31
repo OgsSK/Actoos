@@ -3,6 +3,7 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { OfflineProvider } from "./contexts/OfflineContext";
+import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { Toaster } from "./components/ui/sonner";
 
 // Scroll to top on route change
@@ -109,12 +110,13 @@ const HomeRedirect = () => {
 function App() {
   return (
     <AuthProvider>
-      <OfflineProvider>
-        <BrowserRouter>
-          <ScrollToTop />
-          <Routes>
-            {/* Home */}
-            <Route path="/" element={<HomeRedirect />} />
+      <CurrencyProvider>
+        <OfflineProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <Routes>
+              {/* Home */}
+              <Route path="/" element={<HomeRedirect />} />
 
             {/* Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
@@ -198,6 +200,7 @@ function App() {
         </BrowserRouter>
         <Toaster />
       </OfflineProvider>
+      </CurrencyProvider>
     </AuthProvider>
   );
 }
