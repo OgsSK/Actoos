@@ -86,9 +86,19 @@ async def get_plan_usage(current_user: dict = Depends(get_current_user)):
         {"_id": 0, "plan": 1, "plan_name": 1}
     )
     
+    # Map plan ID to proper display name
+    plan_id = entreprise.get("plan", "starter") if entreprise else "starter"
+    plan_names = {
+        "startup": "Startup",
+        "starter": "Startup",
+        "pro": "Pro",
+        "enterprise": "Enterprise"
+    }
+    plan_display_name = plan_names.get(plan_id, "Startup")
+    
     return {
-        "plan": entreprise.get("plan", "starter") if entreprise else "starter",
-        "plan_name": entreprise.get("plan_name", "Starter") if entreprise else "Starter",
+        "plan": plan_id,
+        "plan_name": entreprise.get("plan_name") or plan_display_name,
         "usage": usage
     }
 
