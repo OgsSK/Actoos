@@ -250,7 +250,7 @@ export const FacturesList = () => {
 export const FactureDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { api, token, isAdmin } = useAuth();
+  const { api, token, isAdmin, formatAmount } = useAuth();
   const [facture, setFacture] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPayment, setShowPayment] = useState(false);

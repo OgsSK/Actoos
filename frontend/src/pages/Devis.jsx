@@ -441,7 +441,7 @@ export const DevisForm = () => {
   const location = useLocation();
   const isEdit = !!id;
   const navigate = useNavigate();
-  const { api } = useAuth();
+  const { api, formatAmount } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [clients, setClients] = useState([]);
@@ -713,7 +713,7 @@ export const DevisForm = () => {
 export const DevisDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { api, token, isAdmin } = useAuth();
+  const { api, token, isAdmin, formatAmount } = useAuth();
   const [devis, setDevis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showSignature, setShowSignature] = useState(false);
