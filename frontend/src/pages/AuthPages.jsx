@@ -39,7 +39,11 @@ export const LoginPage = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/actoos-logo-slogan.svg" alt="Actoos" className="h-16 mx-auto mb-4" />
+          <div className="flex flex-col items-center mb-6">
+            <img src="/actoos-icon.svg" alt="Actoos" className="h-12 w-12 mb-2" />
+            <span className="text-2xl font-bold text-slate-800">Actoos</span>
+            <span className="text-sm text-slate-500">Gestion d'interventions terrain</span>
+          </div>
         </div>
 
         <Card className="border-slate-200 shadow-sm">
@@ -495,7 +499,11 @@ export const ForgotPasswordPage = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/actoos-logo-slogan.svg" alt="Actoos" className="h-16 mx-auto mb-4" />
+          <div className="flex flex-col items-center mb-6">
+            <img src="/actoos-icon.svg" alt="Actoos" className="h-12 w-12 mb-2" />
+            <span className="text-2xl font-bold text-slate-800">Actoos</span>
+            <span className="text-sm text-slate-500">Gestion d'interventions terrain</span>
+          </div>
         </div>
 
         <Card className="border-slate-200 shadow-sm">
@@ -644,7 +652,11 @@ export const ResetPasswordPage = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/actoos-logo-slogan.svg" alt="Actoos" className="h-16 mx-auto mb-4" />
+          <div className="flex flex-col items-center mb-6">
+            <img src="/actoos-icon.svg" alt="Actoos" className="h-12 w-12 mb-2" />
+            <span className="text-2xl font-bold text-slate-800">Actoos</span>
+            <span className="text-sm text-slate-500">Gestion d'interventions terrain</span>
+          </div>
         </div>
 
         <Card className="border-slate-200 shadow-sm">
