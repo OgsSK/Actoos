@@ -554,7 +554,7 @@ const PricingPage = () => {
               },
               {
                 q: "Comment fonctionne l'essai gratuit ?",
-                a: "Vous bénéficiez de 14 jours d'essai gratuit sur le plan de votre choix, avec toutes les fonctionnalités. Aucune carte bancaire requise pour commencer."
+                a: "Vous bénéficiez de 14 jours d'essai gratuit sur le plan de votre choix, avec toutes les fonctionnalités. Une carte bancaire est requise mais vous ne serez pas débité avant la fin de l'essai. Annulez à tout moment."
               },
               {
                 q: "Que se passe-t-il si je dépasse mes limites ?",
@@ -562,7 +562,7 @@ const PricingPage = () => {
               },
               {
                 q: "Les données sont-elles sécurisées ?",
-                a: "Absolument. Toutes les données sont chiffrées, hébergées en France, et nous sommes conformes RGPD. Vos photos terrain sont automatiquement nettoyées des métadonnées GPS."
+                a: "Absolument. Toutes les données sont chiffrées, hébergées en Europe (conformes RGPD). Vos photos terrain sont automatiquement nettoyées des métadonnées GPS pour protéger la vie privée de vos clients."
               }
             ].map((faq, idx) => (
               <div key={idx} className="border-b border-slate-200 pb-6">

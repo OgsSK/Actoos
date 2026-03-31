@@ -210,11 +210,11 @@ const LandingPage = () => {
               <div className="flex items-center gap-6 text-sm text-slate-500">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  Sans carte bancaire
+                  14 jours gratuits
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  Installation en 2 minutes
+                  Annulation facile
                 </div>
               </div>
             </div>
@@ -474,7 +474,7 @@ const LandingPage = () => {
             </Button>
           </div>
           <p className="text-blue-200 text-sm mt-6">
-            Sans engagement • Sans carte bancaire • Support inclus
+            14 jours d'essai gratuit • Annulation à tout moment • Support inclus
           </p>
         </div>
       </section>
