@@ -146,12 +146,13 @@ const PricingPage = () => {
       id: 'enterprise',
       name: 'Enterprise',
       description: 'Pour entreprises structurées',
-      price: 129,
-      priceYearly: 99,
+      price: 149,
+      priceYearly: 119,
       icon: Crown,
       color: 'purple',
       popular: false,
-      cta: 'Contacter',
+      cta: 'Nous contacter',
+      isContact: true,  // Flag to handle differently
       limits: {
         admins: 'Illimité',
         technicians: 'Illimité',
@@ -487,10 +488,16 @@ const PricingPage = () => {
                           : ''
                       }`}
                       variant={plan.popular || isRecommended ? 'default' : 'outline'}
-                      onClick={() => navigate(`/signup?plan=${plan.id}`)}
+                      onClick={() => {
+                        if (plan.isContact) {
+                          window.location.href = 'mailto:contact@actoos.com?subject=Demande%20Enterprise%20-%20Actoos&body=Bonjour,%0A%0AJe%20suis%20intéressé(e)%20par%20le%20plan%20Enterprise.%0A%0ANom%20de%20l%27entreprise:%0ANombre%20de%20techniciens:%0ATéléphone:%0A%0AMerci';
+                        } else {
+                          navigate(`/signup?plan=${plan.id}`);
+                        }
+                      }}
                     >
                       {plan.cta}
-                      <ArrowRight className="w-4 h-4 ml-2" />
+                      {!plan.isContact && <ArrowRight className="w-4 h-4 ml-2" />}
                     </Button>
                   </CardFooter>
                 </Card>

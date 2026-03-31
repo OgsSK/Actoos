@@ -103,7 +103,7 @@ SUBSCRIPTION_PLANS = {
     },
     "enterprise": {
         "name": "Enterprise",
-        "price": 129.00,
+        "price": 149.00,
         "price_per_extra_tech": 0,  # Unlimited included
         "currency": "eur",
         "description": "Entreprises structurées et multi-équipes",
