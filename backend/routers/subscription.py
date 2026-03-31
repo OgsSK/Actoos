@@ -993,3 +993,202 @@ async def get_billing_summary(current_user: dict = Depends(get_current_user)):
         "total_monthly": total_monthly,
         "currency": "EUR"
     }
+
+
+
+@router.post("/change-plan")
+async def change_subscription_plan(
+    request: Request,
+    new_plan_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Change subscription plan (upgrade or downgrade)
+    - Upgrade: Immediate change with prorated billing
+    - Downgrade: Takes effect at end of current billing period
+    """
+    import stripe
+    from subscription_service import get_plan, PLANS
+    
+    stripe_api_key = os.environ.get('STRIPE_API_KEY')
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Stripe non configuré")
+    
+    stripe.api_key = stripe_api_key
+    
+    # Validate new plan
+    new_plan = get_plan(new_plan_id)
+    if not new_plan:
+        raise HTTPException(status_code=400, detail="Plan invalide")
+    
+    # Get entreprise
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "stripe_subscription_id": 1, "stripe_customer_id": 1, "plan": 1, "nom": 1}
+    )
+    
+    if not entreprise:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    current_plan_id = entreprise.get("plan", "startup")
+    current_plan = get_plan(current_plan_id)
+    
+    if current_plan_id == new_plan_id:
+        raise HTTPException(status_code=400, detail="Vous êtes déjà sur ce plan")
+    
+    subscription_id = entreprise.get("stripe_subscription_id")
+    
+    if not subscription_id:
+        raise HTTPException(status_code=400, detail="Aucun abonnement actif. Veuillez d'abord souscrire à un plan.")
+    
+    # Determine if upgrade or downgrade
+    current_price = current_plan.get("price", 0) if current_plan else 0
+    new_price = new_plan.get("price", 0)
+    is_upgrade = new_price > current_price
+    
+    try:
+        # Get current subscription
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        
+        # Get or create price for new plan
+        # First check if we have an existing price
+        new_price_id = None
+        
+        # Create a new price for the plan
+        product = stripe.Product.create(
+            name=f"Actoos {new_plan['name']}",
+            description=new_plan.get("description", f"Abonnement {new_plan['name']}")
+        )
+        
+        price = stripe.Price.create(
+            product=product.id,
+            unit_amount=int(new_plan["price"] * 100),
+            currency=new_plan.get("currency", "eur"),
+            recurring={"interval": "month"}
+        )
+        new_price_id = price.id
+        
+        # Get the main subscription item (excluding extra technicians)
+        main_item = None
+        for item in subscription.get("items", {}).get("data", []):
+            if item.get("price", {}).get("metadata", {}).get("type") != "extra_tech":
+                main_item = item
+                break
+        
+        if not main_item:
+            raise HTTPException(status_code=400, detail="Impossible de trouver l'élément d'abonnement principal")
+        
+        if is_upgrade:
+            # UPGRADE: Immediate change with prorated billing
+            stripe.SubscriptionItem.modify(
+                main_item["id"],
+                price=new_price_id,
+                proration_behavior="create_prorations"  # Charge the difference immediately
+            )
+            
+            # Update entreprise immediately
+            await db.entreprises.update_one(
+                {"id": current_user["entreprise_id"]},
+                {"$set": {
+                    "plan": new_plan_id,
+                    "plan_name": new_plan["name"],
+                    "plan_limits": new_plan.get("limits", {}),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            logger.info(f"Upgrade: {entreprise.get('nom')} from {current_plan_id} to {new_plan_id}")
+            
+            return {
+                "success": True,
+                "type": "upgrade",
+                "message": f"Félicitations ! Vous êtes passé au plan {new_plan['name']}. Les nouvelles fonctionnalités sont disponibles immédiatement.",
+                "effective_immediately": True,
+                "new_plan": new_plan["name"],
+                "prorated": True
+            }
+        else:
+            # DOWNGRADE: Takes effect at end of billing period
+            stripe.SubscriptionItem.modify(
+                main_item["id"],
+                price=new_price_id,
+                proration_behavior="none"  # No proration for downgrades
+            )
+            
+            # Schedule the plan change for end of period
+            await db.entreprises.update_one(
+                {"id": current_user["entreprise_id"]},
+                {"$set": {
+                    "scheduled_plan_change": {
+                        "new_plan_id": new_plan_id,
+                        "new_plan_name": new_plan["name"],
+                        "effective_at": subscription.current_period_end
+                    },
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            # Calculate when it takes effect
+            from datetime import datetime as dt
+            effective_date = dt.fromtimestamp(subscription.current_period_end)
+            
+            logger.info(f"Downgrade scheduled: {entreprise.get('nom')} from {current_plan_id} to {new_plan_id}, effective {effective_date}")
+            
+            return {
+                "success": True,
+                "type": "downgrade",
+                "message": f"Votre passage au plan {new_plan['name']} prendra effet à la fin de votre période de facturation actuelle.",
+                "effective_immediately": False,
+                "effective_date": effective_date.strftime("%d/%m/%Y"),
+                "new_plan": new_plan["name"],
+                "note": "Vous conservez l'accès à toutes les fonctionnalités de votre plan actuel jusqu'à cette date."
+            }
+            
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error changing plan: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe: {str(e)}")
+
+
+@router.get("/available-plans")
+async def get_available_plans_for_change(current_user: dict = Depends(get_current_user)):
+    """Get available plans for subscription change with pricing comparison"""
+    from subscription_service import get_plan, PLANS
+    
+    # Get current plan
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "plan": 1}
+    )
+    
+    current_plan_id = entreprise.get("plan", "startup") if entreprise else "startup"
+    current_plan = get_plan(current_plan_id)
+    current_price = current_plan.get("price", 0) if current_plan else 0
+    
+    available_plans = []
+    for plan_id, plan_data in PLANS.items():
+        plan_info = {
+            "id": plan_id,
+            "name": plan_data["name"],
+            "price": plan_data["price"],
+            "currency": plan_data.get("currency", "eur"),
+            "description": plan_data.get("description", ""),
+            "is_current": plan_id == current_plan_id,
+            "limits": plan_data.get("limits", {})
+        }
+        
+        if plan_id != current_plan_id:
+            if plan_data["price"] > current_price:
+                plan_info["change_type"] = "upgrade"
+                plan_info["change_note"] = "Changement immédiat avec facturation au prorata"
+            else:
+                plan_info["change_type"] = "downgrade"
+                plan_info["change_note"] = "Prend effet à la fin de la période actuelle"
+            
+            plan_info["price_difference"] = plan_data["price"] - current_price
+        
+        available_plans.append(plan_info)
+    
+    return {
+        "current_plan": current_plan_id,
+        "plans": available_plans
+    }

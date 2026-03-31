@@ -144,8 +144,11 @@ const PlanUsageWidget = ({ compact = false }) => {
   const [usage, setUsage] = useState(null);
   const [plans, setPlans] = useState([]);
   const [billingSummary, setBillingSummary] = useState(null);
+  const [availablePlans, setAvailablePlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showChangePlan, setShowChangePlan] = useState(false);
+  const [changingPlan, setChangingPlan] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelFeedback, setCancelFeedback] = useState('');
@@ -204,20 +207,40 @@ const PlanUsageWidget = ({ compact = false }) => {
 
   const fetchData = async () => {
     try {
-      const [usageRes, plansRes, billingRes] = await Promise.all([
+      const [usageRes, plansRes, billingRes, availablePlansRes] = await Promise.all([
         api.get('/usage'),
         api.get('/plans'),
-        api.get('/billing-summary').catch(() => ({ data: null }))
+        api.get('/billing-summary').catch(() => ({ data: null })),
+        api.get('/available-plans').catch(() => ({ data: null }))
       ]);
       setUsage(usageRes.data);
       setPlans(plansRes.data);
       if (billingRes.data) {
         setBillingSummary(billingRes.data);
       }
+      if (availablePlansRes.data) {
+        setAvailablePlans(availablePlansRes.data.plans || []);
+      }
     } catch (error) {
       console.error('Error fetching usage:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePlan = async (newPlanId) => {
+    setChangingPlan(true);
+    try {
+      const res = await api.post(`/change-plan?new_plan_id=${newPlanId}`);
+      if (res.data.success) {
+        toast.success(res.data.message);
+        setShowChangePlan(false);
+        fetchData(); // Refresh data
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors du changement de plan');
+    } finally {
+      setChangingPlan(false);
     }
   };
 
@@ -465,7 +488,7 @@ const PlanUsageWidget = ({ compact = false }) => {
       )}
 
       {/* Subscription Management */}
-      <Card className="border-red-100">
+      <Card className="border-slate-200">
         <CardHeader>
           <CardTitle className="text-base text-slate-700">Gestion de l'abonnement</CardTitle>
         </CardHeader>
@@ -478,9 +501,22 @@ const PlanUsageWidget = ({ compact = false }) => {
             <Badge className="bg-green-100 text-green-800">Actif</Badge>
           </div>
           
+          {/* Change Plan Button */}
           <div className="border-t pt-4">
+            <p className="text-sm text-slate-600 mb-3">
+              Vous pouvez changer de plan à tout moment.
+            </p>
+            <Button
+              variant="outline"
+              className="w-full mb-3"
+              onClick={() => setShowChangePlan(true)}
+            >
+              <ArrowRight className="w-4 h-4 mr-2" />
+              Changer de plan
+            </Button>
+            
             <p className="text-sm text-slate-600 mb-4">
-              Vous pouvez annuler votre abonnement à tout moment. Si vous annulez pendant la période d'essai, aucun prélèvement ne sera effectué.
+              Vous pouvez aussi annuler votre abonnement. Si vous annulez pendant la période d'essai, aucun prélèvement ne sera effectué.
             </p>
             <Button
               variant="outline"
@@ -572,6 +608,76 @@ const PlanUsageWidget = ({ compact = false }) => {
                 onSelect={handleUpgrade}
               />
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Plan Dialog */}
+      <Dialog open={showChangePlan} onOpenChange={setShowChangePlan}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Changer de plan</DialogTitle>
+            <DialogDescription>
+              Choisissez le plan qui correspond à vos besoins
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            {availablePlans.map(plan => (
+              <div 
+                key={plan.id}
+                className={`p-4 border rounded-lg ${
+                  plan.is_current 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-slate-900">{plan.name}</h4>
+                      {plan.is_current && (
+                        <Badge className="bg-blue-100 text-blue-800">Plan actuel</Badge>
+                      )}
+                      {plan.change_type === 'upgrade' && (
+                        <Badge className="bg-green-100 text-green-800">Upgrade</Badge>
+                      )}
+                      {plan.change_type === 'downgrade' && (
+                        <Badge className="bg-amber-100 text-amber-800">Downgrade</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-500 mt-1">{plan.description}</p>
+                    {plan.change_note && (
+                      <p className="text-xs text-slate-400 mt-1">{plan.change_note}</p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-slate-900">{plan.price}€</p>
+                    <p className="text-sm text-slate-500">/mois</p>
+                    {!plan.is_current && (
+                      <Button
+                        size="sm"
+                        className="mt-2"
+                        variant={plan.change_type === 'upgrade' ? 'default' : 'outline'}
+                        onClick={() => handleChangePlan(plan.id)}
+                        disabled={changingPlan}
+                      >
+                        {changingPlan ? 'Changement...' : plan.change_type === 'upgrade' ? 'Passer à ce plan' : 'Réduire'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-slate-50 rounded-lg p-4 mt-4">
+            <h5 className="font-medium text-slate-900 mb-2">Comment ça fonctionne ?</h5>
+            <ul className="text-sm text-slate-600 space-y-1">
+              <li>• <strong>Upgrade :</strong> Changement immédiat avec facturation au prorata</li>
+              <li>• <strong>Downgrade :</strong> Prend effet à la fin de votre période de facturation</li>
+              <li>• Vous pouvez changer de plan à tout moment</li>
+            </ul>
           </div>
         </DialogContent>
       </Dialog>

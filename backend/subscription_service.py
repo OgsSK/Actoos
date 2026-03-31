@@ -190,3 +190,7 @@ def has_feature(plan_id: str, feature: str) -> bool:
     if not plan:
         return False
     return plan.get(feature, False)
+
+
+# Alias for export
+PLANS = SUBSCRIPTION_PLANS
