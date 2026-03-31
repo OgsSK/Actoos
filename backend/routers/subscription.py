@@ -134,8 +134,8 @@ async def create_checkout_session(
     entreprise_name: Optional[str] = None,
     admin_email: Optional[str] = None
 ):
-    """Create a Stripe checkout session for subscription"""
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+    """Create a Stripe checkout session for subscription with 14-day free trial"""
+    import stripe
     
     # Validate plan
     plan = get_plan(plan_id)
@@ -147,53 +147,89 @@ async def create_checkout_session(
     if not stripe_api_key:
         raise HTTPException(status_code=500, detail="Stripe non configuré")
     
+    stripe.api_key = stripe_api_key
+    
     # Build URLs
     success_url = f"{origin_url}/signup/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin_url}/signup?cancelled=true"
     
-    # Initialize Stripe
-    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url=webhook_url)
-    
-    # Create checkout session with plan amount
-    checkout_request = CheckoutSessionRequest(
-        amount=float(plan["price"]),
-        currency=plan["currency"],
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={
+    try:
+        # Create or retrieve Stripe Price for this plan
+        # First, check if we have a price ID stored
+        price_id = plan.get("stripe_price_id")
+        
+        if not price_id:
+            # Create a product and price in Stripe
+            product = stripe.Product.create(
+                name=f"Actoos {plan['name']}",
+                description=plan.get("description", f"Abonnement {plan['name']}")
+            )
+            
+            price = stripe.Price.create(
+                product=product.id,
+                unit_amount=int(plan["price"] * 100),  # Stripe uses cents
+                currency=plan["currency"],
+                recurring={"interval": "month"}
+            )
+            price_id = price.id
+        
+        # Create checkout session with subscription and trial
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            payment_method_types=["card"],
+            line_items=[{
+                "price": price_id,
+                "quantity": 1
+            }],
+            subscription_data={
+                "trial_period_days": 14,  # 14 days free trial
+                "metadata": {
+                    "plan_id": plan_id,
+                    "plan_name": plan["name"],
+                    "entreprise_name": entreprise_name or "",
+                    "admin_email": admin_email or ""
+                }
+            },
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "plan_id": plan_id,
+                "plan_name": plan["name"],
+                "entreprise_name": entreprise_name or "",
+                "admin_email": admin_email or "",
+                "type": "subscription"
+            },
+            customer_email=admin_email if admin_email else None,
+            allow_promotion_codes=True
+        )
+        
+        # Create pending payment transaction
+        transaction = {
+            "id": str(uuid.uuid4()),
+            "session_id": session.id,
             "plan_id": plan_id,
             "plan_name": plan["name"],
-            "entreprise_name": entreprise_name or "",
-            "admin_email": admin_email or "",
-            "type": "subscription"
+            "amount": plan["price"],
+            "currency": plan["currency"],
+            "status": "pending",
+            "payment_status": "trial",
+            "entreprise_name": entreprise_name,
+            "admin_email": admin_email,
+            "trial_ends_at": None,  # Will be set by webhook
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
-    )
-    
-    session = await stripe_checkout.create_checkout_session(checkout_request)
-    
-    # Create pending payment transaction
-    transaction = {
-        "id": str(uuid.uuid4()),
-        "session_id": session.session_id,
-        "plan_id": plan_id,
-        "plan_name": plan["name"],
-        "amount": plan["price"],
-        "currency": plan["currency"],
-        "status": "pending",
-        "payment_status": "initiated",
-        "entreprise_name": entreprise_name,
-        "admin_email": admin_email,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.payment_transactions.insert_one(transaction)
-    
-    logger.info(f"Created checkout session for plan {plan_id}: {session.session_id}")
-    
-    return {
-        "url": session.url,
-        "session_id": session.session_id
-    }
+        await db.payment_transactions.insert_one(transaction)
+        
+        logger.info(f"Created subscription checkout session for plan {plan_id}: {session.id}")
+        
+        return {
+            "url": session.url,
+            "session_id": session.id
+        }
+        
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error creating checkout: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe: {str(e)}")
 
 
 @router.post("/finalize-signup/{session_id}")
@@ -691,3 +727,111 @@ async def get_current_subscription(current_user: dict = Depends(get_current_user
             "interventions_this_month": intervention_count
         }
     }
+
+
+
+@router.post("/cancel")
+async def cancel_subscription(current_user: dict = Depends(get_current_user)):
+    """Cancel the current subscription"""
+    import stripe
+    
+    stripe_api_key = os.environ.get('STRIPE_API_KEY')
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Stripe non configuré")
+    
+    stripe.api_key = stripe_api_key
+    
+    # Get entreprise
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "stripe_subscription_id": 1, "nom": 1}
+    )
+    
+    if not entreprise:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    subscription_id = entreprise.get("stripe_subscription_id")
+    
+    if not subscription_id:
+        raise HTTPException(status_code=400, detail="Aucun abonnement actif trouvé")
+    
+    try:
+        # Cancel the subscription at period end (user keeps access until end of billing period)
+        subscription = stripe.Subscription.modify(
+            subscription_id,
+            cancel_at_period_end=True
+        )
+        
+        # Update entreprise status
+        await db.entreprises.update_one(
+            {"id": current_user["entreprise_id"]},
+            {"$set": {
+                "subscription_status": "canceling",
+                "cancel_at_period_end": True,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        logger.info(f"Subscription {subscription_id} marked for cancellation for {entreprise.get('nom')}")
+        
+        return {
+            "success": True,
+            "message": "Votre abonnement sera annulé à la fin de la période en cours.",
+            "cancel_at": subscription.cancel_at
+        }
+        
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error canceling subscription: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe: {str(e)}")
+
+
+@router.post("/reactivate")
+async def reactivate_subscription(current_user: dict = Depends(get_current_user)):
+    """Reactivate a subscription that was set to cancel"""
+    import stripe
+    
+    stripe_api_key = os.environ.get('STRIPE_API_KEY')
+    if not stripe_api_key:
+        raise HTTPException(status_code=500, detail="Stripe non configuré")
+    
+    stripe.api_key = stripe_api_key
+    
+    # Get entreprise
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "stripe_subscription_id": 1}
+    )
+    
+    if not entreprise:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    subscription_id = entreprise.get("stripe_subscription_id")
+    
+    if not subscription_id:
+        raise HTTPException(status_code=400, detail="Aucun abonnement trouvé")
+    
+    try:
+        # Reactivate subscription
+        subscription = stripe.Subscription.modify(
+            subscription_id,
+            cancel_at_period_end=False
+        )
+        
+        # Update entreprise status
+        await db.entreprises.update_one(
+            {"id": current_user["entreprise_id"]},
+            {"$set": {
+                "subscription_status": "active",
+                "cancel_at_period_end": False,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        return {
+            "success": True,
+            "message": "Votre abonnement a été réactivé."
+        }
+        
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error reactivating subscription: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe: {str(e)}")

@@ -364,6 +364,58 @@ const PlanUsageWidget = ({ compact = false }) => {
         </CardContent>
       </Card>
 
+      {/* Subscription Management */}
+      <Card className="border-red-100">
+        <CardHeader>
+          <CardTitle className="text-base text-slate-700">Gestion de l'abonnement</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+            <div>
+              <p className="font-medium text-slate-900">Période d'essai gratuite</p>
+              <p className="text-sm text-slate-500">14 jours sans engagement, annulation à tout moment</p>
+            </div>
+            <Badge className="bg-green-100 text-green-800">Actif</Badge>
+          </div>
+          
+          <div className="border-t pt-4">
+            <p className="text-sm text-slate-600 mb-4">
+              Vous pouvez annuler votre abonnement à tout moment. Si vous annulez pendant la période d'essai, aucun prélèvement ne sera effectué.
+            </p>
+            <Button
+              variant="outline"
+              className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+              onClick={async () => {
+                if (!window.confirm('Êtes-vous sûr de vouloir annuler votre abonnement ? Vous conserverez l\'accès jusqu\'à la fin de la période en cours.')) {
+                  return;
+                }
+                try {
+                  const API_URL = process.env.REACT_APP_BACKEND_URL;
+                  const token = localStorage.getItem('token');
+                  const res = await fetch(`${API_URL}/api/subscription/cancel`, {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    }
+                  });
+                  const data = await res.json();
+                  if (res.ok) {
+                    toast.success(data.message || 'Abonnement annulé');
+                  } else {
+                    toast.error(data.detail || 'Erreur lors de l\'annulation');
+                  }
+                } catch (err) {
+                  toast.error('Erreur de connexion');
+                }
+              }}
+            >
+              Annuler mon abonnement
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Upgrade Dialog */}
       <Dialog open={showUpgrade} onOpenChange={setShowUpgrade}>
         <DialogContent className="max-w-3xl">

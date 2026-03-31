@@ -83,21 +83,21 @@ const LandingPage = () => {
 
   const testimonials = [
     {
-      name: "Jean-Pierre M.",
-      role: "Gérant, Plomberie Express",
-      content: "Actoos a transformé notre façon de travailler. Mes techniciens sont plus efficaces et mes clients reçoivent leurs factures instantanément.",
+      name: "Pierre Vandenberghe",
+      role: "Gérant, Vandenberghe Plomberie SPRL",
+      content: "Depuis qu'on utilise Actoos, on a réduit notre temps administratif de 40%. Les techniciens adorent l'app mobile et les clients reçoivent leurs factures en temps réel.",
       rating: 5
     },
     {
-      name: "Sophie L.",
-      role: "Directrice, CleanPro Services",
-      content: "Le mode hors ligne est parfait pour nos équipes qui travaillent dans des zones mal couvertes. Un gain de temps énorme !",
+      name: "Marie-Claire Dubois",
+      role: "Directrice, ElectroBelgique SA",
+      content: "Le mode hors ligne nous a sauvé sur plusieurs chantiers en zone rurale. On ne perd plus jamais de données et tout se synchronise automatiquement.",
       rating: 5
     },
     {
-      name: "Marc D.",
-      role: "Fondateur, Élec Solutions",
-      content: "Enfin un logiciel pensé pour le terrain. L'app technicien est intuitive et mes gars l'ont adoptée en quelques heures.",
+      name: "Thomas Leroy",
+      role: "Fondateur, ClimaServices",
+      content: "L'essai gratuit m'a convaincu en 3 jours. Passage de devis à facture en un clic, planning intelligent, et support réactif. Je recommande à 100%.",
       rating: 5
     }
   ];
