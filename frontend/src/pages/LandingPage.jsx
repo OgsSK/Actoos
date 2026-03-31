@@ -516,10 +516,10 @@ const LandingPage = () => {
           
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-slate-400 text-sm">
-              © 2026 Actoos. Tous droits réservés.
+              © {new Date().getFullYear()} Actoos SPRL. Tous droits réservés.
             </p>
             <p className="text-slate-500 text-sm">
-              Hébergé en France 🇫🇷 • Conforme RGPD
+              Belgique 🇧🇪 • Conforme RGPD • TVA BE0123.456.789
             </p>
           </div>
         </div>

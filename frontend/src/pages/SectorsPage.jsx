@@ -359,7 +359,7 @@ const SectorsPage = () => {
 
       {/* Footer */}
       <footer className="py-12 px-4 bg-slate-900 text-center">
-        <p className="text-slate-400">© 2026 Actoos. Tous droits réservés.</p>
+        <p className="text-slate-400">© {new Date().getFullYear()} Actoos SPRL. Tous droits réservés. Belgique · Conforme RGPD</p>
       </footer>
     </div>
   );

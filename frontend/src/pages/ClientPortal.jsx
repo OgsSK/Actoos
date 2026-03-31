@@ -469,7 +469,7 @@ export const ClientPortalDevis = () => {
 
       {/* Footer */}
       <footer className="border-t border-slate-200 mt-12 py-6 text-center text-sm text-slate-500">
-        Propulsé par Actoos
+        Propulsé par Actoos · © {new Date().getFullYear()} Actoos SPRL
       </footer>
     </div>
   );
@@ -943,7 +943,7 @@ export const ClientPortalDashboard = () => {
 
       {/* Footer */}
       <footer className="border-t border-slate-200 mt-12 py-6 text-center text-sm text-slate-500">
-        Propulsé par Actoos
+        Propulsé par Actoos · © {new Date().getFullYear()} Actoos SPRL
       </footer>
     </div>
   );

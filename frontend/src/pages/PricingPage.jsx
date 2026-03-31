@@ -629,8 +629,8 @@ const PricingPage = () => {
             </div>
           </div>
           <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-            <p>© 2026 Actoos. Tous droits réservés.</p>
-            <p>Hébergé en France 🇫🇷 • Conforme RGPD</p>
+            <p>© {new Date().getFullYear()} Actoos SPRL. Tous droits réservés.</p>
+            <p>Belgique 🇧🇪 • Conforme RGPD • TVA BE0123.456.789</p>
           </div>
         </div>
       </footer>
