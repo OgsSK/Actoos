@@ -175,7 +175,7 @@ const PlanUsageWidget = ({ compact = false }) => {
     try {
       const API_URL = process.env.REACT_APP_BACKEND_URL;
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/api/subscription/cancel`, {
+      const res = await fetch(`${API_URL}/api/cancel`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
