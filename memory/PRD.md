@@ -997,6 +997,22 @@ Chaque catégorie métier a maintenant un template de checklist spécifique :
 
 ---
 
+### Phase 40 - Bug Fix Branding API ✅ (Date: 2026-03-31)
+
+#### Problème
+Le frontend appelait `PUT /api/entreprise/branding` pour sauvegarder la couleur primaire, mais cette route n'existait pas dans le backend.
+
+#### Correction
+- [x] **Ajout endpoint** `PUT /api/entreprise/branding` dans `/app/backend/routers/entreprise.py`
+- [x] **Validation format hex** - Vérifie que la couleur est au format `#RRGGBB`
+- [x] **Log d'action** - Enregistrement de la modification dans l'audit
+
+#### Test validé
+- Backend curl: ✅ Sauvegarde et lecture de la couleur
+- Frontend UI: ✅ Sélection couleur + toast de confirmation
+
+---
+
 ## 🎯 STATUT FINAL DU PROJET (Mise à jour: 31 Mars 2026)
 
 ### ✅ PRÊT POUR DÉPLOIEMENT PRODUCTION

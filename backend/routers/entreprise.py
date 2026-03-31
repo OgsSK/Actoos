@@ -162,3 +162,30 @@ async def update_entreprise_locale(
     await log_action(current_user["entreprise_id"], current_user["user_id"], "update_locale", "entreprise", current_user["entreprise_id"], {"locale": locale})
     
     return {"message": "Locale mise à jour", "locale": locale}
+
+
+@router.put("/entreprise/branding")
+async def update_entreprise_branding(
+    couleur_primaire: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Update entreprise branding (primary color) - admin only"""
+    # Validate hex color format
+    if not re.match(r'^#[0-9A-Fa-f]{6}$', couleur_primaire):
+        raise HTTPException(status_code=400, detail="Couleur invalide. Format attendu: #RRGGBB (ex: #2563EB)")
+    
+    await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {"$set": {"couleur_primaire": couleur_primaire}}
+    )
+    
+    await log_action(
+        current_user["entreprise_id"], 
+        current_user["user_id"], 
+        "update_branding", 
+        "entreprise", 
+        current_user["entreprise_id"], 
+        {"couleur_primaire": couleur_primaire}
+    )
+    
+    return {"message": "Couleur primaire mise à jour", "couleur_primaire": couleur_primaire}
