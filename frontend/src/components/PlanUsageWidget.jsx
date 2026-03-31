@@ -87,52 +87,98 @@ const FeatureItem = ({ available, label }) => (
   </div>
 );
 
+// Simplified features for each plan (max 5 key features)
+const PLAN_KEY_FEATURES = {
+  startup: [
+    '1 admin, 3 techniciens',
+    '1 catégorie',
+    'Devis & factures',
+    'App PWA terrain',
+    'Signature électronique'
+  ],
+  pro: [
+    '3 admins, 10 techniciens',
+    'Jusqu\'à 4 catégories',
+    'Mode hors ligne',
+    'Planning intelligent',
+    'Branding avancé'
+  ],
+  enterprise: [
+    'Utilisateurs illimités',
+    'Toutes catégories',
+    'Multi-sites',
+    'API accès',
+    'White-label complet'
+  ]
+};
+
 const PlanCard = ({ plan, isCurrentPlan, onSelect }) => {
   const planInfo = PLAN_FEATURES[plan.id] || PLAN_FEATURES.starter;
   const Icon = planInfo.icon;
+  const keyFeatures = PLAN_KEY_FEATURES[plan.id] || PLAN_KEY_FEATURES.startup;
 
   return (
-    <Card className={`relative overflow-hidden transition-all ${isCurrentPlan ? 'ring-2 ring-blue-500 shadow-lg' : 'hover:shadow-md'}`}>
+    <Card className={`relative overflow-hidden transition-all flex flex-col ${
+      isCurrentPlan 
+        ? 'ring-2 ring-blue-500 shadow-xl scale-[1.02]' 
+        : 'hover:shadow-lg hover:scale-[1.01]'
+    }`}>
       {isCurrentPlan && (
-        <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-3 py-1 rounded-bl-lg font-medium">
+        <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-bl-xl font-semibold z-10">
           Plan actuel
         </div>
       )}
-      <CardHeader className={`bg-gradient-to-r ${planInfo.color} text-white`}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-            <Icon className="w-5 h-5" />
+      
+      {/* Header with gradient */}
+      <div className={`bg-gradient-to-br ${planInfo.color} p-4 sm:p-5 text-white`}>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+            <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <CardTitle className="text-lg">{plan.name}</CardTitle>
-            <p className="text-white/80 text-sm">{plan.description}</p>
+            <h3 className="text-xl sm:text-2xl font-bold">{plan.name}</h3>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="p-4 space-y-4">
-        <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-bold text-slate-900">{plan.price}€</span>
-          <span className="text-slate-500">/mois</span>
-        </div>
         
-        <div className="space-y-2 pt-2 border-t">
-          {plan.features.map((feature, idx) => (
-            <div key={idx} className="flex items-center gap-2 text-sm text-slate-600">
-              <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-              {feature}
+        {/* Price - more prominent */}
+        <div className="flex items-baseline gap-1">
+          <span className="text-3xl sm:text-4xl font-black">{plan.price}€</span>
+          <span className="text-white/70 text-sm sm:text-base">/mois</span>
+        </div>
+      </div>
+      
+      {/* Features - simplified */}
+      <CardContent className="p-4 sm:p-5 flex-1 flex flex-col">
+        <div className="space-y-2.5 flex-1">
+          {keyFeatures.map((feature, idx) => (
+            <div key={idx} className="flex items-start gap-2.5">
+              <Check className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+              <span className="text-sm sm:text-base text-slate-700 font-medium leading-tight">
+                {feature}
+              </span>
             </div>
           ))}
         </div>
 
+        {/* CTA Button */}
         {!isCurrentPlan && (
           <Button 
-            className="w-full mt-4" 
+            className={`w-full mt-5 h-11 sm:h-12 text-sm sm:text-base font-semibold ${
+              plan.id === 'enterprise' 
+                ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
             onClick={() => onSelect(plan.id)}
-            variant={plan.id === 'enterprise' ? 'default' : 'outline'}
           >
-            {plan.id === 'enterprise' ? 'Contacter les ventes' : 'Passer à ce plan'}
+            {plan.id === 'enterprise' ? 'Contacter' : 'Choisir ce plan'}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
+        )}
+        
+        {isCurrentPlan && (
+          <div className="mt-5 h-11 sm:h-12 flex items-center justify-center bg-slate-100 rounded-lg text-slate-500 font-medium">
+            Votre plan actuel
+          </div>
         )}
       </CardContent>
     </Card>
@@ -654,14 +700,16 @@ const PlanUsageWidget = ({ compact = false }) => {
 
       {/* Upgrade Dialog */}
       <Dialog open={showUpgrade} onOpenChange={setShowUpgrade}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Changer de plan</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-xl sm:text-2xl">Choisissez votre plan</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
               Débloquez plus de fonctionnalités pour développer votre activité
             </DialogDescription>
           </DialogHeader>
-          <div className="grid md:grid-cols-3 gap-4 mt-4">
+          
+          {/* Mobile: vertical stack, Desktop: 3 columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {plans.map(plan => (
               <PlanCard
                 key={plan.id}
