@@ -499,7 +499,8 @@ export const DashboardLayout = ({ children }) => {
   
   const handleExitDemo = () => {
     logout();
-    navigate('/');
+    // Use window.location to avoid React Router catching the redirect
+    window.location.href = '/';
   };
 
   return (
