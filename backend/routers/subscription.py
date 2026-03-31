@@ -778,7 +778,20 @@ async def cancel_subscription(
     logger.info(f"Cancellation feedback saved: {cancel_reason} - {entreprise.get('nom')}")
     
     if not subscription_id:
-        raise HTTPException(status_code=400, detail="Aucun abonnement actif trouvé")
+        # No Stripe subscription - just reset the plan to free/none
+        await db.entreprises.update_one(
+            {"id": current_user["entreprise_id"]},
+            {"$set": {
+                "plan": None,
+                "subscription_status": "cancelled",
+                "cancel_at_period_end": False,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        return {
+            "success": True,
+            "message": "Votre abonnement a été annulé."
+        }
     
     try:
         # Cancel the subscription at period end (user keeps access until end of billing period)
