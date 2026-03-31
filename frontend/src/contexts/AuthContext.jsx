@@ -175,6 +175,7 @@ export const AuthProvider = ({ children }) => {
   const canUseTeamValidation = useMemo(() => hasFeature('team_validation'), [hasFeature]);
   const canUseWhiteLabel = useMemo(() => hasFeature('white_label'), [hasFeature]);
   const canUseApiAccess = useMemo(() => hasFeature('api_access'), [hasFeature]);
+  const canUseAdvancedBranding = useMemo(() => hasFeature('advanced_branding'), [hasFeature]);
 
   const value = {
     user,
@@ -208,6 +209,7 @@ export const AuthProvider = ({ children }) => {
     canUseTeamValidation,
     canUseWhiteLabel,
     canUseApiAccess,
+    canUseAdvancedBranding,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -11,6 +11,10 @@ import logging
 from pathlib import Path
 import asyncio
 
+# Load environment variables FIRST before other imports
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
 from storage import init_storage
 from sms_service import init_twilio
 from email_service import send_relance_email
@@ -44,9 +48,6 @@ from routers import (
     calendar as calendar_router,
     accounting_export as accounting_export_router
 )
-
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']

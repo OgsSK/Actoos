@@ -115,21 +115,13 @@ DEFAULT_CATEGORIES = [
 
 
 async def seed_categories_for_entreprise(entreprise_id: str):
-    """Seed default categories for a new entreprise"""
-    existing = await db.categories.count_documents({"entreprise_id": entreprise_id})
-    if existing > 0:
-        return  # Already seeded
-    
-    for cat in DEFAULT_CATEGORIES:
-        cat_doc = {
-            **cat,
-            "id": str(uuid.uuid4()),
-            "entreprise_id": entreprise_id,
-            "active": True,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.categories.insert_one(cat_doc)
-    logger.info(f"Seeded {len(DEFAULT_CATEGORIES)} categories for entreprise {entreprise_id}")
+    """Seed default categories for a new entreprise, respecting plan limits
+    NOTE: Auto-seeding is DISABLED to respect plan limits. 
+    Users must create their own categories.
+    """
+    # Auto-seeding disabled - users should create their own categories
+    # to respect the plan limits they chose during signup
+    pass
 
 
 @router.get("")

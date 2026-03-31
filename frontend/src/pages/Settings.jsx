@@ -361,7 +361,7 @@ const CategoriesManager = ({ api }) => {
 };
 
 export const SettingsPage = () => {
-  const { api, entreprise, user, refreshUser } = useAuth();
+  const { api, entreprise, user, refreshUser, canUseAdvancedBranding, currentPlan } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
@@ -1084,68 +1084,91 @@ export const SettingsPage = () => {
                 </div>
               </div>
 
-              {/* Primary Color */}
+              {/* Primary Color - Only for Pro+ plans */}
               <div className="space-y-4 pt-6 border-t">
                 <Label className="text-base font-semibold">Couleur principale</Label>
                 <p className="text-sm text-slate-500">
                   Cette couleur sera utilisée pour les accents dans l'interface et les documents.
                 </p>
                 
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={brandingData.couleur_primaire}
-                      onChange={(e) => setBrandingData(prev => ({ ...prev, couleur_primaire: e.target.value }))}
-                      className="w-12 h-12 rounded-lg cursor-pointer border-2 border-slate-200"
-                      data-testid="color-picker"
-                    />
-                    <Input
-                      value={brandingData.couleur_primaire}
-                      onChange={(e) => setBrandingData(prev => ({ ...prev, couleur_primaire: e.target.value }))}
-                      placeholder="#2563EB"
-                      className="w-28 font-mono uppercase"
-                    />
-                  </div>
-                  
-                  {/* Color presets */}
-                  <div className="flex gap-2">
-                    {['#2563EB', '#059669', '#DC2626', '#7C3AED', '#EA580C', '#0891B2'].map(color => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => setBrandingData(prev => ({ ...prev, couleur_primaire: color }))}
-                        className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${
-                          brandingData.couleur_primaire === color ? 'border-slate-900 scale-110' : 'border-transparent'
-                        }`}
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                </div>
-                
-                <Button
-                  onClick={async () => {
-                    setSavingBranding(true);
-                    try {
-                      await api.put('/entreprise/branding', null, {
-                        params: { couleur_primaire: brandingData.couleur_primaire }
-                      });
-                      toast.success('Couleur mise à jour');
-                      refreshUser();
-                    } catch (error) {
-                      console.error('Error saving branding:', error);
-                      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
-                    } finally {
-                      setSavingBranding(false);
-                    }
-                  }}
-                  disabled={savingBranding}
-                  data-testid="save-branding-btn"
-                >
-                  {savingBranding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
-                  Enregistrer la couleur
-                </Button>
+                {canUseAdvancedBranding ? (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={brandingData.couleur_primaire}
+                          onChange={(e) => setBrandingData(prev => ({ ...prev, couleur_primaire: e.target.value }))}
+                          className="w-12 h-12 rounded-lg cursor-pointer border-2 border-slate-200"
+                          data-testid="color-picker"
+                        />
+                        <Input
+                          value={brandingData.couleur_primaire}
+                          onChange={(e) => setBrandingData(prev => ({ ...prev, couleur_primaire: e.target.value }))}
+                          placeholder="#2563EB"
+                          className="w-28 font-mono uppercase"
+                        />
+                      </div>
+                      
+                      {/* Color presets */}
+                      <div className="flex gap-2">
+                        {['#2563EB', '#059669', '#DC2626', '#7C3AED', '#EA580C', '#0891B2'].map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => setBrandingData(prev => ({ ...prev, couleur_primaire: color }))}
+                            className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${
+                              brandingData.couleur_primaire === color ? 'border-slate-900 scale-110' : 'border-transparent'
+                            }`}
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <Button
+                      onClick={async () => {
+                        setSavingBranding(true);
+                        try {
+                          await api.put('/entreprise/branding', null, {
+                            params: { couleur_primaire: brandingData.couleur_primaire }
+                          });
+                          toast.success('Couleur mise à jour');
+                          refreshUser();
+                        } catch (error) {
+                          console.error('Error saving branding:', error);
+                          toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+                        } finally {
+                          setSavingBranding(false);
+                        }
+                      }}
+                      disabled={savingBranding}
+                      data-testid="save-branding-btn"
+                    >
+                      {savingBranding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+                      Enregistrer la couleur
+                    </Button>
+                  </>
+                ) : (
+                  <Alert className="border-amber-200 bg-amber-50">
+                    <Info className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-800">
+                      <strong>Fonctionnalité Pro</strong>
+                      <p className="mt-1 text-sm">
+                        La personnalisation des couleurs est disponible à partir du plan Pro.
+                        Passez au plan supérieur pour personnaliser l'interface avec vos couleurs.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-3"
+                        onClick={() => window.location.href = '/dashboard/settings?tab=abonnement'}
+                      >
+                        Passer à Pro
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
 
               {/* Preview */}

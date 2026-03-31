@@ -68,17 +68,25 @@ async def upload_logo(file: UploadFile = File(...), current_user: dict = Depends
     ext = file.filename.split('.')[-1] if '.' in file.filename else 'png'
     storage_path = f"logos/{current_user['entreprise_id']}.{ext}"
     
-    # Upload to storage
+    # Upload to storage (put_object is synchronous)
     try:
-        url = await put_object(storage_path, content, file.content_type)
+        result = put_object(storage_path, content, file.content_type)
+        
+        if not result:
+            raise HTTPException(status_code=500, detail="Erreur de stockage: service non disponible")
+        
+        # Build the public URL from the storage path
+        logo_url = f"https://integrations.emergentagent.com/objstore/api/v1/storage/objects/{result.get('path', storage_path)}"
         
         # Update entreprise with logo URL
         await db.entreprises.update_one(
             {"id": current_user["entreprise_id"]},
-            {"$set": {"logo_url": url}}
+            {"$set": {"logo_url": logo_url}}
         )
         
-        return {"logo_url": url, "message": "Logo uploadé avec succès"}
+        return {"logo_url": logo_url, "message": "Logo uploadé avec succès"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'upload: {str(e)}")
 
