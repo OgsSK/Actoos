@@ -1,9 +1,20 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { OfflineProvider } from "./contexts/OfflineContext";
 import { Toaster } from "./components/ui/sonner";
+
+// Scroll to top on route change
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  
+  return null;
+};
 
 // Auth Pages
 import { LoginPage, RegisterPage, ActivatePage, ForgotPasswordPage, ResetPasswordPage } from "./pages/AuthPages";
@@ -100,6 +111,7 @@ function App() {
     <AuthProvider>
       <OfflineProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             {/* Home */}
             <Route path="/" element={<HomeRedirect />} />
