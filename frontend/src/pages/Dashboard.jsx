@@ -64,7 +64,7 @@ const Sidebar = ({ open, onClose }) => {
           <div className="p-4 border-b border-slate-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img src="/actoos-favicon.png" alt="Actoos" className="w-10 h-10 rounded-lg object-contain bg-white/10 p-1" />
+                <img src="/actoos-icon.svg" alt="Actoos" className="w-10 h-10 rounded-lg object-contain" />
                 <div>
                   <h1 className="font-bold text-lg">Actoos</h1>
                   <p className="text-xs text-slate-400 truncate max-w-[140px]">{entreprise?.nom}</p>
