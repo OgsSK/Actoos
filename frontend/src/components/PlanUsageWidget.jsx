@@ -9,7 +9,7 @@ import {
 } from '../components/ui/dialog';
 import {
   Users, Calendar, FolderTree, Zap, Crown, Rocket, Building2,
-  Check, X, ArrowRight, Sparkles, MessageSquare, Code, Palette, CreditCard
+  Check, X, ArrowRight, Sparkles, MessageSquare, Code, Palette, CreditCard, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -153,6 +153,9 @@ const PlanUsageWidget = ({ compact = false }) => {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelFeedback, setCancelFeedback] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   // Raisons de résiliation
   const cancelReasons = [
@@ -164,6 +167,40 @@ const PlanUsageWidget = ({ compact = false }) => {
     { value: 'temporary', label: 'Pause temporaire' },
     { value: 'other', label: 'Autre raison' }
   ];
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'SUPPRIMER') {
+      toast.error('Veuillez taper SUPPRIMER pour confirmer');
+      return;
+    }
+    
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/delete-account`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast.success('Compte supprimé définitivement');
+        // Logout and redirect
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } else {
+        toast.error(data.detail || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      toast.error('Erreur de connexion');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleCancelSubscription = async () => {
     if (!cancelReason) {
@@ -525,6 +562,20 @@ const PlanUsageWidget = ({ compact = false }) => {
             >
               Annuler mon abonnement
             </Button>
+            
+            <div className="mt-6 pt-6 border-t border-red-200">
+              <p className="text-sm text-red-600 font-medium mb-2">Zone dangereuse</p>
+              <p className="text-xs text-slate-500 mb-3">
+                La suppression de votre compte est irréversible. Toutes vos données seront définitivement effacées.
+              </p>
+              <Button
+                variant="ghost"
+                className="text-red-600 hover:bg-red-50 text-sm"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                Supprimer définitivement mon compte
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -678,6 +729,64 @@ const PlanUsageWidget = ({ compact = false }) => {
               <li>• <strong>Downgrade :</strong> Prend effet à la fin de votre période de facturation</li>
               <li>• Vous pouvez changer de plan à tout moment</li>
             </ul>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              Supprimer votre compte
+            </DialogTitle>
+            <DialogDescription>
+              Cette action est <strong>irréversible</strong>. Toutes vos données seront définitivement supprimées :
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <ul className="text-sm text-slate-600 space-y-1 bg-red-50 p-3 rounded-lg">
+              <li>• Tous vos clients et contacts</li>
+              <li>• Tous vos devis et factures</li>
+              <li>• Toutes vos interventions</li>
+              <li>• Tous vos techniciens</li>
+              <li>• Toutes les photos et documents</li>
+              <li>• Votre abonnement sera annulé</li>
+            </ul>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                Pour confirmer, tapez <strong>SUPPRIMER</strong> ci-dessous :
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="SUPPRIMER"
+                className="flex h-10 w-full rounded-md border border-red-300 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setDeleteConfirmText('');
+              }}
+            >
+              Annuler
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteAccount}
+              disabled={deleting || deleteConfirmText !== 'SUPPRIMER'}
+            >
+              {deleting ? 'Suppression...' : 'Supprimer définitivement'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

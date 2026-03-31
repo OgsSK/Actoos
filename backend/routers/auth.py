@@ -264,3 +264,67 @@ async def reset_password(data: UserSetPassword):
     )
     
     return {"message": "Mot de passe réinitialisé avec succès"}
+
+
+
+@router.delete("/delete-account")
+async def delete_account(
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Suppression définitive du compte et de toutes les données associées.
+    ATTENTION: Cette action est irréversible!
+    Conforme GDPR - Droit à l'effacement (Article 17)
+    """
+    entreprise_id = current_user["entreprise_id"]
+    
+    # Annuler l'abonnement Stripe si actif
+    entreprise = await db.entreprises.find_one({"id": entreprise_id})
+    if entreprise and entreprise.get("stripe_subscription_id"):
+        try:
+            import stripe
+            import os
+            stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+            stripe.Subscription.cancel(entreprise["stripe_subscription_id"])
+        except Exception as e:
+            # Log but continue with deletion
+            pass
+    
+    # Supprimer toutes les données de l'entreprise
+    collections_to_delete = [
+        "users",
+        "clients", 
+        "interventions",
+        "devis",
+        "factures",
+        "categories",
+        "sites",
+        "photos",
+        "rapports",
+        "statements",
+        "audit_logs",
+        "cancellation_feedback",
+        "communications"
+    ]
+    
+    deleted_counts = {}
+    for collection in collections_to_delete:
+        result = await db[collection].delete_many({"entreprise_id": entreprise_id})
+        deleted_counts[collection] = result.deleted_count
+    
+    # Supprimer l'entreprise elle-même
+    await db.entreprises.delete_one({"id": entreprise_id})
+    
+    # Log cette action critique (dans une collection séparée pour audit GDPR)
+    await db.gdpr_deletions.insert_one({
+        "entreprise_id": entreprise_id,
+        "entreprise_nom": entreprise.get("nom") if entreprise else "Unknown",
+        "deleted_by": current_user["user_id"],
+        "deleted_at": datetime.now(timezone.utc).isoformat(),
+        "deleted_counts": deleted_counts
+    })
+    
+    return {
+        "message": "Compte supprimé définitivement",
+        "deleted": deleted_counts
+    }
