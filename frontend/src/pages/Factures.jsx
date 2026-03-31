@@ -212,12 +212,12 @@ export const FacturesList = () => {
                       </TableCell>
                     )}
                     <TableCell>
-                      <p className="font-mono font-medium text-slate-900">{facture.numero_facture}</p>
+                      <p className="font-mono font-medium text-slate-900">{facture.numero}</p>
                     </TableCell>
                     <TableCell>{facture.client_nom}</TableCell>
                     <TableCell>{formatDate(facture.created_at)}</TableCell>
                     <TableCell>{formatDate(facture.date_echeance)}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatAmount(facture.total_ttc)}</TableCell>
+                    <TableCell className="text-right font-semibold">{formatAmount(facture.montant_ttc)}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={`status-${facture.statut}`}>
                         {getStatusLabel(facture.statut)}
@@ -268,7 +268,7 @@ export const FactureDetail = () => {
       setFacture(response.data);
       setPaymentData(prev => ({
         ...prev,
-        montant: response.data.total_ttc - (response.data.montant_paye || 0),
+        montant: response.data.montant_ttc - (response.data.montant_paye || 0),
       }));
     } catch (error) {
       console.error('Error fetching facture:', error);
@@ -347,7 +347,7 @@ export const FactureDetail = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `facture_${facture.numero_facture}.pdf`;
+      link.download = `facture_${facture.numero}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -370,7 +370,7 @@ export const FactureDetail = () => {
     return <div>Facture non trouvée</div>;
   }
 
-  const resteDu = facture.total_ttc - (facture.montant_paye || 0);
+  const resteDu = facture.montant_ttc - (facture.montant_paye || 0);
 
   return (
     <div className="space-y-6" data-testid="facture-detail">
@@ -382,7 +382,7 @@ export const FactureDetail = () => {
             Factures
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">{facture.numero_facture}</h1>
+            <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">{facture.numero}</h1>
             <Badge variant="secondary" className={`status-${facture.statut}`}>
               {getStatusLabel(facture.statut)}
             </Badge>
@@ -435,7 +435,7 @@ export const FactureDetail = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Supprimer la facture ?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Cette action est irréversible. La facture {facture.numero_facture} sera définitivement supprimée.
+                    Cette action est irréversible. La facture {facture.numero} sera définitivement supprimée.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -568,7 +568,7 @@ export const FactureDetail = () => {
                     </div>
                     <div className="flex justify-between text-lg font-bold border-t border-slate-200 pt-2">
                       <span>Total TTC</span>
-                      <span>{formatAmount(facture.total_ttc)}</span>
+                      <span>{formatAmount(facture.montant_ttc)}</span>
                     </div>
                     {facture.montant_paye > 0 && (
                       <>
