@@ -4,16 +4,28 @@
   "description": "Application terrain pour techniciens - Gestion des interventions, devis et factures",
   "icons": [
     {
-      "src": "favicon.svg",
+      "src": "actoos-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "actoos-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "actoos-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "actoos-favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "start_url": "/tech",
@@ -27,5 +39,14 @@
   "categories": ["business", "productivity"],
   "lang": "fr-FR",
   "dir": "ltr",
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Mes interventions",
+      "short_name": "Interventions",
+      "description": "Voir mes interventions du jour",
+      "url": "/tech",
+      "icons": [{"src": "actoos-icon.png", "sizes": "192x192"}]
+    }
+  ]
 }
