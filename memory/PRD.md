@@ -148,3 +148,16 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - **Limite sécurisée**: 150 opérations simultanées
 - **Limite confortable**: 200 opérations simultanées
 - **Limite maximum**: 300 opérations (latence élevée mais 0 erreurs)
+
+
+## 🔒 Sécurité Photos (EXIF Stripping) - IMPLÉMENTÉ
+
+Toutes les photos uploadées via l'API sont automatiquement traitées :
+- **Suppression EXIF** : Coordonnées GPS, modèle appareil, date/heure supprimés
+- **Compression** : Réduction automatique à max 500KB
+- **Redimensionnement** : Max 1920x1920 pixels
+- **Conversion** : Toutes les images converties en JPEG
+
+Fichiers concernés :
+- `/app/backend/image_utils.py` - Fonctions de traitement
+- `/app/backend/routers/photos.py` - Endpoint upload
