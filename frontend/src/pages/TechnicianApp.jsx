@@ -38,6 +38,7 @@ import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday }
 import { fr } from 'date-fns/locale';
 import SignaturePad from '../components/SignaturePad';
 import SyncStatusPanel from '../components/SyncStatusPanel';
+import ConflictNotificationBanner, { ConflictBadge } from '../components/ConflictNotificationBanner';
 
 // PWA Install Prompt Component
 const InstallPrompt = () => {
@@ -312,6 +313,7 @@ const InterventionCard = ({ intervention, onClick, onClaim, currentUserId }) => 
               <Badge variant="secondary" className={`status-${intervention.statut}`}>
                 {getStatusLabel(intervention.statut)}
               </Badge>
+              <ConflictBadge interventionId={intervention.id} />
               {isAvailable && (
                 <Badge variant="secondary" className="bg-amber-100 text-amber-700 animate-pulse">
                   Disponible
@@ -1607,6 +1609,9 @@ export const TechnicianApp = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-4 pb-20">
+        {/* Conflict Notification Banner */}
+        <ConflictNotificationBanner />
+        
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-slate-400" />

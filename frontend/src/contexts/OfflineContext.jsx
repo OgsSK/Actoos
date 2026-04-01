@@ -396,7 +396,28 @@ export const OfflineProvider = ({ children }) => {
             details: conflict.message
           });
           
-          toast.info(`Conflit résolu pour intervention: version serveur appliquée`);
+          // Store conflict info for visual indicator
+          const conflictInfo = {
+            interventionId: conflict.intervention_id,
+            resolvedAt: new Date().toISOString(),
+            reason: 'server_wins',
+            message: 'Vos modifications ont été écrasées par une version plus récente du serveur'
+          };
+          
+          // Store in localStorage for persistent notification
+          const recentConflicts = JSON.parse(localStorage.getItem('lww_conflicts') || '[]');
+          recentConflicts.unshift(conflictInfo);
+          // Keep only last 10 conflicts
+          localStorage.setItem('lww_conflicts', JSON.stringify(recentConflicts.slice(0, 10)));
+          
+          toast.warning(
+            <div className="space-y-1">
+              <p className="font-medium">Conflit de synchronisation résolu</p>
+              <p className="text-sm opacity-90">La version du serveur était plus récente et a été appliquée.</p>
+              <p className="text-xs opacity-75">Vérifiez l'historique de sync pour plus de détails.</p>
+            </div>,
+            { duration: 6000 }
+          );
         }
         
         // Apply server updates

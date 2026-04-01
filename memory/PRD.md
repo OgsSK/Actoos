@@ -177,6 +177,12 @@ Résolution automatique des conflits quand un technicien travaille hors ligne :
 - Notification utilisateur des conflits résolus
 - Historique des syncs dans IndexedDB
 
+### Indicateurs Visuels de Conflits (PWA Technicien)
+- **Banner de notification** : Affiché quand des modifications ont été écrasées
+- **Badge "Sync"** : Sur les cartes d'intervention ayant eu un conflit récent
+- **Dialog de détails** : Permet de voir les conflits et les marquer comme lus
+- **Stockage persistant** : Les conflits sont gardés pendant 24h pour affichage
+
 ### Logique LWW
 1. Client envoie `local_updated_at` avec ses modifications
 2. Serveur compare avec `server_updated_at`
