@@ -115,6 +115,12 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 
 ## 📅 Changelog
 
+### 2026-04-01 (Session 2)
+- **Audit complet des emails système** : Vérifié tous les templates (devis, factures, relances, invitations, welcome, résiliation)
+- **Fix critique**: Ajout `import os` dans `auth.py` (invitation technicien crashait)
+- **Fix critique**: Création fonction `send_email_with_attachment` dans `email_service.py` (relevés de compte crashaient)
+- Tous les emails ont des URLs correctes pointant vers `actoos.com`
+
 ### 2026-03-31
 - Test flux abonnements complet
 - Correction conversion devises

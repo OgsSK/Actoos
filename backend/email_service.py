@@ -375,3 +375,47 @@ async def send_relance_email(facture: dict, client: dict, entreprise: dict, jour
     }
     
     return result
+
+
+async def send_email_with_attachment(
+    to_email: str,
+    subject: str,
+    html_content: str,
+    attachment_bytes: bytes,
+    attachment_filename: str,
+    from_name: str = None
+) -> dict:
+    """Send email with a file attachment (used for statements, reports, etc.)"""
+    
+    if not resend.api_key:
+        logger.warning("RESEND_API_KEY not configured, email not sent")
+        return {"status": "skipped", "message": "Email service not configured"}
+    
+    # Build sender with custom name if provided
+    sender = f"{from_name} <{SENDER_EMAIL}>" if from_name else SENDER_EMAIL
+    
+    params = {
+        "from": sender,
+        "to": [to_email],
+        "subject": subject,
+        "html": html_content,
+        "attachments": [{
+            "filename": attachment_filename,
+            "content": base64.b64encode(attachment_bytes).decode('utf-8')
+        }]
+    }
+    
+    try:
+        email = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Email with attachment sent successfully to {to_email}")
+        return {
+            "status": "success",
+            "message": f"Email envoyé à {to_email}",
+            "email_id": email.get("id")
+        }
+    except Exception as e:
+        logger.error(f"Failed to send email with attachment to {to_email}: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Erreur lors de l'envoi: {str(e)}"
+        }

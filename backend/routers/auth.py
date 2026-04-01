@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
 import uuid
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
