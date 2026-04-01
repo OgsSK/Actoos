@@ -288,3 +288,155 @@ async def get_revenue_by_plan(current_user: dict = Depends(require_super_admin))
         "total_mrr": total_mrr,
         "arr": total_mrr * 12
     }
+
+
+@router.post("/setup-demo-account")
+async def setup_demo_account(secret_key: str):
+    """
+    Crée le compte démo et supprime les comptes test
+    Protégé par une clé secrète (à appeler une seule fois)
+    """
+    # Clé secrète pour protéger cet endpoint
+    import os
+    expected_key = os.environ.get("ADMIN_SETUP_KEY", "actoos-setup-2024-secret")
+    
+    if secret_key != expected_key:
+        raise HTTPException(status_code=403, detail="Clé invalide")
+    
+    from auth import get_password_hash
+    import uuid
+    
+    results = {
+        "deleted_test_accounts": [],
+        "deleted_test_entreprises": [],
+        "demo_account_created": False,
+        "errors": []
+    }
+    
+    # 1. Supprimer les comptes test
+    test_emails = [
+        "admin@test-pro.com",
+        "admin@test-startup.com", 
+        "admin@test-enterprise.com"
+    ]
+    
+    for email in test_emails:
+        try:
+            # Trouver l'utilisateur test
+            test_user = await db.users.find_one({"email": email})
+            if test_user:
+                entreprise_id = test_user.get("entreprise_id")
+                
+                # Supprimer l'utilisateur
+                await db.users.delete_one({"email": email})
+                results["deleted_test_accounts"].append(email)
+                
+                # Supprimer l'entreprise associée et toutes ses données
+                if entreprise_id:
+                    await db.entreprises.delete_one({"id": entreprise_id})
+                    await db.users.delete_many({"entreprise_id": entreprise_id})
+                    await db.clients.delete_many({"entreprise_id": entreprise_id})
+                    await db.interventions.delete_many({"entreprise_id": entreprise_id})
+                    await db.devis.delete_many({"entreprise_id": entreprise_id})
+                    await db.factures.delete_many({"entreprise_id": entreprise_id})
+                    await db.categories.delete_many({"entreprise_id": entreprise_id})
+                    results["deleted_test_entreprises"].append(entreprise_id)
+        except Exception as e:
+            results["errors"].append(f"Erreur suppression {email}: {str(e)}")
+    
+    # 2. Créer ou mettre à jour le compte démo
+    try:
+        demo_email = "demo@actoos.com"
+        demo_password = "demo2024"
+        
+        # Vérifier si le compte démo existe déjà
+        existing_demo = await db.users.find_one({"email": demo_email})
+        
+        if existing_demo:
+            results["demo_account_created"] = "already_exists"
+        else:
+            # Créer l'entreprise démo
+            demo_entreprise_id = str(uuid.uuid4())
+            demo_entreprise = {
+                "id": demo_entreprise_id,
+                "nom": "Entreprise Démo",
+                "email": demo_email,
+                "telephone": "+33 1 23 45 67 89",
+                "adresse": "123 Rue de la Démo",
+                "ville": "Paris",
+                "code_postal": "75001",
+                "pays": "France",
+                "siret": "12345678901234",
+                "tva_number": "FR12345678901",
+                "plan": "enterprise",
+                "plan_limits": {
+                    "max_admins": 99,
+                    "max_technicians": 99,
+                    "max_categories": 99,
+                    "max_interventions_month": -1,
+                    "multi_sites": True,
+                    "offline_mode": True,
+                    "geolocation": True,
+                    "auto_pdf_reports": True,
+                    "advanced_analytics": True,
+                    "white_label": True,
+                    "api_access": True,
+                    "advanced_branding": True,
+                    "smart_planning": True,
+                    "sms_notifications": True,
+                    "custom_fields": True,
+                    "priority_support": True
+                },
+                "is_demo": True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.entreprises.insert_one(demo_entreprise)
+            
+            # Créer l'utilisateur admin démo
+            demo_user_id = str(uuid.uuid4())
+            demo_user = {
+                "id": demo_user_id,
+                "email": demo_email,
+                "password_hash": get_password_hash(demo_password),
+                "nom": "Utilisateur",
+                "prenom": "Démo",
+                "role": "admin",
+                "entreprise_id": demo_entreprise_id,
+                "is_active": True,
+                "is_demo": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.users.insert_one(demo_user)
+            
+            # Créer quelques données de démonstration
+            # Catégorie
+            demo_category = {
+                "id": str(uuid.uuid4()),
+                "nom": "Maintenance",
+                "description": "Interventions de maintenance",
+                "entreprise_id": demo_entreprise_id,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.categories.insert_one(demo_category)
+            
+            # Client démo
+            demo_client = {
+                "id": str(uuid.uuid4()),
+                "nom": "Dupont",
+                "prenom": "Jean",
+                "email": "jean.dupont@demo.com",
+                "telephone": "+33 6 12 34 56 78",
+                "adresse": "45 Avenue des Champs",
+                "ville": "Paris",
+                "code_postal": "75008",
+                "entreprise_id": demo_entreprise_id,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.clients.insert_one(demo_client)
+            
+            results["demo_account_created"] = True
+    except Exception as e:
+        results["errors"].append(f"Erreur création démo: {str(e)}")
+    
+    return results
