@@ -98,6 +98,7 @@ async def create_intervention(
     intervention_dict["photos"] = []
     intervention_dict["date_prevue"] = intervention_dict["date_prevue"].isoformat()
     intervention_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    intervention_dict["updated_at"] = intervention_dict["created_at"]
     
     await db.interventions.insert_one(intervention_dict)
     await log_action(current_user["entreprise_id"], current_user["user_id"], "create", "intervention", intervention_dict["id"])
@@ -456,6 +457,9 @@ async def update_intervention(
         if key in update_data and update_data[key]:
             update_data[key] = update_data[key].isoformat()
     
+    # Add updated_at timestamp for LWW conflict resolution
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
     result = await db.interventions.update_one(query, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Intervention non trouvée")
@@ -505,7 +509,7 @@ async def cancel_intervention(
     if intervention["statut"] in ["terminee", "annulee"]:
         raise HTTPException(status_code=400, detail="Cette intervention ne peut pas être annulée")
     
-    update = {"statut": "annulee", "date_annulation": now}
+    update = {"statut": "annulee", "date_annulation": now, "updated_at": now}
     if motif:
         update["motif_annulation"] = motif
     
@@ -544,7 +548,7 @@ async def start_intervention(
         raise HTTPException(status_code=400, detail="Cette intervention ne peut pas être démarrée")
     
     # If unassigned and tech starts, assign to them
-    update = {"statut": "en_cours", "heure_debut": now}
+    update = {"statut": "en_cours", "heure_debut": now, "updated_at": now}
     if is_unassigned and not is_admin:
         update["technicien_id"] = current_user["user_id"]
     
@@ -592,7 +596,7 @@ async def claim_intervention(
     now = datetime.now(timezone.utc).isoformat()
     await db.interventions.update_one(
         {"id": intervention_id, "technicien_id": None},
-        {"$set": {"technicien_id": current_user["user_id"], "date_assignation": now}}
+        {"$set": {"technicien_id": current_user["user_id"], "date_assignation": now, "updated_at": now}}
     )
     
     # Verify it was actually assigned to this user (race condition check)
@@ -622,7 +626,7 @@ async def complete_intervention(
 ):
     """Complete an intervention"""
     now = datetime.now(timezone.utc).isoformat()
-    update = {"statut": "terminee", "heure_fin": now}
+    update = {"statut": "terminee", "heure_fin": now, "updated_at": now}
     if notes_terrain:
         update["notes_terrain"] = notes_terrain
     
@@ -668,7 +672,7 @@ async def update_intervention_checklist(
     
     await db.interventions.update_one(
         {"id": intervention_id},
-        {"$set": {"checklist_responses": responses_dict}}
+        {"$set": {"checklist_responses": responses_dict, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
     
     await log_action(current_user["entreprise_id"], current_user["user_id"], "update_checklist", "intervention", intervention_id)
@@ -720,7 +724,8 @@ async def complete_intervention_with_signature(
         "heure_fin": now,
         "signature_client": data.signature,
         "nom_signataire": data.nom_signataire,
-        "date_signature": now
+        "date_signature": now,
+        "updated_at": now
     }
     
     if data.notes:
@@ -776,7 +781,8 @@ async def add_signature_to_intervention(
     update = {
         "signature_client": data.signature,
         "nom_signataire": data.nom_signataire,
-        "date_signature": now
+        "date_signature": now,
+        "updated_at": now
     }
     
     await db.interventions.update_one({"id": intervention_id}, {"$set": update})
@@ -824,7 +830,7 @@ async def update_intervention_geolocation(
     
     await db.interventions.update_one(
         {"id": intervention_id},
-        {"$set": {field_name: geo_data}}
+        {"$set": {field_name: geo_data, "updated_at": now}}
     )
     
     return {"message": "Géolocalisation mise à jour", "type": geo_type, "geo": geo_data}
@@ -862,7 +868,8 @@ async def validate_intervention(
             "statut": "terminee",
             "validated_by": current_user["user_id"],
             "validated_at": now,
-            "notes_validation": notes_validation
+            "notes_validation": notes_validation,
+            "updated_at": now
         }
         action = "validate"
         message = "Intervention validée et terminée"
@@ -874,7 +881,8 @@ async def validate_intervention(
             "rejected_at": now,
             "rejection_reason": notes_validation,
             # Clear the signature so tech needs to re-complete
-            "heure_fin": None
+            "heure_fin": None,
+            "updated_at": now
         }
         action = "reject"
         message = "Intervention rejetée - renvoyée au technicien"
@@ -923,3 +931,182 @@ async def get_interventions_pending_validation(
             intervention["technicien_nom"] = f"{tech.get('prenom', '')} {tech.get('nom', '')}" if tech else ""
     
     return [serialize_doc(i) for i in interventions]
+
+
+# ==================== OFFLINE SYNC WITH LWW ====================
+
+@router.post("/sync")
+async def sync_interventions(
+    changes: List[dict] = Body(...),
+    last_sync: Optional[str] = Body(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Synchronize offline changes with Last-Write-Wins conflict resolution.
+    
+    Each change should have:
+    - intervention_id: str
+    - updates: dict of field changes
+    - local_updated_at: ISO timestamp of when the change was made locally
+    
+    Returns:
+    - synced: list of successfully synced interventions
+    - conflicts: list of interventions where server version was newer (LWW applied)
+    - errors: list of failed syncs
+    - server_updates: interventions modified on server since last_sync
+    """
+    results = {
+        "synced": [],
+        "conflicts": [],
+        "errors": [],
+        "server_updates": []
+    }
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    for change in changes:
+        try:
+            intervention_id = change.get("intervention_id")
+            updates = change.get("updates", {})
+            local_updated_at = change.get("local_updated_at")
+            
+            if not intervention_id:
+                results["errors"].append({"error": "Missing intervention_id", "change": change})
+                continue
+            
+            # Fetch current server state
+            query = {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]}
+            if current_user["role"] == "tech":
+                query["$or"] = [
+                    {"technicien_id": current_user["user_id"]},
+                    {"technicien_id": None},
+                    {"technicien_id": {"$exists": False}}
+                ]
+            
+            server_intervention = await db.interventions.find_one(query, {"_id": 0})
+            
+            if not server_intervention:
+                results["errors"].append({
+                    "intervention_id": intervention_id, 
+                    "error": "Intervention not found or not accessible"
+                })
+                continue
+            
+            server_updated_at = server_intervention.get("updated_at")
+            
+            # LWW: Compare timestamps
+            conflict_detected = False
+            if server_updated_at and local_updated_at:
+                server_time = datetime.fromisoformat(server_updated_at.replace('Z', '+00:00'))
+                local_time = datetime.fromisoformat(local_updated_at.replace('Z', '+00:00'))
+                
+                if server_time > local_time:
+                    # Server version is newer - this is a conflict, server wins
+                    conflict_detected = True
+                    results["conflicts"].append({
+                        "intervention_id": intervention_id,
+                        "server_updated_at": server_updated_at,
+                        "local_updated_at": local_updated_at,
+                        "server_data": serialize_doc(server_intervention),
+                        "resolution": "server_wins",
+                        "message": "La version du serveur est plus récente"
+                    })
+                    continue
+            
+            # Apply updates (local version wins or no conflict)
+            # Clean updates - remove protected fields
+            protected_fields = ["id", "entreprise_id", "_id", "created_at"]
+            clean_updates = {k: v for k, v in updates.items() if k not in protected_fields}
+            clean_updates["updated_at"] = now
+            clean_updates["synced_at"] = now
+            
+            await db.interventions.update_one(
+                {"id": intervention_id},
+                {"$set": clean_updates}
+            )
+            
+            # Fetch updated intervention
+            updated = await db.interventions.find_one({"id": intervention_id}, {"_id": 0})
+            
+            results["synced"].append({
+                "intervention_id": intervention_id,
+                "updated_at": now,
+                "data": serialize_doc(updated)
+            })
+            
+            await log_action(
+                current_user["entreprise_id"],
+                current_user["user_id"],
+                "sync",
+                "intervention",
+                intervention_id,
+                {"offline_sync": True}
+            )
+            
+        except Exception as e:
+            logger.error(f"Sync error for change {change}: {e}")
+            results["errors"].append({
+                "intervention_id": change.get("intervention_id"),
+                "error": str(e)
+            })
+    
+    # Get server updates since last_sync (for bi-directional sync)
+    if last_sync:
+        try:
+            query = {
+                "entreprise_id": current_user["entreprise_id"],
+                "updated_at": {"$gt": last_sync}
+            }
+            if current_user["role"] == "tech":
+                query["technicien_id"] = current_user["user_id"]
+            
+            server_changes = await db.interventions.find(query, {"_id": 0}).to_list(100)
+            results["server_updates"] = [serialize_doc(i) for i in server_changes]
+        except Exception as e:
+            logger.error(f"Error fetching server updates: {e}")
+    
+    return {
+        "success": True,
+        "timestamp": now,
+        "summary": {
+            "synced": len(results["synced"]),
+            "conflicts": len(results["conflicts"]),
+            "errors": len(results["errors"]),
+            "server_updates": len(results["server_updates"])
+        },
+        **results
+    }
+
+
+@router.get("/sync/status")
+async def get_sync_status(
+    since: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get sync status - what has changed on the server since a given timestamp.
+    Used by frontend to check if there are updates to fetch.
+    """
+    query = {"entreprise_id": current_user["entreprise_id"]}
+    
+    if current_user["role"] == "tech":
+        query["technicien_id"] = current_user["user_id"]
+    
+    if since:
+        query["updated_at"] = {"$gt": since}
+    
+    # Count changed interventions
+    count = await db.interventions.count_documents(query)
+    
+    # Get latest updated_at
+    latest = await db.interventions.find_one(
+        {"entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0, "updated_at": 1},
+        sort=[("updated_at", -1)]
+    )
+    
+    return {
+        "changes_count": count,
+        "latest_update": latest.get("updated_at") if latest else None,
+        "server_time": datetime.now(timezone.utc).isoformat()
+    }

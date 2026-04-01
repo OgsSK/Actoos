@@ -317,6 +317,127 @@ export const OfflineProvider = ({ children }) => {
     return await db.updateInterventionLocally(id, updates);
   }, []);
 
+  // Sync interventions with LWW conflict resolution
+  const syncInterventionsLWW = useCallback(async () => {
+    if (!isOnline || isSyncing) return null;
+    
+    setIsSyncing(true);
+    const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+    const token = localStorage.getItem('token');
+    
+    try {
+      // Get locally modified interventions
+      const allInterventions = await db.getInterventions({});
+      const modifiedInterventions = allInterventions.filter(i => i._locallyModified);
+      
+      if (modifiedInterventions.length === 0) {
+        console.log('[Offline] No local modifications to sync');
+        setIsSyncing(false);
+        return { synced: 0, conflicts: 0, errors: 0 };
+      }
+      
+      // Prepare changes for sync
+      const changes = modifiedInterventions.map(intervention => ({
+        intervention_id: intervention.id,
+        updates: {
+          notes_terrain: intervention.notes_terrain,
+          statut: intervention.statut,
+          checklist_responses: intervention.checklist_responses
+        },
+        local_updated_at: intervention._modifiedAt || intervention._cachedAt
+      }));
+      
+      // Get last sync time
+      const lastSyncTime = await db.getLastSyncTime('interventions_last_sync');
+      
+      console.log(`[Offline] Syncing ${changes.length} modified interventions via LWW...`);
+      
+      const response = await fetch(`${API_URL}/api/interventions/sync`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          changes,
+          last_sync: lastSyncTime
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update local cache with synced data
+        for (const synced of result.synced) {
+          await db.interventions.put({
+            ...synced.data,
+            _locallyModified: false,
+            _cachedAt: new Date().toISOString()
+          });
+        }
+        
+        // Handle conflicts - server wins, update local
+        for (const conflict of result.conflicts) {
+          await db.interventions.put({
+            ...conflict.server_data,
+            _locallyModified: false,
+            _cachedAt: new Date().toISOString()
+          });
+          
+          // Log the conflict
+          await db.logSyncEvent({
+            type: 'conflict',
+            entityId: conflict.intervention_id,
+            action: 'sync_lww',
+            result: 'lww_resolved',
+            conflictResolved: true,
+            serverVersion: conflict.server_updated_at,
+            localVersion: conflict.local_updated_at,
+            details: conflict.message
+          });
+          
+          toast.info(`Conflit résolu pour intervention: version serveur appliquée`);
+        }
+        
+        // Apply server updates
+        for (const serverUpdate of result.server_updates) {
+          const existing = await db.getIntervention(serverUpdate.id);
+          if (!existing || !existing._locallyModified) {
+            await db.interventions.put({
+              ...serverUpdate,
+              _cachedAt: new Date().toISOString()
+            });
+          }
+        }
+        
+        // Update last sync time
+        await db.setLastSyncTime('interventions_last_sync', result.timestamp);
+        
+        console.log('[Offline] LWW Sync complete:', result.summary);
+        
+        if (result.summary.synced > 0) {
+          toast.success(`${result.summary.synced} intervention(s) synchronisée(s)`);
+        }
+        if (result.summary.conflicts > 0) {
+          toast.warning(`${result.summary.conflicts} conflit(s) résolu(s) (version serveur)`);
+        }
+        
+        setIsSyncing(false);
+        await loadDbStats();
+        
+        return result.summary;
+      } else {
+        console.error('[Offline] LWW Sync failed:', response.status);
+        setIsSyncing(false);
+        return null;
+      }
+    } catch (error) {
+      console.error('[Offline] LWW Sync error:', error);
+      setIsSyncing(false);
+      return null;
+    }
+  }, [isOnline, isSyncing]);
+
   // Cache clients
   const cacheClients = useCallback(async (clients) => {
     const success = await db.cacheClients(clients);
@@ -391,6 +512,7 @@ export const OfflineProvider = ({ children }) => {
     getCachedInterventions,
     getCachedIntervention,
     updateInterventionLocally,
+    syncInterventionsLWW,
     
     // Clients cache
     cacheClients,

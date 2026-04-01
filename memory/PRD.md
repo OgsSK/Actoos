@@ -161,3 +161,25 @@ Toutes les photos uploadées via l'API sont automatiquement traitées :
 Fichiers concernés :
 - `/app/backend/image_utils.py` - Fonctions de traitement
 - `/app/backend/routers/photos.py` - Endpoint upload
+
+## 🔄 Sync Offline LWW (Last-Write-Wins) - IMPLÉMENTÉ
+
+Résolution automatique des conflits quand un technicien travaille hors ligne :
+
+### Backend (`/api/interventions/sync`)
+- `POST /interventions/sync` - Synchronisation avec détection de conflits
+- `GET /interventions/sync/status` - Statut des modifications serveur
+- Tous les endpoints de modification ajoutent `updated_at`
+
+### Frontend (`OfflineContext.jsx`)
+- `syncInterventionsLWW()` - Sync avec résolution LWW
+- Détection automatique de conflits
+- Notification utilisateur des conflits résolus
+- Historique des syncs dans IndexedDB
+
+### Logique LWW
+1. Client envoie `local_updated_at` avec ses modifications
+2. Serveur compare avec `server_updated_at`
+3. Si `server > local` → Conflit, serveur gagne
+4. Si `local > server` → Sync OK, modifications appliquées
+
