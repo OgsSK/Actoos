@@ -247,6 +247,8 @@ const AlertCard = ({ alerts }) => {
         else navigate('/dashboard/factures');
         break;
       case 'devis_expire':
+      case 'devis_attente':
+      case 'devis_attente_signature':
         if (id) navigate(`/dashboard/devis/${id}`);
         else navigate('/dashboard/devis');
         break;
@@ -255,6 +257,10 @@ const AlertCard = ({ alerts }) => {
         else navigate('/dashboard/interventions');
         break;
       default:
+        // Default: navigate to the general page based on type
+        if (alert.type?.includes('devis')) navigate('/dashboard/devis');
+        else if (alert.type?.includes('facture')) navigate('/dashboard/factures');
+        else if (alert.type?.includes('intervention')) navigate('/dashboard/interventions');
         break;
     }
   };
