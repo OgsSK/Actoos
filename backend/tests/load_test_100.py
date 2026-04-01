@@ -12,7 +12,7 @@ import string
 from datetime import datetime, timedelta
 import json
 
-API_URL = "https://date-1.preview.emergentagent.com/api"
+API_URL = "https://actoos-production.up.railway.app/api"
 
 # Statistiques globales
 stats = {
