@@ -290,7 +290,7 @@ async def get_revenue_by_plan(current_user: dict = Depends(require_super_admin))
     }
 
 
-@router.post("/setup-demo-account")
+@router.get("/setup-demo-account")
 async def setup_demo_account(secret_key: str):
     """
     Crée le compte démo et supprime les comptes test
