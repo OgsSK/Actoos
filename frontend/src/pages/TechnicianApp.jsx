@@ -45,6 +45,8 @@ const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
 
   useEffect(() => {
     // Check if already installed
@@ -53,12 +55,22 @@ const InstallPrompt = () => {
       return;
     }
 
+    // Detect iOS
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    setIsIOS(isIOSDevice);
+
     // Check localStorage for dismissed state
     const dismissed = localStorage.getItem('pwa-install-dismissed');
     if (dismissed) {
       const dismissedDate = new Date(dismissed);
       const daysSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
       if (daysSinceDismissed < 7) return; // Don't show for 7 days after dismissal
+    }
+
+    // For iOS, show manual guide after a delay
+    if (isIOSDevice) {
+      setTimeout(() => setShowPrompt(true), 3000);
+      return;
     }
 
     const handleBeforeInstall = (e) => {
@@ -82,6 +94,11 @@ const InstallPrompt = () => {
   }, []);
 
   const handleInstall = async () => {
+    if (isIOS) {
+      setShowIOSGuide(true);
+      return;
+    }
+    
     if (!deferredPrompt) return;
     
     deferredPrompt.prompt();
@@ -96,9 +113,59 @@ const InstallPrompt = () => {
   const handleDismiss = () => {
     localStorage.setItem('pwa-install-dismissed', new Date().toISOString());
     setShowPrompt(false);
+    setShowIOSGuide(false);
   };
 
   if (isInstalled || !showPrompt) return null;
+
+  // iOS Installation Guide Modal
+  if (showIOSGuide) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4">
+        <Card className="w-full max-w-md bg-white rounded-t-3xl animate-in slide-in-from-bottom">
+          <CardContent className="p-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-100 flex items-center justify-center">
+                <Smartphone className="w-8 h-8 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Installer Actoos sur iPhone</h2>
+              <p className="text-slate-500 text-sm">Suivez ces 3 étapes simples</p>
+            </div>
+            
+            <div className="space-y-4 mb-6">
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+                <div>
+                  <p className="font-medium text-slate-900">Appuyez sur le bouton Partager</p>
+                  <p className="text-sm text-slate-500">L'icône <span className="inline-flex items-center justify-center w-5 h-5 bg-slate-200 rounded text-xs">⬆️</span> en bas de Safari</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+                <div>
+                  <p className="font-medium text-slate-900">Faites défiler et appuyez sur</p>
+                  <p className="text-sm text-slate-500">"Sur l'écran d'accueil" <span className="inline-flex items-center justify-center w-5 h-5 bg-slate-200 rounded text-xs">➕</span></p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+                <div>
+                  <p className="font-medium text-slate-900">Confirmez en appuyant sur "Ajouter"</p>
+                  <p className="text-sm text-slate-500">L'app Actoos apparaîtra sur votre écran d'accueil</p>
+                </div>
+              </div>
+            </div>
+            
+            <Button onClick={handleDismiss} className="w-full" variant="outline">
+              J'ai compris
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed bottom-20 left-4 right-4 z-50 animate-in slide-in-from-bottom">
@@ -111,7 +178,10 @@ const InstallPrompt = () => {
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold mb-1">Installer Actoos</h3>
               <p className="text-sm text-blue-100 mb-3">
-                Accédez à l'app rapidement depuis votre écran d'accueil, même hors ligne !
+                {isIOS 
+                  ? "Ajoutez l'app à votre écran d'accueil pour un accès rapide !"
+                  : "Accédez à l'app rapidement depuis votre écran d'accueil, même hors ligne !"
+                }
               </p>
               <div className="flex gap-2">
                 <Button 
@@ -120,7 +190,7 @@ const InstallPrompt = () => {
                   className="bg-white text-blue-600 hover:bg-blue-50"
                 >
                   <Download className="w-4 h-4 mr-1" />
-                  Installer
+                  {isIOS ? "Comment faire ?" : "Installer"}
                 </Button>
                 <Button 
                   size="sm" 
