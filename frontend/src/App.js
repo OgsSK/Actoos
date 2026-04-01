@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { OfflineProvider } from "./contexts/OfflineContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { Toaster } from "./components/ui/sonner";
+import useManifestSwitcher from "./hooks/useManifestSwitcher";
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -14,6 +15,12 @@ const ScrollToTop = () => {
     window.scrollTo(0, 0);
   }, [pathname]);
   
+  return null;
+};
+
+// Manifest switcher component
+const ManifestSwitcher = () => {
+  useManifestSwitcher();
   return null;
 };
 
@@ -114,6 +121,7 @@ function App() {
         <OfflineProvider>
           <BrowserRouter>
             <ScrollToTop />
+            <ManifestSwitcher />
             <Routes>
               {/* Home */}
               <Route path="/" element={<HomeRedirect />} />

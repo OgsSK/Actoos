@@ -18,6 +18,7 @@ import {
   Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code
 } from 'lucide-react';
 import PlanUsageWidget from '../components/PlanUsageWidget';
+import AdminInstallPrompt from '../components/AdminInstallPrompt';
 
 const Sidebar = ({ open, onClose }) => {
   const { user, entreprise, logout, isAdmin } = useAuth();
@@ -535,6 +536,9 @@ export const DashboardLayout = ({ children }) => {
           {children}
         </main>
       </div>
+      
+      {/* PWA Install Prompt for Admin */}
+      <AdminInstallPrompt />
     </div>
   );
 };
