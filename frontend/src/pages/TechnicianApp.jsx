@@ -41,14 +41,20 @@ import SyncStatusPanel from '../components/SyncStatusPanel';
 import ConflictNotificationBanner, { ConflictBadge } from '../components/ConflictNotificationBanner';
 
 // PWA Install Prompt Component
-const InstallPrompt = () => {
+const InstallPrompt = ({ userEmail }) => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
+  // Don't show for demo account
+  const isDemoAccount = userEmail === 'demo@actoos.com';
+
   useEffect(() => {
+    // Skip for demo account
+    if (isDemoAccount) return;
+    
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
@@ -209,6 +215,127 @@ const InstallPrompt = () => {
               <X className="w-5 h-5" />
             </button>
           </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Standalone Install Guide Modal (accessible from Profile menu)
+const InstallGuideModal = ({ isOpen, onClose }) => {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isDesktop = !isIOS && !isAndroid;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <Card className="w-full max-w-md bg-white rounded-2xl animate-in zoom-in-95">
+        <CardContent className="p-6">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-100 flex items-center justify-center">
+              <Smartphone className="w-8 h-8 text-blue-600" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">
+              Installer Actoos
+            </h2>
+            <p className="text-slate-500 text-sm">
+              {isIOS ? "Sur votre iPhone/iPad" : isAndroid ? "Sur votre Android" : "Sur votre ordinateur"}
+            </p>
+          </div>
+          
+          {isIOS ? (
+            <div className="space-y-4 mb-6">
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+                <div>
+                  <p className="font-medium text-slate-900">Ouvrez Safari</p>
+                  <p className="text-sm text-slate-500">L'installation ne fonctionne que depuis Safari</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+                <div>
+                  <p className="font-medium text-slate-900">Appuyez sur Partager</p>
+                  <p className="text-sm text-slate-500">L'icône ⬆️ en bas de l'écran</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+                <div>
+                  <p className="font-medium text-slate-900">"Sur l'écran d'accueil"</p>
+                  <p className="text-sm text-slate-500">Faites défiler et appuyez sur cette option</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">4</div>
+                <div>
+                  <p className="font-medium text-slate-900">Appuyez sur "Ajouter"</p>
+                  <p className="text-sm text-slate-500">L'app apparaît sur votre écran d'accueil !</p>
+                </div>
+              </div>
+            </div>
+          ) : isAndroid ? (
+            <div className="space-y-4 mb-6">
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+                <div>
+                  <p className="font-medium text-slate-900">Ouvrez Chrome</p>
+                  <p className="text-sm text-slate-500">L'installation fonctionne mieux avec Chrome</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+                <div>
+                  <p className="font-medium text-slate-900">Menu ⋮ en haut à droite</p>
+                  <p className="text-sm text-slate-500">Appuyez sur les 3 points verticaux</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+                <div>
+                  <p className="font-medium text-slate-900">"Installer l'application"</p>
+                  <p className="text-sm text-slate-500">Ou "Ajouter à l'écran d'accueil"</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 mb-6">
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+                <div>
+                  <p className="font-medium text-slate-900">Regardez la barre d'adresse</p>
+                  <p className="text-sm text-slate-500">À droite de l'URL</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+                <div>
+                  <p className="font-medium text-slate-900">Cliquez sur l'icône ⊕</p>
+                  <p className="text-sm text-slate-500">Ou sur "Installer Actoos"</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+                <div>
+                  <p className="font-medium text-slate-900">Confirmez l'installation</p>
+                  <p className="text-sm text-slate-500">L'app sera ajoutée à votre bureau/menu</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <Button onClick={onClose} className="w-full">
+            J'ai compris
+          </Button>
         </CardContent>
       </Card>
     </div>
@@ -711,11 +838,16 @@ const ChecklistView = ({ categorie, responses, onChange, readOnly = false }) => 
 };
 
 // Profile Menu Component
-const ProfileMenu = ({ user, skills, categories, onLogout }) => {
+const ProfileMenu = ({ user, skills, categories, onLogout, onShowInstallGuide }) => {
   // Get category details for skills
   const userSkillCategories = (skills || [])
     .map(skillId => categories?.find(c => c.id === skillId))
     .filter(Boolean);
+  
+  // Check if already installed as PWA
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
+  // Check if demo account
+  const isDemoAccount = user?.email === 'demo@actoos.com';
 
   return (
     <DropdownMenu>
@@ -757,6 +889,22 @@ const ProfileMenu = ({ user, skills, categories, onLogout }) => {
           )}
         </div>
         <DropdownMenuSeparator />
+        
+        {/* Install App Button - only show if not installed and not demo */}
+        {!isInstalled && !isDemoAccount && (
+          <>
+            <DropdownMenuItem 
+              className="cursor-pointer text-blue-600" 
+              onClick={onShowInstallGuide}
+              data-testid="install-app-btn"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Installer l'application
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        
         <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={onLogout} data-testid="logout-btn">
           <LogOut className="w-4 h-4 mr-2" />
           Se déconnecter
@@ -1112,6 +1260,7 @@ export const TechnicianApp = () => {
   const [showCreateDevis, setShowCreateDevis] = useState(false);
   const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
   const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
   const [preselectedClientId, setPreselectedClientId] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   
@@ -1750,7 +1899,13 @@ export const TechnicianApp = () => {
             <FileText className="w-5 h-5 mb-1" />
             <span className="text-xs">Devis</span>
           </Button>
-          <ProfileMenu user={user} skills={user?.skills || []} categories={categories} onLogout={logout} />
+          <ProfileMenu 
+            user={user} 
+            skills={user?.skills || []} 
+            categories={categories} 
+            onLogout={logout}
+            onShowInstallGuide={() => setShowInstallGuide(true)}
+          />
         </div>
       </nav>
 
@@ -1949,8 +2104,14 @@ export const TechnicianApp = () => {
         description="Le client doit signer pour valider la fin de l'intervention"
       />
 
-      {/* PWA Install Prompt */}
-      <InstallPrompt />
+      {/* PWA Install Prompt (auto-show) */}
+      <InstallPrompt userEmail={user?.email} />
+      
+      {/* Install Guide Modal (from profile menu) */}
+      <InstallGuideModal 
+        isOpen={showInstallGuide} 
+        onClose={() => setShowInstallGuide(false)} 
+      />
     </div>
   );
 };

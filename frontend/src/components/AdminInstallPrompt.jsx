@@ -3,12 +3,14 @@ import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Download, X, Smartphone, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * PWA Install Prompt for Admin Dashboard
  * Shows installation banner for desktop and mobile
  */
 const AdminInstallPrompt = () => {
+  const { user } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -16,7 +18,13 @@ const AdminInstallPrompt = () => {
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Don't show for demo account
+  const isDemoAccount = user?.email === 'demo@actoos.com';
+
   useEffect(() => {
+    // Skip for demo account
+    if (isDemoAccount) return;
+    
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
