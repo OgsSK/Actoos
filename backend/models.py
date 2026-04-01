@@ -413,6 +413,7 @@ class RegisterRequest(BaseModel):
     admin_nom: str
     admin_prenom: str
     admin_password: str
+    referral_source: Optional[str] = None  # Comment avez-vous connu Actoos?
 
 # ==================== COMMUNICATION LOG ====================
 class CommunicationLog(BaseModel):

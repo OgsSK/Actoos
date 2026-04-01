@@ -386,13 +386,14 @@ export const SignupSuccessPage = () => {
       // Get stored signup data from localStorage
       const storedData = localStorage.getItem('signup_data');
       if (storedData) {
-        const { categories, password, phone } = JSON.parse(storedData);
+        const { categories, password, phone, referral_source } = JSON.parse(storedData);
         
         await axios.post(`${API_URL}/api/finalize-signup/${sessionId}`, null, {
           params: {
             categories: categories.join(','),
             password: password || '',
-            phone: phone || ''
+            phone: phone || '',
+            referral_source: referral_source || ''
           }
         });
         

@@ -288,6 +288,7 @@ const SignupPage = () => {
         categories: selectedCategories,
         password: formData.adminPassword,
         phone: formData.phone,
+        referral_source: formData.referralSource,
         session_id: response.data.session_id
       }));
 

@@ -46,7 +46,8 @@ from routers import (
     public_api as public_api_router,
     sites as sites_router,
     calendar as calendar_router,
-    accounting_export as accounting_export_router
+    accounting_export as accounting_export_router,
+    admin_analytics as admin_analytics_router
 )
 
 # MongoDB connection
@@ -88,6 +89,7 @@ api_router.include_router(public_api_router.router)
 api_router.include_router(sites_router.router)
 api_router.include_router(calendar_router.router)
 api_router.include_router(accounting_export_router.router)
+api_router.include_router(admin_analytics_router.router)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

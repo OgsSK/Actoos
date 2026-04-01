@@ -64,6 +64,7 @@ async def register_entreprise(data: RegisterRequest):
         "plan": "startup",
         "plan_limits": default_plan_limits,
         "subscription_status": "trialing",
+        "referral_source": data.referral_source,  # Comment nous avez-vous connu?
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.entreprises.insert_one(entreprise)

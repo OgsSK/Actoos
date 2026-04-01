@@ -245,9 +245,10 @@ async def finalize_signup(
     session_id: str,
     categories: list[str] = [],
     password: Optional[str] = None,
-    phone: Optional[str] = None
+    phone: Optional[str] = None,
+    referral_source: Optional[str] = None
 ):
-    """Finalize signup with additional data (categories, custom password, phone)"""
+    """Finalize signup with additional data (categories, custom password, phone, referral source)"""
     # Find the transaction
     transaction = await db.payment_transactions.find_one({"session_id": session_id})
     if not transaction:
@@ -271,7 +272,7 @@ async def finalize_signup(
             detail=f"Votre plan est limité à {max_categories} catégorie(s)"
         )
     
-    # Update entreprise with categories
+    # Update entreprise with categories and referral source
     update_data = {
         "categories": categories,
         "updated_at": datetime.now(timezone.utc).isoformat()
@@ -279,6 +280,9 @@ async def finalize_signup(
     
     if phone:
         update_data["telephone"] = phone
+    
+    if referral_source:
+        update_data["referral_source"] = referral_source
     
     await db.entreprises.update_one(
         {"id": entreprise["id"]},

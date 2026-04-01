@@ -639,7 +639,7 @@ const PlanUsageWidget = ({ compact = false }) => {
 
       {/* Cancel Subscription Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md pt-10">
           <DialogHeader>
             <DialogTitle className="text-red-600">Annuler votre abonnement</DialogTitle>
             <DialogDescription>
@@ -654,7 +654,13 @@ const PlanUsageWidget = ({ compact = false }) => {
               </label>
               <select
                 value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
+                onChange={(e) => {
+                  setCancelReason(e.target.value);
+                  // Clear feedback if not "other"
+                  if (e.target.value !== 'other') {
+                    setCancelFeedback('');
+                  }
+                }}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="">Sélectionnez une raison...</option>
@@ -664,33 +670,47 @@ const PlanUsageWidget = ({ compact = false }) => {
               </select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                Des commentaires supplémentaires ? (optionnel)
-              </label>
-              <textarea
-                value={cancelFeedback}
-                onChange={(e) => setCancelFeedback(e.target.value)}
-                placeholder="Dites-nous comment nous pourrions nous améliorer..."
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-              />
-            </div>
+            {/* Show textarea only when "Autre" is selected */}
+            {cancelReason === 'other' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Précisez votre raison * <span className="text-slate-400 font-normal">(minimum 3 caractères)</span>
+                </label>
+                <textarea
+                  value={cancelFeedback}
+                  onChange={(e) => setCancelFeedback(e.target.value)}
+                  placeholder="Expliquez-nous pourquoi vous souhaitez partir..."
+                  className={`flex min-h-[80px] w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none ${
+                    cancelFeedback.length > 0 && cancelFeedback.length < 3 
+                      ? 'border-red-300 focus-visible:ring-red-500' 
+                      : 'border-input'
+                  }`}
+                />
+                {cancelFeedback.length > 0 && cancelFeedback.length < 3 && (
+                  <p className="text-xs text-red-500">Minimum 3 caractères requis</p>
+                )}
+              </div>
+            )}
 
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
               <p className="text-sm text-amber-800">
-                <strong>Important :</strong> Vous conserverez l'accès à toutes les fonctionnalités jusqu'à la fin de votre période de facturation en cours.
+                <strong>Important :</strong> Vous conserverez l'accès à toutes les fonctionnalités jusqu'à la fin de votre période de facturation en cours. Aucun remboursement ne sera effectué pour la période en cours.
               </p>
             </div>
           </div>
 
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
-              Annuler
+              Retour
             </Button>
             <Button 
               variant="destructive" 
               onClick={handleCancelSubscription}
-              disabled={cancelling}
+              disabled={
+                cancelling || 
+                !cancelReason || 
+                (cancelReason === 'other' && cancelFeedback.length < 3)
+              }
             >
               {cancelling ? 'Annulation...' : 'Confirmer l\'annulation'}
             </Button>
