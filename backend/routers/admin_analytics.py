@@ -353,7 +353,12 @@ async def setup_demo_account(secret_key: str):
         existing_demo = await db.users.find_one({"email": demo_email})
         
         if existing_demo:
-            results["demo_account_created"] = "already_exists"
+            # Mettre à jour l'utilisateur existant pour ajouter le statut
+            await db.users.update_one(
+                {"email": demo_email},
+                {"$set": {"statut": "actif", "is_active": True}}
+            )
+            results["demo_account_created"] = "updated"
         else:
             # Créer l'entreprise démo
             demo_entreprise_id = str(uuid.uuid4())
@@ -402,6 +407,7 @@ async def setup_demo_account(secret_key: str):
                 "nom": "Utilisateur",
                 "prenom": "Démo",
                 "role": "admin",
+                "statut": "actif",
                 "entreprise_id": demo_entreprise_id,
                 "is_active": True,
                 "is_demo": True,
