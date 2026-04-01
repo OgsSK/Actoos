@@ -20,7 +20,7 @@ import {
   Building2, FileText, Check, Loader2, Bell, MessageSquare, 
   CheckCircle, XCircle, ExternalLink, Info, Palette, Upload, 
   Tags, Plus, Pencil, Trash2, Wrench, Globe, Coins, CreditCard,
-  Calendar, Link2, Unlink
+  Calendar, Link2, Unlink, DollarSign
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PlanUsageWidget from '../components/PlanUsageWidget';
@@ -584,9 +584,9 @@ export const SettingsPage = () => {
               <span className="sm:hidden">Style</span>
             </TabsTrigger>
             <TabsTrigger value="regional" className="flex items-center gap-2 whitespace-nowrap">
-              <Globe className="w-4 h-4" />
-              <span className="hidden sm:inline">Régional</span>
-              <span className="sm:hidden">Rég.</span>
+              <DollarSign className="w-4 h-4" />
+              <span className="hidden sm:inline">Devise</span>
+              <span className="sm:hidden">€</span>
             </TabsTrigger>
             <TabsTrigger value="integrations" className="flex items-center gap-2 whitespace-nowrap">
               <Link2 className="w-4 h-4" />
@@ -1256,44 +1256,10 @@ export const SettingsPage = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-slate-200">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Globe className="w-5 h-5" />
-                  Langue et Format
-                </CardTitle>
-                <CardDescription>
-                  Choisissez la langue et le format régional
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {locales.map((locale) => (
-                    <button
-                      key={locale.code}
-                      type="button"
-                      onClick={() => handleLocaleChange(locale.code)}
-                      disabled={savingCurrency}
-                      className={`p-4 rounded-lg border-2 text-left transition-all ${
-                        selectedLocale === locale.code
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
-                      data-testid={`locale-${locale.code}`}
-                    >
-                      <div className="text-2xl mb-1">{locale.flag}</div>
-                      <div className="font-medium text-slate-900">{locale.name}</div>
-                      <div className="text-xs text-slate-500">{locale.code}</div>
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
             <Alert className="bg-blue-50 border-blue-200">
               <Info className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-800">
-                Les paramètres régionaux affectent le format des montants sur vos devis, factures et dans toute l'application.
+                Les paramètres de devise affectent le format des montants sur vos devis, factures et dans toute l'application.
               </AlertDescription>
             </Alert>
           </div>
