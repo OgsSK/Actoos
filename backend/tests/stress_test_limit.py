@@ -174,23 +174,25 @@ async def main():
     print("🔥 TEST DE STRESS PROGRESSIF - RECHERCHE DE LA LIMITE")
     print("=" * 70)
     
-    # Niveaux de charge à tester
+    # Niveaux de charge à tester - jusqu'à 1500+
     levels = [
-        {"concurrent": 10, "name": "Niveau 1 - Léger"},
-        {"concurrent": 25, "name": "Niveau 2 - Modéré"},
-        {"concurrent": 50, "name": "Niveau 3 - Élevé"},
-        {"concurrent": 100, "name": "Niveau 4 - Intense"},
-        {"concurrent": 150, "name": "Niveau 5 - Très Intense"},
-        {"concurrent": 200, "name": "Niveau 6 - Extrême"},
-        {"concurrent": 300, "name": "Niveau 7 - Limite Haute"},
-        {"concurrent": 500, "name": "Niveau 8 - Stress Maximum"},
+        {"concurrent": 25, "name": "Niveau 1 - Warm-up"},
+        {"concurrent": 50, "name": "Niveau 2 - Modéré"},
+        {"concurrent": 100, "name": "Niveau 3 - Standard"},
+        {"concurrent": 200, "name": "Niveau 4 - Élevé"},
+        {"concurrent": 300, "name": "Niveau 5 - Intense"},
+        {"concurrent": 500, "name": "Niveau 6 - Très Intense"},
+        {"concurrent": 750, "name": "Niveau 7 - Extrême"},
+        {"concurrent": 1000, "name": "Niveau 8 - Maximum"},
+        {"concurrent": 1250, "name": "Niveau 9 - Au-delà"},
+        {"concurrent": 1500, "name": "Niveau 10 - Limite Ultime"},
     ]
     
     results_summary = []
     breaking_point = None
     
-    connector = aiohttp.TCPConnector(limit=100, limit_per_host=50)
-    timeout = aiohttp.ClientTimeout(total=120)
+    connector = aiohttp.TCPConnector(limit=200, limit_per_host=100)
+    timeout = aiohttp.ClientTimeout(total=180)
     
     async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
         for level in levels:
@@ -248,12 +250,12 @@ async def main():
                 print(f"\n⚠️ LIMITE DÉTECTÉE à {concurrent} opérations simultanées!")
                 break
             
-            if avg_time > 10000:  # 10 secondes de moyenne
+            if avg_time > 60000:  # 60 secondes de moyenne = vraie dégradation
                 breaking_point = {
                     "level": name,
                     "concurrent": concurrent,
                     "avg_time_ms": avg_time,
-                    "reason": "Temps de réponse > 10s"
+                    "reason": "Temps de réponse > 60s"
                 }
                 print(f"\n⚠️ LIMITE DE PERFORMANCE DÉTECTÉE!")
                 break

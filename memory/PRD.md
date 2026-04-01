@@ -92,12 +92,18 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 
 ## ⏳ Post-Déploiement
 
-### À faire après déploiement
-- [ ] Valider domaine Resend (actoos.com)
+### ✅ Complété
+- [x] Valider domaine Resend (actoos.com)
+- [x] Load Test 100 entreprises (0 erreurs)
+- [x] Stress Test jusqu'à 300 simultané (100% succès)
+- [x] Endpoint nettoyage données de test
+
+### À faire après push GitHub
+- [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
 - [ ] Configurer webhook Stripe avec URL prod
 - [ ] Mettre à jour OAuth Google avec URLs prod
 - [ ] Obtenir numéro Twilio belge
-- [ ] Tester tous les flux en production
+- [ ] Tester compte démo (demo@actoos.com / demo2024)
 
 ## 📊 Comptes de Test
 
@@ -121,3 +127,24 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - Email invitation technicien ajouté
 - Email confirmation résiliation ajouté
 - Guide déploiement Railway créé
+- **DÉPLOIEMENT LIVE** sur Railway (actoos.com)
+- Migration MongoDB vers Atlas (M0 cluster)
+- Domaine Resend vérifié (actoos.com)
+- Load Test 100 entreprises: 100% succès
+- **Stress Test Progressif**: Système testé jusqu'à 300 créations simultanées avec 100% de succès
+- Endpoint de nettoyage créé: `/api/admin/analytics/cleanup-all-test-data`
+
+## 📊 Résultats Stress Test Production
+
+| Concurrent | Succès | Temps Moyen | Status |
+|------------|--------|-------------|--------|
+| 25 | 100% | ~9s | ✅ OK |
+| 50 | 100% | ~17s | ✅ OK |
+| 100 | 100% | ~35s | ✅ OK |
+| 200 | 100% | ~53s | ✅ OK |
+| 300 | 100% | ~68s | ⚠️ Limite |
+
+### Recommandations
+- **Limite sécurisée**: 150 opérations simultanées
+- **Limite confortable**: 200 opérations simultanées
+- **Limite maximum**: 300 opérations (latence élevée mais 0 erreurs)

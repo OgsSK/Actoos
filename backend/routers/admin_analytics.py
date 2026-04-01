@@ -446,3 +446,129 @@ async def setup_demo_account(secret_key: str):
         results["errors"].append(f"Erreur création démo: {str(e)}")
     
     return results
+
+
+
+@router.get("/cleanup-all-test-data")
+async def cleanup_all_test_data(secret_key: str):
+    """
+    Nettoie TOUTES les données de test de la base de données.
+    - Supprime les entreprises LoadTest_*, StressTest_*
+    - Supprime les utilisateurs avec emails @test-, @loadtest, stress, etc.
+    - Supprime les clients, devis, factures, interventions associés
+    
+    ATTENTION: Cet endpoint supprime définitivement des données!
+    """
+    if secret_key != "actoos-cleanup-2024-prod":
+        raise HTTPException(status_code=403, detail="Clé secrète invalide")
+    
+    stats = {
+        "users_deleted": 0,
+        "entreprises_deleted": 0,
+        "clients_deleted": 0,
+        "devis_deleted": 0,
+        "factures_deleted": 0,
+        "interventions_deleted": 0,
+        "missions_deleted": 0,
+        "sites_deleted": 0,
+        "invitations_deleted": 0,
+        "subscriptions_deleted": 0,
+        "categories_deleted": 0,
+        "errors": []
+    }
+    
+    try:
+        # 1. Trouver les IDs des entreprises de test
+        entreprise_patterns = {
+            "$or": [
+                {"nom": {"$regex": "LoadTest", "$options": "i"}},
+                {"nom": {"$regex": "StressTest", "$options": "i"}},
+                {"nom": {"$regex": "Test_", "$options": "i"}},
+            ]
+        }
+        
+        entreprise_ids_to_delete = []
+        cursor = db.entreprises.find(entreprise_patterns, {"_id": 0, "id": 1})
+        async for doc in cursor:
+            if doc.get("id"):
+                entreprise_ids_to_delete.append(doc["id"])
+        
+        # 2. Supprimer les utilisateurs de test (sauf demo@actoos.com)
+        user_filter = {
+            "$or": [
+                {"email": {"$regex": "@test-", "$options": "i"}},
+                {"email": {"$regex": "@loadtest", "$options": "i"}},
+                {"email": {"$regex": "stress", "$options": "i"}},
+                {"email": {"$regex": "^admin\\d+@", "$options": "i"}},
+            ],
+            "email": {"$ne": "demo@actoos.com"}
+        }
+        result = await db.users.delete_many(user_filter)
+        stats["users_deleted"] = result.deleted_count
+        
+        if entreprise_ids_to_delete:
+            # 3. Supprimer les données associées
+            # Clients
+            result = await db.clients.delete_many({"entreprise_id": {"$in": entreprise_ids_to_delete}})
+            stats["clients_deleted"] = result.deleted_count
+            
+            # Devis
+            result = await db.devis.delete_many({"entreprise_id": {"$in": entreprise_ids_to_delete}})
+            stats["devis_deleted"] = result.deleted_count
+            
+            # Factures
+            result = await db.factures.delete_many({"entreprise_id": {"$in": entreprise_ids_to_delete}})
+            stats["factures_deleted"] = result.deleted_count
+            
+            # Interventions
+            result = await db.interventions.delete_many({"entreprise_id": {"$in": entreprise_ids_to_delete}})
+            stats["interventions_deleted"] = result.deleted_count
+            
+            # Missions
+            result = await db.missions.delete_many({"entreprise_id": {"$in": entreprise_ids_to_delete}})
+            stats["missions_deleted"] = result.deleted_count
+            
+            # Sites
+            result = await db.sites.delete_many({"entreprise_id": {"$in": entreprise_ids_to_delete}})
+            stats["sites_deleted"] = result.deleted_count
+            
+            # Invitations
+            result = await db.invitations.delete_many({"entreprise_id": {"$in": entreprise_ids_to_delete}})
+            stats["invitations_deleted"] = result.deleted_count
+            
+            # Subscriptions
+            result = await db.subscriptions.delete_many({"entreprise_id": {"$in": entreprise_ids_to_delete}})
+            stats["subscriptions_deleted"] = result.deleted_count
+            
+            # Catégories
+            result = await db.categories.delete_many({"entreprise_id": {"$in": entreprise_ids_to_delete}})
+            stats["categories_deleted"] = result.deleted_count
+            
+            # Enfin, supprimer les entreprises
+            result = await db.entreprises.delete_many(entreprise_patterns)
+            stats["entreprises_deleted"] = result.deleted_count
+        
+        # 4. Nettoyer les clients orphelins avec emails de test
+        orphan_filter = {
+            "$or": [
+                {"email": {"$regex": "@test\\.com", "$options": "i"}},
+                {"email": {"$regex": "stress", "$options": "i"}},
+                {"email": {"$regex": "clientstress", "$options": "i"}},
+            ]
+        }
+        result = await db.clients.delete_many(orphan_filter)
+        stats["clients_deleted"] += result.deleted_count
+        
+        # Calculer le total
+        total = sum(v for k, v in stats.items() if isinstance(v, int))
+        
+        return {
+            "status": "success",
+            "message": f"Nettoyage terminé - {total} éléments supprimés",
+            "stats": stats,
+            "entreprises_found": len(entreprise_ids_to_delete)
+        }
+        
+    except Exception as e:
+        stats["errors"].append(str(e))
+        raise HTTPException(status_code=500, detail=f"Erreur de nettoyage: {str(e)}")

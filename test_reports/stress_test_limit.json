@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-04-01T15:49:06.083832",
+  "results": [
+    {
+      "level": "Niveau 1 - Warm-up",
+      "concurrent": 25,
+      "successes": 25,
+      "failures": 0,
+      "success_rate": 100.0,
+      "avg_time_ms": 9040.568418502808,
+      "max_time_ms": 9339.805841445923,
+      "total_time_s": 9.341182708740234
+    },
+    {
+      "level": "Niveau 2 - Mod\u00e9r\u00e9",
+      "concurrent": 50,
+      "successes": 50,
+      "failures": 0,
+      "success_rate": 100.0,
+      "avg_time_ms": 16295.51884174347,
+      "max_time_ms": 16555.187940597534,
+      "total_time_s": 16.55633544921875
+    }
+  ],
+  "breaking_point": {
+    "level": "Niveau 2 - Mod\u00e9r\u00e9",
+    "concurrent": 50,
+    "avg_time_ms": 16295.51884174347,
+    "reason": "Temps de r\u00e9ponse > 10s"
+  },
+  "total_entreprises_created": 75,
+  "total_emails": 75
+}
