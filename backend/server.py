@@ -95,6 +95,12 @@ api_router.include_router(admin_analytics_router.router)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Health check endpoint for Railway
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Railway deployment"""
+    return {"status": "healthy", "service": "actoos-api"}
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
