@@ -856,6 +856,56 @@ async def cancel_subscription(
         
         logger.info(f"Subscription {subscription_id} marked for cancellation for {entreprise.get('nom')}")
         
+        # Send cancellation confirmation email
+        try:
+            from email_service import send_email
+            from datetime import datetime
+            
+            admin_user = await db.users.find_one(
+                {"entreprise_id": current_user["entreprise_id"], "role": "admin"},
+                {"_id": 0, "email": 1, "prenom": 1}
+            )
+            
+            if admin_user:
+                cancel_date = datetime.fromtimestamp(subscription.cancel_at).strftime("%d/%m/%Y") if subscription.cancel_at else "la fin de la période"
+                
+                html_content = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #dc2626; margin-bottom: 24px;">Confirmation de résiliation</h1>
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                        Bonjour {admin_user.get('prenom', '')},
+                    </p>
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                        Nous confirmons la résiliation de votre abonnement Actoos pour <strong>{entreprise.get('nom')}</strong>.
+                    </p>
+                    
+                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0;">
+                        <p style="margin: 0; color: #92400e;">
+                            <strong>Important :</strong> Vous conservez l'accès à toutes les fonctionnalités jusqu'au <strong>{cancel_date}</strong>.
+                        </p>
+                    </div>
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                        Nous sommes désolés de vous voir partir. Si vous changez d'avis, vous pouvez réactiver votre abonnement à tout moment depuis les paramètres.
+                    </p>
+                    
+                    <p style="font-size: 14px; color: #6b7280; margin-top: 24px;">
+                        Merci d'avoir utilisé Actoos.<br>
+                        L'équipe Actoos
+                    </p>
+                </div>
+                """
+                
+                await send_email(
+                    to_email=admin_user["email"],
+                    subject="Confirmation de résiliation - Actoos",
+                    html_content=html_content
+                )
+        except Exception as e:
+            logger.error(f"Failed to send cancellation email: {e}")
+        
         return {
             "success": True,
             "message": "Votre abonnement sera annulé à la fin de la période en cours.",

@@ -192,6 +192,70 @@ async def invite_technician(data: UserInvite, current_user: dict = Depends(requi
     # Create invitation token
     invite_token = create_invitation_token(user_id, current_user["entreprise_id"])
     
+    # Get entreprise name for email
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "nom": 1}
+    )
+    entreprise_name = entreprise.get("nom", "Notre Entreprise") if entreprise else "Notre Entreprise"
+    
+    # Send invitation email
+    try:
+        from email_service import send_email
+        frontend_url = os.environ.get("FRONTEND_URL", "https://actoos.com")
+        activation_url = f"{frontend_url}/activate?token={invite_token}"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #2563eb; margin-bottom: 24px;">Bienvenue dans l'équipe {entreprise_name} !</h1>
+            
+            <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                Bonjour {data.prenom},
+            </p>
+            
+            <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                Vous avez été ajouté comme technicien chez <strong>{entreprise_name}</strong>.
+            </p>
+            
+            <div style="background: #f1f5f9; padding: 24px; border-radius: 8px; margin: 24px 0;">
+                <p style="margin: 0 0 16px 0; font-size: 18px; font-weight: bold; color: #1e293b;">
+                    📱 Pour commencer :
+                </p>
+                <ol style="margin: 0; padding-left: 20px; color: #475569;">
+                    <li style="margin-bottom: 8px;">Cliquez sur le bouton ci-dessous pour activer votre compte</li>
+                    <li style="margin-bottom: 8px;">Choisissez votre mot de passe</li>
+                    <li style="margin-bottom: 8px;">Installez l'application sur votre téléphone</li>
+                </ol>
+            </div>
+            
+            <p style="text-align: center; margin: 32px 0;">
+                <a href="{activation_url}" style="display: inline-block; background: #2563eb; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                    Activer mon compte
+                </a>
+            </p>
+            
+            <p style="font-size: 14px; color: #6b7280; margin-top: 24px;">
+                Vos identifiants de connexion :<br>
+                <strong>Email :</strong> {data.email}
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+            
+            <p style="font-size: 12px; color: #9ca3af;">
+                Ce lien expire dans 7 jours. Si vous n'avez pas demandé ce compte, ignorez cet email.
+            </p>
+        </div>
+        """
+        
+        await send_email(
+            to_email=data.email,
+            subject=f"Bienvenue chez {entreprise_name} - Activez votre compte Actoos",
+            html_content=html_content
+        )
+        logger.info(f"Invitation email sent to {data.email}")
+    except Exception as e:
+        logger.error(f"Failed to send invitation email: {e}")
+    
     await log_action(current_user["entreprise_id"], current_user["user_id"], "invite", "user", user_id)
     
     # Calculate if this is an extra technician
