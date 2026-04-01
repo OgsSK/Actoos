@@ -511,57 +511,71 @@ def get_category_details(cat_id: str) -> dict:
 @router.get("/checkout/status/{session_id}")
 async def get_checkout_status(session_id: str, request: Request):
     """Get status of a checkout session"""
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    import stripe
     
     stripe_api_key = os.environ.get('STRIPE_API_KEY')
     if not stripe_api_key:
         raise HTTPException(status_code=500, detail="Stripe non configuré")
     
-    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url=webhook_url)
+    stripe.api_key = stripe_api_key
     
-    status = await stripe_checkout.get_checkout_status(session_id)
-    
-    # Update transaction in database
-    transaction = await db.payment_transactions.find_one({"session_id": session_id})
-    if transaction:
-        update_data = {
-            "status": status.status,
-            "payment_status": status.payment_status,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
         
-        # Handle both paid and trialing statuses
-        should_create = (
-            status.payment_status in ("paid", "trialing", "active") and 
-            transaction.get("payment_status") not in ("paid", "trialing", "active")
-        )
+        # Map Stripe status to our expected format
+        payment_status = session.payment_status or "unpaid"
         
-        if should_create:
-            update_data["activated_at"] = datetime.now(timezone.utc).isoformat()
+        # Check if subscription is in trial
+        if session.subscription:
+            sub = stripe.Subscription.retrieve(session.subscription)
+            if sub.status == "trialing":
+                payment_status = "trialing"
+            elif sub.status == "active":
+                payment_status = "paid"
+        
+        # Update transaction in database
+        transaction = await db.payment_transactions.find_one({"session_id": session_id})
+        if transaction:
+            update_data = {
+                "status": session.status,
+                "payment_status": payment_status,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
             
-            # Create the entreprise account
-            if transaction.get("entreprise_name") and transaction.get("admin_email"):
-                is_trial = status.payment_status == "trialing"
-                await create_entreprise_from_subscription(
-                    transaction["entreprise_name"],
-                    transaction["admin_email"],
-                    transaction["plan_id"],
-                    session_id,
-                    is_trial=is_trial
-                )
+            # Handle both paid and trialing statuses
+            should_create = (
+                payment_status in ("paid", "trialing", "active") and 
+                transaction.get("payment_status") not in ("paid", "trialing", "active")
+            )
+            
+            if should_create:
+                update_data["activated_at"] = datetime.now(timezone.utc).isoformat()
+                
+                # Create the entreprise account
+                if transaction.get("entreprise_name") and transaction.get("admin_email"):
+                    is_trial = payment_status == "trialing"
+                    await create_entreprise_from_subscription(
+                        transaction["entreprise_name"],
+                        transaction["admin_email"],
+                        transaction["plan_id"],
+                        session_id,
+                        is_trial=is_trial
+                    )
+            
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": update_data}
+            )
         
-        await db.payment_transactions.update_one(
-            {"session_id": session_id},
-            {"$set": update_data}
-        )
-    
-    return {
-        "status": status.status,
-        "payment_status": status.payment_status,
-        "amount_total": status.amount_total,
-        "currency": status.currency
-    }
+        return {
+            "status": session.status,
+            "payment_status": payment_status,
+            "amount_total": session.amount_total,
+            "currency": session.currency
+        }
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error checking status: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe: {str(e)}")
 
 
 async def create_entreprise_from_subscription(
@@ -668,40 +682,67 @@ async def create_entreprise_from_subscription(
 @router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
     """Handle Stripe webhook events"""
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    import stripe
     
     stripe_api_key = os.environ.get('STRIPE_API_KEY')
+    stripe_webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
+    
     if not stripe_api_key:
         raise HTTPException(status_code=500, detail="Stripe non configuré")
     
-    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url=webhook_url)
+    stripe.api_key = stripe_api_key
     
     # Get request body
     body = await request.body()
     signature = request.headers.get("Stripe-Signature")
     
     try:
-        webhook_response = await stripe_checkout.handle_webhook(body, signature)
-        
-        logger.info(f"Webhook event: {webhook_response.event_type}, session: {webhook_response.session_id}")
-        
-        # Update transaction based on event
-        if webhook_response.session_id:
-            transaction = await db.payment_transactions.find_one(
-                {"session_id": webhook_response.session_id}
+        # Verify webhook signature if secret is configured
+        if stripe_webhook_secret and signature:
+            event = stripe.Webhook.construct_event(
+                body, signature, stripe_webhook_secret
             )
+        else:
+            # Parse event without verification (for development)
+            import json
+            event = stripe.Event.construct_from(
+                json.loads(body), stripe.api_key
+            )
+        
+        logger.info(f"Webhook event: {event.type}")
+        
+        # Handle checkout.session.completed event
+        if event.type == "checkout.session.completed":
+            session = event.data.object
+            session_id = session.id
+            
+            # Determine payment status
+            payment_status = session.payment_status or "unpaid"
+            
+            # Check if subscription is in trial
+            if session.subscription:
+                try:
+                    sub = stripe.Subscription.retrieve(session.subscription)
+                    if sub.status == "trialing":
+                        payment_status = "trialing"
+                    elif sub.status == "active":
+                        payment_status = "paid"
+                except:
+                    pass
+            
+            # Find and update transaction
+            transaction = await db.payment_transactions.find_one({"session_id": session_id})
             
             if transaction:
                 update_data = {
-                    "webhook_event": webhook_response.event_type,
-                    "payment_status": webhook_response.payment_status,
+                    "webhook_event": event.type,
+                    "payment_status": payment_status,
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 }
                 
                 # Handle both paid and trialing statuses
                 should_create = (
-                    webhook_response.payment_status in ("paid", "trialing", "active") and 
+                    payment_status in ("paid", "trialing", "active") and 
                     transaction.get("payment_status") not in ("paid", "trialing", "active")
                 )
                 
@@ -710,22 +751,25 @@ async def stripe_webhook(request: Request):
                     
                     # Create entreprise if not already done
                     if transaction.get("entreprise_name") and transaction.get("admin_email"):
-                        is_trial = webhook_response.payment_status == "trialing"
+                        is_trial = payment_status == "trialing"
                         await create_entreprise_from_subscription(
                             transaction["entreprise_name"],
                             transaction["admin_email"],
                             transaction["plan_id"],
-                            webhook_response.session_id,
+                            session_id,
                             is_trial=is_trial
                         )
                 
                 await db.payment_transactions.update_one(
-                    {"session_id": webhook_response.session_id},
+                    {"session_id": session_id},
                     {"$set": update_data}
                 )
         
         return {"received": True}
         
+    except stripe.error.SignatureVerificationError as e:
+        logger.error(f"Webhook signature verification failed: {e}")
+        raise HTTPException(status_code=400, detail="Invalid signature")
     except Exception as e:
         logger.error(f"Webhook error: {e}")
         raise HTTPException(status_code=400, detail=str(e))

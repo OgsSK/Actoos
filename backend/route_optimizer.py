@@ -52,11 +52,11 @@ async def optimize_route(interventions: List[Dict], start_address: Optional[str]
     Returns:
         Dict with optimized_order, estimated time, tips, etc.
     """
-    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    import openai
     
-    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    api_key = os.environ.get('OPENAI_API_KEY') or os.environ.get('EMERGENT_LLM_KEY')
     if not api_key:
-        logger.warning("EMERGENT_LLM_KEY not set, returning original order")
+        logger.warning("OPENAI_API_KEY not set, returning original order")
         return {
             "optimized_order": [i["id"] for i in interventions],
             "total_estimated_time_minutes": len(interventions) * 30,
@@ -119,15 +119,20 @@ async def optimize_route(interventions: List[Dict], start_address: Optional[str]
     user_prompt += "Analyse ces interventions et propose l'ordre optimal de visite."
     
     try:
-        # Initialize LLM chat
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"route-opt-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-            system_message=ROUTE_OPTIMIZER_PROMPT
-        ).with_model("openai", "gpt-4o")
+        # Initialize OpenAI client
+        client = openai.AsyncOpenAI(api_key=api_key)
         
         # Send message
-        response = await chat.send_message(UserMessage(text=user_prompt))
+        completion = await client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": ROUTE_OPTIMIZER_PROMPT},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.3
+        )
+        
+        response = completion.choices[0].message.content
         
         # Parse JSON response
         try:

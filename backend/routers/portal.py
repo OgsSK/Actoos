@@ -212,7 +212,7 @@ async def create_facture_payment_session(
     request: Request
 ):
     """Create a Stripe checkout session to pay a facture from client portal"""
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+    import stripe
     
     # Verify client token
     client = await db.clients.find_one({"portal_token": token}, {"_id": 0})
@@ -244,6 +244,8 @@ async def create_facture_payment_session(
     if not stripe_api_key:
         raise HTTPException(status_code=500, detail="Paiement non configuré")
     
+    stripe.api_key = stripe_api_key
+    
     # Build URLs
     base_url = str(request.base_url).rstrip('/')
     origin = request.headers.get('origin', base_url.replace('/api', ''))
@@ -251,33 +253,42 @@ async def create_facture_payment_session(
     success_url = f"{origin}/portal/client/{token}?payment=success&facture={facture_id}"
     cancel_url = f"{origin}/portal/client/{token}?payment=cancelled&facture={facture_id}"
     
-    # Initialize Stripe
-    webhook_url = f"{base_url}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url=webhook_url)
-    
-    # Create checkout session
-    checkout_request = CheckoutSessionRequest(
-        amount=float(amount_due),
-        currency="eur",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={
-            "type": "facture_payment",
-            "facture_id": facture_id,
-            "facture_numero": facture.get("numero_facture", ""),
-            "client_id": client["id"],
-            "client_name": f"{client.get('nom', '')} {client.get('prenom', '')}".strip(),
-            "entreprise_id": facture["entreprise_id"],
-            "entreprise_name": entreprise.get("nom", "") if entreprise else ""
-        }
-    )
-    
-    session = await stripe_checkout.create_checkout_session(checkout_request)
+    # Create checkout session with Stripe
+    try:
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "eur",
+                    "unit_amount": int(amount_due * 100),  # Stripe uses cents
+                    "product_data": {
+                        "name": f"Facture {facture.get('numero_facture', '')}",
+                        "description": f"Paiement facture pour {entreprise.get('nom', '') if entreprise else 'Entreprise'}"
+                    }
+                },
+                "quantity": 1
+            }],
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "type": "facture_payment",
+                "facture_id": facture_id,
+                "facture_numero": facture.get("numero_facture", ""),
+                "client_id": client["id"],
+                "client_name": f"{client.get('nom', '')} {client.get('prenom', '')}".strip(),
+                "entreprise_id": facture["entreprise_id"],
+                "entreprise_name": entreprise.get("nom", "") if entreprise else ""
+            }
+        )
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error creating checkout: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe: {str(e)}")
     
     # Create payment transaction record
     transaction = {
         "id": str(uuid.uuid4()),
-        "session_id": session.session_id,
+        "session_id": session.id,
         "type": "facture_payment",
         "facture_id": facture_id,
         "facture_numero": facture.get("numero_facture", ""),
@@ -291,11 +302,11 @@ async def create_facture_payment_session(
     }
     await db.payment_transactions.insert_one(transaction)
     
-    logger.info(f"Created payment session for facture {facture.get('numero_facture')}: {session.session_id}")
+    logger.info(f"Created payment session for facture {facture.get('numero_facture')}: {session.id}")
     
     return {
         "url": session.url,
-        "session_id": session.session_id,
+        "session_id": session.id,
         "amount": amount_due
     }
 
@@ -303,7 +314,7 @@ async def create_facture_payment_session(
 @router.get("/facture/{facture_id}/payment-status")
 async def get_facture_payment_status(facture_id: str, token: str, session_id: str, request: Request):
     """Check payment status for a facture"""
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    import stripe
     
     # Verify client token
     client = await db.clients.find_one({"portal_token": token}, {"_id": 0})
@@ -322,21 +333,24 @@ async def get_facture_payment_status(facture_id: str, token: str, session_id: st
     if not stripe_api_key:
         raise HTTPException(status_code=500, detail="Paiement non configuré")
     
-    base_url = str(request.base_url).rstrip('/')
-    webhook_url = f"{base_url}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url=webhook_url)
+    stripe.api_key = stripe_api_key
     
-    status = await stripe_checkout.get_checkout_status(session_id)
-    
-    # If paid, update facture
-    if status.payment_status == "paid":
-        await process_facture_payment(facture_id, session_id, status.amount_total / 100)
-    
-    return {
-        "status": status.status,
-        "payment_status": status.payment_status,
-        "facture_statut": facture.get("statut")
-    }
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        
+        # If paid, update facture
+        if session.payment_status == "paid":
+            amount_total = session.amount_total / 100 if session.amount_total else 0
+            await process_facture_payment(facture_id, session_id, amount_total)
+        
+        return {
+            "status": session.status,
+            "payment_status": session.payment_status,
+            "facture_statut": facture.get("statut")
+        }
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error checking status: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe: {str(e)}")
 
 
 async def process_facture_payment(facture_id: str, session_id: str, amount_paid: float):
