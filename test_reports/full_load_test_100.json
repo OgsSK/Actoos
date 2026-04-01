@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-04-01T18:46:57.667235",
+  "config": {
+    "api_url": "https://actoos-production.up.railway.app/api",
+    "num_enterprises": 100,
+    "concurrent_limit": 20
+  },
+  "results": {
+    "elapsed_seconds": 89.23085,
+    "enterprises_created": 100,
+    "clients_created": 251,
+    "interventions_created": 299,
+    "devis_created": 149,
+    "interventions_completed": 200,
+    "sync_operations": 0,
+    "total_operations": 999,
+    "success_rate": 100.0
+  },
+  "timings": {
+    "register": {
+      "avg_ms": 3584.39769,
+      "max_ms": 9060.711,
+      "count": 100
+    },
+    "create_client": {
+      "avg_ms": 988.2828247011959,
+      "max_ms": 3034.071,
+      "count": 251
+    },
+    "create_intervention": {
+      "avg_ms": 1355.1621672240803,
+      "max_ms": 2937.86,
+      "count": 299
+    },
+    "create_devis": {
+      "avg_ms": 1649.3849932885905,
+      "max_ms": 3157.856,
+      "count": 149
+    },
+    "complete_intervention": {
+      "avg_ms": 2059.975495000001,
+      "max_ms": 5171.129,
+      "count": 200
+    },
+    "sync": {
+      "avg_ms": 368.5066999999999,
+      "max_ms": 2152.961,
+      "count": 100
+    }
+  },
+  "errors_count": 0,
+  "errors_sample": []
+}
