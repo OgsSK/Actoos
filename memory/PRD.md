@@ -1,1108 +1,123 @@
 # Actoos - SaaS Gestion d'Interventions Terrain
 
-## Problem Statement
-SaaS multi-tenant pour entreprises de services (plomberie, électricité, maintenance, BTP, nettoyage) avec:
-- Dashboard Admin pour pilotage entreprise
-- Application technicien pour terrain (PWA)
-- Portail client pour signature devis
-- White-labeling (logo + couleurs par tenant)
-
-## Plans Officiels Actoos (Version Finale)
-
-### 🟢 STARTUP — 49€ / mois
-Pour artisans, auto-entrepreneurs et petites équipes.
-
-**Utilisateurs**: 1 admin, 3 techniciens (+5€/tech supplémentaire)
-**Catégories**: 1 seule au choix (BTP, Nettoyage, Maintenance...)
-
-**Inclus**:
-- Gestion clients, devis, factures
-- Planning interventions
-- Signature électronique
-- App PWA (missions, checklist, photos, signature)
-- Logo entreprise sur documents
-- Paiement en ligne basique
-
-**Non inclus**: Mode offline, géoloc, multi-sites, analytics avancés
-
----
-
-### 🔵 PRO — 79€ / mois ⭐ (Recommandé)
-Pour PME en croissance.
-
-**Utilisateurs**: 3 admins, 10 techniciens (+5€/tech supplémentaire)
-**Catégories**: Jusqu'à 4
-
-**Inclus** (tout Startup +):
-- Automatisation devis → facture
-- Planning intelligent
-- Statistiques activité, gestion équipes
-- Mode hors ligne, géolocalisation
-- Photos illimitées
-- Rapports PDF auto
-- Validation chef d'équipe
-- Branding avancé (couleurs, templates, emails)
-- Paiement complet (acompte, direct)
-- Analytics: CA, rentabilité, performance
-
-**Non inclus**: Multi-sites, API, white-label complet
-
----
-
-### 🟣 ENTERPRISE — 129€ / mois
-Entreprises structurées et multi-équipes.
-
-**Utilisateurs**: Admins et techniciens illimités
-**Catégories**: Toutes activables
-
-**Inclus** (tout Pro +):
-- **Multi-sites** ← Enterprise seulement
-- Multi-équipes
-- Permissions avancées / rôles personnalisés
-- Reporting avancé, KPI personnalisés
-- Export comptable
-- **API accès** ← Enterprise seulement
-- **White-label complet** ← Enterprise seulement
-- Workflow personnalisable
-- Formulaires dynamiques
-- Validation multi-niveau
-- Suivi GPS avancé
-- Portail client personnalisé
-- Abonnements clients finaux
-- Paiements récurrents
-- Support dédié 24/7
-
----
-
-## What's Implemented
-
-### Phases 1-10 ✅ (Sessions précédentes)
-- Multi-tenant, Auth JWT, CRUD complet
-- PDF génération, Emails, Dashboard
-- Planning drag-drop, App Technicien PWA
-- SMS Twilio, Rapports, Paramètres
-
-### Phase 11 - Corrections Finales ✅
-- [x] Téléchargement PDF (méthode blob)
-- [x] Signature visible dans devis/factures/PDF
-- [x] Timezone Paris
-- [x] Sélection multiple + batch delete
-- [x] Annulation intervention
-
-### Phase 12 - Bugs P0 App Technicien ✅ (Date: 2026-03-30)
-
-#### Bugs corrigés
-- [x] **Menu Profil** - Dropdown avec nom/email utilisateur + bouton "Se déconnecter" séparé (au lieu de logout direct)
-- [x] **Création interventions/devis** - Techniciens peuvent créer interventions et devis via formulaires intégrés
-- [x] **Navigation mobile** - Padding-bottom ajouté pour éviter le badge Emergent
-
-#### Nouveaux composants TechnicianApp
-- `ProfileMenu` - DropdownMenu avec infos utilisateur
-- `CreateInterventionForm` - Formulaire création intervention (client, titre, date, durée, priorité)
-- `CreateDevisForm` - Formulaire création devis avec lignes, calcul TVA automatique
-
-### Phase 13 - Assignation Intelligente ✅ (Date: 2026-03-30)
-
-#### Fonctionnalités
-- [x] **Interventions disponibles** - Si technicien_id=null, l'intervention est visible par tous les techs
-- [x] **Badge "Disponible"** - Badge orange avec animation pulse sur les interventions non assignées
-- [x] **Bouton "Accepter cette mission"** - Permet au tech de réclamer l'intervention
-- [x] **Endpoint /claim** - POST /api/interventions/{id}/claim assigne au premier tech qui clique
-- [x] **Gestion des conflits** - Retourne 409 si l'intervention est déjà prise
-- [x] **Notification SMS** - Envoie SMS aux techs quand une nouvelle intervention disponible est créée (si Twilio configuré)
-
-#### Endpoints ajoutés
-- `GET /api/interventions/available` - Liste les interventions non assignées
-- `POST /api/interventions/{id}/claim` - Réclamer une intervention disponible
-- `GET /api/interventions/today` - Modifié pour inclure les interventions disponibles pour les techs
-- `GET /api/interventions?include_available=true` - Paramètre pour inclure les disponibles
-
-### Phase 14 - Catégories avec Checklists Dynamiques ✅ (Date: 2026-03-30)
-
-#### Fonctionnalités
-- [x] **6 catégories par défaut** - Plomberie, Électricité, Nettoyage, Climatisation, BTP, Maintenance
-- [x] **Checklists dynamiques** - Chaque catégorie a son template de checklist (checkbox, text, number, photo)
-- [x] **Sélecteur de catégorie** - Dans le formulaire de création d'intervention avec couleurs
-- [x] **Affichage checklist** - Dans les détails de l'intervention avec les items à remplir
-- [x] **Sauvegarde checklist** - Les techniciens peuvent remplir et sauvegarder la checklist
-- [x] **Auto-seeding** - Les catégories sont créées automatiquement lors du premier appel
-
-#### Endpoints ajoutés
-- `GET /api/categories` - Liste les catégories de l'entreprise
-- `GET /api/categories/{id}` - Détails d'une catégorie avec son checklist_template
-- `POST /api/categories` - Créer une nouvelle catégorie (admin)
-- `PUT /api/categories/{id}` - Modifier une catégorie (admin)
-- `PUT /api/interventions/{id}/checklist` - Sauvegarder les réponses de checklist
-
-#### Modèles ajoutés
-- `Categorie` - code, nom, icone, couleur, checklist_template
-- `ChecklistItem` - id, label, type (checkbox/text/number/photo), required
-- `ChecklistResponse` - item_id, checked, value, completed_at
-
-### Phase 15 - EXIF Stripping & Historique Communications ✅ (Date: 2026-03-30)
-
-#### EXIF Stripping (Confidentialité photos)
-- [x] **Suppression EXIF** - Les métadonnées GPS sont supprimées des photos avant stockage
-- [x] **Compression** - Images redimensionnées (max 1920px) et compressées (qualité 85, max 500KB)
-- [x] **Validation** - Vérification que le fichier est une image valide avant traitement
-
-#### Historique Communications
-- [x] **Logging emails** - Chaque email envoyé (devis, facture, relance) est enregistré
-- [x] **Logging SMS** - Chaque SMS envoyé est enregistré
-- [x] **Historique par client** - Vue des communications envoyées à un client
-- [x] **Statistiques** - Compteur emails/SMS envoyés, livrés, échoués
-
-#### Endpoints ajoutés
-- `GET /api/clients/{id}/communications` - Historique communications d'un client
-- `GET /api/communications` - Liste toutes les communications
-- `GET /api/communications/stats` - Statistiques des communications
-
-#### Fichiers créés
-- `/app/backend/image_utils.py` - Fonctions EXIF stripping et compression
-- `/app/backend/communication_log.py` - Service de logging des communications
-
-### Phase 16 - Stripe Onboarding SaaS ✅ (Date: 2026-03-30)
-
-#### Plans d'abonnement
-- [x] **Starter** (29€/mois) - 3 techniciens, 100 interventions/mois, 1 catégorie, support email
-- [x] **Pro** (79€/mois) - 10 techniciens, illimité, toutes catégories, 100 SMS, support prioritaire
-- [x] **Enterprise** (199€/mois) - Illimité, white-labeling, support 24/7, API accès
-
-#### Flux d'inscription
-- [x] **Page Pricing** (`/pricing`) - Affichage des 3 plans avec features et prix
-- [x] **Page Signup** (`/signup?plan=xxx`) - Formulaire nom entreprise + email admin
-- [x] **Stripe Checkout** - Paiement sécurisé via hosted checkout Stripe
-- [x] **Création automatique** - Compte entreprise + admin créés après paiement réussi
-- [x] **Email de bienvenue** - Credentials envoyés par email
-
-#### Endpoints ajoutés
-- `GET /api/plans` - Liste des plans d'abonnement (public)
-- `POST /api/checkout/session` - Créer une session Stripe Checkout
-- `GET /api/checkout/status/{session_id}` - Statut du paiement
-- `POST /api/webhook/stripe` - Webhook Stripe pour événements paiement
-- `GET /api/subscription/current` - Abonnement actuel de l'entreprise
-
-#### Fichiers créés
-- `/app/backend/subscription_service.py` - Définition des plans et limites
-- `/app/frontend/src/pages/Pricing.jsx` - Pages Pricing, Signup, Success
-
-### Phase 17 - Branding Actoos & White-labeling ✅ (Date: 2026-03-30)
-
-#### Branding Officiel Actoos
-- [x] **Logo favicon** - "A" géométrique bleu (`/actoos-favicon.png`)
-- [x] **Logo avec texte** - Actoos (`/actoos-logo.jpg`)
-- [x] **Logo avec slogan** - "Le logiciel tout-en-un pour piloter vos opérations terrain" (`/actoos-logo-slogan.png`)
-- [x] **Manifest PWA** - Mis à jour avec icônes Actoos et couleur thème #2563EB
-
-#### Pages mises à jour
-- [x] **Login** - Logo avec slogan
-- [x] **Pricing** - Logo + slogan en hero
-- [x] **Dashboard** - Logo "A" dans la sidebar
-- [x] **App Technicien** - Logo "A" dans le header
-
-#### White-labeling (Paramètres > Personnalisation)
-- [x] **Upload logo entreprise** - Stockage cloud, EXIF stripping automatique
-- [x] **Sélecteur de couleur** - Color picker + presets (6 couleurs)
-- [x] **Aperçu en temps réel** - Prévisualisation du branding
-
-#### Endpoints ajoutés
-- `POST /api/entreprise/logo` - Upload logo entreprise
-- `PUT /api/entreprise/branding` - Mise à jour couleur primaire
-
-### Phase 18 - PDF avec Logo/QR Code & Injection CSS Couleurs ✅ (Date: 2026-03-30)
-
-#### PDF Génération Améliorée
-- [x] **Logo entreprise sur Devis** - Le logo_url du tenant s'affiche en haut à gauche du PDF
-- [x] **Logo entreprise sur Factures** - Même affichage que les devis
-- [x] **QR Code paiement** - QR code généré sur les factures non payées (contient infos paiement)
-- [x] **Design responsive** - Tableau logo + infos entreprise pour un rendu professionnel
-- [x] **Factures payées** - Affichent "PAYÉE" en vert au lieu du QR code
-
-#### Injection CSS Dynamique (White-labeling)
-- [x] **Variables CSS** - `--tenant-primary`, `--primary` (HSL), `--tenant-primary-rgb` injectées dynamiquement
-- [x] **AuthContext hook** - useEffect surveille `entreprise.couleur_primaire` et met à jour le DOM
-- [x] **Classes utilitaires** - `.bg-tenant-primary`, `.text-tenant-primary`, `.border-tenant-primary`, etc.
-- [x] **Shadcn compatible** - La variable `--primary` est en format HSL pour compatibilité Shadcn UI
-
-#### Fonctions ajoutées (pdf_generator.py)
-- `generate_qr_code(data, size)` - Génère image QR code avec la lib `qrcode`
-- `load_logo_image(logo_url, max_width, max_height)` - Télécharge et redimensionne le logo
-- `build_payment_qr_data(facture, entreprise, portal_url)` - Construit les données de paiement
-
-#### Tests Validés
-- Backend: 11/12 tests passés (1 ignoré - pas de facture payée)
-- Frontend: 100% tests branding UI passés
-- CSS injection vérifié: --tenant-primary change après sauvegarde couleur
-
-### Phase 19 - Portail Client Web ✅ (Date: 2026-03-30)
-
-#### Fonctionnalités
-- [x] **Dashboard client** - Page publique accessible via token unique `/portal/client/{token}`
-- [x] **Cartes résumé** - Total devis, en attente, factures, montant dû
-- [x] **Onglet Aperçu** - Vue d'ensemble avec derniers devis, factures et interventions
-- [x] **Onglet Devis** - Tableau complet avec signature en ligne via lien direct
-- [x] **Onglet Factures** - Tableau avec téléchargement PDF
-- [x] **Branding tenant** - Logo et couleur primaire affichés sur le portail
-- [x] **Génération lien portail** - Bouton sur la fiche client pour obtenir/copier le lien
-
-#### Endpoints ajoutés
-- `GET /api/portal/client/{token}` - Dashboard client complet (public)
-- `GET /api/portal/facture/{id}?token=xxx` - Détail facture (public)
-- `GET /api/portal/facture/{id}/pdf?token=xxx` - PDF facture (public)
-- `GET /api/clients/{id}/portal-link` - Obtenir/générer lien portail (auth)
-
-#### Modèle modifié
-- `Client` - Ajout du champ `portal_token` (UUID unique par client)
-
-#### Tests Validés
-- Backend: 15/15 tests passés (100%)
-- Frontend: 100% tests portal UI passés
-
-### Phase 20 - Notifications Push PWA ✅ (Date: 2026-03-30)
-
-#### Fonctionnalités
-- [x] **Service Worker push** - Réception et affichage des notifications
-- [x] **Bouton toggle** - Activer/désactiver notifications dans l'app technicien
-- [x] **VAPID keys** - Authentification sécurisée des notifications
-- [x] **Inscription push** - Stockage des subscriptions par utilisateur
-- [x] **Test notification** - Envoi de notification test pour vérification
-- [x] **Intégration Smart Assignment** - Notification auto quand nouvelle mission disponible
-
-#### Endpoints ajoutés
-- `GET /api/push/vapid-key` - Clé publique VAPID (public)
-- `POST /api/push/subscribe` - Inscription aux notifications (auth)
-- `DELETE /api/push/unsubscribe` - Désinscription (auth)
-- `GET /api/push/status` - Statut d'inscription (auth)
-- `POST /api/push/test` - Envoyer notification test (auth)
-
-#### Fichiers ajoutés
-- `/app/backend/push_service.py` - Service notifications (pywebpush)
-- `/app/frontend/src/hooks/usePushNotifications.js` - Hook React
-
-#### Service Worker (sw.js)
-- Gestionnaire `push` pour recevoir les notifications
-- Gestionnaire `notificationclick` pour ouvrir l'app au clic
-- Affichage natif avec titre, corps, icône et vibration
-
-#### Tests Validés
-- Backend: 13/13 tests passés (100%)
-- Frontend: 100% tests push UI passés
-
-### Phase 21 - Paiement en ligne Stripe (Portail Client) ✅ (Date: 2026-03-30)
-
-#### Fonctionnalités
-- [x] **Bouton "Payer"** - Sur chaque facture non payée avec montant > 0
-- [x] **Montant affiché** - Bouton affiche "Payer 120,00€" avec le montant dû
-- [x] **Stripe Checkout** - Redirection vers page de paiement sécurisée
-- [x] **Traitement automatique** - Facture marquée "payée" après paiement
-- [x] **Email de confirmation** - Envoyé automatiquement au client
-- [x] **Gestion erreurs** - Factures à 0€ ou déjà payées n'affichent pas le bouton
-
-#### Endpoints ajoutés
-- `POST /api/portal/facture/{id}/pay?token=xxx` - Créer session Stripe Checkout
-- `GET /api/portal/facture/{id}/payment-status?token=xxx&session_id=xxx` - Vérifier statut
-
-#### Flux de paiement
-1. Client clique sur "Payer X€" dans le portail
-2. Redirection vers Stripe Checkout (mode test)
-3. Paiement par carte
-4. Retour au portail avec `?payment=success`
-5. Facture marquée comme payée + email de confirmation
-
-#### Tests Validés
-- Backend: 11/11 tests passés (100%)
-- Frontend: 100% tests payment UI passés
-
-### Phase 22 - Support Offline Avancé (IndexedDB/Dexie.js) ✅ (Date: 2026-03-30)
-
-#### Fonctionnalités
-- [x] **IndexedDB avec Dexie.js** - Base de données locale 'ActoosOfflineDB' avec 6 stores
-- [x] **Cache interventions** - Stockage automatique quand chargées
-- [x] **Cache clients/catégories** - Disponibles hors ligne
-- [x] **File d'attente actions** - pendingActions pour sync différée
-- [x] **Mises à jour optimistes** - Start/Complete intervention fonctionne offline
-- [x] **Auto-sync** - Synchronisation automatique au retour en ligne
-- [x] **SyncStatus amélioré** - Affiche temps depuis dernière sync
-
-#### Stores IndexedDB
-- `interventions` - Interventions avec indexation technicien_id, statut
-- `clients` - Liste clients avec indexation entreprise_id
-- `categories` - Catégories avec checklists
-- `pendingActions` - Actions en attente de sync
-- `pendingPhotos` - Photos à uploader
-- `syncMeta` - Métadonnées de synchronisation
-
-#### Action Types supportés
-- `start_intervention`, `complete_intervention`
-- `update_notes`, `update_checklist`
-- `claim_intervention`, `upload_photo`
-
-#### Fichiers ajoutés
-- `/app/frontend/src/lib/offlineDb.js` - Wrapper Dexie.js
-- OfflineContext.jsx entièrement réécrit avec Dexie
-
-#### Tests Validés
-- Frontend: 100% (9/9 tests offline passés)
-- IndexedDB: 12 interventions, 6 catégories en cache validés
-
-### Phase 23 - Optimisation Tournées IA ✅ (Date: 2026-03-30)
-
-#### Fonctionnalités
-- [x] **Bouton optimisation** - Visible quand 2+ interventions planifiées (icône étoile amber)
-- [x] **Modal RouteOptimizerModal** - Interface pour lancer l'optimisation
-- [x] **IA GPT-4o** - Analyse adresses, priorités, créneaux et suggère ordre optimal
-- [x] **Score de tournée** - Évaluation simple sans IA (0-100)
-- [x] **Application de l'ordre** - Bouton pour appliquer la suggestion
-- [x] **Fallback gracieux** - Si IA échoue, ordre original retourné
-
-#### Endpoints ajoutés
-- `POST /api/interventions/optimize-route` - Optimisation IA
-- `GET /api/interventions/route-score` - Score de tournée simple
-- `POST /api/interventions/apply-optimized-order` - Appliquer ordre (admin)
-
-#### Fichiers ajoutés
-- `/app/backend/route_optimizer.py` - Service d'optimisation avec GPT-4o
-
-#### Format de réponse IA
-```json
-{
-  "optimized_order": ["id1", "id2", ...],
-  "total_estimated_time_minutes": 340,
-  "route_summary": "Description du parcours optimisé",
-  "tips": ["Conseil 1", "Conseil 2"],
-  "zones": [{"name": "Zone Nord", "interventions": [...]}],
-  "ai_optimized": true
-}
-```
-
-#### Tests Validés
-- Backend: 16/16 tests passés (100%)
-- Frontend: 100% UI fonctionne
-
-### Phase 24 - Rapports & Analytics ✅ (Date: 2026-03-30)
-
-#### Fonctionnalités
-- [x] **Page Analytics** - Dashboard complet accessible depuis la sidebar
-- [x] **4 KPI Cards** - CA, Factures en attente, Interventions, Taux conversion
-- [x] **Graphique évolution CA** - Barres sur 30 jours
-- [x] **Interventions par statut** - Progress bars colorées avec pourcentages
-- [x] **Performance techniciens** - Tableau avec classement et badges
-- [x] **Top Clients** - Ranking par chiffre d'affaires
-- [x] **Cards résumé** - Devis, Clients, Factures avec détails
-- [x] **Sélecteur période** - Semaine, Mois, Trimestre, Année
-
-#### Endpoints ajoutés (admin uniquement)
-- `GET /api/analytics/revenue` - Métriques revenus et croissance
-- `GET /api/analytics/interventions` - Stats par statut/priorité/catégorie
-- `GET /api/analytics/technicians` - Performance des techniciens
-- `GET /api/analytics/clients` - Stats clients et top clients
-- `GET /api/analytics/devis` - Conversion devis et délais
-- `GET /api/analytics/trends` - Données quotidiennes pour graphiques
-- `GET /api/analytics/summary` - Résumé complet
-
-#### Fichiers ajoutés
-- `/app/backend/analytics_service.py` - Service d'analytics MongoDB
-- `/app/frontend/src/pages/Analytics.jsx` - Page dashboard
-
-#### Tests Validés
-- Backend: 18/18 tests passés (100%)
-- Frontend: 100% UI fonctionnel
-
-### Phase 25 - Skills & Categories Matching ✅ (Date: 2026-03-30)
-
-#### Fonctionnalités
-- [x] **Champ skills sur User** - Liste de categorie_id représentant les compétences du technicien
-- [x] **Filtrage interventions** - Les techs ne voient que les interventions correspondant à leurs skills
-- [x] **Comportement polyvalent** - Un tech sans skills assignés peut voir TOUTES les interventions
-- [x] **Notifications qualifiées** - Push/SMS envoyés uniquement aux techs compétents
-- [x] **Interface Admin** - Colonne "Compétences" avec badges colorés et bouton d'édition
-- [x] **Dialog de gestion** - Multi-sélection avec checkboxes et descriptions des catégories
-- [x] **Affichage profil PWA** - "Mes compétences" visible dans le menu profil technicien
-
-#### Endpoints ajoutés
-- `PUT /api/users/{id}/skills` - Mise à jour des compétences (admin only)
-- `GET /api/users/{id}/skills` - Récupération des compétences avec détails catégories
-
-#### Modifications endpoints existants
-- `GET /api/interventions/available` - Filtré par compétences du tech
-- `GET /api/interventions/today` - Filtré par compétences du tech
-- `GET /api/interventions?include_available=true` - Filtré par compétences
-
-#### Fichiers modifiés
-- `/app/backend/models.py` - UserBase.skills, UserSkillsUpdate
-- `/app/backend/server.py` - Endpoints skills + filtrage interventions
-- `/app/backend/push_service.py` - notify_new_intervention_available_to_techs
-- `/app/frontend/src/pages/Techniciens.jsx` - SkillsManager + colonne compétences
-- `/app/frontend/src/pages/TechnicianApp.jsx` - ProfileMenu avec skills
-
-#### Tests Validés
-- Backend: 16/16 tests passés (100%)
-- Frontend: 100% UI fonctionnel
-
-## Configuration requise
-
-### Variables d'environnement Backend (.env)
-```
-MONGO_URL=mongodb://...
-DB_NAME=fieldcommand
-RESEND_API_KEY=re_xxxxx
-SENDER_EMAIL=onboarding@resend.dev
-TWILIO_ACCOUNT_SID=ACxxxxx
-TWILIO_AUTH_TOKEN=xxxxx
-TWILIO_PHONE_NUMBER=+33xxxxxxxxx
-VAPID_PUBLIC_KEY=BDEosOMy7hCZHnW...
-VAPID_PRIVATE_KEY=KzQjovJG3M3RJd...
-```
-
-## Credentials Test
-- Admin: `admin@testplomberie.fr` / `password123`
-- Tech: `tech@testplomberie.fr` / `technicien123`
-
-## Prioritized Backlog
-
-### P0-P2 - Complété ✅
-- [x] **Logique assignation intelligente** 
-- [x] **Catégories/Modules avec checklists**
-- [x] **EXIF stripping photos**
-- [x] **Historique communications**
-- [x] **Stripe + Onboarding SaaS**
-- [x] **White-labeling complet** (logo + couleur primaire)
-- [x] **Portail Client Web** (devis/factures/interventions)
-- [x] **Notifications Push PWA**
-- [x] **Paiement en ligne Stripe** (portail client)
-- [x] **Support Offline Avancé** (IndexedDB/Dexie.js)
-- [x] **Optimisation Tournées IA** (GPT-4o)
-- [x] **Rapports et Analytics** (Dashboard business)
-
-### Backlog (Nice to have)
-- [x] QR Code paiement sur facture ✅
-- [x] Injection CSS dynamique des couleurs dans toute l'interface ✅
-- [x] Logo visible sur les PDF générés ✅
-- [x] Portail client web (consultation factures/devis, historique) ✅
-- [x] Notifications push PWA ✅
-- [x] Paiement en ligne via Stripe (sur facture depuis portail) ✅
-- [x] Offline avancé (IndexedDB/Dexie.js sync) ✅
-- [x] Optimisation tournées IA ✅
-- [x] Rapports et analytics avancés ✅
-- [x] Skills & Categories Matching (techniciens qualifiés) ✅
-- [x] Gestion des catégories (création/édition/suppression par admin) ✅
-- [x] Refactoring server.py Phase 1 (3716 → 2831 lignes, 7 routers créés) ✅
-- [x] Refactoring server.py Phase 2 (2831 → 2582 lignes, 11 routers total) ✅
-- [x] Multi-devises (EUR, USD, XOF, GBP, CHF, CAD, MAD) et sélecteur de locale ✅
-- [x] Formatage devise dans Dashboard, Analytics, Devis, Factures ✅
-- [x] Export CSV/JSON des rapports Analytics ✅
-
-### Phase 26 - Exports Analytics & Relevés Mensuels ✅ (Date: 2026-03-31)
-
-#### Export Analytics
-- [x] **Export PDF Dashboard** - Génération PDF des statistiques complètes
-- [x] **Export CSV** - Export données brutes pour analyse externe
-- [x] **Sélecteur période** - Export filtré par période sélectionnée
-
-#### Relevés Mensuels (Statements)
-- [x] **Page Relevés** (`/statements`) - Interface admin complète
-- [x] **Génération par période** - Sélection mois/année avec génération batch
-- [x] **PDF par client** - Relevé détaillé avec factures, statuts, totaux
-- [x] **Téléchargement individuel** - Bouton PDF par client
-- [x] **Envoi groupé par email** - Envoi automatique avec pièce jointe PDF
-- [x] **Historique des envois** - Log des relevés envoyés
-- [x] **Support multi-devise** - Montants formatés selon devise entreprise
-
-#### Endpoints ajoutés
-- `GET /api/statements/generate` - Génère relevés pour tous clients avec factures
-- `GET /api/statements/preview/{client_id}` - Télécharge PDF d'un client
-- `POST /api/statements/send` - Envoi batch par email
-- `GET /api/statements/history` - Historique des envois
-
-#### Fichiers créés
-- `/app/backend/statement_generator.py` - Générateur PDF ReportLab
-- `/app/backend/routers/statements.py` - Router FastAPI
-- `/app/frontend/src/pages/Statements.jsx` - Interface React
-
-### Phase 27 - Refactoring server.py Phase 3 (Architecture Modulaire Complète) ✅ (Date: 2026-03-31)
-
-#### Migrations effectuées
-- [x] **Interventions** (~600 lignes) → `/app/backend/routers/interventions.py`
-- [x] **Devis** (~250 lignes) → `/app/backend/routers/devis.py`
-- [x] **Factures** (~280 lignes) → `/app/backend/routers/factures.py`
-- [x] **Portal** (~400 lignes) → `/app/backend/routers/portal.py`
-- [x] **SMS** (~130 lignes) → `/app/backend/routers/sms.py`
-- [x] **Subscription** (~320 lignes) → `/app/backend/routers/subscription.py`
-- [x] **Photos** (~70 lignes) → `/app/backend/routers/photos.py`
-- [x] **Rapports** (~150 lignes) → `/app/backend/routers/rapports.py`
-- [x] **Audit** → `/app/backend/routers/audit.py`
-
-#### Résultat
-- **server.py** réduit de ~2585 lignes à ~235 lignes (réduction de 91%)
-- **21 routers modulaires** dans `/app/backend/routers/`
-- Architecture maintenable et scalable
-- API Version 2.0.0 (Modular Architecture)
-
-### Phase 28 - API Publique pour Intégrations Tierces ✅ (Date: 2026-03-31)
-
-#### Gestion des clés API
-- [x] **Création de clés** - Génération sécurisée avec permissions granulaires
-- [x] **Révocation** - Désactivation immédiate des clés compromises
-- [x] **Permissions** - read, write, webhook, admin
-- [x] **Expiration** - Option de validité limitée (30j, 90j, 1an)
-- [x] **Tracking** - Dernière utilisation enregistrée
-
-#### Webhooks
-- [x] **13 événements** - Interventions, Devis, Factures, Clients
-- [x] **Signature HMAC-SHA256** - Sécurité des payloads
-- [x] **Test intégré** - Envoi d'événement test
-- [x] **Historique livraisons** - Logs des envois
-- [x] **Auto-désactivation** - Après 10 échecs consécutifs
-
-#### Endpoints REST externes (v1.1.0)
-**Lecture (GET)**
-- [x] `GET /api/public-api/v1/clients` - Liste clients paginée
-- [x] `GET /api/public-api/v1/clients/{id}` - Détail client
-- [x] `GET /api/public-api/v1/clients/by-external-id/{external_id}` - Par ID externe
-- [x] `GET /api/public-api/v1/interventions` - Liste interventions
-- [x] `GET /api/public-api/v1/interventions/by-external-id/{external_id}` - Par ID externe
-- [x] `GET /api/public-api/v1/devis` - Liste devis
-- [x] `GET /api/public-api/v1/factures` - Liste factures
-
-**Écriture (POST/PUT/DELETE)**
-- [x] `POST /api/public-api/v1/clients` - Créer client
-- [x] `PUT /api/public-api/v1/clients/{id}` - Modifier client
-- [x] `POST /api/public-api/v1/interventions` - Créer intervention
-- [x] `PUT /api/public-api/v1/interventions/{id}` - Modifier intervention
-- [x] `DELETE /api/public-api/v1/interventions/{id}` - Annuler intervention
-
-#### Fonctionnalités ERP/CRM
-- [x] **external_id** - Champ de liaison avec systèmes externes
-- [x] **Détection doublons** - Vérification email et external_id
-- [x] **Tracking origine** - `created_via: api`, `api_key_id`
-- [x] **Webhooks automatiques** - Déclenchés à chaque création/modification
-
-#### Frontend
-- [x] **Page API Settings** (`/dashboard/api-settings`) - Interface complète
-- [x] **Documentation intégrée** - Tous endpoints avec exemples curl
-- [x] **Onglets** - Clés API, Webhooks, Documentation
-
-#### Fichiers créés/modifiés
-- `/app/backend/models_api.py` - Modèles Pydantic API (APIClientCreate, APIInterventionCreate, etc.)
-- `/app/backend/webhook_service.py` - Service envoi webhooks
-- `/app/backend/routers/public_api.py` - Router API publique (22 endpoints)
-- `/app/frontend/src/pages/APISettings.jsx` - Interface admin enrichie
-
-### Phase 29 - Validation Limites Plans & Widget Usage ✅ (Date: 2026-03-31)
-
-#### Backend - Validation des limites
-- [x] **plan_limits.py** - Service central de validation des limites
-- [x] **check_technician_limit()** - Vérifie limite techniciens avant invitation
-- [x] **check_intervention_limit()** - Vérifie limite interventions/mois
-- [x] **check_category_limit()** - Vérifie limite catégories
-- [x] **get_usage_stats()** - Retourne statistiques d'usage complètes
-- [x] **Endpoint /api/usage** - Récupère usage et limites actuels
-
-#### Frontend - Widget d'usage
-- [x] **PlanUsageWidget.jsx** - Composant réutilisable
-- [x] **Mode compact** - Affichage sidebar/dashboard
-- [x] **Mode complet** - Page Settings avec tous les détails
-- [x] **Barres de progression** - Visualisation usage vs limite
-- [x] **Indicateurs couleur** - Vert/Jaune/Rouge selon usage
-- [x] **Dialog upgrade** - Comparaison des plans avec Stripe checkout
-
-#### Intégration
-- [x] **Dashboard** - Widget compact en bas de page
-- [x] **Settings** - Nouvel onglet "Abonnement" avec vue complète
-- [x] **Erreurs 403** - Messages clairs quand limite atteinte
-
-#### Fichiers créés/modifiés
-- `/app/backend/plan_limits.py` - Service validation limites
-- `/app/backend/routers/auth.py` - Validation invitation technicien
-- `/app/backend/routers/interventions.py` - Validation création intervention
-- `/app/backend/routers/categories.py` - Validation création catégorie
-- `/app/backend/routers/subscription.py` - Endpoint /usage
-- `/app/frontend/src/components/PlanUsageWidget.jsx` - Widget UI
-- `/app/frontend/src/pages/Settings.jsx` - Onglet Abonnement
-- `/app/frontend/src/pages/Dashboard.jsx` - Widget compact
-
-### Backlog V2
-- [ ] React Native (si besoin app native)
-- [ ] Intégration calendrier Google/Outlook
-
-### Phase 30 - Workflow E2E: Signature + Géolocalisation + Photos dans PDF ✅ (Date: 2026-03-31)
-
-#### Fonctionnalités
-- [x] **Signature client PWA** - SignaturePad avec canvas tactile pour signature manuscrite
-- [x] **Géolocalisation** - Capture GPS au démarrage et à la fin de l'intervention
-- [x] **Sauvegarde signature** - Stockage base64 PNG dans MongoDB
-- [x] **Photos d'intervention dans PDF** - Grille 2 colonnes avec légendes
-- [x] **Signature dans PDF** - Section "Signature du client" avec image et nom du signataire
-- [x] **Endpoint complete-with-signature** - Termine intervention + capture signature + geo en une requête
-
-#### Endpoints modifiés
-- `POST /api/interventions/{id}/complete-with-signature` - Body: signature + nom_signataire, Query: geo_latitude/longitude/accuracy
-- `POST /api/interventions/{id}/signature` - Sauvegarde signature seule (avant completion)
-- `GET /api/factures/{id}/pdf` - Inclut photos et signature si intervention_id lié
-- `GET /api/factures/{id}/pdf-download` - Idem avec token auth
-- `POST /api/factures/{id}/emit` - PDF envoyé par email inclut photos/signature
-
-#### Fichiers modifiés
-- `/app/backend/routers/interventions.py` - Endpoint complete-with-signature avec query params geo
-- `/app/backend/routers/factures.py` - Injection intervention_photos et intervention_signature
-- `/app/backend/routers/portal.py` - Portal PDF inclut photos/signature
-- `/app/backend/pdf_generator.py` - build_photos_section() et build_signature_section()
-- `/app/frontend/src/pages/TechnicianApp.jsx` - Envoi geo en query params
-- `/app/frontend/src/components/SignaturePad.jsx` - Composant canvas signature
-
-#### Bug corrigé
-- **422 Unprocessable Entity** sur complete-with-signature: FastAPI ne supportait pas multiple body params. Geo déplacé en query params.
-
-#### Tests
-- `/app/backend/tests/test_signature_pdf_integration.py` - 12 tests (100% pass)
-- PDF avec signature: +1161 bytes vs PDF basic
-
-## Next Tasks
-1. **Fournir credentials OAuth Google** pour activer l'intégration Calendar (voir /app/docs/GOOGLE_CALENDAR_SETUP.md)
-
-### Backlog V2
-- [ ] Notifications push pour validation en attente
-- [ ] React Native (si besoin app native)
-- [ ] Microsoft Outlook Calendar integration
-
----
-
-### Phase 37 - Page Pricing Publique ✅ (Date: 2026-03-31)
-
-#### Fonctionnalités
-- [x] **Page /pricing** - Page publique avec les 3 plans officiels
-- [x] **Plans depuis API** - Chargement dynamique depuis `/api/plans`
-- [x] **Design professionnel** - Dégradé bleu, cards avec hover, badge "POPULAIRE"
-- [x] **Prix corrects** - Startup 49€, Pro 79€, Enterprise 129€
-- [x] **Limites affichées** - Admins, techniciens, catégories par plan
-- [x] **CTA vers inscription** - Bouton "Choisir ce plan" avec navigation
-
-#### Domaine configuré
-- Production : **actoos.com**
-- Google Calendar redirect : `https://actoos.com/api/calendar/callback`
-
-### Phase 34 - Automatisation devis → facture (Plan Pro) ✅ (Date: 2026-03-31)
-
-#### Fonctionnalités
-- [x] **Endpoint convert-to-facture** - Convertit un devis signé en facture
-- [x] **Vérification plan** - Disponible uniquement Plan Pro+
-- [x] **Double conversion bloquée** - Erreur si devis déjà converti
-- [x] **Statut "converti"** - Nouveau statut pour devis transformés
-- [x] **Auto-emit option** - Option pour émettre la facture immédiatement
-
-#### Endpoints
-- `POST /api/devis/{id}/convert-to-facture?auto_emit=false`
-
----
-
-### Phase 35 - Validation chef d'équipe (Plan Pro) ✅ (Date: 2026-03-31)
-
-#### Fonctionnalités
-- [x] **Workflow de validation** - Interventions passent par "en_validation" avant "terminee"
-- [x] **Validation admin** - Endpoint pour approuver/rejeter
-- [x] **Liste pending** - Endpoint pour voir toutes les interventions en attente
-- [x] **Rejet avec motif** - Renvoi au technicien avec commentaire
-
-#### Endpoints
-- `POST /api/interventions/{id}/validate?approved=true&notes_validation=...`
-- `GET /api/interventions/pending-validation`
-
-#### Statuts intervention
-planifiee → en_cours → en_validation → terminee (ou rejet → en_cours)
-
----
-
-### Phase 36 - Export comptable (Plan Enterprise) ✅ (Date: 2026-03-31)
-
-#### Fonctionnalités
-- [x] **Export factures CSV** - Entêtes de factures avec totaux
-- [x] **Export lignes factures** - Détail ligne par ligne
-- [x] **Export clients** - Liste complète des clients
-- [x] **Journal comptable FEC** - Format compatible logiciels comptables français
-- [x] **Résumé export** - Aperçu des données disponibles
-
-#### Endpoints (Enterprise seulement)
-- `GET /api/export/factures`
-- `GET /api/export/factures-lignes`
-- `GET /api/export/clients`
-- `GET /api/export/journal?date_debut=&date_fin=`
-- `GET /api/export/summary?date_debut=&date_fin=`
-
-#### Fichiers créés
-- `/app/backend/routers/accounting_export.py`
-
-### Phase 31 - Support Multi-sites ✅ (Date: 2026-03-31)
-
-#### Fonctionnalités
-- [x] **Modèle Site** - Nouveau modèle pour gérer les adresses multiples d'un client
-- [x] **CRUD Sites API** - Endpoints complets pour créer, lire, modifier, supprimer des sites
-- [x] **UI Gestion Sites** - Section Sites dans la fiche client avec formulaire modal
-- [x] **Sélecteur Site** - Dans le formulaire d'intervention, choix du site si le client en a plusieurs
-- [x] **Auto-remplissage adresse** - L'adresse est pré-remplie selon le site sélectionné
-- [x] **Soft delete** - Les sites avec interventions liées sont désactivés, pas supprimés
-
-#### Structure Site
-```
-{
-  nom: string,           // "Entrepôt Nord"
-  adresse: string,
-  ville: string,
-  code_postal: string,
-  contact_nom?: string,  // Contact sur place
-  contact_telephone?: string,
-  contact_email?: string,
-  horaires_acces?: string,      // "Lun-Ven 8h-18h"
-  instructions_acces?: string,  // "Code portail: 1234"
-  notes?: string,
-  actif: boolean
-}
-```
-
-#### Endpoints API
-- `POST /api/sites` - Créer un site
-- `GET /api/sites` - Liste des sites (filtrable par client_id)
-- `GET /api/sites/client/{client_id}` - Sites actifs d'un client
-- `GET /api/sites/{site_id}` - Détail d'un site
-- `PUT /api/sites/{site_id}` - Modifier un site
-- `DELETE /api/sites/{site_id}` - Supprimer/désactiver un site
-- `POST /api/sites/{site_id}/activate` - Réactiver un site
-
-#### Fichiers modifiés/créés
-- `/app/backend/models.py` - Modèles Site, SiteCreate, SiteUpdate, SiteResponse
-- `/app/backend/routers/sites.py` - Router CRUD complet
-- `/app/backend/server.py` - Import du router sites
-- `/app/frontend/src/pages/Clients.jsx` - Section Sites + SiteForm + gestion CRUD
-- `/app/frontend/src/pages/Interventions.jsx` - Sélecteur de site dans le formulaire
-
----
-
-### Phase 32 - Documentation UI Conflits Offline (LWW) ✅ (Date: 2026-03-31)
-
-#### Fonctionnalités
-- [x] **SyncStatusPanel** - Composant complet de gestion de synchronisation
-- [x] **Historique de sync** - Table `syncHistory` dans IndexedDB pour traçabilité
-- [x] **Statistiques de sync** - Compteurs réussies/échouées/conflits
-- [x] **Logging LWW** - Enregistrement automatique des conflits résolus
-- [x] **Onglet Aide** - Documentation utilisateur sur le mode hors ligne et LWW
-
-#### Composants UI
-- **État** : Statut connexion, dernière sync, cache local, stats
-- **Historique** : Liste chronologique des événements de sync avec indicateurs visuels
-- **Aide** : Documentation complète (Mode hors ligne, Résolution conflits LWW, Bonnes pratiques)
-
-#### Fichiers modifiés/créés
-- `/app/frontend/src/components/SyncStatusPanel.jsx` - Nouveau composant (400+ lignes)
-- `/app/frontend/src/lib/offlineDb.js` - Table syncHistory + méthodes getSyncHistory, getSyncStats, logSyncEvent
-- `/app/frontend/src/contexts/OfflineContext.jsx` - Logging des événements de sync + exposition getSyncHistory/Stats
-- `/app/frontend/src/pages/TechnicianApp.jsx` - Intégration SyncStatusPanel dans header
-
----
-
-### Phase 33 - Intégration Google Calendar (Code prêt, credentials requis) ✅ (Date: 2026-03-31)
-
-#### Fonctionnalités
-- [x] **OAuth Flow** - Flux complet d'authentification Google
-- [x] **Token Management** - Stockage et refresh automatique des tokens
-- [x] **Sync Interventions** - Création/mise à jour d'événements Calendar
-- [x] **UI Settings** - Onglet Intégrations avec connexion/déconnexion
-- [x] **Documentation** - Guide complet de configuration
-
-#### Endpoints API
-- `GET /api/calendar/status` - Statut de connexion
-- `GET /api/calendar/connect` - Démarrer OAuth
-- `GET /api/calendar/callback` - Callback OAuth
-- `POST /api/calendar/disconnect` - Déconnexion
-- `GET /api/calendar/events` - Liste événements
-- `POST /api/calendar/sync-intervention/{id}` - Sync intervention
-- `DELETE /api/calendar/sync-intervention/{id}` - Supprimer du calendar
-- `POST /api/calendar/sync-all` - Sync toutes les interventions
-
-#### Fichiers créés
-- `/app/backend/routers/calendar.py` - Router complet (400+ lignes)
-- `/app/frontend/src/pages/Settings.jsx` - Composant CalendarIntegration
-- `/app/docs/GOOGLE_CALENDAR_SETUP.md` - Guide de configuration
-
-#### Variables d'environnement requises
-```env
-GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=xxx
-GOOGLE_REDIRECT_URI=https://domain.com/api/calendar/callback
-```
-
-#### Statut
-⚠️ **Code prêt** - En attente des credentials OAuth Google de l'utilisateur
-
----
-
-### Phase 37 - Site Marketing & Signup Complet ✅ (Date: 2026-03-31)
-
-#### Site Marketing (actoos.com)
-- [x] **Landing Page** (`/`) - Hero, features, secteurs, testimonials, CTA
-- [x] **Features Page** (`/features`) - Détail des fonctionnalités
-- [x] **Sectors Page** (`/sectors`) - Secteurs d'activité supportés
-- [x] **Pricing Page PRO** (`/pricing`) - Tableau comparatif style SaaS professionnel
-
-#### Mini Quiz de Recommandation
-- [x] **4 questions rapides** - Taille équipe, activités, multi-sites, fonctionnalités
-- [x] **Système de scoring** - Points par réponse pour chaque plan
-- [x] **Recommandation intelligente** - "Nous vous recommandons le plan X"
-- [x] **Option Skip** - "Passer le quiz" toujours visible
-- [x] **Badge dynamique** - "Recommandé pour vous" sur le plan suggéré
-
-#### Tableau Comparatif Professionnel
-- [x] **8 catégories** - Utilisateurs, Gestion métier, App technicien, Automatisation, Analytics, Personnalisation, Intégrations, Support
-- [x] **Checkmarks/X** - Indicateurs visuels clairs ✓ / ✗
-- [x] **Valeurs textuelles** - "Limité", "Illimité", "Jusqu'à 4"
-- [x] **Toggle Mensuel/Annuel** - Réduction -20% sur l'annuel
-
-#### Branding Actoos
-- [x] **Logo officiel** - `/actoos-logo.jpg` utilisé partout (nav, footer)
-- [x] **Favicon** - `/actoos-favicon.png`
-- [x] **Logo avec slogan** - `/actoos-logo-slogan.png` (page login)
-
-#### Signup Flow en 4 étapes (`/signup`)
-- [x] **Étape 1 - Plan** - Sélection du plan (Startup 49€, Pro 79€, Enterprise 129€)
-- [x] **Étape 2 - Catégories** - 10 catégories métier avec limites strictes par plan
-- [x] **Étape 3 - Informations** - Nom entreprise, email, téléphone, mot de passe
-- [x] **Étape 4 - Récapitulatif** - Confirmation avant paiement Stripe
-
-#### 10 Catégories Métier Officielles
-1. **BTP & Travaux** - Maçonnerie, Rénovation, Gros/Second œuvre...
-2. **Nettoyage Professionnel** - Bureaux, Industriel, Fin de chantier...
-3. **Maintenance & SAV** - Technique, Industrielle, Contrats...
-4. **Décoration & Aménagement** - Intérieure, Home staging...
-5. **Électricité** - Installation, Dépannage, Domotique...
-6. **Plomberie & CVC** - Plomberie, Chauffage, Climatisation...
-7. **Espaces Verts & Extérieur** - Jardinage, Paysagisme...
-8. **Sécurité & Installation** - Alarmes, Vidéosurveillance...
-9. **Services Techniques Multi-services** - Homme toutes mains...
-10. **Services Spécialisés** - Dératisation, Inspection drone...
-
-#### Limites Catégories par Plan
-| Plan | Catégories max |
-|------|----------------|
-| Startup | 1 |
-| Pro | 4 |
-| Enterprise | Illimité |
-
-#### Fichiers créés/modifiés
-- `/app/frontend/src/pages/PricingPage.jsx` - Nouvelle page Pricing avec quiz et tableau (500+ lignes)
-- `/app/frontend/src/pages/SignupPage.jsx` - Wizard 4 étapes avec branding (600+ lignes)
-- `/app/frontend/src/pages/LandingPage.jsx` - Mise à jour avec logo officiel
-- `/app/backend/routers/subscription.py` - Endpoint finalize-signup
-
-#### Tests Validés
-- Backend: 16/16 tests passés (100%)
-- Frontend: 100% (quiz + 4 étapes du wizard testées)
-- Iteration: `/app/test_reports/iteration_19.json`
-
----
-
-### Phase 38 - Cohérence Flux Abonnement ↔ Catégories ↔ Skills ✅ (Date: 2026-03-31)
-
-#### Architecture des Flux Vérifiée
+## 🎯 Description
+Application SaaS multi-tenant pour la gestion des interventions terrain avec :
+- Dashboard Admin (web)
+- PWA Technicien (mobile, offline-first)
+- Abonnements Stripe (Startup 49€, Pro 79€, Enterprise 149€)
+
+## ✅ Fonctionnalités Implémentées
+
+### Core
+- [x] Auth JWT + rôles (admin/tech)
+- [x] Multi-tenant (isolation par entreprise)
+- [x] CRUD Clients, Interventions, Devis, Factures
+- [x] Catégories d'intervention personnalisables
+- [x] Planning intelligent avec calendrier
+- [x] Génération PDF (devis, factures, rapports)
+- [x] Signatures électroniques
+- [x] Photos terrain avec upload cloud
+
+### Abonnements & Paiements
+- [x] Stripe Checkout (mode LIVE)
+- [x] 14 jours d'essai gratuit
+- [x] Webhooks Stripe fonctionnels
+- [x] Upgrade/Downgrade de plans
+- [x] Résiliation avec feedback
+- [x] Feature gating par plan
+
+### PWA Technicien
+- [x] Installation comme app native
+- [x] Mode hors ligne
+- [x] Sync automatique
+- [x] Géolocalisation
+- [x] Capture photos
+- [x] Signature tactile
+
+### Intégrations
+- [x] Google Calendar OAuth
+- [x] Resend (emails) - config test
+- [x] Twilio SMS - en attente numéro
+- [x] Multi-devises (EUR, USD, CHF, etc.)
+
+### Admin Analytics
+- [x] Vue d'ensemble business
+- [x] Sources d'acquisition
+- [x] Raisons de résiliation
+- [x] Taux de conversion
+- [x] Revenue par plan (MRR/ARR)
+
+### Emails Système
+- [x] Bienvenue nouvel admin
+- [x] Invitation technicien
+- [x] Mot de passe oublié
+- [x] Confirmation résiliation
+- [x] Envoi devis/factures
+
+## 📁 Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          SIGNUP (/signup)                                │
-│  Plan (Startup/Pro/Enterprise) → Catégories Métier (1/4/∞)              │
-└────────────────────────────────────┬────────────────────────────────────┘
-                                     │
-                                     ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    CRÉATION ENTREPRISE (Backend)                         │
-│  • plan_limits stockées dans MongoDB                                     │
-│  • Catégories créées avec checklists dynamiques                          │
-└────────────────────────────────────┬────────────────────────────────────┘
-                                     │
-            ┌────────────────────────┴────────────────────────┐
-            ▼                                                  ▼
-┌────────────────────────┐                    ┌────────────────────────────┐
-│   GATING BACKEND       │                    │    GATING FRONTEND         │
-│  ✓ check_multi_sites   │                    │  ✓ canUseMultiSites        │
-│  ✓ check_feature       │                    │  ✓ canUseAutoDevisFacture  │
-│  ✓ check_*_limit       │                    │  ✓ Badge "Enterprise"      │
-│  ✓ HTTPException 403   │                    │  ✓ Bouton "Passer à ..."   │
-└────────────────────────┘                    └────────────────────────────┘
-            │                                                  │
-            ▼                                                  ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       SKILLS TECHNICIENS                                 │
-│  Admin assigne skills parmi les catégories de l'entreprise               │
-│  Technicien ne voit que les interventions matching ses skills            │
-└─────────────────────────────────────────────────────────────────────────┘
+/app/
+├── backend/                 # FastAPI
+│   ├── server.py           # Point d'entrée
+│   ├── routers/            # 25+ routers
+│   ├── email_service.py    # Templates emails
+│   ├── pdf_generator.py    # Génération PDF
+│   └── requirements.txt
+├── frontend/               # React
+│   ├── src/
+│   │   ├── pages/         # 20+ pages
+│   │   ├── components/    # Composants réutilisables
+│   │   └── contexts/      # Auth, Currency, Offline
+│   └── package.json
+└── DEPLOYMENT_GUIDE_RAILWAY.md
 ```
 
-#### Fonctionnalités Gating Vérifiées
+## 🚀 Déploiement
 
-| Feature | Startup | Pro | Enterprise | Backend Check | Frontend Display |
-|---------|---------|-----|------------|---------------|------------------|
-| Multi-sites | ❌ | ❌ | ✅ | `check_multi_sites()` | Badge + CTA upgrade |
-| Devis→Facture | ❌ | ✅ | ✅ | `check_feature('auto_devis_to_facture')` | Toast erreur |
-| Mode Offline | ❌ | ✅ | ✅ | `check_offline_mode()` | PWA conditionnel |
-| Géolocalisation | ❌ | ✅ | ✅ | `check_geolocation()` | Masqué si non dispo |
-| Export Comptable | ❌ | ❌ | ✅ | `check_feature('api_access')` | HTTP 403 |
-| Team Validation | ❌ | ✅ | ✅ | `check_feature('team_validation')` | Workflow conditionnel |
+### Fichiers créés
+- `/app/DEPLOYMENT_GUIDE_RAILWAY.md` - Guide complet
+- `/app/backend/railway.toml` - Config Railway backend
+- `/app/frontend/railway.toml` - Config Railway frontend
+- `/app/backend/.env.example` - Template variables
 
-#### Helpers Ajoutés dans AuthContext
-```javascript
-// Plan & Feature helpers
-currentPlan, planLimits, hasFeature(name), getLimit(name),
-canUseMultiSites, canUseOfflineMode, canUseGeolocation,
-canUseAdvancedAnalytics, canUseAutoPdfReports, canUseAutoDevisToFacture,
-canUseTeamValidation, canUseWhiteLabel, canUseApiAccess
-```
+### Étapes
+1. Save to GitHub depuis Emergent
+2. Créer projet Railway
+3. Ajouter MongoDB + Backend + Frontend
+4. Configurer variables d'environnement
+5. Configurer domaine actoos.com
+6. Configurer webhook Stripe
+7. Valider domaine Resend
 
-#### Checklists Dynamiques par Catégorie
-Chaque catégorie métier a maintenant un template de checklist spécifique :
-- **BTP** : Zone sécurisée, matériaux vérifiés, photos avant/après
-- **Plomberie** : Coupure eau, test étanchéité, pression (bar)
-- **Électricité** : Coupure courant, tableau vérifié, tension (V)
-- **Nettoyage** : Sols, vitres, sanitaires, poubelles
-- (+ 6 autres catégories)
+## ⏳ Post-Déploiement
 
----
+### À faire après déploiement
+- [ ] Valider domaine Resend (actoos.com)
+- [ ] Configurer webhook Stripe avec URL prod
+- [ ] Mettre à jour OAuth Google avec URLs prod
+- [ ] Obtenir numéro Twilio belge
+- [ ] Tester tous les flux en production
 
-### Phase 39 - Finalisation PWA & Tests E2E ✅ (Date: 2026-03-31)
+## 📊 Comptes de Test
 
-#### Service Worker & Mode Offline
-- [x] Service worker `/public/sw.js` complet (330 lignes)
-- [x] Page offline `/public/offline.html` 
-- [x] Cache statique + dynamique + API
-- [x] Background sync pour actions offline
-- [x] IndexedDB pour données locales
+| Plan | Email | Password |
+|------|-------|----------|
+| Startup | admin@test-startup.com | Test123! |
+| Pro | admin@test-pro.com | Test123! |
+| Enterprise | admin@test-enterprise.com | Test123! |
 
-#### Notifications Push
-- [x] Clés VAPID générées et configurées
-- [x] Hook `usePushNotifications.js` 
-- [x] Backend `/api/push/*` endpoints
-- [x] Subscription/Unsubscription fonctionnelles
-- [x] Notifications cliquables avec navigation
+## 📅 Changelog
 
-#### Test E2E Final
-- **Backend** : 75% (18/24 tests) - 6 échecs mineurs (chemins endpoints)
-- **Frontend** : 100% tous flux critiques
+### 2026-03-31
+- Test flux abonnements complet
+- Correction conversion devises
+- Amélioration modal upgrade (bouton X visible)
+- Alertes dashboard cliquables
 
-**Toutes les features validées :**
-- Marketing : Landing, Features, Sectors, Pricing avec quiz ✅
-- Signup : 4 étapes avec gating catégories ✅
-- Auth : Admin + Technicien ✅
-- Dashboard : Sidebar, stats, navigation ✅
-- CRUD : Clients, Devis, Factures, Interventions ✅
-- PWA Tech : Liste, week view, checklist, photos, signature ✅
-- Gating : Multi-sites (Enterprise), Devis→Facture (Pro+) ✅
-
-#### Rapport de test
-`/app/test_reports/iteration_20.json`
-
----
-
-### Phase 40 - Bug Fix Branding API ✅ (Date: 2026-03-31)
-
-#### Problème
-Le frontend appelait `PUT /api/entreprise/branding` pour sauvegarder la couleur primaire, mais cette route n'existait pas dans le backend.
-
-#### Correction
-- [x] **Ajout endpoint** `PUT /api/entreprise/branding` dans `/app/backend/routers/entreprise.py`
-- [x] **Validation format hex** - Vérifie que la couleur est au format `#RRGGBB`
-- [x] **Log d'action** - Enregistrement de la modification dans l'audit
-
-#### Test validé
-- Backend curl: ✅ Sauvegarde et lecture de la couleur
-- Frontend UI: ✅ Sélection couleur + toast de confirmation
-
----
-
-### Phase 41 - Corrections Multiples ✅ (Date: 2026-03-31)
-
-#### Bugs corrigés par Testing Agent
-1. **PDF generation** - `conditions_paiement` pouvait être `None` → crash
-2. **Portal link** - Route 404 car mal positionnée 
-3. **Dashboard endpoints** - Manquants, frontend affichait des erreurs
-4. **Complete intervention** - Seul le tech pouvait compléter, pas l'admin
-
-#### Bugs corrigés manuellement
-1. **Upload logo** - `await put_object()` était appelé mais `put_object` n'est pas async
-2. **Stockage EMERGENT_LLM_KEY** - `load_dotenv()` appelé APRÈS import de storage.py
-3. **Couleur personnalisée** - Gated aux plans Pro+ (message "Fonctionnalité Pro" pour Startup)
-4. **Auto-seeding catégories** - Désactivé pour respecter les limites de plan
-5. **Devis/Factures NaN** - Frontend utilisait `numero` au lieu de `numero_devis`/`numero_facture`
-6. **Devis/Factures NaN** - Frontend utilisait `montant_ttc` au lieu de `total_ttc`
-7. **formatCurrency NaN** - Ajout protection contre null/undefined/NaN
-
-#### Tests validés
-- Dashboard: ✅ Stats s'affichent correctement
-- Devis: ✅ Numéros et montants corrects
-- Factures: ✅ Numéros et montants corrects (y compris 0,00 €)
-- Upload logo: ✅ Fonctionne avec toast de confirmation
-- Personnalisation couleur: ✅ Fonctionne pour Pro, message upgrade pour Startup
-
----
-
-## 🎯 STATUT FINAL DU PROJET (Mise à jour: 31 Mars 2026)
-
-### ✅ PRÊT POUR DÉPLOIEMENT PRODUCTION
-
-| Module | Statut |
-|--------|--------|
-| Site Marketing | ✅ Complet avec nouveaux logos SVG |
-| Dashboard Admin | ✅ Complet |
-| PWA Technicien (offline-first) | ✅ Complet |
-| Système d'abonnement 3 plans | ✅ Complet |
-| Feature gating strict | ✅ Complet |
-| Mode offline + Sync Dexie.js | ✅ Complet |
-| Notifications Push VAPID | ✅ Complet |
-| PDF avec photos/signatures | ✅ Complet |
-| **Stripe Paiements (LIVE MODE)** | ✅ Complet |
-| **Google Calendar OAuth** | ✅ Configuré |
-| Authentification + Mot de passe oublié | ✅ Complet |
-| Load Testing (~200 entreprises) | ✅ Validé |
-| Logos SVG professionnels | ✅ Validé par utilisateur |
-
-### Phase 18 - Test Flux Abonnement (Date: 2026-03-31) ✅
-
-#### Tests validés
-- [x] **Login** - Connexion avec comptes test (Startup, Pro, Enterprise)
-- [x] **Page Abonnement** - Affichage plan actuel, utilisation, fonctionnalités
-- [x] **Modal "Changer de plan"** - Liste complète des plans disponibles
-- [x] **Modal "Passer à un plan supérieur"** - Comparatif des 3 plans avec features
-- [x] **Redirection Stripe Checkout** - Upgrade/Downgrade redirige vers Stripe
-- [x] **Dialog Annulation** - Formulaire avec raison + feedback optionnel
-- [x] **Zone dangereuse** - Bouton suppression compte visible
-
-#### Corrections effectuées
-- [x] `handleChangePlan` redirige vers checkout si pas d'abonnement Stripe actif
-- [x] `handleDeleteAccount` - Variables API_URL et token maintenant définies localement
-
----
-
-### 📋 ACTIONS POST-DÉPLOIEMENT REQUISES
-
-| Action | URL/Instructions |
-|--------|------------------|
-| Webhook Stripe | Ajouter `https://actoos.com/api/webhook/stripe` dans Dashboard Stripe |
-| OAuth Google Calendar | Ajouter `https://actoos.com/api/calendar/callback` aux URIs autorisées |
-
-### ⏳ EN ATTENTE VALIDATION UTILISATEUR
-
-| Intégration | Ce qu'il manque |
-|-------------|-----------------|
-| **Resend** (Emails) | Validation domaine `actoos.com` dans Dashboard Resend |
-| **Twilio** (SMS) | Numéro belge (bundle réglementaire en attente) |
-
-### 🔴 BLOQUÉ (NON-CRITIQUE)
-
-| Feature | Raison |
-|---------|--------|
-| Optimisation IA tournées | Budget Emergent LLM Key épuisé (fallback manuel actif) |
-
----
-
-## 🚀 INSTRUCTIONS DÉPLOIEMENT
-
-1. Cliquer sur **Deploy** dans Emergent
-2. Connecter domaine `actoos.com` via **Link Domain → Entri**
-3. Configurer DNS (supprimer anciens enregistrements A)
-4. Attendre propagation DNS (5-15 min à 24h)
-5. Effectuer actions post-déploiement (Stripe webhook, Google OAuth URIs)
-
+### 2026-04-01
+- Formulaire résiliation amélioré (champ Autre conditionnel)
+- API Admin Analytics (6 endpoints)
+- Email invitation technicien ajouté
+- Email confirmation résiliation ajouté
+- Guide déploiement Railway créé
