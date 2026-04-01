@@ -189,3 +189,29 @@ Résolution automatique des conflits quand un technicien travaille hors ligne :
 3. Si `server > local` → Conflit, serveur gagne
 4. Si `local > server` → Sync OK, modifications appliquées
 
+## 📋 RGPD - Rétention des Données - IMPLÉMENTÉ
+
+### Backend (`/api/gdpr/*`)
+- `GET /gdpr/settings` - Récupérer les paramètres de rétention
+- `PUT /gdpr/settings` - Mettre à jour les paramètres
+- `GET /gdpr/preview` - Prévisualiser ce qui sera supprimé
+- `POST /gdpr/cleanup/execute` - Lancer le nettoyage
+- `DELETE /gdpr/client/{id}` - Droit à l'oubli (anonymisation)
+- `POST /gdpr/export-request/{client_id}` - Demande d'export GDPR
+
+### Frontend (`Settings.jsx` - Onglet RGPD)
+- Sliders pour configurer la rétention (photos, interventions, clients)
+- Affichage des obligations légales (devis 5 ans, factures 10 ans)
+- Activation du nettoyage automatique
+- Prévisualisation avant suppression
+- Nettoyage manuel avec confirmation
+
+### Durées par défaut
+| Type de données | Rétention | Configurable |
+|-----------------|-----------|--------------|
+| Photos | 24 mois | ✅ Oui (1-120) |
+| Interventions | 36 mois | ✅ Oui (12-120) |
+| Clients inactifs | 36 mois | ✅ Oui (12-120) |
+| Devis | 60 mois | ❌ Légal minimum |
+| Factures | 120 mois | ❌ Légal minimum |
+

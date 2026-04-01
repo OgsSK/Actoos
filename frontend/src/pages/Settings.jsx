@@ -20,7 +20,8 @@ import {
   Building2, FileText, Check, Loader2, Bell, MessageSquare, 
   CheckCircle, XCircle, ExternalLink, Info, Palette, Upload, 
   Tags, Plus, Pencil, Trash2, Wrench, Globe, Coins, CreditCard,
-  Calendar, Link2, Unlink, DollarSign
+  Calendar, Link2, Unlink, DollarSign, Shield, Clock, AlertTriangle,
+  Database, Trash, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PlanUsageWidget from '../components/PlanUsageWidget';
@@ -592,6 +593,11 @@ export const SettingsPage = () => {
               <Link2 className="w-4 h-4" />
               <span className="hidden sm:inline">Intégrations</span>
               <span className="sm:hidden">Intég.</span>
+            </TabsTrigger>
+            <TabsTrigger value="gdpr" className="flex items-center gap-2 whitespace-nowrap">
+              <Shield className="w-4 h-4" />
+              <span className="hidden sm:inline">RGPD</span>
+              <span className="sm:hidden">RGPD</span>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -1269,6 +1275,11 @@ export const SettingsPage = () => {
         <TabsContent value="integrations">
           <CalendarIntegration api={api} />
         </TabsContent>
+
+        {/* GDPR Tab */}
+        <TabsContent value="gdpr">
+          <GDPRSettings api={api} />
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -1514,6 +1525,358 @@ const CalendarIntegration = ({ api }) => {
             </div>
           </div>
         </CardHeader>
+      </Card>
+    </div>
+  );
+};
+
+
+// GDPR Settings Component
+const GDPRSettings = ({ api }) => {
+  const [settings, setSettings] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [cleaning, setCleaning] = useState(false);
+  const [showCleanupDialog, setShowCleanupDialog] = useState(false);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await api.get('/gdpr/settings');
+      setSettings(response.data);
+    } catch (error) {
+      console.error('Error fetching GDPR settings:', error);
+      // Set defaults
+      setSettings({
+        photos_months: 24,
+        interventions_months: 36,
+        devis_months: 60,
+        factures_months: 120,
+        clients_inactifs_months: 36,
+        auto_cleanup_enabled: false,
+        notify_before_deletion: true,
+        notify_days_before: 30
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPreview = async () => {
+    try {
+      const response = await api.get('/gdpr/preview');
+      setPreview(response.data);
+    } catch (error) {
+      console.error('Error fetching preview:', error);
+      toast.error('Erreur lors de la prévisualisation');
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.put('/gdpr/settings', settings);
+      toast.success('Paramètres RGPD enregistrés');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCleanup = async () => {
+    setCleaning(true);
+    try {
+      const response = await api.post('/gdpr/cleanup/execute?dry_run=false');
+      toast.success('Nettoyage lancé en arrière-plan');
+      setShowCleanupDialog(false);
+      // Refresh settings to get new last_cleanup
+      setTimeout(fetchSettings, 2000);
+    } catch (error) {
+      console.error('Error executing cleanup:', error);
+      toast.error('Erreur lors du nettoyage');
+    } finally {
+      setCleaning(false);
+    }
+  };
+
+  const handleChange = (field, value) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Protection des données (RGPD)</CardTitle>
+              <CardDescription>
+                Configurez la durée de conservation de vos données conformément au RGPD
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Retention Settings */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Durées de conservation
+          </CardTitle>
+          <CardDescription>
+            Définissez combien de temps les données sont conservées avant suppression/anonymisation
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Photos */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="photos_months" className="flex items-center gap-2">
+                Photos d'intervention
+                <Badge variant="outline" className="text-xs">Configurable</Badge>
+              </Label>
+              <span className="text-sm font-medium text-slate-700">{settings.photos_months} mois</span>
+            </div>
+            <input
+              type="range"
+              id="photos_months"
+              min="1"
+              max="120"
+              value={settings.photos_months}
+              onChange={(e) => handleChange('photos_months', parseInt(e.target.value))}
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+            />
+            <p className="text-xs text-slate-500">
+              Les photos seront supprimées après {settings.photos_months} mois ({Math.round(settings.photos_months / 12 * 10) / 10} ans)
+            </p>
+          </div>
+
+          {/* Interventions */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="interventions_months" className="flex items-center gap-2">
+                Interventions terminées
+                <Badge variant="outline" className="text-xs">Configurable</Badge>
+              </Label>
+              <span className="text-sm font-medium text-slate-700">{settings.interventions_months} mois</span>
+            </div>
+            <input
+              type="range"
+              id="interventions_months"
+              min="12"
+              max="120"
+              value={settings.interventions_months}
+              onChange={(e) => handleChange('interventions_months', parseInt(e.target.value))}
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+            />
+            <p className="text-xs text-slate-500">
+              Les interventions seront archivées après {settings.interventions_months} mois ({Math.round(settings.interventions_months / 12 * 10) / 10} ans)
+            </p>
+          </div>
+
+          {/* Clients Inactifs */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="clients_inactifs_months" className="flex items-center gap-2">
+                Clients inactifs
+                <Badge variant="outline" className="text-xs">Configurable</Badge>
+              </Label>
+              <span className="text-sm font-medium text-slate-700">{settings.clients_inactifs_months} mois</span>
+            </div>
+            <input
+              type="range"
+              id="clients_inactifs_months"
+              min="12"
+              max="120"
+              value={settings.clients_inactifs_months}
+              onChange={(e) => handleChange('clients_inactifs_months', parseInt(e.target.value))}
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+            />
+            <p className="text-xs text-slate-500">
+              Les clients sans intervention seront anonymisés après {settings.clients_inactifs_months} mois
+            </p>
+          </div>
+
+          {/* Legal Requirements - Non-configurable */}
+          <div className="pt-4 border-t border-slate-200">
+            <p className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              Obligations légales (non modifiables)
+            </p>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 rounded-lg bg-slate-50">
+                <p className="text-sm font-medium text-slate-700">Devis</p>
+                <p className="text-2xl font-bold text-slate-900">5 ans</p>
+                <p className="text-xs text-slate-500">60 mois minimum</p>
+              </div>
+              <div className="p-3 rounded-lg bg-slate-50">
+                <p className="text-sm font-medium text-slate-700">Factures</p>
+                <p className="text-2xl font-bold text-slate-900">10 ans</p>
+                <p className="text-xs text-slate-500">120 mois minimum</p>
+              </div>
+            </div>
+          </div>
+
+          <Button onClick={handleSave} disabled={saving} className="w-full">
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+            Enregistrer les paramètres
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Auto Cleanup Settings */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Database className="w-4 h-4" />
+            Nettoyage automatique
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+            <div>
+              <p className="font-medium text-slate-900">Activer le nettoyage automatique</p>
+              <p className="text-sm text-slate-500">Supprime automatiquement les données expirées chaque mois</p>
+            </div>
+            <Switch
+              checked={settings.auto_cleanup_enabled}
+              onCheckedChange={(checked) => handleChange('auto_cleanup_enabled', checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+            <div>
+              <p className="font-medium text-slate-900">Notification avant suppression</p>
+              <p className="text-sm text-slate-500">Recevez un email {settings.notify_days_before} jours avant</p>
+            </div>
+            <Switch
+              checked={settings.notify_before_deletion}
+              onCheckedChange={(checked) => handleChange('notify_before_deletion', checked)}
+            />
+          </div>
+
+          {settings.last_cleanup && (
+            <Alert className="border-blue-200 bg-blue-50">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-700">
+                Dernier nettoyage : {new Date(settings.last_cleanup.completed_at).toLocaleDateString('fr-FR')}
+                <br />
+                <span className="text-xs">
+                  {settings.last_cleanup.photos_deleted} photos • {settings.last_cleanup.interventions_archived} interventions • {settings.last_cleanup.clients_anonymized} clients
+                </span>
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Manual Cleanup */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Trash className="w-4 h-4" />
+            Nettoyage manuel
+          </CardTitle>
+          <CardDescription>
+            Lancez un nettoyage immédiat des données expirées
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button 
+            variant="outline" 
+            onClick={fetchPreview}
+            className="w-full"
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            Prévisualiser ce qui sera supprimé
+          </Button>
+
+          {preview && (
+            <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 space-y-3">
+              <p className="font-medium text-amber-800 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Prévisualisation du nettoyage
+              </p>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="p-2 bg-white rounded">
+                  <p className="text-xl font-bold text-red-600">{preview.photos.count}</p>
+                  <p className="text-xs text-slate-600">Photos</p>
+                </div>
+                <div className="p-2 bg-white rounded">
+                  <p className="text-xl font-bold text-amber-600">{preview.interventions.count}</p>
+                  <p className="text-xs text-slate-600">Interventions</p>
+                </div>
+                <div className="p-2 bg-white rounded">
+                  <p className="text-xl font-bold text-blue-600">{preview.clients_inactifs.count}</p>
+                  <p className="text-xs text-slate-600">Clients</p>
+                </div>
+              </div>
+              {preview.estimated_storage_freed_mb > 0 && (
+                <p className="text-sm text-amber-700">
+                  Espace libéré estimé : {preview.estimated_storage_freed_mb} MB
+                </p>
+              )}
+            </div>
+          )}
+
+          <AlertDialog open={showCleanupDialog} onOpenChange={setShowCleanupDialog}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="w-full">
+                <Trash className="w-4 h-4 mr-2" />
+                Lancer le nettoyage maintenant
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                  Confirmer le nettoyage
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cette action va supprimer ou anonymiser définitivement les données expirées selon vos paramètres de rétention.
+                  <br /><br />
+                  <strong>Cette action est irréversible.</strong>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleCleanup}
+                  disabled={cleaning}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {cleaning ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Trash className="w-4 h-4 mr-2" />
+                  )}
+                  Confirmer le nettoyage
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardContent>
       </Card>
     </div>
   );
