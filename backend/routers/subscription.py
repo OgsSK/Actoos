@@ -651,6 +651,7 @@ async def create_entreprise_from_subscription(
     # Send welcome email with credentials
     try:
         from email_service import send_email
+        frontend_url = os.environ.get("FRONTEND_URL", "https://actoos.com")
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h1 style="color: #2563eb;">Bienvenue sur Actoos!</h1>
@@ -662,7 +663,7 @@ async def create_entreprise_from_subscription(
             </div>
             <p style="color: #dc2626;">Veuillez changer votre mot de passe lors de votre première connexion.</p>
             <p>Plan souscrit : <strong>{plan["name"] if plan else "Starter"}</strong></p>
-            <a href="#" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+            <a href="{frontend_url}/login" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
                 Accéder à mon espace
             </a>
         </div>
