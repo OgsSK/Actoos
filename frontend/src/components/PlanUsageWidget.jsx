@@ -700,7 +700,7 @@ const PlanUsageWidget = ({ compact = false }) => {
 
       {/* Upgrade Dialog */}
       <Dialog open={showUpgrade} onOpenChange={setShowUpgrade}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 pt-10 sm:pt-12">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-xl sm:text-2xl">Choisissez votre plan</DialogTitle>
             <DialogDescription className="text-sm sm:text-base">
@@ -724,7 +724,7 @@ const PlanUsageWidget = ({ compact = false }) => {
 
       {/* Change Plan Dialog */}
       <Dialog open={showChangePlan} onOpenChange={setShowChangePlan}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl pt-10">
           <DialogHeader>
             <DialogTitle>Changer de plan</DialogTitle>
             <DialogDescription>
