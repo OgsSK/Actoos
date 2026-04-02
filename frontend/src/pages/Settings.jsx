@@ -361,6 +361,479 @@ const CategoriesManager = ({ api }) => {
   );
 };
 
+// Document Settings Component - Conditions générales, footers, etc.
+const DocumentSettingsForm = ({ api }) => {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [settings, setSettings] = useState({
+    conditions_generales: '',
+    devis_footer: '',
+    facture_footer: '',
+    conditions_paiement: '',
+    delai_paiement_jours: 30,
+    mentions_legales: '',
+    prefixe_devis: 'D',
+    prefixe_facture: 'F'
+  });
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const response = await api.get('/settings/documents');
+      setSettings(response.data);
+    } catch (error) {
+      console.error('Error loading document settings:', error);
+      toast.error('Erreur lors du chargement des paramètres');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (field, value) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api.put('/settings/documents', settings);
+      toast.success('Paramètres des documents enregistrés');
+    } catch (error) {
+      console.error('Error saving document settings:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card className="border-slate-200">
+        <CardContent className="py-12">
+          <div className="flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Conditions générales */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Conditions générales de vente
+          </CardTitle>
+          <CardDescription>
+            Ce texte apparaîtra sur tous vos devis et factures
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Textarea
+              value={settings.conditions_generales}
+              onChange={(e) => handleChange('conditions_generales', e.target.value)}
+              rows={6}
+              placeholder="Exemple: Tout devis accepté engage le client. Les travaux seront réalisés dans un délai de X jours après acceptation..."
+              data-testid="doc-conditions-generales"
+            />
+            <p className="text-xs text-slate-500">
+              Conseils: Incluez vos conditions de paiement, délais, garanties, etc.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Conditions de paiement */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base">Conditions de paiement</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Condition de paiement par défaut</Label>
+              <Input
+                value={settings.conditions_paiement}
+                onChange={(e) => handleChange('conditions_paiement', e.target.value)}
+                placeholder="Paiement à réception de facture"
+                data-testid="doc-conditions-paiement"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Délai de paiement (jours)</Label>
+              <Input
+                type="number"
+                value={settings.delai_paiement_jours}
+                onChange={(e) => handleChange('delai_paiement_jours', parseInt(e.target.value) || 30)}
+                min={0}
+                max={365}
+                data-testid="doc-delai-paiement"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pieds de page */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base">Pieds de page des documents</CardTitle>
+          <CardDescription>
+            Textes affichés en bas de vos devis et factures
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Pied de page - Devis</Label>
+            <Textarea
+              value={settings.devis_footer}
+              onChange={(e) => handleChange('devis_footer', e.target.value)}
+              rows={2}
+              placeholder="Devis valable 30 jours. TVA non applicable, art. 293 B du CGI."
+              data-testid="doc-devis-footer"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Pied de page - Factures</Label>
+            <Textarea
+              value={settings.facture_footer}
+              onChange={(e) => handleChange('facture_footer', e.target.value)}
+              rows={2}
+              placeholder="En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée."
+              data-testid="doc-facture-footer"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Mentions légales additionnelles</Label>
+            <Textarea
+              value={settings.mentions_legales}
+              onChange={(e) => handleChange('mentions_legales', e.target.value)}
+              rows={2}
+              placeholder="SIRET, RCS, N° TVA Intracommunautaire, etc. (si non déjà dans l'entête)"
+              data-testid="doc-mentions-legales"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Numérotation */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base">Numérotation des documents</CardTitle>
+          <CardDescription>
+            Préfixes pour les numéros de devis et factures
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Préfixe devis</Label>
+              <Input
+                value={settings.prefixe_devis}
+                onChange={(e) => handleChange('prefixe_devis', e.target.value.toUpperCase())}
+                placeholder="D"
+                maxLength={5}
+                className="uppercase"
+                data-testid="doc-prefixe-devis"
+              />
+              <p className="text-xs text-slate-500">Ex: D-2024-001</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Préfixe factures</Label>
+              <Input
+                value={settings.prefixe_facture}
+                onChange={(e) => handleChange('prefixe_facture', e.target.value.toUpperCase())}
+                placeholder="F"
+                maxLength={5}
+                className="uppercase"
+                data-testid="doc-prefixe-facture"
+              />
+              <p className="text-xs text-slate-500">Ex: F-2024-001</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Submit Button */}
+      <div className="flex justify-end">
+        <Button type="submit" disabled={saving} data-testid="save-document-settings">
+          {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+          Enregistrer les paramètres
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+// SMS Configuration Component - Supports shared Actoos or custom Twilio
+const SMSConfiguration = ({ api, smsStatus, onStatusChange }) => {
+  const [mode, setMode] = useState(smsStatus?.use_shared !== false ? 'shared' : 'custom');
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [testPhone, setTestPhone] = useState('');
+  const [customConfig, setCustomConfig] = useState({
+    twilio_account_sid: '',
+    twilio_auth_token: '',
+    twilio_phone_number: ''
+  });
+
+  const handleModeChange = async (newMode) => {
+    setMode(newMode);
+    if (newMode === 'shared') {
+      // Switch to shared Actoos Twilio
+      setSaving(true);
+      try {
+        await api.put('/sms/config', { use_shared: true });
+        toast.success('Configuration SMS mise à jour - Mode service Actoos');
+        onStatusChange?.();
+      } catch (error) {
+        console.error('Error switching to shared mode:', error);
+        toast.error(error.response?.data?.detail || 'Erreur lors du changement de mode');
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      setShowCustomForm(true);
+    }
+  };
+
+  const handleCustomConfigSave = async () => {
+    if (!customConfig.twilio_account_sid || !customConfig.twilio_auth_token || !customConfig.twilio_phone_number) {
+      toast.error('Tous les champs sont obligatoires pour la configuration personnalisée');
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      await api.put('/sms/config', {
+        use_shared: false,
+        ...customConfig
+      });
+      toast.success('Configuration Twilio personnalisée enregistrée');
+      setShowCustomForm(false);
+      onStatusChange?.();
+    } catch (error) {
+      console.error('Error saving custom config:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde. Vérifiez vos identifiants Twilio.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTestSMS = async () => {
+    if (!testPhone) {
+      toast.error('Veuillez entrer un numéro de téléphone pour le test');
+      return;
+    }
+    
+    setTesting(true);
+    try {
+      const response = await api.post(`/sms/test?phone_number=${encodeURIComponent(testPhone)}`);
+      toast.success(`SMS de test envoyé à ${testPhone} (mode: ${response.data.mode})`);
+    } catch (error) {
+      console.error('Error sending test SMS:', error);
+      toast.error(error.response?.data?.detail || 'Échec de l\'envoi du SMS de test');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Mode Selection */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Shared Actoos Option */}
+        <div 
+          onClick={() => handleModeChange('shared')}
+          className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+            mode === 'shared' 
+              ? 'border-blue-500 bg-blue-50' 
+              : 'border-slate-200 hover:border-slate-300'
+          }`}
+          data-testid="sms-mode-shared"
+        >
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              mode === 'shared' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'
+            }`}>
+              <Globe className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-medium text-slate-900">Service Actoos (recommandé)</h4>
+              <p className="text-sm text-slate-500 mt-1">
+                Utilisez le service SMS partagé d'Actoos. Aucune configuration requise.
+              </p>
+              {smsStatus?.shared_available ? (
+                <Badge className="mt-2 bg-emerald-100 text-emerald-700">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Disponible
+                </Badge>
+              ) : (
+                <Badge className="mt-2 bg-amber-100 text-amber-700">
+                  <Clock className="w-3 h-3 mr-1" />
+                  Bientôt disponible
+                </Badge>
+              )}
+            </div>
+            {mode === 'shared' && (
+              <CheckCircle className="w-5 h-5 text-blue-500" />
+            )}
+          </div>
+        </div>
+
+        {/* Custom Twilio Option */}
+        <div 
+          onClick={() => handleModeChange('custom')}
+          className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+            mode === 'custom' 
+              ? 'border-blue-500 bg-blue-50' 
+              : 'border-slate-200 hover:border-slate-300'
+          }`}
+          data-testid="sms-mode-custom"
+        >
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              mode === 'custom' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'
+            }`}>
+              <Key className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-medium text-slate-900">Mon propre Twilio</h4>
+              <p className="text-sm text-slate-500 mt-1">
+                Utilisez votre compte Twilio avec votre propre numéro de téléphone.
+              </p>
+              {smsStatus?.has_custom_config && (
+                <Badge className="mt-2 bg-emerald-100 text-emerald-700">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Configuré
+                </Badge>
+              )}
+            </div>
+            {mode === 'custom' && (
+              <CheckCircle className="w-5 h-5 text-blue-500" />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Custom Configuration Form */}
+      {showCustomForm && mode === 'custom' && (
+        <Card className="border-slate-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Key className="w-4 h-4" />
+              Configuration Twilio personnalisée
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="twilio_sid">Account SID</Label>
+                <Input
+                  id="twilio_sid"
+                  value={customConfig.twilio_account_sid}
+                  onChange={(e) => setCustomConfig(prev => ({ ...prev, twilio_account_sid: e.target.value }))}
+                  placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  className="font-mono text-sm"
+                  data-testid="twilio-sid-input"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="twilio_token">Auth Token</Label>
+                <Input
+                  id="twilio_token"
+                  type="password"
+                  value={customConfig.twilio_auth_token}
+                  onChange={(e) => setCustomConfig(prev => ({ ...prev, twilio_auth_token: e.target.value }))}
+                  placeholder="Votre Auth Token Twilio"
+                  data-testid="twilio-token-input"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="twilio_phone">Numéro de téléphone</Label>
+                <Input
+                  id="twilio_phone"
+                  value={customConfig.twilio_phone_number}
+                  onChange={(e) => setCustomConfig(prev => ({ ...prev, twilio_phone_number: e.target.value }))}
+                  placeholder="+32470123456"
+                  data-testid="twilio-phone-input"
+                />
+                <p className="text-xs text-slate-500">Format international (ex: +32470123456)</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 pt-2">
+              <Button onClick={handleCustomConfigSave} disabled={saving} data-testid="save-twilio-config">
+                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+                Enregistrer
+              </Button>
+              <Button variant="outline" onClick={() => setShowCustomForm(false)}>
+                Annuler
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Console Twilio
+                </a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Test SMS Section */}
+      {smsStatus?.configured && (
+        <div className="pt-4 border-t border-slate-200">
+          <Label className="text-sm font-medium mb-2 block">Tester la configuration</Label>
+          <div className="flex items-center gap-3">
+            <Input
+              value={testPhone}
+              onChange={(e) => setTestPhone(e.target.value)}
+              placeholder="+32470123456"
+              className="max-w-xs"
+              data-testid="test-phone-input"
+            />
+            <Button 
+              variant="outline" 
+              onClick={handleTestSMS} 
+              disabled={testing || !testPhone}
+              data-testid="send-test-sms"
+            >
+              {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MessageSquare className="w-4 h-4 mr-2" />}
+              Envoyer un SMS test
+            </Button>
+          </div>
+          <p className="text-xs text-slate-500 mt-2">
+            Entrez votre numéro pour recevoir un SMS de test et vérifier la configuration.
+          </p>
+        </div>
+      )}
+
+      {/* Status Info */}
+      {smsStatus?.configured && (
+        <Alert className="bg-emerald-50 border-emerald-200">
+          <CheckCircle className="h-4 w-4 text-emerald-600" />
+          <AlertDescription className="text-emerald-800">
+            <strong>SMS actif</strong> — Mode: {smsStatus.mode === 'shared' ? 'Service Actoos' : 'Twilio personnalisé'}
+            {smsStatus.phone_number && smsStatus.mode === 'custom' && (
+              <span className="block text-sm mt-1">Numéro: {smsStatus.phone_number}</span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+};
+
 export const SettingsPage = () => {
   const { api, entreprise, user, refreshUser, canUseAdvancedBranding, currentPlan } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -740,23 +1213,25 @@ export const SettingsPage = () => {
         {/* Notifications Tab */}
         <TabsContent value="notifications">
           <div className="space-y-6">
-            {/* SMS Status Card */}
+            {/* SMS Configuration Card - NEW */}
             <Card className="border-slate-200">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
                       <MessageSquare className="w-5 h-5" />
-                      SMS (Twilio)
+                      Configuration SMS (Twilio)
                     </CardTitle>
-                    <CardDescription>Notifications par SMS pour vos clients</CardDescription>
+                    <CardDescription>
+                      Envoyez des SMS automatiques à vos clients pour les rappels et notifications
+                    </CardDescription>
                   </div>
                   {loadingSmsStatus ? (
                     <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
                   ) : smsStatus.configured ? (
                     <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
                       <CheckCircle className="w-3 h-3 mr-1" />
-                      Configuré
+                      {smsStatus.mode === 'shared' ? 'Service Actoos' : 'Configuré'}
                     </Badge>
                   ) : (
                     <Badge variant="secondary" className="bg-amber-100 text-amber-700">
@@ -767,46 +1242,7 @@ export const SettingsPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {smsStatus.configured ? (
-                  <div className="space-y-4">
-                    {smsStatus.phone_number && smsStatus.phone_number !== '****' ? (
-                      <p className="text-sm text-slate-600">
-                        Numéro d'envoi : <span className="font-mono">{smsStatus.phone_number}</span>
-                      </p>
-                    ) : (
-                      <Alert className="bg-amber-50 border-amber-200">
-                        <Info className="h-4 w-4 text-amber-600" />
-                        <AlertDescription className="text-amber-800">
-                          Twilio est connecté mais aucun numéro de téléphone n'est configuré. 
-                          Ajoutez <code className="bg-amber-100 px-1 rounded">TWILIO_PHONE_NUMBER</code> dans les variables d'environnement.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <Alert className="bg-slate-50 border-slate-200">
-                      <Info className="h-4 w-4" />
-                      <AlertDescription>
-                        Pour activer les SMS, configurez vos identifiants Twilio dans les variables d'environnement du serveur.
-                      </AlertDescription>
-                    </Alert>
-                    <div className="text-sm text-slate-600 space-y-2">
-                      <p>Variables requises :</p>
-                      <ul className="list-disc list-inside space-y-1 font-mono text-xs bg-slate-100 p-3 rounded-md">
-                        <li>TWILIO_ACCOUNT_SID</li>
-                        <li>TWILIO_AUTH_TOKEN</li>
-                        <li>TWILIO_PHONE_NUMBER</li>
-                      </ul>
-                    </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Console Twilio
-                      </a>
-                    </Button>
-                  </div>
-                )}
+                <SMSConfiguration api={api} smsStatus={smsStatus} onStatusChange={loadSmsStatus} />
               </CardContent>
             </Card>
 
@@ -823,6 +1259,9 @@ export const SettingsPage = () => {
                     <h4 className="font-medium text-sm text-slate-700 flex items-center gap-2">
                       <MessageSquare className="w-4 h-4" />
                       Notifications SMS
+                      {!smsStatus.configured && (
+                        <Badge variant="outline" className="text-xs">Configurez d'abord le SMS</Badge>
+                      )}
                     </h4>
                     
                     <div className="space-y-3 pl-6">
@@ -895,6 +1334,7 @@ export const SettingsPage = () => {
                     <h4 className="font-medium text-sm text-slate-700 flex items-center gap-2">
                       <Bell className="w-4 h-4" />
                       Notifications Email
+                      <Badge className="bg-emerald-100 text-emerald-700 text-xs">Toujours disponible</Badge>
                     </h4>
                     
                     <div className="space-y-3 pl-6">
@@ -962,7 +1402,7 @@ export const SettingsPage = () => {
                   </div>
 
                   <div className="flex justify-end pt-4">
-                    <Button type="submit" disabled={saving}>
+                    <Button type="submit" disabled={saving} data-testid="save-notification-prefs">
                       {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                       Enregistrer les préférences
                     </Button>
@@ -975,35 +1415,7 @@ export const SettingsPage = () => {
 
         {/* Documents Tab */}
         <TabsContent value="documents">
-          <form onSubmit={handleSubmit}>
-            <Card className="border-slate-200">
-              <CardHeader>
-                <CardTitle className="text-base">Conditions générales</CardTitle>
-                <CardDescription>Texte affiché par défaut sur vos devis</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="conditions_generales">Conditions générales de vente</Label>
-                  <Textarea
-                    id="conditions_generales"
-                    name="conditions_generales"
-                    value={formData.conditions_generales}
-                    onChange={handleChange}
-                    rows={6}
-                    placeholder="Vos conditions générales de vente..."
-                    data-testid="settings-conditions"
-                  />
-                </div>
-
-                <div className="flex justify-end pt-4">
-                  <Button type="submit" disabled={saving} data-testid="settings-documents-submit">
-                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    Enregistrer
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </form>
+          <DocumentSettingsForm api={api} />
         </TabsContent>
 
         {/* Branding / White-label Tab */}

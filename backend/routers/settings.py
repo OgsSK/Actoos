@@ -67,16 +67,23 @@ class DocumentSettings(BaseModel):
 async def get_notification_settings(current_user: dict = Depends(get_current_user)):
     """Get notification preferences for the enterprise"""
     
+    # First check if enterprise exists
+    entreprise_exists = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "id": 1}
+    )
+    
+    if not entreprise_exists:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    # Get notification settings
     entreprise = await db.entreprises.find_one(
         {"id": current_user["entreprise_id"]},
         {"_id": 0, "notification_settings": 1}
     )
     
-    if not entreprise:
-        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-    
     # Return existing settings or defaults
-    settings = entreprise.get("notification_settings", {})
+    settings = entreprise.get("notification_settings", {}) if entreprise else {}
     
     defaults = NotificationSettings().dict()
     
@@ -115,23 +122,32 @@ async def update_notification_settings(
 async def get_document_settings(current_user: dict = Depends(get_current_user)):
     """Get document settings (conditions générales, footers, etc.)"""
     
-    entreprise = await db.entreprises.find_one(
+    # First check if enterprise exists
+    entreprise_exists = await db.entreprises.find_one(
         {"id": current_user["entreprise_id"]},
-        {"_id": 0, "document_settings": 1, "conditions_paiement": 1}
+        {"_id": 0, "id": 1}
     )
     
-    if not entreprise:
+    if not entreprise_exists:
         raise HTTPException(status_code=404, detail="Entreprise non trouvée")
     
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "document_settings": 1, "conditions_paiement": 1, "conditions_generales": 1}
+    )
+    
     # Return existing settings or defaults
-    settings = entreprise.get("document_settings", {})
+    settings = entreprise.get("document_settings", {}) if entreprise else {}
     
     defaults = DocumentSettings().dict()
     
     # Merge defaults with existing settings
-    # Also include legacy field if exists
-    if entreprise.get("conditions_paiement"):
-        defaults["conditions_paiement"] = entreprise["conditions_paiement"]
+    # Also include legacy fields if they exist
+    if entreprise:
+        if entreprise.get("conditions_paiement"):
+            defaults["conditions_paiement"] = entreprise["conditions_paiement"]
+        if entreprise.get("conditions_generales"):
+            defaults["conditions_generales"] = entreprise["conditions_generales"]
     
     result = {**defaults, **settings}
     
@@ -199,16 +215,83 @@ async def preview_document_settings(current_user: dict = Depends(get_current_use
 async def get_all_settings(current_user: dict = Depends(get_current_user)):
     """Get all settings at once"""
     
+    # First check if enterprise exists
+    entreprise_exists = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "id": 1}
+    )
+    
+    if not entreprise_exists:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
     entreprise = await db.entreprises.find_one(
         {"id": current_user["entreprise_id"]},
-        {"_id": 0, "notification_settings": 1, "document_settings": 1, "gdpr_settings": 1}
+        {"_id": 0, "notification_settings": 1, "document_settings": 1, "gdpr_settings": 1, 
+         "api_keys_configured": 1, "use_shared_twilio": 1, "twilio_account_sid": 1,
+         "conditions_generales": 1, "conditions_paiement": 1}
+    )
+    
+    # Build documents defaults with legacy fields
+    doc_defaults = DocumentSettings().dict()
+    if entreprise:
+        if entreprise.get("conditions_generales"):
+            doc_defaults["conditions_generales"] = entreprise["conditions_generales"]
+        if entreprise.get("conditions_paiement"):
+            doc_defaults["conditions_paiement"] = entreprise["conditions_paiement"]
+    
+    return {
+        "notifications": {**NotificationSettings().dict(), **(entreprise.get("notification_settings", {}) if entreprise else {})},
+        "documents": {**doc_defaults, **(entreprise.get("document_settings", {}) if entreprise else {})},
+        "gdpr": entreprise.get("gdpr_settings", {}) if entreprise else {},
+        "integrations": {
+            "twilio": {
+                "use_shared": entreprise.get("use_shared_twilio", True) if entreprise else True,
+                "has_custom": bool(entreprise.get("twilio_account_sid")) if entreprise else False
+            }
+        }
+    }
+
+
+# ==================== API KEYS / INTEGRATIONS CONFIG ====================
+
+class IntegrationKeys(BaseModel):
+    """API Keys for integrations - stored securely"""
+    # Twilio
+    twilio_account_sid: Optional[str] = None
+    twilio_auth_token: Optional[str] = None
+    twilio_phone_number: Optional[str] = None
+    use_shared_twilio: bool = True
+    
+    # Future: Google Calendar, etc.
+
+
+@router.get("/integrations")
+async def get_integrations_status(current_user: dict = Depends(require_admin)):
+    """Get integration configuration status (not the actual keys)"""
+    from sms_service import is_shared_twilio_available
+    
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "twilio_account_sid": 1, "twilio_phone_number": 1, "use_shared_twilio": 1,
+         "google_calendar_connected": 1}
     )
     
     if not entreprise:
         raise HTTPException(status_code=404, detail="Entreprise non trouvée")
     
     return {
-        "notifications": {**NotificationSettings().dict(), **entreprise.get("notification_settings", {})},
-        "documents": {**DocumentSettings().dict(), **entreprise.get("document_settings", {})},
-        "gdpr": entreprise.get("gdpr_settings", {})
+        "twilio": {
+            "configured": bool(entreprise.get("twilio_account_sid")) or is_shared_twilio_available(),
+            "mode": "custom" if entreprise.get("twilio_account_sid") else ("shared" if is_shared_twilio_available() else "none"),
+            "use_shared": entreprise.get("use_shared_twilio", True),
+            "shared_available": is_shared_twilio_available(),
+            "phone_number": entreprise.get("twilio_phone_number", "")[:6] + "****" if entreprise.get("twilio_phone_number") else None
+        },
+        "google_calendar": {
+            "connected": entreprise.get("google_calendar_connected", False)
+        },
+        "email": {
+            "configured": True,  # Resend is always configured at platform level
+            "provider": "Resend"
+        }
     }

@@ -1,38 +1,75 @@
 """
-SMS Service for FieldCommand using Twilio
-Handles SMS notifications for interventions, quotes, and invoices
+SMS Service for Actoos using Twilio
+Handles SMS notifications for interventions, quotes, and invoices.
+Supports both shared (Actoos) and custom (per-enterprise) Twilio configurations.
 """
 import os
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
 
 logger = logging.getLogger(__name__)
 
-# Twilio configuration
-TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
-TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
+# Default Actoos Twilio configuration (shared for all enterprises without their own)
+DEFAULT_TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+DEFAULT_TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+DEFAULT_TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
 
-# Initialize Twilio client
+# Legacy aliases for backward compatibility
+TWILIO_ACCOUNT_SID = DEFAULT_TWILIO_ACCOUNT_SID
+TWILIO_AUTH_TOKEN = DEFAULT_TWILIO_AUTH_TOKEN
+TWILIO_PHONE_NUMBER = DEFAULT_TWILIO_PHONE_NUMBER
+
+# Default Twilio client (shared)
 twilio_client = None
 
 def init_twilio():
-    """Initialize Twilio client"""
+    """Initialize default Twilio client"""
     global twilio_client
     
-    if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
+    if not DEFAULT_TWILIO_ACCOUNT_SID or not DEFAULT_TWILIO_AUTH_TOKEN:
         logger.warning("Twilio credentials not configured - SMS disabled")
         return False
     
     try:
-        twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        logger.info("Twilio client initialized successfully")
+        twilio_client = Client(DEFAULT_TWILIO_ACCOUNT_SID, DEFAULT_TWILIO_AUTH_TOKEN)
+        logger.info("Default Twilio client initialized successfully")
         return True
     except Exception as e:
         logger.error(f"Failed to initialize Twilio: {e}")
         return False
+
+
+def get_twilio_client_for_entreprise(entreprise: dict = None) -> Tuple[Optional[Client], Optional[str], str]:
+    """
+    Get the appropriate Twilio client for an enterprise.
+    Returns (client, phone_number, mode) where mode is 'custom' or 'shared'.
+    
+    Priority:
+    1. Enterprise's own Twilio credentials (if configured)
+    2. Default Actoos Twilio (shared)
+    """
+    if entreprise:
+        # Check if enterprise has custom Twilio credentials
+        custom_sid = entreprise.get('twilio_account_sid')
+        custom_token = entreprise.get('twilio_auth_token')
+        custom_phone = entreprise.get('twilio_phone_number')
+        
+        if custom_sid and custom_token and custom_phone:
+            try:
+                custom_client = Client(custom_sid, custom_token)
+                logger.info(f"Using custom Twilio for enterprise {entreprise.get('id')}")
+                return (custom_client, custom_phone, 'custom')
+            except Exception as e:
+                logger.error(f"Failed to create custom Twilio client: {e}")
+                # Fall back to shared
+    
+    # Use shared Actoos Twilio
+    if twilio_client and DEFAULT_TWILIO_PHONE_NUMBER:
+        return (twilio_client, DEFAULT_TWILIO_PHONE_NUMBER, 'shared')
+    
+    return (None, None, 'none')
 
 def format_phone_number(phone: str) -> str:
     """
@@ -59,43 +96,47 @@ def format_phone_number(phone: str) -> str:
     
     return phone
 
-async def send_sms(to_number: str, message: str) -> dict:
+async def send_sms(to_number: str, message: str, entreprise: dict = None) -> dict:
     """
-    Send an SMS message
+    Send an SMS message using the appropriate Twilio client.
     
     Args:
         to_number: Recipient phone number
         message: SMS content (max 160 chars for single SMS)
+        entreprise: Enterprise dict (optional) - to use custom Twilio if configured
     
     Returns:
-        dict with status and message_sid or error
+        dict with status, message_sid, and mode (shared/custom)
     """
-    if not twilio_client:
-        return {"status": "error", "message": "Twilio not configured"}
+    client, from_number, mode = get_twilio_client_for_entreprise(entreprise)
     
-    if not TWILIO_PHONE_NUMBER:
-        return {"status": "error", "message": "Twilio phone number not configured"}
+    if not client:
+        return {"status": "error", "message": "Twilio non configuré. Configurez vos propres credentials Twilio ou attendez l'activation du service partagé Actoos."}
+    
+    if not from_number:
+        return {"status": "error", "message": "Numéro d'expédition Twilio non configuré"}
     
     formatted_number = format_phone_number(to_number)
     if not formatted_number:
-        return {"status": "error", "message": "Invalid phone number"}
+        return {"status": "error", "message": "Numéro de téléphone invalide"}
     
     try:
         # Truncate message if too long
         if len(message) > 1600:  # Max 10 segments
             message = message[:1597] + "..."
         
-        sms = twilio_client.messages.create(
+        sms = client.messages.create(
             body=message,
-            from_=TWILIO_PHONE_NUMBER,
+            from_=from_number,
             to=formatted_number
         )
         
-        logger.info(f"SMS sent to {formatted_number}: {sms.sid}")
+        logger.info(f"SMS sent to {formatted_number} via {mode} Twilio: {sms.sid}")
         return {
             "status": "success",
             "message_sid": sms.sid,
-            "to": formatted_number
+            "to": formatted_number,
+            "mode": mode  # 'shared' or 'custom'
         }
         
     except TwilioRestException as e:
@@ -103,14 +144,65 @@ async def send_sms(to_number: str, message: str) -> dict:
         return {
             "status": "error",
             "message": str(e),
-            "code": e.code
+            "code": e.code,
+            "mode": mode
         }
     except Exception as e:
         logger.error(f"Error sending SMS to {formatted_number}: {e}")
         return {
             "status": "error",
-            "message": str(e)
+            "message": str(e),
+            "mode": mode
         }
+
+# ==================== SMS Status Functions ====================
+
+def get_sms_status_for_entreprise(entreprise: dict = None) -> dict:
+    """
+    Get the SMS configuration status for an enterprise.
+    
+    Returns:
+        dict with configured status, mode, and phone number
+    """
+    if entreprise:
+        # Check custom credentials
+        custom_sid = entreprise.get('twilio_account_sid')
+        custom_token = entreprise.get('twilio_auth_token')
+        custom_phone = entreprise.get('twilio_phone_number')
+        
+        if custom_sid and custom_token and custom_phone:
+            return {
+                "configured": True,
+                "mode": "custom",
+                "phone_number": custom_phone,
+                "description": "Votre propre compte Twilio"
+            }
+    
+    # Check shared Actoos Twilio
+    if twilio_client and DEFAULT_TWILIO_PHONE_NUMBER and DEFAULT_TWILIO_PHONE_NUMBER != '+32XXXXXXXXX':
+        return {
+            "configured": True,
+            "mode": "shared",
+            "phone_number": "Actoos",  # Don't expose shared number
+            "description": "Service SMS partagé Actoos"
+        }
+    
+    return {
+        "configured": False,
+        "mode": "none",
+        "phone_number": None,
+        "description": "SMS non configuré"
+    }
+
+
+def is_shared_twilio_available() -> bool:
+    """Check if the shared Actoos Twilio is configured and available"""
+    return (
+        twilio_client is not None and 
+        DEFAULT_TWILIO_PHONE_NUMBER is not None and 
+        DEFAULT_TWILIO_PHONE_NUMBER != '+32XXXXXXXXX'
+    )
+
 
 # ==================== SMS Templates ====================
 
