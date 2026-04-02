@@ -22,17 +22,20 @@ class NotificationSettings(BaseModel):
     # Email notifications
     email_new_intervention: bool = True
     email_intervention_completed: bool = True
-    email_new_devis: bool = True
+    email_devis_notification: bool = True
     email_devis_accepted: bool = True
-    email_new_facture: bool = True
+    email_facture_notification: bool = True
     email_payment_received: bool = True
     email_payment_reminder: bool = True
     
-    # SMS notifications
-    sms_intervention_reminder: bool = False
-    sms_new_devis: bool = False
-    sms_new_facture: bool = False
-    sms_appointment_confirmation: bool = False
+    # SMS/WhatsApp notifications (same settings control both)
+    sms_intervention_reminder: bool = True
+    sms_devis_notification: bool = True
+    sms_facture_notification: bool = True
+    sms_payment_reminder: bool = True
+    
+    # Auto reminders
+    auto_reminders_enabled: bool = True
     
     # Push notifications
     push_new_intervention: bool = True
