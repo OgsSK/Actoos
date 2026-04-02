@@ -1,10 +1,11 @@
 """
 Google Calendar Integration Router
 Allows technicians to sync their interventions with their Google Calendar
+Supports both shared Actoos credentials and custom per-enterprise credentials
 """
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import RedirectResponse
-from typing import Optional
+from typing import Optional, Tuple
 from datetime import datetime, timezone, timedelta
 import os
 import logging
@@ -17,9 +18,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/calendar", tags=["Calendar Integration"])
 
-# Google OAuth Configuration
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+# Default Actoos Google OAuth Configuration (shared)
+DEFAULT_GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+DEFAULT_GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "")
 GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/calendar",
@@ -27,9 +28,45 @@ GOOGLE_SCOPES = [
     "openid"
 ]
 
+# Legacy aliases
+GOOGLE_CLIENT_ID = DEFAULT_GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET = DEFAULT_GOOGLE_CLIENT_SECRET
+
+
+async def get_google_credentials_for_entreprise(entreprise_id: str) -> Tuple[str, str, str]:
+    """
+    Get Google OAuth credentials for an enterprise.
+    Returns (client_id, client_secret, mode) where mode is 'custom' or 'shared'.
+    """
+    entreprise = await db.entreprises.find_one(
+        {"id": entreprise_id},
+        {"_id": 0, "google_client_id": 1, "google_client_secret": 1, "use_shared_google": 1}
+    )
+    
+    if entreprise:
+        # Check if enterprise has custom Google credentials
+        custom_id = entreprise.get("google_client_id")
+        custom_secret = entreprise.get("google_client_secret")
+        use_shared = entreprise.get("use_shared_google", True)
+        
+        if not use_shared and custom_id and custom_secret:
+            return (custom_id, custom_secret, "custom")
+    
+    # Use shared Actoos credentials
+    if DEFAULT_GOOGLE_CLIENT_ID and DEFAULT_GOOGLE_CLIENT_SECRET:
+        return (DEFAULT_GOOGLE_CLIENT_ID, DEFAULT_GOOGLE_CLIENT_SECRET, "shared")
+    
+    return (None, None, "none")
+
+
 def is_calendar_configured():
-    """Check if Google Calendar credentials are configured"""
-    return bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
+    """Check if Google Calendar credentials are configured (shared)"""
+    return bool(DEFAULT_GOOGLE_CLIENT_ID and DEFAULT_GOOGLE_CLIENT_SECRET)
+
+
+def is_shared_google_available():
+    """Check if shared Actoos Google Calendar is available"""
+    return bool(DEFAULT_GOOGLE_CLIENT_ID and DEFAULT_GOOGLE_CLIENT_SECRET)
 
 
 @router.get("/status")
@@ -37,11 +74,18 @@ async def get_calendar_status(current_user: dict = Depends(get_current_user)):
     """
     Check if calendar integration is configured and if user is connected
     """
-    if not is_calendar_configured():
+    # Get credentials for this enterprise
+    client_id, client_secret, mode = await get_google_credentials_for_entreprise(current_user["entreprise_id"])
+    
+    configured = bool(client_id and client_secret)
+    
+    if not configured:
         return {
             "configured": False,
             "connected": False,
-            "message": "Google Calendar n'est pas configuré. Contactez l'administrateur."
+            "mode": "none",
+            "shared_available": is_shared_google_available(),
+            "message": "Google Calendar n'est pas configuré. Utilisez le service Actoos ou configurez vos propres credentials."
         }
     
     # Check if user has Google tokens
@@ -51,6 +95,8 @@ async def get_calendar_status(current_user: dict = Depends(get_current_user)):
     return {
         "configured": True,
         "connected": has_tokens,
+        "mode": mode,
+        "shared_available": is_shared_google_available(),
         "google_email": user.get("google_calendar_email") if has_tokens else None,
         "last_sync": user.get("calendar_last_sync") if has_tokens else None
     }
@@ -62,10 +108,13 @@ async def connect_google_calendar(current_user: dict = Depends(get_current_user)
     Start OAuth flow to connect Google Calendar
     Returns the authorization URL to redirect the user to
     """
-    if not is_calendar_configured():
+    # Get credentials for this enterprise
+    client_id, client_secret, mode = await get_google_credentials_for_entreprise(current_user["entreprise_id"])
+    
+    if not client_id or not client_secret:
         raise HTTPException(
             status_code=503,
-            detail="Google Calendar non configuré. GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET requis."
+            detail="Google Calendar non configuré. Activez le service Actoos ou configurez vos propres credentials dans Paramètres > Intégrations."
         )
     
     # Build redirect URI if not set
@@ -75,14 +124,15 @@ async def connect_google_calendar(current_user: dict = Depends(get_current_user)
         frontend_url = os.environ.get("REACT_APP_BACKEND_URL", "")
         redirect_uri = f"{frontend_url}/api/calendar/callback"
     
-    # Store state for security (include user_id to link account after callback)
+    # Store state for security (include user_id and entreprise_id to link account after callback)
     import secrets
-    state = f"{current_user['user_id']}:{secrets.token_urlsafe(16)}"
+    state = f"{current_user['user_id']}:{current_user['entreprise_id']}:{secrets.token_urlsafe(16)}"
     
     # Store state in DB temporarily
     await db.oauth_states.insert_one({
         "state": state,
         "user_id": current_user["user_id"],
+        "entreprise_id": current_user["entreprise_id"],
         "created_at": datetime.now(timezone.utc).isoformat(),
         "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
     })
@@ -90,7 +140,7 @@ async def connect_google_calendar(current_user: dict = Depends(get_current_user)
     # Build authorization URL
     auth_url = "https://accounts.google.com/o/oauth2/v2/auth"
     params = {
-        "client_id": GOOGLE_CLIENT_ID,
+        "client_id": client_id,
         "redirect_uri": redirect_uri,
         "response_type": "code",
         "scope": " ".join(GOOGLE_SCOPES),
@@ -102,10 +152,11 @@ async def connect_google_calendar(current_user: dict = Depends(get_current_user)
     query_string = "&".join(f"{k}={requests.utils.quote(str(v))}" for k, v in params.items())
     authorization_url = f"{auth_url}?{query_string}"
     
-    logger.info(f"Generated OAuth URL for user {current_user['user_id']}")
+    logger.info(f"Generated OAuth URL for user {current_user['user_id']} (mode: {mode})")
     
     return {
         "authorization_url": authorization_url,
+        "mode": mode,
         "message": "Redirigez l'utilisateur vers cette URL pour connecter Google Calendar"
     }
 
@@ -118,9 +169,6 @@ async def google_calendar_callback(
     """
     Handle OAuth callback from Google
     """
-    if not is_calendar_configured():
-        raise HTTPException(status_code=503, detail="Google Calendar non configuré")
-    
     # Verify state
     oauth_state = await db.oauth_states.find_one({"state": state})
     if not oauth_state:
@@ -132,6 +180,13 @@ async def google_calendar_callback(
         raise HTTPException(status_code=400, detail="État OAuth expiré")
     
     user_id = oauth_state["user_id"]
+    entreprise_id = oauth_state.get("entreprise_id")
+    
+    # Get credentials for this enterprise
+    client_id, client_secret, mode = await get_google_credentials_for_entreprise(entreprise_id) if entreprise_id else (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, "shared")
+    
+    if not client_id or not client_secret:
+        raise HTTPException(status_code=503, detail="Google Calendar non configuré pour cette entreprise")
     
     # Build redirect URI
     redirect_uri = GOOGLE_REDIRECT_URI
@@ -144,8 +199,8 @@ async def google_calendar_callback(
         "https://oauth2.googleapis.com/token",
         data={
             "code": code,
-            "client_id": GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,
+            "client_id": client_id,
+            "client_secret": client_secret,
             "redirect_uri": redirect_uri,
             "grant_type": "authorization_code"
         }

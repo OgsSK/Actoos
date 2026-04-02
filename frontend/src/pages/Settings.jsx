@@ -1193,7 +1193,231 @@ const IntegrationsHub = ({ api }) => {
           <strong>Templates WhatsApp:</strong> Les messages envoyés via WhatsApp Business utilisent des templates pré-approuvés par Meta pour les rappels d'intervention, notifications de devis/factures, et relances de paiement. Ces templates sont automatiquement configurés avec le service Actoos.
         </AlertDescription>
       </Alert>
+
+      {/* Google Calendar Configuration */}
+      <GoogleCalendarConfig api={api} integrations={integrations} onStatusChange={loadIntegrationsStatus} />
     </div>
+  );
+};
+
+// Google Calendar Configuration Component
+const GoogleCalendarConfig = ({ api, integrations, onStatusChange }) => {
+  const [mode, setMode] = useState(integrations?.google_calendar?.use_shared !== false ? 'shared' : 'custom');
+  const [saving, setSaving] = useState(false);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customConfig, setCustomConfig] = useState({
+    google_client_id: '',
+    google_client_secret: ''
+  });
+
+  const handleModeChange = async (newMode) => {
+    setMode(newMode);
+    if (newMode === 'shared') {
+      setSaving(true);
+      try {
+        await api.put('/integrations/google-calendar/config', { use_shared: true });
+        toast.success('Google Calendar configuré en mode service Actoos');
+        onStatusChange?.();
+      } catch (error) {
+        toast.error(error.response?.data?.detail || 'Erreur');
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      setShowCustomForm(true);
+    }
+  };
+
+  const handleCustomSave = async () => {
+    if (!customConfig.google_client_id || !customConfig.google_client_secret) {
+      toast.error('Client ID et Client Secret sont requis');
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      await api.put('/integrations/google-calendar/config', {
+        use_shared: false,
+        ...customConfig
+      });
+      toast.success('Configuration Google Calendar personnalisée enregistrée');
+      setShowCustomForm(false);
+      onStatusChange?.();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors de la configuration');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card className="border-slate-200">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Google Calendar</CardTitle>
+              <CardDescription>
+                Synchronisez vos interventions avec Google Calendar
+              </CardDescription>
+            </div>
+          </div>
+          {integrations?.google_calendar?.connected ? (
+            <Badge className="bg-green-100 text-green-700">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Connecté
+            </Badge>
+          ) : integrations?.google_calendar?.shared_available || integrations?.google_calendar?.has_custom_config ? (
+            <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+              Prêt à connecter
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+              Configuration requise
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Mode Selection */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            onClick={() => handleModeChange('shared')}
+            className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+              mode === 'shared' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'
+            }`}
+            data-testid="gcal-mode-shared"
+          >
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                mode === 'shared' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>
+                <Globe className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-slate-900">Service Actoos</h4>
+                <p className="text-sm text-slate-500 mt-1">
+                  Utilisez le service de synchronisation Actoos. Aucune configuration requise.
+                </p>
+                {integrations?.google_calendar?.shared_available ? (
+                  <Badge className="mt-2 bg-green-100 text-green-700">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Disponible
+                  </Badge>
+                ) : (
+                  <Badge className="mt-2 bg-amber-100 text-amber-700">
+                    <Clock className="w-3 h-3 mr-1" />
+                    Non configuré
+                  </Badge>
+                )}
+              </div>
+              {mode === 'shared' && <CheckCircle className="w-5 h-5 text-blue-500" />}
+            </div>
+          </div>
+
+          <div
+            onClick={() => handleModeChange('custom')}
+            className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+              mode === 'custom' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'
+            }`}
+            data-testid="gcal-mode-custom"
+          >
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                mode === 'custom' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>
+                <Key className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-slate-900">Mes propres credentials Google</h4>
+                <p className="text-sm text-slate-500 mt-1">
+                  Utilisez votre propre projet Google Cloud.
+                </p>
+                {integrations?.google_calendar?.has_custom_config && (
+                  <Badge className="mt-2 bg-green-100 text-green-700">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Configuré
+                  </Badge>
+                )}
+              </div>
+              {mode === 'custom' && <CheckCircle className="w-5 h-5 text-blue-500" />}
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Google Config Form */}
+        {showCustomForm && mode === 'custom' && (
+          <Card className="border-slate-200 mt-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Key className="w-4 h-4" />
+                Configuration Google OAuth
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert className="bg-blue-50 border-blue-200">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800 text-sm">
+                  <strong>Instructions:</strong>
+                  <ol className="list-decimal ml-4 mt-2 space-y-1">
+                    <li>Allez sur <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer" className="underline">console.cloud.google.com</a></li>
+                    <li>Créez un projet ou sélectionnez-en un existant</li>
+                    <li>Activez l'API "Google Calendar API"</li>
+                    <li>Allez dans "Credentials" &gt; "Create Credentials" &gt; "OAuth 2.0 Client ID"</li>
+                    <li>Ajoutez l'URI de redirection: <code className="bg-blue-100 px-1 rounded">{window.location.origin}/api/calendar/callback</code></li>
+                  </ol>
+                </AlertDescription>
+              </Alert>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label>Client ID</Label>
+                  <Input
+                    value={customConfig.google_client_id}
+                    onChange={(e) => setCustomConfig(prev => ({ ...prev, google_client_id: e.target.value }))}
+                    placeholder="123456789-xxxxxxxx.apps.googleusercontent.com"
+                    data-testid="gcal-client-id-input"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Client Secret</Label>
+                  <Input
+                    type="password"
+                    value={customConfig.google_client_secret}
+                    onChange={(e) => setCustomConfig(prev => ({ ...prev, google_client_secret: e.target.value }))}
+                    placeholder="GOCSPX-xxxxxx"
+                    data-testid="gcal-client-secret-input"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Button onClick={handleCustomSave} disabled={saving} data-testid="save-gcal-config">
+                  {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+                  Enregistrer
+                </Button>
+                <Button variant="outline" onClick={() => setShowCustomForm(false)}>
+                  Annuler
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Status message */}
+        {(integrations?.google_calendar?.shared_available || integrations?.google_calendar?.has_custom_config) && !integrations?.google_calendar?.connected && (
+          <Alert className="bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              Configuration prête ! Utilisez le bouton "Connecter Google Calendar" ci-dessous pour autoriser l'accès à votre calendrier.
+            </AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
