@@ -51,8 +51,9 @@ const PrivacyPage = () => {
                 protégeons vos informations lorsque vous utilisez notre plateforme de gestion d'interventions terrain.
               </p>
               <p className="text-slate-600 dark:text-slate-300 mt-4 leading-relaxed">
-                Actoos est conforme au Règlement Général sur la Protection des Données (RGPD) et à la législation 
-                belge en matière de protection de la vie privée.
+                Actoos est un logiciel de gestion d'interventions terrain conforme au Règlement Général 
+                sur la Protection des Données (RGPD) et aux réglementations internationales en matière 
+                de protection de la vie privée.
               </p>
             </section>
 
@@ -232,13 +233,14 @@ const PrivacyPage = () => {
                 Pour exercer vos droits ou pour toute question concernant cette politique :
               </p>
               <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <p className="font-medium text-slate-900 dark:text-white">Actoos - Délégué à la Protection des Données</p>
+                <p className="font-medium text-slate-900 dark:text-white">Actoos - Protection des Données</p>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Email : privacy@actoos.com</p>
-                <p className="text-slate-600 dark:text-slate-400">Adresse : Belgique</p>
+                <p className="text-slate-600 dark:text-slate-400">Site web : www.actoos.com</p>
               </div>
               <p className="text-slate-600 dark:text-slate-300 mt-4">
-                Vous avez également le droit d'introduire une réclamation auprès de l'Autorité de Protection 
-                des Données (APD) si vous estimez que le traitement de vos données n'est pas conforme à la réglementation.
+                Vous avez également le droit d'introduire une réclamation auprès de l'autorité de protection 
+                des données compétente de votre pays si vous estimez que le traitement de vos données 
+                n'est pas conforme à la réglementation applicable.
               </p>
             </section>
 

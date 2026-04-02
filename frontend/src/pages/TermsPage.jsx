@@ -286,9 +286,10 @@ const TermsPage = () => {
                 <Scale className="w-5 h-5 text-purple-500 mt-0.5" />
                 <div>
                   <p>
-                    Les présentes CGU sont régies par le droit belge. En cas de litige, les parties 
-                    s'engagent à rechercher une solution amiable. À défaut, les tribunaux de Bruxelles 
-                    seront seuls compétents.
+                    Les présentes CGU sont régies par le droit applicable dans votre pays de résidence. 
+                    En cas de litige, les parties s'engagent à rechercher une solution amiable avant 
+                    toute action en justice. À défaut d'accord amiable, les tribunaux compétents seront 
+                    ceux du lieu de résidence du défendeur.
                   </p>
                 </div>
               </div>
@@ -320,9 +321,9 @@ const TermsPage = () => {
               Pour toute question concernant ces conditions :
             </p>
             <div className="mt-3 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-              <p className="font-medium text-slate-900 dark:text-white">Actoos</p>
-              <p className="text-slate-600 dark:text-slate-400">Email : legal@actoos.com</p>
-              <p className="text-slate-600 dark:text-slate-400">Site : www.actoos.com</p>
+              <p className="font-medium text-slate-900 dark:text-white">Actoos - Support</p>
+              <p className="text-slate-600 dark:text-slate-400">Email : support@actoos.com</p>
+              <p className="text-slate-600 dark:text-slate-400">Site web : www.actoos.com</p>
             </div>
           </section>
 

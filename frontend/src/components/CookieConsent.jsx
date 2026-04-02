@@ -218,6 +218,10 @@ const CookieConsent = () => {
                 
                 {/* Legal links */}
                 <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex flex-wrap gap-4 text-xs text-slate-500">
+                  <a href="/legal" className="hover:text-blue-600 flex items-center gap-1">
+                    Mentions légales
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                   <a href="/privacy" className="hover:text-blue-600 flex items-center gap-1">
                     Politique de confidentialité
                     <ExternalLink className="w-3 h-3" />

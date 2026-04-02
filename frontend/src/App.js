@@ -62,6 +62,7 @@ import DemoPage from "./pages/DemoPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import CookiesPage from "./pages/CookiesPage";
+import LegalPage from "./pages/LegalPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
@@ -202,6 +203,7 @@ function App() {
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/cookies" element={<CookiesPage />} />
+            <Route path="/legal" element={<LegalPage />} />
 
             {/* Client Portal (Public) */}
             <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />

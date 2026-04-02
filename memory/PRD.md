@@ -250,7 +250,30 @@ Résolution automatique des conflits quand un technicien travaille hors ligne :
 - Modales de détails et modification de plan
 
 ### Métriques actuelles (2026-04-02)
-- 518 entreprises (508 Startup, 3 Pro, 5 Enterprise)
-- 518 utilisateurs (511 admins, 7 techniciens)
-- MRR : 1091€ / ARR : 13092€
-- 2 résiliations totales
+- 7 entreprises (2 Startup, 2 Pro, 3 Enterprise) - Données nettoyées
+- 13 utilisateurs (6 admins, 7 techniciens)
+- MRR : 654€ / ARR : 7848€
+- 0 résiliations
+
+## 🍪 Système de Consentement RGPD - IMPLÉMENTÉ (2026-04-02)
+
+### Composant Cookie Consent (`CookieConsent.jsx`)
+- Bannière de consentement apparaissant à la première visite
+- 4 catégories de cookies : Essentiels, Analytiques, Marketing, Préférences
+- Boutons : Accepter tout, Personnaliser, Refuser les non-essentiels
+- Modal de personnalisation avec toggles par catégorie
+- Stockage dans localStorage (`actoos_cookie_consent`)
+- Liens vers les pages légales
+
+### Pages Légales
+- `/legal` - Mentions légales (LegalPage.jsx)
+- `/privacy` - Politique de confidentialité (PrivacyPage.jsx)
+- `/terms` - Conditions générales d'utilisation (TermsPage.jsx)
+- `/cookies` - Politique des cookies avec bouton de réinitialisation (CookiesPage.jsx)
+
+### Caractéristiques
+- Design adapté à Actoos (logiciel SaaS)
+- Pas de données d'entreprise spécifiques (numéro TVA, adresse)
+- Conforme RGPD
+- Liens légaux dans le footer de la landing page
+- Liens légaux dans la bannière de cookies

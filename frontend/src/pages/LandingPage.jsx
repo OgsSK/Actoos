@@ -511,9 +511,10 @@ const LandingPage = () => {
             <div>
               <h4 className="font-semibold text-white mb-4">Légal</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-slate-400 hover:text-white">Mentions légales</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white">CGV</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white">Confidentialité</a></li>
+                <li><Link to="/legal" className="text-slate-400 hover:text-white">Mentions légales</Link></li>
+                <li><Link to="/terms" className="text-slate-400 hover:text-white">Conditions d'utilisation</Link></li>
+                <li><Link to="/privacy" className="text-slate-400 hover:text-white">Confidentialité</Link></li>
+                <li><Link to="/cookies" className="text-slate-400 hover:text-white">Cookies</Link></li>
               </ul>
             </div>
           </div>
