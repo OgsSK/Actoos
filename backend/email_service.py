@@ -419,3 +419,48 @@ async def send_email_with_attachment(
             "status": "error",
             "message": f"Erreur lors de l'envoi: {str(e)}"
         }
+
+
+
+async def send_super_admin_email(
+    to_email: str,
+    subject: str,
+    message: str,
+    entreprise_name: str = ""
+) -> dict:
+    """Send communication email from super admin to enterprise"""
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); color: white; padding: 30px; text-align: center; border-radius: 12px 12px 0 0; }}
+            .content {{ background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; }}
+            .message {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; white-space: pre-wrap; }}
+            .footer {{ text-align: center; padding: 20px; color: #64748b; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1 style="margin: 0; font-size: 24px;">Actoos</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9;">Message de l'équipe Actoos</p>
+            </div>
+            <div class="content">
+                {f'<p>Bonjour <strong>{entreprise_name}</strong>,</p>' if entreprise_name else '<p>Bonjour,</p>'}
+                <div class="message">{message}</div>
+                <p>Cordialement,<br><strong>L'équipe Actoos</strong></p>
+            </div>
+            <div class="footer">
+                <p>Actoos - Gestion d'interventions terrain</p>
+                <p>Cet email vous a été envoyé car vous êtes client Actoos.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return await send_email(to_email, f"[Actoos] {subject}", html_content)
