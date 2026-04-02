@@ -59,6 +59,7 @@ const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
         className={`fixed top-0 left-0 h-full w-64 bg-slate-900 text-white z-50 transform transition-transform duration-300 lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -146,7 +147,7 @@ const TopBar = ({ onMenuClick, onShowInstallGuide }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 lg:px-6 py-3">
+    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 lg:px-6 py-3" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0.75rem))' }}>
       <div className="flex items-center gap-2 sm:gap-4">
         <button
           onClick={onMenuClick}
