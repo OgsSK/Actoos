@@ -6,6 +6,7 @@ import { OfflineProvider } from "./contexts/OfflineContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { Toaster } from "./components/ui/sonner";
 import useManifestSwitcher from "./hooks/useManifestSwitcher";
+import CookieConsent from "./components/CookieConsent";
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -56,6 +57,11 @@ import LandingPage from "./pages/LandingPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import SectorsPage from "./pages/SectorsPage";
 import DemoPage from "./pages/DemoPage";
+
+// Legal Pages
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
+import CookiesPage from "./pages/CookiesPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
@@ -192,6 +198,11 @@ function App() {
             <Route path="/sectors" element={<SectorsPage />} />
             <Route path="/demo" element={<DemoPage />} />
 
+            {/* Legal Pages (Public) */}
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/cookies" element={<CookiesPage />} />
+
             {/* Client Portal (Public) */}
             <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />
             <Route path="/portal/client/:token" element={<ClientPortalDashboard />} />
@@ -263,6 +274,7 @@ function App() {
           </Routes>
         </BrowserRouter>
         <Toaster />
+        <CookieConsent />
       </OfflineProvider>
       </CurrencyProvider>
     </AuthProvider>
