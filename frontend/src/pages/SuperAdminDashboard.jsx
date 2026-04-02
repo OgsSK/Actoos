@@ -49,10 +49,10 @@ const SuperAdminDashboard = () => {
       setLoading(true);
       
       const [statsRes, entreprisesRes, feedbacksRes, cancellationsRes] = await Promise.all([
-        api.get('/api/super-admin/stats'),
-        api.get('/api/super-admin/entreprises?limit=100'),
-        api.get('/api/super-admin/feedbacks?limit=50'),
-        api.get('/api/super-admin/cancellations?days=30')
+        api.get('/super-admin/stats'),
+        api.get('/super-admin/entreprises?limit=100'),
+        api.get('/super-admin/feedbacks?limit=50'),
+        api.get('/super-admin/cancellations?days=30')
       ]);
       
       setStats(statsRes.data);
@@ -81,7 +81,7 @@ const SuperAdminDashboard = () => {
 
   const handleViewDetails = async (entreprise) => {
     try {
-      const res = await api.get(`/api/super-admin/entreprises/${entreprise.id}`);
+      const res = await api.get(`/super-admin/entreprises/${entreprise.id}`);
       setSelectedEntreprise(res.data);
       setShowDetails(true);
     } catch (error) {
@@ -91,7 +91,7 @@ const SuperAdminDashboard = () => {
 
   const handleUpdatePlan = async (entrepriseId, newPlan) => {
     try {
-      await api.put(`/api/super-admin/entreprises/${entrepriseId}/plan`, { plan: newPlan });
+      await api.put(`/super-admin/entreprises/${entrepriseId}/plan`, { plan: newPlan });
       toast.success('Plan mis à jour');
       loadData();
       setShowEditPlan(false);
@@ -102,7 +102,7 @@ const SuperAdminDashboard = () => {
 
   const handleUpdateStatus = async (entrepriseId, newStatus) => {
     try {
-      await api.put(`/api/super-admin/entreprises/${entrepriseId}/status`, { status: newStatus });
+      await api.put(`/super-admin/entreprises/${entrepriseId}/status`, { status: newStatus });
       toast.success('Statut mis à jour');
       loadData();
     } catch (error) {

@@ -18,12 +18,25 @@ router = APIRouter(prefix="/super-admin", tags=["Super Admin"])
 # Super admin email (platform owner)
 SUPER_ADMIN_EMAIL = os.environ.get("SUPER_ADMIN_EMAIL", "salifkane612@gmail.com")
 
-def require_super_admin(current_user: dict = Depends(get_current_user)):
+async def require_super_admin(current_user: dict = Depends(get_current_user)):
     """Check if user is the super admin (platform owner)"""
-    # Accept any email variant with salifkane612
-    user_email = current_user.get("email", "").lower()
+    # Get user email from database
+    user_doc = await db.users.find_one(
+        {"id": current_user.get("user_id")}, 
+        {"_id": 0, "email": 1}
+    )
+    
+    if not user_doc:
+        raise HTTPException(status_code=403, detail="Utilisateur non trouvé")
+    
+    user_email = user_doc.get("email", "").lower()
+    
+    # Accept any email variant with salifkane612 (the platform owner)
     if "salifkane612" not in user_email:
         raise HTTPException(status_code=403, detail="Accès réservé au super administrateur")
+    
+    # Add email to current_user for convenience
+    current_user["email"] = user_email
     return current_user
 
 

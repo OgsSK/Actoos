@@ -15,7 +15,7 @@ import { formatDate, getStatusLabel, formatRelative } from '../lib/utils';
 import {
   LayoutDashboard, Users, Calendar, FileText, Receipt, Settings, LogOut, Menu, X,
   Search, Bell, Plus, TrendingUp, AlertTriangle, Clock, CheckCircle, ChevronRight,
-  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code, Download
+  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code, Download, Crown
 } from 'lucide-react';
 import PlanUsageWidget from '../components/PlanUsageWidget';
 import AdminInstallPrompt from '../components/AdminInstallPrompt';
@@ -102,6 +102,19 @@ const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
 
           {/* User */}
           <div className="p-4 border-t border-slate-800">
+            {/* Super Admin Link - Only for platform owner */}
+            {user?.email?.toLowerCase().includes('salifkane612') && (
+              <Link
+                to="/super-admin"
+                onClick={onClose}
+                className="w-full flex items-center gap-3 px-3 py-2 mb-3 text-sm text-yellow-400 hover:bg-slate-800 rounded-lg transition-colors"
+                data-testid="super-admin-link"
+              >
+                <Crown className="w-4 h-4" />
+                <span>Super Admin</span>
+              </Link>
+            )}
+            
             {/* Install App Button - Hidden if already installed */}
             {!isInstalled && (
               <button
