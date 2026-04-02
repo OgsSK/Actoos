@@ -277,3 +277,59 @@ Résolution automatique des conflits quand un technicien travaille hors ligne :
 - Conforme RGPD
 - Liens légaux dans le footer de la landing page
 - Liens légaux dans la bannière de cookies
+
+## 📱 Préférences de Notification & SMS - IMPLÉMENTÉ (2026-04-02)
+
+### Configuration SMS (Twilio)
+- **Mode Service Actoos** : Utilise le Twilio partagé d'Actoos (recommandé). Aucune configuration requise pour l'utilisateur.
+- **Mode Twilio Personnalisé** : L'utilisateur peut configurer ses propres credentials Twilio (Account SID, Auth Token, Numéro)
+- Endpoint `GET /api/sms/status` retourne le statut SMS avec `mode` (shared/custom/none)
+- Endpoint `PUT /api/sms/config` pour changer de mode
+- Endpoint `POST /api/sms/test` pour envoyer un SMS de test
+
+### Préférences de Notification
+- **Notifications SMS** (désactivées si SMS non configuré) :
+  - Rappel d'intervention (J-1)
+  - Nouveau devis
+  - Nouvelle facture
+  - Relance de paiement
+- **Notifications Email** (toujours disponibles) :
+  - Nouveau devis (avec PDF)
+  - Nouvelle facture (avec PDF)
+  - Relance de paiement
+- Relances automatiques (toggle global)
+
+### Backend (`/api/settings/*`)
+- `GET /api/settings/notifications` - Préférences de notification
+- `PUT /api/settings/notifications` - Mise à jour préférences
+- `GET /api/settings/all` - Toutes les préférences combinées
+- `GET /api/settings/integrations` - Statut des intégrations
+
+### Frontend (Settings.jsx)
+- Composant `SMSConfiguration` avec choix mode partagé/personnalisé
+- Section test SMS pour vérifier la configuration
+- Toggles pour activer/désactiver chaque type de notification
+
+## 📄 Conditions Générales Documents - IMPLÉMENTÉ (2026-04-02)
+
+### Paramètres Documents
+- **Conditions générales de vente** : Texte affiché sur tous les devis et factures
+- **Conditions de paiement** : Texte par défaut et délai en jours
+- **Pieds de page** :
+  - Pied de page Devis
+  - Pied de page Factures
+  - Mentions légales additionnelles
+- **Numérotation** : Préfixes personnalisables (ex: D-2024-001, F-2024-001)
+
+### Backend (`/api/settings/documents`)
+- `GET /api/settings/documents` - Récupère les paramètres documents
+- `PUT /api/settings/documents` - Met à jour les paramètres
+- `GET /api/settings/documents/preview` - Aperçu du rendu
+
+### Frontend (Settings.jsx)
+- Composant `DocumentSettingsForm` avec :
+  - Textarea pour conditions générales
+  - Champs conditions de paiement et délai
+  - Textareas pour pieds de page devis/factures
+  - Champs préfixes de numérotation
+
