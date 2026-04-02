@@ -130,10 +130,13 @@ const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
   );
 };
 
-const TopBar = ({ onMenuClick }) => {
+const TopBar = ({ onMenuClick, onShowInstallGuide }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const navigate = useNavigate();
+  
+  // Check if demo account
+  const isDemoAccount = user?.email === 'demo@actoos.com';
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -144,7 +147,7 @@ const TopBar = ({ onMenuClick }) => {
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 lg:px-6 py-3">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         <button
           onClick={onMenuClick}
           className="lg:hidden p-2 -ml-2 hover:bg-slate-100 rounded-md"
@@ -159,21 +162,34 @@ const TopBar = ({ onMenuClick }) => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               type="search"
-              placeholder="Rechercher client, devis, facture..."
+              placeholder="Rechercher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10 bg-slate-50 border-slate-200"
+              className="pl-10 h-9 sm:h-10 bg-slate-50 border-slate-200 text-sm"
               data-testid="global-search"
             />
           </div>
         </form>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Install App Button - Mobile only */}
+          {!isDemoAccount && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onShowInstallGuide}
+              className="lg:hidden p-2"
+              data-testid="install-app-mobile-btn"
+            >
+              <Download className="w-5 h-5 text-slate-600" />
+            </Button>
+          )}
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="default" size="sm" className="bg-slate-900 hover:bg-slate-800" data-testid="quick-add-btn">
-                <Plus className="w-4 h-4 mr-1" />
+                <Plus className="w-4 h-4 sm:mr-1" />
                 <span className="hidden sm:inline">Nouveau</span>
               </Button>
             </DropdownMenuTrigger>
@@ -653,7 +669,10 @@ export const DashboardLayout = ({ children }) => {
       />
       
       <div className="lg:ml-64">
-        <TopBar onMenuClick={() => setSidebarOpen(true)} />
+        <TopBar 
+          onMenuClick={() => setSidebarOpen(true)} 
+          onShowInstallGuide={() => setShowInstallGuide(true)}
+        />
         <main className="p-4 lg:p-6">
           {children}
         </main>
