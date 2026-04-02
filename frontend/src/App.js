@@ -29,6 +29,7 @@ import { LoginPage, RegisterPage, ActivatePage, ForgotPasswordPage, ResetPasswor
 
 // Dashboard Pages
 import { DashboardLayout, DashboardOverview } from "./pages/Dashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import { ClientsList, ClientForm, ClientDetail } from "./pages/Clients";
 import { InterventionsList, InterventionForm, InterventionDetail } from "./pages/Interventions";
 import { DevisList, DevisForm, DevisDetail } from "./pages/Devis";
@@ -194,6 +195,13 @@ function App() {
             {/* Client Portal (Public) */}
             <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />
             <Route path="/portal/client/:token" element={<ClientPortalDashboard />} />
+
+            {/* Super Admin Dashboard (Platform Owner Only) */}
+            <Route path="/super-admin" element={
+              <ProtectedRoute>
+                <SuperAdminDashboard />
+              </ProtectedRoute>
+            } />
 
             {/* Technician App - Only for techs, redirects admins */}
             <Route path="/tech" element={
