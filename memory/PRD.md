@@ -221,3 +221,36 @@ Résolution automatique des conflits quand un technicien travaille hors ligne :
 | Devis | 60 mois | ❌ Légal minimum |
 | Factures | 120 mois | ❌ Légal minimum |
 
+
+
+## 👑 Super Admin Dashboard - IMPLÉMENTÉ (2026-04-02)
+
+### Accès
+- Réservé au propriétaire de la plateforme (emails contenant "salifkane612")
+- Lien dans la sidebar du dashboard principal (icône couronne dorée)
+- Route : `/super-admin`
+
+### Backend (`/api/super-admin/*`)
+- `GET /super-admin/stats` - Statistiques globales (entreprises, utilisateurs, MRR, résiliations)
+- `GET /super-admin/entreprises` - Liste toutes les entreprises avec filtres
+- `GET /super-admin/entreprises/{id}` - Détails d'une entreprise
+- `PUT /super-admin/entreprises/{id}/plan` - Modifier le plan (admin override)
+- `PUT /super-admin/entreprises/{id}/status` - Modifier le statut
+- `GET /super-admin/revenue` - Métriques de revenus (MRR, ARR, tendances)
+- `GET /super-admin/feedbacks` - Feedbacks des clients
+- `GET /super-admin/cancellations` - Résiliations récentes
+- `DELETE /super-admin/entreprises/{id}` - Supprimer une entreprise
+
+### Frontend (`SuperAdminDashboard.jsx`)
+- Cartes KPI : Entreprises, Utilisateurs, MRR/ARR, Résiliations
+- Statistiques d'activité : Interventions, Devis, Factures
+- Graphique de répartition par plan (Startup/Pro/Enterprise)
+- Tableau des entreprises avec recherche et filtres
+- Onglets : Entreprises, Feedbacks, Résiliations
+- Modales de détails et modification de plan
+
+### Métriques actuelles (2026-04-02)
+- 518 entreprises (508 Startup, 3 Pro, 5 Enterprise)
+- 518 utilisateurs (511 admins, 7 techniciens)
+- MRR : 1091€ / ARR : 13092€
+- 2 résiliations totales
