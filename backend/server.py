@@ -51,7 +51,8 @@ from routers import (
     gdpr as gdpr_router,
     offline_sync as offline_sync_router,
     super_admin as super_admin_router,
-    settings as settings_router
+    settings as settings_router,
+    integrations as integrations_router
 )
 
 # MongoDB connection
@@ -98,6 +99,7 @@ api_router.include_router(gdpr_router.router)
 api_router.include_router(offline_sync_router.router)
 api_router.include_router(super_admin_router.router)
 api_router.include_router(settings_router.router)
+api_router.include_router(integrations_router.router)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

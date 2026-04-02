@@ -834,6 +834,369 @@ const SMSConfiguration = ({ api, smsStatus, onStatusChange }) => {
   );
 };
 
+// WhatsApp & Integrations Hub Component
+const IntegrationsHub = ({ api }) => {
+  const [loading, setLoading] = useState(true);
+  const [integrations, setIntegrations] = useState(null);
+  const [savingWhatsApp, setSavingWhatsApp] = useState(false);
+  const [testingWhatsApp, setTestingWhatsApp] = useState(false);
+  const [whatsAppMode, setWhatsAppMode] = useState('shared');
+  const [showWhatsAppForm, setShowWhatsAppForm] = useState(false);
+  const [testPhone, setTestPhone] = useState('');
+  const [whatsAppConfig, setWhatsAppConfig] = useState({
+    whatsapp_access_token: '',
+    whatsapp_phone_number_id: '',
+    whatsapp_business_account_id: ''
+  });
+
+  useEffect(() => {
+    loadIntegrationsStatus();
+  }, []);
+
+  const loadIntegrationsStatus = async () => {
+    try {
+      const response = await api.get('/integrations/status');
+      setIntegrations(response.data);
+      setWhatsAppMode(response.data.whatsapp?.use_shared !== false ? 'shared' : 'custom');
+    } catch (error) {
+      console.error('Error loading integrations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWhatsAppModeChange = async (newMode) => {
+    setWhatsAppMode(newMode);
+    if (newMode === 'shared') {
+      setSavingWhatsApp(true);
+      try {
+        await api.put('/integrations/whatsapp/config', { use_shared: true });
+        toast.success('WhatsApp configuré en mode service Actoos');
+        loadIntegrationsStatus();
+      } catch (error) {
+        toast.error(error.response?.data?.detail || 'Erreur');
+      } finally {
+        setSavingWhatsApp(false);
+      }
+    } else {
+      setShowWhatsAppForm(true);
+    }
+  };
+
+  const handleWhatsAppCustomSave = async () => {
+    if (!whatsAppConfig.whatsapp_access_token || !whatsAppConfig.whatsapp_phone_number_id) {
+      toast.error('Access Token et Phone Number ID sont requis');
+      return;
+    }
+    
+    setSavingWhatsApp(true);
+    try {
+      await api.put('/integrations/whatsapp/config', {
+        use_shared: false,
+        ...whatsAppConfig
+      });
+      toast.success('Configuration WhatsApp personnalisée enregistrée');
+      setShowWhatsAppForm(false);
+      loadIntegrationsStatus();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erreur lors de la configuration');
+    } finally {
+      setSavingWhatsApp(false);
+    }
+  };
+
+  const handleTestWhatsApp = async () => {
+    if (!testPhone) {
+      toast.error('Veuillez entrer un numéro de téléphone');
+      return;
+    }
+    
+    setTestingWhatsApp(true);
+    try {
+      const response = await api.post(`/integrations/whatsapp/test?phone_number=${encodeURIComponent(testPhone)}`);
+      toast.success(`Message WhatsApp envoyé à ${testPhone}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Échec de l\'envoi');
+    } finally {
+      setTestingWhatsApp(false);
+    }
+  };
+
+  const handleMessagingPreference = async (channel) => {
+    try {
+      await api.put('/integrations/messaging-preference', { preferred_channel: channel });
+      toast.success(`Canal préféré: ${channel === 'whatsapp' ? 'WhatsApp' : channel === 'sms' ? 'SMS' : 'Email'}`);
+      loadIntegrationsStatus();
+    } catch (error) {
+      toast.error('Erreur lors de la mise à jour');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-slate-900">Intégrations & Messagerie</h3>
+        <p className="text-sm text-slate-500 mt-1">
+          Configurez WhatsApp Business, SMS et synchronisez vos services externes
+        </p>
+      </div>
+
+      {/* Messaging Preference */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base">Canal de notification préféré</CardTitle>
+          <CardDescription>
+            Choisissez le canal principal pour les notifications clients
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { value: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, color: 'green', recommended: true },
+              { value: 'sms', label: 'SMS', icon: MessageSquare, color: 'blue', recommended: false },
+              { value: 'email', label: 'Email', icon: Bell, color: 'purple', recommended: false }
+            ].map(({ value, label, icon: Icon, color, recommended }) => (
+              <button
+                key={value}
+                onClick={() => handleMessagingPreference(value)}
+                className={`p-4 rounded-lg border-2 transition-all text-left ${
+                  integrations?.messaging_preference === value
+                    ? `border-${color}-500 bg-${color}-50`
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+                data-testid={`messaging-pref-${value}`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon className={`w-5 h-5 ${integrations?.messaging_preference === value ? `text-${color}-600` : 'text-slate-400'}`} />
+                  <span className="font-medium">{label}</span>
+                </div>
+                {recommended && (
+                  <Badge className="bg-green-100 text-green-700 text-xs">Recommandé</Badge>
+                )}
+                {integrations?.messaging_preference === value && (
+                  <CheckCircle className="w-4 h-4 text-green-500 mt-2" />
+                )}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* WhatsApp Business */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <CardTitle className="text-base">WhatsApp Business</CardTitle>
+                <CardDescription>
+                  Envoyez des notifications via WhatsApp (98% taux d'ouverture)
+                </CardDescription>
+              </div>
+            </div>
+            {integrations?.whatsapp?.configured ? (
+              <Badge className="bg-green-100 text-green-700">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                {integrations.whatsapp.mode === 'shared' ? 'Service Actoos' : 'Configuré'}
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                Non configuré
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Mode Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div
+              onClick={() => handleWhatsAppModeChange('shared')}
+              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                whatsAppMode === 'shared' ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+              }`}
+              data-testid="whatsapp-mode-shared"
+            >
+              <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  whatsAppMode === 'shared' ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-500'
+                }`}>
+                  <Globe className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-slate-900">Service Actoos (recommandé)</h4>
+                  <p className="text-sm text-slate-500 mt-1">
+                    WhatsApp partagé d'Actoos. Aucune configuration requise.
+                  </p>
+                  {integrations?.whatsapp?.shared_available ? (
+                    <Badge className="mt-2 bg-green-100 text-green-700">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Disponible
+                    </Badge>
+                  ) : (
+                    <Badge className="mt-2 bg-amber-100 text-amber-700">
+                      <Clock className="w-3 h-3 mr-1" />
+                      Bientôt disponible
+                    </Badge>
+                  )}
+                </div>
+                {whatsAppMode === 'shared' && <CheckCircle className="w-5 h-5 text-green-500" />}
+              </div>
+            </div>
+
+            <div
+              onClick={() => handleWhatsAppModeChange('custom')}
+              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                whatsAppMode === 'custom' ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+              }`}
+              data-testid="whatsapp-mode-custom"
+            >
+              <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  whatsAppMode === 'custom' ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-500'
+                }`}>
+                  <Key className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-slate-900">Mon propre WhatsApp Business</h4>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Utilisez votre propre compte Meta Business / WhatsApp.
+                  </p>
+                  {integrations?.whatsapp?.has_custom_config && (
+                    <Badge className="mt-2 bg-green-100 text-green-700">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Configuré
+                    </Badge>
+                  )}
+                </div>
+                {whatsAppMode === 'custom' && <CheckCircle className="w-5 h-5 text-green-500" />}
+              </div>
+            </div>
+          </div>
+
+          {/* Custom WhatsApp Form */}
+          {showWhatsAppForm && whatsAppMode === 'custom' && (
+            <Card className="border-slate-200 mt-4">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Key className="w-4 h-4" />
+                  Configuration WhatsApp Business
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert className="bg-blue-50 border-blue-200">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800 text-sm">
+                    <strong>Prérequis:</strong>
+                    <ol className="list-decimal ml-4 mt-2 space-y-1">
+                      <li>Créez un compte Meta Business sur <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="underline">business.facebook.com</a></li>
+                      <li>Accédez à la section WhatsApp dans Meta for Developers</li>
+                      <li>Créez une application et obtenez vos credentials</li>
+                      <li>Créez et faites approuver vos templates de messages</li>
+                    </ol>
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label>Access Token (permanent)</Label>
+                    <Input
+                      type="password"
+                      value={whatsAppConfig.whatsapp_access_token}
+                      onChange={(e) => setWhatsAppConfig(prev => ({ ...prev, whatsapp_access_token: e.target.value }))}
+                      placeholder="EAAxxxxxxxx..."
+                      data-testid="whatsapp-token-input"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phone Number ID</Label>
+                    <Input
+                      value={whatsAppConfig.whatsapp_phone_number_id}
+                      onChange={(e) => setWhatsAppConfig(prev => ({ ...prev, whatsapp_phone_number_id: e.target.value }))}
+                      placeholder="123456789012345"
+                      data-testid="whatsapp-phone-id-input"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Business Account ID (optionnel)</Label>
+                    <Input
+                      value={whatsAppConfig.whatsapp_business_account_id}
+                      onChange={(e) => setWhatsAppConfig(prev => ({ ...prev, whatsapp_business_account_id: e.target.value }))}
+                      placeholder="123456789012345"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <Button onClick={handleWhatsAppCustomSave} disabled={savingWhatsApp} data-testid="save-whatsapp-config">
+                    {savingWhatsApp ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+                    Enregistrer
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowWhatsAppForm(false)}>
+                    Annuler
+                  </Button>
+                  <Button variant="ghost" size="sm" asChild>
+                    <a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started" target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Documentation
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Test WhatsApp */}
+          {integrations?.whatsapp?.configured && (
+            <div className="pt-4 border-t border-slate-200">
+              <Label className="text-sm font-medium mb-2 block">Tester la configuration</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  value={testPhone}
+                  onChange={(e) => setTestPhone(e.target.value)}
+                  placeholder="+32470123456"
+                  className="max-w-xs"
+                  data-testid="whatsapp-test-phone"
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleTestWhatsApp}
+                  disabled={testingWhatsApp || !testPhone}
+                  data-testid="send-whatsapp-test"
+                >
+                  {testingWhatsApp ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MessageSquare className="w-4 h-4 mr-2" />}
+                  Tester WhatsApp
+                </Button>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                Note: Les messages de test fonctionnent uniquement si le destinataire a envoyé un message dans les dernières 24h.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Info about templates */}
+      <Alert className="bg-blue-50 border-blue-200">
+        <Info className="h-4 w-4 text-blue-600" />
+        <AlertDescription className="text-blue-800">
+          <strong>Templates WhatsApp:</strong> Les messages envoyés via WhatsApp Business utilisent des templates pré-approuvés par Meta pour les rappels d'intervention, notifications de devis/factures, et relances de paiement. Ces templates sont automatiquement configurés avec le service Actoos.
+        </AlertDescription>
+      </Alert>
+    </div>
+  );
+};
+
 export const SettingsPage = () => {
   const { api, entreprise, user, refreshUser, canUseAdvancedBranding, currentPlan } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -1690,7 +2053,10 @@ export const SettingsPage = () => {
 
         {/* Integrations Tab */}
         <TabsContent value="integrations">
-          <CalendarIntegration api={api} />
+          <div className="space-y-8">
+            <IntegrationsHub api={api} />
+            <CalendarIntegration api={api} />
+          </div>
         </TabsContent>
 
         {/* GDPR Tab */}
