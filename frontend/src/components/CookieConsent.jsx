@@ -22,6 +22,25 @@ const CookieConsent = () => {
   });
 
   useEffect(() => {
+    // Don't show banner in standalone mode (PWA installed)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                         window.navigator.standalone === true;
+    
+    if (isStandalone) {
+      // PWA mode - auto accept essential cookies only, don't show banner
+      const savedConsent = localStorage.getItem(CONSENT_KEY);
+      if (!savedConsent) {
+        const consent = {
+          version: CONSENT_VERSION,
+          preferences: { essential: true, analytics: false, marketing: false, preferences: false },
+          timestamp: new Date().toISOString(),
+          pwa_auto_accepted: true
+        };
+        localStorage.setItem(CONSENT_KEY, JSON.stringify(consent));
+      }
+      return; // Don't show banner
+    }
+    
     // Check if user has already given consent
     const savedConsent = localStorage.getItem(CONSENT_KEY);
     if (savedConsent) {

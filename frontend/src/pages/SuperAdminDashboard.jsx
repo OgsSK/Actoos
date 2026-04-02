@@ -119,11 +119,14 @@ const SuperAdminDashboard = () => {
       
     } catch (error) {
       console.error('Error loading super admin data:', error);
+      console.error('Error details:', error.response?.data);
       if (error.response?.status === 403) {
-        toast.error('Accès non autorisé');
+        toast.error('Accès non autorisé - Vous devez être super admin');
         navigate('/dashboard');
+      } else if (error.response?.status === 401) {
+        toast.error('Session expirée - Reconnectez-vous');
       } else {
-        toast.error('Erreur lors du chargement des données');
+        toast.error(`Erreur: ${error.response?.data?.detail || error.message || 'Chargement impossible'}`);
       }
     } finally {
       setLoading(false);
