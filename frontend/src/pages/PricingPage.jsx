@@ -171,6 +171,7 @@ const PricingPage = () => {
         { name: 'Administrateurs', startup: '1', pro: '3', enterprise: 'Illimité' },
         { name: 'Techniciens inclus', startup: '3', pro: '10', enterprise: 'Illimité' },
         { name: 'Technicien supplémentaire', startup: '+5€/mois', pro: '+5€/mois', enterprise: 'Inclus' },
+        { name: 'Interventions / mois', startup: 'Illimité', pro: 'Illimité', enterprise: 'Illimité' },
       ]
     },
     {
@@ -394,7 +395,7 @@ const PricingPage = () => {
                   Basé sur vos réponses, ce plan correspond le mieux à vos besoins.
                 </p>
                 <div className="flex gap-3 justify-center">
-                  <Button onClick={() => navigate(`/signup?plan=${recommendedPlan}`)} className="bg-blue-600 hover:bg-blue-700">
+                  <Button onClick={() => navigate(`/signup?plan=${recommendedPlan}&billing=${billingCycle}`)} className="bg-blue-600 hover:bg-blue-700">
                     Choisir ce plan
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -492,7 +493,7 @@ const PricingPage = () => {
                         if (plan.isContact) {
                           window.location.href = 'mailto:contact@actoos.com?subject=Demande%20Entreprise%20-%20Actoos&body=Bonjour,%0A%0AJe%20suis%20intéressé(e)%20par%20le%20plan%20Entreprise.%0A%0ANom%20de%20l%27entreprise:%0ANombre%20de%20techniciens:%0ATéléphone:%0A%0AMerci';
                         } else {
-                          navigate(`/signup?plan=${plan.id}`);
+                          navigate(`/signup?plan=${plan.id}&billing=${billingCycle}`);
                         }
                       }}
                     >

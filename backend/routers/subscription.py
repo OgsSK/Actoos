@@ -140,7 +140,8 @@ async def create_checkout_session(
     plan_id: str,
     origin_url: str,
     entreprise_name: Optional[str] = None,
-    admin_email: Optional[str] = None
+    admin_email: Optional[str] = None,
+    billing_cycle: Optional[str] = "monthly"  # "monthly" or "yearly"
 ):
     """Create a Stripe checkout session for subscription with 14-day free trial"""
     import stripe
@@ -149,6 +150,19 @@ async def create_checkout_session(
     plan = get_plan(plan_id)
     if not plan:
         raise HTTPException(status_code=400, detail="Plan invalide")
+    
+    # Calculate price based on billing cycle
+    is_yearly = billing_cycle == "yearly"
+    monthly_price = plan["price"]
+    
+    if is_yearly:
+        # 20% discount for yearly billing
+        yearly_price = monthly_price * 12 * 0.8  # 20% off
+        final_price = yearly_price
+        interval = "year"
+    else:
+        final_price = monthly_price
+        interval = "month"
     
     # Get Stripe API key
     stripe_api_key = os.environ.get('STRIPE_API_KEY')
@@ -175,9 +189,9 @@ async def create_checkout_session(
             
             price = stripe.Price.create(
                 product=product.id,
-                unit_amount=int(plan["price"] * 100),  # Stripe uses cents
+                unit_amount=int(final_price * 100),  # Stripe uses cents
                 currency=plan["currency"],
-                recurring={"interval": "month"}
+                recurring={"interval": interval}
             )
             price_id = price.id
         
@@ -194,6 +208,7 @@ async def create_checkout_session(
                 "metadata": {
                     "plan_id": plan_id,
                     "plan_name": plan["name"],
+                    "billing_cycle": billing_cycle,
                     "entreprise_name": entreprise_name or "",
                     "admin_email": admin_email or ""
                 }
@@ -203,6 +218,7 @@ async def create_checkout_session(
             metadata={
                 "plan_id": plan_id,
                 "plan_name": plan["name"],
+                "billing_cycle": billing_cycle,
                 "entreprise_name": entreprise_name or "",
                 "admin_email": admin_email or "",
                 "type": "subscription"
@@ -217,7 +233,9 @@ async def create_checkout_session(
             "session_id": session.id,
             "plan_id": plan_id,
             "plan_name": plan["name"],
-            "amount": plan["price"],
+            "billing_cycle": billing_cycle,
+            "amount": final_price,
+            "monthly_equivalent": monthly_price,
             "currency": plan["currency"],
             "status": "pending",
             "payment_status": "trial",

@@ -131,6 +131,7 @@ const SignupPage = () => {
   
   // Données du formulaire
   const [selectedPlan, setSelectedPlan] = useState(searchParams.get('plan') || null);
+  const [billingCycle, setBillingCycle] = useState(searchParams.get('billing') || 'monthly');
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [formData, setFormData] = useState({
     entrepriseName: '',
@@ -279,7 +280,8 @@ const SignupPage = () => {
           plan_id: selectedPlan,
           origin_url: originUrl,
           entreprise_name: formData.entrepriseName,
-          admin_email: formData.adminEmail
+          admin_email: formData.adminEmail,
+          billing_cycle: billingCycle
         }
       });
 
@@ -289,6 +291,7 @@ const SignupPage = () => {
         password: formData.adminPassword,
         phone: formData.phone,
         referral_source: formData.referralSource,
+        billing_cycle: billingCycle,
         session_id: response.data.session_id
       }));
 
