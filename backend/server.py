@@ -50,7 +50,8 @@ from routers import (
     admin_analytics as admin_analytics_router,
     gdpr as gdpr_router,
     offline_sync as offline_sync_router,
-    super_admin as super_admin_router
+    super_admin as super_admin_router,
+    settings as settings_router
 )
 
 # MongoDB connection
