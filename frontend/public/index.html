@@ -16,17 +16,48 @@
         <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg" />
         <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/icon-48x48.png" />
         
-        <!-- Apple Touch Icons -->
-        <link rel="apple-touch-icon" href="%PUBLIC_URL%/icon-180x180.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/icon-180x180.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="%PUBLIC_URL%/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="120x120" href="%PUBLIC_URL%/icon-120x120.png" />
+        <!-- Apple Touch Icons - Default (will be changed by script) -->
+        <link rel="apple-touch-icon" href="%PUBLIC_URL%/icons-admin/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/icons-admin/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="%PUBLIC_URL%/icons-admin/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="120x120" href="%PUBLIC_URL%/icons-admin/icon-128x128.png" />
         
         <!-- iOS Splash Screens -->
         <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icon-512x512.png" />
         
-        <!-- Manifest -->
-        <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+        <!-- Manifest - Dynamically loaded based on route -->
+        <link rel="manifest" id="manifest-link" href="%PUBLIC_URL%/manifest.json" />
+        
+        <!-- Script to switch manifest based on route -->
+        <script>
+            (function() {
+                var path = window.location.pathname;
+                var manifestLink = document.getElementById('manifest-link');
+                var themeColor = document.querySelector('meta[name="theme-color"]');
+                var appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+                var appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+                
+                // Determine which app we're in
+                var isTechApp = path.startsWith('/tech') || path === '/pwa-landing';
+                var isDashboard = path.startsWith('/dashboard') || path.startsWith('/login') || path === '/';
+                
+                if (isTechApp) {
+                    // Technician App - Orange theme
+                    manifestLink.href = '/manifest-tech.json';
+                    if (themeColor) themeColor.content = '#F97316';
+                    if (appleTitle) appleTitle.content = 'Actoos Tech';
+                    if (appleTouchIcon) appleTouchIcon.href = '/icons-tech/icon-192x192.png';
+                    document.title = 'Actoos Tech - App Technicien';
+                } else if (isDashboard) {
+                    // Admin Dashboard - Blue theme
+                    manifestLink.href = '/manifest-admin.json';
+                    if (themeColor) themeColor.content = '#2563EB';
+                    if (appleTitle) appleTitle.content = 'Actoos Admin';
+                    if (appleTouchIcon) appleTouchIcon.href = '/icons-admin/icon-192x192.png';
+                    document.title = 'Actoos - Dashboard';
+                }
+            })();
+        </script>
         
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />

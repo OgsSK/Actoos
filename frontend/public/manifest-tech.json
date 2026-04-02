@@ -1,70 +1,70 @@
 {
-  "short_name": "Actoos",
-  "name": "Actoos - Gestion d'Interventions Terrain",
-  "description": "Application terrain pour techniciens - Gestion des interventions, devis et factures",
+  "short_name": "Actoos Tech",
+  "name": "Actoos - App Technicien",
+  "description": "Application terrain pour techniciens - Gestion des interventions, signatures et photos",
   "icons": [
     {
-      "src": "icon-48x48.png",
+      "src": "/icons-tech/icon-48x48.png",
       "sizes": "48x48",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-72x72.png",
+      "src": "/icons-tech/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-96x96.png",
+      "src": "/icons-tech/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-128x128.png",
+      "src": "/icons-tech/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-144x144.png",
+      "src": "/icons-tech/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-152x152.png",
+      "src": "/icons-tech/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-192x192.png",
+      "src": "/icons-tech/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-256x256.png",
+      "src": "/icons-tech/icon-256x256.png",
       "sizes": "256x256",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-384x384.png",
+      "src": "/icons-tech/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512x512.png",
+      "src": "/icons-tech/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512x512.png",
+      "src": "/icons-tech/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -74,8 +74,8 @@
   "id": "/tech",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "theme_color": "#2563EB",
-  "background_color": "#F8FAFC",
+  "theme_color": "#F97316",
+  "background_color": "#FFF7ED",
   "orientation": "portrait",
   "scope": "/",
   "categories": ["business", "productivity"],
@@ -88,7 +88,14 @@
       "short_name": "Interventions",
       "description": "Voir mes interventions du jour",
       "url": "/tech",
-      "icons": [{"src": "icon-192x192.png", "sizes": "192x192"}]
+      "icons": [{"src": "/icons-tech/icon-192x192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Planning",
+      "short_name": "Planning",
+      "description": "Voir mon planning",
+      "url": "/tech/planning",
+      "icons": [{"src": "/icons-tech/icon-192x192.png", "sizes": "192x192"}]
     }
   ]
 }
