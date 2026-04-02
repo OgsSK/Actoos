@@ -15,12 +15,12 @@ import { formatDate, getStatusLabel, formatRelative } from '../lib/utils';
 import {
   LayoutDashboard, Users, Calendar, FileText, Receipt, Settings, LogOut, Menu, X,
   Search, Bell, Plus, TrendingUp, AlertTriangle, Clock, CheckCircle, ChevronRight,
-  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code
+  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code, Download
 } from 'lucide-react';
 import PlanUsageWidget from '../components/PlanUsageWidget';
 import AdminInstallPrompt from '../components/AdminInstallPrompt';
 
-const Sidebar = ({ open, onClose }) => {
+const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
   const { user, entreprise, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
 
@@ -97,6 +97,16 @@ const Sidebar = ({ open, onClose }) => {
 
           {/* User */}
           <div className="p-4 border-t border-slate-800">
+            {/* Install App Button */}
+            <button
+              onClick={onShowInstallGuide}
+              className="w-full flex items-center gap-3 px-3 py-2 mb-3 text-sm text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+              data-testid="install-app-sidebar-btn"
+            >
+              <Download className="w-4 h-4" />
+              <span>Installer l'application</span>
+            </button>
+            
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center">
                 <UserCircle className="w-5 h-5 text-slate-400" />
@@ -495,9 +505,117 @@ export const DashboardOverview = () => {
   );
 };
 
+// Install Guide Modal Component
+const InstallGuideModal = ({ isOpen, onClose }) => {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isDesktop = !isIOS && !isAndroid;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-100 flex items-center justify-center">
+              <Download className="w-8 h-8 text-blue-600" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Installer Actoos</h2>
+            <p className="text-slate-500 text-sm">
+              {isIOS ? "Sur votre iPhone/iPad" : isAndroid ? "Sur votre Android" : "Sur votre ordinateur"}
+            </p>
+          </div>
+
+          <div className="space-y-3 mb-6">
+            {isIOS ? (
+              <>
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+                  <div>
+                    <p className="font-medium text-slate-900">Ouvrez Safari</p>
+                    <p className="text-sm text-slate-500">L'installation ne fonctionne que depuis Safari</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+                  <div>
+                    <p className="font-medium text-slate-900">Appuyez sur Partager</p>
+                    <p className="text-sm text-slate-500">L'icône ⬆️ en bas de l'écran</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+                  <div>
+                    <p className="font-medium text-slate-900">"Sur l'écran d'accueil"</p>
+                    <p className="text-sm text-slate-500">Faites défiler et sélectionnez cette option</p>
+                  </div>
+                </div>
+              </>
+            ) : isAndroid ? (
+              <>
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+                  <div>
+                    <p className="font-medium text-slate-900">Ouvrez Chrome</p>
+                    <p className="text-sm text-slate-500">L'installation fonctionne mieux avec Chrome</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+                  <div>
+                    <p className="font-medium text-slate-900">Menu ⋮ en haut à droite</p>
+                    <p className="text-sm text-slate-500">Appuyez sur les 3 points verticaux</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+                  <div>
+                    <p className="font-medium text-slate-900">"Installer l'application"</p>
+                    <p className="text-sm text-slate-500">Confirmez l'installation</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+                  <div>
+                    <p className="font-medium text-slate-900">Cherchez l'icône ⊕</p>
+                    <p className="text-sm text-slate-500">Dans la barre d'adresse de Chrome/Edge</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+                  <div>
+                    <p className="font-medium text-slate-900">Cliquez sur "Installer"</p>
+                    <p className="text-sm text-slate-500">Une fenêtre de confirmation apparaîtra</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+                  <div>
+                    <p className="font-medium text-slate-900">Confirmez l'installation</p>
+                    <p className="text-sm text-slate-500">L'app apparaît sur votre bureau</p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <Button onClick={onClose} className="w-full">
+            J'ai compris
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Dashboard Layout Component
 export const DashboardLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   
@@ -528,7 +646,11 @@ export const DashboardLayout = ({ children }) => {
         </div>
       )}
       
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar 
+        open={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        onShowInstallGuide={() => setShowInstallGuide(true)}
+      />
       
       <div className="lg:ml-64">
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
@@ -539,6 +661,12 @@ export const DashboardLayout = ({ children }) => {
       
       {/* PWA Install Prompt for Admin */}
       <AdminInstallPrompt />
+      
+      {/* Install Guide Modal */}
+      <InstallGuideModal 
+        isOpen={showInstallGuide} 
+        onClose={() => setShowInstallGuide(false)} 
+      />
     </div>
   );
 };

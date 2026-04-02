@@ -102,7 +102,7 @@ SUBSCRIPTION_PLANS = {
         "sms_included": 100
     },
     "enterprise": {
-        "name": "Enterprise",
+        "name": "Entreprise",
         "price": 149.00,
         "price_per_extra_tech": 0,  # Unlimited included
         "currency": "eur",

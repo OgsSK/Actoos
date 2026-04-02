@@ -33,7 +33,7 @@ const PLAN_FEATURES = {
     icon: Rocket
   },
   enterprise: {
-    name: 'Enterprise',
+    name: 'Entreprise',
     price: 129,
     color: 'from-purple-500 to-purple-600',
     icon: Crown
@@ -340,7 +340,7 @@ const PlanUsageWidget = ({ compact = false }) => {
 
   const handleUpgrade = async (planId) => {
     if (planId === 'enterprise') {
-      toast.info('Contactez-nous à contact@actoos.com pour le plan Enterprise');
+      toast.info('Contactez-nous à contact@actoos.com pour le plan Entreprise');
       return;
     }
 

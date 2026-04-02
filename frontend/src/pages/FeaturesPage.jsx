@@ -184,7 +184,7 @@ const FeaturesPage = () => {
               <div className="text-slate-600">Fonctionnalité</div>
               <div className="text-center text-slate-900">Startup</div>
               <div className="text-center text-blue-600">Pro</div>
-              <div className="text-center text-purple-600">Enterprise</div>
+              <div className="text-center text-purple-600">Entreprise</div>
             </div>
             
             {comparisonFeatures.map((feature, idx) => (

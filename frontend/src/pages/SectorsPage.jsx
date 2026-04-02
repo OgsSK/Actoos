@@ -298,7 +298,7 @@ const SectorsPage = () => {
           <p className="text-lg text-slate-600 mb-8">
             Votre entreprise fait de la plomberie ET de l'électricité ? 
             Pas de problème ! Avec le plan Pro, combinez jusqu'à 4 catégories. 
-            En Enterprise, toutes les catégories sont disponibles.
+            En Entreprise, toutes les catégories sont disponibles.
           </p>
           
           <div className="grid sm:grid-cols-3 gap-6 mb-8">
@@ -320,7 +320,7 @@ const SectorsPage = () => {
               <CardContent className="p-6 text-center">
                 <p className="text-4xl font-bold text-purple-600 mb-2">∞</p>
                 <p className="text-sm text-slate-600">catégories</p>
-                <p className="font-medium text-purple-700 mt-2">Plan Enterprise</p>
+                <p className="font-medium text-purple-700 mt-2">Plan Entreprise</p>
               </CardContent>
             </Card>
           </div>

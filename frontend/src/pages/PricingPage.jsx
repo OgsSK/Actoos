@@ -144,7 +144,7 @@ const PricingPage = () => {
     },
     {
       id: 'enterprise',
-      name: 'Enterprise',
+      name: 'Entreprise',
       description: 'Pour entreprises structurées',
       price: 149,
       priceYearly: 119,
@@ -490,7 +490,7 @@ const PricingPage = () => {
                       variant={plan.popular || isRecommended ? 'default' : 'outline'}
                       onClick={() => {
                         if (plan.isContact) {
-                          window.location.href = 'mailto:contact@actoos.com?subject=Demande%20Enterprise%20-%20Actoos&body=Bonjour,%0A%0AJe%20suis%20intéressé(e)%20par%20le%20plan%20Enterprise.%0A%0ANom%20de%20l%27entreprise:%0ANombre%20de%20techniciens:%0ATéléphone:%0A%0AMerci';
+                          window.location.href = 'mailto:contact@actoos.com?subject=Demande%20Entreprise%20-%20Actoos&body=Bonjour,%0A%0AJe%20suis%20intéressé(e)%20par%20le%20plan%20Entreprise.%0A%0ANom%20de%20l%27entreprise:%0ANombre%20de%20techniciens:%0ATéléphone:%0A%0AMerci';
                         } else {
                           navigate(`/signup?plan=${plan.id}`);
                         }

@@ -867,7 +867,7 @@ export const ClientDetail = () => {
               Sites / Adresses d'intervention
               {!canUseMultiSites && (
                 <Badge variant="outline" className="text-xs ml-2 bg-purple-50 text-purple-700 border-purple-200">
-                  Enterprise
+                  Entreprise
                 </Badge>
               )}
             </CardTitle>
@@ -884,7 +884,7 @@ export const ClientDetail = () => {
                 className="text-purple-600 border-purple-200 hover:bg-purple-50"
               >
                 <Crown className="w-4 h-4 mr-1" />
-                Passer à Enterprise
+                Passer à Entreprise
               </Button>
             )}
           </div>
@@ -894,7 +894,7 @@ export const ClientDetail = () => {
             <div className="text-center py-6 text-slate-500">
               <MapPinned className="w-10 h-10 mx-auto mb-3 text-slate-300" />
               <p className="font-medium text-slate-700">Fonctionnalité Multi-sites</p>
-              <p className="text-sm mt-1">Gérez plusieurs adresses par client avec le plan Enterprise</p>
+              <p className="text-sm mt-1">Gérez plusieurs adresses par client avec le plan Entreprise</p>
             </div>
           ) : sites.length > 0 ? (
             <div className="space-y-3">
