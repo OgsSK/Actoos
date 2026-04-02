@@ -5,19 +5,15 @@
       <stop offset="100%" style="stop-color:#EA580C"/>
     </linearGradient>
   </defs>
-  <!-- Background fills entire icon -->
+  <!-- Orange background for Tech -->
   <rect width="512" height="512" rx="108" fill="url(#bgGradient)"/>
-  <!-- Simple "A" letter for Actoos Tech with wrench accent -->
-  <text x="256" y="340" 
-        font-family="SF Pro Display, -apple-system, Helvetica Neue, Arial, sans-serif" 
-        font-size="280" 
-        font-weight="700" 
-        fill="white" 
-        text-anchor="middle"
-        letter-spacing="-10">A</text>
-  <!-- Small wrench icon accent -->
-  <g transform="translate(340, 340) scale(0.45)">
-    <path d="M140 20 C100 20 68 52 68 92 C68 108 73 123 82 135 L22 195 C12 205 12 221 22 231 C32 241 48 241 58 231 L118 171 C130 180 145 185 161 185 C201 185 233 153 233 113 C233 103 231 94 228 86 L178 136 L135 93 L185 43 C177 40 168 38 158 38 C118 38 86 70 86 110" 
-          fill="white" opacity="0.95"/>
+  <!-- Actoos Logo centered and scaled -->
+  <g transform="translate(156, 106) scale(2)">
+    <!-- Left shape (white for visibility on orange) -->
+    <polygon points="10,110 40,10 60,10 40,110" fill="white" opacity="0.95"/>
+    <!-- Right shape (slightly transparent white) -->
+    <polygon points="30,110 60,10 90,110" fill="white" opacity="0.75"/>
+    <!-- Inner triangle (orange to match background) -->
+    <polygon points="42,90 50,60 58,90" fill="#EA580C"/>
   </g>
 </svg>
