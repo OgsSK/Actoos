@@ -333,3 +333,38 @@ Résolution automatique des conflits quand un technicien travaille hors ligne :
   - Textareas pour pieds de page devis/factures
   - Champs préfixes de numérotation
 
+## 📱 WhatsApp Business Cloud API - IMPLÉMENTÉ (2026-04-02)
+
+### Fonctionnalités
+- **Mode Service Actoos** : WhatsApp partagé, aucune config requise pour l'utilisateur
+- **Mode Personnalisé** : L'utilisateur peut configurer ses propres credentials Meta Business
+- **Templates de messages** prêts à l'emploi :
+  - Rappel d'intervention (J-1)
+  - Notification nouveau devis (avec PDF en pièce jointe)
+  - Notification nouvelle facture (avec PDF)
+  - Relance de paiement
+- **Avantages vs SMS** : 98% taux d'ouverture, ~0.004€/message (vs ~0.05€ SMS), médias riches
+
+### Backend
+- `/app/backend/whatsapp_service.py` - Service WhatsApp complet
+- `/app/backend/routers/integrations.py` - Router intégrations (WhatsApp, Google Calendar)
+- Endpoints :
+  - `GET /api/integrations/status` - Statut de toutes les intégrations
+  - `GET /api/integrations/whatsapp/status` - Statut WhatsApp
+  - `PUT /api/integrations/whatsapp/config` - Configuration
+  - `POST /api/integrations/whatsapp/test` - Test d'envoi
+  - `PUT /api/integrations/messaging-preference` - Canal préféré (WhatsApp/SMS/Email)
+
+### Frontend (Settings.jsx)
+- Composant `IntegrationsHub` avec :
+  - Sélection du canal préféré (WhatsApp recommandé)
+  - Configuration WhatsApp (partagé ou personnalisé)
+  - Formulaire de credentials Meta Business
+  - Test d'envoi WhatsApp
+  - Intégration Google Calendar
+
+### Note sur Twilio SMS
+- SMS reste disponible en option de secours
+- WhatsApp est maintenant le canal recommandé par défaut
+- Les utilisateurs peuvent choisir leur canal préféré
+
