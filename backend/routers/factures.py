@@ -157,12 +157,14 @@ async def get_facture(facture_id: str, current_user: dict = Depends(get_current_
 
 @router.post("/{facture_id}/emit")
 async def emit_facture(facture_id: str, current_user: dict = Depends(get_current_user)):
-    """Emit a facture and send email to client"""
+    """Emit a facture and send notification to client"""
     return await emit_facture_internal(facture_id, current_user)
 
 
 async def emit_facture_internal(facture_id: str, current_user: dict):
     """Internal function to emit a facture (can be called from other modules)"""
+    from notification_service import NotificationService
+    
     # Get facture before update
     facture = await db.factures.find_one(
         {"id": facture_id, "entreprise_id": current_user["entreprise_id"], "statut": "brouillon"},
@@ -174,10 +176,10 @@ async def emit_facture_internal(facture_id: str, current_user: dict):
     # Update status
     await db.factures.update_one(
         {"id": facture_id},
-        {"$set": {"statut": "emise"}}
+        {"$set": {"statut": "emise", "date_emission": datetime.now(timezone.utc).isoformat()}}
     )
     
-    # Get client and entreprise for email
+    # Get client and entreprise
     client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
     entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
     
@@ -208,32 +210,58 @@ async def emit_facture_internal(facture_id: str, current_user: dict):
         intervention_signature=intervention_signature
     )
     
-    # Send email with PDF
-    email_result = {"status": "skipped", "message": "Email non envoyé"}
-    if client and client.get("email"):
-        email_result = await send_facture_email(facture, client, entreprise or {}, pdf_bytes)
-        
-        # Log communication
-        if email_result.get("_log_data"):
-            log_data = email_result.pop("_log_data")
-            await communication_log.log_email(
-                entreprise_id=current_user["entreprise_id"],
-                client_id=client["id"],
-                recipient_email=log_data["recipient"],
-                subject=log_data["subject"],
-                content_preview=log_data["content_preview"],
-                status="sent" if email_result.get("status") == "success" else "failed",
-                error_message=email_result.get("message") if email_result.get("status") != "success" else None,
-                related_entity=log_data["related_entity"],
-                related_entity_id=log_data["related_entity_id"],
-                sent_by=current_user["user_id"]
-            )
+    # Build PDF URL for WhatsApp
+    pdf_url = f"/api/factures/{facture_id}/pdf"
     
-    await log_action(current_user["entreprise_id"], current_user["user_id"], "emit", "facture", facture_id, {"email_sent": email_result.get("status") == "success"})
+    # Send notification via preferred channel (WhatsApp > SMS > Email)
+    notification_result = {"status": "skipped", "channels": []}
+    if client:
+        notification_result = await NotificationService.send_notification(
+            entreprise_id=current_user["entreprise_id"],
+            notification_type="facture",
+            client=client,
+            data=facture,
+            entreprise=entreprise,
+            pdf_url=pdf_url
+        )
+        
+        # Log communication for each successful channel
+        if notification_result.get("status") == "success":
+            for channel_info in notification_result.get("details", {}).get("channels", []):
+                channel = channel_info.get("channel")
+                if channel == "email":
+                    await communication_log.log_email(
+                        entreprise_id=current_user["entreprise_id"],
+                        client_id=client["id"],
+                        recipient_email=client.get("email", ""),
+                        subject=f"Facture {facture.get('numero', facture_id[:8])}",
+                        content_preview="Nouvelle facture émise",
+                        status="sent",
+                        related_entity="facture",
+                        related_entity_id=facture_id,
+                        sent_by=current_user["user_id"]
+                    )
+                elif channel in ["whatsapp", "sms"]:
+                    await communication_log.log_sms(
+                        entreprise_id=current_user["entreprise_id"],
+                        client_id=client["id"],
+                        recipient_phone=client.get("telephone", ""),
+                        message=f"Notification facture {facture.get('numero', '')} via {channel.upper()}",
+                        status="sent",
+                        message_id=channel_info.get("result", {}).get("message_id"),
+                        related_entity="facture",
+                        related_entity_id=facture_id,
+                        sent_by=current_user["user_id"]
+                    )
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "emit", "facture", facture_id, {
+        "notification_status": notification_result.get("status"),
+        "channels": [c.get("channel") for c in notification_result.get("details", {}).get("channels", [])]
+    })
     
     return {
         "message": "Facture émise",
-        "email": email_result
+        "notification": notification_result
     }
 
 

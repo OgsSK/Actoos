@@ -157,7 +157,9 @@ async def delete_devis(devis_id: str, current_user: dict = Depends(require_admin
 
 @router.post("/{devis_id}/send")
 async def send_devis(devis_id: str, request: Request, current_user: dict = Depends(get_current_user)):
-    """Mark devis as sent and send email to client"""
+    """Mark devis as sent and send notification to client (WhatsApp/SMS/Email based on preferences)"""
+    from notification_service import NotificationService
+    
     # Get devis before update
     devis = await db.devis.find_one(
         {"id": devis_id, "entreprise_id": current_user["entreprise_id"], "statut": "brouillon"},
@@ -169,49 +171,74 @@ async def send_devis(devis_id: str, request: Request, current_user: dict = Depen
     # Update status
     await db.devis.update_one(
         {"id": devis_id},
-        {"$set": {"statut": "envoye"}}
+        {"$set": {"statut": "envoye", "date_envoi": datetime.now(timezone.utc).isoformat()}}
     )
     
-    # Get client and entreprise for email
+    # Get client and entreprise
     client = await db.clients.find_one({"id": devis["client_id"]}, {"_id": 0})
     entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
     
     # Generate PDF
     pdf_bytes = generate_devis_pdf(devis, client or {}, entreprise or {})
     
-    # Send email with PDF
-    email_result = {"status": "skipped", "message": "Email non envoyé"}
-    if client and client.get("email"):
-        # Get base URL from request
-        base_url = str(request.base_url).rstrip('/')
-        # Remove /api suffix if present
-        if '/api' in base_url:
-            base_url = base_url.rsplit('/api', 1)[0]
-        
-        email_result = await send_devis_email(devis, client, entreprise or {}, pdf_bytes, base_url)
-        
-        # Log communication
-        if email_result.get("_log_data"):
-            log_data = email_result.pop("_log_data")
-            await communication_log.log_email(
-                entreprise_id=current_user["entreprise_id"],
-                client_id=client["id"],
-                recipient_email=log_data["recipient"],
-                subject=log_data["subject"],
-                content_preview=log_data["content_preview"],
-                status="sent" if email_result.get("status") == "success" else "failed",
-                error_message=email_result.get("message") if email_result.get("status") != "success" else None,
-                related_entity=log_data["related_entity"],
-                related_entity_id=log_data["related_entity_id"],
-                sent_by=current_user["user_id"]
-            )
+    # Get base URL for PDF link
+    base_url = str(request.base_url).rstrip('/')
+    if '/api' in base_url:
+        base_url = base_url.rsplit('/api', 1)[0]
     
-    await log_action(current_user["entreprise_id"], current_user["user_id"], "send", "devis", devis_id, {"email_sent": email_result.get("status") == "success"})
+    # Build PDF URL (for WhatsApp document attachment)
+    pdf_url = f"{base_url}/api/devis/{devis_id}/pdf?token={devis.get('token_client', '')}"
+    
+    # Send notification via preferred channel (WhatsApp > SMS > Email)
+    notification_result = {"status": "skipped", "channels": []}
+    if client:
+        notification_result = await NotificationService.send_notification(
+            entreprise_id=current_user["entreprise_id"],
+            notification_type="devis",
+            client=client,
+            data=devis,
+            entreprise=entreprise,
+            pdf_url=pdf_url
+        )
+        
+        # Log communication for each successful channel
+        if notification_result.get("status") == "success":
+            for channel_info in notification_result.get("details", {}).get("channels", []):
+                channel = channel_info.get("channel")
+                if channel == "email":
+                    await communication_log.log_email(
+                        entreprise_id=current_user["entreprise_id"],
+                        client_id=client["id"],
+                        recipient_email=client.get("email", ""),
+                        subject=f"Devis {devis.get('numero', devis_id[:8])}",
+                        content_preview="Nouveau devis envoyé",
+                        status="sent",
+                        related_entity="devis",
+                        related_entity_id=devis_id,
+                        sent_by=current_user["user_id"]
+                    )
+                elif channel in ["whatsapp", "sms"]:
+                    await communication_log.log_sms(
+                        entreprise_id=current_user["entreprise_id"],
+                        client_id=client["id"],
+                        recipient_phone=client.get("telephone", ""),
+                        message=f"Notification devis {devis.get('numero', '')} via {channel.upper()}",
+                        status="sent",
+                        message_id=channel_info.get("result", {}).get("message_id"),
+                        related_entity="devis",
+                        related_entity_id=devis_id,
+                        sent_by=current_user["user_id"]
+                    )
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "send", "devis", devis_id, {
+        "notification_status": notification_result.get("status"),
+        "channels": [c.get("channel") for c in notification_result.get("details", {}).get("channels", [])]
+    })
     
     return {
         "message": "Devis envoyé",
         "token_client": devis["token_client"],
-        "email": email_result
+        "notification": notification_result
     }
 
 

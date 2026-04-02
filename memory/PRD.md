@@ -368,3 +368,42 @@ Résolution automatique des conflits quand un technicien travaille hors ligne :
 - WhatsApp est maintenant le canal recommandé par défaut
 - Les utilisateurs peuvent choisir leur canal préféré
 
+## 🔔 Notifications Automatiques - IMPLÉMENTÉ (2026-04-02)
+
+### Service de Notification Unifié
+- `/app/backend/notification_service.py` - Service central qui route vers WhatsApp/SMS/Email
+- Respecte les préférences de canal de l'entreprise
+- Cascade automatique : WhatsApp → SMS → Email (si le canal préféré échoue)
+
+### Notifications Automatiques
+1. **Envoi de Devis** (`POST /api/devis/{id}/send`)
+   - Déclenche automatiquement notification WhatsApp/SMS/Email
+   - Attache le PDF du devis (WhatsApp supporte les documents)
+   - Log dans l'historique des communications
+
+2. **Émission de Facture** (`POST /api/factures/{id}/emit`)
+   - Notification automatique avec PDF en pièce jointe
+   - Respecte les préférences de notification
+
+3. **Rappels d'Intervention J-1** (Tâche programmée)
+   - `POST /api/admin/analytics/cron/intervention-reminders`
+   - Envoie rappels pour les interventions du lendemain
+   - À configurer via cron job ou Railway Scheduled Tasks
+
+4. **Relances de Paiement** (Tâche programmée)
+   - `POST /api/admin/analytics/cron/payment-reminders`
+   - Relance les factures en retard (min 7 jours entre chaque relance)
+   - Met à jour le statut "en_retard"
+
+### Configuration Cron Recommandée (Railway)
+```
+# Rappels J-1 - Tous les jours à 9h
+0 9 * * * curl -X POST https://api.actoos.com/api/admin/analytics/cron/intervention-reminders?secret_key=YOUR_CRON_SECRET
+
+# Relances paiement - Tous les jours à 10h
+0 10 * * * curl -X POST https://api.actoos.com/api/admin/analytics/cron/payment-reminders?secret_key=YOUR_CRON_SECRET
+```
+
+### Variables d'environnement
+- `CRON_SECRET_KEY` : Clé secrète pour les endpoints cron (défaut: actoos-cron-2024)
+

@@ -572,3 +572,102 @@ async def cleanup_all_test_data(secret_key: str):
     except Exception as e:
         stats["errors"].append(str(e))
         raise HTTPException(status_code=500, detail=f"Erreur de nettoyage: {str(e)}")
+
+
+# ==================== SCHEDULED TASKS (CRON) ====================
+
+@router.post("/cron/intervention-reminders")
+async def trigger_intervention_reminders(secret_key: str = None, current_user: dict = Depends(require_super_admin)):
+    """
+    Trigger J-1 intervention reminders.
+    Can be called manually by super admin or via cron job with secret key.
+    """
+    import os
+    
+    # Allow cron jobs with secret key
+    cron_secret = os.environ.get("CRON_SECRET_KEY", "actoos-cron-2024")
+    if secret_key and secret_key != cron_secret:
+        raise HTTPException(status_code=403, detail="Invalid cron secret key")
+    
+    from notification_service import send_intervention_reminders_j1
+    
+    try:
+        results = await send_intervention_reminders_j1()
+        return {
+            "status": "success",
+            "message": f"Rappels J-1 envoyés: {results['sent']} succès, {results['failed']} échecs, {results['skipped']} ignorés",
+            "details": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'envoi des rappels: {str(e)}")
+
+
+@router.post("/cron/payment-reminders")
+async def trigger_payment_reminders(secret_key: str = None, current_user: dict = Depends(require_super_admin)):
+    """
+    Trigger payment reminders for overdue invoices.
+    Can be called manually by super admin or via cron job with secret key.
+    """
+    import os
+    
+    cron_secret = os.environ.get("CRON_SECRET_KEY", "actoos-cron-2024")
+    if secret_key and secret_key != cron_secret:
+        raise HTTPException(status_code=403, detail="Invalid cron secret key")
+    
+    from notification_service import send_payment_reminders
+    
+    try:
+        results = await send_payment_reminders()
+        return {
+            "status": "success",
+            "message": f"Relances envoyées: {results['sent']} succès, {results['failed']} échecs, {results['skipped']} ignorés",
+            "details": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'envoi des relances: {str(e)}")
+
+
+@router.get("/cron/status")
+async def get_cron_status(current_user: dict = Depends(require_super_admin)):
+    """Get status of scheduled tasks and pending notifications"""
+    from datetime import timedelta
+    
+    now = datetime.now(timezone.utc)
+    tomorrow = now + timedelta(days=1)
+    tomorrow_start = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_end = tomorrow.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    # Count pending J-1 reminders
+    pending_reminders = await db.interventions.count_documents({
+        "date_debut": {
+            "$gte": tomorrow_start.isoformat(),
+            "$lte": tomorrow_end.isoformat()
+        },
+        "statut": {"$in": ["planifiee", "confirmee"]},
+        "reminder_sent": {"$ne": True}
+    })
+    
+    # Count overdue invoices needing reminders
+    pending_payment_reminders = await db.factures.count_documents({
+        "statut": {"$in": ["emise", "en_retard"]},
+        "date_echeance": {"$lt": now.isoformat()},
+        "$or": [
+            {"last_reminder_sent": {"$exists": False}},
+            {"last_reminder_sent": {"$lt": (now - timedelta(days=7)).isoformat()}}
+        ]
+    })
+    
+    return {
+        "intervention_reminders_pending": pending_reminders,
+        "payment_reminders_pending": pending_payment_reminders,
+        "last_check": now.isoformat(),
+        "cron_endpoints": {
+            "intervention_reminders": "POST /api/admin/analytics/cron/intervention-reminders",
+            "payment_reminders": "POST /api/admin/analytics/cron/payment-reminders"
+        },
+        "recommended_schedule": {
+            "intervention_reminders": "Tous les jours à 9h00",
+            "payment_reminders": "Tous les jours à 10h00"
+        }
+    }
+
