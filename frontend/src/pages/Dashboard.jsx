@@ -23,6 +23,10 @@ import AdminInstallPrompt from '../components/AdminInstallPrompt';
 const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
   const { user, entreprise, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+  
+  // Check if app is already installed (standalone mode)
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches || 
+                      window.navigator.standalone === true;
 
   const handleLogout = () => {
     logout();
@@ -98,15 +102,17 @@ const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
 
           {/* User */}
           <div className="p-4 border-t border-slate-800">
-            {/* Install App Button */}
-            <button
-              onClick={onShowInstallGuide}
-              className="w-full flex items-center gap-3 px-3 py-2 mb-3 text-sm text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
-              data-testid="install-app-sidebar-btn"
-            >
-              <Download className="w-4 h-4" />
-              <span>Installer l'application</span>
-            </button>
+            {/* Install App Button - Hidden if already installed */}
+            {!isInstalled && (
+              <button
+                onClick={onShowInstallGuide}
+                className="w-full flex items-center gap-3 px-3 py-2 mb-3 text-sm text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                data-testid="install-app-sidebar-btn"
+              >
+                <Download className="w-4 h-4" />
+                <span>Installer l'application</span>
+              </button>
+            )}
             
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center">
@@ -138,6 +144,10 @@ const TopBar = ({ onMenuClick, onShowInstallGuide }) => {
   
   // Check if demo account
   const isDemoAccount = user?.email === 'demo@actoos.com';
+  
+  // Check if app is already installed (standalone mode)
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches || 
+                      window.navigator.standalone === true;
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -174,8 +184,8 @@ const TopBar = ({ onMenuClick, onShowInstallGuide }) => {
 
         {/* Actions */}
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Install App Button - Mobile only */}
-          {!isDemoAccount && (
+          {/* Install App Button - Mobile only, hidden if already installed */}
+          {!isDemoAccount && !isInstalled && (
             <Button 
               variant="ghost" 
               size="sm" 
