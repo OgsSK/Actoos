@@ -13,6 +13,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
+} from '../components/ui/dropdown-menu';
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '../components/ui/table';
 import { Label } from '../components/ui/label';
@@ -24,8 +27,8 @@ import {
   RefreshCw, Eye, Pencil, Trash2, Crown, Loader2, LogOut, ArrowLeft,
   Star, ThumbsDown, Bug, Lightbulb, ChevronRight, Mail, Bell, Send,
   Download, Gift, Calendar, CreditCard, UserPlus, ArrowUpRight,
-  ArrowDownRight, Percent, Filter, MoreHorizontal, Play, Pause,
-  FileText, PieChart
+  ArrowDownRight, Percent, Filter, MoreVertical, Play, Pause,
+  FileText, PieChart, Menu
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
@@ -347,27 +350,29 @@ const SuperAdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-slate-900 text-white overflow-x-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-slate-800 border-b border-slate-700 px-4 lg:px-8 py-4">
+      <header className="sticky top-0 z-50 bg-slate-800 border-b border-slate-700 px-3 sm:px-4 lg:px-8 py-3">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/dashboard')}
-              className="text-slate-400 hover:text-white"
+              className="text-slate-400 hover:text-white px-2"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Dashboard
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">Dashboard</span>
             </Button>
-            <div className="h-6 w-px bg-slate-700" />
+            <div className="h-6 w-px bg-slate-700 hidden sm:block" />
             <div className="flex items-center gap-2">
               <Crown className="w-5 h-5 text-yellow-500" />
-              <h1 className="text-lg font-bold">Super Admin</h1>
+              <h1 className="text-base sm:text-lg font-bold">Super Admin</h1>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          
+          {/* Desktop buttons */}
+          <div className="hidden md:flex items-center gap-2">
             <Button 
               variant="outline" 
               size="sm" 
@@ -397,140 +402,182 @@ const SuperAdminDashboard = () => {
               disabled={refreshing}
               className="border-slate-600 text-slate-300"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              Actualiser
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
-            <Button variant="ghost" size="sm" onClick={logout} className="text-slate-400">
-              <LogOut className="w-4 h-4" />
+          </div>
+          
+          {/* Mobile menu */}
+          <div className="flex md:hidden items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="border-slate-600 text-slate-300 px-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="border-slate-600 text-slate-300 px-2">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-slate-800 border-slate-700">
+                <DropdownMenuItem 
+                  onClick={handleExport}
+                  disabled={exporting}
+                  className="text-slate-300 focus:bg-slate-700"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setCommTarget('all');
+                    setShowCommunicate(true);
+                  }}
+                  className="text-slate-300 focus:bg-slate-700"
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Communiquer
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-slate-700" />
+                <DropdownMenuItem 
+                  onClick={() => setShowCreateCoupon(true)}
+                  className="text-slate-300 focus:bg-slate-700"
+                >
+                  <Gift className="w-4 h-4 mr-2" />
+                  Créer coupon
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 lg:px-8 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20">
         {/* Main Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">Entreprises</p>
-                  <p className="text-2xl font-bold text-white">{stats?.entreprises?.total || 0}</p>
+                <div className="min-w-0">
+                  <p className="text-slate-400 text-xs sm:text-sm">Entreprises</p>
+                  <p className="text-xl sm:text-2xl font-bold text-white">{stats?.entreprises?.total || 0}</p>
                   <p className="text-xs text-green-400">+{stats?.entreprises?.recent_signups || 0} ce mois</p>
                 </div>
-                <Building2 className="w-8 h-8 text-blue-500" />
+                <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">Utilisateurs</p>
-                  <p className="text-2xl font-bold text-white">{stats?.users?.total || 0}</p>
-                  <p className="text-xs text-slate-400">
-                    {stats?.users?.admins || 0} admins · {stats?.users?.technicians || 0} techs
+                <div className="min-w-0">
+                  <p className="text-slate-400 text-xs sm:text-sm">Utilisateurs</p>
+                  <p className="text-xl sm:text-2xl font-bold text-white">{stats?.users?.total || 0}</p>
+                  <p className="text-xs text-slate-400 truncate">
+                    {stats?.users?.admins || 0}A · {stats?.users?.technicians || 0}T
                   </p>
                 </div>
-                <Users className="w-8 h-8 text-green-500" />
+                <Users className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">MRR</p>
-                  <p className="text-2xl font-bold text-white">{revenue?.current_mrr || stats?.revenue?.mrr || 0}€</p>
+                <div className="min-w-0">
+                  <p className="text-slate-400 text-xs sm:text-sm">MRR</p>
+                  <p className="text-xl sm:text-2xl font-bold text-white">{revenue?.current_mrr || stats?.revenue?.mrr || 0}€</p>
                   <p className="text-xs text-slate-400">ARR: {revenue?.arr || (stats?.revenue?.mrr || 0) * 12}€</p>
                 </div>
-                <DollarSign className="w-8 h-8 text-yellow-500" />
+                <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">Résiliations</p>
-                  <p className="text-2xl font-bold text-white">{stats?.cancellations?.total || 0}</p>
-                  <p className="text-xs text-red-400">{stats?.cancellations?.recent || 0} cette semaine</p>
+                <div className="min-w-0">
+                  <p className="text-slate-400 text-xs sm:text-sm">Résiliations</p>
+                  <p className="text-xl sm:text-2xl font-bold text-white">{stats?.cancellations?.total || 0}</p>
+                  <p className="text-xs text-red-400">{stats?.cancellations?.recent || 0} cette sem.</p>
                 </div>
-                <XCircle className="w-8 h-8 text-red-500" />
+                <XCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Secondary Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+        {/* Secondary Stats - Hidden on mobile */}
+        <div className="hidden sm:grid grid-cols-3 lg:grid-cols-6 gap-3">
           <Card className="bg-slate-800/50 border-slate-700">
-            <CardContent className="p-4 text-center">
-              <Activity className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-              <p className="text-xl font-bold">{stats?.activity?.total_interventions || 0}</p>
+            <CardContent className="p-3 text-center">
+              <Activity className="w-5 h-5 text-blue-400 mx-auto mb-1" />
+              <p className="text-lg font-bold">{stats?.activity?.total_interventions || 0}</p>
               <p className="text-xs text-slate-400">Interventions</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700">
-            <CardContent className="p-4 text-center">
-              <FileText className="w-6 h-6 text-green-400 mx-auto mb-2" />
-              <p className="text-xl font-bold">{stats?.activity?.total_devis || 0}</p>
+            <CardContent className="p-3 text-center">
+              <FileText className="w-5 h-5 text-green-400 mx-auto mb-1" />
+              <p className="text-lg font-bold">{stats?.activity?.total_devis || 0}</p>
               <p className="text-xs text-slate-400">Devis</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700">
-            <CardContent className="p-4 text-center">
-              <CreditCard className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-              <p className="text-xl font-bold">{stats?.activity?.total_factures || 0}</p>
+            <CardContent className="p-3 text-center">
+              <CreditCard className="w-5 h-5 text-purple-400 mx-auto mb-1" />
+              <p className="text-lg font-bold">{stats?.activity?.total_factures || 0}</p>
               <p className="text-xs text-slate-400">Factures</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700">
-            <CardContent className="p-4 text-center">
-              <UserPlus className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
-              <p className="text-xl font-bold">{stats?.users?.active_today || 0}</p>
-              <p className="text-xs text-slate-400">Actifs aujourd'hui</p>
+            <CardContent className="p-3 text-center">
+              <UserPlus className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+              <p className="text-lg font-bold">{stats?.users?.active_today || 0}</p>
+              <p className="text-xs text-slate-400">Actifs</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700">
-            <CardContent className="p-4 text-center">
-              <Calendar className="w-6 h-6 text-orange-400 mx-auto mb-2" />
-              <p className="text-xl font-bold">{stats?.entreprises?.by_billing?.yearly || 0}</p>
-              <p className="text-xs text-slate-400">Abonnés annuels</p>
+            <CardContent className="p-3 text-center">
+              <Calendar className="w-5 h-5 text-orange-400 mx-auto mb-1" />
+              <p className="text-lg font-bold">{stats?.entreprises?.by_billing?.yearly || 0}</p>
+              <p className="text-xs text-slate-400">Annuels</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700">
-            <CardContent className="p-4 text-center">
-              <Gift className="w-6 h-6 text-pink-400 mx-auto mb-2" />
-              <p className="text-xl font-bold">{coupons.length}</p>
-              <p className="text-xs text-slate-400">Coupons actifs</p>
+            <CardContent className="p-3 text-center">
+              <Gift className="w-5 h-5 text-pink-400 mx-auto mb-1" />
+              <p className="text-lg font-bold">{coupons.length}</p>
+              <p className="text-xs text-slate-400">Coupons</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Plan Distribution */}
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-white text-base flex items-center justify-between">
+          <CardHeader className="pb-2 px-3 sm:px-6">
+            <CardTitle className="text-white text-sm sm:text-base flex items-center justify-between flex-wrap gap-2">
               <span>Répartition par plan</span>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowCreateCoupon(true)}
-                  className="border-slate-600 text-xs"
-                >
-                  <Gift className="w-3 h-3 mr-1" />
-                  Créer coupon
-                </Button>
-              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowCreateCoupon(true)}
+                className="border-slate-600 text-xs hidden sm:flex"
+              >
+                <Gift className="w-3 h-3 mr-1" />
+                Créer coupon
+              </Button>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 items-center">
+          <CardContent className="px-3 sm:px-6">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
               <div className="flex-1 bg-slate-700 rounded-full h-6 overflow-hidden flex">
                 {stats?.entreprises?.by_plan && stats?.entreprises?.total > 0 && (
                   <>
@@ -555,36 +602,36 @@ const SuperAdminDashboard = () => {
                   </>
                 )}
               </div>
-              <div className="flex gap-4 text-sm">
+              <div className="flex gap-3 sm:gap-4 text-xs sm:text-sm justify-center sm:justify-start">
                 <span className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded bg-slate-500" />
-                  Startup: {stats?.entreprises?.by_plan?.startup || 0}
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 rounded bg-slate-500" />
+                  S: {stats?.entreprises?.by_plan?.startup || 0}
                 </span>
                 <span className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded bg-blue-500" />
-                  Pro: {stats?.entreprises?.by_plan?.pro || 0}
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 rounded bg-blue-500" />
+                  P: {stats?.entreprises?.by_plan?.pro || 0}
                 </span>
                 <span className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded bg-purple-500" />
-                  Enterprise: {stats?.entreprises?.by_plan?.enterprise || 0}
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 rounded bg-purple-500" />
+                  E: {stats?.entreprises?.by_plan?.enterprise || 0}
                 </span>
               </div>
             </div>
             
-            {/* Revenue by plan */}
+            {/* Revenue by plan - Hidden on mobile */}
             {revenue?.by_plan && (
-              <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-                <div className="p-3 bg-slate-700/50 rounded-lg">
-                  <p className="text-slate-400 text-xs">Startup MRR</p>
-                  <p className="text-lg font-bold">{revenue.by_plan.startup?.mrr || 0}€</p>
+              <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-4 text-center hidden sm:grid">
+                <div className="p-2 sm:p-3 bg-slate-700/50 rounded-lg">
+                  <p className="text-slate-400 text-xs">Startup</p>
+                  <p className="text-base sm:text-lg font-bold">{revenue.by_plan.startup?.mrr || 0}€</p>
                 </div>
-                <div className="p-3 bg-slate-700/50 rounded-lg">
-                  <p className="text-slate-400 text-xs">Pro MRR</p>
-                  <p className="text-lg font-bold">{revenue.by_plan.pro?.mrr || 0}€</p>
+                <div className="p-2 sm:p-3 bg-slate-700/50 rounded-lg">
+                  <p className="text-slate-400 text-xs">Pro</p>
+                  <p className="text-base sm:text-lg font-bold">{revenue.by_plan.pro?.mrr || 0}€</p>
                 </div>
-                <div className="p-3 bg-slate-700/50 rounded-lg">
-                  <p className="text-slate-400 text-xs">Enterprise MRR</p>
-                  <p className="text-lg font-bold">{revenue.by_plan.enterprise?.mrr || 0}€</p>
+                <div className="p-2 sm:p-3 bg-slate-700/50 rounded-lg">
+                  <p className="text-slate-400 text-xs">Enterprise</p>
+                  <p className="text-base sm:text-lg font-bold">{revenue.by_plan.enterprise?.mrr || 0}€</p>
                 </div>
               </div>
             )}
@@ -592,31 +639,38 @@ const SuperAdminDashboard = () => {
         </Card>
 
         {/* Tabs */}
-        <Tabs defaultValue="entreprises" className="space-y-4">
-          <TabsList className="bg-slate-800">
-            <TabsTrigger value="entreprises" className="data-[state=active]:bg-slate-700">
-              <Building2 className="w-4 h-4 mr-2" />
-              Entreprises ({entreprises.length})
+        <Tabs defaultValue="entreprises" className="space-y-3 sm:space-y-4">
+          <TabsList className="bg-slate-800 flex-wrap h-auto p-1 gap-1">
+            <TabsTrigger value="entreprises" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm px-2 sm:px-3">
+              <Building2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">Entreprises</span>
+              <span className="xs:hidden">Ent.</span>
+              <span className="ml-1">({entreprises.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="feedbacks" className="data-[state=active]:bg-slate-700">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Feedbacks ({feedbacks.length})
+            <TabsTrigger value="feedbacks" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm px-2 sm:px-3">
+              <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Feedbacks</span>
+              <span className="sm:hidden">FB</span>
+              <span className="ml-1">({feedbacks.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="cancellations" className="data-[state=active]:bg-slate-700">
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              Résiliations ({cancellations.length})
+            <TabsTrigger value="cancellations" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm px-2 sm:px-3">
+              <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Résiliations</span>
+              <span className="sm:hidden">Rés.</span>
+              <span className="ml-1">({cancellations.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="coupons" className="data-[state=active]:bg-slate-700">
-              <Gift className="w-4 h-4 mr-2" />
-              Coupons ({coupons.length})
+            <TabsTrigger value="coupons" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm px-2 sm:px-3">
+              <Gift className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span>Coupons</span>
+              <span className="ml-1">({coupons.length})</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Entreprises Tab */}
-          <TabsContent value="entreprises" className="space-y-4">
+          <TabsContent value="entreprises" className="space-y-3 sm:space-y-4">
             {/* Filters */}
-            <div className="flex flex-wrap gap-3">
-              <div className="relative flex-1 min-w-[200px]">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
                   placeholder="Rechercher par nom ou email..."
@@ -650,18 +704,67 @@ const SuperAdminDashboard = () => {
               </Select>
             </div>
 
-            {/* Table */}
-            <Card className="bg-slate-800 border-slate-700 overflow-hidden">
-              <ScrollArea className="h-[500px]">
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
+              {filteredEntreprises.map((ent) => (
+                <Card key={ent.id} className="bg-slate-800 border-slate-700">
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-white truncate">{ent.nom}</p>
+                        <p className="text-xs text-slate-400 truncate">{ent.email}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          {getPlanBadge(ent.plan)}
+                          {getStatusBadge(ent.subscription_status)}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-2">
+                          {ent.user_count || 0} users · {ent.intervention_count || 0} interv.
+                        </p>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                          <DropdownMenuItem onClick={() => handleViewDetails(ent)} className="text-slate-300">
+                            <Eye className="w-4 h-4 mr-2" />
+                            Détails
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setSelectedEntreprise(ent); setShowEditPlan(true); }} className="text-slate-300">
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Modifier plan
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setSelectedEntreprise(ent); setCommTarget('single'); setShowCommunicate(true); }} className="text-slate-300">
+                            <Mail className="w-4 h-4 mr-2" />
+                            Message
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {filteredEntreprises.length === 0 && (
+                <div className="text-center py-8 text-slate-400">
+                  Aucune entreprise trouvée
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Table */}
+            <Card className="bg-slate-800 border-slate-700 overflow-hidden hidden sm:block">
+              <ScrollArea className="h-[400px]">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-slate-700 hover:bg-slate-800">
                       <TableHead className="text-slate-400">Entreprise</TableHead>
                       <TableHead className="text-slate-400">Plan</TableHead>
                       <TableHead className="text-slate-400">Statut</TableHead>
-                      <TableHead className="text-slate-400">Utilisateurs</TableHead>
-                      <TableHead className="text-slate-400">Activité</TableHead>
-                      <TableHead className="text-slate-400">Inscrit le</TableHead>
+                      <TableHead className="text-slate-400 hidden lg:table-cell">Utilisateurs</TableHead>
+                      <TableHead className="text-slate-400 hidden lg:table-cell">Activité</TableHead>
+                      <TableHead className="text-slate-400 hidden md:table-cell">Inscrit le</TableHead>
                       <TableHead className="text-slate-400">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -685,7 +788,7 @@ const SuperAdminDashboard = () => {
                           </div>
                         </TableCell>
                         <TableCell>{getStatusBadge(ent.subscription_status)}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden lg:table-cell">
                           <div className="text-sm">
                             <span className="text-white">{ent.user_count || 0}</span>
                             <span className="text-slate-400 text-xs ml-1">
@@ -693,13 +796,13 @@ const SuperAdminDashboard = () => {
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden lg:table-cell">
                           <div className="text-xs text-slate-400">
                             <div>{ent.intervention_count || 0} interv.</div>
                             <div>{ent.devis_count || 0} devis · {ent.facture_count || 0} fact.</div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-slate-400 text-sm">{formatDate(ent.created_at)}</TableCell>
+                        <TableCell className="text-slate-400 text-sm hidden md:table-cell">{formatDate(ent.created_at)}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Button 
