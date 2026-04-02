@@ -21,7 +21,7 @@ import {
   CheckCircle, XCircle, ExternalLink, Info, Palette, Upload, 
   Tags, Plus, Pencil, Trash2, Wrench, Globe, Coins, CreditCard,
   Calendar, Link2, Unlink, DollarSign, Shield, Clock, AlertTriangle,
-  Database, Trash, Eye
+  Database, Trash, Eye, Lock, Key
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PlanUsageWidget from '../components/PlanUsageWidget';
@@ -598,6 +598,11 @@ export const SettingsPage = () => {
               <Shield className="w-4 h-4" />
               <span className="hidden sm:inline">RGPD</span>
               <span className="sm:hidden">RGPD</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2 whitespace-nowrap">
+              <Lock className="w-4 h-4" />
+              <span className="hidden sm:inline">Sécurité</span>
+              <span className="sm:hidden">Sécu.</span>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -1280,7 +1285,319 @@ export const SettingsPage = () => {
         <TabsContent value="gdpr">
           <GDPRSettings api={api} />
         </TabsContent>
+
+        {/* Security Tab - Password Management */}
+        <TabsContent value="security">
+          <SecuritySettings api={api} />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+};
+
+// Security Settings Component - Password Management
+const SecuritySettings = ({ api }) => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [errors, setErrors] = useState({});
+
+  const validatePassword = (password) => {
+    const checks = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    };
+    return checks;
+  };
+
+  const passwordStrength = validatePassword(formData.newPassword);
+  const strengthScore = Object.values(passwordStrength).filter(Boolean).length;
+  const strengthLabel = strengthScore <= 2 ? 'Faible' : strengthScore <= 3 ? 'Moyen' : strengthScore <= 4 ? 'Fort' : 'Très fort';
+  const strengthColor = strengthScore <= 2 ? 'bg-red-500' : strengthScore <= 3 ? 'bg-yellow-500' : strengthScore <= 4 ? 'bg-blue-500' : 'bg-green-500';
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => ({ ...prev, [field]: '' }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrors({});
+
+    // Validation
+    const newErrors = {};
+    
+    if (!formData.currentPassword) {
+      newErrors.currentPassword = 'Le mot de passe actuel est requis';
+    }
+    
+    if (!formData.newPassword) {
+      newErrors.newPassword = 'Le nouveau mot de passe est requis';
+    } else if (formData.newPassword.length < 8) {
+      newErrors.newPassword = 'Le mot de passe doit contenir au moins 8 caractères';
+    }
+    
+    if (formData.newPassword !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.post('/api/auth/change-password', {
+        current_password: formData.currentPassword,
+        new_password: formData.newPassword
+      });
+      
+      toast.success('Mot de passe modifié avec succès');
+      setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Erreur lors du changement de mot de passe';
+      toast.error(message);
+      if (message.includes('actuel')) {
+        setErrors({ currentPassword: message });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Change Password Card */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Key className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Changer le mot de passe</CardTitle>
+              <CardDescription>
+                Mettez à jour votre mot de passe pour sécuriser votre compte
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+            {/* Current Password */}
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Mot de passe actuel</Label>
+              <div className="relative">
+                <Input
+                  id="currentPassword"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  value={formData.currentPassword}
+                  onChange={(e) => handleChange('currentPassword', e.target.value)}
+                  className={errors.currentPassword ? 'border-red-500' : ''}
+                  placeholder="Entrez votre mot de passe actuel"
+                  data-testid="current-password-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              </div>
+              {errors.currentPassword && (
+                <p className="text-sm text-red-500">{errors.currentPassword}</p>
+              )}
+            </div>
+
+            {/* New Password */}
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={formData.newPassword}
+                  onChange={(e) => handleChange('newPassword', e.target.value)}
+                  className={errors.newPassword ? 'border-red-500' : ''}
+                  placeholder="Entrez votre nouveau mot de passe"
+                  data-testid="new-password-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              </div>
+              {errors.newPassword && (
+                <p className="text-sm text-red-500">{errors.newPassword}</p>
+              )}
+              
+              {/* Password Strength Indicator */}
+              {formData.newPassword && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all ${strengthColor}`}
+                        style={{ width: `${(strengthScore / 5) * 100}%` }}
+                      />
+                    </div>
+                    <span className={`text-xs font-medium ${
+                      strengthScore <= 2 ? 'text-red-600' : 
+                      strengthScore <= 3 ? 'text-yellow-600' : 
+                      strengthScore <= 4 ? 'text-blue-600' : 'text-green-600'
+                    }`}>
+                      {strengthLabel}
+                    </span>
+                  </div>
+                  <ul className="text-xs text-slate-500 space-y-1">
+                    <li className={passwordStrength.length ? 'text-green-600' : ''}>
+                      {passwordStrength.length ? '✓' : '○'} Au moins 8 caractères
+                    </li>
+                    <li className={passwordStrength.uppercase ? 'text-green-600' : ''}>
+                      {passwordStrength.uppercase ? '✓' : '○'} Une majuscule
+                    </li>
+                    <li className={passwordStrength.lowercase ? 'text-green-600' : ''}>
+                      {passwordStrength.lowercase ? '✓' : '○'} Une minuscule
+                    </li>
+                    <li className={passwordStrength.number ? 'text-green-600' : ''}>
+                      {passwordStrength.number ? '✓' : '○'} Un chiffre
+                    </li>
+                    <li className={passwordStrength.special ? 'text-green-600' : ''}>
+                      {passwordStrength.special ? '✓' : '○'} Un caractère spécial (!@#$%...)
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmer le nouveau mot de passe</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                  className={errors.confirmPassword ? 'border-red-500' : ''}
+                  placeholder="Confirmez votre nouveau mot de passe"
+                  data-testid="confirm-password-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-sm text-red-500">{errors.confirmPassword}</p>
+              )}
+              {formData.confirmPassword && formData.newPassword === formData.confirmPassword && (
+                <p className="text-sm text-green-600 flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Les mots de passe correspondent
+                </p>
+              )}
+            </div>
+
+            <Button 
+              type="submit" 
+              disabled={loading || !formData.currentPassword || !formData.newPassword || formData.newPassword !== formData.confirmPassword}
+              className="w-full sm:w-auto"
+              data-testid="change-password-submit"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Modification...
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4 mr-2" />
+                  Changer le mot de passe
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Security Tips Card */}
+      <Card className="border-slate-200 bg-blue-50/50">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Shield className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Conseils de sécurité</CardTitle>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="text-sm text-slate-600 space-y-2">
+          <p className="flex items-start gap-2">
+            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+            <span>Utilisez un mot de passe unique pour chaque compte</span>
+          </p>
+          <p className="flex items-start gap-2">
+            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+            <span>Changez votre mot de passe tous les 3 à 6 mois</span>
+          </p>
+          <p className="flex items-start gap-2">
+            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+            <span>Ne partagez jamais votre mot de passe par email ou téléphone</span>
+          </p>
+          <p className="flex items-start gap-2">
+            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+            <span>Utilisez un gestionnaire de mots de passe sécurisé</span>
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Account Info Card */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base">Informations du compte</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex justify-between items-center py-2 border-b">
+            <span className="text-sm text-slate-500">Email</span>
+            <span className="text-sm font-medium">{user?.email}</span>
+          </div>
+          <div className="flex justify-between items-center py-2 border-b">
+            <span className="text-sm text-slate-500">Rôle</span>
+            <Badge variant="outline">
+              {user?.role === 'admin' ? 'Administrateur' : 'Technicien'}
+            </Badge>
+          </div>
+          <div className="flex justify-between items-center py-2">
+            <span className="text-sm text-slate-500">Mot de passe oublié ?</span>
+            <a 
+              href="/forgot-password" 
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Réinitialiser par email
+            </a>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

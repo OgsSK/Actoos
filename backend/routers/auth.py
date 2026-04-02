@@ -362,6 +362,58 @@ async def reset_password(data: UserSetPassword):
     return {"message": "Mot de passe réinitialisé avec succès"}
 
 
+@router.post("/change-password")
+async def change_password(
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Change password for authenticated user.
+    Requires current password verification.
+    """
+    current_password = data.get("current_password")
+    new_password = data.get("new_password")
+    
+    if not current_password or not new_password:
+        raise HTTPException(status_code=400, detail="Mot de passe actuel et nouveau requis")
+    
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Le nouveau mot de passe doit contenir au moins 8 caractères")
+    
+    # Get user with password hash
+    user = await db.users.find_one({"id": current_user["id"]})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Verify current password
+    if not verify_password(current_password, user.get("password_hash", "")):
+        raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect")
+    
+    # Check new password is different from current
+    if verify_password(new_password, user.get("password_hash", "")):
+        raise HTTPException(status_code=400, detail="Le nouveau mot de passe doit être différent de l'actuel")
+    
+    # Update password
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {
+            "$set": {
+                "password_hash": get_password_hash(new_password),
+                "password_changed_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    # Log action
+    await log_action(
+        entreprise_id=current_user["entreprise_id"],
+        user_id=current_user["id"],
+        action="password_changed",
+        details={"user_email": current_user["email"]}
+    )
+    
+    return {"message": "Mot de passe modifié avec succès"}
+
 
 @router.delete("/delete-account")
 async def delete_account(
