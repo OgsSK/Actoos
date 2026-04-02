@@ -79,14 +79,62 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
   return children;
 };
 
-// Dashboard Routes Wrapper
+// Technician Route - Redirects admins to dashboard
+const TechnicianRoute = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // If user is admin, redirect to dashboard
+  if (user?.role === 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+};
+
+// Admin Route - Redirects techs to /tech
+const AdminRoute = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // If user is tech, redirect to tech app
+  if (user?.role === 'tech') {
+    return <Navigate to="/tech" replace />;
+  }
+
+  return children;
+};
+
+// Dashboard Routes Wrapper - Only for admins
 const DashboardRoutes = () => {
   return (
-    <ProtectedRoute>
+    <AdminRoute>
       <DashboardLayout>
         <Outlet />
       </DashboardLayout>
-    </ProtectedRoute>
+    </AdminRoute>
   );
 };
 
@@ -147,11 +195,11 @@ function App() {
             <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />
             <Route path="/portal/client/:token" element={<ClientPortalDashboard />} />
 
-            {/* Technician App */}
+            {/* Technician App - Only for techs, redirects admins */}
             <Route path="/tech" element={
-              <ProtectedRoute>
+              <TechnicianRoute>
                 <TechnicianApp />
-              </ProtectedRoute>
+              </TechnicianRoute>
             } />
 
             {/* Dashboard Routes */}
