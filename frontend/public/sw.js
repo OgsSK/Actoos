@@ -1,6 +1,8 @@
 // Service Worker for Actoos PWA
-const CACHE_NAME = 'actoos-v2';
-const API_CACHE_NAME = 'actoos-api-v2';
+// Version increment forces update
+const CACHE_VERSION = 'v3';
+const CACHE_NAME = `actoos-${CACHE_VERSION}`;
+const API_CACHE_NAME = `actoos-api-${CACHE_VERSION}`;
 
 // Static assets to cache
 const STATIC_ASSETS = [
@@ -18,34 +20,45 @@ const API_ROUTES_TO_CACHE = [
   '/api/users'
 ];
 
-// Install event - cache static assets
+// Install event - cache static assets and skip waiting immediately
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
+  console.log('[SW] Installing new service worker version:', CACHE_VERSION);
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Caching static assets');
       return cache.addAll(STATIC_ASSETS);
     })
   );
+  // Force immediate activation - don't wait for old SW to stop
   self.skipWaiting();
 });
 
-// Activate event - clean old caches
+// Activate event - clean old caches and take control immediately
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
+  console.log('[SW] Activating new service worker version:', CACHE_VERSION);
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
+          // Delete ALL old caches that don't match current version
           if (cacheName !== CACHE_NAME && cacheName !== API_CACHE_NAME) {
             console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => {
+      console.log('[SW] Taking control of all clients');
+      return self.clients.claim();
+    }).then(() => {
+      // Notify all clients to refresh
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION });
+        });
+      });
     })
   );
-  self.clients.claim();
 });
 
 // Fetch event - handle requests
@@ -68,25 +81,44 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(handleStaticRequest(request));
 });
 
-// Handle static requests - cache first, network fallback
+// Handle static requests - NETWORK FIRST, cache fallback
+// This ensures users always get the latest version when online
 async function handleStaticRequest(request) {
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-
   try {
+    // Try network first
     const networkResponse = await fetch(request);
+    
     if (networkResponse.ok) {
+      // Update cache with new version
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
+      return networkResponse;
     }
+    
+    // Network returned error, try cache
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
     return networkResponse;
   } catch (error) {
+    // Network failed completely, use cache
+    console.log('[SW] Network failed, using cache for:', request.url);
+    const cachedResponse = await caches.match(request);
+    
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
     // Return offline page for navigation requests
     if (request.mode === 'navigate') {
-      return caches.match('/');
+      const offlineResponse = await caches.match('/');
+      if (offlineResponse) {
+        return offlineResponse;
+      }
     }
+    
     throw error;
   }
 }

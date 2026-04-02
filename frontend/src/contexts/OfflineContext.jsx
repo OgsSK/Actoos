@@ -581,15 +581,36 @@ export const registerServiceWorker = async () => {
       
       console.log('Service Worker registered:', registration.scope);
       
+      // Check for updates immediately
+      registration.update();
+      
       // Handle updates
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
+        console.log('[SW] New version found, installing...');
+        
         newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('New version available!');
-            toast.info('Nouvelle version disponible - Rafraîchissez la page');
+          if (newWorker.state === 'installed') {
+            if (navigator.serviceWorker.controller) {
+              // New SW installed, tell it to activate immediately
+              console.log('[SW] New version installed, activating...');
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+            }
           }
         });
+      });
+      
+      // Listen for SW taking control and reload
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('[SW] Controller changed, reloading page...');
+        window.location.reload();
+      });
+      
+      // Listen for messages from SW
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data.type === 'SW_UPDATED') {
+          console.log('[SW] Update complete, version:', event.data.version);
+        }
       });
       
       return registration;
