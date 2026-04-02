@@ -28,7 +28,7 @@
         <!-- Manifest - Dynamically loaded based on route -->
         <link rel="manifest" id="manifest-link" href="%PUBLIC_URL%/manifest.json" />
         
-        <!-- Script to switch manifest based on route -->
+        <!-- Script to switch manifest based on route or saved role -->
         <script>
             (function() {
                 var path = window.location.pathname;
@@ -36,25 +36,35 @@
                 var themeColor = document.querySelector('meta[name="theme-color"]');
                 var appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
                 var appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+                var favicon = document.querySelector('link[rel="icon"][type="image/png"]');
                 
-                // Determine which app we're in
-                var isTechApp = path.startsWith('/tech') || path === '/pwa-landing';
-                var isDashboard = path.startsWith('/dashboard') || path.startsWith('/login') || path === '/';
+                // Check if we have a saved role preference
+                var savedRole = localStorage.getItem('pwa_role');
                 
-                if (isTechApp) {
+                // Determine if tech based on saved role or URL
+                var isTechByRole = savedRole === 'technicien' || savedRole === 'tech';
+                var isTechByUrl = path.startsWith('/tech') || path === '/pwa-landing';
+                var isTech = isTechByRole || isTechByUrl;
+                
+                // Admin is default for /dashboard, /login, or any other path (unless tech role is saved)
+                var isAdmin = !isTech;
+                
+                if (isTech) {
                     // Technician App - Orange theme
-                    manifestLink.href = '/manifest-tech.json';
+                    if (manifestLink) manifestLink.href = '/manifest-tech.json';
                     if (themeColor) themeColor.content = '#F97316';
                     if (appleTitle) appleTitle.content = 'Actoos Tech';
                     if (appleTouchIcon) appleTouchIcon.href = '/icons-tech/icon-192x192.png';
-                    document.title = 'Actoos Tech - App Technicien';
-                } else if (isDashboard) {
+                    if (favicon) favicon.href = '/icons-tech/icon-48x48.png';
+                    document.title = 'Actoos Tech';
+                } else {
                     // Admin Dashboard - Blue theme
-                    manifestLink.href = '/manifest-admin.json';
+                    if (manifestLink) manifestLink.href = '/manifest-admin.json';
                     if (themeColor) themeColor.content = '#2563EB';
                     if (appleTitle) appleTitle.content = 'Actoos Admin';
                     if (appleTouchIcon) appleTouchIcon.href = '/icons-admin/icon-192x192.png';
-                    document.title = 'Actoos - Dashboard';
+                    if (favicon) favicon.href = '/icons-admin/icon-48x48.png';
+                    document.title = 'Actoos Admin';
                 }
             })();
         </script>

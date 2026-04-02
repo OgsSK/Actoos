@@ -6,6 +6,40 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const AuthContext = createContext(null);
 
+// Function to update PWA manifest, favicon, and theme based on user role
+const updatePWAForRole = (role) => {
+  const isAdmin = role === 'admin' || role === 'super_admin';
+  const isTech = role === 'technicien' || role === 'tech';
+  
+  // Get DOM elements
+  const manifestLink = document.getElementById('manifest-link') || document.querySelector('link[rel="manifest"]');
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+  const appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+  const favicon = document.querySelector('link[rel="icon"][type="image/png"]');
+  
+  if (isTech) {
+    // Technician - Orange theme
+    if (manifestLink) manifestLink.href = '/manifest-tech.json';
+    if (themeColor) themeColor.content = '#F97316';
+    if (appleTitle) appleTitle.content = 'Actoos Tech';
+    if (appleTouchIcon) appleTouchIcon.href = '/icons-tech/icon-192x192.png';
+    if (favicon) favicon.href = '/icons-tech/icon-48x48.png';
+    document.title = 'Actoos Tech';
+  } else if (isAdmin) {
+    // Admin - Blue theme  
+    if (manifestLink) manifestLink.href = '/manifest-admin.json';
+    if (themeColor) themeColor.content = '#2563EB';
+    if (appleTitle) appleTitle.content = 'Actoos Admin';
+    if (appleTouchIcon) appleTouchIcon.href = '/icons-admin/icon-192x192.png';
+    if (favicon) favicon.href = '/icons-admin/icon-48x48.png';
+    document.title = 'Actoos Admin';
+  }
+  
+  // Store the role preference for PWA
+  localStorage.setItem('pwa_role', role);
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -58,6 +92,21 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
+
+  // Update PWA manifest/icons when user role changes or on initial load
+  useEffect(() => {
+    if (user?.role) {
+      updatePWAForRole(user.role);
+    } else {
+      // No user logged in - check URL to determine which manifest to use
+      const path = window.location.pathname;
+      if (path.startsWith('/tech')) {
+        updatePWAForRole('technicien');
+      } else {
+        updatePWAForRole('admin');
+      }
+    }
+  }, [user?.role]);
 
   // Apply tenant's custom primary color as CSS variable
   useEffect(() => {
@@ -118,6 +167,9 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     setEntreprise(entData);
     
+    // Update PWA manifest and icons based on user role
+    updatePWAForRole(userData.role);
+    
     return userData;
   };
 
@@ -135,9 +187,13 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('pwa_role'); // Clear PWA role preference on logout
     setToken(null);
     setUser(null);
     setEntreprise(null);
+    
+    // Reset to default admin manifest (will be updated on next login)
+    updatePWAForRole('admin');
   };
 
   // Currency formatting helpers based on entreprise settings
