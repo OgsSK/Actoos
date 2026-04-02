@@ -118,7 +118,7 @@ const TermsPage = () => {
                 <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
                 <p>
                   Vous devez nous notifier immédiatement toute utilisation non autorisée de votre compte 
-                  à l'adresse support@actoos.com
+                  à l'adresse contact@actoos.com
                 </p>
               </div>
             </div>
@@ -322,7 +322,7 @@ const TermsPage = () => {
             </p>
             <div className="mt-3 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
               <p className="font-medium text-slate-900 dark:text-white">Actoos - Support</p>
-              <p className="text-slate-600 dark:text-slate-400">Email : support@actoos.com</p>
+              <p className="text-slate-600 dark:text-slate-400">Email : contact@actoos.com</p>
               <p className="text-slate-600 dark:text-slate-400">Site web : www.actoos.com</p>
             </div>
           </section>

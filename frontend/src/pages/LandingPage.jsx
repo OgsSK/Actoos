@@ -500,11 +500,11 @@ const LandingPage = () => {
             </div>
             
             <div>
-              <h4 className="font-semibold text-white mb-4">Ressources</h4>
+              <h4 className="font-semibold text-white mb-4">Support</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-slate-400 hover:text-white">Documentation</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white">Blog</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white">Support</a></li>
+                <li><a href="mailto:contact@actoos.com" className="text-slate-400 hover:text-white">contact@actoos.com</a></li>
+                <li><Link to="/demo" className="text-slate-400 hover:text-white">Demander une démo</Link></li>
+                <li><Link to="/pricing" className="text-slate-400 hover:text-white">Tarifs</Link></li>
               </ul>
             </div>
             

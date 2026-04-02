@@ -298,7 +298,7 @@ const CookiesPage = () => {
             </p>
             <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
               <p className="font-medium text-slate-900 dark:text-white">Actoos - Protection des données</p>
-              <p className="text-slate-600 dark:text-slate-400">Email : privacy@actoos.com</p>
+              <p className="text-slate-600 dark:text-slate-400">Email : contact@actoos.com</p>
             </div>
           </div>
 
