@@ -1911,7 +1911,7 @@ export const TechnicianApp = () => {
 
       {/* Create Intervention Modal */}
       <Dialog open={showCreateIntervention} onOpenChange={setShowCreateIntervention}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby="create-intervention-description">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }} aria-describedby="create-intervention-description">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wrench className="w-5 h-5" />
@@ -1936,7 +1936,7 @@ export const TechnicianApp = () => {
         setShowCreateDevis(open);
         if (!open) setPreselectedClientId(null);
       }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby="create-devis-description">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }} aria-describedby="create-devis-description">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />
