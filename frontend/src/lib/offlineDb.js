@@ -5,7 +5,7 @@
 import Dexie from 'dexie';
 
 // Database schema version
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 class ActoosDatabase extends Dexie {
   constructor() {
@@ -31,7 +31,20 @@ class ActoosDatabase extends Dexie {
       syncMeta: 'key',
       
       // Sync history log for LWW transparency
-      syncHistory: '++id, type, entityId, timestamp, result, conflictResolved'
+      syncHistory: '++id, type, entityId, timestamp, result, conflictResolved',
+      
+      // ========== NEW: Offline Devis ==========
+      // Devis created offline (Pro & Enterprise only)
+      offlineDevis: '++id, tempId, client_id, entreprise_id, status, created_at, synced',
+      
+      // Offline clients (created when no connection)
+      offlineClients: '++id, tempId, entreprise_id, created_at, synced',
+      
+      // Offline interventions (created when no connection)
+      offlineInterventions: '++id, tempId, client_id, entreprise_id, created_at, synced',
+      
+      // Signatures storage (base64)
+      signatures: '++id, devis_temp_id, signatory_name, signature_data, created_at'
     });
     
     // Define table types
@@ -42,6 +55,12 @@ class ActoosDatabase extends Dexie {
     this.pendingPhotos = this.table('pendingPhotos');
     this.syncMeta = this.table('syncMeta');
     this.syncHistory = this.table('syncHistory');
+    
+    // New tables for offline mode
+    this.offlineDevis = this.table('offlineDevis');
+    this.offlineClients = this.table('offlineClients');
+    this.offlineInterventions = this.table('offlineInterventions');
+    this.signatures = this.table('signatures');
   }
   
   // ==================== INTERVENTIONS ====================
@@ -466,6 +485,296 @@ class ActoosDatabase extends Dexie {
     } catch (error) {
       console.error('[OfflineDB] Failed to get sync stats:', error);
       return { total: 0, last24h: 0, conflicts: 0, conflictsLast24h: 0, successful: 0, failed: 0 };
+    }
+  }
+
+  // ==================== OFFLINE DEVIS ====================
+  
+  /**
+   * Create a devis offline with temporary ID
+   */
+  async createOfflineDevis(devisData) {
+    try {
+      const tempId = `OFFLINE-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      const offlineDevis = {
+        tempId,
+        ...devisData,
+        status: 'draft',
+        synced: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const id = await this.offlineDevis.add(offlineDevis);
+      console.log('[OfflineDB] Created offline devis:', tempId);
+      
+      return { ...offlineDevis, id };
+    } catch (error) {
+      console.error('[OfflineDB] Failed to create offline devis:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all offline devis for an enterprise
+   */
+  async getOfflineDevis(entrepriseId) {
+    try {
+      return await this.offlineDevis
+        .where('entreprise_id')
+        .equals(entrepriseId)
+        .toArray();
+    } catch (error) {
+      console.error('[OfflineDB] Failed to get offline devis:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get pending (unsynced) offline devis
+   */
+  async getPendingOfflineDevis() {
+    try {
+      return await this.offlineDevis
+        .where('synced')
+        .equals(false)
+        .toArray();
+    } catch (error) {
+      console.error('[OfflineDB] Failed to get pending offline devis:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Update offline devis (add signature, update status, etc.)
+   */
+  async updateOfflineDevis(id, updates) {
+    try {
+      await this.offlineDevis.update(id, {
+        ...updates,
+        updated_at: new Date().toISOString()
+      });
+      console.log('[OfflineDB] Updated offline devis:', id);
+      return true;
+    } catch (error) {
+      console.error('[OfflineDB] Failed to update offline devis:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Mark offline devis as synced with real ID
+   */
+  async markDevisSynced(tempId, realId, realNumero) {
+    try {
+      const devis = await this.offlineDevis
+        .where('tempId')
+        .equals(tempId)
+        .first();
+      
+      if (devis) {
+        await this.offlineDevis.update(devis.id, {
+          synced: true,
+          real_id: realId,
+          real_numero: realNumero,
+          synced_at: new Date().toISOString()
+        });
+        console.log('[OfflineDB] Marked devis synced:', tempId, '->', realNumero);
+      }
+      return true;
+    } catch (error) {
+      console.error('[OfflineDB] Failed to mark devis synced:', error);
+      return false;
+    }
+  }
+
+  // ==================== SIGNATURES ====================
+
+  /**
+   * Save signature for a devis
+   */
+  async saveSignature(devisTempId, signatoryName, signatureData) {
+    try {
+      const signature = {
+        devis_temp_id: devisTempId,
+        signatory_name: signatoryName,
+        signature_data: signatureData, // Base64 PNG
+        created_at: new Date().toISOString()
+      };
+      
+      const id = await this.signatures.add(signature);
+      console.log('[OfflineDB] Saved signature for devis:', devisTempId);
+      
+      // Update devis status to signed
+      const devis = await this.offlineDevis
+        .where('tempId')
+        .equals(devisTempId)
+        .first();
+      
+      if (devis) {
+        await this.offlineDevis.update(devis.id, {
+          status: 'signed',
+          signature_id: id,
+          signed_at: new Date().toISOString(),
+          signed_by: signatoryName
+        });
+      }
+      
+      return { ...signature, id };
+    } catch (error) {
+      console.error('[OfflineDB] Failed to save signature:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get signature for a devis
+   */
+  async getSignature(devisTempId) {
+    try {
+      return await this.signatures
+        .where('devis_temp_id')
+        .equals(devisTempId)
+        .first();
+    } catch (error) {
+      console.error('[OfflineDB] Failed to get signature:', error);
+      return null;
+    }
+  }
+
+  // ==================== OFFLINE CLIENTS ====================
+
+  /**
+   * Create a client offline
+   */
+  async createOfflineClient(clientData) {
+    try {
+      const tempId = `CLIENT-OFFLINE-${Date.now()}`;
+      
+      const offlineClient = {
+        tempId,
+        ...clientData,
+        synced: false,
+        created_at: new Date().toISOString()
+      };
+      
+      const id = await this.offlineClients.add(offlineClient);
+      console.log('[OfflineDB] Created offline client:', tempId);
+      
+      return { ...offlineClient, id, _isOffline: true };
+    } catch (error) {
+      console.error('[OfflineDB] Failed to create offline client:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all offline clients
+   */
+  async getOfflineClients(entrepriseId) {
+    try {
+      return await this.offlineClients
+        .where('entreprise_id')
+        .equals(entrepriseId)
+        .toArray();
+    } catch (error) {
+      console.error('[OfflineDB] Failed to get offline clients:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Mark offline client as synced
+   */
+  async markClientSynced(tempId, realId) {
+    try {
+      const client = await this.offlineClients
+        .where('tempId')
+        .equals(tempId)
+        .first();
+      
+      if (client) {
+        await this.offlineClients.update(client.id, {
+          synced: true,
+          real_id: realId,
+          synced_at: new Date().toISOString()
+        });
+      }
+      return true;
+    } catch (error) {
+      console.error('[OfflineDB] Failed to mark client synced:', error);
+      return false;
+    }
+  }
+
+  // ==================== OFFLINE INTERVENTIONS ====================
+
+  /**
+   * Create an intervention offline
+   */
+  async createOfflineIntervention(interventionData) {
+    try {
+      const tempId = `INT-OFFLINE-${Date.now()}`;
+      
+      const offlineIntervention = {
+        tempId,
+        ...interventionData,
+        statut: 'planifiee',
+        synced: false,
+        created_at: new Date().toISOString()
+      };
+      
+      const id = await this.offlineInterventions.add(offlineIntervention);
+      console.log('[OfflineDB] Created offline intervention:', tempId);
+      
+      return { ...offlineIntervention, id, _isOffline: true };
+    } catch (error) {
+      console.error('[OfflineDB] Failed to create offline intervention:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get pending offline data count (for sync indicator)
+   */
+  async getPendingOfflineCount() {
+    try {
+      const [devis, clients, interventions, photos] = await Promise.all([
+        this.offlineDevis.where('synced').equals(false).count(),
+        this.offlineClients.where('synced').equals(false).count(),
+        this.offlineInterventions.where('synced').equals(false).count(),
+        this.pendingPhotos.where('synced').equals(false).count()
+      ]);
+      
+      return {
+        devis,
+        clients,
+        interventions,
+        photos,
+        total: devis + clients + interventions + photos
+      };
+    } catch (error) {
+      console.error('[OfflineDB] Failed to get pending count:', error);
+      return { devis: 0, clients: 0, interventions: 0, photos: 0, total: 0 };
+    }
+  }
+
+  /**
+   * Clear synced offline data (cleanup)
+   */
+  async clearSyncedOfflineData() {
+    try {
+      await Promise.all([
+        this.offlineDevis.where('synced').equals(true).delete(),
+        this.offlineClients.where('synced').equals(true).delete(),
+        this.offlineInterventions.where('synced').equals(true).delete()
+      ]);
+      console.log('[OfflineDB] Cleared synced offline data');
+      return true;
+    } catch (error) {
+      console.error('[OfflineDB] Failed to clear synced data:', error);
+      return false;
     }
   }
 }

@@ -38,6 +38,8 @@ import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday }
 import { fr } from 'date-fns/locale';
 import SignaturePad from '../components/SignaturePad';
 import SyncStatusPanel from '../components/SyncStatusPanel';
+import OfflineDevisForm from '../components/OfflineDevisForm';
+import db from '../lib/offlineDb';
 import ConflictNotificationBanner, { ConflictBadge } from '../components/ConflictNotificationBanner';
 
 // PWA Install Prompt Component
@@ -1258,11 +1260,13 @@ export const TechnicianApp = () => {
   // Modal states
   const [showCreateIntervention, setShowCreateIntervention] = useState(false);
   const [showCreateDevis, setShowCreateDevis] = useState(false);
+  const [showOfflineDevis, setShowOfflineDevis] = useState(false);
   const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
   const [showSignaturePad, setShowSignaturePad] = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   const [preselectedClientId, setPreselectedClientId] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
+  const [offlineClients, setOfflineClients] = useState([]);
   
   const { api, user, logout } = useAuth();
   const { 
@@ -1294,7 +1298,19 @@ export const TechnicianApp = () => {
     loadInterventions();
     loadClients();
     loadCategories();
+    loadOfflineClients();
   }, [activeTab]);
+
+  const loadOfflineClients = async () => {
+    try {
+      if (user?.entreprise_id) {
+        const offlineClientsList = await db.getOfflineClients(user.entreprise_id);
+        setOfflineClients(offlineClientsList.filter(c => !c.synced));
+      }
+    } catch (error) {
+      console.error('Error loading offline clients:', error);
+    }
+  };
 
   const loadClients = async () => {
     try {
@@ -1893,11 +1909,18 @@ export const TechnicianApp = () => {
           <Button
             variant="ghost"
             className="flex-col h-auto py-2 flex-1"
-            onClick={() => setShowCreateDevis(true)}
+            onClick={() => {
+              // If offline and plan supports it, use offline devis form
+              if (!isOnline && user?.entreprise?.plan_limits?.offline_mode) {
+                setShowOfflineDevis(true);
+              } else {
+                setShowCreateDevis(true);
+              }
+            }}
             data-testid="nav-new-devis"
           >
             <FileText className="w-5 h-5 mb-1" />
-            <span className="text-xs">Devis</span>
+            <span className="text-xs">{!isOnline ? 'Devis ✏️' : 'Devis'}</span>
           </Button>
           <ProfileMenu 
             user={user} 
@@ -2103,6 +2126,31 @@ export const TechnicianApp = () => {
         title="Signature de fin d'intervention"
         description="Le client doit signer pour valider la fin de l'intervention"
       />
+
+      {/* Offline Devis Modal - for Pro & Enterprise plans */}
+      <Dialog open={showOfflineDevis} onOpenChange={setShowOfflineDevis}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Nouveau devis (hors ligne)
+            </DialogTitle>
+          </DialogHeader>
+          <OfflineDevisForm
+            clients={clients}
+            offlineClients={offlineClients}
+            entreprise={user?.entreprise || {}}
+            onSubmit={(devis) => {
+              toast.success('Devis créé hors ligne');
+              setShowOfflineDevis(false);
+            }}
+            onClose={() => setShowOfflineDevis(false)}
+            onCreateOfflineClient={(client) => {
+              setOfflineClients([...offlineClients, client]);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* PWA Install Prompt (auto-show) */}
       <InstallPrompt userEmail={user?.email} />

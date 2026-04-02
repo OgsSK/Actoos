@@ -291,6 +291,126 @@ export const OfflineProvider = ({ children }) => {
     }
     
     console.log(`[Offline] Sync complete: ${successCount} success, ${failCount} failed`);
+    
+    // Also sync offline devis, clients, and interventions
+    await syncOfflineData();
+  }, [isOnline, isSyncing]);
+
+  // Sync offline-created data (devis, clients, interventions)
+  const syncOfflineData = useCallback(async () => {
+    if (!isOnline || isSyncing) return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      // Get pending offline items
+      const [pendingDevis, pendingClients, pendingInterventions] = await Promise.all([
+        db.getPendingOfflineDevis(),
+        db.offlineClients.where('synced').equals(false).toArray(),
+        db.offlineInterventions.where('synced').equals(false).toArray()
+      ]);
+      
+      const totalPending = pendingDevis.length + pendingClients.length + pendingInterventions.length;
+      if (totalPending === 0) return;
+      
+      console.log(`[Offline] Syncing ${totalPending} offline items...`);
+      
+      // Get API URL
+      const apiUrl = process.env.REACT_APP_BACKEND_URL || '';
+      
+      // Prepare batch sync data
+      const batchData = {
+        clients: pendingClients.map(c => ({
+          temp_id: c.tempId,
+          nom: c.nom,
+          email: c.email,
+          telephone: c.telephone,
+          adresse: c.adresse,
+          ville: c.ville,
+          code_postal: c.code_postal,
+          created_at: c.created_at
+        })),
+        devis: await Promise.all(pendingDevis.map(async d => {
+          const signature = await db.getSignature(d.tempId);
+          return {
+            temp_id: d.tempId,
+            client_id: d.client_id,
+            client_name: d.client_name,
+            lignes: d.lignes,
+            total_ht: d.total_ht,
+            total_tva: d.total_tva,
+            total_ttc: d.total_ttc,
+            devise: d.devise,
+            validite_jours: d.validite_jours,
+            conditions: d.conditions,
+            notes_internes: d.notes_internes,
+            created_at: d.created_at,
+            signature: signature ? {
+              signature_data: signature.signature_data,
+              signatory_name: signature.signatory_name,
+              created_at: signature.created_at
+            } : null
+          };
+        })),
+        interventions: pendingInterventions.map(i => ({
+          temp_id: i.tempId,
+          client_id: i.client_id,
+          titre: i.titre,
+          description: i.description,
+          date_prevue: i.date_prevue,
+          duree_estimee: i.duree_estimee,
+          adresse: i.adresse,
+          ville: i.ville,
+          code_postal: i.code_postal,
+          priorite: i.priorite,
+          categorie_id: i.categorie_id,
+          created_at: i.created_at
+        }))
+      };
+      
+      // Send batch sync request
+      const response = await fetch(`${apiUrl}/api/offline/sync/batch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(batchData)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Mark items as synced based on response
+        for (const clientResult of result.details.clients) {
+          if (clientResult.status === 'synced' || clientResult.status === 'already_synced') {
+            await db.markClientSynced(clientResult.temp_id, clientResult.client_id);
+          }
+        }
+        
+        for (const devisResult of result.details.devis) {
+          if (devisResult.status === 'synced' || devisResult.status === 'already_synced') {
+            await db.markDevisSynced(devisResult.temp_id, devisResult.devis_id, devisResult.numero);
+          }
+        }
+        
+        // Clean up synced offline data
+        await db.clearSyncedOfflineData();
+        
+        const syncedCount = result.synced.clients + result.synced.devis + result.synced.interventions;
+        if (syncedCount > 0) {
+          toast.success(`${syncedCount} élément(s) hors ligne synchronisé(s)`);
+        }
+        
+        console.log('[Offline] Offline data sync complete:', result);
+      } else {
+        const errorText = await response.text();
+        console.error('[Offline] Failed to sync offline data:', errorText);
+      }
+    } catch (error) {
+      console.error('[Offline] Error syncing offline data:', error);
+    }
   }, [isOnline, isSyncing]);
 
   // Cache interventions for offline use
