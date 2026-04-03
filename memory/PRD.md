@@ -431,22 +431,32 @@ Résolution automatique des conflits quand un technicien travaille hors ligne :
   - `GET /api/dashboard/recent` - Activité récente (interventions, devis, factures)
 - **Fichiers**: `/app/backend/routers/dashboard.py` (nouveau), `/app/backend/server.py`, `/app/frontend/src/pages/Rapports.jsx`
 
-### P1 - En cours/À faire
+### P1 - Corrigés ✅ (2026-04-03)
 
-#### Bug 5: Photos & Notes non incluses dans les Devis PDF
-- **Status**: À implémenter
-- **Description**: Lier intervention_id au devis lors de la création pour inclure photos/notes
+#### Bug 5: Photos & Notes incluses dans les Devis PDF
+- **Fix**: `generate_devis_pdf()` accepte maintenant `intervention_photos` et `intervention_notes` 
+- **Fichiers**: `/app/backend/pdf_generator.py`, `/app/backend/routers/devis.py`
 
-#### Bug 6: QR Code Facture placeholder
-- **Status**: Partiellement implémenté
-- **Description**: Le QR code contient les infos de paiement basiques, mais nécessite un portal_url Stripe pour être fonctionnel
-- **Solution**: Passer le lien de paiement Stripe au PDF generator
+#### Bug 6: QR Code Facture fonctionnel
+- **Fix**: Le QR code contient maintenant le `portal_url` (lien de paiement en ligne)
+- **Fichiers**: `/app/backend/routers/factures.py`, `/app/backend/pdf_generator.py`
 
-### P2 - Améliorations futures
+### P2 - Corrigés ✅ (2026-04-03)
 
-- [ ] Super Admin UI (texte noir sur fond sombre)
+#### Bug 7: Super Admin UI - Contraste amélioré
+- **Fix**: Badges avec couleurs sombres (bg-slate-700, bg-blue-900/50) et texte clair
+- **Fichiers**: `/app/frontend/src/pages/SuperAdminDashboard.jsx`
+
+### Nouvelles Fonctionnalités - 2026-04-03
+
+#### Système de Notifications Temps Réel (SSE)
+- **Endpoint**: `GET /api/events/stream?token={jwt_token}`
+- **Events**: intervention_created, intervention_started, intervention_completed, intervention_claimed, devis_created, devis_signed, facture_created, facture_paid, sync_required
+- **Fichiers**: `/app/backend/realtime_events.py`, `/app/frontend/src/hooks/useRealtimeEvents.js`
+
+### P2 - En cours/Backlog
+
 - [ ] Performance/Chargement lent (optimisation React, indexes DB)
-- [ ] Notes internes perdues à la création
-- [ ] Flux création devis technicien
+- [ ] Flux création devis technicien (section dédiée dans App Tech)
 - [ ] Personnalisation admin non reflétée dans App Tech
 - [ ] Chat temps réel Admin ↔ Tech
