@@ -407,3 +407,46 @@ Résolution automatique des conflits quand un technicien travaille hors ligne :
 ### Variables d'environnement
 - `CRON_SECRET_KEY` : Clé secrète pour les endpoints cron (défaut: actoos-cron-2024)
 
+
+## 🐛 Corrections de Bugs - 2026-04-03
+
+### P0 - Critiques (CORRIGÉS ✅)
+
+#### Bug 1: Interventions ne démarrent pas dans l'App Technicien
+- **Cause**: Le frontend envoyait `{ geo: geoData }` mais le backend attendait `geoData` directement
+- **Fix**: `TechnicianApp.jsx` ligne 1471 - `api.post('/interventions/{id}/start', geoData)` au lieu de `{geo: geoData}`
+- **Fix**: `OfflineContext.jsx` ligne 165 - Même correction pour le sync offline
+- **Fichiers**: `/app/frontend/src/pages/TechnicianApp.jsx`, `/app/frontend/src/contexts/OfflineContext.jsx`
+
+#### Bug 3: Timezone/Minuit - Interventions d'aujourd'hui non affichées
+- **Cause**: Le filtrage utilisait UTC strict (00:00 à 23:59 UTC), mais la France est en UTC+1/UTC+2
+- **Fix**: Fenêtre élargie de 22h J-1 à 02h J+1 UTC pour couvrir les fuseaux horaires européens
+- **Fichiers**: `/app/backend/routers/interventions.py` (ligne 191-205), `/app/backend/routers/dashboard.py`
+
+#### Bug 4: Analytics Dashboard montrant 0
+- **Cause**: Le frontend appelait `/api/dashboard/stats` mais le endpoint n'existait pas (c'était `/api/stats`)
+- **Fix**: Création du nouveau router `/app/backend/routers/dashboard.py` avec:
+  - `GET /api/dashboard/stats` - Stats complètes du dashboard
+  - `GET /api/dashboard/alerts` - Alertes (factures en retard, interventions non démarrées)
+  - `GET /api/dashboard/recent` - Activité récente (interventions, devis, factures)
+- **Fichiers**: `/app/backend/routers/dashboard.py` (nouveau), `/app/backend/server.py`, `/app/frontend/src/pages/Rapports.jsx`
+
+### P1 - En cours/À faire
+
+#### Bug 5: Photos & Notes non incluses dans les Devis PDF
+- **Status**: À implémenter
+- **Description**: Lier intervention_id au devis lors de la création pour inclure photos/notes
+
+#### Bug 6: QR Code Facture placeholder
+- **Status**: Partiellement implémenté
+- **Description**: Le QR code contient les infos de paiement basiques, mais nécessite un portal_url Stripe pour être fonctionnel
+- **Solution**: Passer le lien de paiement Stripe au PDF generator
+
+### P2 - Améliorations futures
+
+- [ ] Super Admin UI (texte noir sur fond sombre)
+- [ ] Performance/Chargement lent (optimisation React, indexes DB)
+- [ ] Notes internes perdues à la création
+- [ ] Flux création devis technicien
+- [ ] Personnalisation admin non reflétée dans App Tech
+- [ ] Chat temps réel Admin ↔ Tech

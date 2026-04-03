@@ -1,0 +1,64 @@
+======================================================================
+🔥 TEST DE STRESS PROGRESSIF - RECHERCHE DE LA LIMITE
+======================================================================
+
+======================================================================
+🚀 Niveau 1 - Warm-up - 25 opérations simultanées
+======================================================================
+
+📦 Test: Création de 25 entreprises simultanées...
+  ✅ Succès: 25/25 (100.0%)
+  ⏱️ Temps total: 8.99s
+  ⚡ Temps moyen: 8871ms | Max: 8985ms
+
+⏸️ Pause de 3s avant le niveau suivant...
+
+======================================================================
+🚀 Niveau 2 - Modéré - 50 opérations simultanées
+======================================================================
+
+📦 Test: Création de 50 entreprises simultanées...
+  ✅ Succès: 50/50 (100.0%)
+  ⏱️ Temps total: 17.32s
+  ⚡ Temps moyen: 17143ms | Max: 17314ms
+
+⏸️ Pause de 3s avant le niveau suivant...
+
+======================================================================
+🚀 Niveau 3 - Standard - 100 opérations simultanées
+======================================================================
+
+📦 Test: Création de 100 entreprises simultanées...
+  ✅ Succès: 100/100 (100.0%)
+  ⏱️ Temps total: 37.58s
+  ⚡ Temps moyen: 35351ms | Max: 37574ms
+
+⏸️ Pause de 3s avant le niveau suivant...
+
+======================================================================
+🚀 Niveau 4 - Élevé - 200 opérations simultanées
+======================================================================
+
+📦 Test: Création de 200 entreprises simultanées...
+  ✅ Succès: 200/200 (100.0%)
+  ⏱️ Temps total: 70.35s
+  ⚡ Temps moyen: 52534ms | Max: 70343ms
+
+⏸️ Pause de 3s avant le niveau suivant...
+
+======================================================================
+🚀 Niveau 5 - Intense - 300 opérations simultanées
+======================================================================
+
+📦 Test: Création de 300 entreprises simultanées...
+  ✅ Succès: 300/300 (100.0%)
+  ⏱️ Temps total: 103.06s
+  ⚡ Temps moyen: 67721ms | Max: 103038ms
+
+⚠️ LIMITE DE PERFORMANCE DÉTECTÉE!
+
+======================================================================
+🧹 PHASE DE NETTOYAGE
+======================================================================
+
+🧹 NETTOYAGE DES DONNÉES DE TEST...
