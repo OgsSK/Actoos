@@ -78,6 +78,33 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         "role": role
     }
 
+
+async def get_current_user_from_token(token: str) -> dict:
+    """Get current user from a token string (for SSE endpoints that can't use headers)"""
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token requis"
+        )
+    
+    payload = decode_token(token)
+    user_id = payload.get("sub")
+    entreprise_id = payload.get("ent")
+    role = payload.get("role")
+    
+    if not user_id or not entreprise_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token invalide"
+        )
+    
+    return {
+        "user_id": user_id,
+        "entreprise_id": entreprise_id,
+        "role": role
+    }
+
+
 def require_admin(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "admin":
         raise HTTPException(

@@ -55,6 +55,7 @@ from routers import (
     integrations as integrations_router,
     dashboard as dashboard_router
 )
+import realtime_events
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -102,6 +103,7 @@ api_router.include_router(super_admin_router.router)
 api_router.include_router(settings_router.router)
 api_router.include_router(integrations_router.router)
 api_router.include_router(dashboard_router.router)
+api_router.include_router(realtime_events.router)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

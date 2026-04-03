@@ -309,8 +309,14 @@ def build_payment_qr_data(facture: dict, entreprise: dict, portal_url: str = Non
     
     return "\n".join(parts)
 
-def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
-    """Generate PDF for a devis/quote with company logo and multi-currency support"""
+def generate_devis_pdf(
+    devis: dict, 
+    client: dict, 
+    entreprise: dict,
+    intervention_photos: list = None,
+    intervention_notes: str = None
+) -> bytes:
+    """Generate PDF for a devis/quote with company logo, multi-currency support, and intervention details"""
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20*mm, bottomMargin=20*mm, leftMargin=20*mm, rightMargin=20*mm)
     
@@ -427,6 +433,47 @@ def generate_devis_pdf(devis: dict, client: dict, entreprise: dict) -> bytes:
         elements.append(Paragraph("<b>Conditions:</b>", styles['Subtitle']))
         elements.append(Paragraph(devis.get('conditions', ''), styles['Small']))
         elements.append(Spacer(1, 5*mm))
+    
+    # Intervention notes if available
+    if intervention_notes:
+        elements.append(Paragraph("<b>Notes du technicien:</b>", styles['Subtitle']))
+        elements.append(Paragraph(intervention_notes, styles['Normal10']))
+        elements.append(Spacer(1, 5*mm))
+    
+    # Intervention photos if available
+    if intervention_photos and len(intervention_photos) > 0:
+        elements.append(Paragraph("<b>Photos de l'intervention:</b>", styles['Subtitle']))
+        elements.append(Spacer(1, 3*mm))
+        
+        # Create a grid of photos (2 per row max)
+        photo_images = []
+        for photo_url in intervention_photos[:6]:  # Limit to 6 photos
+            try:
+                photo_img = load_photo_image(photo_url, max_width=70*mm, max_height=50*mm)
+                if photo_img:
+                    photo_images.append(photo_img)
+            except Exception as e:
+                logger.warning(f"Could not load intervention photo: {e}")
+        
+        # Arrange photos in a 2-column table
+        if photo_images:
+            photo_rows = []
+            for i in range(0, len(photo_images), 2):
+                row = [photo_images[i]]
+                if i + 1 < len(photo_images):
+                    row.append(photo_images[i + 1])
+                else:
+                    row.append('')
+                photo_rows.append(row)
+            
+            photo_table = Table(photo_rows, colWidths=[85*mm, 85*mm])
+            photo_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ]))
+            elements.append(photo_table)
+            elements.append(Spacer(1, 5*mm))
     
     # Signature area
     if devis.get('statut') == 'signe' and devis.get('signature_client'):

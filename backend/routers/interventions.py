@@ -3,7 +3,7 @@ Intervention routes - CRUD and workflow operations
 """
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Body, Query
 from typing import List, Optional
-from datetime import datetime, timezone, date as date_type
+from datetime import datetime, timezone, date as date_type, timedelta
 import uuid
 import logging
 
@@ -11,8 +11,12 @@ from models import InterventionCreate, InterventionUpdate, ChecklistResponse, In
 from auth import get_current_user, require_admin
 from dependencies import db, serialize_doc, log_action
 from route_optimizer import optimize_route, calculate_simple_route_score
-from push_service import notify_new_intervention_available_to_techs
+from push_service import notify_new_intervention_available_to_techs, notify_intervention_assigned
 from plan_limits import check_intervention_limit, raise_limit_error
+from realtime_events import (
+    broadcast_event, EventType, notify_intervention_change, 
+    notify_intervention_assigned_realtime, notify_sync_required
+)
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +107,15 @@ async def create_intervention(
     await db.interventions.insert_one(intervention_dict)
     await log_action(current_user["entreprise_id"], current_user["user_id"], "create", "intervention", intervention_dict["id"])
     
+    # Broadcast real-time event to all connected users
+    background_tasks.add_task(
+        notify_intervention_change,
+        current_user["entreprise_id"],
+        intervention_dict,
+        EventType.INTERVENTION_CREATED,
+        current_user["user_id"]
+    )
+    
     # If no technician assigned, notify all technicians
     if not intervention_dict.get("technicien_id"):
         background_tasks.add_task(
@@ -110,6 +123,14 @@ async def create_intervention(
             current_user["entreprise_id"],
             intervention_dict,
             client
+        )
+    else:
+        # Notify assigned technician in real-time
+        background_tasks.add_task(
+            notify_intervention_assigned_realtime,
+            current_user["entreprise_id"],
+            intervention_dict,
+            intervention_dict["technicien_id"]
         )
     
     return serialize_doc(intervention_dict)
@@ -532,6 +553,7 @@ async def cancel_intervention(
 @router.post("/{intervention_id}/start")
 async def start_intervention(
     intervention_id: str,
+    background_tasks: BackgroundTasks,
     geo: Optional[InterventionGeoLocation] = None,
     current_user: dict = Depends(get_current_user)
 ):
@@ -574,6 +596,16 @@ async def start_intervention(
     await db.interventions.update_one({"id": intervention_id}, {"$set": update})
     await log_action(current_user["entreprise_id"], current_user["user_id"], "start", "intervention", intervention_id)
     
+    # Broadcast real-time event - intervention started
+    intervention_updated = {**intervention, **update}
+    background_tasks.add_task(
+        notify_intervention_change,
+        current_user["entreprise_id"],
+        intervention_updated,
+        EventType.INTERVENTION_STARTED,
+        current_user["user_id"]
+    )
+    
     return {"message": "Intervention démarrée", "heure_debut": now, "geo_debut": update.get("geo_debut")}
 
 
@@ -610,7 +642,7 @@ async def claim_intervention(
     )
     
     # Verify it was actually assigned to this user (race condition check)
-    updated = await db.interventions.find_one({"id": intervention_id}, {"_id": 0, "technicien_id": 1})
+    updated = await db.interventions.find_one({"id": intervention_id}, {"_id": 0})
     if updated.get("technicien_id") != current_user["user_id"]:
         raise HTTPException(status_code=409, detail="Cette intervention a été prise par un autre technicien")
     
@@ -619,6 +651,15 @@ async def claim_intervention(
     # Get current user info for notification
     claiming_tech = await db.users.find_one({"id": current_user["user_id"]}, {"_id": 0, "prenom": 1, "nom": 1})
     tech_name = f"{claiming_tech.get('prenom', '')} {claiming_tech.get('nom', '')}" if claiming_tech else "Un technicien"
+    
+    # Broadcast real-time event - intervention claimed
+    background_tasks.add_task(
+        notify_intervention_change,
+        current_user["entreprise_id"],
+        updated,
+        EventType.INTERVENTION_CLAIMED,
+        None  # Notify everyone including the claimer (for dashboard update)
+    )
     
     return {
         "message": "Intervention assignée avec succès",
@@ -631,6 +672,7 @@ async def claim_intervention(
 @router.post("/{intervention_id}/complete")
 async def complete_intervention(
     intervention_id: str,
+    background_tasks: BackgroundTasks,
     notes_terrain: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
@@ -645,11 +687,27 @@ async def complete_intervention(
     if current_user.get("role") != "admin":
         query["technicien_id"] = current_user["user_id"]
     
+    # Get intervention before update for event data
+    intervention = await db.interventions.find_one(query, {"_id": 0})
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
     result = await db.interventions.update_one(query, {"$set": update})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Intervention non trouvée")
     
     await log_action(current_user["entreprise_id"], current_user["user_id"], "complete", "intervention", intervention_id)
+    
+    # Broadcast real-time event - intervention completed
+    intervention_updated = {**intervention, **update}
+    background_tasks.add_task(
+        notify_intervention_change,
+        current_user["entreprise_id"],
+        intervention_updated,
+        EventType.INTERVENTION_COMPLETED,
+        current_user["user_id"]
+    )
+    
     return {"message": "Intervention terminée", "heure_fin": now}
 
 

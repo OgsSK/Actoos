@@ -309,9 +309,9 @@ const SuperAdminDashboard = () => {
 
   const getPlanBadge = (plan) => {
     const styles = {
-      startup: 'bg-slate-100 text-slate-700',
-      pro: 'bg-blue-100 text-blue-700',
-      enterprise: 'bg-purple-100 text-purple-700'
+      startup: 'bg-slate-700 text-slate-200 border border-slate-600',
+      pro: 'bg-blue-900/50 text-blue-300 border border-blue-700',
+      enterprise: 'bg-purple-900/50 text-purple-300 border border-purple-700'
     };
     const labels = { startup: 'Startup', pro: 'Pro', enterprise: 'Entreprise' };
     const prices = { startup: '49€', pro: '79€', enterprise: '149€' };
@@ -324,11 +324,11 @@ const SuperAdminDashboard = () => {
 
   const getStatusBadge = (status) => {
     const styles = {
-      active: 'bg-green-100 text-green-700',
-      trial: 'bg-yellow-100 text-yellow-700',
-      cancelled: 'bg-red-100 text-red-700',
-      past_due: 'bg-orange-100 text-orange-700',
-      suspended: 'bg-slate-100 text-slate-700'
+      active: 'bg-green-900/50 text-green-300 border border-green-700',
+      trial: 'bg-yellow-900/50 text-yellow-300 border border-yellow-700',
+      cancelled: 'bg-red-900/50 text-red-300 border border-red-700',
+      past_due: 'bg-orange-900/50 text-orange-300 border border-orange-700',
+      suspended: 'bg-slate-700 text-slate-300 border border-slate-600'
     };
     const labels = {
       active: 'Actif', trial: 'Essai', cancelled: 'Résilié',

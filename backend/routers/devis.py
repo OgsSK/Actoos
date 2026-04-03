@@ -178,8 +178,26 @@ async def send_devis(devis_id: str, request: Request, current_user: dict = Depen
     client = await db.clients.find_one({"id": devis["client_id"]}, {"_id": 0})
     entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
     
-    # Generate PDF
-    pdf_bytes = generate_devis_pdf(devis, client or {}, entreprise or {})
+    # Get intervention photos and notes if linked
+    intervention_photos = None
+    intervention_notes = None
+    if devis.get("intervention_id"):
+        intervention = await db.interventions.find_one(
+            {"id": devis["intervention_id"]},
+            {"_id": 0, "photos": 1, "notes_terrain": 1, "notes_technicien": 1}
+        )
+        if intervention:
+            intervention_photos = intervention.get("photos", [])
+            intervention_notes = intervention.get("notes_terrain") or intervention.get("notes_technicien")
+    
+    # Generate PDF with intervention data if available
+    pdf_bytes = generate_devis_pdf(
+        devis, 
+        client or {}, 
+        entreprise or {},
+        intervention_photos=intervention_photos,
+        intervention_notes=intervention_notes
+    )
     
     # Get base URL for PDF link
     base_url = str(request.base_url).rstrip('/')

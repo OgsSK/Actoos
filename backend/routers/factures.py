@@ -1,11 +1,12 @@
 """
 Factures (Invoices) routes - CRUD and workflow operations
 """
-from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi import APIRouter, HTTPException, Depends, Response, Request
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 import uuid
 import logging
+import os
 
 from models import FactureCreate, FactureFromDevis
 from auth import get_current_user, require_admin, decode_token
@@ -156,12 +157,16 @@ async def get_facture(facture_id: str, current_user: dict = Depends(get_current_
 
 
 @router.post("/{facture_id}/emit")
-async def emit_facture(facture_id: str, current_user: dict = Depends(get_current_user)):
+async def emit_facture(facture_id: str, request: Request, current_user: dict = Depends(get_current_user)):
     """Emit a facture and send notification to client"""
-    return await emit_facture_internal(facture_id, current_user)
+    # Build base URL for portal link
+    base_url = str(request.base_url).rstrip('/')
+    if '/api' in base_url:
+        base_url = base_url.rsplit('/api', 1)[0]
+    return await emit_facture_internal(facture_id, current_user, base_url)
 
 
-async def emit_facture_internal(facture_id: str, current_user: dict):
+async def emit_facture_internal(facture_id: str, current_user: dict, base_url: str = None):
     """Internal function to emit a facture (can be called from other modules)"""
     from notification_service import NotificationService
     
@@ -201,11 +206,17 @@ async def emit_facture_internal(facture_id: str, current_user: dict):
                     "date_signature": intervention.get("date_signature")
                 }
     
+    # Build portal URL for QR code payment (online invoice payment page)
+    portal_url = None
+    if base_url and facture.get('token_client'):
+        portal_url = f"{base_url}/paiement/{facture_id}?token={facture.get('token_client', '')}"
+    
     # Generate PDF with photos and signature
     pdf_bytes = generate_facture_pdf(
         facture, 
         client or {}, 
         entreprise or {},
+        portal_url=portal_url,
         intervention_photos=intervention_photos,
         intervention_signature=intervention_signature
     )
@@ -298,7 +309,7 @@ async def mark_facture_paid(
 
 
 @router.get("/{facture_id}/pdf")
-async def get_facture_pdf(facture_id: str, current_user: dict = Depends(get_current_user)):
+async def get_facture_pdf(facture_id: str, request: Request, current_user: dict = Depends(get_current_user)):
     """Generate and return facture PDF with intervention photos and signature"""
     facture = await db.factures.find_one({"id": facture_id, "entreprise_id": current_user["entreprise_id"]}, {"_id": 0})
     if not facture:
@@ -325,10 +336,17 @@ async def get_facture_pdf(facture_id: str, current_user: dict = Depends(get_curr
                     "date_signature": intervention.get("date_signature")
                 }
     
+    # Build portal URL for QR code payment
+    base_url = str(request.base_url).rstrip('/')
+    if '/api' in base_url:
+        base_url = base_url.rsplit('/api', 1)[0]
+    portal_url = f"{base_url}/paiement/{facture_id}?token={facture.get('token_client', '')}"
+    
     pdf_bytes = generate_facture_pdf(
         facture, 
         client or {}, 
         entreprise or {},
+        portal_url=portal_url,
         intervention_photos=intervention_photos,
         intervention_signature=intervention_signature
     )
