@@ -107,8 +107,8 @@ export const RapportsPage = () => {
   const loadStats = async () => {
     setLoading(true);
     try {
-      // Load basic stats
-      const statsRes = await api.get('/dashboard/stats');
+      // Load basic stats (correct endpoint is /stats, not /dashboard/stats)
+      const statsRes = await api.get('/stats');
       setStats(statsRes.data);
 
       // Load monthly revenue data
@@ -121,9 +121,9 @@ export const RapportsPage = () => {
 
     } catch (error) {
       console.error('Error loading stats:', error);
-      // Use dashboard stats as fallback
+      // Use stats as fallback
       try {
-        const statsRes = await api.get('/dashboard/stats');
+        const statsRes = await api.get('/stats');
         setStats(statsRes.data);
       } catch (e) {
         console.error('Fallback stats also failed:', e);

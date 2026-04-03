@@ -51,7 +51,7 @@ async def notify_available_intervention(entreprise_id: str, intervention: dict, 
         try:
             date_obj = datetime.fromisoformat(intervention["date_prevue"].replace('Z', '+00:00'))
             date_str = date_obj.strftime("%d/%m à %Hh%M")
-        except:
+        except (ValueError, TypeError, KeyError):
             date_str = "bientôt"
         
         client_nom = f"{client.get('nom', '')} {client.get('prenom', '')}".strip() or "Client"
@@ -191,9 +191,19 @@ async def list_interventions(
 @router.get("/today")
 async def get_today_interventions(current_user: dict = Depends(get_current_user)):
     """Get today's interventions for technician. Skill-based filtering for available missions."""
+    # Use a wider time window to handle timezone differences
+    # France is UTC+1 (winter) or UTC+2 (summer), so we need to account for this
+    # Extend the window by 2 hours on each side to handle European timezones
     today = datetime.now(timezone.utc).date()
-    today_start = datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=timezone.utc).isoformat()
-    today_end = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc).isoformat()
+    
+    # Start from 22:00 UTC of previous day (to catch midnight in UTC+2)
+    from datetime import timedelta
+    yesterday = today - timedelta(days=1)
+    today_start = datetime(yesterday.year, yesterday.month, yesterday.day, 22, 0, 0, tzinfo=timezone.utc).isoformat()
+    
+    # End at 02:00 UTC of next day (to catch 23:59 in UTC+2)
+    tomorrow = today + timedelta(days=1)
+    today_end = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 2, 0, 0, tzinfo=timezone.utc).isoformat()
     
     query = {
         "entreprise_id": current_user["entreprise_id"],
@@ -1002,7 +1012,6 @@ async def sync_interventions(
                 
                 if server_time > local_time:
                     # Server version is newer - this is a conflict, server wins
-                    conflict_detected = True
                     results["conflicts"].append({
                         "intervention_id": intervention_id,
                         "server_updated_at": server_updated_at,

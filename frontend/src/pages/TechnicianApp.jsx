@@ -1468,7 +1468,8 @@ export const TechnicianApp = () => {
     }
     
     try {
-      await api.post(`/interventions/${id}/start`, geoData ? { geo: geoData } : null);
+      // Send geo data directly (not wrapped in { geo: ... })
+      await api.post(`/interventions/${id}/start`, geoData || null);
       toast.success('Intervention démarrée');
       loadInterventions();
       if (selectedIntervention?.id === id) {

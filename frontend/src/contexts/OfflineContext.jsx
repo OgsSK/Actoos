@@ -162,9 +162,11 @@ export const OfflineProvider = ({ children }) => {
         
         switch (type) {
           case ACTION_TYPES.START_INTERVENTION:
+            // Send geo data directly if available
             response = await fetch(`${API_URL}/api/interventions/${data.interventionId}/start`, {
               method: 'POST',
-              headers
+              headers,
+              body: data.geo ? JSON.stringify(data.geo) : null
             });
             break;
             
