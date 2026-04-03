@@ -453,10 +453,24 @@ Résolution automatique des conflits quand un technicien travaille hors ligne :
 - **Endpoint**: `GET /api/events/stream?token={jwt_token}`
 - **Events**: intervention_created, intervention_started, intervention_completed, intervention_claimed, devis_created, devis_signed, facture_created, facture_paid, sync_required
 - **Fichiers**: `/app/backend/realtime_events.py`, `/app/frontend/src/hooks/useRealtimeEvents.js`
+- **Intégration Frontend**: Dashboard.jsx et TechnicianApp.jsx utilisent le hook pour auto-refresh
 
-### P2 - En cours/Backlog
+#### Bug 2 RÉSOLU: Sync Dashboard ↔ App Tech en temps réel
+- **Solution**: SSE intégré dans Dashboard.jsx et TechnicianApp.jsx
+- Dashboard rafraîchit automatiquement lors des changements d'interventions/devis/factures
+- TechnicianApp reçoit notifications push pour nouvelles assignations
 
-- [ ] Performance/Chargement lent (optimisation React, indexes DB)
+#### Performance: Indexes MongoDB créés
+- **Script**: `/app/backend/create_indexes.py`
+- **Indexes créés**:
+  - interventions: 9 indexes (date_prevue, statut, technicien_id, client_id, composés)
+  - factures: 10 indexes (paye, statut, date_echeance, composés)
+  - devis: 8 indexes (statut, client_id, created_at)
+  - clients: 6 indexes (email, nom, portal_token)
+  - users: 5 indexes (email, role)
+
+### P2 - Backlog restant
+
 - [ ] Flux création devis technicien (section dédiée dans App Tech)
 - [ ] Personnalisation admin non reflétée dans App Tech
 - [ ] Chat temps réel Admin ↔ Tech
