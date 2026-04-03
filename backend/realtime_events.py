@@ -37,6 +37,7 @@ class EventType:
     FACTURE_PAID = "facture_paid"
     CLIENT_CREATED = "client_created"
     SYNC_REQUIRED = "sync_required"
+    CHAT_MESSAGE = "chat_message"
 
 
 async def broadcast_event(

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useOffline, ACTION_TYPES } from '../contexts/OfflineContext';
@@ -1089,6 +1089,163 @@ const CreateInterventionForm = ({ clients, categories, onSubmit, onClose, loadin
   );
 };
 
+// Devis Signature Form Component - For client to sign a quote
+const DevisSignatureForm = ({ devis, onSign, onClose, loading }) => {
+  const [signataireName, setSignataireName] = useState('');
+  const [signatureData, setSignatureData] = useState(null);
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+    }
+  }, []);
+  
+  const getCoords = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  };
+  
+  const startDrawing = (e) => {
+    e.preventDefault();
+    setIsDrawing(true);
+    const coords = getCoords(e);
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.beginPath();
+    ctx.moveTo(coords.x, coords.y);
+  };
+  
+  const draw = (e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const coords = getCoords(e);
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.lineTo(coords.x, coords.y);
+    ctx.stroke();
+  };
+  
+  const stopDrawing = () => {
+    if (isDrawing) {
+      setIsDrawing(false);
+      setSignatureData(canvasRef.current.toDataURL('image/png'));
+    }
+  };
+  
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setSignatureData(null);
+  };
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!signataireName.trim()) {
+      toast.error('Veuillez saisir le nom du signataire');
+      return;
+    }
+    if (!signatureData) {
+      toast.error('Veuillez dessiner une signature');
+      return;
+    }
+    onSign(devis.id, signatureData, signataireName);
+  };
+  
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Devis Summary */}
+      <div className="bg-slate-50 rounded-lg p-4 space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-slate-500">Référence:</span>
+          <span className="font-medium">{devis.numero_devis}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-slate-500">Montant TTC:</span>
+          <span className="font-bold text-lg">{devis.total_ttc?.toFixed(2)} €</span>
+        </div>
+      </div>
+      
+      {/* Signatory Name */}
+      <div>
+        <Label htmlFor="signataire-name">Nom du signataire *</Label>
+        <Input
+          id="signataire-name"
+          value={signataireName}
+          onChange={(e) => setSignataireName(e.target.value)}
+          placeholder="Prénom et Nom du client"
+          className="mt-1"
+          data-testid="signataire-name-input"
+        />
+      </div>
+      
+      {/* Signature Canvas */}
+      <div>
+        <Label>Signature du client *</Label>
+        <div className="border-2 border-dashed border-slate-300 rounded-lg mt-1 bg-white">
+          <canvas
+            ref={canvasRef}
+            width={350}
+            height={150}
+            className="w-full touch-none cursor-crosshair"
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+            onTouchStart={startDrawing}
+            onTouchMove={draw}
+            onTouchEnd={stopDrawing}
+            data-testid="signature-canvas"
+          />
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={clearSignature}
+          className="mt-1 text-slate-500"
+        >
+          Effacer la signature
+        </Button>
+      </div>
+      
+      {/* Legal Text */}
+      <p className="text-xs text-slate-500 text-center">
+        En signant, le client accepte les conditions générales du devis
+      </p>
+      
+      {/* Actions */}
+      <div className="flex gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+          Annuler
+        </Button>
+        <Button 
+          type="submit" 
+          disabled={loading || !signatureData || !signataireName.trim()} 
+          className="flex-1 bg-orange-500 hover:bg-orange-600"
+          data-testid="submit-devis-signature"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+          Valider la signature
+        </Button>
+      </div>
+    </form>
+  );
+};
+
 // Create Devis Form Component (simplified for technician)
 const CreateDevisForm = ({ clients, onSubmit, onClose, loading, preselectedClient }) => {
   const [formData, setFormData] = useState({
@@ -1269,7 +1426,12 @@ export const TechnicianApp = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [offlineClients, setOfflineClients] = useState([]);
   
-  const { api, user, logout } = useAuth();
+  // Devis section states
+  const [myDevis, setMyDevis] = useState([]);
+  const [selectedDevisForSignature, setSelectedDevisForSignature] = useState(null);
+  const [showDevisSignature, setShowDevisSignature] = useState(false);
+  
+  const { api, user, logout, entreprise } = useAuth();
   const { 
     isOnline, pendingActions, pendingCount, isSyncing, 
     addPendingAction, syncPendingActions, 
@@ -1315,12 +1477,33 @@ export const TechnicianApp = () => {
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
+  // Apply entreprise branding (custom colors) if available
+  useEffect(() => {
+    if (entreprise?.couleur_primaire) {
+      const primaryColor = entreprise.couleur_primaire;
+      // Set CSS variable for dynamic theming
+      document.documentElement.style.setProperty('--tech-primary-color', primaryColor);
+      
+      // Update theme color meta tag
+      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+      if (themeColorMeta) {
+        themeColorMeta.content = primaryColor;
+      }
+    }
+    
+    return () => {
+      // Reset to default on unmount
+      document.documentElement.style.removeProperty('--tech-primary-color');
+    };
+  }, [entreprise?.couleur_primaire]);
+
   // Load interventions, clients, and categories
   useEffect(() => {
     loadInterventions();
     loadClients();
     loadCategories();
     loadOfflineClients();
+    loadMyDevis();
   }, [activeTab]);
 
   const loadOfflineClients = async () => {
@@ -1428,6 +1611,40 @@ export const TechnicianApp = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load technician's devis (created by this tech, pending signature)
+  const loadMyDevis = async () => {
+    try {
+      if (isOnline) {
+        const response = await api.get('/devis', {
+          params: { created_by_tech: true, statut: 'envoye' }
+        });
+        setMyDevis(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading devis:', error);
+    }
+  };
+
+  // Handle client signature on devis
+  const handleDevisSignature = async (devisId, signatureData, signataireName) => {
+    try {
+      setFormLoading(true);
+      await api.post(`/devis/${devisId}/sign`, {
+        signature: signatureData,
+        nom_signataire: signataireName
+      });
+      toast.success('Devis signé avec succès !');
+      setShowDevisSignature(false);
+      setSelectedDevisForSignature(null);
+      loadMyDevis(); // Refresh devis list
+    } catch (error) {
+      console.error('Error signing devis:', error);
+      toast.error('Erreur lors de la signature');
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -1779,15 +1996,33 @@ export const TechnicianApp = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col" data-testid="tech-app" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-10" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0.75rem))' }}>
+      <header 
+        className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-10" 
+        style={{ 
+          paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0.75rem))',
+          borderColor: entreprise?.couleur_primaire ? `${entreprise.couleur_primaire}20` : undefined
+        }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/actoos-icon.svg" alt="Actoos" className="w-8 h-8 object-contain" />
+            {/* Show entreprise logo if available, otherwise default Actoos icon */}
+            {entreprise?.logo_url ? (
+              <img 
+                src={entreprise.logo_url} 
+                alt={entreprise.nom || 'Logo'} 
+                className="w-8 h-8 object-contain rounded"
+                onError={(e) => { e.target.src = '/actoos-icon.svg'; }}
+              />
+            ) : (
+              <img src="/actoos-icon.svg" alt="Actoos" className="w-8 h-8 object-contain" />
+            )}
             <div>
               <h1 className="font-bold text-lg text-slate-900">{dateLabel}</h1>
               <p className="text-sm text-slate-500">
                 {activeTab === 'today' 
                   ? `${todayInterventions.length} intervention(s)`
+                  : activeTab === 'devis'
+                  ? `${myDevis.length} devis en attente`
                   : `${interventions.length} intervention(s) cette semaine`
                 }
               </p>
@@ -1852,7 +2087,7 @@ export const TechnicianApp = () => {
       {/* View Toggle */}
       <div className="bg-white border-b border-slate-200 px-4 py-2">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="today" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Aujourd'hui
@@ -1860,6 +2095,15 @@ export const TechnicianApp = () => {
             <TabsTrigger value="week" className="flex items-center gap-2" data-testid="week-tab">
               <CalendarDays className="w-4 h-4" />
               Semaine
+            </TabsTrigger>
+            <TabsTrigger value="devis" className="flex items-center gap-2 relative" data-testid="devis-tab">
+              <FileText className="w-4 h-4" />
+              Devis
+              {myDevis.length > 0 && (
+                <Badge className="bg-orange-500 text-white text-xs px-1.5 py-0.5 ml-1">
+                  {myDevis.length}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -1894,6 +2138,48 @@ export const TechnicianApp = () => {
                     currentUserId={user?.id}
                   />
                 ))}
+            </div>
+          )
+        ) : activeTab === 'devis' ? (
+          // Devis View - Tech's quotes pending signature
+          myDevis.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+              <p className="text-slate-500">Aucun devis en attente de signature</p>
+              <p className="text-slate-400 text-sm mt-2">Les devis créés apparaîtront ici pour signature client</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {myDevis.map((devis) => (
+                <Card key={devis.id} className="p-4" data-testid={`devis-card-${devis.id}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-medium">{devis.numero_devis || `Devis #${devis.id.slice(0, 8)}`}</h3>
+                      <p className="text-sm text-slate-500">{devis.client_nom || 'Client'}</p>
+                    </div>
+                    <Badge className={devis.statut === 'accepte' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}>
+                      {devis.statut === 'accepte' ? 'Signé' : 'En attente'}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center text-sm text-slate-600 mb-3">
+                    <span>{format(new Date(devis.created_at), 'dd/MM/yyyy')}</span>
+                    <span className="font-semibold">{devis.total_ttc?.toFixed(2) || '0.00'} €</span>
+                  </div>
+                  {devis.statut !== 'accepte' && (
+                    <Button 
+                      className="w-full bg-orange-500 hover:bg-orange-600"
+                      onClick={() => {
+                        setSelectedDevisForSignature(devis);
+                        setShowDevisSignature(true);
+                      }}
+                      data-testid={`sign-devis-${devis.id}`}
+                    >
+                      <PenTool className="w-4 h-4 mr-2" />
+                      Faire signer le client
+                    </Button>
+                  )}
+                </Card>
+              ))}
             </div>
           )
         ) : (
@@ -2002,6 +2288,36 @@ export const TechnicianApp = () => {
             loading={formLoading}
             preselectedClient={preselectedClientId}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Devis Signature Modal */}
+      <Dialog open={showDevisSignature} onOpenChange={(open) => {
+        setShowDevisSignature(open);
+        if (!open) setSelectedDevisForSignature(null);
+      }}>
+        <DialogContent className="max-w-lg" aria-describedby="devis-signature-description">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PenTool className="w-5 h-5 text-orange-500" />
+              Signature du client
+            </DialogTitle>
+            <p id="devis-signature-description" className="text-sm text-slate-500 mt-1">
+              {selectedDevisForSignature?.numero_devis} - {selectedDevisForSignature?.total_ttc?.toFixed(2)} €
+            </p>
+          </DialogHeader>
+          
+          {selectedDevisForSignature && (
+            <DevisSignatureForm
+              devis={selectedDevisForSignature}
+              onSign={handleDevisSignature}
+              onClose={() => {
+                setShowDevisSignature(false);
+                setSelectedDevisForSignature(null);
+              }}
+              loading={formLoading}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
