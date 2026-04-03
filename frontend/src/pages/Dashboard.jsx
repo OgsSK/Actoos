@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import PlanUsageWidget from '../components/PlanUsageWidget';
 import AdminInstallPrompt from '../components/AdminInstallPrompt';
+import { useRealtimeEvents, EventType } from '../hooks/useRealtimeEvents';
 
 const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
   const { user, entreprise, logout, isAdmin } = useAuth();
@@ -420,26 +421,52 @@ export const DashboardOverview = () => {
   const [loading, setLoading] = useState(true);
   const { api, formatAmount, currencySymbol } = useAuth();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [statsRes, alertsRes, recentRes] = await Promise.all([
-          api.get('/dashboard/stats'),
-          api.get('/dashboard/alerts'),
-          api.get('/dashboard/recent'),
-        ]);
-        setStats(statsRes.data);
-        setAlerts(alertsRes.data);
-        setRecent(recentRes.data);
-      } catch (error) {
-        console.error('Dashboard fetch error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+  // Fetch dashboard data
+  const fetchData = useCallback(async () => {
+    try {
+      const [statsRes, alertsRes, recentRes] = await Promise.all([
+        api.get('/dashboard/stats'),
+        api.get('/dashboard/alerts'),
+        api.get('/dashboard/recent'),
+      ]);
+      setStats(statsRes.data);
+      setAlerts(alertsRes.data);
+      setRecent(recentRes.data);
+    } catch (error) {
+      console.error('Dashboard fetch error:', error);
+    } finally {
+      setLoading(false);
+    }
   }, [api]);
+
+  // Real-time updates via SSE
+  const { isConnected } = useRealtimeEvents({
+    enabled: true,
+    showToasts: true,
+    onInterventionChange: (eventType, data) => {
+      // Refresh dashboard when any intervention changes
+      console.log('[Dashboard] Intervention changed:', eventType, data);
+      fetchData();
+    },
+    onDevisChange: (eventType, data) => {
+      // Refresh dashboard when devis changes
+      console.log('[Dashboard] Devis changed:', eventType, data);
+      fetchData();
+    },
+    onFactureChange: (eventType, data) => {
+      // Refresh dashboard when facture changes
+      console.log('[Dashboard] Facture changed:', eventType, data);
+      fetchData();
+    },
+    onSyncRequired: () => {
+      // Full refresh requested
+      fetchData();
+    }
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (loading) {
     return (

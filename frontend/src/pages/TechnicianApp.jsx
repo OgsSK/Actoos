@@ -41,6 +41,7 @@ import SyncStatusPanel from '../components/SyncStatusPanel';
 import OfflineDevisForm from '../components/OfflineDevisForm';
 import db from '../lib/offlineDb';
 import ConflictNotificationBanner, { ConflictBadge } from '../components/ConflictNotificationBanner';
+import { useRealtimeEvents, EventType } from '../hooks/useRealtimeEvents';
 
 // PWA Install Prompt Component
 const InstallPrompt = ({ userEmail }) => {
@@ -1287,6 +1288,27 @@ export const TechnicianApp = () => {
     sendTestNotification
   } = usePushNotifications();
   const navigate = useNavigate();
+
+  // Real-time updates via SSE - receives updates when admin makes changes
+  const { isConnected: sseConnected } = useRealtimeEvents({
+    enabled: isOnline,
+    showToasts: true,
+    onInterventionChange: (eventType, data) => {
+      // Refresh interventions when admin creates/updates/assigns
+      console.log('[TechnicianApp] SSE Intervention event:', eventType, data);
+      if (eventType === EventType.INTERVENTION_ASSIGNED && data?.technicien_id === user?.user_id) {
+        toast.info(`Nouvelle mission assignée: ${data.titre || 'Intervention'}`, {
+          description: 'Votre planning a été mis à jour'
+        });
+      }
+      loadInterventions();
+    },
+    onSyncRequired: () => {
+      // Full refresh requested by server
+      loadInterventions();
+      loadClients();
+    }
+  });
 
   // Week data
   const today = new Date();
