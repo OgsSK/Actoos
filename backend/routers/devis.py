@@ -23,16 +23,22 @@ router = APIRouter(prefix="/devis", tags=["Devis"])
 @router.post("")
 async def create_devis(data: DevisCreate, current_user: dict = Depends(get_current_user)):
     """Create a new devis"""
+    from currency_utils import get_exchange_rate
+    
     # Verify client exists
     client = await db.clients.find_one({"id": data.client_id, "entreprise_id": current_user["entreprise_id"]})
     if not client:
         raise HTTPException(status_code=404, detail="Client non trouvé")
     
-    # Get next sequence number
+    # Get next sequence number and currency info
     entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
     seq = entreprise.get("sequence_devis", 1)
     year = datetime.now().year
     numero_devis = f"D{year}-{seq:05d}"
+    
+    # Capture currency snapshot at document creation time
+    devise = entreprise.get("devise", "EUR")
+    taux_change_eur = get_exchange_rate(devise, "EUR")
     
     # Update sequence
     await db.entreprises.update_one(
@@ -54,6 +60,8 @@ async def create_devis(data: DevisCreate, current_user: dict = Depends(get_curre
     devis_dict["total_ht"] = total_ht
     devis_dict["total_tva"] = total_tva
     devis_dict["total_ttc"] = total_ttc
+    devis_dict["devise"] = devise  # Currency snapshot
+    devis_dict["taux_change_eur"] = taux_change_eur  # Exchange rate snapshot
     devis_dict["token_client"] = str(uuid.uuid4())
     devis_dict["created_at"] = datetime.now(timezone.utc).isoformat()
     devis_dict["date_expiration"] = (datetime.now(timezone.utc) + timedelta(days=data.validite_jours)).isoformat()

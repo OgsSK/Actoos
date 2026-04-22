@@ -23,16 +23,22 @@ router = APIRouter(prefix="/factures", tags=["Factures"])
 @router.post("")
 async def create_facture(data: FactureCreate, current_user: dict = Depends(get_current_user)):
     """Create a new facture"""
+    from currency_utils import get_exchange_rate
+    
     # Verify client exists
     client = await db.clients.find_one({"id": data.client_id, "entreprise_id": current_user["entreprise_id"]})
     if not client:
         raise HTTPException(status_code=404, detail="Client non trouvé")
     
-    # Get next sequence number
+    # Get next sequence number and currency info
     entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
     seq = entreprise.get("sequence_facture", 1)
     year = datetime.now().year
     numero_facture = f"F{year}-{seq:05d}"
+    
+    # Capture currency snapshot at document creation time
+    devise = entreprise.get("devise", "EUR")
+    taux_change_eur = get_exchange_rate(devise, "EUR")
     
     # Update sequence
     await db.entreprises.update_one(
@@ -54,6 +60,8 @@ async def create_facture(data: FactureCreate, current_user: dict = Depends(get_c
     facture_dict["total_ht"] = total_ht
     facture_dict["total_tva"] = total_tva
     facture_dict["total_ttc"] = total_ttc
+    facture_dict["devise"] = devise  # Currency snapshot
+    facture_dict["taux_change_eur"] = taux_change_eur  # Exchange rate snapshot
     facture_dict["montant_paye"] = 0
     facture_dict["created_at"] = datetime.now(timezone.utc).isoformat()
     facture_dict["date_echeance"] = (datetime.now(timezone.utc) + timedelta(days=data.echeance_jours)).isoformat()
@@ -86,6 +94,11 @@ async def create_facture_from_devis(data: FactureFromDevis, current_user: dict =
         {"$inc": {"sequence_facture": 1}}
     )
     
+    # Inherit currency from devis (preserve historical currency)
+    # If devis doesn't have currency info (old document), use current entreprise currency
+    devise = devis.get("devise", entreprise.get("devise", "EUR"))
+    taux_change_eur = devis.get("taux_change_eur", 1.0)
+    
     facture_dict = {
         "id": str(uuid.uuid4()),
         "entreprise_id": current_user["entreprise_id"],
@@ -99,6 +112,8 @@ async def create_facture_from_devis(data: FactureFromDevis, current_user: dict =
         "total_ht": devis["total_ht"],
         "total_tva": devis["total_tva"],
         "total_ttc": devis["total_ttc"],
+        "devise": devise,  # Inherited from devis
+        "taux_change_eur": taux_change_eur,  # Inherited from devis
         "montant_paye": 0,
         "conditions_paiement": "Paiement à réception de facture",
         "echeance_jours": 30,

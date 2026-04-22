@@ -320,6 +320,9 @@ class Devis(DevisBase):
     total_ht: float = 0
     total_tva: float = 0
     total_ttc: float = 0
+    # Currency snapshot - captures currency at document creation time
+    devise: str = "EUR"  # Currency code when document was created
+    taux_change_eur: float = 1.0  # Exchange rate to EUR at creation time
     token_client: str = Field(default_factory=lambda: str(uuid.uuid4()))
     signature_client: Optional[str] = None
     date_signature: Optional[datetime] = None
@@ -356,6 +359,9 @@ class Facture(FactureBase):
     total_ttc: float = 0
     montant_paye: float = 0
     date_paiement: Optional[datetime] = None
+    # Currency snapshot - captures currency at document creation time
+    devise: str = "EUR"  # Currency code when document was created
+    taux_change_eur: float = 1.0  # Exchange rate to EUR at creation time
     pdf_url: Optional[str] = None
     created_at: datetime = Field(default_factory=now_utc)
     date_echeance: Optional[datetime] = None

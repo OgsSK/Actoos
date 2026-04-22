@@ -145,7 +145,7 @@ async def create_checkout_session(
     admin_email: Optional[str] = None,
     billing_cycle: Optional[str] = "monthly"  # "monthly" or "yearly"
 ):
-    """Create a Stripe checkout session for subscription with 14-day free trial"""
+    """Create a Stripe checkout session for ACTOOS PRO subscription with 14-day free trial"""
     import stripe
     
     # Validate plan
@@ -158,13 +158,14 @@ async def create_checkout_session(
     monthly_price = plan["price"]
     
     if is_yearly:
-        # 20% discount for yearly billing
-        yearly_price = monthly_price * 12 * 0.8  # 20% off
-        final_price = yearly_price
+        # Use the pre-calculated annual price with 20% discount
+        final_price = plan.get("price_annual", monthly_price * 12 * 0.8)
         interval = "year"
+        billing_label = "Annuel"
     else:
         final_price = monthly_price
         interval = "month"
+        billing_label = "Mensuel"
     
     # Get Stripe API key
     stripe_api_key = os.environ.get('STRIPE_API_KEY')
@@ -175,34 +176,41 @@ async def create_checkout_session(
     
     # Build URLs
     success_url = f"{origin_url}/signup/success?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{origin_url}/signup?cancelled=true"
+    cancel_url = f"{origin_url}/pricing?cancelled=true"
     
     try:
-        # Create or retrieve Stripe Price for this plan
-        # First, check if we have a price ID stored
-        price_id = plan.get("stripe_price_id")
+        # Create product name with ACTOOS PRO branding
+        product_name = f"ACTOOS PRO {plan['name']} - {billing_label}"
+        product_description = f"Abonnement ACTOOS PRO {plan['name']} ({billing_label})"
         
-        if not price_id:
-            # Create a product and price in Stripe
-            product = stripe.Product.create(
-                name=f"Actoos {plan['name']}",
-                description=plan.get("description", f"Abonnement {plan['name']}")
-            )
-            
-            price = stripe.Price.create(
-                product=product.id,
-                unit_amount=int(final_price * 100),  # Stripe uses cents
-                currency=plan["currency"],
-                recurring={"interval": interval}
-            )
-            price_id = price.id
+        # Create a product and price in Stripe for this checkout
+        product = stripe.Product.create(
+            name=product_name,
+            description=product_description,
+            metadata={
+                "plan_id": plan_id,
+                "billing_cycle": billing_cycle,
+                "brand": "ACTOOS PRO"
+            }
+        )
+        
+        price = stripe.Price.create(
+            product=product.id,
+            unit_amount=int(round(final_price * 100)),  # Stripe uses cents
+            currency=plan["currency"],
+            recurring={"interval": interval},
+            metadata={
+                "plan_id": plan_id,
+                "billing_cycle": billing_cycle
+            }
+        )
         
         # Create checkout session with subscription and trial
         session = stripe.checkout.Session.create(
             mode="subscription",
             payment_method_types=["card"],
             line_items=[{
-                "price": price_id,
+                "price": price.id,
                 "quantity": 1
             }],
             subscription_data={
@@ -212,8 +220,10 @@ async def create_checkout_session(
                     "plan_name": plan["name"],
                     "billing_cycle": billing_cycle,
                     "entreprise_name": entreprise_name or "",
-                    "admin_email": admin_email or ""
-                }
+                    "admin_email": admin_email or "",
+                    "brand": "ACTOOS PRO"
+                },
+                "description": f"ACTOOS PRO {plan['name']}"
             },
             success_url=success_url,
             cancel_url=cancel_url,
@@ -223,10 +233,13 @@ async def create_checkout_session(
                 "billing_cycle": billing_cycle,
                 "entreprise_name": entreprise_name or "",
                 "admin_email": admin_email or "",
-                "type": "subscription"
+                "type": "subscription",
+                "brand": "ACTOOS PRO"
             },
             customer_email=admin_email if admin_email else None,
-            allow_promotion_codes=True
+            allow_promotion_codes=True,
+            billing_address_collection="auto",
+            tax_id_collection={"enabled": True}
         )
         
         # Create pending payment transaction
@@ -240,15 +253,16 @@ async def create_checkout_session(
             "monthly_equivalent": monthly_price,
             "currency": plan["currency"],
             "status": "pending",
-            "payment_status": "trial",
+            "payment_status": "pending",
             "entreprise_name": entreprise_name,
             "admin_email": admin_email,
             "trial_ends_at": None,  # Will be set by webhook
+            "brand": "ACTOOS PRO",
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.payment_transactions.insert_one(transaction)
         
-        logger.info(f"Created subscription checkout session for plan {plan_id}: {session.id}")
+        logger.info(f"Created ACTOOS PRO checkout session for plan {plan_id} ({billing_cycle}): {session.id}")
         
         return {
             "url": session.url,

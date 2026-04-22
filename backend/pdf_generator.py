@@ -320,8 +320,8 @@ def generate_devis_pdf(
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20*mm, bottomMargin=20*mm, leftMargin=20*mm, rightMargin=20*mm)
     
-    # Get currency from entreprise
-    devise = entreprise.get('devise', 'EUR')
+    # Get currency from document (snapshot) - falls back to entreprise if not present (legacy documents)
+    devise = devis.get('devise', entreprise.get('devise', 'EUR'))
     
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='RightAlign', alignment=TA_RIGHT, fontSize=10))
@@ -512,8 +512,8 @@ def generate_facture_pdf(
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20*mm, bottomMargin=20*mm, leftMargin=20*mm, rightMargin=20*mm)
     
-    # Get currency from entreprise
-    devise = entreprise.get('devise', 'EUR')
+    # Get currency from document (snapshot) - falls back to entreprise if not present (legacy documents)
+    devise = facture.get('devise', entreprise.get('devise', 'EUR'))
     
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='RightAlign', alignment=TA_RIGHT, fontSize=10))

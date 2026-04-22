@@ -10,7 +10,8 @@ import {
 } from 'lucide-react';
 
 // =====================================================
-// PAGE PRICING PROFESSIONNELLE ACTOOS
+// PAGE PRICING PROFESSIONNELLE ACTOOS PRO
+// Tarifs officiels 2026 avec -20% annuel
 // =====================================================
 
 const PricingPage = () => {
@@ -104,18 +105,19 @@ const PricingPage = () => {
     setShowQuiz(false);
   };
 
-  // Définition des plans
+  // Définition des plans ACTOOS PRO (Tarifs 2026)
   const plans = [
     {
       id: 'startup',
       name: 'Startup',
       description: 'Pour artisans et auto-entrepreneurs',
-      price: 49,
-      priceYearly: 39,
+      price: 9.99,
+      priceYearly: 7.99,  // 95.90€/an = 7.99€/mois
+      annualTotal: 95.90,
       icon: Building,
       color: 'slate',
       popular: false,
-      cta: 'Démarrer',
+      cta: 'Essai gratuit 14j',
       limits: {
         admins: '1',
         technicians: '3',
@@ -128,12 +130,13 @@ const PricingPage = () => {
       id: 'pro',
       name: 'Pro',
       description: 'Pour PME en croissance',
-      price: 79,
-      priceYearly: 63,
+      price: 19.99,
+      priceYearly: 15.99,  // 191.90€/an = 15.99€/mois
+      annualTotal: 191.90,
       icon: Zap,
-      color: 'blue',
+      color: 'emerald',
       popular: true,
-      cta: 'Essayer gratuitement',
+      cta: 'Essai gratuit 14j',
       limits: {
         admins: '3',
         technicians: '10',
@@ -146,13 +149,13 @@ const PricingPage = () => {
       id: 'enterprise',
       name: 'Entreprise',
       description: 'Pour entreprises structurées',
-      price: 149,
-      priceYearly: 119,
+      price: 39.99,
+      priceYearly: 31.99,  // 383.90€/an = 31.99€/mois
+      annualTotal: 383.90,
       icon: Crown,
       color: 'purple',
       popular: false,
-      cta: 'Nous contacter',
-      isContact: true,  // Flag to handle differently
+      cta: 'Essai gratuit 14j',
       limits: {
         admins: 'Illimité',
         technicians: 'Illimité',
@@ -163,7 +166,7 @@ const PricingPage = () => {
     }
   ];
 
-  // Features comparatives
+  // Features comparatives ACTOOS PRO
   const featureCategories = [
     {
       name: 'Utilisateurs',
@@ -261,7 +264,7 @@ const PricingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2">
-              <img src="/actoos-logo.svg" alt="Actoos" className="h-10 sm:h-12" />
+              <img src="/branding/actoos-pro-logo.png" alt="ACTOOS PRO" className="h-10 sm:h-12" onError={(e) => { e.target.src = '/actoos-logo.svg'; }} />
             </Link>
 
             <div className="hidden md:flex items-center gap-8">
@@ -271,7 +274,7 @@ const PricingPage = () => {
               <Link to="/sectors" className="text-slate-600 hover:text-slate-900 transition-colors">
                 Secteurs
               </Link>
-              <Link to="/pricing" className="text-blue-600 font-medium">
+              <Link to="/pricing" className="text-emerald-600 font-medium">
                 Tarifs
               </Link>
             </div>
@@ -282,7 +285,7 @@ const PricingPage = () => {
               </Button>
               <Button 
                 onClick={() => navigate('/signup')} 
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-emerald-600 hover:bg-emerald-700"
               >
                 Essai gratuit
               </Button>
@@ -294,9 +297,9 @@ const PricingPage = () => {
       <div className="pt-24 pb-20">
         {/* Hero */}
         <section className="text-center px-4 mb-16">
-          <Badge className="mb-4 bg-blue-100 text-blue-700">14 jours d'essai gratuit</Badge>
+          <Badge className="mb-4 bg-emerald-100 text-emerald-700">14 jours d'essai gratuit • Sans carte bancaire</Badge>
           <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4">
-            Un prix simple, des fonctionnalités puissantes
+            Tarifs <span className="text-emerald-600">ACTOOS PRO</span>
           </h1>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
             Choisissez le plan adapté à votre entreprise. Évoluez à tout moment.
@@ -308,7 +311,7 @@ const PricingPage = () => {
               variant="outline" 
               size="lg"
               onClick={() => setShowQuiz(true)}
-              className="mb-8"
+              className="mb-8 border-emerald-300 hover:border-emerald-500"
             >
               <HelpCircle className="w-5 h-5 mr-2" />
               Pas sûr ? Trouvez votre plan en 30 secondes
@@ -323,8 +326,9 @@ const PricingPage = () => {
             <button
               onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
               className={`relative w-14 h-7 rounded-full transition-colors ${
-                billingCycle === 'yearly' ? 'bg-blue-600' : 'bg-slate-200'
+                billingCycle === 'yearly' ? 'bg-emerald-600' : 'bg-slate-200'
               }`}
+              data-testid="billing-toggle"
             >
               <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
                 billingCycle === 'yearly' ? 'translate-x-8' : 'translate-x-1'
@@ -334,7 +338,7 @@ const PricingPage = () => {
               Annuel
             </span>
             {billingCycle === 'yearly' && (
-              <Badge className="bg-green-100 text-green-700">-20%</Badge>
+              <Badge className="bg-amber-100 text-amber-700">-20%</Badge>
             )}
           </div>
         </section>
@@ -342,7 +346,7 @@ const PricingPage = () => {
         {/* Quiz Modal */}
         {showQuiz && !recommendedPlan && (
           <section className="max-w-2xl mx-auto px-4 mb-16">
-            <Card className="border-2 border-blue-200 shadow-xl">
+            <Card className="border-2 border-emerald-200 shadow-xl">
               <CardHeader className="text-center">
                 <div className="flex items-center justify-between mb-4">
                   <Badge variant="outline">Question {quizStep + 1}/{quizQuestions.length}</Badge>
@@ -350,8 +354,8 @@ const PricingPage = () => {
                     Passer le quiz
                   </Button>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-blue-100 mx-auto mb-4 flex items-center justify-center">
-                  {React.createElement(quizQuestions[quizStep].icon, { className: "w-6 h-6 text-blue-600" })}
+                <div className="w-12 h-12 rounded-full bg-emerald-100 mx-auto mb-4 flex items-center justify-center">
+                  {React.createElement(quizQuestions[quizStep].icon, { className: "w-6 h-6 text-emerald-600" })}
                 </div>
                 <CardTitle className="text-xl">{quizQuestions[quizStep].question}</CardTitle>
               </CardHeader>
@@ -360,7 +364,7 @@ const PricingPage = () => {
                   <button
                     key={idx}
                     onClick={() => handleQuizAnswer(option)}
-                    className="w-full p-4 text-left border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
+                    className="w-full p-4 text-left border-2 rounded-lg hover:border-emerald-500 hover:bg-emerald-50 transition-all"
                   >
                     {option.label}
                   </button>
@@ -371,7 +375,7 @@ const PricingPage = () => {
                   {quizQuestions.map((_, idx) => (
                     <div 
                       key={idx} 
-                      className={`w-2 h-2 rounded-full ${idx <= quizStep ? 'bg-blue-600' : 'bg-slate-200'}`} 
+                      className={`w-2 h-2 rounded-full ${idx <= quizStep ? 'bg-emerald-600' : 'bg-slate-200'}`} 
                     />
                   ))}
                 </div>
@@ -383,19 +387,19 @@ const PricingPage = () => {
         {/* Quiz Result */}
         {recommendedPlan && (
           <section className="max-w-2xl mx-auto px-4 mb-16">
-            <Card className="border-2 border-green-200 bg-green-50/50">
+            <Card className="border-2 border-emerald-200 bg-emerald-50/50">
               <CardContent className="pt-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-green-100 mx-auto mb-4 flex items-center justify-center">
-                  <Check className="w-8 h-8 text-green-600" />
+                <div className="w-16 h-16 rounded-full bg-emerald-100 mx-auto mb-4 flex items-center justify-center">
+                  <Check className="w-8 h-8 text-emerald-600" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-2">
-                  Nous vous recommandons le plan {plans.find(p => p.id === recommendedPlan)?.name}
+                  Nous vous recommandons ACTOOS PRO {plans.find(p => p.id === recommendedPlan)?.name}
                 </h3>
                 <p className="text-slate-600 mb-4">
                   Basé sur vos réponses, ce plan correspond le mieux à vos besoins.
                 </p>
                 <div className="flex gap-3 justify-center">
-                  <Button onClick={() => navigate(`/signup?plan=${recommendedPlan}&billing=${billingCycle}`)} className="bg-blue-600 hover:bg-blue-700">
+                  <Button onClick={() => navigate(`/signup?plan=${recommendedPlan}&billing=${billingCycle}`)} className="bg-emerald-600 hover:bg-emerald-700">
                     Choisir ce plan
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -415,19 +419,21 @@ const PricingPage = () => {
               const Icon = plan.icon;
               const isRecommended = recommendedPlan === plan.id;
               const price = billingCycle === 'yearly' ? plan.priceYearly : plan.price;
+              const annualSavings = billingCycle === 'yearly' ? ((plan.price * 12) - plan.annualTotal).toFixed(0) : 0;
               
               return (
                 <Card 
                   key={plan.id}
                   className={`relative transition-all ${
                     plan.popular || isRecommended
-                      ? 'border-2 border-blue-500 shadow-xl scale-105 z-10' 
-                      : 'border-slate-200 hover:border-blue-200 hover:shadow-lg'
+                      ? 'border-2 border-emerald-500 shadow-xl scale-105 z-10' 
+                      : 'border-slate-200 hover:border-emerald-200 hover:shadow-lg'
                   }`}
+                  data-testid={`plan-card-${plan.id}`}
                 >
                   {(plan.popular || isRecommended) && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="bg-blue-600 px-4">
+                      <Badge className="bg-emerald-600 px-4">
                         {isRecommended ? 'Recommandé pour vous' : 'Le plus populaire'}
                       </Badge>
                     </div>
@@ -435,47 +441,52 @@ const PricingPage = () => {
                   
                   <CardHeader className="text-center pt-8">
                     <div className={`w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center ${
-                      plan.color === 'blue' ? 'bg-blue-100' :
+                      plan.color === 'emerald' ? 'bg-emerald-100' :
                       plan.color === 'purple' ? 'bg-purple-100' : 'bg-slate-100'
                     }`}>
                       <Icon className={`w-7 h-7 ${
-                        plan.color === 'blue' ? 'text-blue-600' :
+                        plan.color === 'emerald' ? 'text-emerald-600' :
                         plan.color === 'purple' ? 'text-purple-600' : 'text-slate-600'
                       }`} />
                     </div>
-                    <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                    <CardTitle className="text-2xl">ACTOOS PRO {plan.name}</CardTitle>
                     <CardDescription>{plan.description}</CardDescription>
                   </CardHeader>
                   
                   <CardContent className="text-center">
                     <div className="mb-6">
-                      <span className="text-5xl font-bold text-slate-900">{price}€</span>
+                      <span className="text-5xl font-bold text-slate-900">{price.toFixed(2).replace('.', ',')}€</span>
                       <span className="text-slate-500">/mois</span>
                       {billingCycle === 'yearly' && (
-                        <p className="text-sm text-green-600 mt-1">
-                          Économisez {(plan.price - plan.priceYearly) * 12}€/an
-                        </p>
+                        <>
+                          <p className="text-sm text-emerald-600 mt-1">
+                            Économisez {annualSavings}€/an
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            Facturé {plan.annualTotal.toFixed(2).replace('.', ',')}€/an
+                          </p>
+                        </>
                       )}
                     </div>
                     
                     <div className="space-y-3 text-left mb-6">
                       <div className="flex items-center gap-2 text-sm">
-                        <Check className="w-4 h-4 text-green-500" />
+                        <Check className="w-4 h-4 text-emerald-500" />
                         <span>{plan.limits.admins} admin{plan.limits.admins !== '1' ? 's' : ''}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <Check className="w-4 h-4 text-green-500" />
+                        <Check className="w-4 h-4 text-emerald-500" />
                         <span>{plan.limits.technicians} technicien{plan.limits.technicians !== '1' ? 's' : ''}</span>
                         {plan.limits.extraTechPrice !== 'Inclus' && (
                           <span className="text-slate-400">({plan.limits.extraTechPrice} sup.)</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <Check className="w-4 h-4 text-green-500" />
+                        <Check className="w-4 h-4 text-emerald-500" />
                         <span>{plan.limits.categories} catégorie{plan.limits.categories !== '1' ? 's' : ''}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <Check className="w-4 h-4 text-green-500" />
+                        <Check className="w-4 h-4 text-emerald-500" />
                         <span>Interventions illimitées</span>
                       </div>
                     </div>
@@ -485,20 +496,15 @@ const PricingPage = () => {
                     <Button 
                       className={`w-full ${
                         plan.popular || isRecommended
-                          ? 'bg-blue-600 hover:bg-blue-700' 
+                          ? 'bg-emerald-600 hover:bg-emerald-700' 
                           : ''
                       }`}
                       variant={plan.popular || isRecommended ? 'default' : 'outline'}
-                      onClick={() => {
-                        if (plan.isContact) {
-                          window.location.href = 'mailto:contact@actoos.com?subject=Demande%20Entreprise%20-%20Actoos&body=Bonjour,%0A%0AJe%20suis%20intéressé(e)%20par%20le%20plan%20Entreprise.%0A%0ANom%20de%20l%27entreprise:%0ANombre%20de%20techniciens:%0ATéléphone:%0A%0AMerci';
-                        } else {
-                          navigate(`/signup?plan=${plan.id}&billing=${billingCycle}`);
-                        }
-                      }}
+                      onClick={() => navigate(`/signup?plan=${plan.id}&billing=${billingCycle}`)}
+                      data-testid={`select-plan-${plan.id}`}
                     >
                       {plan.cta}
-                      {!plan.isContact && <ArrowRight className="w-4 h-4 ml-2" />}
+                      <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </CardFooter>
                 </Card>
@@ -511,7 +517,7 @@ const PricingPage = () => {
         <section className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">Comparaison détaillée</h2>
-            <p className="text-slate-600">Tout ce qui est inclus dans chaque plan</p>
+            <p className="text-slate-600">Tout ce qui est inclus dans chaque plan ACTOOS PRO</p>
           </div>
 
           <div className="overflow-x-auto">
@@ -522,7 +528,7 @@ const PricingPage = () => {
                   {plans.map(plan => (
                     <th key={plan.id} className="text-center py-4 px-4">
                       <div className="font-bold text-lg">{plan.name}</div>
-                      <div className="text-sm text-slate-500">{plan.price}€/mois</div>
+                      <div className="text-sm text-slate-500">{plan.price.toFixed(2).replace('.', ',')}€/mois</div>
                     </th>
                   ))}
                 </tr>
@@ -583,16 +589,16 @@ const PricingPage = () => {
 
         {/* CTA */}
         <section className="max-w-4xl mx-auto px-4 mt-20 text-center">
-          <Card className="bg-gradient-to-br from-blue-600 to-blue-700 border-0 text-white">
+          <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 border-0 text-white">
             <CardContent className="py-12">
               <h2 className="text-3xl font-bold mb-4">Prêt à simplifier votre gestion terrain ?</h2>
-              <p className="text-blue-100 mb-8 max-w-xl mx-auto">
-                Rejoignez des centaines d'entreprises qui font confiance à Actoos. 
+              <p className="text-emerald-100 mb-8 max-w-xl mx-auto">
+                Rejoignez des centaines d'entreprises qui font confiance à ACTOOS PRO. 
                 14 jours d'essai gratuit, sans engagement.
               </p>
               <Button 
                 size="lg" 
-                className="bg-white text-blue-600 hover:bg-blue-50"
+                className="bg-white text-emerald-600 hover:bg-emerald-50"
                 onClick={() => navigate('/signup')}
               >
                 Commencer gratuitement
@@ -608,8 +614,8 @@ const PricingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <img src="/actoos-logo.svg" alt="Actoos" className="h-10" />
-              <p className="text-sm text-slate-500">
+              <img src="/branding/actoos-pro-logo.png" alt="ACTOOS PRO" className="h-10" onError={(e) => { e.target.src = '/actoos-logo.svg'; }} />
+              <p className="text-sm text-slate-500 mt-4">
                 Le logiciel de gestion d'interventions terrain pour les professionnels.
               </p>
             </div>
@@ -625,19 +631,19 @@ const PricingPage = () => {
               <h4 className="font-semibold text-slate-900 mb-4">Support</h4>
               <ul className="space-y-2 text-sm">
                 <li><a href="#" className="text-slate-500 hover:text-slate-900">Documentation</a></li>
-                <li><a href="#" className="text-slate-500 hover:text-slate-900">Contact</a></li>
+                <li><a href="mailto:contact@actoos.com" className="text-slate-500 hover:text-slate-900">Contact</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold text-slate-900 mb-4">Légal</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-slate-500 hover:text-slate-900">CGV</a></li>
-                <li><a href="#" className="text-slate-500 hover:text-slate-900">Confidentialité</a></li>
+                <li><Link to="/terms" className="text-slate-500 hover:text-slate-900">CGV</Link></li>
+                <li><Link to="/privacy" className="text-slate-500 hover:text-slate-900">Confidentialité</Link></li>
               </ul>
             </div>
           </div>
           <div className="border-t pt-8 text-center text-sm text-slate-500">
-            <p>© {new Date().getFullYear()} Actoos. Tous droits réservés.</p>
+            <p>© {new Date().getFullYear()} ACTOOS PRO. Tous droits réservés.</p>
           </div>
         </div>
       </footer>
