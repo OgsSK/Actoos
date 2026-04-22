@@ -131,6 +131,19 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - Snapshot de la devise au moment de création du document
   - Les PDFs utilisent la devise du document (pas celle de l'entreprise)
   - Protection des données financières historiques
+- **Email rappel trial J-3** :
+  - Template email avec urgency colors (J-3/J-1/J0)
+  - CTA direct vers page upgrade
+  - Endpoints `/api/tasks/send-trial-reminders` et `/api/tasks/check-and-send-reminders`
+- **Mass Import CSV/Excel** :
+  - Router `/api/import` avec upload, preview, execute
+  - Parsing CSV/Excel avec suggestions de mapping automatiques
+  - Support: Clients, Interventions, Devis, Factures
+  - UI wizard 5 étapes dans `/dashboard/import`
+- **Stockage Cloud S3/R2** :
+  - Service compatible S3 et Cloudflare R2
+  - Fallback automatique vers stockage local si non configuré
+  - Configuration via variables d'environnement (S3_ENDPOINT, S3_ACCESS_KEY, etc.)
 
 ### 2026-04-01 (Session 2)
 - **Audit complet des emails système** : Vérifié tous les templates (devis, factures, relances, invitations, welcome, résiliation)
