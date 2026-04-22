@@ -140,10 +140,19 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - Parsing CSV/Excel avec suggestions de mapping automatiques
   - Support: Clients, Interventions, Devis, Factures
   - UI wizard 5 étapes dans `/dashboard/import`
+  - **Historique d'import avec rollback** :
+    - API `/api/import/history` - liste des imports
+    - API `/api/import/rollback/{id}` - annulation avec suppression des données
+    - UI avec onglets "Nouvel import" / "Historique"
 - **Stockage Cloud S3/R2** :
   - Service compatible S3 et Cloudflare R2
   - Fallback automatique vers stockage local si non configuré
-  - Configuration via variables d'environnement (S3_ENDPOINT, S3_ACCESS_KEY, etc.)
+  - Variables dans `.env` : `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_PUBLIC_URL`, `S3_REGION`
+- **Cron Job Trial Reminders** :
+  - Script `/app/backend/cron_trial_reminders.py`
+  - Envoie rappels J-3, J-1, J0 pour trials expirant
+  - Usage: `python cron_trial_reminders.py` ou cron `0 9 * * *`
+  - Ou via API: `POST /api/tasks/check-and-send-reminders` (super admin)
 
 ### 2026-04-01 (Session 2)
 - **Audit complet des emails système** : Vérifié tous les templates (devis, factures, relances, invitations, welcome, résiliation)
