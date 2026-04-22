@@ -20,6 +20,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] Génération PDF (devis, factures, rapports)
 - [x] Signatures électroniques
 - [x] Photos terrain avec upload cloud
+- [x] **2FA - Authentification à deux facteurs (TOTP & Email)**
 
 ### Abonnements & Paiements
 - [x] Stripe Checkout (mode LIVE)
@@ -102,6 +103,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] Load Test 100 entreprises (0 erreurs)
 - [x] Stress Test jusqu'à 300 simultané (100% succès)
 - [x] Endpoint nettoyage données de test
+- [x] **Authentification à deux facteurs (2FA)**
 
 ### À faire après push GitHub
 - [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
@@ -119,6 +121,34 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-04-22 - Authentification à Deux Facteurs (2FA)
+- **2FA TOTP (Google Authenticator)** :
+  - Génération QR code avec pyotp/qrcode
+  - Secret key pour saisie manuelle
+  - Validation avec tolérance de 1 fenêtre temporelle
+- **2FA Email OTP** :
+  - Code à 6 chiffres envoyé par email
+  - Expiration après 5 minutes
+  - Template email sécurisé
+- **Codes de récupération** :
+  - 8 codes générés lors de l'activation
+  - Utilisables une seule fois
+  - API de régénération
+- **Endpoints 2FA** :
+  - `GET /api/2fa/status` - Statut actuel
+  - `POST /api/2fa/setup/start` - Démarrer configuration
+  - `POST /api/2fa/setup/verify` - Valider et activer
+  - `POST /api/2fa/verify-login` - Vérification lors du login
+  - `POST /api/2fa/send-login-code` - Renvoyer code email
+  - `POST /api/2fa/disable` - Désactiver 2FA
+  - `GET /api/2fa/backup-codes` - Compter codes restants
+  - `POST /api/2fa/regenerate-backup-codes` - Nouveaux codes
+- **Interface utilisateur** :
+  - Composant `TwoFactorSettings.jsx` dans Paramètres → Sécurité
+  - Composant `TwoFactorVerify.jsx` pour le flux de connexion
+  - `LoginPage` gère le flux 2FA automatiquement
+  - `AuthContext` avec `complete2FALogin()` pour finaliser la connexion 2FA
 
 ### 2026-04-22 - Corrections de Sécurité Critiques
 - **Mot de passe oublié sécurisé** :
