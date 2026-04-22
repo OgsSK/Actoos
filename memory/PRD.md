@@ -1,10 +1,13 @@
-# Actoos - SaaS Gestion d'Interventions Terrain
+# ACTOOS PRO - SaaS Gestion d'Interventions Terrain
 
 ## 🎯 Description
 Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - Dashboard Admin (web)
 - PWA Technicien (mobile, offline-first)
-- Abonnements Stripe (Startup 49€, Pro 79€, Enterprise 149€)
+- Abonnements Stripe avec tarifs ACTOOS PRO 2026:
+  - **Startup**: 9,99€/mois ou 95,90€/an (-20%)
+  - **Pro**: 19,99€/mois ou 191,90€/an (-20%)
+  - **Entreprise**: 39,99€/mois ou 383,90€/an (-20%)
 
 ## ✅ Fonctionnalités Implémentées
 
@@ -25,6 +28,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] Upgrade/Downgrade de plans
 - [x] Résiliation avec feedback
 - [x] Feature gating par plan
+- [x] **Toggle mensuel/annuel avec -20% discount**
 
 ### PWA Technicien
 - [x] Installation comme app native
@@ -39,6 +43,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] Resend (emails) - config test
 - [x] Twilio SMS - en attente numéro
 - [x] Multi-devises (EUR, USD, CHF, etc.)
+- [x] **Currency Snapshot** - Devise figée au moment de création des documents
 
 ### Admin Analytics
 - [x] Vue d'ensemble business
@@ -114,6 +119,18 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-04-22 - Mise à jour ACTOOS PRO Pricing & Currency Fix
+- **Nouveaux tarifs ACTOOS PRO** :
+  - Startup: 9,99€/mois ou 95,90€/an (-20%)
+  - Pro: 19,99€/mois ou 191,90€/an (-20%)
+  - Entreprise: 39,99€/mois ou 383,90€/an (-20%)
+- **Branding ACTOOS PRO** : Page pricing avec toggle mensuel/annuel, couleur verte, badge -20%
+- **Fix critique: Bug devise rétroactive** :
+  - Ajout champs `devise` et `taux_change_eur` aux modèles Devis et Facture
+  - Snapshot de la devise au moment de création du document
+  - Les PDFs utilisent la devise du document (pas celle de l'entreprise)
+  - Protection des données financières historiques
 
 ### 2026-04-01 (Session 2)
 - **Audit complet des emails système** : Vérifié tous les templates (devis, factures, relances, invitations, welcome, résiliation)
