@@ -64,6 +64,9 @@ import TermsPage from "./pages/TermsPage";
 import CookiesPage from "./pages/CookiesPage";
 import LegalPage from "./pages/LegalPage";
 
+// Data Import
+import DataImport from "./pages/DataImport";
+
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { isAuthenticated, loading, isAdmin } = useAuth();
@@ -266,6 +269,9 @@ function App() {
               
               {/* API Settings */}
               <Route path="api-settings" element={<APISettings />} />
+              
+              {/* Data Import */}
+              <Route path="import" element={<DataImport />} />
               
               {/* Settings */}
               <Route path="settings" element={<SettingsPage />} />

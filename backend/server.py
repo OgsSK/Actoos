@@ -54,7 +54,9 @@ from routers import (
     settings as settings_router,
     integrations as integrations_router,
     dashboard as dashboard_router,
-    chat as chat_router
+    chat as chat_router,
+    import_data as import_data_router,
+    scheduled_tasks as scheduled_tasks_router
 )
 import realtime_events
 
@@ -106,6 +108,8 @@ api_router.include_router(integrations_router.router)
 api_router.include_router(dashboard_router.router)
 api_router.include_router(realtime_events.router)
 api_router.include_router(chat_router.router)
+api_router.include_router(import_data_router.router)
+api_router.include_router(scheduled_tasks_router.router)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

@@ -15,7 +15,7 @@ import { formatDate, getStatusLabel, formatRelative } from '../lib/utils';
 import {
   LayoutDashboard, Users, Calendar, FileText, Receipt, Settings, LogOut, Menu, X,
   Search, Bell, Plus, TrendingUp, AlertTriangle, Clock, CheckCircle, ChevronRight,
-  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code, Download, Crown, MessageCircle
+  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code, Download, Crown, MessageCircle, Upload
 } from 'lucide-react';
 import PlanUsageWidget from '../components/PlanUsageWidget';
 import AdminInstallPrompt from '../components/AdminInstallPrompt';
@@ -46,6 +46,7 @@ const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
     { icon: PieChart, label: 'Analytics', path: '/dashboard/analytics', admin: true },
     { icon: FileSpreadsheet, label: 'Relevés', path: '/dashboard/statements', admin: true },
     { icon: BarChart3, label: 'Rapports', path: '/dashboard/rapports', admin: true },
+    { icon: Upload, label: 'Import', path: '/dashboard/import', admin: true },
     { icon: Code, label: 'API', path: '/dashboard/api-settings', admin: true },
     { icon: Settings, label: 'Paramètres', path: '/dashboard/settings', admin: true },
   ];

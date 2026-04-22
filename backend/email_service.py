@@ -464,3 +464,136 @@ async def send_super_admin_email(
     """
     
     return await send_email(to_email, f"[Actoos] {subject}", html_content)
+
+
+def get_trial_reminder_email_html(entreprise: dict, admin: dict, days_remaining: int, upgrade_url: str) -> str:
+    """Generate HTML email for trial expiration reminder (J-3)"""
+    plan_name = entreprise.get('plan', 'Pro')
+    
+    urgency_color = "#f59e0b" if days_remaining > 1 else "#ef4444"
+    urgency_text = f"{days_remaining} jour{'s' if days_remaining > 1 else ''}" if days_remaining > 0 else "aujourd'hui"
+    
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc;">
+        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 40px 20px;">
+                    <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <!-- Header -->
+                        <tr>
+                            <td style="padding: 32px; text-align: center; background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 12px 12px 0 0;">
+                                <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff;">ACTOOS PRO</h1>
+                                <p style="margin: 8px 0 0; color: #d1fae5; font-size: 14px;">Votre période d'essai se termine bientôt</p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Countdown Badge -->
+                        <tr>
+                            <td style="padding: 0 32px;">
+                                <table role="presentation" style="width: 100%; margin-top: -20px;">
+                                    <tr>
+                                        <td style="text-align: center;">
+                                            <span style="display: inline-block; background-color: {urgency_color}; color: white; padding: 12px 24px; border-radius: 50px; font-size: 16px; font-weight: 600;">
+                                                ⏰ Expire dans {urgency_text}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        
+                        <!-- Content -->
+                        <tr>
+                            <td style="padding: 32px;">
+                                <p style="margin: 0 0 16px; font-size: 18px; color: #0f172a;">
+                                    Bonjour {admin.get('prenom', '')} {admin.get('nom', '')},
+                                </p>
+                                <p style="margin: 0 0 24px; font-size: 16px; color: #475569; line-height: 1.6;">
+                                    Votre essai gratuit de <strong>14 jours</strong> sur <strong>ACTOOS PRO {plan_name}</strong> 
+                                    pour <strong>{entreprise.get('nom', '')}</strong> arrive à expiration.
+                                </p>
+                                
+                                <!-- Stats Box -->
+                                <table role="presentation" style="width: 100%; background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; margin-bottom: 24px;">
+                                    <tr>
+                                        <td style="padding: 24px;">
+                                            <p style="margin: 0 0 12px; font-size: 14px; color: #166534; font-weight: 600;">
+                                                📊 Ce que vous perdez si vous n'activez pas :
+                                            </p>
+                                            <ul style="margin: 0; padding-left: 20px; color: #15803d; font-size: 14px; line-height: 1.8;">
+                                                <li>Vos données clients et interventions</li>
+                                                <li>L'accès technicien (PWA mobile)</li>
+                                                <li>La génération de devis et factures</li>
+                                                <li>Le planning et les notifications</li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                                <!-- CTA Button -->
+                                <table role="presentation" style="width: 100%;">
+                                    <tr>
+                                        <td style="text-align: center; padding: 8px 0 24px;">
+                                            <a href="{upgrade_url}" style="display: inline-block; background-color: #059669; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                                                Activer mon abonnement →
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                                <p style="margin: 0; font-size: 14px; color: #64748b; text-align: center;">
+                                    Aucune interruption de service - Passez en mode payant en 2 clics
+                                </p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                            <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; border-radius: 0 0 12px 12px;">
+                                <p style="margin: 0 0 8px; font-size: 13px; color: #64748b; text-align: center;">
+                                    Des questions ? Répondez directement à cet email.
+                                </p>
+                                <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">
+                                    © 2026 ACTOOS PRO - Gestion d'interventions terrain
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
+
+
+async def send_trial_reminder_email(
+    entreprise: dict,
+    admin: dict,
+    days_remaining: int,
+    upgrade_url: str
+) -> dict:
+    """Send trial expiration reminder email (J-3, J-1, J0)"""
+    
+    to_email = admin.get('email')
+    if not to_email:
+        return {"status": "error", "message": "Email admin manquant"}
+    
+    subject_map = {
+        3: "⏰ Plus que 3 jours d'essai ACTOOS PRO",
+        2: "⚠️ Plus que 2 jours d'essai ACTOOS PRO", 
+        1: "🚨 Dernier jour d'essai ACTOOS PRO",
+        0: "❌ Votre essai ACTOOS PRO expire aujourd'hui"
+    }
+    
+    subject = subject_map.get(days_remaining, f"Votre essai expire dans {days_remaining} jours")
+    html_content = get_trial_reminder_email_html(entreprise, admin, days_remaining, upgrade_url)
+    
+    return await send_email(to_email, subject, html_content)
+
