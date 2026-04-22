@@ -471,6 +471,57 @@ Résolution automatique des conflits quand un technicien travaille hors ligne :
 
 ### P2 - Backlog restant
 
-- [ ] Flux création devis technicien (section dédiée dans App Tech)
-- [ ] Personnalisation admin non reflétée dans App Tech
-- [ ] Chat temps réel Admin ↔ Tech
+- [x] Flux création devis technicien (section dédiée dans App Tech) ✅ FAIT
+- [x] Personnalisation admin non reflétée dans App Tech ✅ FAIT
+- [x] Chat temps réel Admin ↔ Tech ✅ FAIT
+
+## 🎨 Rebranding ACTOOS PRO - 2026-04-22
+
+### Nouvelles fonctionnalités livrées
+
+#### 1. Section Devis Technicien avec Signature Client
+- **Nouvel onglet "Devis"** dans TechnicianApp avec badge compteur
+- **DevisSignatureForm** : Canvas de signature tactile
+- **Workflow** : Tech crée devis → Client signe sur tablette/téléphone
+- **Fichiers**: `/app/frontend/src/pages/TechnicianApp.jsx`
+
+#### 2. Personnalisation Branding dans App Technicien
+- Logo entreprise personnalisé dans le header TechnicianApp
+- Couleur thème dynamique via CSS variables
+- Fallback vers logo ACTOOS PRO si pas de personnalisation
+- **Fichiers**: `/app/frontend/src/pages/TechnicianApp.jsx`
+
+#### 3. Chat Temps Réel Admin ↔ Tech
+- **Backend**: `/app/backend/routers/chat.py`
+  - `GET /api/chat/conversations` - Liste conversations
+  - `GET /api/chat/messages/{user_id}` - Historique messages
+  - `POST /api/chat/messages` - Envoi message
+  - `GET /api/chat/unread-count` - Messages non lus
+- **Frontend**: `/app/frontend/src/components/ChatWidget.jsx`
+  - FloatingChatButton pour TechnicianApp
+  - ChatButton dans TopBar Dashboard Admin
+  - MessageThread avec groupage par date
+- **SSE Event**: `chat_message` pour notifications temps réel
+
+### Logos ACTOOS PRO (Vert)
+- **Dossier**: `/app/frontend/public/branding/`
+- **Logo principal**: `actoos-pro-logo.png` (vert sur blanc)
+- **Icône**: `actoos-pro-icon.png` (icône A verte)
+- **Version dark**: `actoos-pro-logo-dark.png`
+- **Icons PWA**: `pwa-icon-{72,96,128,144,152,192,384,512}.png`
+- **Favicon**: `favicon.png` (32x32)
+- **Apple touch**: `apple-touch-icon.png` (180x180)
+
+### Design System ACTOOS PRO
+- **Couleur primaire**: `#22C55E` (Green-500)
+- **Slogan**: "Run your business. Simply."
+- **Fond**: Blanc
+- **Texte**: Noir/Gris foncé
+- **Manifest PWA**: theme_color mis à jour
+
+### Plan futur - Migration vers pro.actoos.com
+- [ ] Audit complet de l'existant
+- [ ] Mise en place sous-domaine pro.actoos.com
+- [ ] Plan de migration progressive MongoDB → PostgreSQL
+- [ ] Vitrine actoos.com séparée
+- [ ] ACTOOS EATS (nouveau produit)
