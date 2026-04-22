@@ -160,7 +160,33 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
+    
+    // Check if 2FA is required
+    if (response.data.requires_2fa) {
+      // Return special object indicating 2FA is needed
+      return {
+        requires_2fa: true,
+        method: response.data.method,
+        temp_token: response.data.temp_token
+      };
+    }
+    
     const { access_token, user: userData, entreprise: entData } = response.data;
+    
+    localStorage.setItem('token', access_token);
+    setToken(access_token);
+    setUser(userData);
+    setEntreprise(entData);
+    
+    // Update PWA manifest and icons based on user role
+    updatePWAForRole(userData.role);
+    
+    return userData;
+  };
+  
+  // Complete login after 2FA verification
+  const complete2FALogin = (authData) => {
+    const { access_token, user: userData, entreprise: entData } = authData;
     
     localStorage.setItem('token', access_token);
     setToken(access_token);
@@ -242,6 +268,7 @@ export const AuthProvider = ({ children }) => {
     isAdmin: user?.role === 'admin',
     isTech: user?.role === 'tech',
     login,
+    complete2FALogin,
     register,
     logout,
     api,

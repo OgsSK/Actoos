@@ -7,13 +7,20 @@ import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Wrench, AlertCircle, Loader2 } from 'lucide-react';
+import TwoFactorVerify from '../components/TwoFactorVerify';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  
+  // 2FA state
+  const [needs2FA, setNeeds2FA] = useState(false);
+  const [twoFAMethod, setTwoFAMethod] = useState(null);
+  const [tempToken, setTempToken] = useState(null);
+  
+  const { login, complete2FALogin } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -22,8 +29,19 @@ export const LoginPage = () => {
     setLoading(true);
 
     try {
-      const user = await login(email, password);
-      if (user.role === 'admin') {
+      const result = await login(email, password);
+      
+      // Check if 2FA is required
+      if (result.requires_2fa) {
+        setNeeds2FA(true);
+        setTwoFAMethod(result.method);
+        setTempToken(result.temp_token);
+        setLoading(false);
+        return;
+      }
+      
+      // Normal login - redirect based on role
+      if (result.role === 'admin') {
         navigate('/dashboard');
       } else {
         navigate('/tech');
@@ -34,6 +52,36 @@ export const LoginPage = () => {
       setLoading(false);
     }
   };
+
+  // Handle successful 2FA verification
+  const handle2FASuccess = (authData) => {
+    const user = complete2FALogin(authData);
+    if (user.role === 'admin') {
+      navigate('/dashboard');
+    } else {
+      navigate('/tech');
+    }
+  };
+
+  // Handle 2FA cancellation - go back to login form
+  const handle2FACancel = () => {
+    setNeeds2FA(false);
+    setTempToken(null);
+    setTwoFAMethod(null);
+    setPassword('');
+  };
+
+  // Show 2FA verification screen
+  if (needs2FA && tempToken) {
+    return (
+      <TwoFactorVerify
+        tempToken={tempToken}
+        method={twoFAMethod}
+        onSuccess={handle2FASuccess}
+        onCancel={handle2FACancel}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">

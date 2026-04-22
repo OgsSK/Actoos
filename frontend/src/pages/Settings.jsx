@@ -2297,7 +2297,7 @@ export const SettingsPage = () => {
   );
 };
 
-// Security Settings Component - Password Management
+// Security Settings Component - Password Management & 2FA
 const SecuritySettings = ({ api }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -2310,6 +2310,9 @@ const SecuritySettings = ({ api }) => {
     confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
+
+  // Import TwoFactorSettings dynamically to avoid circular deps
+  const TwoFactorSettingsComponent = React.lazy(() => import('../components/TwoFactorSettings'));
 
   const validatePassword = (password) => {
     const checks = {
@@ -2380,6 +2383,17 @@ const SecuritySettings = ({ api }) => {
 
   return (
     <div className="space-y-6">
+      {/* Two-Factor Authentication Section */}
+      <React.Suspense fallback={
+        <Card className="border-slate-200">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-400" />
+          </CardContent>
+        </Card>
+      }>
+        <TwoFactorSettingsComponent />
+      </React.Suspense>
+
       {/* Change Password Card */}
       <Card className="border-slate-200">
         <CardHeader>

@@ -418,7 +418,8 @@ async def send_login_2fa_code(temp_token: str):
 @router.post("/verify-login")
 async def verify_login_2fa(data: LoginWith2FARequest):
     """Verify 2FA code and complete login"""
-    from auth import decode_token, TokenResponse, UserResponse
+    from auth import decode_token
+    from models import TokenResponse, UserResponse
     
     try:
         payload = decode_token(data.temp_token)
