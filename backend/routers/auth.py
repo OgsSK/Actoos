@@ -2,7 +2,7 @@
 Authentication routes: login, register, invite, password reset
 """
 from fastapi import APIRouter, HTTPException, Depends, Request
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
 import logging
 import os
@@ -227,9 +227,9 @@ async def register_from_checkout(session_id: str, password: str = None):
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 async def login(data: UserLogin):
-    """Login user with subscription validation"""
+    """Login user with subscription validation and 2FA support"""
     user = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
@@ -280,6 +280,21 @@ async def login(data: UserLogin):
                     "redirect": "/pricing"
                 }
             )
+    
+    # Check if 2FA is enabled
+    if user.get("2fa_enabled"):
+        # Generate temporary token for 2FA verification
+        temp_token = create_access_token(
+            {"sub": user["id"], "ent": user["entreprise_id"], "type": "2fa_pending"},
+            expires_delta=timedelta(minutes=10)
+        )
+        
+        return {
+            "requires_2fa": True,
+            "method": user.get("2fa_method", "totp"),
+            "temp_token": temp_token,
+            "message": "Authentification à deux facteurs requise"
+        }
     
     # Update last login
     await db.users.update_one(
