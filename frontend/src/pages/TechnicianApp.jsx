@@ -42,6 +42,7 @@ import OfflineDevisForm from '../components/OfflineDevisForm';
 import db from '../lib/offlineDb';
 import ConflictNotificationBanner, { ConflictBadge } from '../components/ConflictNotificationBanner';
 import { useRealtimeEvents, EventType } from '../hooks/useRealtimeEvents';
+import { ChatWidget, FloatingChatButton, useChatUnread } from '../components/ChatWidget';
 
 // PWA Install Prompt Component
 const InstallPrompt = ({ userEmail }) => {
@@ -1431,6 +1432,10 @@ export const TechnicianApp = () => {
   const [selectedDevisForSignature, setSelectedDevisForSignature] = useState(null);
   const [showDevisSignature, setShowDevisSignature] = useState(false);
   
+  // Chat state
+  const [showChat, setShowChat] = useState(false);
+  const { unreadCount: chatUnreadCount, refreshUnread: refreshChatUnread } = useChatUnread();
+  
   const { api, user, logout, entreprise } = useAuth();
   const { 
     isOnline, pendingActions, pendingCount, isSyncing, 
@@ -2011,10 +2016,10 @@ export const TechnicianApp = () => {
                 src={entreprise.logo_url} 
                 alt={entreprise.nom || 'Logo'} 
                 className="w-8 h-8 object-contain rounded"
-                onError={(e) => { e.target.src = '/actoos-icon.svg'; }}
+                onError={(e) => { e.target.src = '/branding/actoos-pro-icon.png'; }}
               />
             ) : (
-              <img src="/actoos-icon.svg" alt="Actoos" className="w-8 h-8 object-contain" />
+              <img src="/branding/actoos-pro-icon.png" alt="ACTOOS PRO" className="w-8 h-8 object-contain" />
             )}
             <div>
               <h1 className="font-bold text-lg text-slate-900">{dateLabel}</h1>
@@ -2498,6 +2503,22 @@ export const TechnicianApp = () => {
       <InstallGuideModal 
         isOpen={showInstallGuide} 
         onClose={() => setShowInstallGuide(false)} 
+      />
+      
+      {/* Floating Chat Button */}
+      <FloatingChatButton 
+        onClick={() => setShowChat(true)} 
+        unreadCount={chatUnreadCount}
+      />
+      
+      {/* Chat Widget Modal */}
+      <ChatWidget 
+        isOpen={showChat} 
+        onClose={() => {
+          setShowChat(false);
+          refreshChatUnread();
+        }}
+        isTech={true}
       />
     </div>
   );

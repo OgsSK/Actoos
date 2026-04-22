@@ -4,6 +4,7 @@ Devis (Quotes) routes - CRUD and workflow operations
 from fastapi import APIRouter, HTTPException, Depends, Request, Response
 from typing import Optional
 from datetime import datetime, timezone, timedelta
+from pydantic import BaseModel
 import uuid
 import logging
 
@@ -260,19 +261,24 @@ async def send_devis(devis_id: str, request: Request, current_user: dict = Depen
     }
 
 
+class DevisSignRequest(BaseModel):
+    """Request model for signing a devis"""
+    signature: str
+    nom_signataire: str
+
+
 @router.post("/{devis_id}/sign")
 async def sign_devis(
     devis_id: str,
-    signature: str,
-    nom_signataire: str,
+    data: DevisSignRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Sign a devis"""
+    """Sign a devis - accepts JSON body with signature and nom_signataire"""
     now = datetime.now(timezone.utc).isoformat()
     
     result = await db.devis.update_one(
         {"id": devis_id, "entreprise_id": current_user["entreprise_id"], "statut": {"$in": ["brouillon", "envoye"]}},
-        {"$set": {"statut": "signe", "signature_client": signature, "nom_signataire": nom_signataire, "date_signature": now}}
+        {"$set": {"statut": "signe", "signature_client": data.signature, "nom_signataire": data.nom_signataire, "date_signature": now}}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Devis non trouvé ou déjà signé")

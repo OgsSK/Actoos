@@ -3,93 +3,53 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-        <meta name="theme-color" content="#2563EB" />
-        <meta name="description" content="Actoos - Le logiciel tout-en-un pour piloter vos opérations terrain" />
+        <meta name="theme-color" content="#22C55E" />
+        <meta name="description" content="ACTOOS PRO - Run your business. Simply. Le logiciel tout-en-un pour piloter vos opérations terrain" />
         
         <!-- PWA iOS Meta Tags -->
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Actoos" />
+        <meta name="apple-mobile-web-app-title" content="ACTOOS PRO" />
         <meta name="mobile-web-app-capable" content="yes" />
         
-        <!-- Favicon -->
-        <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg" />
-        <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/icon-48x48.png" />
+        <!-- Favicon - ACTOOS PRO Green -->
+        <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon.png" />
         
-        <!-- Apple Touch Icons - Default (will be changed by script) -->
-        <link rel="apple-touch-icon" href="%PUBLIC_URL%/icons-admin/icon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/icons-admin/icon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="%PUBLIC_URL%/icons-admin/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="120x120" href="%PUBLIC_URL%/icons-admin/icon-128x128.png" />
+        <!-- Apple Touch Icons - ACTOOS PRO -->
+        <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="%PUBLIC_URL%/pwa-icon-152.png" />
+        <link rel="apple-touch-icon" sizes="120x120" href="%PUBLIC_URL%/pwa-icon-128.png" />
         
         <!-- iOS Splash Screens -->
-        <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icon-512x512.png" />
+        <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/pwa-icon-512.png" />
         
-        <!-- Manifest - Dynamically loaded based on route -->
-        <link rel="manifest" id="manifest-link" href="%PUBLIC_URL%/manifest.json" />
-        
-        <!-- Script to switch manifest based on route or saved role -->
-        <script>
-            (function() {
-                var path = window.location.pathname;
-                var manifestLink = document.getElementById('manifest-link');
-                var themeColor = document.querySelector('meta[name="theme-color"]');
-                var appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-                var appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
-                var favicon = document.querySelector('link[rel="icon"][type="image/png"]');
-                
-                // Check if we have a saved role preference
-                var savedRole = localStorage.getItem('pwa_role');
-                
-                // Determine if tech based on saved role or URL
-                var isTechByRole = savedRole === 'technicien' || savedRole === 'tech';
-                var isTechByUrl = path.startsWith('/tech') || path === '/pwa-landing';
-                var isTech = isTechByRole || isTechByUrl;
-                
-                // Admin is default for /dashboard, /login, or any other path (unless tech role is saved)
-                var isAdmin = !isTech;
-                
-                if (isTech) {
-                    // Technician App - Orange theme
-                    if (manifestLink) manifestLink.href = '/manifest-tech.json';
-                    if (themeColor) themeColor.content = '#F97316';
-                    if (appleTitle) appleTitle.content = 'Actoos Tech';
-                    if (appleTouchIcon) appleTouchIcon.href = '/icons-tech/icon-192x192.png';
-                    if (favicon) favicon.href = '/icons-tech/icon-48x48.png';
-                    document.title = 'Actoos Tech';
-                } else {
-                    // Admin Dashboard - Blue theme
-                    if (manifestLink) manifestLink.href = '/manifest-admin.json';
-                    if (themeColor) themeColor.content = '#2563EB';
-                    if (appleTitle) appleTitle.content = 'Actoos Admin';
-                    if (appleTouchIcon) appleTouchIcon.href = '/icons-admin/icon-192x192.png';
-                    if (favicon) favicon.href = '/icons-admin/icon-48x48.png';
-                    document.title = 'Actoos Admin';
-                }
-            })();
-        </script>
+        <!-- Manifest -->
+        <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
         
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         
-        <title>Actoos - Gestion d'interventions terrain</title>
+        <title>ACTOOS PRO - Run your business. Simply.</title>
+        
+        <!-- CSS Variables for branding -->
+        <style>
+            :root {
+                --actoos-primary: #22C55E;
+                --actoos-primary-dark: #16A34A;
+                --actoos-primary-light: #4ADE80;
+                --actoos-secondary: #1E293B;
+            }
+        </style>
+        
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="root"></div>
-        <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
         <script>
             !(function (t, e) {
                 var o, n, p, r;
@@ -154,7 +114,7 @@
             })(document, window.posthog || []);
             posthog.init("phc_xAvL2Iq4tFmANRE7kzbKwaSqp1HJjN7x48s3vr0CMjs", {
                 api_host: "https://us.i.posthog.com",
-                person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well,
+                person_profiles: "identified_only",
                 session_recording: {
                     recordCrossOriginIframes: true,
                     capturePerformance: false,

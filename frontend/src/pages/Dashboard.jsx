@@ -15,11 +15,12 @@ import { formatDate, getStatusLabel, formatRelative } from '../lib/utils';
 import {
   LayoutDashboard, Users, Calendar, FileText, Receipt, Settings, LogOut, Menu, X,
   Search, Bell, Plus, TrendingUp, AlertTriangle, Clock, CheckCircle, ChevronRight,
-  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code, Download, Crown
+  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code, Download, Crown, MessageCircle
 } from 'lucide-react';
 import PlanUsageWidget from '../components/PlanUsageWidget';
 import AdminInstallPrompt from '../components/AdminInstallPrompt';
 import { useRealtimeEvents, EventType } from '../hooks/useRealtimeEvents';
+import { ChatWidget, ChatButton, useChatUnread } from '../components/ChatWidget';
 
 const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
   const { user, entreprise, logout, isAdmin } = useAuth();
@@ -71,7 +72,7 @@ const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
           <div className="p-4 border-b border-slate-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img src="/actoos-icon.svg" alt="Actoos" className="w-10 h-10 rounded-lg object-contain" />
+                <img src="/branding/actoos-pro-logo.png" alt="ACTOOS PRO" className="w-10 h-10 rounded-lg object-contain" />
                 <div>
                   <h1 className="font-bold text-lg">Actoos</h1>
                   <p className="text-xs text-slate-400 truncate max-w-[140px]">{entreprise?.nom}</p>
@@ -151,7 +152,7 @@ const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
   );
 };
 
-const TopBar = ({ onMenuClick, onShowInstallGuide }) => {
+const TopBar = ({ onMenuClick, onShowInstallGuide, onShowChat, chatUnreadCount }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const { api, user } = useAuth();
   const navigate = useNavigate();
@@ -198,6 +199,9 @@ const TopBar = ({ onMenuClick, onShowInstallGuide }) => {
 
         {/* Actions */}
         <div className="flex items-center gap-1 sm:gap-2">
+          {/* Chat Button */}
+          <ChatButton onClick={onShowChat} unreadCount={chatUnreadCount} />
+          
           {/* Install App Button - Mobile only, hidden if already installed */}
           {!isDemoAccount && !isInstalled && (
             <Button 
@@ -683,8 +687,10 @@ const InstallGuideModal = ({ isOpen, onClose }) => {
 export const DashboardLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { unreadCount: chatUnreadCount, refreshUnread: refreshChatUnread } = useChatUnread();
   
   // Check if this is the demo account
   const isDemoAccount = user?.email === 'demo@actoos.com';
@@ -723,6 +729,8 @@ export const DashboardLayout = ({ children }) => {
         <TopBar 
           onMenuClick={() => setSidebarOpen(true)} 
           onShowInstallGuide={() => setShowInstallGuide(true)}
+          onShowChat={() => setShowChat(true)}
+          chatUnreadCount={chatUnreadCount}
         />
         <main className="p-4 lg:p-6">
           {children}
@@ -736,6 +744,16 @@ export const DashboardLayout = ({ children }) => {
       <InstallGuideModal 
         isOpen={showInstallGuide} 
         onClose={() => setShowInstallGuide(false)} 
+      />
+      
+      {/* Chat Widget */}
+      <ChatWidget 
+        isOpen={showChat} 
+        onClose={() => {
+          setShowChat(false);
+          refreshChatUnread();
+        }}
+        isTech={false}
       />
     </div>
   );

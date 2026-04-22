@@ -40,7 +40,7 @@ export const LoginPage = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-6">
-            <img src="/actoos-icon.svg" alt="Actoos" className="h-12 w-12 mb-2" />
+            <img src="/branding/actoos-pro-icon.png" alt="ACTOOS PRO" className="h-12 w-12 mb-2" />
             <span className="text-2xl font-bold text-slate-800">Actoos</span>
             <span className="text-sm text-slate-500">Gestion d'interventions terrain</span>
           </div>
@@ -500,7 +500,7 @@ export const ForgotPasswordPage = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-6">
-            <img src="/actoos-icon.svg" alt="Actoos" className="h-12 w-12 mb-2" />
+            <img src="/branding/actoos-pro-icon.png" alt="ACTOOS PRO" className="h-12 w-12 mb-2" />
             <span className="text-2xl font-bold text-slate-800">Actoos</span>
             <span className="text-sm text-slate-500">Gestion d'interventions terrain</span>
           </div>
@@ -653,7 +653,7 @@ export const ResetPasswordPage = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-6">
-            <img src="/actoos-icon.svg" alt="Actoos" className="h-12 w-12 mb-2" />
+            <img src="/branding/actoos-pro-icon.png" alt="ACTOOS PRO" className="h-12 w-12 mb-2" />
             <span className="text-2xl font-bold text-slate-800">Actoos</span>
             <span className="text-sm text-slate-500">Gestion d'interventions terrain</span>
           </div>

@@ -192,7 +192,6 @@ async def send_message(
     """
     user_id = current_user["user_id"]
     entreprise_id = current_user["entreprise_id"]
-    is_admin = current_user.get("role") == "admin"
     
     # Get sender info
     sender = await db.users.find_one({"id": user_id}, {"_id": 0, "prenom": 1, "nom": 1, "role": 1})

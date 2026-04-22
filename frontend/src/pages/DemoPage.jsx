@@ -38,7 +38,7 @@ const DemoPage = () => {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center p-4">
       <div className="text-center">
         <div className="w-20 h-20 mx-auto mb-6">
-          <img src="/actoos-icon.svg" alt="Actoos" className="w-full h-full" />
+          <img src="/branding/actoos-pro-icon.png" alt="ACTOOS PRO" className="w-full h-full" />
         </div>
         
         {error ? (
