@@ -120,9 +120,11 @@ async def list_subscription_plans():
             "id": plan_id,
             "name": plan_data["name"],
             "price": plan_data["price"],
+            "price_annual": plan_data.get("price_annual", round(plan_data["price"] * 12 * 0.8, 2)),
             "price_per_extra_tech": plan_data.get("price_per_extra_tech", 5),
             "currency": plan_data["currency"],
             "description": plan_data["description"],
+            "target_audience": plan_data.get("target_audience", ""),
             "features": plan_data["features"],
             "recommended": plan_data.get("recommended", False),
             "limits": {

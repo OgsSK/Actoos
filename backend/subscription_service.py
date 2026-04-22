@@ -1,6 +1,11 @@
 """
-Stripe Subscription Service for Actoos SaaS
+Stripe Subscription Service for ACTOOS PRO
 Handles subscription plans, checkout sessions, and webhooks
+
+TARIFS OFFICIELS ACTOOS PRO (Mise à jour 2026)
+- Startup: 9,99€/mois ou 95,90€/an (-20%)
+- Pro: 19,99€/mois ou 191,90€/an (-20%)
+- Entreprise: 39,99€/mois ou 383,90€/an (-20%)
 """
 import logging
 import os
@@ -11,38 +16,41 @@ import uuid
 logger = logging.getLogger(__name__)
 
 # =============================================================================
-# ACTOOS OFFICIAL SUBSCRIPTION PLANS (Version Finale)
+# ACTOOS PRO - GRILLE TARIFAIRE OFFICIELLE
 # =============================================================================
 #
-# Key Logic:
-# 1. Client chooses subscription → 2. Chooses categories → 3. Actoos activates features
+# TARIFS HT (Hors Taxes)
+# - Mensuel: Prélèvement chaque mois
+# - Annuel: -20% de réduction, engagement 12 mois
 #
-# Pricing for extra technicians: +5€/mois/technicien (all plans)
+# Nom marchand sur relevés bancaires: ACTOOS PRO
 # =============================================================================
 
 SUBSCRIPTION_PLANS = {
     "startup": {
         "name": "Startup",
-        "price": 49.00,
+        "price": 9.99,  # Mensuel HT
+        "price_annual": 95.90,  # Annuel HT (-20%)
         "price_per_extra_tech": 5.00,
         "currency": "eur",
-        "description": "Pour artisans, auto-entrepreneurs et petites équipes",
+        "description": "Pour indépendants et petites structures",
+        "target_audience": "Artisans, auto-entrepreneurs, petites équipes",
         "features": [
             "1 administrateur",
-            "3 techniciens inclus (+5€/tech)",
-            "1 catégorie au choix (BTP, Nettoyage, Maintenance...)",
+            "3 techniciens inclus (+5€/tech supplémentaire)",
+            "1 catégorie métier",
             "Gestion clients, devis, factures",
             "Planning interventions",
             "Signature électronique",
-            "App terrain PWA (missions, checklist, photos, signature)",
+            "App terrain PWA",
             "Logo entreprise sur documents",
             "Paiement en ligne basique"
         ],
         # Limits
         "max_admins": 1,
-        "max_technicians": 3,  # Included, can add more at 5€/tech
+        "max_technicians": 3,
         "max_categories": 1,
-        "max_interventions_month": -1,  # unlimited
+        "max_interventions_month": -1,
         # Features
         "multi_sites": False,
         "offline_mode": False,
@@ -59,15 +67,17 @@ SUBSCRIPTION_PLANS = {
     },
     "pro": {
         "name": "Pro",
-        "price": 79.00,
+        "price": 19.99,  # Mensuel HT
+        "price_annual": 191.90,  # Annuel HT (-20%)
         "price_per_extra_tech": 5.00,
         "currency": "eur",
-        "description": "Pour PME en croissance",
+        "description": "Pour PME et équipes en croissance",
+        "target_audience": "PME, équipes structurées",
         "recommended": True,
         "features": [
             "3 administrateurs",
-            "10 techniciens inclus (+5€/tech)",
-            "Jusqu'à 4 catégories",
+            "10 techniciens inclus (+5€/tech supplémentaire)",
+            "Jusqu'à 4 catégories métier",
             "Tout Startup +",
             "Automatisation devis → facture",
             "Planning intelligent",
@@ -76,19 +86,18 @@ SUBSCRIPTION_PLANS = {
             "Historique complet clients",
             "Notifications automatiques",
             "App terrain: photos illimitées, géolocalisation, mode hors ligne",
-            "Rapports d'intervention PDF auto",
+            "Rapports d'intervention PDF automatiques",
             "Validation chef d'équipe",
-            "Branding avancé (couleurs, templates, emails)",
-            "Paiement complet (acompte, direct)",
-            "Analytics: CA, rentabilité, performance"
+            "Branding avancé",
+            "Analytics avancés"
         ],
         # Limits
         "max_admins": 3,
-        "max_technicians": 10,  # Included, can add more at 5€/tech
+        "max_technicians": 10,
         "max_categories": 4,
         "max_interventions_month": -1,
         # Features
-        "multi_sites": False,  # Still Enterprise only
+        "multi_sites": False,
         "offline_mode": True,
         "geolocation": True,
         "auto_pdf_reports": True,
@@ -103,32 +112,33 @@ SUBSCRIPTION_PLANS = {
     },
     "enterprise": {
         "name": "Entreprise",
-        "price": 149.00,
-        "price_per_extra_tech": 0,  # Unlimited included
+        "price": 39.99,  # Mensuel HT
+        "price_annual": 383.90,  # Annuel HT (-20%)
+        "price_per_extra_tech": 0,  # Techniciens illimités inclus
         "currency": "eur",
-        "description": "Entreprises structurées et multi-équipes",
+        "description": "Pour organisations avancées et besoins complexes",
+        "target_audience": "Entreprises structurées, multi-équipes",
         "features": [
             "Administrateurs illimités",
             "Techniciens illimités",
-            "Toutes les catégories",
+            "Toutes les catégories métier",
             "Multi-sites",
             "Multi-équipes",
             "Permissions avancées / rôles personnalisés",
             "Reporting avancé, KPI personnalisés",
             "Export comptable",
-            "API accès",
+            "Accès API",
             "Automatisations complètes",
             "Workflow personnalisable",
             "Formulaires dynamiques",
             "Validation multi-niveau",
             "Suivi GPS avancé",
-            "Branding Premium (quasi white-label)",
+            "Branding Premium",
             "PDF totalement personnalisables",
             "Portail client personnalisé",
-            "Abonnements clients finaux",
             "Paiements récurrents",
             "Intégrations comptables",
-            "Support dédié 24/7"
+            "Support prioritaire"
         ],
         # Limits
         "max_admins": -1,
@@ -158,19 +168,41 @@ SUBSCRIPTION_PLANS = {
     }
 }
 
-# For backward compatibility with existing code
+# Backward compatibility
 SUBSCRIPTION_PLANS["starter"] = SUBSCRIPTION_PLANS["startup"]
+
 
 def get_plan(plan_id: str) -> Optional[Dict[str, Any]]:
     """Get plan details by ID"""
-    # Handle legacy "starter" name
     if plan_id == "starter":
         plan_id = "startup"
     return SUBSCRIPTION_PLANS.get(plan_id)
 
+
 def get_all_plans() -> Dict[str, Dict[str, Any]]:
     """Get all available plans (excluding legacy alias)"""
     return {k: v for k, v in SUBSCRIPTION_PLANS.items() if k != "starter"}
+
+
+def get_plan_price(plan_id: str, billing_cycle: str = "monthly") -> float:
+    """
+    Get the price for a plan based on billing cycle.
+    
+    Args:
+        plan_id: Plan identifier (startup, pro, enterprise)
+        billing_cycle: 'monthly' or 'annual'
+    
+    Returns:
+        Price in EUR (HT)
+    """
+    plan = get_plan(plan_id)
+    if not plan:
+        return 0.0
+    
+    if billing_cycle == "annual":
+        return plan.get("price_annual", plan["price"] * 12 * 0.8)
+    return plan["price"]
+
 
 def validate_plan_limits(plan_id: str, current_technicians: int = 0) -> bool:
     """Validate if plan limits are respected"""
@@ -184,12 +216,26 @@ def validate_plan_limits(plan_id: str, current_technicians: int = 0) -> bool:
     
     return True
 
+
 def has_feature(plan_id: str, feature: str) -> bool:
     """Check if a plan has a specific feature enabled"""
     plan = get_plan(plan_id)
     if not plan:
         return False
     return plan.get(feature, False)
+
+
+def calculate_extra_technicians_cost(plan_id: str, extra_techs: int) -> float:
+    """Calculate the monthly cost for extra technicians"""
+    plan = get_plan(plan_id)
+    if not plan:
+        return 0.0
+    
+    price_per_extra = plan.get("price_per_extra_tech", 0)
+    if price_per_extra == 0:  # Enterprise has unlimited techs
+        return 0.0
+    
+    return extra_techs * price_per_extra
 
 
 # Alias for export
