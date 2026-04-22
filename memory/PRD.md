@@ -120,7 +120,28 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 
 ## 📅 Changelog
 
-### 2026-04-22 - Mise à jour ACTOOS PRO Pricing & Currency Fix
+### 2026-04-22 - Corrections de Sécurité Critiques
+- **Mot de passe oublié sécurisé** :
+  - Rate limiting : 3 requêtes max par email par heure
+  - Messages génériques pour empêcher l'énumération d'emails
+  - Tokens stockés en DB avec expiration de 1 heure
+  - Tokens invalidés après utilisation
+  - Email amélioré avec avertissements de sécurité
+- **Blocage inscription directe** :
+  - `POST /api/auth/register` retourne désormais 403
+  - Nouvel endpoint `POST /api/auth/register-from-checkout` pour création via Stripe
+  - Page `/register` redirige automatiquement vers `/pricing`
+  - Lien "Créer une entreprise" remplacé par "Démarrer l'essai gratuit"
+- **Vérification abonnement au login** :
+  - Vérifie `subscription_status` lors de chaque connexion admin
+  - Bloque l'accès si trial expiré, abonnement annulé ou absent
+  - Retourne code `subscription_required` avec redirection vers pricing
+- **Historique d'import avec rollback** :
+  - API `/api/import/history` - liste des imports
+  - API `/api/import/rollback/{id}` - annulation avec suppression des données
+  - UI avec onglets "Nouvel import" / "Historique"
+- **Variables S3/R2 configurées** dans `.env`
+- **Cron Job Trial Reminders** : Script `/app/backend/cron_trial_reminders.py`
 - **Nouveaux tarifs ACTOOS PRO** :
   - Startup: 9,99€/mois ou 95,90€/an (-20%)
   - Pro: 19,99€/mois ou 191,90€/an (-20%)
