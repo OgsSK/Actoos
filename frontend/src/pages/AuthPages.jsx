@@ -113,8 +113,8 @@ export const LoginPage = () => {
 
             <div className="mt-4 pt-4 border-t border-slate-200 text-center text-sm text-slate-500">
               Pas encore de compte ?{' '}
-              <Link to="/register" className="text-blue-600 hover:underline font-medium">
-                Créer une entreprise
+              <Link to="/pricing" className="text-emerald-600 hover:underline font-medium">
+                Démarrer l'essai gratuit
               </Link>
             </div>
           </CardContent>
@@ -125,217 +125,39 @@ export const LoginPage = () => {
 };
 
 export const RegisterPage = () => {
-  const [formData, setFormData] = useState({
-    entreprise_nom: '',
-    entreprise_email: '',
-    entreprise_telephone: '',
-    admin_email: '',
-    admin_nom: '',
-    admin_prenom: '',
-    admin_password: '',
-    confirm_password: '',
-  });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
   const navigate = useNavigate();
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (formData.admin_password !== formData.confirm_password) {
-      setError('Les mots de passe ne correspondent pas');
-      return;
-    }
-
-    if (formData.admin_password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { confirm_password, ...registerData } = formData;
-      await register(registerData);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Erreur lors de l\'inscription');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  
+  // Redirect to pricing page - direct registration is disabled for security
+  React.useEffect(() => {
+    navigate('/pricing');
+  }, [navigate]);
+  
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-slate-900 text-white mb-4">
-            <Wrench className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">FieldCommand</h1>
-          <p className="text-slate-500 mt-1">Créez votre espace entreprise</p>
+      <div className="w-full max-w-lg text-center">
+        <div className="mb-8">
+          <img src="/branding/actoos-pro-icon.png" alt="ACTOOS PRO" className="h-16 w-16 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-900">ACTOOS PRO</h1>
         </div>
-
+        
         <Card className="border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl">Inscription</CardTitle>
-            <CardDescription>Créez votre compte administrateur et votre entreprise</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="font-semibold text-slate-900">Informations entreprise</h3>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="entreprise_nom" className="text-sm font-semibold text-slate-700">Nom de l'entreprise *</Label>
-                  <Input
-                    id="entreprise_nom"
-                    name="entreprise_nom"
-                    value={formData.entreprise_nom}
-                    onChange={handleChange}
-                    required
-                    className="h-11"
-                    data-testid="register-company-name"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="entreprise_email" className="text-sm font-semibold text-slate-700">Email entreprise</Label>
-                    <Input
-                      id="entreprise_email"
-                      name="entreprise_email"
-                      type="email"
-                      value={formData.entreprise_email}
-                      onChange={handleChange}
-                      className="h-11"
-                      data-testid="register-company-email"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="entreprise_telephone" className="text-sm font-semibold text-slate-700">Téléphone</Label>
-                    <Input
-                      id="entreprise_telephone"
-                      name="entreprise_telephone"
-                      value={formData.entreprise_telephone}
-                      onChange={handleChange}
-                      className="h-11"
-                      data-testid="register-company-phone"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t border-slate-200">
-                <h3 className="font-semibold text-slate-900">Compte administrateur</h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="admin_prenom" className="text-sm font-semibold text-slate-700">Prénom *</Label>
-                    <Input
-                      id="admin_prenom"
-                      name="admin_prenom"
-                      value={formData.admin_prenom}
-                      onChange={handleChange}
-                      required
-                      className="h-11"
-                      data-testid="register-admin-firstname"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="admin_nom" className="text-sm font-semibold text-slate-700">Nom *</Label>
-                    <Input
-                      id="admin_nom"
-                      name="admin_nom"
-                      value={formData.admin_nom}
-                      onChange={handleChange}
-                      required
-                      className="h-11"
-                      data-testid="register-admin-lastname"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="admin_email" className="text-sm font-semibold text-slate-700">Email *</Label>
-                  <Input
-                    id="admin_email"
-                    name="admin_email"
-                    type="email"
-                    value={formData.admin_email}
-                    onChange={handleChange}
-                    required
-                    className="h-11"
-                    data-testid="register-admin-email"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="admin_password" className="text-sm font-semibold text-slate-700">Mot de passe *</Label>
-                    <Input
-                      id="admin_password"
-                      name="admin_password"
-                      type="password"
-                      value={formData.admin_password}
-                      onChange={handleChange}
-                      required
-                      className="h-11"
-                      data-testid="register-admin-password"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm_password" className="text-sm font-semibold text-slate-700">Confirmer *</Label>
-                    <Input
-                      id="confirm_password"
-                      name="confirm_password"
-                      type="password"
-                      value={formData.confirm_password}
-                      onChange={handleChange}
-                      required
-                      className="h-11"
-                      data-testid="register-confirm-password"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full h-11 bg-slate-900 hover:bg-slate-800 font-semibold"
-                disabled={loading}
-                data-testid="register-submit"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Création en cours...
-                  </>
-                ) : (
-                  'Créer mon entreprise'
-                )}
-              </Button>
-            </form>
-
-            <div className="mt-4 pt-4 border-t border-slate-200 text-center text-sm text-slate-500">
-              Déjà inscrit ?{' '}
-              <Link to="/login" className="text-blue-600 hover:underline font-medium">
+          <CardContent className="p-8">
+            <h2 className="text-xl font-semibold mb-4">Créez votre compte</h2>
+            <p className="text-slate-600 mb-6">
+              Pour créer votre compte ACTOOS PRO, choisissez un plan et bénéficiez de 14 jours d'essai gratuit.
+            </p>
+            <Button 
+              onClick={() => navigate('/pricing')}
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+            >
+              Voir les tarifs et commencer l'essai gratuit
+            </Button>
+            <p className="mt-4 text-sm text-slate-500">
+              Déjà un compte ?{' '}
+              <Link to="/login" className="text-emerald-600 hover:underline">
                 Se connecter
               </Link>
-            </div>
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -511,7 +333,7 @@ export const ForgotPasswordPage = () => {
             <CardTitle className="text-xl">Mot de passe oublié</CardTitle>
             <CardDescription>
               {sent 
-                ? "Un email de réinitialisation a été envoyé"
+                ? "Vérifiez votre boîte email"
                 : "Entrez votre email pour recevoir un lien de réinitialisation"
               }
             </CardDescription>
@@ -519,14 +341,17 @@ export const ForgotPasswordPage = () => {
           <CardContent>
             {sent ? (
               <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                  <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                  <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <p className="text-slate-600">
-                  Si un compte existe avec l'email <strong>{email}</strong>, vous recevrez un lien de réinitialisation.
+                  Si un compte existe avec l'email <strong>{email}</strong>, vous recevrez un lien de réinitialisation dans les prochaines minutes.
                 </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                  <strong>Note :</strong> Le lien expire dans 1 heure. Vérifiez vos spams si vous ne voyez pas l'email.
+                </div>
                 <Button variant="outline" onClick={() => navigate('/login')} className="w-full">
                   Retour à la connexion
                 </Button>
@@ -553,19 +378,19 @@ export const ForgotPasswordPage = () => {
                   />
                 </div>
 
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={loading}>
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Envoi en cours...
                     </>
                   ) : (
-                    'Envoyer le lien'
+                    'Envoyer le lien de réinitialisation'
                   )}
                 </Button>
 
                 <div className="text-center">
-                  <Link to="/login" className="text-sm text-blue-600 hover:underline">
+                  <Link to="/login" className="text-sm text-emerald-600 hover:underline">
                     Retour à la connexion
                   </Link>
                 </div>
