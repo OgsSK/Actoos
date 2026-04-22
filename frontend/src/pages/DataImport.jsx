@@ -7,13 +7,15 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Progress } from '../components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { 
   Upload, FileSpreadsheet, Check, X, AlertTriangle, 
   ArrowRight, ArrowLeft, Download, Loader2, CheckCircle,
-  Users, FileText, Receipt, Wrench, HelpCircle, Trash2
+  Users, FileText, Receipt, Wrench, HelpCircle, Trash2, History
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import ImportHistory from '../components/ImportHistory';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -49,6 +51,7 @@ const ENTITY_TYPES = {
 const STEPS = ['entity', 'upload', 'mapping', 'preview', 'import'];
 
 const DataImport = () => {
+  const [activeTab, setActiveTab] = useState('import');
   const [currentStep, setCurrentStep] = useState(0);
   const [entityType, setEntityType] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -696,40 +699,60 @@ const DataImport = () => {
           </p>
         </div>
         
-        {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between relative">
-            <div className="absolute top-4 left-0 right-0 h-0.5 bg-slate-200" />
-            <div 
-              className="absolute top-4 left-0 h-0.5 bg-emerald-500 transition-all"
-              style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
-            />
-            {STEPS.map((step, idx) => (
-              <div
-                key={step}
-                className={`relative z-10 flex flex-col items-center ${
-                  idx <= currentStep ? 'text-emerald-600' : 'text-slate-400'
-                }`}
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  idx < currentStep ? 'bg-emerald-500 text-white' :
-                  idx === currentStep ? 'bg-emerald-100 text-emerald-600 ring-2 ring-emerald-500' :
-                  'bg-slate-200 text-slate-500'
-                }`}>
-                  {idx < currentStep ? <Check className="w-4 h-4" /> : idx + 1}
-                </div>
-                <span className="mt-2 text-xs font-medium capitalize">{step}</span>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="import" className="flex items-center gap-2">
+              <Upload className="w-4 h-4" />
+              Nouvel import
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <History className="w-4 h-4" />
+              Historique
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="import" className="mt-6">
+            {/* Progress Steps */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between relative">
+                <div className="absolute top-4 left-0 right-0 h-0.5 bg-slate-200" />
+                <div 
+                  className="absolute top-4 left-0 h-0.5 bg-emerald-500 transition-all"
+                  style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
+                />
+                {STEPS.map((step, idx) => (
+                  <div
+                    key={step}
+                    className={`relative z-10 flex flex-col items-center ${
+                      idx <= currentStep ? 'text-emerald-600' : 'text-slate-400'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      idx < currentStep ? 'bg-emerald-500 text-white' :
+                      idx === currentStep ? 'bg-emerald-100 text-emerald-600 ring-2 ring-emerald-500' :
+                      'bg-slate-200 text-slate-500'
+                    }`}>
+                      {idx < currentStep ? <Check className="w-4 h-4" /> : idx + 1}
+                    </div>
+                    <span className="mt-2 text-xs font-medium capitalize">{step}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-        
-        {/* Content */}
-        <Card>
-          <CardContent className="p-8">
-            {renderStepContent()}
-          </CardContent>
-        </Card>
+            </div>
+            
+            {/* Content */}
+            <Card>
+              <CardContent className="p-8">
+                {renderStepContent()}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="history" className="mt-6">
+            <ImportHistory />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

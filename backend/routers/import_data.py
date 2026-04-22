@@ -494,10 +494,32 @@ async def execute_import(
             {"$set": {"sequence_facture": seq_facture}}
         )
     
-    logger.info(f"Import completed: {len(imported)} {entity_type} imported, {len(errors)} errors")
+    # Save import history for rollback capability
+    import_id = str(uuid.uuid4())
+    import_history = {
+        "id": import_id,
+        "entreprise_id": entreprise_id,
+        "user_id": current_user["user_id"],
+        "user_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip() or current_user.get('email', ''),
+        "entity_type": entity_type,
+        "filename": file.filename,
+        "total_rows": len(df),
+        "imported_count": len(imported),
+        "error_count": len(errors),
+        "imported_ids": [item["id"] for item in imported],
+        "mappings_used": mappings,
+        "date_format": date_format,
+        "skip_errors": skip_errors,
+        "rolled_back": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.import_history.insert_one(import_history)
+    
+    logger.info(f"Import completed: {len(imported)} {entity_type} imported, {len(errors)} errors (history_id: {import_id})")
     
     return {
         "success": True,
+        "import_id": import_id,
         "imported_count": len(imported),
         "error_count": len(errors),
         "imported": imported[:50],  # First 50 for response size
@@ -574,3 +596,143 @@ async def get_import_template(
         "example_row": template_data,
         "csv_template": ",".join(all_fields) + "\n" + ",".join([str(template_data.get(f, "")) for f in all_fields])
     }
+
+
+# =====================================================
+# IMPORT HISTORY & ROLLBACK
+# =====================================================
+
+@router.get("/history")
+async def get_import_history(
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get import history for the current enterprise
+    """
+    entreprise_id = current_user["entreprise_id"]
+    
+    history = await db.import_history.find(
+        {"entreprise_id": entreprise_id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(length=limit)
+    
+    return {
+        "total": len(history),
+        "imports": history
+    }
+
+
+@router.get("/history/{import_id}")
+async def get_import_details(
+    import_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get details of a specific import including all imported record IDs
+    """
+    entreprise_id = current_user["entreprise_id"]
+    
+    import_record = await db.import_history.find_one(
+        {"id": import_id, "entreprise_id": entreprise_id},
+        {"_id": 0}
+    )
+    
+    if not import_record:
+        raise HTTPException(status_code=404, detail="Import non trouvé")
+    
+    return import_record
+
+
+@router.post("/rollback/{import_id}")
+async def rollback_import(
+    import_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Rollback an import - delete all records created by this import
+    """
+    entreprise_id = current_user["entreprise_id"]
+    
+    # Get import record
+    import_record = await db.import_history.find_one(
+        {"id": import_id, "entreprise_id": entreprise_id},
+        {"_id": 0}
+    )
+    
+    if not import_record:
+        raise HTTPException(status_code=404, detail="Import non trouvé")
+    
+    if import_record.get("rolled_back"):
+        raise HTTPException(status_code=400, detail="Cet import a déjà été annulé")
+    
+    entity_type = import_record["entity_type"]
+    imported_ids = import_record.get("imported_ids", [])
+    
+    if not imported_ids:
+        raise HTTPException(status_code=400, detail="Aucun enregistrement à supprimer")
+    
+    # Get the collection
+    collection_map = {
+        "clients": db.clients,
+        "interventions": db.interventions,
+        "devis": db.devis,
+        "factures": db.factures
+    }
+    
+    collection = collection_map.get(entity_type)
+    if not collection:
+        raise HTTPException(status_code=400, detail="Type d'entité invalide")
+    
+    # Delete all imported records
+    delete_result = await collection.delete_many({
+        "id": {"$in": imported_ids},
+        "entreprise_id": entreprise_id
+    })
+    
+    deleted_count = delete_result.deleted_count
+    
+    # Update import history to mark as rolled back
+    await db.import_history.update_one(
+        {"id": import_id},
+        {
+            "$set": {
+                "rolled_back": True,
+                "rolled_back_at": datetime.now(timezone.utc).isoformat(),
+                "rolled_back_by": current_user["user_id"],
+                "deleted_count": deleted_count
+            }
+        }
+    )
+    
+    logger.info(f"Rollback import {import_id}: {deleted_count} {entity_type} deleted")
+    
+    return {
+        "success": True,
+        "import_id": import_id,
+        "entity_type": entity_type,
+        "deleted_count": deleted_count,
+        "message": f"{deleted_count} enregistrements supprimés"
+    }
+
+
+@router.delete("/history/{import_id}")
+async def delete_import_history(
+    import_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Delete an import history record (does not delete the imported data)
+    """
+    entreprise_id = current_user["entreprise_id"]
+    
+    result = await db.import_history.delete_one({
+        "id": import_id,
+        "entreprise_id": entreprise_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Import non trouvé")
+    
+    return {"success": True, "message": "Historique supprimé"}
+
