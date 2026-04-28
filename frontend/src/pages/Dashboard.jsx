@@ -21,6 +21,7 @@ import PlanUsageWidget from '../components/PlanUsageWidget';
 import AdminInstallPrompt from '../components/AdminInstallPrompt';
 import { useRealtimeEvents, EventType } from '../hooks/useRealtimeEvents';
 import { ChatWidget, ChatButton, useChatUnread } from '../components/ChatWidget';
+import { DemoBanner } from '../components/DemoBanner';
 
 const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
   const { user, entreprise, logout, isAdmin } = useAuth();
@@ -694,31 +695,12 @@ export const DashboardLayout = ({ children }) => {
   const { unreadCount: chatUnreadCount, refreshUnread: refreshChatUnread } = useChatUnread();
   
   // Check if this is the demo account
-  const isDemoAccount = user?.email === 'demo@actoos.com';
-  
-  const handleExitDemo = () => {
-    logout();
-    // Use window.location to avoid React Router catching the redirect
-    window.location.href = '/';
-  };
+  const isDemoAccount = user?.email === 'demo@actoos.com' || user?.is_demo;
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Demo Mode Banner */}
-      {isDemoAccount && (
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 flex items-center justify-between sticky top-0 z-50">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">🎯 Mode Démonstration</span>
-            <span className="text-xs text-blue-200 hidden sm:inline">- Explorez librement les fonctionnalités d'Actoos</span>
-          </div>
-          <button
-            onClick={handleExitDemo}
-            className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-sm font-medium transition-colors"
-          >
-            Quitter la démo
-          </button>
-        </div>
-      )}
+      {/* Demo Mode Banner - New Professional Version */}
+      {isDemoAccount && <DemoBanner variant="full" />}
       
       <Sidebar 
         open={sidebarOpen} 

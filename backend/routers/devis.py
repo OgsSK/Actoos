@@ -316,7 +316,7 @@ async def convert_devis_to_facture(
             status_code=403,
             detail={
                 "error": "feature_not_available",
-                "message": "La conversion automatique devis → facture est disponible avec le plan Pro (79€/mois).",
+                "message": "Passez au plan Pro pour débloquer la conversion automatique devis → facture et profiter de toutes les fonctionnalités avancées.",
                 "feature": "auto_devis_to_facture",
                 "required_plan": "pro"
             }

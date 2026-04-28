@@ -57,7 +57,8 @@ from routers import (
     chat as chat_router,
     import_data as import_data_router,
     scheduled_tasks as scheduled_tasks_router,
-    two_factor as two_factor_router
+    two_factor as two_factor_router,
+    demo as demo_router
 )
 import realtime_events
 
@@ -112,6 +113,7 @@ api_router.include_router(chat_router.router)
 api_router.include_router(import_data_router.router)
 api_router.include_router(scheduled_tasks_router.router)
 api_router.include_router(two_factor_router.router)
+api_router.include_router(demo_router.router)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

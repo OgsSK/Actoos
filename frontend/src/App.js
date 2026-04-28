@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "rea
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { OfflineProvider } from "./contexts/OfflineContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
+import { DemoProvider } from "./contexts/DemoContext";
 import { Toaster } from "./components/ui/sonner";
 import useManifestSwitcher from "./hooks/useManifestSwitcher";
 import CookieConsent from "./components/CookieConsent";
@@ -178,6 +179,7 @@ function App() {
     <AuthProvider>
       <CurrencyProvider>
         <OfflineProvider>
+          <DemoProvider>
           <BrowserRouter>
             <ScrollToTop />
             <ManifestSwitcher />
@@ -283,6 +285,7 @@ function App() {
         </BrowserRouter>
         <Toaster />
         <CookieConsent />
+        </DemoProvider>
       </OfflineProvider>
       </CurrencyProvider>
     </AuthProvider>

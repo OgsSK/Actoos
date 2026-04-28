@@ -6,7 +6,9 @@ from . import (
     push, analytics, communications, entreprise, 
     search, stats, statements, interventions, devis,
     factures, portal, sms, subscription, photos, rapports, audit, public_api,
-    import_data, scheduled_tasks
+    import_data, scheduled_tasks, sites, calendar, accounting_export,
+    admin_analytics, gdpr, offline_sync, super_admin, settings,
+    integrations, dashboard, chat, two_factor, demo
 )
 
 __all__ = [
@@ -14,5 +16,7 @@ __all__ = [
     'push', 'analytics', 'communications', 'entreprise',
     'search', 'stats', 'statements', 'interventions', 'devis',
     'factures', 'portal', 'sms', 'subscription', 'photos', 'rapports', 'audit', 'public_api',
-    'import_data', 'scheduled_tasks'
+    'import_data', 'scheduled_tasks', 'sites', 'calendar', 'accounting_export',
+    'admin_analytics', 'gdpr', 'offline_sync', 'super_admin', 'settings',
+    'integrations', 'dashboard', 'chat', 'two_factor', 'demo'
 ]

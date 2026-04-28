@@ -1,6 +1,6 @@
 """
 Plan Limits Service - Validates subscription limits before operations
-Based on Official Actoos Plans (Startup 49€, Pro 79€, Enterprise 149€)
+Based on Official ACTOOS PRO Plans (Startup 9.99€, Pro 19.99€, Enterprise 39.99€)
 """
 from fastapi import HTTPException
 from datetime import datetime, timezone
