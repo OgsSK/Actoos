@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
@@ -12,9 +13,13 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from '../components/ui/dialog';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+} from '../components/ui/dropdown-menu';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import {
-  FileText, Download, Send, Loader2, Calendar, Users, Mail, CheckCircle, AlertCircle, Info
+  FileText, Download, Send, Loader2, Calendar, Users, Mail, CheckCircle, AlertCircle, Info,
+  Search, Share2, MessageCircle, Copy, Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,8 +29,11 @@ const Statements = () => {
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [statements, setStatements] = useState([]);
+  const [filteredStatements, setFilteredStatements] = useState([]);
   const [history, setHistory] = useState([]);
   const [showConfirmSend, setShowConfirmSend] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [copiedLink, setCopiedLink] = useState(null);
   
   // Period selection
   const currentDate = new Date();
@@ -57,6 +65,20 @@ const Statements = () => {
     fetchHistory();
   }, []);
 
+  // Filter statements when search query changes
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredStatements(statements);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = statements.filter(s => 
+        s.client_name?.toLowerCase().includes(query) ||
+        s.client_email?.toLowerCase().includes(query)
+      );
+      setFilteredStatements(filtered);
+    }
+  }, [searchQuery, statements]);
+
   const fetchHistory = async () => {
     try {
       const response = await api.get('/statements/history');
@@ -70,7 +92,10 @@ const Statements = () => {
     setGenerating(true);
     try {
       const response = await api.get(`/statements/generate?month=${selectedMonth}&year=${selectedYear}`);
-      setStatements(response.data.clients || []);
+      const data = response.data.clients || [];
+      setStatements(data);
+      setFilteredStatements(data);
+      setSearchQuery('');
       if (response.data.generated === 0) {
         toast.info('Aucune facture trouvée pour cette période');
       } else {
@@ -122,6 +147,70 @@ const Statements = () => {
       toast.error('Erreur lors de l\'envoi');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleCopyLink = (clientId, clientName) => {
+    const link = `${window.location.origin}/portal/client/${clientId}`;
+    navigator.clipboard.writeText(link);
+    setCopiedLink(clientId);
+    setTimeout(() => setCopiedLink(null), 2000);
+    toast.success('Lien copié !');
+  };
+
+  const handleShareWhatsApp = (clientId, clientName, phone) => {
+    const link = `${window.location.origin}/portal/client/${clientId}`;
+    const message = encodeURIComponent(`Bonjour ${clientName}, voici votre espace client : ${link}`);
+    
+    if (phone) {
+      // Clean phone number
+      const cleanPhone = phone.replace(/\s/g, '').replace(/^\+/, '');
+      window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+    } else {
+      window.open(`https://wa.me/?text=${message}`, '_blank');
+    }
+  };
+
+  const handleShareEmail = (email, clientName, clientId) => {
+    const link = `${window.location.origin}/portal/client/${clientId}`;
+    const subject = encodeURIComponent('Votre espace client');
+    const body = encodeURIComponent(`Bonjour ${clientName},\n\nVoici le lien vers votre espace client où vous pouvez consulter vos documents :\n\n${link}\n\nCordialement`);
+    
+    if (email) {
+      window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+    } else {
+      toast.error('Email manquant pour ce client');
+    }
+  };
+
+  const handleShareSMS = (phone, clientName, clientId) => {
+    const link = `${window.location.origin}/portal/client/${clientId}`;
+    const message = encodeURIComponent(`Bonjour ${clientName}, votre espace client : ${link}`);
+    
+    if (phone) {
+      window.open(`sms:${phone}?body=${message}`, '_blank');
+    } else {
+      toast.error('Téléphone manquant pour ce client');
+    }
+  };
+
+  const handleNativeShare = async (clientId, clientName) => {
+    const link = `${window.location.origin}/portal/client/${clientId}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Espace client',
+          text: `Bonjour ${clientName}, voici votre espace client`,
+          url: link
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Share error:', error);
+        }
+      }
+    } else {
+      handleCopyLink(clientId, clientName);
     }
   };
 
@@ -195,68 +284,130 @@ const Statements = () => {
       {statements.length > 0 && (
         <Card className="border-slate-200">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Users className="w-5 h-5" />
-                  Relevés générés ({statements.length})
+                  Relevés générés ({filteredStatements.length}/{statements.length})
                 </CardTitle>
                 <CardDescription>
                   Période: {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
                 </CardDescription>
               </div>
-              <Button 
-                onClick={() => setShowConfirmSend(true)} 
-                disabled={sending}
-                className="bg-blue-600 hover:bg-blue-700"
-                data-testid="send-all-btn"
-              >
-                {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                Envoyer par email
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                {/* Search bar */}
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  <Input
+                    placeholder="Rechercher client..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 w-full sm:w-64"
+                    data-testid="statement-search"
+                  />
+                </div>
+                <Button 
+                  onClick={() => setShowConfirmSend(true)} 
+                  disabled={sending}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  data-testid="send-all-btn"
+                >
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                  Envoyer par email
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead className="text-center">Factures</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {statements.map((statement) => (
-                  <TableRow key={statement.client_id}>
-                    <TableCell className="font-medium">{statement.client_name}</TableCell>
-                    <TableCell>
-                      {statement.client_email ? (
-                        <span className="text-slate-600">{statement.client_email}</span>
-                      ) : (
-                        <Badge variant="secondary" className="bg-amber-100 text-amber-700">
-                          Email manquant
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="secondary">{statement.facture_count}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownload(statement.client_id, statement.client_name)}
-                        data-testid={`download-${statement.client_id}`}
-                      >
-                        <Download className="w-4 h-4 mr-1" />
-                        PDF
-                      </Button>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead className="text-center">Factures</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredStatements.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                        {searchQuery ? 'Aucun résultat pour cette recherche' : 'Aucun relevé'}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredStatements.map((statement) => (
+                      <TableRow key={statement.client_id}>
+                        <TableCell className="font-medium">{statement.client_name}</TableCell>
+                        <TableCell>
+                          {statement.client_email ? (
+                            <span className="text-slate-600">{statement.client_email}</span>
+                          ) : (
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                              Email manquant
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">{statement.facture_count}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDownload(statement.client_id, statement.client_name)}
+                              data-testid={`download-${statement.client_id}`}
+                            >
+                              <Download className="w-4 h-4 mr-1" />
+                              PDF
+                            </Button>
+                            
+                            {/* Share dropdown */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" data-testid={`share-${statement.client_id}`}>
+                                  <Share2 className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleCopyLink(statement.client_id, statement.client_name)}>
+                                  {copiedLink === statement.client_id ? (
+                                    <Check className="w-4 h-4 mr-2 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="w-4 h-4 mr-2" />
+                                  )}
+                                  Copier le lien
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleShareWhatsApp(statement.client_id, statement.client_name, statement.client_phone)}>
+                                  <MessageCircle className="w-4 h-4 mr-2 text-green-600" />
+                                  WhatsApp
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleShareEmail(statement.client_email, statement.client_name, statement.client_id)}>
+                                  <Mail className="w-4 h-4 mr-2 text-blue-600" />
+                                  Email
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleShareSMS(statement.client_phone, statement.client_name, statement.client_id)}>
+                                  <Send className="w-4 h-4 mr-2 text-purple-600" />
+                                  SMS
+                                </DropdownMenuItem>
+                                {navigator.share && (
+                                  <DropdownMenuItem onClick={() => handleNativeShare(statement.client_id, statement.client_name)}>
+                                    <Share2 className="w-4 h-4 mr-2" />
+                                    Partager...
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}

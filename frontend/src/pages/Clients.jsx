@@ -17,6 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
 import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
+import { Separator } from '../components/ui/separator';
 import {
   Plus, Search, Phone, Mail, MapPin, User, Building2, ChevronLeft, 
   Edit, Trash2, FileText, Receipt, Calendar, Loader2, ExternalLink, Copy, Check,
@@ -419,140 +420,165 @@ const SiteForm = ({ initialData, onSubmit, onCancel, loading }) => {
     instructions_acces: initialData?.instructions_acces || '',
     notes: initialData?.notes || ''
   });
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.nom.trim()) newErrors.nom = 'Le nom du site est requis';
+    if (!formData.adresse.trim()) newErrors.adresse = 'L\'adresse est requise';
+    if (!formData.ville.trim()) newErrors.ville = 'La ville est requise';
+    if (!formData.code_postal.trim()) newErrors.code_postal = 'Le code postal est requis';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.nom || !formData.adresse || !formData.ville || !formData.code_postal) {
+    if (!validateForm()) {
+      toast.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
     onSubmit(formData);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 gap-4">
-        <div>
-          <Label htmlFor="site-nom">Nom du site *</Label>
-          <Input
-            id="site-nom"
-            value={formData.nom}
-            onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-            placeholder="Ex: Entrepôt Nord, Siège social..."
-            required
-            data-testid="site-nom-input"
-          />
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[65vh] overflow-y-auto px-1">
+      {/* Site Name */}
+      <div className="space-y-2">
+        <Label htmlFor="site-nom" className="text-sm font-medium">
+          Nom du site <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          id="site-nom"
+          value={formData.nom}
+          onChange={(e) => { setFormData({ ...formData, nom: e.target.value }); setErrors({...errors, nom: ''}); }}
+          placeholder="Ex: Entrepôt Nord, Siège social..."
+          className={errors.nom ? 'border-red-500' : ''}
+          data-testid="site-nom-input"
+        />
+        {errors.nom && <p className="text-red-500 text-xs">{errors.nom}</p>}
+      </div>
 
-        <div>
-          <Label htmlFor="site-adresse">Adresse *</Label>
-          <Input
-            id="site-adresse"
-            value={formData.adresse}
-            onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
-            placeholder="123 rue de l'Industrie"
-            required
-          />
-        </div>
+      {/* Address */}
+      <div className="space-y-2">
+        <Label htmlFor="site-adresse" className="text-sm font-medium">
+          Adresse <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          id="site-adresse"
+          value={formData.adresse}
+          onChange={(e) => { setFormData({ ...formData, adresse: e.target.value }); setErrors({...errors, adresse: ''}); }}
+          placeholder="123 rue de l'Industrie"
+          className={errors.adresse ? 'border-red-500' : ''}
+        />
+        {errors.adresse && <p className="text-red-500 text-xs">{errors.adresse}</p>}
+      </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="site-code_postal">Code postal *</Label>
-            <Input
-              id="site-code_postal"
-              value={formData.code_postal}
-              onChange={(e) => setFormData({ ...formData, code_postal: e.target.value })}
-              placeholder="75001"
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="site-ville">Ville *</Label>
-            <Input
-              id="site-ville"
-              value={formData.ville}
-              onChange={(e) => setFormData({ ...formData, ville: e.target.value })}
-              placeholder="Paris"
-              required
-            />
-          </div>
+      {/* City / Postal */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="site-code_postal" className="text-sm font-medium">
+            Code postal <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="site-code_postal"
+            value={formData.code_postal}
+            onChange={(e) => { setFormData({ ...formData, code_postal: e.target.value }); setErrors({...errors, code_postal: ''}); }}
+            placeholder="75001"
+            className={errors.code_postal ? 'border-red-500' : ''}
+          />
+          {errors.code_postal && <p className="text-red-500 text-xs">{errors.code_postal}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="site-ville" className="text-sm font-medium">
+            Ville <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="site-ville"
+            value={formData.ville}
+            onChange={(e) => { setFormData({ ...formData, ville: e.target.value }); setErrors({...errors, ville: ''}); }}
+            placeholder="Paris"
+            className={errors.ville ? 'border-red-500' : ''}
+          />
+          {errors.ville && <p className="text-red-500 text-xs">{errors.ville}</p>}
         </div>
       </div>
 
-      <hr className="my-4" />
+      <Separator className="my-4" />
       <p className="text-sm text-slate-500 font-medium">Contact sur site (optionnel)</p>
 
-      <div className="grid grid-cols-1 gap-4">
-        <div>
-          <Label htmlFor="site-contact_nom">Nom du contact</Label>
+      {/* Contact */}
+      <div className="space-y-2">
+        <Label htmlFor="site-contact_nom" className="text-sm font-medium">Nom du contact</Label>
+        <Input
+          id="site-contact_nom"
+          value={formData.contact_nom}
+          onChange={(e) => setFormData({ ...formData, contact_nom: e.target.value })}
+          placeholder="Jean Dupont"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="site-contact_telephone" className="text-sm font-medium">Téléphone</Label>
           <Input
-            id="site-contact_nom"
-            value={formData.contact_nom}
-            onChange={(e) => setFormData({ ...formData, contact_nom: e.target.value })}
-            placeholder="Jean Dupont"
+            id="site-contact_telephone"
+            value={formData.contact_telephone}
+            onChange={(e) => setFormData({ ...formData, contact_telephone: e.target.value })}
+            placeholder="06 12 34 56 78"
           />
         </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="site-contact_telephone">Téléphone</Label>
-            <Input
-              id="site-contact_telephone"
-              value={formData.contact_telephone}
-              onChange={(e) => setFormData({ ...formData, contact_telephone: e.target.value })}
-              placeholder="06 12 34 56 78"
-            />
-          </div>
-          <div>
-            <Label htmlFor="site-contact_email">Email</Label>
-            <Input
-              id="site-contact_email"
-              type="email"
-              value={formData.contact_email}
-              onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-              placeholder="contact@site.fr"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="site-contact_email" className="text-sm font-medium">Email</Label>
+          <Input
+            id="site-contact_email"
+            type="email"
+            value={formData.contact_email}
+            onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+            placeholder="contact@site.fr"
+          />
         </div>
       </div>
 
-      <hr className="my-4" />
+      <Separator className="my-4" />
       <p className="text-sm text-slate-500 font-medium">Accès (optionnel)</p>
 
-      <div className="grid grid-cols-1 gap-4">
-        <div>
-          <Label htmlFor="site-horaires_acces">Horaires d'accès</Label>
-          <Input
-            id="site-horaires_acces"
-            value={formData.horaires_acces}
-            onChange={(e) => setFormData({ ...formData, horaires_acces: e.target.value })}
-            placeholder="Lun-Ven 8h-18h"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="site-instructions_acces">Instructions d'accès</Label>
-          <Textarea
-            id="site-instructions_acces"
-            value={formData.instructions_acces}
-            onChange={(e) => setFormData({ ...formData, instructions_acces: e.target.value })}
-            placeholder="Code portail: 1234, Badge à récupérer à l'accueil..."
-            rows={2}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="site-notes">Notes internes</Label>
-          <Textarea
-            id="site-notes"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            placeholder="Notes pour les techniciens..."
-            rows={2}
-          />
-        </div>
+      {/* Access */}
+      <div className="space-y-2">
+        <Label htmlFor="site-horaires_acces" className="text-sm font-medium">Horaires d'accès</Label>
+        <Input
+          id="site-horaires_acces"
+          value={formData.horaires_acces}
+          onChange={(e) => setFormData({ ...formData, horaires_acces: e.target.value })}
+          placeholder="Lun-Ven 8h-18h"
+        />
       </div>
 
-      <DialogFooter className="pt-4">
+      <div className="space-y-2">
+        <Label htmlFor="site-instructions_acces" className="text-sm font-medium">Instructions d'accès</Label>
+        <Textarea
+          id="site-instructions_acces"
+          value={formData.instructions_acces}
+          onChange={(e) => setFormData({ ...formData, instructions_acces: e.target.value })}
+          placeholder="Code portail: 1234, Badge à récupérer..."
+          rows={2}
+          className="resize-none"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="site-notes" className="text-sm font-medium">Notes internes</Label>
+        <Textarea
+          id="site-notes"
+          value={formData.notes}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          placeholder="Notes pour les techniciens..."
+          rows={2}
+          className="resize-none"
+        />
+      </div>
+
+      <DialogFooter className="pt-4 sticky bottom-0 bg-white">
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
           Annuler
         </Button>

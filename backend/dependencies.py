@@ -41,6 +41,9 @@ def serialize_doc(doc: dict) -> dict:
     for key, value in doc.items():
         if isinstance(value, datetime):
             doc[key] = value.isoformat()
+        # Convert telephone fields from int to string if needed
+        elif key in ('telephone', 'contact_telephone') and isinstance(value, (int, float)):
+            doc[key] = str(int(value))
     return doc
 
 def calculate_totals(lignes: list) -> tuple:

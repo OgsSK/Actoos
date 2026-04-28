@@ -120,12 +120,17 @@ def generate_client_statement_pdf(
         total_impaye = 0
         
         for facture in factures:
-            montant = facture.get('montant_ttc', 0)
+            # Use correct field name: total_ttc (not montant_ttc)
+            montant = facture.get('total_ttc') or facture.get('montant_ttc', 0)
             total_montant += montant
             
-            if facture.get('paye'):
+            # Use correct statut field: statut = 'payee' (not paye = True)
+            statut_str = facture.get('statut', '')
+            if statut_str == 'payee':
                 statut = "Payée"
                 total_paye += montant
+            elif statut_str == 'annulee':
+                statut = "Annulée"
             else:
                 statut = "En attente"
                 total_impaye += montant
@@ -139,8 +144,11 @@ def generate_client_statement_pdf(
                 except:
                     date_str = facture['created_at'][:10]
             
+            # Use correct field name: numero_facture (not numero)
+            numero_facture = facture.get('numero_facture') or facture.get('numero', 'N/A')
+            
             table_data.append([
-                facture.get('numero', 'N/A'),
+                numero_facture,
                 date_str,
                 format_currency_for_pdf(montant, devise),
                 statut
