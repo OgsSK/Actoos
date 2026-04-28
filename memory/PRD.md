@@ -107,6 +107,8 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] **Mode Démo Cohérent et Professionnel**
 - [x] **Cohérence Paramètres Documents (Devis/Factures)**
 - [x] **Cohérence Données Rapports vs Analytics**
+- [x] **Affichage Ajouter un Site (responsive + validation)**
+- [x] **Relevés de Compte (N° factures, recherche, partage)**
 
 ### À faire après push GitHub
 - [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
@@ -124,6 +126,27 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-04-28 - Affichage Sites + Relevés de Compte
+- **Formulaire Ajouter un Site amélioré** :
+  - Validation avec messages d'erreur clairs (champs obligatoires)
+  - Layout responsive `sm:grid-cols-2` pour Code postal/Ville et Téléphone/Email
+  - `max-h-[65vh] overflow-y-auto` pour scroll sur petits écrans
+  - Composant `Separator` pour séparer les sections
+- **Relevés de compte - Corrections** :
+  - `numero_facture` utilisé au lieu de `numero` (plus de "N/A")
+  - `total_ttc` au lieu de `montant_ttc`
+  - `statut == 'payee'` au lieu de `paye == True`
+  - Gestion du statut "Annulée"
+- **Relevés de compte - Recherche** :
+  - Barre de recherche fonctionnelle
+  - Filtre par nom client et email
+  - Affichage "X/Y" résultats
+- **Relevés de compte - Partage** :
+  - Bouton Share dropdown ajouté
+  - Options : WhatsApp, Email, SMS, Copier le lien
+  - Partage natif sur mobile (navigator.share)
+  - Messages pré-remplis avec nom client et lien
 
 ### 2026-04-28 - Cohérence Données Rapports vs Analytics
 - **Single Source of Truth implémentée** :
