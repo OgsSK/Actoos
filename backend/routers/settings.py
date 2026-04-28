@@ -48,6 +48,10 @@ class DocumentSettings(BaseModel):
     # Conditions générales
     conditions_generales: str = ""
     
+    # Message au client (affiché sur les devis/factures)
+    message_client_devis: str = ""
+    message_client_facture: str = ""
+    
     # Footer texts
     devis_footer: str = "Devis valable 30 jours. TVA non applicable, art. 293 B du CGI."
     facture_footer: str = "En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée."
@@ -55,6 +59,9 @@ class DocumentSettings(BaseModel):
     # Payment terms
     conditions_paiement: str = "Paiement à réception de facture"
     delai_paiement_jours: int = 30
+    
+    # Validité par défaut
+    validite_devis_jours: int = 30
     
     # Mentions légales
     mentions_legales: str = ""
@@ -297,4 +304,69 @@ async def get_integrations_status(current_user: dict = Depends(require_admin)):
             "configured": True,  # Resend is always configured at platform level
             "provider": "Resend"
         }
+    }
+
+
+# ==================== DOCUMENT DEFAULTS FOR NEW DEVIS/FACTURES ====================
+
+@router.get("/documents/defaults/devis")
+async def get_devis_defaults(current_user: dict = Depends(get_current_user)):
+    """
+    Get default values for a new devis form.
+    These are the global document settings that will be used if not overridden locally.
+    """
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "document_settings": 1, "conditions_generales": 1, "conditions_paiement": 1}
+    )
+    
+    if not entreprise:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    # Get document settings with fallback to defaults
+    doc_settings = entreprise.get("document_settings", {})
+    defaults = DocumentSettings().dict()
+    settings = {**defaults, **doc_settings}
+    
+    # Legacy field support
+    if entreprise.get("conditions_generales") and not doc_settings.get("conditions_generales"):
+        settings["conditions_generales"] = entreprise["conditions_generales"]
+    
+    return {
+        "conditions": settings.get("conditions_generales", ""),
+        "message_client": settings.get("message_client_devis", ""),
+        "validite_jours": settings.get("validite_devis_jours", 30),
+        "pied_de_page": settings.get("devis_footer", "")
+    }
+
+
+@router.get("/documents/defaults/facture")
+async def get_facture_defaults(current_user: dict = Depends(get_current_user)):
+    """
+    Get default values for a new facture.
+    These are the global document settings that will be used if not overridden locally.
+    """
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "document_settings": 1, "conditions_generales": 1, "conditions_paiement": 1}
+    )
+    
+    if not entreprise:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    # Get document settings with fallback to defaults
+    doc_settings = entreprise.get("document_settings", {})
+    defaults = DocumentSettings().dict()
+    settings = {**defaults, **doc_settings}
+    
+    # Legacy field support
+    if entreprise.get("conditions_paiement") and not doc_settings.get("conditions_paiement"):
+        settings["conditions_paiement"] = entreprise["conditions_paiement"]
+    
+    return {
+        "conditions_paiement": settings.get("conditions_paiement", "Paiement à réception de facture"),
+        "delai_paiement_jours": settings.get("delai_paiement_jours", 30),
+        "message_client": settings.get("message_client_facture", ""),
+        "pied_de_page": settings.get("facture_footer", ""),
+        "mentions_legales": settings.get("mentions_legales", "")
     }

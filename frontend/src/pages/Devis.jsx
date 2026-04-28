@@ -445,6 +445,7 @@ export const DevisForm = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [clients, setClients] = useState([]);
+  const [defaultsLoaded, setDefaultsLoaded] = useState(false);
   const [formData, setFormData] = useState({
     client_id: location.state?.client_id || '',
     intervention_id: location.state?.intervention_id || '',
@@ -458,6 +459,9 @@ export const DevisForm = () => {
     fetchClients();
     if (isEdit) {
       fetchDevis();
+    } else {
+      // Load default values from settings for new devis
+      fetchDevisDefaults();
     }
   }, [id]);
 
@@ -467,6 +471,25 @@ export const DevisForm = () => {
       setClients(response.data);
     } catch (error) {
       console.error('Error fetching clients:', error);
+    }
+  };
+
+  const fetchDevisDefaults = async () => {
+    try {
+      const response = await api.get('/settings/documents/defaults/devis');
+      const defaults = response.data;
+      
+      // Pre-fill form with global defaults
+      setFormData(prev => ({
+        ...prev,
+        conditions: defaults.conditions || '',
+        message_client: defaults.message_client || '',
+        validite_jours: defaults.validite_jours || 30,
+      }));
+      setDefaultsLoaded(true);
+    } catch (error) {
+      console.error('Error fetching devis defaults:', error);
+      setDefaultsLoaded(true);
     }
   };
 

@@ -30,8 +30,11 @@ async def create_devis(data: DevisCreate, current_user: dict = Depends(get_curre
     if not client:
         raise HTTPException(status_code=404, detail="Client non trouvé")
     
-    # Get next sequence number and currency info
-    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    # Get next sequence number, currency info, and document settings
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]}, 
+        {"_id": 0, "sequence_devis": 1, "devise": 1, "document_settings": 1, "conditions_generales": 1}
+    )
     seq = entreprise.get("sequence_devis", 1)
     year = datetime.now().year
     numero_devis = f"D{year}-{seq:05d}"
@@ -39,6 +42,26 @@ async def create_devis(data: DevisCreate, current_user: dict = Depends(get_curre
     # Capture currency snapshot at document creation time
     devise = entreprise.get("devise", "EUR")
     taux_change_eur = get_exchange_rate(devise, "EUR")
+    
+    # Get document settings for defaults
+    doc_settings = entreprise.get("document_settings", {})
+    
+    # Merge local values with global defaults (local takes priority)
+    conditions = data.conditions
+    if not conditions:
+        # Use global settings as fallback
+        conditions = doc_settings.get("conditions_generales") or entreprise.get("conditions_generales", "")
+    
+    message_client = data.message_client
+    if not message_client:
+        # Use global settings as fallback
+        message_client = doc_settings.get("message_client_devis", "")
+    
+    validite_jours = data.validite_jours
+    if validite_jours == 30:  # Default value - check if there's a global setting
+        global_validite = doc_settings.get("validite_devis_jours")
+        if global_validite:
+            validite_jours = global_validite
     
     # Update sequence
     await db.entreprises.update_one(
@@ -64,7 +87,12 @@ async def create_devis(data: DevisCreate, current_user: dict = Depends(get_curre
     devis_dict["taux_change_eur"] = taux_change_eur  # Exchange rate snapshot
     devis_dict["token_client"] = str(uuid.uuid4())
     devis_dict["created_at"] = datetime.now(timezone.utc).isoformat()
-    devis_dict["date_expiration"] = (datetime.now(timezone.utc) + timedelta(days=data.validite_jours)).isoformat()
+    
+    # Use merged values
+    devis_dict["conditions"] = conditions
+    devis_dict["message_client"] = message_client
+    devis_dict["validite_jours"] = validite_jours
+    devis_dict["date_expiration"] = (datetime.now(timezone.utc) + timedelta(days=validite_jours)).isoformat()
     
     await db.devis.insert_one(devis_dict)
     await log_action(current_user["entreprise_id"], current_user["user_id"], "create", "devis", devis_dict["id"])

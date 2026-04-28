@@ -428,6 +428,12 @@ def generate_devis_pdf(
     elements.append(totals_table)
     elements.append(Spacer(1, 10*mm))
     
+    # Message au client (if present)
+    if devis.get('message_client'):
+        elements.append(Paragraph("<b>Message:</b>", styles['Subtitle']))
+        elements.append(Paragraph(devis.get('message_client', ''), styles['Normal10']))
+        elements.append(Spacer(1, 5*mm))
+    
     # Conditions
     if devis.get('conditions'):
         elements.append(Paragraph("<b>Conditions:</b>", styles['Subtitle']))

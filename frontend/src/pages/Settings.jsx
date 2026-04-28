@@ -367,6 +367,9 @@ const DocumentSettingsForm = ({ api }) => {
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
     conditions_generales: '',
+    message_client_devis: '',
+    message_client_facture: '',
+    validite_devis_jours: 30,
     devis_footer: '',
     facture_footer: '',
     conditions_paiement: '',
@@ -432,7 +435,7 @@ const DocumentSettingsForm = ({ api }) => {
             Conditions générales de vente
           </CardTitle>
           <CardDescription>
-            Ce texte apparaîtra sur tous vos devis et factures
+            Ce texte apparaîtra automatiquement sur tous vos devis et factures (sauf si modifié localement)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -447,6 +450,65 @@ const DocumentSettingsForm = ({ api }) => {
             <p className="text-xs text-slate-500">
               Conseils: Incluez vos conditions de paiement, délais, garanties, etc.
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Message au client - Devis */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" />
+            Message au client
+          </CardTitle>
+          <CardDescription>
+            Message personnalisé affiché sur vos documents (pré-rempli automatiquement, modifiable par devis/facture)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Message par défaut - Devis</Label>
+            <Textarea
+              value={settings.message_client_devis}
+              onChange={(e) => handleChange('message_client_devis', e.target.value)}
+              rows={3}
+              placeholder="Exemple: Merci pour votre confiance. N'hésitez pas à nous contacter pour toute question."
+              data-testid="doc-message-client-devis"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Message par défaut - Factures</Label>
+            <Textarea
+              value={settings.message_client_facture}
+              onChange={(e) => handleChange('message_client_facture', e.target.value)}
+              rows={3}
+              placeholder="Exemple: Merci pour votre confiance. En cas de question, contactez-nous."
+              data-testid="doc-message-client-facture"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Validité par défaut */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base">Validité des devis</CardTitle>
+          <CardDescription>
+            Durée de validité par défaut pour vos nouveaux devis
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-w-xs">
+            <Label>Validité par défaut (jours)</Label>
+            <Input
+              type="number"
+              value={settings.validite_devis_jours}
+              onChange={(e) => handleChange('validite_devis_jours', parseInt(e.target.value) || 30)}
+              min={1}
+              max={365}
+              data-testid="doc-validite-devis"
+            />
+            <p className="text-xs text-slate-500">Cette valeur sera pré-remplie lors de la création d'un nouveau devis</p>
           </div>
         </CardContent>
       </Card>
