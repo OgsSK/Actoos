@@ -106,6 +106,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] **Authentification à deux facteurs (2FA)**
 - [x] **Mode Démo Cohérent et Professionnel**
 - [x] **Cohérence Paramètres Documents (Devis/Factures)**
+- [x] **Cohérence Données Rapports vs Analytics**
 
 ### À faire après push GitHub
 - [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
@@ -123,6 +124,26 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-04-28 - Cohérence Données Rapports vs Analytics
+- **Single Source of Truth implémentée** :
+  - `/api/stats` refactorisé pour utiliser la même logique de calcul que `analytics_service.py`
+  - Anciens champs incorrects (`paye: True`, `montant_ttc`) remplacés par les champs corrects (`statut: "payee"`, `total_ttc`)
+- **Nouvelles métriques ajoutées à /stats** :
+  - `techniciens_actifs` - Compte des techniciens actifs
+  - `devis.total`, `devis.en_attente`, `devis.signes`, `devis.montant_total`
+  - `factures.en_attente`, `factures.payees_mois`, `factures.en_retard`, `factures.pending_amount`, `factures.montant_moyen`
+  - `taux_conversion` - Calculé comme `(devis_signes / devis_total) * 100`
+- **Frontend Rapports.jsx mis à jour** :
+  - Utilise les nouveaux noms de champs unifiés
+  - KPIs avec données en temps réel
+  - Tunnel de conversion avec pourcentages calculés dynamiquement
+  - Section Résumé avec toutes les statistiques globales
+- **Données vérifiées cohérentes** :
+  - Clients: 13 (stats) = 13 (analytics) ✅
+  - Devis: 7 total, 4 signés, 57.1% conversion ✅
+  - Factures: 2 en attente, 300€ ✅
+  - Interventions: 2 terminées ✅
 
 ### 2026-04-28 - Cohérence Paramètres Documents (Devis/Factures)
 - **Nouveaux champs dans les paramètres documents** :
