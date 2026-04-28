@@ -104,6 +104,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] Stress Test jusqu'à 300 simultané (100% succès)
 - [x] Endpoint nettoyage données de test
 - [x] **Authentification à deux facteurs (2FA)**
+- [x] **Mode Démo Cohérent et Professionnel**
 
 ### À faire après push GitHub
 - [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
@@ -121,6 +122,34 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-04-28 - Mode Démo Cohérent et Professionnel
+- **Réinitialisation automatique des données** :
+  - Endpoint `POST /api/demo/init` réinitialise toutes les données à chaque connexion
+  - Création automatique de données seed : 3 clients, 4 catégories, 1 technicien, 3 interventions, 1 devis
+  - Les données ne sont pas conservées entre les sessions
+- **Bannière démo professionnelle** :
+  - Titre "Mode démonstration actif"
+  - Message explicatif clair
+  - Liste des fonctionnalités simulées (Emails, SMS/WhatsApp, Paiements, Données non persistantes)
+  - Bouton CTA "Démarrer l'essai gratuit" (vert)
+  - Bouton X pour quitter la démo
+- **Contexte React DemoContext** :
+  - Hook `useDemo()` pour accéder aux infos de démo
+  - Méthodes : `initDemoSession`, `simulateAction`, `checkFeature`, `exitDemo`
+  - Messages de restriction personnalisés
+- **Page de chargement démo améliorée** :
+  - Design moderne avec indicateurs d'étapes
+  - Feedback visuel pendant l'initialisation
+  - Réinitialisation automatique avant connexion
+- **Endpoints Backend** :
+  - `POST /api/demo/init` - Réinitialiser les données démo
+  - `GET /api/demo/status` - Statut du mode démo
+  - `GET /api/demo/feature-check/{feature}` - Vérifier disponibilité fonctionnalité
+  - `POST /api/demo/simulate-action` - Simuler une action (email, SMS, etc.)
+- **Messages de restriction professionnels** :
+  - Remplacement des prix obsolètes (79€ → messages génériques)
+  - Messages incitatifs pour pousser à l'abonnement
 
 ### 2026-04-22 - Authentification à Deux Facteurs (2FA)
 - **2FA TOTP (Google Authenticator)** :
