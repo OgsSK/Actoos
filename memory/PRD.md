@@ -105,6 +105,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] Endpoint nettoyage données de test
 - [x] **Authentification à deux facteurs (2FA)**
 - [x] **Mode Démo Cohérent et Professionnel**
+- [x] **Cohérence Paramètres Documents (Devis/Factures)**
 
 ### À faire après push GitHub
 - [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
@@ -122,6 +123,24 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-04-28 - Cohérence Paramètres Documents (Devis/Factures)
+- **Nouveaux champs dans les paramètres documents** :
+  - `message_client_devis` - Message par défaut pour les devis
+  - `message_client_facture` - Message par défaut pour les factures
+  - `validite_devis_jours` - Validité par défaut des devis
+- **Logique de priorité implémentée** :
+  - Valeur locale (dans le devis/facture) > Valeur globale (paramètres)
+  - Si non défini localement, utilise la valeur des paramètres
+- **Endpoints backend** :
+  - `GET /api/settings/documents/defaults/devis` - Valeurs par défaut pour création devis
+  - `GET /api/settings/documents/defaults/facture` - Valeurs par défaut pour création facture
+- **Frontend amélioré** :
+  - Formulaire de création de devis pré-rempli avec les paramètres globaux
+  - Nouveaux champs dans Settings → Documents (Message au client, Validité)
+  - Description mise à jour "(sauf si modifié localement)"
+- **Génération PDF** :
+  - Le champ `message_client` est maintenant affiché dans le PDF des devis
 
 ### 2026-04-28 - Mode Démo Cohérent et Professionnel
 - **Réinitialisation automatique des données** :
