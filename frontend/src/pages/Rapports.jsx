@@ -107,7 +107,7 @@ export const RapportsPage = () => {
   const loadStats = async () => {
     setLoading(true);
     try {
-      // Load basic stats (correct endpoint is /stats, not /dashboard/stats)
+      // Load unified stats from /stats endpoint
       const statsRes = await api.get('/stats');
       setStats(statsRes.data);
 
@@ -121,13 +121,6 @@ export const RapportsPage = () => {
 
     } catch (error) {
       console.error('Error loading stats:', error);
-      // Use stats as fallback
-      try {
-        const statsRes = await api.get('/stats');
-        setStats(statsRes.data);
-      } catch (e) {
-        console.error('Fallback stats also failed:', e);
-      }
     } finally {
       setLoading(false);
     }
@@ -159,12 +152,22 @@ export const RapportsPage = () => {
     );
   }
 
-  // Calculate some derived stats
-  const tauxConversion = stats?.devis_signes_mois && stats?.devis_en_attente 
-    ? Math.round((stats.devis_signes_mois / (stats.devis_signes_mois + stats.devis_en_attente)) * 100)
-    : 0;
+  // Use unified stats from backend (same as Analytics)
+  const tauxConversion = stats?.taux_conversion || 0;
+  const devisEnAttente = stats?.devis?.en_attente || stats?.devis_en_attente || 0;
+  const devisSignesMois = stats?.devis?.signes_mois || stats?.devis_signes_mois || 0;
+  const facturesEnAttente = stats?.factures?.en_attente || 0;
+  const facturesPendingAmount = stats?.factures?.pending_amount || 0;
+  const facturesEnRetard = stats?.factures?.en_retard || 0;
+  const caMois = stats?.ca_mois || stats?.revenue?.this_month || 0;
+  const clientsTotal = stats?.clients || 0;
+  const techniciensActifs = stats?.techniciens_actifs || 0;
+  const interventionsTerminees = stats?.interventions?.terminees || 0;
+  const interventionsToday = stats?.interventions?.today || 0;
+  const devisTotal = stats?.devis?.total || (devisEnAttente + devisSignesMois);
+  const devisMontantTotal = stats?.devis?.montant_total || 0;
 
-  const maxMonthlyValue = Math.max(...monthlyData.map(d => d.revenue || 0), stats?.ca_mois || 0);
+  const maxMonthlyValue = Math.max(...monthlyData.map(d => d.revenue || 0), caMois);
 
   return (
     <div className="space-y-6" data-testid="rapports-page">
@@ -195,33 +198,35 @@ export const RapportsPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Chiffre d'affaires"
-          value={formatCurrency(stats?.ca_mois || 0)}
+          value={formatCurrency(caMois)}
           subValue="Ce mois"
           icon={Euro}
           color="text-emerald-600"
-          trend="up"
-          trendValue="+12%"
+          trend={caMois > 0 ? 'up' : 'neutral'}
+          trendValue={caMois > 0 ? "Ce mois" : ""}
         />
         <KPICard
           title="Devis signés"
-          value={stats?.devis_signes_mois || 0}
-          subValue={`${formatCurrency(stats?.montant_devis_attente || 0)} en attente`}
+          value={devisSignesMois}
+          subValue={`${formatCurrency(devisMontantTotal)} total`}
           icon={FileText}
           color="text-blue-600"
-          trend={tauxConversion > 50 ? 'up' : 'down'}
+          trend={tauxConversion > 50 ? 'up' : tauxConversion > 0 ? 'neutral' : 'down'}
           trendValue={`${tauxConversion}% conv.`}
         />
         <KPICard
-          title="Factures impayées"
-          value={stats?.factures_impayees || 0}
-          subValue={formatCurrency(stats?.montant_factures_impayees || 0)}
+          title="Factures en attente"
+          value={facturesEnAttente}
+          subValue={formatCurrency(facturesPendingAmount)}
           icon={Receipt}
-          color={stats?.factures_impayees > 5 ? 'text-red-600' : 'text-amber-600'}
+          color={facturesEnRetard > 0 ? 'text-red-600' : 'text-amber-600'}
+          trend={facturesEnRetard > 0 ? 'down' : 'neutral'}
+          trendValue={facturesEnRetard > 0 ? `${facturesEnRetard} en retard` : ''}
         />
         <KPICard
           title="Interventions"
-          value={stats?.interventions_today || 0}
-          subValue={`${stats?.interventions_en_retard || 0} en retard`}
+          value={interventionsToday}
+          subValue={`${interventionsTerminees} terminées ce mois`}
           icon={Clock}
           color="text-violet-600"
         />
@@ -249,14 +254,14 @@ export const RapportsPage = () => {
                     data={item.revenue || 0}
                     maxValue={maxMonthlyValue}
                     label={item.month}
-                    color={idx === monthlyData.length - 1 ? 'bg-blue-600' : 'bg-blue-400'}
+                    color={idx === monthlyData.slice(-6).length - 1 ? 'bg-blue-600' : 'bg-blue-400'}
                   />
                 ))
               ) : (
                 // Show current month as fallback
                 <ChartBar
-                  data={stats?.ca_mois || 0}
-                  maxValue={stats?.ca_mois || 1}
+                  data={caMois}
+                  maxValue={caMois || 1}
                   label={format(new Date(), 'MMM', { locale: fr })}
                   color="bg-blue-600"
                 />
@@ -280,29 +285,29 @@ export const RapportsPage = () => {
             <div className="space-y-1">
               <StatsRow
                 label="Interventions terminées"
-                value={stats?.interventions_today || 0}
+                value={interventionsTerminees}
                 percentage={100}
               />
               <StatsRow
                 label="Devis créés"
-                value={(stats?.devis_en_attente || 0) + (stats?.devis_signes_mois || 0)}
-                percentage={75}
+                value={devisTotal}
+                percentage={devisTotal > 0 ? Math.round((devisTotal / Math.max(interventionsTerminees, 1)) * 100) : 0}
               />
               <StatsRow
                 label="Devis signés"
-                value={stats?.devis_signes_mois || 0}
+                value={devisSignesMois}
                 percentage={tauxConversion}
                 highlight
               />
               <StatsRow
                 label="Factures émises"
-                value={stats?.factures_impayees || 0}
-                percentage={Math.round(tauxConversion * 0.9)}
+                value={facturesEnAttente + (stats?.factures?.payees_mois || 0)}
+                percentage={devisSignesMois > 0 ? Math.round(((facturesEnAttente + (stats?.factures?.payees_mois || 0)) / devisSignesMois) * 100) : 0}
               />
               <StatsRow
                 label="Factures payées"
-                value={Math.max(0, (stats?.devis_signes_mois || 0) - (stats?.factures_impayees || 0))}
-                percentage={Math.round(tauxConversion * 0.8)}
+                value={stats?.factures?.payees_mois || 0}
+                percentage={Math.round(((stats?.factures?.payees_mois || 0) / Math.max(facturesEnAttente + (stats?.factures?.payees_mois || 0), 1)) * 100)}
                 highlight
               />
             </div>
@@ -362,15 +367,15 @@ export const RapportsPage = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between py-2 border-b border-slate-100">
                 <span className="text-sm text-slate-600">Total clients</span>
-                <span className="font-semibold">{stats?.total_clients || 0}</span>
+                <span className="font-semibold">{clientsTotal}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-slate-100">
                 <span className="text-sm text-slate-600">Techniciens actifs</span>
-                <span className="font-semibold">{stats?.total_techniciens || 0}</span>
+                <span className="font-semibold">{techniciensActifs}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-slate-100">
                 <span className="text-sm text-slate-600">Devis en attente</span>
-                <span className="font-semibold">{stats?.devis_en_attente || 0}</span>
+                <span className="font-semibold">{devisEnAttente}</span>
               </div>
               <div className="flex items-center justify-between py-2">
                 <span className="text-sm text-slate-600">Taux de conversion</span>
