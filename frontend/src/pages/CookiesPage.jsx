@@ -64,7 +64,7 @@ const CookiesPage = () => {
             <span>Retour à l'accueil</span>
           </Link>
           <Link to="/" className="text-xl font-bold text-slate-900 dark:text-white">
-            Actoos
+            ACTOOS PRO
           </Link>
         </div>
       </header>
@@ -106,7 +106,7 @@ const CookiesPage = () => {
               Comment utilisons-nous les cookies ?
             </h2>
             <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Actoos utilise différents types de cookies pour :
+              ACTOOS PRO utilise différents types de cookies pour :
             </p>
             <div className="grid md:grid-cols-2 gap-4">
               {[
@@ -297,7 +297,7 @@ const CookiesPage = () => {
               Pour toute question concernant notre utilisation des cookies :
             </p>
             <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-              <p className="font-medium text-slate-900 dark:text-white">Actoos - Protection des données</p>
+              <p className="font-medium text-slate-900 dark:text-white">ACTOOS PRO - Protection des données</p>
               <p className="text-slate-600 dark:text-slate-400">Email : contact@actoos.com</p>
             </div>
           </div>
@@ -318,7 +318,7 @@ const CookiesPage = () => {
       {/* Footer */}
       <footer className="border-t border-slate-200 dark:border-slate-700 py-6 mt-12">
         <div className="max-w-4xl mx-auto px-4 text-center text-sm text-slate-500">
-          <p>&copy; {new Date().getFullYear()} Actoos. Tous droits réservés.</p>
+          <p>&copy; {new Date().getFullYear()} ACTOOS PRO. Tous droits réservés.</p>
           <div className="flex justify-center gap-4 mt-2">
             <Link to="/privacy" className="hover:text-blue-600">Politique de confidentialité</Link>
             <Link to="/terms" className="hover:text-blue-600">Conditions d'utilisation</Link>

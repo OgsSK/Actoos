@@ -16,7 +16,7 @@ const LegalPage = () => {
             <span>Retour à l'accueil</span>
           </Link>
           <Link to="/" className="text-xl font-bold text-slate-900 dark:text-white">
-            Actoos
+            ACTOOS PRO
           </Link>
         </div>
       </header>
@@ -130,7 +130,7 @@ const LegalPage = () => {
               </p>
               <p>
                 Pour toute question relative à vos données personnelles, vous pouvez nous contacter à :{' '}
-                <a href="mailto:privacy@actoos.com" className="text-blue-600 hover:underline">privacy@actoos.com</a>
+                <a href="mailto:contact@actoos.com" className="text-blue-600 hover:underline">contact@actoos.com</a>
               </p>
             </div>
           </section>

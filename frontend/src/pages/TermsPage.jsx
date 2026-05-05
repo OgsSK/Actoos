@@ -16,7 +16,7 @@ const TermsPage = () => {
             <span>Retour à l'accueil</span>
           </Link>
           <Link to="/" className="text-xl font-bold text-slate-900 dark:text-white">
-            Actoos
+            ACTOOS PRO
           </Link>
         </div>
       </header>

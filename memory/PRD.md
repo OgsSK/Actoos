@@ -169,6 +169,21 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - Évite le conflit de route qui causait "Utilisateur non trouvé"
 - **Tests validés** : 90% backend (validation mineure corrigée), 100% frontend (iteration_46)
 
+### 2026-05-05 - Rebranding ACTOOS PRO (Thème Vert)
+- **Landing Page refonte complète** :
+  - Thème couleur: Bleu → VERT (emerald-600)
+  - Slogan officiel: "Run your business, simply."
+  - Statistiques réalistes: 50+ entreprises, 2,500+ interventions, 97% satisfaction
+  - Témoignages professionnels discrets (Marc D., Sophie L., Jean-Pierre M.)
+- **Footer corrigé** :
+  - Doublon "Tarifs" supprimé → remplacé par "Connexion"
+  - Logo vert (suppression du filtre `invert`)
+  - Email unique: contact@actoos.com partout
+- **Pages légales** :
+  - Header "ACTOOS PRO" sur toutes les pages (Legal, Privacy, Terms, Cookies)
+  - Suppression de `privacy@actoos.com` → `contact@actoos.com`
+- **Tests validés** : Screenshots landing page OK
+
 ### 2026-05-05 - Paiements Partiels & Relances Intelligentes (P0/P1)
 - **Paiements Partiels Factures** :
   - `POST /api/factures/{id}/pay` - Enregistrer un paiement partiel ou total
