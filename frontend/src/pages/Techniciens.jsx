@@ -20,9 +20,11 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { Checkbox } from '../components/ui/checkbox';
 import { formatDate } from '../lib/utils';
 import {
-  Plus, UserPlus, User, Mail, Phone, Copy, Check, AlertCircle, Loader2, Trash2, Wrench, Settings2
+  Plus, UserPlus, User, Mail, Phone, Copy, Check, AlertCircle, Loader2, Trash2, Wrench, Settings2,
+  MessageSquare, Clock, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
 // Skills Manager Component
 const SkillsManager = ({ user, categories, onUpdate, onClose }) => {
@@ -126,20 +128,24 @@ const SkillsManager = ({ user, categories, onUpdate, onClose }) => {
 export const TechniciensList = () => {
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [pendingInvites, setPendingInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
+  const [inviteMethod, setInviteMethod] = useState('sms'); // 'sms' or 'email'
   const [showSkills, setShowSkills] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [inviteData, setInviteData] = useState({ email: '', nom: '', prenom: '', telephone: '' });
   const [inviting, setInviting] = useState(false);
   const [inviteResult, setInviteResult] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [sendingSms, setSendingSms] = useState(null);
   const { api, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchUsers();
     fetchCategories();
+    fetchPendingInvites();
   }, []);
 
   const fetchUsers = async () => {
@@ -162,22 +168,86 @@ export const TechniciensList = () => {
     }
   };
 
+  const fetchPendingInvites = async () => {
+    try {
+      const response = await api.get('/users/invites');
+      setPendingInvites(response.data.filter(inv => inv.status === 'pending'));
+    } catch (error) {
+      console.error('Error fetching invites:', error);
+    }
+  };
+
   const openSkillsDialog = (user) => {
     setSelectedUser(user);
     setShowSkills(true);
   };
 
-  const handleInvite = async () => {
+  // Email invitation (old method)
+  const handleEmailInvite = async () => {
     setInviting(true);
     try {
       const response = await api.post('/auth/invite', inviteData);
-      setInviteResult(response.data);
+      setInviteResult({ type: 'email', ...response.data });
       fetchUsers();
     } catch (error) {
       console.error('Error inviting user:', error);
-      alert(error.response?.data?.detail || 'Erreur lors de l\'invitation');
+      toast.error(error.response?.data?.detail || 'Erreur lors de l\'invitation');
     } finally {
       setInviting(false);
+    }
+  };
+
+  // SMS invitation (new method)
+  const handleSmsInvite = async () => {
+    setInviting(true);
+    try {
+      const response = await api.post('/users/invite', {
+        telephone: inviteData.telephone,
+        nom: inviteData.nom,
+        prenom: inviteData.prenom,
+        email: inviteData.email || null,
+        send_sms: true
+      });
+      setInviteResult({ type: 'sms', ...response.data });
+      toast.success('Invitation SMS envoyée !');
+      fetchUsers();
+      fetchPendingInvites();
+    } catch (error) {
+      console.error('Error sending SMS invite:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de l\'envoi de l\'invitation');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleInvite = () => {
+    if (inviteMethod === 'sms') {
+      handleSmsInvite();
+    } else {
+      handleEmailInvite();
+    }
+  };
+
+  const handleResendInvite = async (inviteId) => {
+    setSendingSms(inviteId);
+    try {
+      await api.post(`/users/invites/${inviteId}/resend`);
+      toast.success('SMS renvoyé !');
+      fetchPendingInvites();
+    } catch (error) {
+      toast.error('Erreur lors du renvoi du SMS');
+    } finally {
+      setSendingSms(null);
+    }
+  };
+
+  const handleCancelInvite = async (inviteId) => {
+    try {
+      await api.delete(`/users/invites/${inviteId}`);
+      toast.success('Invitation annulée');
+      fetchPendingInvites();
+    } catch (error) {
+      toast.error('Erreur lors de l\'annulation');
     }
   };
 
@@ -214,6 +284,19 @@ export const TechniciensList = () => {
     setInviteData({ email: '', nom: '', prenom: '', telephone: '' });
     setInviteResult(null);
     setShowInvite(false);
+    setInviteMethod('sms');
+  };
+
+  // Calculate time remaining for invite
+  const getTimeRemaining = (expiresAt) => {
+    const now = new Date();
+    const expires = new Date(expiresAt);
+    const hours = Math.max(0, Math.floor((expires - now) / (1000 * 60 * 60)));
+    if (hours < 1) {
+      const minutes = Math.max(0, Math.floor((expires - now) / (1000 * 60)));
+      return `${minutes}min`;
+    }
+    return `${hours}h`;
   };
 
   return (
@@ -226,99 +309,223 @@ export const TechniciensList = () => {
         {isAdmin && (
           <Dialog open={showInvite} onOpenChange={(open) => { if (!open) resetInviteDialog(); else setShowInvite(true); }}>
             <DialogTrigger asChild>
-              <Button data-testid="invite-tech-btn">
+              <Button data-testid="invite-tech-btn" className="bg-emerald-600 hover:bg-emerald-700">
                 <UserPlus className="w-4 h-4 mr-2" />
                 Inviter un technicien
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>
-                  {inviteResult ? 'Invitation envoyée' : 'Inviter un technicien'}
+                  {inviteResult ? '✅ Invitation envoyée' : 'Inviter un technicien'}
                 </DialogTitle>
               </DialogHeader>
 
               {inviteResult ? (
                 <div className="space-y-4 py-4">
-                  <Alert className="bg-emerald-50 border-emerald-200 text-emerald-800">
-                    <Check className="h-4 w-4" />
-                    <AlertDescription>
-                      L'invitation a été créée avec succès.
-                    </AlertDescription>
-                  </Alert>
+                  {inviteResult.type === 'sms' ? (
+                    <>
+                      <Alert className="bg-emerald-50 border-emerald-200 text-emerald-800">
+                        <MessageSquare className="h-4 w-4" />
+                        <AlertDescription>
+                          SMS envoyé à {inviteResult.telephone} avec le code d'inscription.
+                        </AlertDescription>
+                      </Alert>
 
-                  <div className="space-y-2">
-                    <Label>Lien d'activation</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={`${window.location.origin}/activate?token=${inviteResult.invite_token}`}
-                        readOnly
-                        className="text-xs"
-                      />
-                      <Button variant="outline" onClick={copyInviteLink}>
-                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-slate-500">
-                      Envoyez ce lien au technicien pour qu'il puisse activer son compte.
-                    </p>
-                  </div>
+                      <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600">Code d'inscription :</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-lg font-bold text-slate-900 tracking-wider bg-white px-3 py-1 rounded border">
+                              {inviteResult.invite_code}
+                            </span>
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              navigator.clipboard.writeText(inviteResult.invite_code);
+                              toast.success('Code copié !');
+                            }}>
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">Expire dans :</span>
+                          <Badge variant="secondary">
+                            <Clock className="w-3 h-3 mr-1" />
+                            48 heures
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <p className="text-sm text-slate-500">
+                        Le technicien peut s'inscrire depuis l'app mobile avec son numéro de téléphone et ce code.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Alert className="bg-emerald-50 border-emerald-200 text-emerald-800">
+                        <Check className="h-4 w-4" />
+                        <AlertDescription>
+                          L'invitation a été créée avec succès.
+                        </AlertDescription>
+                      </Alert>
+
+                      <div className="space-y-2">
+                        <Label>Lien d'activation</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            value={`${window.location.origin}/activate?token=${inviteResult.invite_token}`}
+                            readOnly
+                            className="text-xs"
+                          />
+                          <Button variant="outline" onClick={copyInviteLink}>
+                            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Envoyez ce lien au technicien pour qu'il puisse activer son compte.
+                        </p>
+                      </div>
+                    </>
+                  )}
 
                   <DialogFooter>
                     <Button onClick={resetInviteDialog}>Fermer</Button>
                   </DialogFooter>
                 </div>
               ) : (
-                <div className="space-y-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="prenom">Prénom *</Label>
-                      <Input
-                        id="prenom"
-                        value={inviteData.prenom}
-                        onChange={(e) => setInviteData(prev => ({ ...prev, prenom: e.target.value }))}
-                        required
-                        data-testid="invite-prenom"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="nom">Nom *</Label>
-                      <Input
-                        id="nom"
-                        value={inviteData.nom}
-                        onChange={(e) => setInviteData(prev => ({ ...prev, nom: e.target.value }))}
-                        required
-                        data-testid="invite-nom"
-                      />
-                    </div>
-                  </div>
+                <div className="space-y-4 py-2">
+                  <Tabs value={inviteMethod} onValueChange={setInviteMethod}>
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="sms" className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" />
+                        Par SMS
+                      </TabsTrigger>
+                      <TabsTrigger value="email" className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Par Email
+                      </TabsTrigger>
+                    </TabsList>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={inviteData.email}
-                      onChange={(e) => setInviteData(prev => ({ ...prev, email: e.target.value }))}
-                      required
-                      data-testid="invite-email"
-                    />
-                  </div>
+                    <TabsContent value="sms" className="space-y-4 mt-4">
+                      <Alert className="bg-blue-50 border-blue-200">
+                        <MessageSquare className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-blue-800 text-sm">
+                          Un SMS avec un code à 6 chiffres sera envoyé au technicien. Il pourra s'inscrire via l'app mobile.
+                        </AlertDescription>
+                      </Alert>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="telephone">Téléphone</Label>
-                    <Input
-                      id="telephone"
-                      value={inviteData.telephone}
-                      onChange={(e) => setInviteData(prev => ({ ...prev, telephone: e.target.value }))}
-                      data-testid="invite-telephone"
-                    />
-                  </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="prenom-sms">Prénom *</Label>
+                          <Input
+                            id="prenom-sms"
+                            value={inviteData.prenom}
+                            onChange={(e) => setInviteData(prev => ({ ...prev, prenom: e.target.value }))}
+                            required
+                            placeholder="Jean"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="nom-sms">Nom *</Label>
+                          <Input
+                            id="nom-sms"
+                            value={inviteData.nom}
+                            onChange={(e) => setInviteData(prev => ({ ...prev, nom: e.target.value }))}
+                            required
+                            placeholder="Dupont"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="telephone-sms">Téléphone *</Label>
+                        <Input
+                          id="telephone-sms"
+                          value={inviteData.telephone}
+                          onChange={(e) => setInviteData(prev => ({ ...prev, telephone: e.target.value }))}
+                          required
+                          placeholder="+33 6 12 34 56 78"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email-sms">Email (optionnel)</Label>
+                        <Input
+                          id="email-sms"
+                          type="email"
+                          value={inviteData.email}
+                          onChange={(e) => setInviteData(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="jean.dupont@email.com"
+                        />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="email" className="space-y-4 mt-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="prenom-email">Prénom *</Label>
+                          <Input
+                            id="prenom-email"
+                            value={inviteData.prenom}
+                            onChange={(e) => setInviteData(prev => ({ ...prev, prenom: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="nom-email">Nom *</Label>
+                          <Input
+                            id="nom-email"
+                            value={inviteData.nom}
+                            onChange={(e) => setInviteData(prev => ({ ...prev, nom: e.target.value }))}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email-email">Email *</Label>
+                        <Input
+                          id="email-email"
+                          type="email"
+                          value={inviteData.email}
+                          onChange={(e) => setInviteData(prev => ({ ...prev, email: e.target.value }))}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="telephone-email">Téléphone (optionnel)</Label>
+                        <Input
+                          id="telephone-email"
+                          value={inviteData.telephone}
+                          onChange={(e) => setInviteData(prev => ({ ...prev, telephone: e.target.value }))}
+                        />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
 
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setShowInvite(false)}>Annuler</Button>
-                    <Button onClick={handleInvite} disabled={inviting || !inviteData.email || !inviteData.nom || !inviteData.prenom} data-testid="invite-submit">
-                      {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Inviter'}
+                    <Button 
+                      onClick={handleInvite} 
+                      disabled={inviting || 
+                        !inviteData.nom || 
+                        !inviteData.prenom || 
+                        (inviteMethod === 'sms' ? !inviteData.telephone : !inviteData.email)
+                      }
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                      data-testid="invite-submit"
+                    >
+                      {inviting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : inviteMethod === 'sms' ? (
+                        <>
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Envoyer le SMS
+                        </>
+                      ) : (
+                        'Créer l\'invitation'
+                      )}
                     </Button>
                   </DialogFooter>
                 </div>
@@ -326,6 +533,65 @@ export const TechniciensList = () => {
             </DialogContent>
           </Dialog>
         )}
+      </div>
+
+      {/* Pending Invites Section */}
+      {pendingInvites.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2 text-amber-800">
+              <Clock className="w-4 h-4" />
+              Invitations en attente ({pendingInvites.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {pendingInvites.map((invite) => (
+                <div 
+                  key={invite.id}
+                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                      <MessageSquare className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-900">{invite.prenom} {invite.nom}</p>
+                      <p className="text-xs text-slate-500">{invite.telephone}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-amber-700 border-amber-300">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {getTimeRemaining(invite.expires_at)}
+                    </Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleResendInvite(invite.id)}
+                      disabled={sendingSms === invite.id}
+                    >
+                      {sendingSms === invite.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleCancelInvite(invite.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       </div>
 
       {/* Skills Dialog */}

@@ -181,7 +181,7 @@ const SectorsPage = () => {
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/actoos-logo.svg" alt="Actoos" className="h-10 sm:h-12" />
+            <img src="/logo-actoos-icon.png" alt="ACTOOS PRO" className="h-10 sm:h-12" />
           </Link>
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/login')}>

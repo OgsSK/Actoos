@@ -2459,7 +2459,7 @@ export const TechnicianApp = () => {
                 onError={(e) => { e.target.src = '/branding/actoos-pro-icon.png'; }}
               />
             ) : (
-              <img src="/branding/actoos-pro-icon.png" alt="ACTOOS PRO" className="w-8 h-8 object-contain" />
+              <img src="/logo-actoos-icon.png" alt="ACTOOS PRO" className="w-8 h-8 object-contain" />
             )}
             <div>
               <h1 className="font-bold text-lg text-slate-900">{dateLabel}</h1>
