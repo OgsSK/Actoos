@@ -313,12 +313,62 @@ async def get_available_interventions(current_user: dict = Depends(get_current_u
     
     interventions = await db.interventions.find(query, {"_id": 0}).sort("date_prevue", 1).to_list(100)
     
-    # Enrich with client data
+    # Enrich with client and category data
     for i in interventions:
-        client = await db.clients.find_one({"id": i["client_id"]}, {"_id": 0, "nom": 1, "prenom": 1, "telephone": 1, "adresse": 1})
+        # Add client info
+        client = await db.clients.find_one(
+            {"id": i.get("client_id")}, 
+            {"_id": 0, "nom": 1, "prenom": 1, "telephone": 1, "email": 1, "adresse": 1, "ville": 1, "code_postal": 1}
+        )
         i["client"] = serialize_doc(client) if client else None
+        
+        # Add category info if exists
+        if i.get("categorie_id"):
+            categorie = await db.categories.find_one(
+                {"id": i["categorie_id"]},
+                {"_id": 0, "nom": 1, "couleur": 1, "icone": 1}
+            )
+            i["categorie"] = serialize_doc(categorie) if categorie else None
+        else:
+            i["categorie"] = None
     
     return [serialize_doc(i) for i in interventions]
+
+
+@router.get("/available/count")
+async def get_available_interventions_count(current_user: dict = Depends(get_current_user)):
+    """Get count of available interventions for badge display"""
+    # Get tech's skills if tech role
+    tech_skills = []
+    if current_user["role"] == "tech":
+        tech = await db.users.find_one(
+            {"id": current_user["user_id"]},
+            {"_id": 0, "skills": 1}
+        )
+        tech_skills = tech.get("skills", []) if tech else []
+    
+    query = {
+        "entreprise_id": current_user["entreprise_id"],
+        "statut": "planifiee",
+        "$or": [
+            {"technicien_id": None},
+            {"technicien_id": {"$exists": False}}
+        ]
+    }
+    
+    # If tech has skills, filter interventions by matching category
+    if current_user["role"] == "tech" and tech_skills:
+        query["$and"] = [
+            {"$or": query.pop("$or")},
+            {"$or": [
+                {"categorie_id": {"$in": tech_skills}},
+                {"categorie_id": None},
+                {"categorie_id": {"$exists": False}}
+            ]}
+        ]
+    
+    count = await db.interventions.count_documents(query)
+    return {"count": count}
 
 
 # ==================== ROUTE OPTIMIZATION ====================
@@ -666,6 +716,91 @@ async def claim_intervention(
         "intervention_id": intervention_id,
         "technicien_id": current_user["user_id"],
         "technicien_nom": tech_name
+    }
+
+
+@router.post("/{intervention_id}/unclaim")
+async def unclaim_intervention(
+    intervention_id: str,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Release/unclaim an intervention - technician gives up the assignment.
+    Only allowed when intervention is still in 'planifiee' status.
+    """
+    # Find the intervention
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Check if user owns this intervention (or is admin)
+    is_admin = current_user.get("role") == "admin"
+    is_assigned_to_user = intervention.get("technicien_id") == current_user["user_id"]
+    
+    if not is_admin and not is_assigned_to_user:
+        raise HTTPException(status_code=403, detail="Cette intervention ne vous est pas assignée")
+    
+    # Only allow unclaim for 'planifiee' status
+    if intervention["statut"] != "planifiee":
+        raise HTTPException(
+            status_code=400, 
+            detail="Impossible d'annuler l'acceptation : l'intervention a déjà été démarrée ou terminée"
+        )
+    
+    # Get the releasing tech's info for notification
+    releasing_tech = await db.users.find_one(
+        {"id": intervention.get("technicien_id")}, 
+        {"_id": 0, "prenom": 1, "nom": 1}
+    )
+    tech_name = f"{releasing_tech.get('prenom', '')} {releasing_tech.get('nom', '')}" if releasing_tech else "Un technicien"
+    
+    # Remove assignment
+    now = datetime.now(timezone.utc).isoformat()
+    await db.interventions.update_one(
+        {"id": intervention_id},
+        {
+            "$set": {"updated_at": now},
+            "$unset": {"technicien_id": "", "date_assignation": ""}
+        }
+    )
+    
+    await log_action(
+        current_user["entreprise_id"], 
+        current_user["user_id"], 
+        "unclaim", 
+        "intervention", 
+        intervention_id,
+        {"previous_technicien": intervention.get("technicien_id")}
+    )
+    
+    # Get updated intervention for broadcast
+    updated = await db.interventions.find_one({"id": intervention_id}, {"_id": 0})
+    
+    # Broadcast real-time event - intervention released (now available again)
+    background_tasks.add_task(
+        notify_intervention_change,
+        current_user["entreprise_id"],
+        updated,
+        EventType.INTERVENTION_UPDATED,  # Will trigger refresh for all techs
+        None  # Notify everyone
+    )
+    
+    # Also notify specifically about this being available again
+    from push_service import notify_new_intervention_available_to_techs
+    background_tasks.add_task(
+        notify_new_intervention_available_to_techs,
+        current_user["entreprise_id"],
+        updated
+    )
+    
+    return {
+        "message": "Acceptation annulée - l'intervention est à nouveau disponible",
+        "intervention_id": intervention_id,
+        "previous_technicien": tech_name
     }
 
 

@@ -31,7 +31,7 @@ import {
   Loader2, ChevronRight, User, Navigation, Wifi, WifiOff, RefreshCw,
   Plus, X, Upload, Image as ImageIcon, ChevronLeft, CalendarDays,
   LogOut, Settings, Wrench, Euro, Trash2, Bell, BellOff, Route, Sparkles,
-  Download, Smartphone, PenTool, MapPinned
+  Download, Smartphone, PenTool, MapPinned, Mail
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday } from 'date-fns';
@@ -603,6 +603,92 @@ const DaySection = ({ date, interventions, onInterventionClick, onClaim, current
         </div>
       )}
     </div>
+  );
+};
+
+// Available Intervention Card - For unassigned interventions (detailed view before claim)
+const AvailableInterventionCard = ({ intervention, onClick }) => {
+  const isUrgent = intervention.priorite === 'urgente' || intervention.priorite === 'haute';
+  const dateStr = format(new Date(intervention.date_prevue), 'EEEE d MMMM', { locale: fr });
+  const timeStr = format(new Date(intervention.date_prevue), 'HH:mm');
+  
+  return (
+    <Card 
+      className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-amber-500 bg-amber-50/30"
+      onClick={onClick}
+      data-testid={`available-intervention-${intervention.id}`}
+    >
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start">
+          <div className="flex-1 min-w-0">
+            {/* Header with badges */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <Badge className="bg-amber-500 text-white">
+                <Bell className="w-3 h-3 mr-1" />
+                Disponible
+              </Badge>
+              {isUrgent && (
+                <Badge className="bg-red-500 text-white">
+                  {getPriorityLabel(intervention.priorite)}
+                </Badge>
+              )}
+              {intervention.categorie && (
+                <Badge 
+                  variant="outline" 
+                  style={{ 
+                    borderColor: intervention.categorie.couleur || '#64748b',
+                    color: intervention.categorie.couleur || '#64748b'
+                  }}
+                >
+                  {intervention.categorie.nom}
+                </Badge>
+              )}
+            </div>
+            
+            {/* Title */}
+            <h3 className="font-semibold text-slate-900 mb-1">{intervention.titre}</h3>
+            
+            {/* Date & Time */}
+            <p className="text-sm text-amber-700 font-medium flex items-center gap-1 mb-1">
+              <Calendar className="w-3.5 h-3.5" />
+              {dateStr} à {timeStr}
+            </p>
+            
+            {/* Client info */}
+            {intervention.client && (
+              <p className="text-sm text-slate-600 flex items-center gap-1">
+                <User className="w-3.5 h-3.5" />
+                {intervention.client.nom} {intervention.client.prenom}
+              </p>
+            )}
+            
+            {/* Address */}
+            {intervention.adresse && (
+              <p className="text-sm text-slate-500 flex items-center gap-1 mt-1 truncate">
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                {intervention.adresse}, {intervention.ville}
+              </p>
+            )}
+            
+            {/* Duration */}
+            {intervention.duree_estimee && (
+              <p className="text-xs text-slate-400 mt-1">
+                <Clock className="w-3 h-3 inline mr-1" />
+                Durée estimée: {intervention.duree_estimee} min
+              </p>
+            )}
+          </div>
+          <ChevronRight className="w-5 h-5 text-amber-500 flex-shrink-0 mt-2" />
+        </div>
+        
+        {/* CTA hint */}
+        <div className="mt-3 pt-3 border-t border-amber-200">
+          <p className="text-xs text-amber-600 text-center">
+            Cliquez pour voir les détails et accepter
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -1613,9 +1699,12 @@ const CreateDevisForm = ({ clients, onSubmit, onClose, loading, preselectedClien
 // Technician App Main View
 export const TechnicianApp = () => {
   const [interventions, setInterventions] = useState([]);
+  const [availableInterventions, setAvailableInterventions] = useState([]);
+  const [availableCount, setAvailableCount] = useState(0);
   const [clients, setClients] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
+  const [viewingAvailableIntervention, setViewingAvailableIntervention] = useState(null); // For detail view before claiming
   const [selectedCategorie, setSelectedCategorie] = useState(null);
   const [checklistResponses, setChecklistResponses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1676,11 +1765,15 @@ export const TechnicianApp = () => {
         });
       }
       loadInterventions();
+      loadAvailableCount(); // Also refresh available count
+      loadAvailableInterventions(); // Refresh available list if another tech claimed/unclaimed
     },
     onSyncRequired: () => {
       // Full refresh requested by server
       loadInterventions();
       loadClients();
+      loadAvailableInterventions();
+      loadAvailableCount();
     }
   });
 
@@ -1711,11 +1804,17 @@ export const TechnicianApp = () => {
 
   // Load interventions, clients, and categories
   useEffect(() => {
-    loadInterventions();
+    if (activeTab === 'available') {
+      loadAvailableInterventions();
+    } else {
+      loadInterventions();
+    }
     loadClients();
     loadCategories();
     loadOfflineClients();
     loadMyDevis();
+    // Always load available count for badge (lightweight)
+    loadAvailableCount();
   }, [activeTab]);
 
   const loadOfflineClients = async () => {
@@ -1823,6 +1922,37 @@ export const TechnicianApp = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load available (unassigned) interventions for the "Disponibles" tab
+  const loadAvailableInterventions = async () => {
+    try {
+      if (isOnline) {
+        const response = await api.get('/interventions/available');
+        setAvailableInterventions(response.data);
+        setAvailableCount(response.data.length);
+      } else {
+        // When offline, cannot fetch available interventions
+        setAvailableInterventions([]);
+        setAvailableCount(0);
+      }
+    } catch (error) {
+      console.error('Error loading available interventions:', error);
+      setAvailableInterventions([]);
+      setAvailableCount(0);
+    }
+  };
+
+  // Load available count (for badge) - lighter endpoint
+  const loadAvailableCount = async () => {
+    try {
+      if (isOnline) {
+        const response = await api.get('/interventions/available/count');
+        setAvailableCount(response.data.count);
+      }
+    } catch (error) {
+      console.error('Error loading available count:', error);
     }
   };
 
@@ -2033,6 +2163,9 @@ export const TechnicianApp = () => {
       setInterventions(prev => prev.map(i => 
         i.id === id ? { ...i, technicien_id: user?.id, _pendingClaim: true } : i
       ));
+      setAvailableInterventions(prev => prev.filter(i => i.id !== id));
+      setAvailableCount(prev => Math.max(0, prev - 1));
+      setViewingAvailableIntervention(null);
       return;
     }
     
@@ -2040,6 +2173,10 @@ export const TechnicianApp = () => {
       const response = await api.post(`/interventions/${id}/claim`);
       toast.success('Mission acceptée ! Elle vous est maintenant assignée.');
       loadInterventions();
+      loadAvailableInterventions();
+      loadAvailableCount();
+      // Close detail modal if viewing available intervention
+      setViewingAvailableIntervention(null);
       // Close detail modal if open
       if (selectedIntervention?.id === id) {
         const updated = await api.get(`/interventions/${id}`);
@@ -2051,6 +2188,31 @@ export const TechnicianApp = () => {
       toast.error(message);
       // Refresh list in case someone else claimed it
       loadInterventions();
+      loadAvailableInterventions();
+      loadAvailableCount();
+    }
+  };
+
+  // Unclaim/Release an intervention (cancel acceptance)
+  const handleUnclaimIntervention = async (id) => {
+    if (!isOnline) {
+      toast.error('Annulation impossible hors ligne');
+      return;
+    }
+    
+    try {
+      await api.post(`/interventions/${id}/unclaim`);
+      toast.success('Acceptation annulée - l\'intervention est à nouveau disponible');
+      // Close detail view
+      setSelectedIntervention(null);
+      // Refresh all lists
+      loadInterventions();
+      loadAvailableInterventions();
+      loadAvailableCount();
+    } catch (error) {
+      console.error('Error unclaiming intervention:', error);
+      const message = error.response?.data?.detail || 'Erreur lors de l\'annulation';
+      toast.error(message);
     }
   };
 
@@ -2360,16 +2522,27 @@ export const TechnicianApp = () => {
       {/* View Toggle */}
       <div className="bg-white border-b border-slate-200 px-4 py-2">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="today" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="today" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="today-tab">
               <Calendar className="w-4 h-4" />
-              Aujourd'hui
+              <span className="hidden sm:inline">Aujourd'hui</span>
+              <span className="sm:hidden">Jour</span>
             </TabsTrigger>
-            <TabsTrigger value="week" className="flex items-center gap-2" data-testid="week-tab">
+            <TabsTrigger value="week" className="flex items-center gap-1 text-xs sm:text-sm" data-testid="week-tab">
               <CalendarDays className="w-4 h-4" />
               Semaine
             </TabsTrigger>
-            <TabsTrigger value="devis" className="flex items-center gap-2 relative" data-testid="devis-tab">
+            <TabsTrigger value="available" className="flex items-center gap-1 text-xs sm:text-sm relative" data-testid="available-tab">
+              <Bell className="w-4 h-4" />
+              <span className="hidden sm:inline">Disponibles</span>
+              <span className="sm:hidden">Dispo</span>
+              {availableCount > 0 && (
+                <Badge className="bg-amber-500 text-white text-xs px-1.5 py-0.5 ml-1 animate-pulse">
+                  {availableCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="devis" className="flex items-center gap-1 text-xs sm:text-sm relative" data-testid="devis-tab">
               <FileText className="w-4 h-4" />
               Devis
               {myDevis.length > 0 && (
@@ -2409,6 +2582,42 @@ export const TechnicianApp = () => {
                     onClick={() => selectIntervention(intervention)}
                     onClaim={handleClaimIntervention}
                     currentUserId={user?.id}
+                  />
+                ))}
+            </div>
+          )
+        ) : activeTab === 'available' ? (
+          // Available Interventions View - Unassigned interventions for claiming
+          !isOnline ? (
+            <div className="text-center py-12">
+              <Bell className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+              <p className="text-slate-500">Interventions disponibles</p>
+              <p className="text-slate-400 text-sm mt-2">Connectez-vous à internet pour voir les missions disponibles</p>
+            </div>
+          ) : availableInterventions.length === 0 ? (
+            <div className="text-center py-12">
+              <CheckCircle className="w-12 h-12 mx-auto mb-4 text-emerald-300" />
+              <p className="text-slate-500">Aucune intervention disponible</p>
+              <p className="text-slate-400 text-sm mt-2">Toutes les missions sont actuellement assignées</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-amber-800">
+                  <Bell className="w-4 h-4 inline mr-1" />
+                  <strong>{availableCount}</strong> intervention(s) en attente d'acceptation
+                </p>
+                <p className="text-xs text-amber-600 mt-1">
+                  Cliquez sur une intervention pour voir les détails avant d'accepter
+                </p>
+              </div>
+              {availableInterventions
+                .sort((a, b) => new Date(a.date_prevue) - new Date(b.date_prevue))
+                .map((intervention) => (
+                  <AvailableInterventionCard
+                    key={intervention.id}
+                    intervention={intervention}
+                    onClick={() => setViewingAvailableIntervention(intervention)}
                   />
                 ))}
             </div>
@@ -2705,6 +2914,25 @@ export const TechnicianApp = () => {
                   </div>
                 )}
 
+                {/* Unclaim Button - Only for assigned interventions in planifiee status */}
+                {selectedIntervention.statut === 'planifiee' && 
+                 selectedIntervention.technicien_id === user?.id && (
+                  <div className="pt-2 border-t border-slate-200">
+                    <Button
+                      variant="outline"
+                      className="w-full text-amber-600 border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                      onClick={() => handleUnclaimIntervention(selectedIntervention.id)}
+                      data-testid="unclaim-intervention-btn"
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Annuler mon acceptation
+                    </Button>
+                    <p className="text-xs text-slate-400 text-center mt-2">
+                      L'intervention redeviendra disponible pour tous les techniciens
+                    </p>
+                  </div>
+                )}
+
                 {/* Create Devis Button */}
                 <Button
                   variant="outline"
@@ -2718,6 +2946,178 @@ export const TechnicianApp = () => {
                   <FileText className="w-4 h-4 mr-2" />
                   Créer un devis
                 </Button>
+              </div>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Available Intervention Detail Modal - View details before claiming */}
+      <Dialog open={!!viewingAvailableIntervention} onOpenChange={() => setViewingAvailableIntervention(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col" aria-describedby="available-intervention-detail-description">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="w-5 h-5 text-amber-500" />
+              {viewingAvailableIntervention?.titre}
+            </DialogTitle>
+            <p id="available-intervention-detail-description" className="sr-only">
+              Détails de l'intervention disponible
+            </p>
+          </DialogHeader>
+          
+          {viewingAvailableIntervention && (
+            <ScrollArea className="flex-1 -mx-6 px-6">
+              <div className="space-y-4 py-4">
+                {/* Alert banner */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-amber-800">
+                    Cette intervention est disponible
+                  </p>
+                  <p className="text-xs text-amber-600 mt-1">
+                    Consultez les détails ci-dessous puis acceptez si vous souhaitez prendre cette mission
+                  </p>
+                </div>
+
+                {/* Date & Time */}
+                <Card className="border-amber-200 bg-amber-50/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-amber-500 text-white flex items-center justify-center">
+                        <Calendar className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {format(new Date(viewingAvailableIntervention.date_prevue), 'EEEE d MMMM yyyy', { locale: fr })}
+                        </p>
+                        <p className="text-amber-700 font-medium">
+                          {format(new Date(viewingAvailableIntervention.date_prevue), 'HH:mm')}
+                          {viewingAvailableIntervention.duree_estimee && ` • ${viewingAvailableIntervention.duree_estimee} min`}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Priority & Category */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge className={priorityColors[viewingAvailableIntervention.priorite] || 'bg-slate-100 text-slate-600'}>
+                    {getPriorityLabel(viewingAvailableIntervention.priorite)}
+                  </Badge>
+                  {viewingAvailableIntervention.categorie && (
+                    <Badge 
+                      variant="outline" 
+                      style={{ 
+                        borderColor: viewingAvailableIntervention.categorie.couleur,
+                        color: viewingAvailableIntervention.categorie.couleur
+                      }}
+                    >
+                      {viewingAvailableIntervention.categorie.nom}
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Client Info */}
+                <Card className="border-slate-200">
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Client
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-2">
+                    <p className="font-medium">
+                      {viewingAvailableIntervention.client?.nom} {viewingAvailableIntervention.client?.prenom}
+                    </p>
+                    {viewingAvailableIntervention.client?.telephone && (
+                      <p className="text-sm text-slate-600 flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        {viewingAvailableIntervention.client.telephone}
+                      </p>
+                    )}
+                    {viewingAvailableIntervention.client?.email && (
+                      <p className="text-sm text-slate-600 flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        {viewingAvailableIntervention.client.email}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Address */}
+                {viewingAvailableIntervention.adresse && (
+                  <Card className="border-slate-200">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        Adresse
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <p className="text-slate-700">
+                        {viewingAvailableIntervention.adresse}
+                      </p>
+                      <p className="text-slate-600">
+                        {viewingAvailableIntervention.code_postal} {viewingAvailableIntervention.ville}
+                      </p>
+                      <Button 
+                        variant="link" 
+                        className="p-0 h-auto text-blue-600 mt-2"
+                        onClick={() => handleNavigate(viewingAvailableIntervention)}
+                      >
+                        <Navigation className="w-4 h-4 mr-1" />
+                        Voir l'itinéraire
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Description */}
+                {viewingAvailableIntervention.description && (
+                  <Card className="border-slate-200">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm">Description</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <p className="text-slate-700 whitespace-pre-wrap">
+                        {viewingAvailableIntervention.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Notes internes (if any) */}
+                {viewingAvailableIntervention.notes_internes && (
+                  <Card className="border-amber-200 bg-amber-50">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm text-amber-800">Instructions particulières</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <p className="text-amber-900 text-sm">
+                        {viewingAvailableIntervention.notes_internes}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Action buttons */}
+                <div className="space-y-3 pt-4 border-t border-slate-200">
+                  <Button 
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                    onClick={() => handleClaimIntervention(viewingAvailableIntervention.id)}
+                    data-testid="claim-from-detail-btn"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Accepter cette mission
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setViewingAvailableIntervention(null)}
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    Retour à la liste
+                  </Button>
+                </div>
               </div>
             </ScrollArea>
           )}

@@ -1,0 +1,92 @@
+{
+  "summary": "Iteration 41 - ACTOOS PRO Available Interventions Workflow Testing Complete. All backend APIs verified: GET /api/interventions/available (list unassigned), GET /api/interventions/available/count (badge counter), POST /api/interventions/{id}/claim (accept intervention), POST /api/interventions/{id}/unclaim (release intervention). Backend: 19/20 tests passed (95%). Frontend: TechnicianApp verified with Available tab, detail modal, and unclaim button logic.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/auth/login",
+        "issue": "tech1@demo-actoos.com returns 500 error - demo tech accounts may have password issues",
+        "priority": "LOW",
+        "notes": "marc.leroy@demo-tech.com works correctly"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_available_claim_unclaim_iteration41.py",
+    "/app/test_reports/pytest/pytest_available_claim_unclaim_iteration41.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "VERIFIED: GET /api/interventions/available returns list of unassigned interventions with client and category enrichment",
+    "VERIFIED: GET /api/interventions/available/count returns count matching list length",
+    "VERIFIED: POST /api/interventions/{id}/claim assigns intervention to requesting tech with race condition protection",
+    "VERIFIED: POST /api/interventions/{id}/unclaim releases intervention back to available pool (only for planifiee status)",
+    "VERIFIED: Claim returns 409 Conflict when intervention already claimed by another tech",
+    "VERIFIED: Unclaim returns 400 when intervention is already started (en_cours)",
+    "VERIFIED: TechnicianApp has 'Dispo' tab (mobile) / 'Disponibles' tab (desktop) with badge counter",
+    "VERIFIED: AvailableInterventionCard shows intervention details before accepting",
+    "VERIFIED: Detail modal has 'Accepter cette mission' button (data-testid='claim-from-detail-btn')",
+    "VERIFIED: Unclaim button appears only for planifiee interventions assigned to current user"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_available_claim_unclaim_iteration41.py"
+  ],
+  "success_rate": {
+    "backend": "95% (19/20 tests passed)",
+    "frontend": "100% (All UI elements verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "demo@actoos.com", "password": "demo2024"},
+    "tech": {"email": "marc.leroy@demo-tech.com", "password": "demo2024"}
+  },
+  "seed_data_creation": "Created test intervention 'TEST_Available_Intervention_*' during testing - intervention was started during claim/unclaim workflow testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Available interventions workflow fully tested. Key findings: 1) /api/interventions/available returns unassigned interventions with client/category enrichment, 2) /api/interventions/available/count provides badge counter, 3) claim/unclaim endpoints work correctly with proper error handling (409 for already claimed, 400 for started interventions), 4) Frontend TechnicianApp has 'Dispo' tab with available interventions list and detail modal with 'Accepter cette mission' button, 5) Unclaim button only visible for planifiee interventions assigned to current user.",
+  "features_tested": {
+    "get_available_interventions": {
+      "endpoint": "GET /api/interventions/available",
+      "status": "PASS",
+      "notes": "Returns list of unassigned interventions with client and category enrichment"
+    },
+    "get_available_count": {
+      "endpoint": "GET /api/interventions/available/count",
+      "status": "PASS",
+      "notes": "Returns count matching list length for badge display"
+    },
+    "claim_intervention": {
+      "endpoint": "POST /api/interventions/{id}/claim",
+      "status": "PASS",
+      "notes": "Assigns intervention to tech, returns 409 if already claimed"
+    },
+    "unclaim_intervention": {
+      "endpoint": "POST /api/interventions/{id}/unclaim",
+      "status": "PASS",
+      "notes": "Releases intervention back to available pool, returns 400 if started"
+    },
+    "technician_app_available_tab": {
+      "component": "TechnicianApp.jsx - Available Tab",
+      "status": "PASS",
+      "notes": "Tab labeled 'Dispo' on mobile, 'Disponibles' on desktop, with badge counter"
+    },
+    "available_intervention_detail_modal": {
+      "component": "TechnicianApp.jsx - viewingAvailableIntervention modal",
+      "status": "PASS",
+      "notes": "Shows intervention details with 'Accepter cette mission' button"
+    },
+    "unclaim_button": {
+      "component": "TechnicianApp.jsx - unclaim-intervention-btn",
+      "status": "PASS",
+      "notes": "Visible only for planifiee interventions assigned to current user"
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  }
+}
