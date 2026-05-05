@@ -273,6 +273,27 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - Récapitulatif facture: total, payé, reste dû
   - Indicateur visuel "FACTURE SOLDÉE" ou "SOLDE RESTANT"
 
+### 2026-05-05 - Cohérence Globale Plans & Tarifs (P0 CRITIQUE)
+- **Mise à jour tarifs officiels** :
+  - Startup: 49€/mois (470,40€/an -20%)
+  - Pro: 79€/mois (758,40€/an -20%)
+  - Entreprise: 149€/mois (1430,40€/an -20%)
+- **Correction limites plans** :
+  - Startup: 1 admin, 3 techs (+5€/tech), 1 catégorie
+  - Pro: 3 admins, 10 techs (+5€/tech), **4 catégories** (corrigé de 3)
+  - Entreprise: Illimité tout, techs inclus
+- **SMS inclus par plan** :
+  - Startup: 0 SMS/mois
+  - Pro: 50 SMS/mois
+  - Entreprise: 500 SMS/mois
+- **Plan Entreprise paiement direct** :
+  - Bouton "S'abonner →" (au lieu de "Nous contacter")
+  - Souscription via Stripe comme les autres plans
+- **Migration DB** :
+  - Mise à jour `plan_limits` de toutes les entreprises existantes
+  - Synchronisation `max_categories` Pro = 4
+- **Tests validés** : 100% backend (23/23), 100% frontend
+
 ### 2026-05-05 - Archivage Client + QR Code Paiement
 - **Système d'archivage client** :
   - `DELETE /api/clients/{id}` - Archive le client (soft delete)

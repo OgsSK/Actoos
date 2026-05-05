@@ -244,6 +244,14 @@ const PricingPage = () => {
         { name: 'Support dédié 24/7', startup: false, pro: false, enterprise: true },
         { name: 'Formation personnalisée', startup: false, pro: false, enterprise: true },
       ]
+    },
+    {
+      name: 'Communications',
+      features: [
+        { name: 'SMS inclus / mois', startup: '0', pro: '50', enterprise: '500' },
+        { name: 'Notifications email', startup: true, pro: true, enterprise: true },
+        { name: 'Notifications WhatsApp', startup: false, pro: true, enterprise: true },
+      ]
     }
   ];
 
