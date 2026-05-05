@@ -115,6 +115,8 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] **QR Code Paiement (validation infos entreprise, EPC SEPA)**
 - [x] **Workflow Interventions: Photos avec tags, Notes, Rapport PDF, Signature obligatoire**
 - [x] **Workflow Interventions Non Attribuées: Section Disponibles, détails avant claim, unclaim, sync temps réel**
+- [x] **Validation Signature Enrichie: type signataire (client/tiers), relation, email/tel, device info, géoloc**
+- [x] **Workflow par Plan: Pro/Enterprise=auto-validation, Startup=validation admin manuelle**
 
 ### À faire après push GitHub
 - [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
@@ -132,6 +134,27 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-05-05 - Validation Signature & Workflow par Plan (P0)
+- **Signature enrichie avec traçabilité** :
+  - Type de signataire: `client` ou `tiers` (autre personne)
+  - Relation avec client si tiers: conjoint, collègue, réceptionniste, famille, etc.
+  - Email/téléphone signataire (optionnels)
+  - Device info, IP, user-agent capturés automatiquement
+  - Géolocalisation lors de la signature
+- **Workflow différencié par plan** :
+  - Pro/Enterprise: signature → `terminee` (auto-validation)
+  - Startup: signature → `en_validation` → validation admin → `terminee`
+- **Endpoints admin** :
+  - `POST /api/interventions/{id}/validate` - Valider et terminer
+  - `POST /api/interventions/{id}/reject-validation` - Rejeter avec motif (retour en_cours)
+  - `GET /api/interventions/pending-validation` - Liste des interventions à valider
+- **UI améliorée** :
+  - SignaturePad avec sélecteur "Le client" / "Autre personne"
+  - Dropdown relation obligatoire si tiers
+  - Préremplissage nom/email/tel du client
+  - Dashboard: filtrer par "En validation", boutons Valider/Rejeter
+- **Tests validés** : 100% backend (18/18), 100% frontend (iteration_42)
 
 ### 2026-05-05 - Workflow Interventions Non Attribuées (P0)
 - **Nouveau système d'interventions disponibles** :
