@@ -1,6 +1,7 @@
 """
 Real-time Event Service using Server-Sent Events (SSE)
 Provides live updates between Admin Dashboard and Technician App
+Supports Redis Pub/Sub for multi-instance synchronization
 """
 import asyncio
 import json
@@ -22,6 +23,9 @@ router = APIRouter(prefix="/events", tags=["Real-time Events"])
 # Format: {entreprise_id: {user_id: queue}}
 active_connections: Dict[str, Dict[str, asyncio.Queue]] = defaultdict(dict)
 
+# Redis pub/sub channel prefix
+REDIS_CHANNEL_PREFIX = "actoos:events:"
+
 
 class EventType:
     """Event types for real-time sync"""
@@ -40,6 +44,57 @@ class EventType:
     CHAT_MESSAGE = "chat_message"
 
 
+async def _handle_redis_event(event: dict):
+    """Handle events received from Redis pub/sub"""
+    entreprise_id = event.get("entreprise_id")
+    if not entreprise_id or entreprise_id not in active_connections:
+        return
+    
+    exclude_user_id = event.get("exclude_user_id")
+    target_user_id = event.get("target_user_id")
+    
+    sse_event = {
+        "type": event.get("type"),
+        "data": event.get("data"),
+        "timestamp": event.get("timestamp", datetime.now(timezone.utc).isoformat())
+    }
+    
+    # Send to specific user or broadcast
+    if target_user_id:
+        if target_user_id in active_connections[entreprise_id]:
+            try:
+                await active_connections[entreprise_id][target_user_id].put(sse_event)
+            except Exception as e:
+                logger.warning(f"Failed to send event to user {target_user_id}: {e}")
+    else:
+        for user_id, queue in list(active_connections[entreprise_id].items()):
+            if exclude_user_id and user_id == exclude_user_id:
+                continue
+            try:
+                await queue.put(sse_event)
+            except Exception as e:
+                logger.warning(f"Failed to send event to user {user_id}: {e}")
+
+
+# Initialize Redis subscription on startup
+_redis_subscribed = False
+
+async def _init_redis_subscription():
+    """Initialize Redis pub/sub subscription"""
+    global _redis_subscribed
+    if _redis_subscribed:
+        return
+    
+    try:
+        from redis_service import subscribe_to_events, is_redis_available
+        if is_redis_available():
+            await subscribe_to_events(f"{REDIS_CHANNEL_PREFIX}*", _handle_redis_event)
+            _redis_subscribed = True
+            logger.info("Redis pub/sub subscription initialized for SSE")
+    except Exception as e:
+        logger.warning(f"Failed to initialize Redis subscription: {e}")
+
+
 async def broadcast_event(
     entreprise_id: str,
     event_type: str,
@@ -48,6 +103,7 @@ async def broadcast_event(
 ):
     """
     Broadcast an event to all connected users of an entreprise
+    Uses Redis pub/sub if available for multi-instance support
     
     Args:
         entreprise_id: The entreprise to broadcast to
@@ -55,22 +111,40 @@ async def broadcast_event(
         data: Event payload
         exclude_user_id: User ID to exclude (e.g., the one who triggered the event)
     """
-    if entreprise_id not in active_connections:
-        return
-    
     event = {
         "type": event_type,
         "data": data,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "entreprise_id": entreprise_id,
+        "exclude_user_id": exclude_user_id
     }
     
     logger.info(f"Broadcasting {event_type} to entreprise {entreprise_id}")
+    
+    # Try to publish via Redis for multi-instance sync
+    try:
+        from redis_service import publish_event, is_redis_available
+        if is_redis_available():
+            await publish_event(f"{REDIS_CHANNEL_PREFIX}{entreprise_id}", event)
+            return  # Redis will handle distribution
+    except Exception as e:
+        logger.warning(f"Redis publish failed, using local broadcast: {e}")
+    
+    # Fallback: local broadcast only
+    if entreprise_id not in active_connections:
+        return
+    
+    sse_event = {
+        "type": event_type,
+        "data": data,
+        "timestamp": event["timestamp"]
+    }
     
     for user_id, queue in list(active_connections[entreprise_id].items()):
         if exclude_user_id and user_id == exclude_user_id:
             continue
         try:
-            await queue.put(event)
+            await queue.put(sse_event)
         except Exception as e:
             logger.warning(f"Failed to send event to user {user_id}: {e}")
 
@@ -81,21 +155,39 @@ async def send_event_to_user(
     event_type: str,
     data: dict
 ):
-    """Send an event to a specific user"""
+    """Send an event to a specific user (uses Redis if available)"""
+    event = {
+        "type": event_type,
+        "data": data,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "entreprise_id": entreprise_id,
+        "target_user_id": user_id
+    }
+    
+    # Try to publish via Redis for multi-instance sync
+    try:
+        from redis_service import publish_event, is_redis_available
+        if is_redis_available():
+            await publish_event(f"{REDIS_CHANNEL_PREFIX}{entreprise_id}", event)
+            return
+    except Exception as e:
+        logger.warning(f"Redis publish failed, using local send: {e}")
+    
+    # Fallback: local send only
     if entreprise_id not in active_connections:
         return
     
     if user_id not in active_connections[entreprise_id]:
         return
     
-    event = {
+    sse_event = {
         "type": event_type,
         "data": data,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": event["timestamp"]
     }
     
     try:
-        await active_connections[entreprise_id][user_id].put(event)
+        await active_connections[entreprise_id][user_id].put(sse_event)
         logger.info(f"Sent {event_type} to user {user_id}")
     except Exception as e:
         logger.warning(f"Failed to send event to user {user_id}: {e}")

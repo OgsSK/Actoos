@@ -134,6 +134,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Rate limiting middleware
+from rate_limit_middleware import RateLimitMiddleware
+app.add_middleware(RateLimitMiddleware)
+
 # Keep clients portal link in server.py for backward compatibility
 from fastapi import HTTPException, Depends
 import uuid
@@ -268,6 +272,17 @@ async def run_intervention_reminders():
 
 @app.on_event("startup")
 async def startup():
+    # Initialize Redis service
+    try:
+        from redis_service import get_redis
+        redis = await get_redis()
+        if redis:
+            logger.info("Redis service initialized")
+        else:
+            logger.info("Redis not configured - using in-memory fallback")
+    except Exception as e:
+        logger.warning(f"Redis init failed (optional): {e}")
+    
     # Initialize storage
     try:
         init_storage()
@@ -301,4 +316,11 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    # Cleanup Redis
+    try:
+        from redis_service import cleanup
+        await cleanup()
+    except:
+        pass
+    
     client.close()

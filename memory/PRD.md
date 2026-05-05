@@ -169,6 +169,27 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - Évite le conflit de route qui causait "Utilisateur non trouvé"
 - **Tests validés** : 90% backend (validation mineure corrigée), 100% frontend (iteration_46)
 
+### 2026-05-05 - Implémentation Redis (Cache, SSE, Rate Limiting) (P2)
+- **Service Redis** (`redis_service.py`) :
+  - Cache avec TTL (in-memory fallback si Redis non configuré)
+  - Pub/Sub pour synchronisation SSE multi-instances
+  - Rate limiting storage avec fenêtres temporelles
+  - Décorateur `@cached()` pour cacher les résultats de fonctions
+  - Gestion de sessions
+- **Rate Limiting Middleware** (`rate_limit_middleware.py`) :
+  - Protection par endpoint : login (10/min), register (5/min), SMS (20/h)
+  - Headers standard : X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
+  - Whitelist pour SSE et webhooks Stripe
+  - Identification client par IP + token
+- **SSE avec Redis Pub/Sub** :
+  - `realtime_events.py` mis à jour pour utiliser Redis pub/sub
+  - Support multi-instances (scaling horizontal)
+  - Fallback automatique en mode local si Redis non disponible
+- **Configuration** :
+  - Variable `REDIS_URL` ajoutée au `.env` (optionnelle)
+  - Fonctionne en mode in-memory sans Redis configuré
+- **Tests validés** : Backend démarre OK, rate limit headers fonctionnels
+
 ### 2026-05-05 - Rebranding ACTOOS PRO (Thème Vert)
 - **Landing Page refonte complète** :
   - Thème couleur: Bleu → VERT (emerald-600)
