@@ -17,10 +17,12 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] CRUD Clients, Interventions, Devis, Factures
 - [x] Catégories d'intervention personnalisables
 - [x] Planning intelligent avec calendrier
-- [x] Génération PDF (devis, factures, rapports)
-- [x] Signatures électroniques
-- [x] Photos terrain avec upload cloud
+- [x] Génération PDF (devis, factures, rapports d'intervention)
+- [x] Signatures électroniques (devis + fin intervention)
+- [x] **Photos terrain avec upload cloud et tags (avant/pendant/après)**
 - [x] **2FA - Authentification à deux facteurs (TOTP & Email)**
+- [x] **Notes d'intervention (terrain + internes)**
+- [x] **Rapport PDF d'intervention complet**
 
 ### Abonnements & Paiements
 - [x] Stripe Checkout (mode LIVE)
@@ -111,6 +113,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] **Relevés de Compte (N° factures, recherche, partage)**
 - [x] **Archivage Client (soft delete, restore, permanent delete)**
 - [x] **QR Code Paiement (validation infos entreprise, EPC SEPA)**
+- [x] **Workflow Interventions: Photos avec tags, Notes, Rapport PDF, Signature obligatoire**
 
 ### À faire après push GitHub
 - [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
@@ -128,6 +131,30 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-05-05 - Refonte Workflow Interventions
+- **Upload Photos avec Tags** :
+  - Correction URL endpoint: `/api/photos/interventions/{id}` (corrigé depuis `/interventions/{id}/photos`)
+  - Tags disponibles: `avant`, `pendant`, `après`, `autre`
+  - Tag automatique basé sur le statut de l'intervention
+  - Composant PhotoUpload amélioré avec dropdown de sélection
+  - Groupement visuel des photos par tag
+  - Suppression photo avec soft delete
+- **Notes d'Intervention** :
+  - `POST /api/interventions/{id}/notes` - Mise à jour notes
+  - `notes_terrain` - Notes du technicien (visible terrain)
+  - `notes_internes` - Notes admin (privées)
+  - Admins peuvent modifier les deux, techniciens seulement notes_terrain
+- **Rapport PDF d'Intervention** :
+  - `GET /api/interventions/{id}/report/pdf` - Génération rapport complet
+  - Inclut: infos entreprise/client, détails intervention, horaires, technicien, notes, checklist, photos, signature
+  - Design professionnel avec sections colorées
+  - Bouton "Rapport PDF" dans Dashboard et App Technicien pour interventions terminées
+- **Workflow Signature** :
+  - Endpoint `complete-with-signature` fonctionnel avec géolocalisation
+  - SignaturePad obligatoire avant completion dans TechnicianApp
+  - Nom signataire et date enregistrés
+- **Tests validés** : 94% backend (16/17), 100% frontend
 
 ### 2026-05-05 - Archivage Client + QR Code Paiement
 - **Système d'archivage client** :
