@@ -205,6 +205,14 @@ async def invite_technician(
             detail=f"Limite de techniciens atteinte ({limit_check['max']}). Passez à un plan supérieur."
         )
     
+    # Validate required fields
+    if not data.telephone or not data.telephone.strip():
+        raise HTTPException(status_code=400, detail="Le numéro de téléphone est requis")
+    if not data.nom or not data.nom.strip():
+        raise HTTPException(status_code=400, detail="Le nom est requis")
+    if not data.prenom or not data.prenom.strip():
+        raise HTTPException(status_code=400, detail="Le prénom est requis")
+    
     # Clean phone number (remove spaces, dashes)
     phone = data.telephone.replace(" ", "").replace("-", "").replace(".", "")
     if not phone.startswith("+"):

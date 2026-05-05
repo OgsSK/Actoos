@@ -5,9 +5,9 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - Dashboard Admin (web)
 - PWA Technicien (mobile, offline-first)
 - Abonnements Stripe avec tarifs ACTOOS PRO 2026:
-  - **Startup**: 9,99€/mois ou 95,90€/an (-20%)
-  - **Pro**: 19,99€/mois ou 191,90€/an (-20%)
-  - **Entreprise**: 39,99€/mois ou 383,90€/an (-20%)
+  - **Startup**: 19,99€/mois ou 191,90€/an (-20%)
+  - **Pro**: 49,99€/mois ou 479,90€/an (-20%)
+  - **Enterprise**: 89,99€/mois ou 863,90€/an (-20%)
 
 ## ✅ Fonctionnalités Implémentées
 
@@ -151,6 +151,23 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-05-05 - Admin UI Invitations SMS Techniciens (P0)
+- **Interface d'invitation technicien complète** :
+  - Dialogue modal avec onglets "Par SMS" / "Par Email" (Shadcn Tabs)
+  - Formulaire SMS: Prénom*, Nom*, Téléphone* (requis), Email (optionnel)
+  - Formulaire Email: Prénom*, Nom*, Email* (requis), Téléphone (optionnel)
+  - Validation côté client et serveur des champs obligatoires
+  - Bouton "Envoyer le SMS" / "Créer l'invitation" selon onglet
+- **Section "Invitations en attente"** :
+  - Liste des invitations pending avec nom, téléphone, temps restant (badge "47h")
+  - Bouton Rafraîchir (icône RefreshCw) → `POST /api/users/invites/{id}/resend`
+  - Bouton Annuler (icône Trash2) → `DELETE /api/users/invites/{id}`
+  - Design ambre (bg-amber-50, border-amber-200) distinctif
+- **Correction ordre routes FastAPI** :
+  - Routes statiques `/invites` déplacées AVANT `/{user_id}` dynamique
+  - Évite le conflit de route qui causait "Utilisateur non trouvé"
+- **Tests validés** : 90% backend (validation mineure corrigée), 100% frontend (iteration_46)
 
 ### 2026-05-05 - Paiements Partiels & Relances Intelligentes (P0/P1)
 - **Paiements Partiels Factures** :
