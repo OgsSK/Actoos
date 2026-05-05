@@ -169,6 +169,23 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - Évite le conflit de route qui causait "Utilisateur non trouvé"
 - **Tests validés** : 90% backend (validation mineure corrigée), 100% frontend (iteration_46)
 
+### 2026-05-05 - Vitrine Corporate actoos.com (Hub)
+- **Page corporate premium** (`/corporate`) :
+  - Design "Slate & Gold" inspiré Stripe/Vercel/Apple
+  - Hero section : "Empowering Action. Delivering Progress."
+  - Badge : "Multi-Continental Software Factory"
+  - Section Software Suite sur fond ardoise (#0F172A)
+  - Cartes produits : Actoos One (or), Actoos Pro (vert), Actoos Pay (intégré)
+  - Section Philosophy avec logo + slogan
+  - Footer corporate : Hubs Bruxelles • Paris • Bamako
+  - Mobile-first responsive avec menu hamburger
+- **Logos intégrés** :
+  - `/corporate/logo-icon.png` → Favicon, icône
+  - `/corporate/logo-actoos.png` → Navbar, footer
+  - `/corporate/logo-actoos-slogan.png` → Section Philosophy, documents
+- **Route** : `/corporate` accessible publiquement
+- **Prêt pour déploiement** sur actoos.com
+
 ### 2026-05-05 - Audit MongoDB + Plan Migration PostgreSQL (P2)
 - **Audit complet** (`/app/memory/MONGODB_AUDIT.md`) :
   - 30 collections, 1,158 documents analysés

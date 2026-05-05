@@ -65,6 +65,9 @@ import TermsPage from "./pages/TermsPage";
 import CookiesPage from "./pages/CookiesPage";
 import LegalPage from "./pages/LegalPage";
 
+// Corporate Vitrine
+import CorporatePage from "./pages/CorporatePage";
+
 // Data Import
 import DataImport from "./pages/DataImport";
 
@@ -209,6 +212,9 @@ function App() {
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/cookies" element={<CookiesPage />} />
             <Route path="/legal" element={<LegalPage />} />
+
+            {/* Corporate Vitrine (actoos.com) */}
+            <Route path="/corporate" element={<CorporatePage />} />
 
             {/* Client Portal (Public) */}
             <Route path="/portal/devis/:token" element={<ClientPortalDevis />} />
