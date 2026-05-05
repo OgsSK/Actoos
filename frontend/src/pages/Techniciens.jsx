@@ -592,7 +592,6 @@ export const TechniciensList = () => {
           </CardContent>
         </Card>
       )}
-      </div>
 
       {/* Skills Dialog */}
       {selectedUser && (

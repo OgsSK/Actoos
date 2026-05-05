@@ -21,6 +21,23 @@ async def list_users(current_user: dict = Depends(get_current_user)):
     return [UserResponse(**serialize_doc(u)) for u in users]
 
 
+# =============================================
+# STATIC ROUTES MUST BE BEFORE DYNAMIC ROUTES
+# =============================================
+
+@router.get("/invites")
+async def list_invites(current_user: dict = Depends(require_admin)):
+    """List all technician invitations"""
+    from dependencies import db, serialize_doc
+    invites = await db.tech_invites.find(
+        {"entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return [serialize_doc(i) for i in invites]
+
+
+# Dynamic route AFTER static routes
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(user_id: str, current_user: dict = Depends(get_current_user)):
     """Get a specific user"""
@@ -287,17 +304,6 @@ async def invite_technician(
         sms_sent=sms_result.get("status") == "sent",
         sms_status=sms_result
     )
-
-
-@router.get("/invites")
-async def list_invites(current_user: dict = Depends(require_admin)):
-    """List all technician invitations"""
-    invites = await db.tech_invites.find(
-        {"entreprise_id": current_user["entreprise_id"]},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(100)
-    
-    return [serialize_doc(i) for i in invites]
 
 
 @router.delete("/invites/{invite_id}")
