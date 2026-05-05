@@ -71,6 +71,24 @@ class DocumentSettings(BaseModel):
     prefixe_facture: str = "F"
 
 
+class PaymentSettings(BaseModel):
+    """Payment configuration for the enterprise"""
+    # External payment link (PayPal, SenePay, etc.)
+    lien_paiement_externe: Optional[str] = None
+    
+    # Reminder settings
+    relance_auto_enabled: bool = False
+    relance_delai_jours: int = 7  # Days after due date to send reminder
+    relance_max_count: int = 3  # Maximum number of reminders
+    
+    # Payment methods accepted
+    modes_paiement_acceptes: list = ["especes", "carte", "virement", "cheque"]
+    
+    # Display settings
+    afficher_qr_code_paiement: bool = True
+    afficher_lien_paiement: bool = True
+
+
 # ==================== NOTIFICATION ENDPOINTS ====================
 
 @router.get("/notifications")
@@ -369,4 +387,76 @@ async def get_facture_defaults(current_user: dict = Depends(get_current_user)):
         "message_client": settings.get("message_client_facture", ""),
         "pied_de_page": settings.get("facture_footer", ""),
         "mentions_legales": settings.get("mentions_legales", "")
+    }
+
+
+
+# ==================== PAYMENT SETTINGS ENDPOINTS ====================
+
+@router.get("/payment")
+async def get_payment_settings(current_user: dict = Depends(get_current_user)):
+    """Get payment configuration for the enterprise"""
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    
+    if not entreprise:
+        # Return defaults if enterprise not found
+        return PaymentSettings().dict()
+    
+    # Get payment settings with fallback to defaults
+    settings = entreprise.get("payment_settings", {})
+    defaults = PaymentSettings().dict()
+    
+    return {**defaults, **settings}
+
+
+@router.put("/payment")
+async def update_payment_settings(
+    settings: PaymentSettings,
+    current_user: dict = Depends(require_admin)
+):
+    """Update payment configuration (admin only)"""
+    result = await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {
+            "$set": {
+                "payment_settings": settings.dict(),
+                "payment_settings_updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    return {
+        "message": "Paramètres de paiement mis à jour",
+        "settings": settings.dict()
+    }
+
+
+@router.patch("/payment/lien-externe")
+async def update_payment_link(
+    lien_paiement_externe: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Quick update of external payment link"""
+    result = await db.entreprises.update_one(
+        {"id": current_user["entreprise_id"]},
+        {
+            "$set": {
+                "payment_settings.lien_paiement_externe": lien_paiement_externe,
+                "payment_settings_updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    return {
+        "message": "Lien de paiement mis à jour",
+        "lien_paiement_externe": lien_paiement_externe
     }

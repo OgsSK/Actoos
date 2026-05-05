@@ -292,13 +292,22 @@ async def emit_facture_internal(facture_id: str, current_user: dict, base_url: s
 
 
 @router.post("/{facture_id}/pay")
-async def mark_facture_paid(
+async def record_payment(
     facture_id: str,
     montant: float,
-    mode_paiement: Optional[str] = None,
+    mode_paiement: str = "especes",
+    reference: Optional[str] = None,
+    notes: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Mark facture as paid"""
+    """
+    Record a payment (partial or full) for an invoice.
+    
+    This creates a payment record in invoice_payments and updates the invoice totals.
+    Status automatically transitions:
+    - If paid >= total: 'payee'
+    - If paid > 0 but < total: 'partiel' (partial)
+    """
     facture = await db.factures.find_one(
         {"id": facture_id, "entreprise_id": current_user["entreprise_id"]},
         {"_id": 0}
@@ -306,21 +315,183 @@ async def mark_facture_paid(
     if not facture:
         raise HTTPException(status_code=404, detail="Facture non trouvée")
     
+    if facture["statut"] in ["payee", "annulee"]:
+        raise HTTPException(status_code=400, detail="Cette facture est déjà payée ou annulée")
+    
+    # Validate payment amount
+    remaining = facture["total_ttc"] - facture.get("montant_paye", 0)
+    if montant <= 0:
+        raise HTTPException(status_code=400, detail="Le montant doit être positif")
+    if montant > remaining + 0.01:  # Small tolerance for rounding
+        raise HTTPException(status_code=400, detail=f"Le montant dépasse le solde restant ({remaining:.2f}€)")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Create payment record
+    payment_record = {
+        "id": str(uuid.uuid4()),
+        "facture_id": facture_id,
+        "entreprise_id": current_user["entreprise_id"],
+        "montant": montant,
+        "mode_paiement": mode_paiement,
+        "reference": reference,
+        "notes": notes,
+        "recorded_by": current_user["user_id"],
+        "recorded_at": now,
+        "source": "manual"
+    }
+    await db.invoice_payments.insert_one(payment_record)
+    
+    # Update invoice totals
     new_montant_paye = facture.get("montant_paye", 0) + montant
+    new_remaining = facture["total_ttc"] - new_montant_paye
+    
+    # Determine new status
+    if new_remaining <= 0.01:  # Fully paid (with small tolerance)
+        new_statut = "payee"
+        date_paiement = now
+    elif new_montant_paye > 0:
+        new_statut = "partiel"
+        date_paiement = facture.get("date_paiement")  # Keep original if exists
+    else:
+        new_statut = facture["statut"]
+        date_paiement = facture.get("date_paiement")
+    
     update = {
         "montant_paye": new_montant_paye,
-        "date_paiement": datetime.now(timezone.utc).isoformat()
+        "statut": new_statut,
+        "updated_at": now
     }
-    if mode_paiement:
-        update["mode_paiement"] = mode_paiement
-    
-    if new_montant_paye >= facture["total_ttc"]:
-        update["statut"] = "payee"
+    if new_statut == "payee":
+        update["date_paiement"] = date_paiement
     
     await db.factures.update_one({"id": facture_id}, {"$set": update})
-    await log_action(current_user["entreprise_id"], current_user["user_id"], "pay", "facture", facture_id, {"montant": montant})
     
-    return {"message": "Paiement enregistré", "montant_paye": new_montant_paye, "statut": update.get("statut", facture["statut"])}
+    await log_action(
+        current_user["entreprise_id"], 
+        current_user["user_id"], 
+        "payment", 
+        "facture", 
+        facture_id, 
+        {
+            "montant": montant, 
+            "mode": mode_paiement,
+            "new_total_paye": new_montant_paye,
+            "statut": new_statut
+        }
+    )
+    
+    return {
+        "message": "Paiement enregistré",
+        "payment_id": payment_record["id"],
+        "montant_paye": round(new_montant_paye, 2),
+        "reste_a_payer": round(max(0, new_remaining), 2),
+        "statut": new_statut,
+        "is_fully_paid": new_statut == "payee"
+    }
+
+
+@router.get("/{facture_id}/payments")
+async def get_payment_history(
+    facture_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all payment records for an invoice"""
+    facture = await db.factures.find_one(
+        {"id": facture_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    payments = await db.invoice_payments.find(
+        {"facture_id": facture_id},
+        {"_id": 0}
+    ).sort("recorded_at", -1).to_list(100)
+    
+    # Enrich with user names
+    for p in payments:
+        user = await db.users.find_one({"id": p["recorded_by"]}, {"_id": 0, "prenom": 1, "nom": 1})
+        p["recorded_by_name"] = f"{user.get('prenom', '')} {user.get('nom', '')}" if user else "Système"
+    
+    return {
+        "facture_id": facture_id,
+        "total_ttc": facture["total_ttc"],
+        "montant_paye": facture.get("montant_paye", 0),
+        "reste_a_payer": round(facture["total_ttc"] - facture.get("montant_paye", 0), 2),
+        "statut": facture["statut"],
+        "payments": [serialize_doc(p) for p in payments]
+    }
+
+
+@router.delete("/{facture_id}/payments/{payment_id}")
+async def cancel_payment(
+    facture_id: str,
+    payment_id: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Cancel a payment record (admin only) - reverses the payment"""
+    payment = await db.invoice_payments.find_one(
+        {"id": payment_id, "facture_id": facture_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not payment:
+        raise HTTPException(status_code=404, detail="Paiement non trouvé")
+    
+    facture = await db.factures.find_one({"id": facture_id}, {"_id": 0})
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    if facture["statut"] == "annulee":
+        raise HTTPException(status_code=400, detail="Impossible d'annuler un paiement sur une facture annulée")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Reverse the payment
+    new_montant_paye = max(0, facture.get("montant_paye", 0) - payment["montant"])
+    new_remaining = facture["total_ttc"] - new_montant_paye
+    
+    # Determine new status
+    if new_montant_paye <= 0:
+        new_statut = "emise" if facture.get("date_emission") else "brouillon"
+    else:
+        new_statut = "partiel"
+    
+    # Update facture
+    await db.factures.update_one(
+        {"id": facture_id},
+        {"$set": {
+            "montant_paye": new_montant_paye,
+            "statut": new_statut,
+            "updated_at": now
+        }}
+    )
+    
+    # Mark payment as cancelled instead of deleting (for audit trail)
+    await db.invoice_payments.update_one(
+        {"id": payment_id},
+        {"$set": {
+            "cancelled": True,
+            "cancelled_at": now,
+            "cancelled_by": current_user["user_id"]
+        }}
+    )
+    
+    await log_action(
+        current_user["entreprise_id"],
+        current_user["user_id"],
+        "cancel_payment",
+        "facture",
+        facture_id,
+        {"payment_id": payment_id, "montant": payment["montant"]}
+    )
+    
+    return {
+        "message": "Paiement annulé",
+        "montant_paye": round(new_montant_paye, 2),
+        "reste_a_payer": round(new_remaining, 2),
+        "statut": new_statut
+    }
 
 
 @router.get("/{facture_id}/pdf")
@@ -445,14 +616,26 @@ async def delete_facture(facture_id: str, current_user: dict = Depends(require_a
 
 
 @router.post("/{facture_id}/relance")
-async def send_relance(facture_id: str, current_user: dict = Depends(get_current_user)):
-    """Send payment reminder email for unpaid facture"""
+async def send_relance(facture_id: str, request: Request, current_user: dict = Depends(get_current_user)):
+    """
+    Send payment reminder for unpaid or partially paid invoice.
+    The reminder includes only the REMAINING amount to pay.
+    """
+    from notification_service import NotificationService
+    
     facture = await db.factures.find_one(
-        {"id": facture_id, "entreprise_id": current_user["entreprise_id"], "statut": {"$in": ["emise", "en_retard"]}},
+        {"id": facture_id, "entreprise_id": current_user["entreprise_id"], "statut": {"$in": ["emise", "partiel", "en_retard"]}},
         {"_id": 0}
     )
     if not facture:
         raise HTTPException(status_code=404, detail="Facture non trouvée ou déjà payée")
+    
+    # Calculate remaining amount
+    montant_paye = facture.get("montant_paye", 0)
+    reste_a_payer = round(facture["total_ttc"] - montant_paye, 2)
+    
+    if reste_a_payer <= 0:
+        raise HTTPException(status_code=400, detail="Cette facture est déjà entièrement payée")
     
     # Calculate days overdue
     date_echeance = datetime.fromisoformat(facture.get("date_echeance", datetime.now(timezone.utc).isoformat()).replace('Z', '+00:00'))
@@ -462,16 +645,98 @@ async def send_relance(facture_id: str, current_user: dict = Depends(get_current
     client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
     entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
     
-    if not client or not client.get("email"):
-        raise HTTPException(status_code=400, detail="Le client n'a pas d'adresse email")
+    if not client:
+        raise HTTPException(status_code=400, detail="Client non trouvé")
     
-    # Send reminder email
-    email_result = await send_relance_email(facture, client, entreprise or {}, jours_retard)
+    # Build portal URL for payment
+    base_url = str(request.base_url).rstrip('/')
+    if '/api' in base_url:
+        base_url = base_url.rsplit('/api', 1)[0]
     
-    await log_action(current_user["entreprise_id"], current_user["user_id"], "relance", "facture", facture_id, {"email_sent": email_result.get("status") == "success"})
+    # Get or create client token for portal access
+    if not facture.get("token_client"):
+        token_client = str(uuid.uuid4())[:12]
+        await db.factures.update_one({"id": facture_id}, {"$set": {"token_client": token_client}})
+    else:
+        token_client = facture.get("token_client")
+    
+    portal_url = f"{base_url}/paiement/{facture_id}?token={token_client}"
+    
+    # Add custom payment link if configured
+    lien_paiement = entreprise.get("lien_paiement_externe") or facture.get("lien_paiement_externe") or portal_url
+    
+    # Prepare reminder data with remaining amount
+    reminder_data = {
+        **facture,
+        "reste_a_payer": reste_a_payer,
+        "montant_paye": montant_paye,
+        "jours_retard": jours_retard,
+        "lien_paiement": lien_paiement,
+        "is_partial": montant_paye > 0
+    }
+    
+    # Send notification via preferred channels
+    notification_result = await NotificationService.send_notification(
+        entreprise_id=current_user["entreprise_id"],
+        notification_type="relance",
+        client=client,
+        data=reminder_data,
+        entreprise=entreprise
+    )
+    
+    # Update reminder tracking
+    now = datetime.now(timezone.utc).isoformat()
+    await db.factures.update_one(
+        {"id": facture_id},
+        {"$set": {"last_reminder_sent": now}, "$inc": {"reminder_count": 1}}
+    )
+    
+    # Log communication
+    if notification_result.get("status") == "success":
+        for channel_info in notification_result.get("details", {}).get("channels", []):
+            channel = channel_info.get("channel")
+            if channel == "email":
+                await communication_log.log_email(
+                    entreprise_id=current_user["entreprise_id"],
+                    client_id=client["id"],
+                    recipient_email=client.get("email", ""),
+                    subject=f"Rappel - Facture {facture.get('numero_facture', facture_id[:8])} - {reste_a_payer:.2f}€",
+                    content_preview=f"Rappel paiement: {reste_a_payer:.2f}€ restant",
+                    status="sent",
+                    related_entity="facture",
+                    related_entity_id=facture_id,
+                    sent_by=current_user["user_id"]
+                )
+            elif channel in ["whatsapp", "sms"]:
+                await communication_log.log_sms(
+                    entreprise_id=current_user["entreprise_id"],
+                    client_id=client["id"],
+                    recipient_phone=client.get("telephone", ""),
+                    message=f"Relance facture {facture.get('numero_facture', '')} - {reste_a_payer:.2f}€ via {channel.upper()}",
+                    status="sent",
+                    message_id=channel_info.get("result", {}).get("message_id"),
+                    related_entity="facture",
+                    related_entity_id=facture_id,
+                    sent_by=current_user["user_id"]
+                )
+    
+    await log_action(
+        current_user["entreprise_id"], 
+        current_user["user_id"], 
+        "relance", 
+        "facture", 
+        facture_id, 
+        {
+            "reste_a_payer": reste_a_payer,
+            "jours_retard": jours_retard,
+            "channels": [c.get("channel") for c in notification_result.get("details", {}).get("channels", [])]
+        }
+    )
     
     return {
         "message": "Relance envoyée",
+        "reste_a_payer": reste_a_payer,
+        "montant_paye": montant_paye,
         "jours_retard": jours_retard,
-        "email": email_result
+        "notification": notification_result
     }

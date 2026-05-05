@@ -10,7 +10,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '../components/ui/table';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from '../components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -150,6 +150,7 @@ export const FacturesList = () => {
               <SelectItem value="all">Tous les statuts</SelectItem>
               <SelectItem value="brouillon">Brouillon</SelectItem>
               <SelectItem value="emise">Émise</SelectItem>
+              <SelectItem value="partiel">Paiement partiel</SelectItem>
               <SelectItem value="payee">Payée</SelectItem>
               <SelectItem value="en_retard">En retard</SelectItem>
               <SelectItem value="annulee">Annulée</SelectItem>
@@ -310,20 +311,37 @@ export const FactureDetail = () => {
   };
 
   const handlePay = async () => {
+    if (!paymentData.montant || paymentData.montant <= 0) {
+      toast.error('Veuillez entrer un montant valide');
+      return;
+    }
+    if (!paymentData.mode_paiement) {
+      toast.error('Veuillez sélectionner un mode de paiement');
+      return;
+    }
+    
     setPaying(true);
     try {
-      await api.post(`/factures/${id}/pay`, null, {
+      const response = await api.post(`/factures/${id}/pay`, null, {
         params: {
           montant: paymentData.montant,
           mode_paiement: paymentData.mode_paiement,
+          reference: paymentData.reference || null,
+          notes: paymentData.notes || null
         }
       });
-      toast.success('Paiement enregistré');
+      
+      if (response.data.is_fully_paid) {
+        toast.success('Facture entièrement payée !');
+      } else {
+        toast.success(`Paiement enregistré - Reste à payer: ${formatAmount(response.data.reste_a_payer)}`);
+      }
       setShowPayment(false);
+      setPaymentData({ montant: 0, mode_paiement: '', reference: '', notes: '' });
       fetchFacture();
     } catch (error) {
       console.error('Error recording payment:', error);
-      toast.error('Erreur lors de l\'enregistrement du paiement');
+      toast.error(error.response?.data?.detail || 'Erreur lors de l\'enregistrement du paiement');
     } finally {
       setPaying(false);
     }
@@ -455,10 +473,28 @@ export const FactureDetail = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Enregistrer un paiement</DialogTitle>
+            <DialogDescription>
+              {facture.montant_paye > 0 
+                ? `Cette facture a déjà été partiellement payée (${formatAmount(facture.montant_paye)})`
+                : 'Enregistrez un paiement partiel ou total'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Remaining amount highlight */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <div className="flex justify-between items-center">
+                <span className="text-amber-800 font-medium">Reste à payer</span>
+                <span className="text-lg font-bold text-amber-900">{formatAmount(resteDu)}</span>
+              </div>
+              {facture.montant_paye > 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Déjà payé: {formatAmount(facture.montant_paye)} sur {formatAmount(facture.total_ttc || facture.montant_ttc)}
+                </p>
+              )}
+            </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="montant">Montant</Label>
+              <Label htmlFor="montant">Montant du paiement *</Label>
               <Input
                 id="montant"
                 type="number"
@@ -469,10 +505,20 @@ export const FactureDetail = () => {
                 step="0.01"
                 data-testid="payment-amount"
               />
-              <p className="text-xs text-slate-500">Reste dû: {formatAmount(resteDu)}</p>
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setPaymentData(prev => ({ ...prev, montant: resteDu }))}
+                >
+                  Tout payer ({formatAmount(resteDu)})
+                </Button>
+              </div>
             </div>
+            
             <div className="space-y-2">
-              <Label>Mode de paiement</Label>
+              <Label>Mode de paiement *</Label>
               <Select
                 value={paymentData.mode_paiement}
                 onValueChange={(value) => setPaymentData(prev => ({ ...prev, mode_paiement: value }))}
@@ -481,18 +527,45 @@ export const FactureDetail = () => {
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="especes">Espèces</SelectItem>
                   <SelectItem value="carte">Carte bancaire</SelectItem>
                   <SelectItem value="virement">Virement</SelectItem>
                   <SelectItem value="cheque">Chèque</SelectItem>
-                  <SelectItem value="especes">Espèces</SelectItem>
+                  <SelectItem value="en_ligne">Paiement en ligne</SelectItem>
+                  <SelectItem value="autre">Autre</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="reference">Référence (optionnel)</Label>
+              <Input
+                id="reference"
+                placeholder="N° de transaction, chèque..."
+                value={paymentData.reference || ''}
+                onChange={(e) => setPaymentData(prev => ({ ...prev, reference: e.target.value }))}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (optionnel)</Label>
+              <Input
+                id="notes"
+                placeholder="Notes sur ce paiement..."
+                value={paymentData.notes || ''}
+                onChange={(e) => setPaymentData(prev => ({ ...prev, notes: e.target.value }))}
+              />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPayment(false)}>Annuler</Button>
-            <Button onClick={handlePay} disabled={paying} data-testid="confirm-payment">
-              {paying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmer'}
+            <Button 
+              onClick={handlePay} 
+              disabled={paying || !paymentData.montant || !paymentData.mode_paiement} 
+              className="bg-emerald-600 hover:bg-emerald-700"
+              data-testid="confirm-payment"
+            >
+              {paying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmer le paiement'}
             </Button>
           </DialogFooter>
         </DialogContent>

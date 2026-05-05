@@ -365,7 +365,7 @@ class Facture(FactureBase):
     entreprise_id: str
     technicien_id: Optional[str] = None
     numero_facture: str = ""
-    statut: Literal["brouillon", "emise", "payee", "en_retard", "annulee"] = "brouillon"
+    statut: Literal["brouillon", "emise", "partiel", "payee", "en_retard", "annulee"] = "brouillon"
     total_ht: float = 0
     total_tva: float = 0
     total_ttc: float = 0
@@ -377,6 +377,26 @@ class Facture(FactureBase):
     pdf_url: Optional[str] = None
     created_at: datetime = Field(default_factory=now_utc)
     date_echeance: Optional[datetime] = None
+    # Payment tracking
+    last_reminder_sent: Optional[datetime] = None
+    reminder_count: int = 0
+    # External payment link (configurable by enterprise)
+    lien_paiement_externe: Optional[str] = None
+
+
+class InvoicePayment(BaseModel):
+    """Track individual payments for partial payment support"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_id)
+    facture_id: str
+    entreprise_id: str
+    montant: float
+    mode_paiement: str  # especes, carte, virement, cheque, en_ligne, autre
+    reference: Optional[str] = None  # Transaction ID, check number, etc.
+    notes: Optional[str] = None
+    recorded_by: str  # User ID who recorded this payment
+    recorded_at: datetime = Field(default_factory=now_utc)
+    source: Literal["manual", "stripe", "online", "portal"] = "manual"
 
 # ==================== AUDIT LOG ====================
 class AuditLog(BaseModel):

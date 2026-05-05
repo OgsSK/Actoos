@@ -103,6 +103,7 @@ export const statusLabels = {
   converti: 'Converti en facture',
   // Factures
   emise: 'Émise',
+  partiel: 'Paiement partiel',
   payee: 'Payée',
   en_retard: 'En retard',
 };
