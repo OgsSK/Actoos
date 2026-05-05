@@ -3,9 +3,9 @@ Stripe Subscription Service for ACTOOS PRO
 Handles subscription plans, checkout sessions, and webhooks
 
 TARIFS OFFICIELS ACTOOS PRO (Mise à jour 2026)
-- Startup: 49€/mois ou 470,40€/an (-20%)
-- Pro: 79€/mois ou 758,40€/an (-20%)
-- Entreprise: 149€/mois ou 1430,40€/an (-20%)
+- Startup: 19,99€/mois ou 191,90€/an (-20%)
+- Pro: 49,99€/mois ou 479,90€/an (-20%)
+- Entreprise: 89,99€/mois ou 863,90€/an (-20%)
 
 LIMITES PAR PLAN:
 - Startup: 1 admin, 3 techniciens (+5€/tech sup.), 1 catégorie
@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 SUBSCRIPTION_PLANS = {
     "startup": {
         "name": "Startup",
-        "price": 49.00,  # Mensuel HT
-        "price_annual": 470.40,  # Annuel HT (-20%)
+        "price": 19.99,  # Mensuel HT
+        "price_annual": 191.90,  # Annuel HT (-20%)
         "price_per_extra_tech": 5.00,
         "currency": "eur",
         "description": "Pour artisans et auto-entrepreneurs",
@@ -77,8 +77,8 @@ SUBSCRIPTION_PLANS = {
     },
     "pro": {
         "name": "Pro",
-        "price": 79.00,  # Mensuel HT
-        "price_annual": 758.40,  # Annuel HT (-20%)
+        "price": 49.99,  # Mensuel HT
+        "price_annual": 479.90,  # Annuel HT (-20%)
         "price_per_extra_tech": 5.00,
         "currency": "eur",
         "description": "Pour PME en croissance",
@@ -126,8 +126,8 @@ SUBSCRIPTION_PLANS = {
     },
     "enterprise": {
         "name": "Entreprise",
-        "price": 149.00,  # Mensuel HT
-        "price_annual": 1430.40,  # Annuel HT (-20%)
+        "price": 89.99,  # Mensuel HT
+        "price_annual": 863.90,  # Annuel HT (-20%)
         "price_per_extra_tech": 0,  # Techniciens illimités inclus
         "currency": "eur",
         "description": "Pour entreprises structurées",

@@ -275,9 +275,9 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 
 ### 2026-05-05 - Cohérence Globale Plans & Tarifs (P0 CRITIQUE)
 - **Mise à jour tarifs officiels** :
-  - Startup: 49€/mois (470,40€/an -20%)
-  - Pro: 79€/mois (758,40€/an -20%)
-  - Entreprise: 149€/mois (1430,40€/an -20%)
+  - Startup: 19,99€/mois (191,90€/an -20%)
+  - Pro: 49,99€/mois (479,90€/an -20%)
+  - Entreprise: 89,99€/mois (863,90€/an -20%)
 - **Correction limites plans** :
   - Startup: 1 admin, 3 techs (+5€/tech), 1 catégorie
   - Pro: 3 admins, 10 techs (+5€/tech), **4 catégories** (corrigé de 3)

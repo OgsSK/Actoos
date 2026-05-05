@@ -314,7 +314,7 @@ const SuperAdminDashboard = () => {
       enterprise: 'bg-purple-900/50 text-purple-300 border border-purple-700'
     };
     const labels = { startup: 'Startup', pro: 'Pro', enterprise: 'Entreprise' };
-    const prices = { startup: '49€', pro: '79€', enterprise: '149€' };
+    const prices = { startup: '19,99€', pro: '49,99€', enterprise: '89,99€' };
     return (
       <Badge className={styles[plan] || styles.startup}>
         {labels[plan] || plan} ({prices[plan] || '?'})
@@ -1162,7 +1162,7 @@ const SuperAdminDashboard = () => {
               >
                 <span>{getPlanBadge(plan)}</span>
                 <span className="text-slate-400">
-                  {plan === 'startup' ? '49€/mois' : plan === 'pro' ? '79€/mois' : '149€/mois'}
+                  {plan === 'startup' ? '19,99€/mois' : plan === 'pro' ? '49,99€/mois' : '89,99€/mois'}
                 </span>
               </Button>
             ))}

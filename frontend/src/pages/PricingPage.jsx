@@ -111,9 +111,9 @@ const PricingPage = () => {
       id: 'startup',
       name: 'Startup',
       description: 'Pour artisans et auto-entrepreneurs',
-      price: 49,
-      priceYearly: 39.20,  // 470.40€/an = 39.20€/mois (-20%)
-      annualTotal: 470.40,
+      price: 19.99,
+      priceYearly: 15.99,  // 191.90€/an = 15.99€/mois (-20%)
+      annualTotal: 191.90,
       icon: Building,
       color: 'slate',
       popular: false,
@@ -130,9 +130,9 @@ const PricingPage = () => {
       id: 'pro',
       name: 'Pro',
       description: 'Pour PME en croissance',
-      price: 79,
-      priceYearly: 63.20,  // 758.40€/an = 63.20€/mois (-20%)
-      annualTotal: 758.40,
+      price: 49.99,
+      priceYearly: 39.99,  // 479.90€/an = 39.99€/mois (-20%)
+      annualTotal: 479.90,
       icon: Zap,
       color: 'emerald',
       popular: true,
@@ -149,9 +149,9 @@ const PricingPage = () => {
       id: 'enterprise',
       name: 'Entreprise',
       description: 'Pour entreprises structurées',
-      price: 149,
-      priceYearly: 119.20,  // 1430.40€/an = 119.20€/mois (-20%)
-      annualTotal: 1430.40,
+      price: 89.99,
+      priceYearly: 71.99,  // 863.90€/an = 71.99€/mois (-20%)
+      annualTotal: 863.90,
       icon: Crown,
       color: 'purple',
       popular: false,

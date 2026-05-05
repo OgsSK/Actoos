@@ -134,9 +134,9 @@ const TermsPage = () => {
               <p>Actoos propose trois formules d'abonnement :</p>
               <div className="grid md:grid-cols-3 gap-4 mt-4">
                 {[
-                  { name: "Startup", price: "49€/mois", features: ["1 admin", "3 techniciens", "1 catégorie"] },
-                  { name: "Pro", price: "79€/mois", features: ["3 admins", "10 techniciens", "4 catégories"] },
-                  { name: "Entreprise", price: "149€/mois", features: ["Admins illimités", "Techs illimités", "Toutes fonctionnalités"] }
+                  { name: "Startup", price: "19,99€/mois", features: ["1 admin", "3 techniciens", "1 catégorie"] },
+                  { name: "Pro", price: "49,99€/mois", features: ["3 admins", "10 techniciens", "4 catégories"] },
+                  { name: "Entreprise", price: "89,99€/mois", features: ["Admins illimités", "Techs illimités", "Toutes fonctionnalités"] }
                 ].map((plan, i) => (
                   <div key={i} className="p-4 border border-slate-200 dark:border-slate-600 rounded-lg">
                     <h3 className="font-bold text-slate-900 dark:text-white">{plan.name}</h3>

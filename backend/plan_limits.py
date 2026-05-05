@@ -1,9 +1,9 @@
 """
 Plan Limits Service - Validates subscription limits before operations
 Based on Official ACTOOS PRO Plans:
-- Startup: 49€/mois - 1 admin, 3 techs, 1 catégorie
-- Pro: 79€/mois - 3 admins, 10 techs, 4 catégories  
-- Entreprise: 149€/mois - Illimité tout
+- Startup: 19,99€/mois - 1 admin, 3 techs, 1 catégorie
+- Pro: 49,99€/mois - 3 admins, 10 techs, 4 catégories  
+- Entreprise: 89,99€/mois - Illimité tout
 """
 from fastapi import HTTPException
 from datetime import datetime, timezone
