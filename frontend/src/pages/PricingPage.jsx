@@ -105,19 +105,19 @@ const PricingPage = () => {
     setShowQuiz(false);
   };
 
-  // Définition des plans ACTOOS PRO (Tarifs 2026)
+  // Définition des plans ACTOOS PRO (Tarifs officiels 2026)
   const plans = [
     {
       id: 'startup',
       name: 'Startup',
       description: 'Pour artisans et auto-entrepreneurs',
-      price: 9.99,
-      priceYearly: 7.99,  // 95.90€/an = 7.99€/mois
-      annualTotal: 95.90,
+      price: 49,
+      priceYearly: 39.20,  // 470.40€/an = 39.20€/mois (-20%)
+      annualTotal: 470.40,
       icon: Building,
       color: 'slate',
       popular: false,
-      cta: 'Essai gratuit 14j',
+      cta: 'Démarrer →',
       limits: {
         admins: '1',
         technicians: '3',
@@ -130,13 +130,13 @@ const PricingPage = () => {
       id: 'pro',
       name: 'Pro',
       description: 'Pour PME en croissance',
-      price: 19.99,
-      priceYearly: 15.99,  // 191.90€/an = 15.99€/mois
-      annualTotal: 191.90,
+      price: 79,
+      priceYearly: 63.20,  // 758.40€/an = 63.20€/mois (-20%)
+      annualTotal: 758.40,
       icon: Zap,
       color: 'emerald',
       popular: true,
-      cta: 'Essai gratuit 14j',
+      cta: 'Essayer gratuitement →',
       limits: {
         admins: '3',
         technicians: '10',
@@ -149,13 +149,13 @@ const PricingPage = () => {
       id: 'enterprise',
       name: 'Entreprise',
       description: 'Pour entreprises structurées',
-      price: 39.99,
-      priceYearly: 31.99,  // 383.90€/an = 31.99€/mois
-      annualTotal: 383.90,
+      price: 149,
+      priceYearly: 119.20,  // 1430.40€/an = 119.20€/mois (-20%)
+      annualTotal: 1430.40,
       icon: Crown,
       color: 'purple',
       popular: false,
-      cta: 'Essai gratuit 14j',
+      cta: 'S\'abonner →',
       limits: {
         admins: 'Illimité',
         technicians: 'Illimité',

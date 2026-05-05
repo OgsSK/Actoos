@@ -3,9 +3,14 @@ Stripe Subscription Service for ACTOOS PRO
 Handles subscription plans, checkout sessions, and webhooks
 
 TARIFS OFFICIELS ACTOOS PRO (Mise à jour 2026)
-- Startup: 9,99€/mois ou 95,90€/an (-20%)
-- Pro: 19,99€/mois ou 191,90€/an (-20%)
-- Entreprise: 39,99€/mois ou 383,90€/an (-20%)
+- Startup: 49€/mois ou 470,40€/an (-20%)
+- Pro: 79€/mois ou 758,40€/an (-20%)
+- Entreprise: 149€/mois ou 1430,40€/an (-20%)
+
+LIMITES PAR PLAN:
+- Startup: 1 admin, 3 techniciens (+5€/tech sup.), 1 catégorie
+- Pro: 3 admins, 10 techniciens (+5€/tech sup.), 4 catégories
+- Entreprise: Illimité admins, Illimité techniciens (inclus), Toutes catégories
 """
 import logging
 import os
@@ -29,28 +34,31 @@ logger = logging.getLogger(__name__)
 SUBSCRIPTION_PLANS = {
     "startup": {
         "name": "Startup",
-        "price": 9.99,  # Mensuel HT
-        "price_annual": 95.90,  # Annuel HT (-20%)
+        "price": 49.00,  # Mensuel HT
+        "price_annual": 470.40,  # Annuel HT (-20%)
         "price_per_extra_tech": 5.00,
         "currency": "eur",
-        "description": "Pour indépendants et petites structures",
+        "description": "Pour artisans et auto-entrepreneurs",
         "target_audience": "Artisans, auto-entrepreneurs, petites équipes",
         "features": [
             "1 administrateur",
             "3 techniciens inclus (+5€/tech supplémentaire)",
             "1 catégorie métier",
-            "Gestion clients, devis, factures",
+            "Interventions illimitées",
+            "Gestion clients",
+            "Devis & Factures",
             "Planning interventions",
             "Signature électronique",
-            "App terrain PWA",
-            "Logo entreprise sur documents",
-            "Paiement en ligne basique"
+            "App technicien PWA mobile",
+            "Photos interventions (limité)",
+            "Checklists dynamiques",
+            "Statistiques basiques"
         ],
         # Limits
         "max_admins": 1,
         "max_technicians": 3,
         "max_categories": 1,
-        "max_interventions_month": -1,
+        "max_interventions_month": -1,  # Illimité
         # Features
         "multi_sites": False,
         "offline_mode": False,
@@ -63,39 +71,41 @@ SUBSCRIPTION_PLANS = {
         "smart_planning": False,
         "auto_devis_to_facture": False,
         "team_validation": False,
+        "photos_interventions": "limited",  # Limité
+        "notifications_push": True,
         "sms_included": 0
     },
     "pro": {
         "name": "Pro",
-        "price": 19.99,  # Mensuel HT
-        "price_annual": 191.90,  # Annuel HT (-20%)
+        "price": 79.00,  # Mensuel HT
+        "price_annual": 758.40,  # Annuel HT (-20%)
         "price_per_extra_tech": 5.00,
         "currency": "eur",
-        "description": "Pour PME et équipes en croissance",
+        "description": "Pour PME en croissance",
         "target_audience": "PME, équipes structurées",
         "recommended": True,
         "features": [
             "3 administrateurs",
             "10 techniciens inclus (+5€/tech supplémentaire)",
             "Jusqu'à 4 catégories métier",
+            "Interventions illimitées",
             "Tout Startup +",
+            "Photos interventions illimitées",
+            "Mode hors ligne",
+            "Géolocalisation",
             "Automatisation devis → facture",
-            "Planning intelligent",
-            "Statistiques activité",
-            "Gestion équipes",
-            "Historique complet clients",
-            "Notifications automatiques",
-            "App terrain: photos illimitées, géolocalisation, mode hors ligne",
-            "Rapports d'intervention PDF automatiques",
+            "Rapports PDF automatiques",
+            "Notifications push",
             "Validation chef d'équipe",
-            "Branding avancé",
-            "Analytics avancés"
+            "Workflows personnalisés",
+            "Analytics avancés",
+            "50 SMS/mois inclus"
         ],
         # Limits
         "max_admins": 3,
         "max_technicians": 10,
         "max_categories": 4,
-        "max_interventions_month": -1,
+        "max_interventions_month": -1,  # Illimité
         # Features
         "multi_sites": False,
         "offline_mode": True,
@@ -108,43 +118,41 @@ SUBSCRIPTION_PLANS = {
         "smart_planning": True,
         "auto_devis_to_facture": True,
         "team_validation": True,
-        "sms_included": 100
+        "photos_interventions": "unlimited",
+        "notifications_push": True,
+        "workflows_personnalises": False,  # Pas de workflows personnalisés en Pro
+        "gps_avance": False,  # Pas de GPS avancé temps réel en Pro
+        "sms_included": 50
     },
     "enterprise": {
         "name": "Entreprise",
-        "price": 39.99,  # Mensuel HT
-        "price_annual": 383.90,  # Annuel HT (-20%)
+        "price": 149.00,  # Mensuel HT
+        "price_annual": 1430.40,  # Annuel HT (-20%)
         "price_per_extra_tech": 0,  # Techniciens illimités inclus
         "currency": "eur",
-        "description": "Pour organisations avancées et besoins complexes",
+        "description": "Pour entreprises structurées",
         "target_audience": "Entreprises structurées, multi-équipes",
         "features": [
             "Administrateurs illimités",
-            "Techniciens illimités",
+            "Techniciens illimités (inclus)",
             "Toutes les catégories métier",
-            "Multi-sites",
-            "Multi-équipes",
-            "Permissions avancées / rôles personnalisés",
-            "Reporting avancé, KPI personnalisés",
+            "Interventions illimitées",
+            "Tout Pro +",
+            "Multi-sites par client",
+            "GPS avancé temps réel",
+            "Workflows personnalisés",
             "Export comptable",
-            "Accès API",
-            "Automatisations complètes",
-            "Workflow personnalisable",
-            "Formulaires dynamiques",
-            "Validation multi-niveau",
-            "Suivi GPS avancé",
-            "Branding Premium",
-            "PDF totalement personnalisables",
-            "Portail client personnalisé",
-            "Paiements récurrents",
-            "Intégrations comptables",
+            "Accès API intégrations",
+            "White-labeling (logo, couleurs)",
+            "Catégories illimitées",
+            "500 SMS/mois inclus",
             "Support prioritaire"
         ],
         # Limits
-        "max_admins": -1,
-        "max_technicians": -1,
-        "max_categories": -1,
-        "max_interventions_month": -1,
+        "max_admins": -1,  # Illimité
+        "max_technicians": -1,  # Illimité
+        "max_categories": -1,  # Illimité
+        "max_interventions_month": -1,  # Illimité
         # Features
         "multi_sites": True,
         "offline_mode": True,
@@ -160,11 +168,14 @@ SUBSCRIPTION_PLANS = {
         "multi_teams": True,
         "custom_workflows": True,
         "dynamic_forms": True,
-        "advanced_gps": True,
+        "gps_avance": True,  # GPS avancé temps réel
+        "workflows_personnalises": True,
         "client_portal_custom": True,
         "recurring_payments": True,
         "accounting_export": True,
-        "sms_included": -1
+        "photos_interventions": "unlimited",
+        "notifications_push": True,
+        "sms_included": 500
     }
 }
 

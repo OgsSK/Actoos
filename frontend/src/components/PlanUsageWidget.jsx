@@ -34,7 +34,7 @@ const PLAN_FEATURES = {
   },
   enterprise: {
     name: 'Entreprise',
-    price: 129,
+    price: 149,
     color: 'from-purple-500 to-purple-600',
     icon: Crown
   }
@@ -170,7 +170,7 @@ const PlanCard = ({ plan, isCurrentPlan, onSelect }) => {
             }`}
             onClick={() => onSelect(plan.id)}
           >
-            {plan.id === 'enterprise' ? 'Contacter' : 'Choisir ce plan'}
+            Choisir ce plan
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         )}
