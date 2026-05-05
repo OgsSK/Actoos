@@ -169,6 +169,23 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - Évite le conflit de route qui causait "Utilisateur non trouvé"
 - **Tests validés** : 90% backend (validation mineure corrigée), 100% frontend (iteration_46)
 
+### 2026-05-05 - Vitrine Next.js SSG (actoos.com)
+- **Projet Next.js 14** créé dans `/app/vitrine/`
+  - TypeScript + Tailwind CSS
+  - 100% Statique (output: 'export')
+  - Build size: ~92 KB First Load JS
+- **Page principale** (`app/page.tsx`) :
+  - Design "Slate & Gold" premium
+  - Sections: Hero, Software Suite, Philosophy, Contact, Footer
+  - Mobile-first responsive
+  - SEO metadata complet (OpenGraph, Twitter)
+- **Assets** :
+  - logo-icon.png (favicon)
+  - logo-actoos.png
+  - logo-actoos-slogan.png
+- **Build réussi** : `/app/vitrine/out/` prêt pour déploiement
+- **README** avec instructions Vercel/Netlify/Cloudflare
+
 ### 2026-05-05 - Configuration pro.actoos.com
 - **Configuration centralisée** (`/app/frontend/src/config/app.config.js`) :
   - Domaines : actoos.com (vitrine), pro.actoos.com (PRO), one.actoos.com (ONE)

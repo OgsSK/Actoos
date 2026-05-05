@@ -276,3 +276,4 @@ credentials.json
 *.key
 .credentials
 frontend/node_modules/.cache/default-development/33.pack
+vitrine/node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
