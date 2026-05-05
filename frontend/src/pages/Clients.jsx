@@ -17,11 +17,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
 import { formatDate, formatCurrency, getStatusLabel } from '../lib/utils';
+import { Alert, AlertDescription } from '../components/ui/alert';
 import { Separator } from '../components/ui/separator';
 import {
   Plus, Search, Phone, Mail, MapPin, User, Building2, ChevronLeft, 
   Edit, Trash2, FileText, Receipt, Calendar, Loader2, ExternalLink, Copy, Check,
-  MapPinned, Clock, Info, X, Crown
+  MapPinned, Clock, Info, X, Crown, AlertTriangle, Archive, ArchiveRestore
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,22 +31,37 @@ export const ClientsList = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedCount, setArchivedCount] = useState(0);
   const { api } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchClients();
-  }, []);
+    fetchArchivedCount();
+  }, [showArchived]);
 
   const fetchClients = async (searchQuery = '') => {
     try {
-      const params = searchQuery ? { search: searchQuery } : {};
+      const params = { 
+        ...(searchQuery ? { search: searchQuery } : {}),
+        ...(showArchived ? { archived_only: true } : {})
+      };
       const response = await api.get('/clients', { params });
       setClients(response.data);
     } catch (error) {
       console.error('Error fetching clients:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchArchivedCount = async () => {
+    try {
+      const response = await api.get('/clients/archived/count');
+      setArchivedCount(response.data.count || 0);
+    } catch (error) {
+      console.error('Error fetching archived count:', error);
     }
   };
 
@@ -67,24 +83,55 @@ export const ClientsList = () => {
         </Button>
       </div>
 
-      {/* Search */}
+      {/* Search and Filter */}
       <Card className="border-slate-200">
         <CardContent className="p-4">
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Rechercher par nom, email, téléphone..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-                data-testid="client-search"
-              />
-            </div>
-            <Button type="submit" variant="secondary">Rechercher</Button>
-          </form>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <form onSubmit={handleSearch} className="flex gap-2 flex-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Rechercher par nom, email, téléphone..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                  data-testid="client-search"
+                />
+              </div>
+              <Button type="submit" variant="secondary">Rechercher</Button>
+            </form>
+            
+            {/* Archive toggle */}
+            {archivedCount > 0 && (
+              <Button 
+                variant={showArchived ? "default" : "outline"}
+                onClick={() => setShowArchived(!showArchived)}
+                className={showArchived ? "bg-amber-600 hover:bg-amber-700" : ""}
+              >
+                <Archive className="w-4 h-4 mr-2" />
+                {showArchived ? `Archivés (${archivedCount})` : `Voir archivés (${archivedCount})`}
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
+
+      {/* Archive notice */}
+      {showArchived && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertTriangle className="w-4 h-4 text-amber-600" />
+          <AlertDescription className="text-amber-700">
+            Vous consultez les clients archivés. Ces clients n'apparaissent pas dans les autres sections de l'application.
+            <Button 
+              variant="link" 
+              className="p-0 h-auto ml-2 text-amber-700 underline"
+              onClick={() => setShowArchived(false)}
+            >
+              Revenir aux clients actifs
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Table */}
       <Card className="border-slate-200">
@@ -637,9 +684,33 @@ export const ClientDetail = () => {
   const handleDelete = async () => {
     try {
       await api.delete(`/clients/${id}`);
+      toast.success('Client archivé');
       navigate('/dashboard/clients');
     } catch (error) {
-      console.error('Error deleting client:', error);
+      console.error('Error archiving client:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de l\'archivage');
+    }
+  };
+
+  const handleRestore = async () => {
+    try {
+      await api.post(`/clients/${id}/restore`);
+      toast.success('Client restauré');
+      fetchClientData();
+    } catch (error) {
+      console.error('Error restoring client:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la restauration');
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    try {
+      const response = await api.delete(`/clients/${id}/permanent`);
+      toast.success('Client supprimé définitivement');
+      navigate('/dashboard/clients');
+    } catch (error) {
+      console.error('Error permanently deleting client:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
     }
   };
 
@@ -720,6 +791,16 @@ export const ClientDetail = () => {
 
   return (
     <div className="space-y-6" data-testid="client-detail">
+      {/* Archived Banner */}
+      {client.archived && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertTriangle className="w-4 h-4 text-amber-600" />
+          <AlertDescription className="text-amber-700">
+            Ce client est archivé. Il n'apparaît plus dans la liste principale.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -741,24 +822,75 @@ export const ClientDetail = () => {
             <Edit className="w-4 h-4 mr-2" />
             Modifier
           </Button>
-          {isAdmin && (
+          {isAdmin && !client.archived && (
             <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                <Button variant="outline" className="text-amber-600 hover:text-amber-700 hover:bg-amber-50">
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Supprimer ce client ?</DialogTitle>
+                  <DialogTitle>Archiver ce client ?</DialogTitle>
                 </DialogHeader>
-                <p className="text-slate-600">Cette action est irréversible.</p>
+                <p className="text-slate-600">
+                  Le client sera archivé et masqué de la liste principale. Vous pourrez le restaurer ou le supprimer définitivement ultérieurement.
+                </p>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Annuler</Button>
-                  <Button variant="destructive" onClick={handleDelete}>Supprimer</Button>
+                  <Button 
+                    className="bg-amber-600 hover:bg-amber-700"
+                    onClick={() => { handleDelete(); setShowDeleteDialog(false); }}
+                  >
+                    Archiver
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          )}
+          {isAdmin && client.archived && (
+            <>
+              <Button 
+                variant="outline" 
+                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                onClick={handleRestore}
+              >
+                Restaurer
+              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Supprimer définitivement
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className="text-red-600">Supprimer définitivement ?</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <p className="text-slate-600">
+                      Cette action est <strong>irréversible</strong>. Toutes les données associées seront supprimées :
+                    </p>
+                    <ul className="text-sm text-slate-500 list-disc pl-5 space-y-1">
+                      <li>Interventions et photos</li>
+                      <li>Devis et factures</li>
+                      <li>Sites et contacts</li>
+                      <li>Historique de communications</li>
+                    </ul>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline">Annuler</Button>
+                    <Button 
+                      variant="destructive"
+                      onClick={handlePermanentDelete}
+                    >
+                      Supprimer définitivement
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
           )}
         </div>
       </div>

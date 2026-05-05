@@ -53,6 +53,69 @@ async def update_entreprise(data: dict, current_user: dict = Depends(require_adm
     return serialize_doc(entreprise)
 
 
+@router.get("/entreprise/qr-validation")
+async def validate_qr_requirements(current_user: dict = Depends(get_current_user)):
+    """
+    Validate that all required company information is present for QR code generation.
+    Returns validation status and list of missing fields.
+    """
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    
+    if not entreprise:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    
+    # Required fields for QR code payment
+    required_fields = {
+        "nom": "Nom de l'entreprise",
+        "email": "Email de l'entreprise",
+        "telephone": "Téléphone",
+        "adresse": "Adresse",
+        "ville": "Ville",
+        "code_postal": "Code postal"
+    }
+    
+    # Recommended fields (not blocking but shown as warning)
+    recommended_fields = {
+        "iban": "IBAN (pour paiement par virement)",
+        "siret": "Numéro SIRET"
+    }
+    
+    missing_required = []
+    missing_recommended = []
+    
+    # Check required fields
+    for field, label in required_fields.items():
+        value = entreprise.get(field)
+        if not value or (isinstance(value, str) and not value.strip()):
+            missing_required.append({"field": field, "label": label})
+    
+    # Check recommended fields
+    for field, label in recommended_fields.items():
+        value = entreprise.get(field)
+        if not value or (isinstance(value, str) and not value.strip()):
+            missing_recommended.append({"field": field, "label": label})
+    
+    # Validation status
+    is_valid = len(missing_required) == 0
+    
+    return {
+        "is_valid": is_valid,
+        "missing_required": missing_required,
+        "missing_recommended": missing_recommended,
+        "message": "Toutes les informations requises sont présentes" if is_valid else "Certaines informations sont manquantes pour générer un QR code valide",
+        "can_generate_qr": is_valid,
+        "entreprise_data": {
+            "nom": entreprise.get("nom"),
+            "email": entreprise.get("email"),
+            "has_iban": bool(entreprise.get("iban")),
+            "has_siret": bool(entreprise.get("siret"))
+        }
+    }
+
+
 @router.post("/entreprise/logo")
 async def upload_logo(file: UploadFile = File(...), current_user: dict = Depends(require_admin)):
     """Upload entreprise logo"""

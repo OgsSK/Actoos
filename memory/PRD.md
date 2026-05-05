@@ -109,6 +109,8 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] **Cohérence Données Rapports vs Analytics**
 - [x] **Affichage Ajouter un Site (responsive + validation)**
 - [x] **Relevés de Compte (N° factures, recherche, partage)**
+- [x] **Archivage Client (soft delete, restore, permanent delete)**
+- [x] **QR Code Paiement (validation infos entreprise, EPC SEPA)**
 
 ### À faire après push GitHub
 - [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
@@ -126,6 +128,27 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-05-05 - Archivage Client + QR Code Paiement
+- **Système d'archivage client** :
+  - `DELETE /api/clients/{id}` - Archive le client (soft delete)
+  - `POST /api/clients/{id}/restore` - Restaure un client archivé
+  - `DELETE /api/clients/{id}/permanent` - Suppression définitive (requiert archivage préalable)
+  - `GET /api/clients?archived_only=true` - Liste les clients archivés
+  - `GET /api/clients/archived/count` - Nombre de clients archivés
+  - Champs ajoutés: `archived`, `archived_at`, `archived_by`, `restored_at`, `restored_by`
+  - Suppression définitive cascade : interventions, devis, factures, sites, photos, communications
+- **Frontend archivage** :
+  - Bouton "Voir archivés (X)" dans la liste clients
+  - Bannière d'alerte sur client archivé
+  - Boutons Restaurer / Supprimer définitivement
+  - Dialog de confirmation pour suppression permanente
+- **QR Code Paiement** :
+  - `GET /api/entreprise/qr-validation` - Valide les infos entreprise requises
+  - Champs requis: nom, email, telephone, adresse, ville, code_postal
+  - Champs recommandés: iban, siret
+  - Format EPC QR (European Payments Council) pour virements SEPA si IBAN présent
+  - Fallback sur URL portail ou infos texte si pas d'IBAN
 
 ### 2026-04-28 - Affichage Sites + Relevés de Compte
 - **Formulaire Ajouter un Site amélioré** :

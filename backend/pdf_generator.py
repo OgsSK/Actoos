@@ -291,21 +291,52 @@ def build_signature_section(signature_data: str, signer_name: str, signature_dat
     return elements
 
 def build_payment_qr_data(facture: dict, entreprise: dict, portal_url: str = None) -> str:
-    """Build payment data string for QR code"""
+    """
+    Build payment data string for QR code.
+    Uses EPC QR standard for SEPA payments if IBAN is available.
+    Otherwise falls back to portal URL or basic info.
+    """
+    iban = entreprise.get('iban', '').replace(' ', '').upper()
+    bic = entreprise.get('bic', '')  # Optional BIC/SWIFT code
+    
+    # If we have IBAN, generate EPC QR code (EU standard for SEPA payments)
+    if iban and len(iban) >= 15:
+        # EPC QR format: https://www.europeanpaymentscouncil.eu/what-we-do/epc-qr-code
+        amount = facture.get('total_ttc', 0)
+        reference = facture.get('numero_facture', '')
+        beneficiary = entreprise.get('nom', '')[:70]  # Max 70 chars
+        
+        # Build EPC QR string
+        epc_lines = [
+            "BCD",                              # Service Tag
+            "002",                              # Version
+            "1",                                # Character set (UTF-8)
+            "SCT",                              # SEPA Credit Transfer
+            bic if bic else "",                 # BIC (optional)
+            beneficiary,                        # Beneficiary name
+            iban,                               # IBAN
+            f"EUR{amount:.2f}",                 # Amount
+            "",                                 # Purpose code (optional)
+            reference,                          # Payment reference
+            f"Facture {reference}",             # Remittance info
+            ""                                  # Beneficiary to originator info
+        ]
+        
+        return "\n".join(epc_lines)
+    
     # If we have a portal URL, use that for easy payment
     if portal_url:
         return portal_url
     
-    # Otherwise, build a payment reference string
-    # Format: Company | Invoice Number | Amount | IBAN (if available)
+    # Fallback: Build a payment reference string
     parts = [
         f"Facture: {facture.get('numero_facture', '')}",
         f"Montant: {facture.get('total_ttc', 0):.2f} EUR",
         f"Entreprise: {entreprise.get('nom', '')}",
     ]
     
-    if entreprise.get('iban'):
-        parts.append(f"IBAN: {entreprise.get('iban')}")
+    if entreprise.get('email'):
+        parts.append(f"Contact: {entreprise.get('email')}")
     
     return "\n".join(parts)
 

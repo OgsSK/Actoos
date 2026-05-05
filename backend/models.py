@@ -133,6 +133,12 @@ class ClientResponse(ClientBase):
     entreprise_id: str
     portal_token: Optional[str] = None
     created_at: str
+    # Archive fields
+    archived: Optional[bool] = False
+    archived_at: Optional[str] = None
+    archived_by: Optional[str] = None
+    restored_at: Optional[str] = None
+    restored_by: Optional[str] = None
 
 # ==================== SITE (Multi-site support) ====================
 class SiteBase(BaseModel):
