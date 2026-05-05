@@ -2119,12 +2119,22 @@ export const TechnicianApp = () => {
           params.geo_longitude = geoData.longitude;
           params.geo_accuracy = geoData.accuracy;
         }
-        await api.post(`/interventions/${id}/complete-with-signature`, {
+        const response = await api.post(`/interventions/${id}/complete-with-signature`, {
           signature: signatureData.signature,
           nom_signataire: signatureData.nom_signataire,
+          type_signataire: signatureData.type_signataire || 'client',
+          relation_signataire: signatureData.relation_signataire,
+          email_signataire: signatureData.email_signataire,
+          telephone_signataire: signatureData.telephone_signataire,
           notes: notes
         }, { params });
-        toast.success('Intervention terminée et signée');
+        
+        // Check if validation is required (Startup plan)
+        if (response.data?.requires_validation) {
+          toast.success('Intervention signée - en attente de validation par l\'admin');
+        } else {
+          toast.success('Intervention terminée et signée');
+        }
       } else {
         // Complete without signature (backwards compatibility)
         await api.post(`/interventions/${id}/complete`, null, {
@@ -2138,7 +2148,7 @@ export const TechnicianApp = () => {
       setSelectedIntervention(null);
     } catch (error) {
       console.error('Error completing intervention:', error);
-      toast.error('Erreur lors de la clôture');
+      toast.error(error.response?.data?.detail || 'Erreur lors de la clôture');
     }
   };
 
@@ -3139,7 +3149,10 @@ export const TechnicianApp = () => {
         onClose={() => setShowSignaturePad(false)}
         onSave={handleSignatureSubmit}
         title="Signature de fin d'intervention"
-        description="Le client doit signer pour valider la fin de l'intervention"
+        description="Le client ou une personne présente doit signer pour valider la fin de l'intervention"
+        clientName={selectedIntervention?.client ? `${selectedIntervention.client.prenom || ''} ${selectedIntervention.client.nom || ''}`.trim() : ''}
+        clientEmail={selectedIntervention?.client?.email || ''}
+        clientPhone={selectedIntervention?.client?.telephone || ''}
       />
 
       {/* Offline Devis Modal - for Pro & Enterprise plans */}

@@ -1,7 +1,7 @@
 """
 Intervention routes - CRUD and workflow operations
 """
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Body, Query
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Body, Query, Request
 from typing import List, Optional
 from datetime import datetime, timezone, date as date_type, timedelta
 import uuid
@@ -504,6 +504,31 @@ async def apply_optimized_order(
     }
 
 
+@router.get("/pending-validation")
+async def get_interventions_pending_validation(
+    current_user: dict = Depends(require_admin)
+):
+    """Get all interventions pending validation (Admin only)"""
+    interventions = await db.interventions.find(
+        {
+            "entreprise_id": current_user["entreprise_id"],
+            "statut": "en_validation"
+        },
+        {"_id": 0}
+    ).sort("heure_fin", -1).to_list(100)
+    
+    # Enrich with client and technician info
+    for intervention in interventions:
+        client = await db.clients.find_one({"id": intervention["client_id"]}, {"_id": 0, "nom": 1, "prenom": 1})
+        intervention["client_nom"] = f"{client.get('nom', '')} {client.get('prenom', '')}" if client else ""
+        
+        if intervention.get("technicien_id"):
+            tech = await db.users.find_one({"id": intervention["technicien_id"]}, {"_id": 0, "prenom": 1, "nom": 1})
+            intervention["technicien_nom"] = f"{tech.get('prenom', '')} {tech.get('nom', '')}" if tech else ""
+    
+    return [serialize_doc(i) for i in interventions]
+
+
 @router.get("/{intervention_id}")
 async def get_intervention(intervention_id: str, current_user: dict = Depends(get_current_user)):
     """Get a specific intervention"""
@@ -886,14 +911,25 @@ async def update_intervention_checklist(
 async def complete_intervention_with_signature(
     intervention_id: str,
     data: InterventionSignature,
+    request: Request,
     geo_latitude: Optional[float] = Query(None),
     geo_longitude: Optional[float] = Query(None),
     geo_accuracy: Optional[float] = Query(None),
     current_user: dict = Depends(get_current_user)
 ):
-    """Complete an intervention with client signature and optional geolocation (via query params)"""
-    from plan_limits import check_feature
+    """
+    Complete an intervention with client signature and optional geolocation.
     
+    Workflow by plan:
+    - Startup: signature → statut "en_validation" → admin validates → "terminee"
+    - Pro/Enterprise: signature → statut "terminee" directly (auto-validation)
+    
+    Enhanced signature data includes:
+    - type_signataire: "client" or "tiers"
+    - relation_signataire: if tiers, the relationship (conjoint, collègue, etc.)
+    - email/telephone_signataire: optional contact info
+    - Device info, IP, user-agent captured automatically
+    """
     now = datetime.now(timezone.utc).isoformat()
     
     # Find the intervention
@@ -911,15 +947,53 @@ async def complete_intervention_with_signature(
     if intervention["statut"] != "en_cours":
         raise HTTPException(status_code=400, detail="Cette intervention doit être en cours pour être terminée")
     
-    # Check if team_validation feature is enabled (Pro+)
-    requires_validation = await check_feature(db, current_user["entreprise_id"], "team_validation")
+    # Get entreprise plan to determine workflow
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0, "plan": 1, "plan_limits": 1}
+    )
+    plan = entreprise.get("plan", "startup") if entreprise else "startup"
     
-    # If team_validation is enabled and user is a tech, set status to "en_validation"
-    # Admins can complete directly
-    if requires_validation and current_user["role"] == "tech":
-        new_statut = "en_validation"
-    else:
+    # Determine status based on plan:
+    # - Startup: requires manual admin validation ("en_validation")
+    # - Pro/Enterprise: auto-validated ("terminee")
+    if plan in ["pro", "enterprise", "entreprise"]:
         new_statut = "terminee"
+        requires_validation = False
+    else:
+        # Startup plan - requires admin validation
+        new_statut = "en_validation"
+        requires_validation = True
+    
+    # Capture device/request info for signature audit trail
+    user_agent = request.headers.get("user-agent", "")
+    client_ip = request.client.host if request.client else None
+    
+    # Build signature data object with all tracking info
+    signature_data = {
+        "signature": data.signature,
+        "nom_signataire": data.nom_signataire,
+        "type_signataire": data.type_signataire,
+        "relation_signataire": data.relation_signataire if data.type_signataire == "tiers" else None,
+        "email_signataire": data.email_signataire,
+        "telephone_signataire": data.telephone_signataire,
+        "commentaire_signataire": data.commentaire_signataire,
+        "date_signature": now,
+        "device_info": {
+            "user_agent": user_agent,
+            "ip_address": client_ip,
+            "timestamp": now
+        }
+    }
+    
+    # Add geolocation if provided
+    if geo_latitude is not None and geo_longitude is not None:
+        signature_data["geolocation"] = {
+            "latitude": geo_latitude,
+            "longitude": geo_longitude,
+            "accuracy": geo_accuracy,
+            "timestamp": now
+        }
     
     # Build update
     update = {
@@ -927,7 +1001,12 @@ async def complete_intervention_with_signature(
         "heure_fin": now,
         "signature_client": data.signature,
         "nom_signataire": data.nom_signataire,
+        "type_signataire": data.type_signataire,
+        "relation_signataire": signature_data["relation_signataire"],
+        "email_signataire": data.email_signataire,
+        "telephone_signataire": data.telephone_signataire,
         "date_signature": now,
+        "signature_data": signature_data,  # Full audit trail
         "updated_at": now
     }
     
@@ -950,14 +1029,23 @@ async def complete_intervention_with_signature(
         "complete_with_signature",
         "intervention",
         intervention_id,
-        {"signataire": data.nom_signataire, "has_geo": geo_latitude is not None}
+        {
+            "signataire": data.nom_signataire, 
+            "type_signataire": data.type_signataire,
+            "has_geo": geo_latitude is not None,
+            "statut": new_statut,
+            "requires_validation": requires_validation
+        }
     )
     
     return {
-        "message": "Intervention terminée et signée",
+        "message": "Intervention terminée et signée" if new_statut == "terminee" else "Intervention signée - en attente de validation",
+        "statut": new_statut,
         "heure_fin": now,
         "signataire": data.nom_signataire,
-        "date_signature": now
+        "type_signataire": data.type_signataire,
+        "date_signature": now,
+        "requires_validation": requires_validation
     }
 
 
@@ -1005,6 +1093,144 @@ async def add_signature_to_intervention(
     }
 
 
+@router.post("/{intervention_id}/validate")
+async def validate_intervention(
+    intervention_id: str,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Validate an intervention (admin only) - moves from "en_validation" to "terminee".
+    This is used for Startup plan where manual validation is required after signature.
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    if intervention["statut"] != "en_validation":
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cette intervention n'est pas en attente de validation (statut actuel: {intervention['statut']})"
+        )
+    
+    # Check that intervention has a signature
+    if not intervention.get("signature_client"):
+        raise HTTPException(status_code=400, detail="Cette intervention n'a pas de signature client")
+    
+    # Update status to terminee
+    update = {
+        "statut": "terminee",
+        "date_validation": now,
+        "validated_by": current_user["user_id"],
+        "updated_at": now
+    }
+    
+    await db.interventions.update_one({"id": intervention_id}, {"$set": update})
+    
+    await log_action(
+        current_user["entreprise_id"],
+        current_user["user_id"],
+        "validate",
+        "intervention",
+        intervention_id,
+        {"previous_statut": "en_validation", "new_statut": "terminee"}
+    )
+    
+    # Broadcast update
+    updated = await db.interventions.find_one({"id": intervention_id}, {"_id": 0})
+    background_tasks.add_task(
+        notify_intervention_change,
+        current_user["entreprise_id"],
+        updated,
+        EventType.INTERVENTION_UPDATED,
+        intervention.get("technicien_id")
+    )
+    
+    return {
+        "message": "Intervention validée avec succès",
+        "statut": "terminee",
+        "date_validation": now,
+        "validated_by": current_user["user_id"]
+    }
+
+
+@router.post("/{intervention_id}/reject-validation")
+async def reject_validation(
+    intervention_id: str,
+    reason: str = Body(..., embed=True),
+    background_tasks: BackgroundTasks = None,
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Reject an intervention validation (admin only) - moves from "en_validation" back to "en_cours".
+    The technician will need to address the issue and re-submit with a new signature.
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    if intervention["statut"] != "en_validation":
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cette intervention n'est pas en attente de validation (statut actuel: {intervention['statut']})"
+        )
+    
+    # Update status back to en_cours and clear signature
+    update = {
+        "statut": "en_cours",
+        "rejection_reason": reason,
+        "rejected_at": now,
+        "rejected_by": current_user["user_id"],
+        # Clear the signature so tech needs to re-complete
+        "signature_client": None,
+        "nom_signataire": None,
+        "date_signature": None,
+        "type_signataire": None,
+        "relation_signataire": None,
+        "signature_data": None,
+        "heure_fin": None,
+        "updated_at": now
+    }
+    
+    await db.interventions.update_one({"id": intervention_id}, {"$set": update})
+    
+    await log_action(
+        current_user["entreprise_id"],
+        current_user["user_id"],
+        "reject_validation",
+        "intervention",
+        intervention_id,
+        {"reason": reason}
+    )
+    
+    # Broadcast update
+    if background_tasks:
+        updated = await db.interventions.find_one({"id": intervention_id}, {"_id": 0})
+        background_tasks.add_task(
+            notify_intervention_change,
+            current_user["entreprise_id"],
+            updated,
+            EventType.INTERVENTION_UPDATED,
+            intervention.get("technicien_id")
+        )
+    
+    return {
+        "message": "Validation rejetée - l'intervention est remise en cours",
+        "statut": "en_cours",
+        "reason": reason
+    }
+
+
 @router.post("/{intervention_id}/geolocation")
 async def update_intervention_geolocation(
     intervention_id: str,
@@ -1037,103 +1263,6 @@ async def update_intervention_geolocation(
     )
     
     return {"message": "Géolocalisation mise à jour", "type": geo_type, "geo": geo_data}
-
-
-@router.post("/{intervention_id}/validate")
-async def validate_intervention(
-    intervention_id: str,
-    approved: bool = True,
-    notes_validation: Optional[str] = None,
-    current_user: dict = Depends(require_admin)
-):
-    """
-    Validate a completed intervention (Admin/Team Leader only)
-    This is required when team_validation feature is enabled (Pro+ plans)
-    """
-    now = datetime.now(timezone.utc).isoformat()
-    
-    intervention = await db.interventions.find_one(
-        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
-        {"_id": 0}
-    )
-    if not intervention:
-        raise HTTPException(status_code=404, detail="Intervention non trouvée")
-    
-    if intervention["statut"] != "en_validation":
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Cette intervention n'est pas en attente de validation (statut: {intervention['statut']})"
-        )
-    
-    if approved:
-        # Approve: set to terminee
-        update = {
-            "statut": "terminee",
-            "validated_by": current_user["user_id"],
-            "validated_at": now,
-            "notes_validation": notes_validation,
-            "updated_at": now
-        }
-        action = "validate"
-        message = "Intervention validée et terminée"
-    else:
-        # Reject: send back to en_cours for fixes
-        update = {
-            "statut": "en_cours",
-            "rejected_by": current_user["user_id"],
-            "rejected_at": now,
-            "rejection_reason": notes_validation,
-            # Clear the signature so tech needs to re-complete
-            "heure_fin": None,
-            "updated_at": now
-        }
-        action = "reject"
-        message = "Intervention rejetée - renvoyée au technicien"
-    
-    await db.interventions.update_one({"id": intervention_id}, {"$set": update})
-    
-    await log_action(
-        current_user["entreprise_id"],
-        current_user["user_id"],
-        action,
-        "intervention",
-        intervention_id,
-        {"approved": approved, "notes": notes_validation}
-    )
-    
-    # TODO: Send notification to technician about validation result
-    
-    return {
-        "message": message,
-        "approved": approved,
-        "validated_by": current_user["user_id"],
-        "timestamp": now
-    }
-
-
-@router.get("/pending-validation")
-async def get_interventions_pending_validation(
-    current_user: dict = Depends(require_admin)
-):
-    """Get all interventions pending validation (Admin only)"""
-    interventions = await db.interventions.find(
-        {
-            "entreprise_id": current_user["entreprise_id"],
-            "statut": "en_validation"
-        },
-        {"_id": 0}
-    ).sort("heure_fin", -1).to_list(100)
-    
-    # Enrich with client and technician info
-    for intervention in interventions:
-        client = await db.clients.find_one({"id": intervention["client_id"]}, {"_id": 0, "nom": 1, "prenom": 1})
-        intervention["client_nom"] = f"{client.get('nom', '')} {client.get('prenom', '')}" if client else ""
-        
-        if intervention.get("technicien_id"):
-            tech = await db.users.find_one({"id": intervention["technicien_id"]}, {"_id": 0, "prenom": 1, "nom": 1})
-            intervention["technicien_nom"] = f"{tech.get('prenom', '')} {tech.get('nom', '')}" if tech else ""
-    
-    return [serialize_doc(i) for i in interventions]
 
 
 # ==================== OFFLINE SYNC WITH LWW ====================

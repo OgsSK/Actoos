@@ -77,6 +77,7 @@ export const InterventionsList = () => {
                 <SelectItem value="all">Tous les statuts</SelectItem>
                 <SelectItem value="planifiee">Planifiée</SelectItem>
                 <SelectItem value="en_cours">En cours</SelectItem>
+                <SelectItem value="en_validation">En validation</SelectItem>
                 <SelectItem value="terminee">Terminée</SelectItem>
                 <SelectItem value="annulee">Annulée</SelectItem>
               </SelectContent>
@@ -636,6 +637,7 @@ export const InterventionDetail = () => {
   const { api, isAdmin } = useAuth();
   const [intervention, setIntervention] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   useEffect(() => {
     fetchIntervention();
@@ -731,6 +733,35 @@ export const InterventionDetail = () => {
     }
   };
 
+  // Validate intervention (admin only - for Startup plan)
+  const handleValidateIntervention = async () => {
+    try {
+      await api.post(`/interventions/${id}/validate`);
+      toast.success('Intervention validée avec succès');
+      fetchIntervention();
+    } catch (error) {
+      console.error('Error validating intervention:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la validation');
+    }
+  };
+
+  // Reject validation (admin only - sends back to en_cours)
+  const handleRejectValidation = async () => {
+    if (!rejectionReason.trim()) {
+      toast.error('Veuillez indiquer un motif de rejet');
+      return;
+    }
+    try {
+      await api.post(`/interventions/${id}/reject-validation`, { reason: rejectionReason });
+      toast.success('Validation rejetée - intervention remise en cours');
+      setRejectionReason('');
+      fetchIntervention();
+    } catch (error) {
+      console.error('Error rejecting validation:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors du rejet');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -782,6 +813,54 @@ export const InterventionDetail = () => {
               <CheckCircle className="w-4 h-4 mr-2" />
               Terminer
             </Button>
+          )}
+          {intervention.statut === 'en_validation' && isAdmin && (
+            <>
+              <Button 
+                onClick={handleValidateIntervention}
+                className="bg-emerald-600 hover:bg-emerald-700"
+                data-testid="validate-intervention"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Valider
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="text-amber-600 hover:text-amber-700 border-amber-300">
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Rejeter
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Rejeter la validation ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      L'intervention sera remise "en cours" et le technicien devra obtenir une nouvelle signature.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <div className="py-4">
+                    <Label htmlFor="rejection-reason">Motif du rejet</Label>
+                    <Input
+                      id="rejection-reason"
+                      placeholder="Ex: Photos manquantes, travaux incomplets..."
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      className="mt-2"
+                    />
+                  </div>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setRejectionReason('')}>Annuler</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleRejectValidation} 
+                      className="bg-amber-600 hover:bg-amber-700"
+                      disabled={!rejectionReason.trim()}
+                    >
+                      Rejeter
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           )}
           {intervention.statut === 'terminee' && (
             <Button 

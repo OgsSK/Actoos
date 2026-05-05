@@ -268,6 +268,12 @@ class InterventionSignature(BaseModel):
     signature: str = Field(..., description="Base64 encoded signature image")
     nom_signataire: str = Field(..., description="Name of the person signing")
     notes: Optional[str] = None
+    # Enhanced signature data
+    type_signataire: Literal["client", "tiers"] = "client"
+    relation_signataire: Optional[str] = None  # conjoint, collègue, réceptionniste, autre
+    email_signataire: Optional[str] = None
+    telephone_signataire: Optional[str] = None
+    commentaire_signataire: Optional[str] = None  # Additional context about the signature
 
 class InterventionGeoLocation(BaseModel):
     """Model for geolocation data"""
@@ -281,7 +287,7 @@ class Intervention(InterventionBase):
     id: str = Field(default_factory=generate_id)
     entreprise_id: str
     technicien_id: Optional[str] = None
-    statut: Literal["planifiee", "en_cours", "terminee", "annulee"] = "planifiee"
+    statut: Literal["planifiee", "en_cours", "en_validation", "terminee", "annulee"] = "planifiee"
     notes_terrain: Optional[str] = None
     photos: List[str] = []
     heure_debut: Optional[datetime] = None
