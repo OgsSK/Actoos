@@ -607,9 +607,10 @@ const DaySection = ({ date, interventions, onInterventionClick, onClaim, current
 };
 
 // Quick Actions Component
-const QuickActions = ({ intervention, onCall, onNavigate, onStart, onComplete }) => {
+const QuickActions = ({ intervention, onCall, onNavigate, onStart, onComplete, onDownloadReport }) => {
   const canStart = intervention.statut === 'planifiee';
   const canComplete = intervention.statut === 'en_cours';
+  const isCompleted = intervention.statut === 'terminee';
   
   return (
     <div className="flex gap-2 flex-wrap">
@@ -626,25 +627,50 @@ const QuickActions = ({ intervention, onCall, onNavigate, onStart, onComplete })
         </Button>
       )}
       {canStart && (
-        <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={onStart}>
+        <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={onStart} data-testid="start-intervention-btn">
           <Play className="w-4 h-4 mr-1" />
           Démarrer
         </Button>
       )}
       {canComplete && (
-        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={onComplete}>
+        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={onComplete} data-testid="complete-intervention-btn">
           <CheckCircle className="w-4 h-4 mr-1" />
           Terminer
+        </Button>
+      )}
+      {isCompleted && onDownloadReport && (
+        <Button size="sm" variant="outline" onClick={onDownloadReport} data-testid="download-report-btn">
+          <Download className="w-4 h-4 mr-1" />
+          Rapport PDF
         </Button>
       )}
     </div>
   );
 };
 
-// Photo Upload Component
-const PhotoUpload = ({ interventionId, photos, onUpload, onDelete }) => {
+// Photo Upload Component with Tag Selection
+const PhotoUpload = ({ interventionId, photos, onUpload, onDelete, interventionStatus }) => {
   const [uploading, setUploading] = useState(false);
+  const [selectedTag, setSelectedTag] = useState('pendant');
+  const [showTagMenu, setShowTagMenu] = useState(false);
   const fileInputRef = React.useRef(null);
+
+  // Determine default tag based on intervention status
+  useEffect(() => {
+    if (interventionStatus === 'planifiee') {
+      setSelectedTag('avant');
+    } else if (interventionStatus === 'terminee') {
+      setSelectedTag('apres');
+    } else {
+      setSelectedTag('pendant');
+    }
+  }, [interventionStatus]);
+
+  const photoTags = [
+    { value: 'avant', label: 'Avant', color: 'bg-blue-500', description: 'État initial' },
+    { value: 'pendant', label: 'Pendant', color: 'bg-amber-500', description: 'En cours de travaux' },
+    { value: 'apres', label: 'Après', color: 'bg-emerald-500', description: 'Travaux terminés' }
+  ];
 
   const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files);
@@ -652,54 +678,235 @@ const PhotoUpload = ({ interventionId, photos, onUpload, onDelete }) => {
 
     setUploading(true);
     for (const file of files) {
-      await onUpload(file);
+      await onUpload(file, selectedTag);
     }
     setUploading(false);
     e.target.value = '';
+    setShowTagMenu(false);
   };
+
+  const handleAddClick = () => {
+    setShowTagMenu(true);
+  };
+
+  const handleTagSelectAndUpload = (tag) => {
+    setSelectedTag(tag);
+    fileInputRef.current?.click();
+  };
+
+  // Group photos by tag
+  const groupedPhotos = {
+    avant: photos?.filter(p => p.type_photo === 'avant') || [],
+    pendant: photos?.filter(p => p.type_photo === 'pendant') || [],
+    apres: photos?.filter(p => p.type_photo === 'apres') || [],
+    autre: photos?.filter(p => !['avant', 'pendant', 'apres'].includes(p.type_photo)) || []
+  };
+
+  const getTagStyle = (tag) => {
+    const styles = {
+      avant: 'bg-blue-500 text-white',
+      pendant: 'bg-amber-500 text-white',
+      apres: 'bg-emerald-500 text-white',
+      autre: 'bg-slate-500 text-white'
+    };
+    return styles[tag] || styles.autre;
+  };
+
+  const totalPhotos = photos?.length || 0;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label>Photos</Label>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4 mr-1" />}
-          Ajouter
-        </Button>
+        <div className="flex items-center gap-2">
+          <Label className="font-medium">Photos</Label>
+          {totalPhotos > 0 && (
+            <Badge variant="secondary" className="text-xs">{totalPhotos}</Badge>
+          )}
+        </div>
+        
+        {/* Tag Selection Dropdown */}
+        <DropdownMenu open={showTagMenu} onOpenChange={setShowTagMenu}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddClick}
+              disabled={uploading}
+              data-testid="add-photo-btn"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4 mr-1" />}
+              Ajouter
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <div className="px-2 py-1.5 text-xs font-medium text-slate-500">Type de photo</div>
+            {photoTags.map(tag => (
+              <DropdownMenuItem 
+                key={tag.value}
+                onClick={() => handleTagSelectAndUpload(tag.value)}
+                className="cursor-pointer"
+                data-testid={`photo-tag-${tag.value}`}
+              >
+                <div className={`w-3 h-3 rounded-full ${tag.color} mr-2`} />
+                <div>
+                  <div className="font-medium">{tag.label}</div>
+                  <div className="text-xs text-slate-400">{tag.description}</div>
+                </div>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          multiple
           capture="environment"
           onChange={handleFileSelect}
           className="hidden"
+          data-testid="photo-file-input"
         />
       </div>
 
-      {photos && photos.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2">
-          {photos.map((photo, idx) => (
-            <div key={photo.id || idx} className="relative aspect-square rounded-lg overflow-hidden bg-slate-100">
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageIcon className="w-8 h-8 text-slate-400" />
+      {totalPhotos > 0 ? (
+        <div className="space-y-4">
+          {/* Avant */}
+          {groupedPhotos.avant.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <span className="text-xs font-medium text-slate-600">Avant ({groupedPhotos.avant.length})</span>
               </div>
-              <Badge className="absolute bottom-1 left-1 text-xs bg-slate-900/70">
-                {photo.type_photo || 'Photo'}
-              </Badge>
+              <div className="grid grid-cols-3 gap-2">
+                {groupedPhotos.avant.map((photo, idx) => (
+                  <PhotoThumbnail 
+                    key={photo.id || idx} 
+                    photo={photo} 
+                    onDelete={onDelete}
+                    tagColor="bg-blue-500"
+                  />
+                ))}
+              </div>
             </div>
-          ))}
+          )}
+          
+          {/* Pendant */}
+          {groupedPhotos.pendant.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="text-xs font-medium text-slate-600">Pendant ({groupedPhotos.pendant.length})</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {groupedPhotos.pendant.map((photo, idx) => (
+                  <PhotoThumbnail 
+                    key={photo.id || idx} 
+                    photo={photo} 
+                    onDelete={onDelete}
+                    tagColor="bg-amber-500"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Après */}
+          {groupedPhotos.apres.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-xs font-medium text-slate-600">Après ({groupedPhotos.apres.length})</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {groupedPhotos.apres.map((photo, idx) => (
+                  <PhotoThumbnail 
+                    key={photo.id || idx} 
+                    photo={photo} 
+                    onDelete={onDelete}
+                    tagColor="bg-emerald-500"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Autres */}
+          {groupedPhotos.autre.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-slate-500" />
+                <span className="text-xs font-medium text-slate-600">Autres ({groupedPhotos.autre.length})</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {groupedPhotos.autre.map((photo, idx) => (
+                  <PhotoThumbnail 
+                    key={photo.id || idx} 
+                    photo={photo} 
+                    onDelete={onDelete}
+                    tagColor="bg-slate-500"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center py-6 text-slate-500 text-sm border-2 border-dashed border-slate-200 rounded-lg">
           <Camera className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-          Aucune photo
+          <p>Aucune photo</p>
+          <p className="text-xs text-slate-400 mt-1">Ajoutez des photos avant, pendant et après l'intervention</p>
         </div>
+      )}
+    </div>
+  );
+};
+
+// Photo Thumbnail Component
+const PhotoThumbnail = ({ photo, onDelete, tagColor }) => {
+  const [imageError, setImageError] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const { api } = useAuth();
+  
+  // Build photo URL - either use storage URL or API endpoint
+  const photoUrl = photo.url || (api?.defaults?.baseURL ? `${api.defaults.baseURL}/photos/${photo.id}` : null);
+  
+  return (
+    <div 
+      className="relative aspect-square rounded-lg overflow-hidden bg-slate-100 group"
+      onMouseEnter={() => setShowDelete(true)}
+      onMouseLeave={() => setShowDelete(false)}
+      data-testid={`photo-thumbnail-${photo.id}`}
+    >
+      {photoUrl && !imageError ? (
+        <img 
+          src={photoUrl}
+          alt={photo.description || 'Photo intervention'}
+          className="w-full h-full object-cover"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <ImageIcon className="w-8 h-8 text-slate-400" />
+        </div>
+      )}
+      
+      {/* Tag badge */}
+      <div className={`absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${tagColor} text-white shadow`}>
+        {photo.type_photo || 'Photo'}
+      </div>
+      
+      {/* Delete button on hover */}
+      {showDelete && onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(photo.id);
+          }}
+          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+          data-testid={`delete-photo-${photo.id}`}
+        >
+          <X className="w-3 h-3" />
+        </button>
       )}
     </div>
   );
@@ -1856,7 +2063,7 @@ export const TechnicianApp = () => {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${address}`, '_blank');
   };
 
-  const handlePhotoUpload = async (file) => {
+  const handlePhotoUpload = async (file, photoTag) => {
     if (!selectedIntervention) return;
     
     if (!isOnline) {
@@ -1866,19 +2073,80 @@ export const TechnicianApp = () => {
     
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('type_photo', 'autre');
+    formData.append('type_photo', photoTag || 'autre');
     
     try {
-      await api.post(`/interventions/${selectedIntervention.id}/photos`, formData, {
+      await api.post(`/photos/interventions/${selectedIntervention.id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       toast.success('Photo ajoutée');
       // Reload photos
-      const response = await api.get(`/interventions/${selectedIntervention.id}/photos`);
+      const response = await api.get(`/photos/interventions/${selectedIntervention.id}`);
       setPhotos(response.data);
     } catch (error) {
       console.error('Error uploading photo:', error);
-      toast.error('Erreur lors de l\'upload');
+      toast.error(error.response?.data?.detail || 'Erreur lors de l\'upload');
+    }
+  };
+
+  // Delete photo handler
+  const handlePhotoDelete = async (photoId) => {
+    if (!isOnline) {
+      toast.error('Suppression indisponible hors ligne');
+      return;
+    }
+    
+    try {
+      await api.delete(`/photos/${photoId}`);
+      toast.success('Photo supprimée');
+      // Reload photos
+      const response = await api.get(`/photos/interventions/${selectedIntervention.id}`);
+      setPhotos(response.data);
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+    }
+  };
+
+  // Download intervention report PDF
+  const handleDownloadReport = async (interventionId) => {
+    if (!isOnline) {
+      toast.error('Téléchargement indisponible hors ligne');
+      return;
+    }
+    
+    try {
+      toast.loading('Génération du rapport...', { id: 'report-loading' });
+      
+      const response = await api.get(`/interventions/${interventionId}/report/pdf`, {
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from header or generate default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `Rapport_Intervention_${interventionId.slice(0, 8)}.pdf`;
+      if (contentDisposition) {
+        const matches = contentDisposition.match(/filename="(.+)"/);
+        if (matches) filename = matches[1];
+      }
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.dismiss('report-loading');
+      toast.success('Rapport téléchargé');
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      toast.dismiss('report-loading');
+      toast.error(error.response?.data?.detail || 'Erreur lors du téléchargement');
     }
   };
 
@@ -1946,7 +2214,7 @@ export const TechnicianApp = () => {
     // Load photos
     if (isOnline) {
       try {
-        const response = await api.get(`/interventions/${intervention.id}/photos`);
+        const response = await api.get(`/photos/interventions/${intervention.id}`);
         setPhotos(response.data);
       } catch (error) {
         setPhotos([]);
@@ -2356,6 +2624,7 @@ export const TechnicianApp = () => {
                   onNavigate={() => handleNavigate(selectedIntervention)}
                   onStart={() => handleStartIntervention(selectedIntervention.id)}
                   onComplete={() => handleRequestCompletion(selectedIntervention.id)}
+                  onDownloadReport={() => handleDownloadReport(selectedIntervention.id)}
                 />
 
                 {/* Client Info */}
@@ -2409,6 +2678,8 @@ export const TechnicianApp = () => {
                   interventionId={selectedIntervention.id}
                   photos={photos}
                   onUpload={handlePhotoUpload}
+                  onDelete={handlePhotoDelete}
+                  interventionStatus={selectedIntervention.statut}
                 />
 
                 {/* Checklist */}

@@ -1177,3 +1177,146 @@ async def get_sync_status(
         "latest_update": latest.get("updated_at") if latest else None,
         "server_time": datetime.now(timezone.utc).isoformat()
     }
+
+
+
+@router.get("/{intervention_id}/report/pdf")
+async def generate_intervention_report(
+    intervention_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate a comprehensive PDF report for an intervention"""
+    from fastapi.responses import Response
+    from pdf_generator import generate_intervention_report_pdf
+    
+    # Get intervention
+    intervention = await db.interventions.find_one(
+        {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    # Get related data
+    entreprise = await db.entreprises.find_one(
+        {"id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    
+    client = await db.clients.find_one(
+        {"id": intervention.get("client_id")},
+        {"_id": 0}
+    )
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    # Get technician if assigned
+    technicien = None
+    if intervention.get("technicien_id"):
+        technicien = await db.users.find_one(
+            {"id": intervention["technicien_id"]},
+            {"_id": 0, "password_hash": 0}
+        )
+    
+    # Get photos with URLs
+    photos = []
+    if intervention.get("photos"):
+        photo_docs = await db.photos.find(
+            {"id": {"$in": intervention["photos"]}, "is_deleted": False},
+            {"_id": 0}
+        ).to_list(50)
+        
+        # Build URLs for photos
+        from storage import get_object
+        for photo in photo_docs:
+            # For now, we'll skip actual photo embedding and just include metadata
+            # In production, you'd want to fetch and embed the actual images
+            photos.append({
+                "id": photo.get("id"),
+                "type_photo": photo.get("type_photo"),
+                "description": photo.get("description"),
+                "created_at": photo.get("created_at"),
+                "url": None  # Would need presigned URL or base64 data
+            })
+    
+    # Get category if assigned
+    categorie = None
+    if intervention.get("categorie_id"):
+        categorie = await db.categories.find_one(
+            {"id": intervention["categorie_id"]},
+            {"_id": 0}
+        )
+    
+    # Generate PDF
+    try:
+        pdf_bytes = generate_intervention_report_pdf(
+            intervention=intervention,
+            entreprise=entreprise,
+            client=client,
+            technicien=technicien,
+            photos=photos,
+            categorie=categorie
+        )
+    except Exception as e:
+        logger.error(f"Error generating intervention report PDF: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération du PDF: {str(e)}")
+    
+    # Generate filename
+    date_str = datetime.now().strftime("%Y%m%d")
+    client_name = f"{client.get('nom', '')}_{client.get('prenom', '')}".strip('_').replace(' ', '_')
+    filename = f"Rapport_Intervention_{client_name}_{date_str}.pdf"
+    
+    await log_action(
+        current_user["entreprise_id"],
+        current_user["user_id"],
+        "generate_report",
+        "intervention",
+        intervention_id
+    )
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
+
+
+@router.post("/{intervention_id}/notes")
+async def update_intervention_notes(
+    intervention_id: str,
+    notes_internes: Optional[str] = Body(None),
+    notes_terrain: Optional[str] = Body(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """Update intervention notes (internal and/or field notes)"""
+    # Build query - admins can update any intervention, techs only their own
+    query = {"id": intervention_id, "entreprise_id": current_user["entreprise_id"]}
+    if current_user.get("role") != "admin":
+        query["technicien_id"] = current_user["user_id"]
+    
+    intervention = await db.interventions.find_one(query, {"_id": 0})
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervention non trouvée")
+    
+    update = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    # Admins can update both, techs can only update notes_terrain
+    if current_user.get("role") == "admin" and notes_internes is not None:
+        update["notes_internes"] = notes_internes
+    
+    if notes_terrain is not None:
+        update["notes_terrain"] = notes_terrain
+    
+    await db.interventions.update_one({"id": intervention_id}, {"$set": update})
+    
+    await log_action(
+        current_user["entreprise_id"],
+        current_user["user_id"],
+        "update_notes",
+        "intervention",
+        intervention_id
+    )
+    
+    return {"message": "Notes mises à jour"}

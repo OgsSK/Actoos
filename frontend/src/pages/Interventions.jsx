@@ -24,7 +24,7 @@ import { fr } from 'date-fns/locale';
 import { formatDate, formatTime, formatCurrency, getStatusLabel, getPriorityLabel, priorityColors } from '../lib/utils';
 import {
   Plus, Search, ChevronLeft, Edit, Calendar as CalendarIcon, Clock, MapPin,
-  User, Phone, Play, CheckCircle, FileText, Loader2, Camera, XCircle, Trash2
+  User, Phone, Play, CheckCircle, FileText, Loader2, Camera, XCircle, Trash2, Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -694,6 +694,43 @@ export const InterventionDetail = () => {
     }
   };
 
+  // Download intervention report PDF
+  const handleDownloadReport = async () => {
+    try {
+      toast.loading('Génération du rapport...', { id: 'report-loading' });
+      
+      const response = await api.get(`/interventions/${id}/report/pdf`, {
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from header or generate default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `Rapport_Intervention_${id.slice(0, 8)}.pdf`;
+      if (contentDisposition) {
+        const matches = contentDisposition.match(/filename="(.+)"/);
+        if (matches) filename = matches[1];
+      }
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.dismiss('report-loading');
+      toast.success('Rapport téléchargé');
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      toast.dismiss('report-loading');
+      toast.error(error.response?.data?.detail || 'Erreur lors du téléchargement');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -744,6 +781,16 @@ export const InterventionDetail = () => {
             <Button onClick={handleComplete} className="bg-emerald-600 hover:bg-emerald-700" data-testid="complete-intervention">
               <CheckCircle className="w-4 h-4 mr-2" />
               Terminer
+            </Button>
+          )}
+          {intervention.statut === 'terminee' && (
+            <Button 
+              variant="outline" 
+              onClick={handleDownloadReport}
+              data-testid="download-intervention-report"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Rapport PDF
             </Button>
           )}
           {intervention.statut === 'annulee' && (

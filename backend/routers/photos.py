@@ -104,3 +104,31 @@ async def get_photo(photo_id: str, current_user: dict = Depends(get_current_user
         raise HTTPException(status_code=404, detail="Fichier non trouvé")
     
     return Response(content=data, media_type=photo.get("content_type", content_type))
+
+
+
+@router.delete("/{photo_id}")
+async def delete_photo(photo_id: str, current_user: dict = Depends(get_current_user)):
+    """Soft delete a photo (mark as deleted)"""
+    photo = await db.photos.find_one(
+        {"id": photo_id, "entreprise_id": current_user["entreprise_id"], "is_deleted": False},
+        {"_id": 0}
+    )
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo non trouvée")
+    
+    # Soft delete
+    await db.photos.update_one(
+        {"id": photo_id},
+        {"$set": {"is_deleted": True, "deleted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Remove from intervention photos list
+    await db.interventions.update_one(
+        {"id": photo["intervention_id"]},
+        {"$pull": {"photos": photo_id}}
+    )
+    
+    await log_action(current_user["entreprise_id"], current_user["user_id"], "delete", "photo", photo_id)
+    
+    return {"message": "Photo supprimée"}

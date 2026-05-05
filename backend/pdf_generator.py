@@ -718,3 +718,466 @@ def generate_facture_pdf(
     
     doc.build(elements)
     return buffer.getvalue()
+
+
+
+def generate_intervention_report_pdf(
+    intervention: dict,
+    entreprise: dict,
+    client: dict,
+    technicien: dict = None,
+    photos: list = None,
+    categorie: dict = None
+) -> bytes:
+    """
+    Generate a comprehensive intervention report PDF
+    
+    Args:
+        intervention: Intervention data with signature, notes, times
+        entreprise: Company information
+        client: Client information  
+        technicien: Technician who performed the intervention
+        photos: List of photo objects with URLs/data
+        categorie: Optional category with checklist template
+    
+    Returns:
+        PDF bytes
+    """
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=15*mm,
+        leftMargin=15*mm,
+        topMargin=15*mm,
+        bottomMargin=15*mm
+    )
+    
+    styles = getSampleStyleSheet()
+    
+    # Custom styles
+    styles.add(ParagraphStyle(
+        name='ReportTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        alignment=TA_CENTER,
+        spaceAfter=10*mm,
+        textColor=colors.HexColor('#1e293b')
+    ))
+    styles.add(ParagraphStyle(
+        name='ReportSection',
+        parent=styles['Heading2'],
+        fontSize=12,
+        spaceBefore=8*mm,
+        spaceAfter=4*mm,
+        textColor=colors.HexColor('#334155'),
+        borderPadding=(0, 0, 2, 0)
+    ))
+    styles.add(ParagraphStyle(
+        name='ReportLabel',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=colors.HexColor('#64748b')
+    ))
+    styles.add(ParagraphStyle(
+        name='ReportValue',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#1e293b')
+    ))
+    
+    elements = []
+    
+    # ===== HEADER =====
+    # Company logo and title
+    header_data = []
+    
+    # Logo (if available)
+    if entreprise.get('logo_url'):
+        try:
+            logo_response = requests.get(entreprise['logo_url'], timeout=5)
+            if logo_response.status_code == 200:
+                logo_buffer = BytesIO(logo_response.content)
+                logo_img = Image(logo_buffer, width=40*mm, height=15*mm)
+                logo_img.hAlign = 'LEFT'
+                header_data.append([logo_img, ''])
+        except:
+            pass
+    
+    # Title
+    elements.append(Paragraph("RAPPORT D'INTERVENTION", styles['ReportTitle']))
+    
+    # Reference and date
+    intervention_date = get_local_time(intervention.get('date_prevue'))
+    ref_text = f"<font size='9' color='#64748b'>Réf: {intervention.get('id', '')[:8].upper()}</font>"
+    date_text = f"<font size='9' color='#64748b'>Date: {intervention_date.strftime('%d/%m/%Y')}</font>"
+    
+    ref_table = Table([[Paragraph(ref_text, styles['Normal']), Paragraph(date_text, styles['Normal'])]], 
+                      colWidths=[90*mm, 90*mm])
+    ref_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+    ]))
+    elements.append(ref_table)
+    elements.append(Spacer(1, 5*mm))
+    
+    # ===== STATUS BANNER =====
+    statut = intervention.get('statut', 'planifiee')
+    statut_colors = {
+        'planifiee': ('#3b82f6', 'Planifiée'),
+        'en_cours': ('#f59e0b', 'En cours'),
+        'terminee': ('#22c55e', 'Terminée'),
+        'annulee': ('#ef4444', 'Annulée'),
+        'en_validation': ('#8b5cf6', 'En validation')
+    }
+    statut_color, statut_label = statut_colors.get(statut, ('#64748b', statut))
+    
+    status_para = Paragraph(
+        f"<font color='white'><b>STATUT: {statut_label.upper()}</b></font>",
+        ParagraphStyle('StatusStyle', parent=styles['Normal'], fontSize=10, alignment=TA_CENTER)
+    )
+    status_table = Table([[status_para]], colWidths=[180*mm])
+    status_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor(statut_color)),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3*mm),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3*mm),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5*mm),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 5*mm),
+    ]))
+    elements.append(status_table)
+    elements.append(Spacer(1, 5*mm))
+    
+    # ===== COMPANY & CLIENT INFO (side by side) =====
+    # Company info
+    company_lines = [
+        f"<b>{entreprise.get('nom', '')}</b>",
+        entreprise.get('adresse', ''),
+        f"{entreprise.get('code_postal', '')} {entreprise.get('ville', '')}",
+        f"Tél: {entreprise.get('telephone', '')}",
+        entreprise.get('email', '')
+    ]
+    company_text = Paragraph('<br/>'.join([l for l in company_lines if l.strip()]), styles['ReportValue'])
+    
+    # Client info
+    client_name = f"{client.get('nom', '')} {client.get('prenom', '')}".strip()
+    client_lines = [
+        f"<b>{client_name}</b>",
+        client.get('adresse', ''),
+        f"{client.get('code_postal', '')} {client.get('ville', '')}",
+        f"Tél: {client.get('telephone', '')}",
+        client.get('email', '')
+    ]
+    client_text = Paragraph('<br/>'.join([l for l in client_lines if l.strip()]), styles['ReportValue'])
+    
+    info_table = Table([
+        [Paragraph("<b>ENTREPRISE</b>", styles['ReportLabel']), Paragraph("<b>CLIENT</b>", styles['ReportLabel'])],
+        [company_text, client_text]
+    ], colWidths=[90*mm, 90*mm])
+    info_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f1f5f9')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING', (0, 0), (-1, -1), 2*mm),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2*mm),
+        ('LEFTPADDING', (0, 0), (-1, -1), 3*mm),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 3*mm),
+        ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+        ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.HexColor('#e2e8f0')),
+    ]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 5*mm))
+    
+    # ===== INTERVENTION DETAILS =====
+    elements.append(Paragraph("DÉTAILS DE L'INTERVENTION", styles['ReportSection']))
+    
+    # Title and category
+    titre = intervention.get('titre', 'Sans titre')
+    cat_name = categorie.get('nom', '') if categorie else ''
+    cat_color = categorie.get('couleur', '#64748b') if categorie else '#64748b'
+    
+    details_data = [
+        ['Titre', Paragraph(f"<b>{titre}</b>", styles['ReportValue'])],
+    ]
+    
+    if cat_name:
+        details_data.append(['Catégorie', Paragraph(f"<font color='{cat_color}'>{cat_name}</font>", styles['ReportValue'])])
+    
+    # Address
+    address_parts = [intervention.get('adresse', ''), intervention.get('ville', ''), intervention.get('code_postal', '')]
+    address = ', '.join([p for p in address_parts if p])
+    if address:
+        details_data.append(['Adresse', Paragraph(address, styles['ReportValue'])])
+    
+    # Priority
+    priorite_labels = {'basse': 'Basse', 'normale': 'Normale', 'haute': 'Haute', 'urgente': 'URGENTE'}
+    priorite = priorite_labels.get(intervention.get('priorite', 'normale'), 'Normale')
+    details_data.append(['Priorité', Paragraph(priorite, styles['ReportValue'])])
+    
+    # Scheduled date/time
+    date_prevue = get_local_time(intervention.get('date_prevue'))
+    details_data.append(['Date prévue', Paragraph(date_prevue.strftime('%d/%m/%Y à %H:%M'), styles['ReportValue'])])
+    
+    # Duration estimated
+    duree = intervention.get('duree_estimee', 0)
+    if duree:
+        details_data.append(['Durée estimée', Paragraph(f"{duree} minutes", styles['ReportValue'])])
+    
+    # Description
+    description = intervention.get('description', '')
+    if description:
+        details_data.append(['Description', Paragraph(description, styles['ReportValue'])])
+    
+    details_table = Table(details_data, colWidths=[40*mm, 140*mm])
+    details_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#64748b')),
+        ('FONTSIZE', (0, 0), (0, -1), 9),
+        ('TOPPADDING', (0, 0), (-1, -1), 2*mm),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2*mm),
+        ('LINEBELOW', (0, 0), (-1, -2), 0.25, colors.HexColor('#e2e8f0')),
+    ]))
+    elements.append(details_table)
+    
+    # ===== TIME TRACKING =====
+    if intervention.get('heure_debut') or intervention.get('heure_fin'):
+        elements.append(Spacer(1, 3*mm))
+        elements.append(Paragraph("SUIVI HORAIRE", styles['ReportSection']))
+        
+        time_data = []
+        
+        if intervention.get('heure_debut'):
+            heure_debut = get_local_time(intervention['heure_debut'])
+            time_data.append(['Début', heure_debut.strftime('%d/%m/%Y à %H:%M')])
+        
+        if intervention.get('heure_fin'):
+            heure_fin = get_local_time(intervention['heure_fin'])
+            time_data.append(['Fin', heure_fin.strftime('%d/%m/%Y à %H:%M')])
+            
+            # Calculate duration
+            if intervention.get('heure_debut'):
+                debut = get_local_time(intervention['heure_debut'])
+                duration_minutes = int((heure_fin - debut).total_seconds() / 60)
+                hours = duration_minutes // 60
+                minutes = duration_minutes % 60
+                time_data.append(['Durée réelle', f"{hours}h{minutes:02d}" if hours else f"{minutes} min"])
+        
+        if time_data:
+            time_table = Table(time_data, colWidths=[40*mm, 140*mm])
+            time_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#64748b')),
+                ('FONTSIZE', (0, 0), (0, -1), 9),
+                ('TOPPADDING', (0, 0), (-1, -1), 1.5*mm),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 1.5*mm),
+            ]))
+            elements.append(time_table)
+    
+    # ===== TECHNICIAN INFO =====
+    if technicien:
+        elements.append(Spacer(1, 3*mm))
+        elements.append(Paragraph("TECHNICIEN", styles['ReportSection']))
+        
+        tech_name = f"{technicien.get('prenom', '')} {technicien.get('nom', '')}".strip()
+        tech_data = [['Nom', tech_name]]
+        if technicien.get('telephone'):
+            tech_data.append(['Téléphone', technicien['telephone']])
+        
+        tech_table = Table(tech_data, colWidths=[40*mm, 140*mm])
+        tech_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#64748b')),
+            ('FONTSIZE', (0, 0), (0, -1), 9),
+            ('TOPPADDING', (0, 0), (-1, -1), 1.5*mm),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 1.5*mm),
+        ]))
+        elements.append(tech_table)
+    
+    # ===== NOTES =====
+    notes_internes = intervention.get('notes_internes', '')
+    notes_terrain = intervention.get('notes_terrain', '')
+    
+    if notes_internes or notes_terrain:
+        elements.append(Spacer(1, 3*mm))
+        elements.append(Paragraph("NOTES & OBSERVATIONS", styles['ReportSection']))
+        
+        if notes_terrain:
+            elements.append(Paragraph("<font color='#64748b' size='9'>Notes du technicien:</font>", styles['Normal']))
+            elements.append(Spacer(1, 1*mm))
+            notes_para = Paragraph(notes_terrain, styles['ReportValue'])
+            notes_box = Table([[notes_para]], colWidths=[175*mm])
+            notes_box.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f8fafc')),
+                ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+                ('TOPPADDING', (0, 0), (-1, -1), 2*mm),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 2*mm),
+                ('LEFTPADDING', (0, 0), (-1, -1), 3*mm),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 3*mm),
+            ]))
+            elements.append(notes_box)
+            elements.append(Spacer(1, 2*mm))
+        
+        if notes_internes:
+            elements.append(Paragraph("<font color='#64748b' size='9'>Notes internes (admin):</font>", styles['Normal']))
+            elements.append(Spacer(1, 1*mm))
+            notes_para = Paragraph(notes_internes, styles['ReportValue'])
+            notes_box = Table([[notes_para]], colWidths=[175*mm])
+            notes_box.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fef3c7')),
+                ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#fcd34d')),
+                ('TOPPADDING', (0, 0), (-1, -1), 2*mm),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 2*mm),
+                ('LEFTPADDING', (0, 0), (-1, -1), 3*mm),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 3*mm),
+            ]))
+            elements.append(notes_box)
+    
+    # ===== CHECKLIST RESPONSES =====
+    checklist_responses = intervention.get('checklist_responses', [])
+    if checklist_responses and categorie and categorie.get('checklist_template'):
+        elements.append(Spacer(1, 3*mm))
+        elements.append(Paragraph("CHECKLIST", styles['ReportSection']))
+        
+        checklist_data = [['', 'Élément', 'Réponse']]
+        
+        for response in checklist_responses:
+            # Find template item
+            item_id = response.get('item_id')
+            template_item = next((t for t in categorie.get('checklist_template', []) if t.get('id') == item_id), None)
+            label = response.get('label') or (template_item.get('label') if template_item else 'N/A')
+            
+            # Determine response value
+            if response.get('checked'):
+                status = '✓'
+                value = 'Oui'
+            elif response.get('value'):
+                status = '✓'
+                value = str(response['value'])
+            else:
+                status = '○'
+                value = '-'
+            
+            checklist_data.append([status, label, value])
+        
+        checklist_table = Table(checklist_data, colWidths=[10*mm, 120*mm, 50*mm])
+        checklist_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f1f5f9')),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+            ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+            ('ALIGN', (2, 0), (2, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 1.5*mm),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 1.5*mm),
+            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+            ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.HexColor('#e2e8f0')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+        ]))
+        elements.append(checklist_table)
+    
+    # ===== PHOTOS =====
+    if photos and len(photos) > 0:
+        elements.append(Spacer(1, 3*mm))
+        elements.append(Paragraph(f"PHOTOS ({len(photos)})", styles['ReportSection']))
+        
+        # Group by type
+        photos_by_type = {'avant': [], 'pendant': [], 'apres': [], 'autre': []}
+        for photo in photos:
+            ptype = photo.get('type_photo', 'autre')
+            if ptype in photos_by_type:
+                photos_by_type[ptype].append(photo)
+            else:
+                photos_by_type['autre'].append(photo)
+        
+        type_labels = {'avant': 'Avant', 'pendant': 'Pendant', 'apres': 'Après', 'autre': 'Autres'}
+        
+        for ptype, type_photos in photos_by_type.items():
+            if type_photos:
+                elements.append(Paragraph(f"<font color='#64748b' size='9'>{type_labels[ptype]}:</font>", styles['Normal']))
+                elements.append(Spacer(1, 1*mm))
+                
+                # Create photo grid (3 per row)
+                photo_row = []
+                for photo in type_photos:
+                    # Try to load photo
+                    photo_img = None
+                    try:
+                        if photo.get('url'):
+                            response = requests.get(photo['url'], timeout=5)
+                            if response.status_code == 200:
+                                img_buffer = BytesIO(response.content)
+                                photo_img = Image(img_buffer, width=55*mm, height=40*mm)
+                    except:
+                        pass
+                    
+                    if photo_img:
+                        photo_row.append(photo_img)
+                    else:
+                        # Placeholder
+                        placeholder = Paragraph("<font color='#94a3b8' size='8'>[Photo]</font>", 
+                                               ParagraphStyle('PhotoPlaceholder', alignment=TA_CENTER))
+                        photo_row.append(placeholder)
+                    
+                    if len(photo_row) == 3:
+                        photo_table = Table([photo_row], colWidths=[60*mm, 60*mm, 60*mm])
+                        photo_table.setStyle(TableStyle([
+                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                            ('TOPPADDING', (0, 0), (-1, -1), 1*mm),
+                            ('BOTTOMPADDING', (0, 0), (-1, -1), 1*mm),
+                        ]))
+                        elements.append(photo_table)
+                        photo_row = []
+                
+                # Remaining photos
+                if photo_row:
+                    while len(photo_row) < 3:
+                        photo_row.append('')
+                    photo_table = Table([photo_row], colWidths=[60*mm, 60*mm, 60*mm])
+                    photo_table.setStyle(TableStyle([
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ]))
+                    elements.append(photo_table)
+                
+                elements.append(Spacer(1, 2*mm))
+    
+    # ===== SIGNATURE =====
+    if intervention.get('signature_client'):
+        elements.append(Spacer(1, 5*mm))
+        elements.append(Paragraph("SIGNATURE CLIENT", styles['ReportSection']))
+        
+        sig_buffer = decode_signature_image(intervention['signature_client'])
+        if sig_buffer:
+            sig_img = Image(sig_buffer, width=60*mm, height=25*mm)
+            
+            sig_date = intervention.get('date_signature')
+            sig_date_str = get_local_time(sig_date).strftime('%d/%m/%Y à %H:%M') if sig_date else ''
+            nom_signataire = intervention.get('nom_signataire', '')
+            
+            sig_data = [
+                [sig_img],
+                [Paragraph(f"<b>{nom_signataire}</b>", styles['ReportValue'])],
+                [Paragraph(f"<font color='#64748b' size='8'>Signé le {sig_date_str}</font>", styles['Normal'])]
+            ]
+            
+            sig_table = Table(sig_data, colWidths=[80*mm])
+            sig_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+                ('TOPPADDING', (0, 0), (-1, -1), 2*mm),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 2*mm),
+            ]))
+            elements.append(sig_table)
+    
+    # ===== FOOTER =====
+    elements.append(Spacer(1, 10*mm))
+    footer_text = f"<font color='#94a3b8' size='8'>Rapport généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')} par {entreprise.get('nom', 'ACTOOS PRO')}</font>"
+    elements.append(Paragraph(footer_text, ParagraphStyle('Footer', alignment=TA_CENTER)))
+    
+    doc.build(elements)
+    return buffer.getvalue()
