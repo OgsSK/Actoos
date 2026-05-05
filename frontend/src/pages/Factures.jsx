@@ -413,7 +413,7 @@ export const FactureDetail = () => {
               Émettre et envoyer
             </Button>
           )}
-          {['emise', 'en_retard'].includes(facture.statut) && (
+          {['emise', 'partiel', 'en_retard'].includes(facture.statut) && (
             <>
               <Button onClick={() => setShowPayment(true)} className="bg-emerald-600 hover:bg-emerald-700" data-testid="pay-facture">
                 <CreditCard className="w-4 h-4 mr-2" />

@@ -32,6 +32,9 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] Résiliation avec feedback
 - [x] Feature gating par plan
 - [x] **Toggle mensuel/annuel avec -20% discount**
+- [x] **Paiements Partiels Factures** - Enregistrer plusieurs versements, statut 'partiel'
+- [x] **Historique Paiements** - Audit trail complet des transactions
+- [x] **Relances Intelligentes** - Rappels avec montant restant uniquement
 
 ### PWA Technicien
 - [x] Installation comme app native
@@ -117,6 +120,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] **Workflow Interventions Non Attribuées: Section Disponibles, détails avant claim, unclaim, sync temps réel**
 - [x] **Validation Signature Enrichie: type signataire (client/tiers), relation, email/tel, device info, géoloc**
 - [x] **Workflow par Plan: Pro/Enterprise=auto-validation, Startup=validation admin manuelle**
+- [x] **Paiements Partiels: Admin peut enregistrer plusieurs versements, Client Portal affiche reste dû**
 
 ### À faire après push GitHub
 - [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
@@ -134,6 +138,24 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-05-05 - Paiements Partiels & Relances Intelligentes (P0/P1)
+- **Paiements Partiels Factures** :
+  - `POST /api/factures/{id}/pay` - Enregistrer un paiement partiel ou total
+  - `GET /api/factures/{id}/payments` - Historique complet des paiements
+  - Statut automatique: `emise` → `partiel` (si paiement < total) → `payee` (si soldée)
+  - Collection `invoice_payments` pour audit trail des transactions
+  - Dashboard Admin: dialog paiement avec montant restant pré-calculé
+  - Client Portal: colonne "Reste dû" + bouton "Payer X€" avec montant restant
+- **Relances Intelligentes** :
+  - `POST /api/factures/{id}/relance` supporte statut `partiel`
+  - Email/SMS/WhatsApp mentionnent uniquement le `reste_a_payer`
+  - Lien de paiement personnalisé ou portail client
+- **UI Améliorée** :
+  - Badge "Paiement partiel" en orange/ambre dans la liste des factures
+  - Section "Payé" et "Reste dû" dans le détail de facture
+  - CSS `.status-partiel` ajouté dans index.css
+- **Tests validés** : 100% backend (15/15), 100% frontend (iteration_43)
 
 ### 2026-05-05 - Validation Signature & Workflow par Plan (P0)
 - **Signature enrichie avec traçabilité** :
