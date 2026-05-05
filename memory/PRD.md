@@ -114,6 +114,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] **Archivage Client (soft delete, restore, permanent delete)**
 - [x] **QR Code Paiement (validation infos entreprise, EPC SEPA)**
 - [x] **Workflow Interventions: Photos avec tags, Notes, Rapport PDF, Signature obligatoire**
+- [x] **Workflow Interventions Non Attribuées: Section Disponibles, détails avant claim, unclaim, sync temps réel**
 
 ### À faire après push GitHub
 - [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
@@ -131,6 +132,20 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 | Enterprise | admin@test-enterprise.com | Test123! |
 
 ## 📅 Changelog
+
+### 2026-05-05 - Workflow Interventions Non Attribuées (P0)
+- **Nouveau système d'interventions disponibles** :
+  - `GET /api/interventions/available` - Liste des interventions non assignées (filtré par compétences)
+  - `GET /api/interventions/available/count` - Compteur pour badge
+  - `POST /api/interventions/{id}/claim` - Accepter une intervention (protection race condition)
+  - `POST /api/interventions/{id}/unclaim` - Annuler l'acceptation (retour au pool disponible)
+- **App Technicien - Nouvel onglet "Disponibles"** :
+  - Badge avec compteur d'interventions en attente
+  - Vue liste avec cartes détaillées (badges Disponible/Priorité, client, adresse, durée)
+  - Modal détaillé AVANT acceptation : infos complètes + boutons "Accepter cette mission" / "Retour"
+  - Bouton "Annuler mon acceptation" pour interventions planifiées assignées
+- **Synchronisation temps réel** : Mise à jour automatique via SSE lors de claim/unclaim
+- **Tests validés** : 95% backend, 100% frontend (iteration_41)
 
 ### 2026-05-05 - Refonte Workflow Interventions
 - **Upload Photos avec Tags** :
