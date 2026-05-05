@@ -230,7 +230,7 @@ const LandingPage = () => {
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
                   <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                   <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="ml-4 text-slate-400 text-xs">actoos.com/dashboard</span>
+                  <span className="ml-4 text-slate-400 text-xs">pro.actoos.com/dashboard</span>
                 </div>
                 <div className="bg-gradient-to-br from-slate-100 to-slate-200 p-8 min-h-[400px] flex items-center justify-center">
                   <div className="text-center">

@@ -91,7 +91,7 @@ async def run_trial_reminders():
                         continue
                     
                     # Generate upgrade URL
-                    upgrade_url = f"https://actoos.com/dashboard/subscription?upgrade=true&source=trial_reminder_j{days}"
+                    upgrade_url = f"https://pro.actoos.com/dashboard/subscription?upgrade=true&source=trial_reminder_j{days}"
                     
                     # Send email
                     result = await send_trial_reminder_email(

@@ -74,7 +74,7 @@ async def send_trial_reminders(
                 continue
             
             # Generate upgrade URL
-            upgrade_url = f"https://actoos.com/dashboard/subscription?upgrade=true&source=trial_reminder"
+            upgrade_url = f"https://pro.actoos.com/dashboard/subscription?upgrade=true&source=trial_reminder"
             
             # Queue email in background
             background_tasks.add_task(
@@ -205,7 +205,7 @@ async def check_and_send_all_reminders(
                 if not admin or not admin.get("email"):
                     continue
                 
-                upgrade_url = f"https://actoos.com/dashboard/subscription?upgrade=true&source=trial_reminder_j{days}"
+                upgrade_url = f"https://pro.actoos.com/dashboard/subscription?upgrade=true&source=trial_reminder_j{days}"
                 
                 background_tasks.add_task(
                     send_trial_reminder_email,

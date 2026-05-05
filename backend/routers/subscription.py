@@ -685,7 +685,7 @@ async def create_entreprise_from_subscription(
     # Send welcome email with credentials
     try:
         from email_service import send_email
-        frontend_url = os.environ.get("FRONTEND_URL", "https://actoos.com")
+        frontend_url = os.environ.get("FRONTEND_URL", "https://pro.actoos.com")
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h1 style="color: #2563eb;">Bienvenue sur Actoos!</h1>

@@ -169,6 +169,21 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - Évite le conflit de route qui causait "Utilisateur non trouvé"
 - **Tests validés** : 90% backend (validation mineure corrigée), 100% frontend (iteration_46)
 
+### 2026-05-05 - Configuration pro.actoos.com
+- **Configuration centralisée** (`/app/frontend/src/config/app.config.js`) :
+  - Domaines : actoos.com (vitrine), pro.actoos.com (PRO), one.actoos.com (ONE)
+  - Tarifs, limites plans, couleurs thème
+  - Fonctions `getBaseUrl()` et `getApiUrl()`
+- **URLs Backend mises à jour** :
+  - `FRONTEND_URL` fallback → `https://pro.actoos.com`
+  - Emails de reset password, upgrade URLs, OAuth callbacks
+- **Guide de déploiement** (`/app/memory/DEPLOYMENT_GUIDE_PRO.md`) :
+  - Configuration DNS, SSL, variables d'environnement
+  - Docker Compose + Nginx config
+  - Checklist pré-déploiement
+  - Instructions Vercel/Railway
+- **Prêt pour déploiement** sur pro.actoos.com
+
 ### 2026-05-05 - Vitrine Corporate actoos.com (Hub)
 - **Page corporate premium** (`/corporate`) :
   - Design "Slate & Gold" inspiré Stripe/Vercel/Apple

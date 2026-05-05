@@ -193,7 +193,7 @@ async def register_from_checkout(session_id: str, password: str = None):
                 </div>
                 
                 <p style="text-align: center; margin: 30px 0;">
-                    <a href="https://actoos.com/login" style="background: #059669; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                    <a href="https://pro.actoos.com/login" style="background: #059669; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
                         Se connecter maintenant
                     </a>
                 </p>
@@ -375,7 +375,7 @@ async def invite_technician(data: UserInvite, current_user: dict = Depends(requi
     # Send invitation email
     try:
         from email_service import send_email
-        frontend_url = os.environ.get("FRONTEND_URL", "https://actoos.com")
+        frontend_url = os.environ.get("FRONTEND_URL", "https://pro.actoos.com")
         activation_url = f"{frontend_url}/activate?token={invite_token}"
         
         html_content = f"""
@@ -521,7 +521,7 @@ async def request_password_reset(data: UserPasswordReset, request: Request):
         })
         
         # Build reset URL
-        origin = request.headers.get("origin", "https://actoos.com")
+        origin = request.headers.get("origin", "https://pro.actoos.com")
         reset_url = f"{origin}/reset-password?token={reset_token}"
         
         # Send email with reset link
