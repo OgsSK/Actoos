@@ -133,6 +133,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] **Validation Signature Enrichie: type signataire (client/tiers), relation, email/tel, device info, géoloc**
 - [x] **Workflow par Plan: Pro/Enterprise=auto-validation, Startup=validation admin manuelle**
 - [x] **Paiements Partiels: Admin peut enregistrer plusieurs versements, Client Portal affiche reste dû**
+- [x] **Dashboard Settings: 10 onglets vérifiés** (Entreprise, Abonnement, Catégories, Notifications, Documents, Personnalisation, Devise, Intégrations, RGPD, Sécurité)
 
 ### À faire après push GitHub
 - [ ] Appeler endpoint nettoyage sur production: `GET https://actoos-production.up.railway.app/api/admin/analytics/cleanup-all-test-data?secret_key=actoos-cleanup-2024-prod`
