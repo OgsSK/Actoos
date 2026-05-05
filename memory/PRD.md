@@ -169,6 +169,20 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - Évite le conflit de route qui causait "Utilisateur non trouvé"
 - **Tests validés** : 90% backend (validation mineure corrigée), 100% frontend (iteration_46)
 
+### 2026-05-05 - Audit MongoDB + Plan Migration PostgreSQL (P2)
+- **Audit complet** (`/app/memory/MONGODB_AUDIT.md`) :
+  - 30 collections, 1,158 documents analysés
+  - Diagramme des relations entre entités
+  - Index existants documentés
+  - Points d'attention identifiés (JSONB, multi-tenancy, séquences)
+- **Schéma PostgreSQL** (`/app/memory/POSTGRESQL_SCHEMA.sql`) :
+  - 18 tables avec types ENUM
+  - Foreign keys et contraintes
+  - Index optimisés pour les requêtes fréquentes
+  - Row Level Security (RLS) préparé pour multi-tenancy
+  - Triggers pour `updated_at` automatique
+- **Recommandation** : Garder MongoDB pour ACTOOS PRO (volume faible), démarrer ACTOOS ONE directement sur PostgreSQL
+
 ### 2026-05-05 - Implémentation Redis (Cache, SSE, Rate Limiting) (P2)
 - **Service Redis** (`redis_service.py`) :
   - Cache avec TTL (in-memory fallback si Redis non configuré)
