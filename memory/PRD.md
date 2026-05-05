@@ -169,6 +169,22 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - Évite le conflit de route qui causait "Utilisateur non trouvé"
 - **Tests validés** : 90% backend (validation mineure corrigée), 100% frontend (iteration_46)
 
+### 2026-05-05 - Préparation Architecture Haute Performance
+- **Dépendances installées** :
+  - `asyncpg` - Driver PostgreSQL async ultra-rapide
+  - `sqlalchemy[asyncio]` - ORM avec connection pooling
+  - `databases` - Wrapper async pour bases de données
+  - `supabase` - Client Supabase officiel
+- **Fichiers créés** :
+  - `/app/backend/database_pg.py` - Couche PostgreSQL avec modèles SQLAlchemy
+    - Connection pooling (20 connexions, 30 overflow)
+    - Modèles : Entreprise, User, Client, Intervention, Devis, Facture, etc.
+    - Indexes optimisés pour les requêtes fréquentes
+  - `/app/backend/redis_service.py` - Amélioré avec batch operations et LRU cache
+- **Variables .env ajoutées** :
+  - `SUPABASE_URL`, `SUPABASE_KEY`, `DATABASE_URL`
+- **Prochaine étape** : Créer compte Supabase + Upstash Redis et connecter
+
 ### 2026-05-05 - Vitrine Next.js SSG (actoos.com)
 - **Projet Next.js 14** créé dans `/app/vitrine/`
   - TypeScript + Tailwind CSS
