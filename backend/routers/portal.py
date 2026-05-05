@@ -376,13 +376,30 @@ async def process_facture_payment(facture_id: str, session_id: str, amount_paid:
     
     update_data = {
         "montant_paye": new_montant_paye,
-        "date_paiement": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
-    # Mark as paid if fully paid
-    if new_montant_paye >= total_ttc:
+    # Determine new status based on payment
+    if new_montant_paye >= total_ttc - 0.01:  # Tolerance for rounding
         update_data["statut"] = "payee"
+        update_data["date_paiement"] = datetime.now(timezone.utc).isoformat()
+    elif new_montant_paye > 0:
+        update_data["statut"] = "partiel"
+    
+    # Create payment record in invoice_payments collection for audit trail
+    payment_record = {
+        "id": str(uuid.uuid4()),
+        "facture_id": facture_id,
+        "entreprise_id": facture.get("entreprise_id"),
+        "montant": amount_paid,
+        "mode_paiement": "en_ligne",
+        "reference": session_id,
+        "notes": "Paiement via portail client (Stripe)",
+        "recorded_by": "system",
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+        "source": "stripe_portal"
+    }
+    await db.invoice_payments.insert_one(payment_record)
     
     await db.factures.update_one(
         {"id": facture_id},

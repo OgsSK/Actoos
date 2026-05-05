@@ -709,12 +709,18 @@ export const ClientPortalDashboard = () => {
                       {factures.slice(0, 5).map((f) => {
                         const amountDue = (f.total_ttc || 0) - (f.montant_paye || 0);
                         const canPay = f.statut !== 'payee' && amountDue > 0;
+                        const isPartial = f.statut === 'partiel' || (f.montant_paye > 0 && amountDue > 0);
                         
                         return (
                           <div key={f.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                             <div>
                               <p className="font-medium text-sm">{f.numero_facture}</p>
                               <p className="text-xs text-slate-500">Échéance: {formatDate(f.date_echeance)}</p>
+                              {isPartial && (
+                                <p className="text-xs text-amber-600 font-medium">
+                                  Reste à payer: {formatCurrency(amountDue)}
+                                </p>
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
                               <Badge variant="secondary" className={`status-${f.statut}`}>
@@ -734,7 +740,7 @@ export const ClientPortalDashboard = () => {
                                   ) : (
                                     <>
                                       <CreditCard className="w-3 h-3 mr-1" />
-                                      Payer
+                                      Payer {isPartial ? formatCurrency(amountDue) : ''}
                                     </>
                                   )}
                                 </Button>
@@ -853,24 +859,42 @@ export const ClientPortalDashboard = () => {
                         <TableHead>Numéro</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Échéance</TableHead>
-                        <TableHead>Montant TTC</TableHead>
-                        <TableHead>Payé</TableHead>
+                        <TableHead className="text-right">Montant TTC</TableHead>
+                        <TableHead className="text-right">Payé</TableHead>
+                        <TableHead className="text-right">Reste dû</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {factures.map((f) => {
-                        const amountDue = (f.total_ttc || 0) - (f.montant_paye || 0);
+                        const montantPaye = f.montant_paye || 0;
+                        const amountDue = (f.total_ttc || 0) - montantPaye;
                         const canPay = f.statut !== 'payee' && amountDue > 0;
+                        const isPartial = f.statut === 'partiel' || (montantPaye > 0 && amountDue > 0);
                         
                         return (
                           <TableRow key={f.id}>
                             <TableCell className="font-mono">{f.numero_facture}</TableCell>
                             <TableCell>{formatDate(f.created_at)}</TableCell>
                             <TableCell>{formatDate(f.date_echeance)}</TableCell>
-                            <TableCell className="font-medium">{formatCurrency(f.total_ttc)}</TableCell>
-                            <TableCell>{formatCurrency(f.montant_paye || 0)}</TableCell>
+                            <TableCell className="text-right font-medium">{formatCurrency(f.total_ttc)}</TableCell>
+                            <TableCell className="text-right">
+                              {montantPaye > 0 ? (
+                                <span className="text-emerald-600">{formatCurrency(montantPaye)}</span>
+                              ) : (
+                                <span className="text-slate-400">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {amountDue > 0 ? (
+                                <span className={isPartial ? "text-amber-600 font-medium" : ""}>
+                                  {formatCurrency(amountDue)}
+                                </span>
+                              ) : (
+                                <span className="text-emerald-600">Soldé</span>
+                              )}
+                            </TableCell>
                             <TableCell>
                               <Badge variant="secondary" className={`status-${f.statut}`}>
                                 {getStatusLabel(f.statut)}
