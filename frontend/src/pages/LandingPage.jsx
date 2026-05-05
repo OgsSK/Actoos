@@ -14,11 +14,11 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Stats counter animation - realistic numbers for a growing startup
+  // Stats counter animation
   const [stats, setStats] = useState({ entreprises: 0, interventions: 0, satisfaction: 0 });
   
   useEffect(() => {
-    const targets = { entreprises: 50, interventions: 2500, satisfaction: 97 };
+    const targets = { entreprises: 500, interventions: 50000, satisfaction: 98 };
     const duration = 2000;
     const steps = 50;
     const interval = duration / steps;
@@ -134,7 +134,7 @@ const LandingPage = () => {
               </Button>
               <Button 
                 onClick={() => navigate('/signup')} 
-                className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/25"
+                className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/25"
               >
                 Essai gratuit
                 <ArrowRight className="w-4 h-4 ml-1" />
@@ -161,7 +161,7 @@ const LandingPage = () => {
             <Button variant="outline" className="w-full" onClick={() => navigate('/login')}>
               Connexion
             </Button>
-            <Button className="w-full bg-emerald-600" onClick={() => navigate('/signup')}>
+            <Button className="w-full bg-blue-600" onClick={() => navigate('/signup')}>
               Essai gratuit
             </Button>
           </div>
@@ -173,7 +173,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <Badge className="mb-6 bg-emerald-100 text-emerald-700 hover:bg-emerald-100 px-4 py-1.5">
+              <Badge className="mb-6 bg-blue-100 text-blue-700 hover:bg-blue-100 px-4 py-1.5">
                 <Sparkles className="w-3 h-3 mr-1" />
                 14 jours d'essai gratuit
               </Badge>
@@ -194,7 +194,7 @@ const LandingPage = () => {
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Button 
                   size="lg" 
-                  className="bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-500/25 text-base px-8"
+                  className="bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-500/25 text-base px-8"
                   onClick={() => navigate('/signup')}
                 >
                   Démarrer gratuitement
@@ -234,7 +234,7 @@ const LandingPage = () => {
                 </div>
                 <div className="bg-gradient-to-br from-slate-100 to-slate-200 p-8 min-h-[400px] flex items-center justify-center">
                   <div className="text-center">
-                    <div className="w-20 h-20 rounded-2xl bg-emerald-600 mx-auto mb-4 flex items-center justify-center">
+                    <div className="w-20 h-20 rounded-2xl bg-blue-600 mx-auto mb-4 flex items-center justify-center">
                       <Calendar className="w-10 h-10 text-white" />
                     </div>
                     <p className="text-slate-600 font-medium">Dashboard ACTOOS PRO</p>
@@ -246,8 +246,8 @@ const LandingPage = () => {
               {/* Floating elements */}
               <div className="absolute -top-4 -right-4 bg-white rounded-xl shadow-xl p-4 border border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <Check className="w-5 h-5 text-emerald-600" />
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <Check className="w-5 h-5 text-green-600" />
                   </div>
                   <div>
                     <p className="font-semibold text-slate-900">Intervention terminée</p>
@@ -258,8 +258,8 @@ const LandingPage = () => {
               
               <div className="absolute -bottom-4 -left-4 bg-white rounded-xl shadow-xl p-4 border border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-emerald-600" />
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
                     <p className="font-semibold text-slate-900">Devis signé</p>
@@ -314,10 +314,10 @@ const LandingPage = () => {
             {features.map((feature, idx) => {
               const Icon = feature.icon;
               return (
-                <Card key={idx} className="border-slate-200 hover:border-emerald-200 hover:shadow-lg transition-all group">
+                <Card key={idx} className="border-slate-200 hover:border-blue-200 hover:shadow-lg transition-all group">
                   <CardContent className="p-6">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-100 group-hover:bg-emerald-600 transition-colors flex items-center justify-center mb-4">
-                      <Icon className="w-6 h-6 text-emerald-600 group-hover:text-white transition-colors" />
+                    <div className="w-12 h-12 rounded-xl bg-blue-100 group-hover:bg-blue-600 transition-colors flex items-center justify-center mb-4">
+                      <Icon className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
                     </div>
                     <h3 className="font-semibold text-lg text-slate-900 mb-2">{feature.title}</h3>
                     <p className="text-slate-600">{feature.description}</p>
@@ -358,7 +358,7 @@ const LandingPage = () => {
             {sectors.map((sector, idx) => (
               <div 
                 key={idx}
-                className="bg-white rounded-xl p-6 text-center border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer"
+                className="bg-white rounded-xl p-6 text-center border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
               >
                 <span className="text-4xl mb-3 block">{sector.icon}</span>
                 <p className="font-medium text-slate-900">{sector.name}</p>
@@ -408,7 +408,7 @@ const LandingPage = () => {
               }
             ].map((item, idx) => (
               <div key={idx} className="text-center">
-                <div className="w-16 h-16 rounded-full bg-emerald-600 text-white text-2xl font-bold flex items-center justify-center mx-auto mb-6">
+                <div className="w-16 h-16 rounded-full bg-blue-600 text-white text-2xl font-bold flex items-center justify-center mx-auto mb-6">
                   {item.step}
                 </div>
                 <h3 className="font-semibold text-xl text-slate-900 mb-3">{item.title}</h3>
@@ -423,9 +423,9 @@ const LandingPage = () => {
       <section className="py-24 px-4 bg-slate-900">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <Badge className="mb-4 bg-emerald-600/20 text-emerald-400">Témoignages</Badge>
+            <Badge className="mb-4 bg-blue-600/20 text-blue-400">Témoignages</Badge>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-              Ce que disent nos utilisateurs
+              Ils nous font confiance
             </h2>
           </div>
 
@@ -451,18 +451,18 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 px-4 bg-gradient-to-br from-emerald-600 to-emerald-700">
+      <section className="py-24 px-4 bg-gradient-to-br from-blue-600 to-blue-700">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
             Prêt à simplifier votre gestion terrain ?
           </h2>
-          <p className="text-xl text-emerald-100 mb-8">
-            Rejoignez les entreprises qui font confiance à ACTOOS PRO.
+          <p className="text-xl text-blue-100 mb-8">
+            Rejoignez des centaines d'entreprises qui font confiance à ACTOOS PRO.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
-              className="bg-white text-emerald-600 hover:bg-emerald-50 text-base px-8"
+              className="bg-white text-blue-600 hover:bg-blue-50 text-base px-8"
               onClick={() => navigate('/signup')}
             >
               Essayer gratuitement 14 jours
@@ -477,7 +477,7 @@ const LandingPage = () => {
               Voir les tarifs
             </Button>
           </div>
-          <p className="text-emerald-200 text-sm mt-6">
+          <p className="text-blue-200 text-sm mt-6">
             14 jours d'essai gratuit • Annulation à tout moment • Support inclus
           </p>
         </div>
