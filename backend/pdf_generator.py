@@ -1181,3 +1181,238 @@ def generate_intervention_report_pdf(
     
     doc.build(elements)
     return buffer.getvalue()
+
+
+
+def generate_payment_receipt_pdf(
+    payment: dict,
+    facture: dict,
+    client: dict,
+    entreprise: dict
+) -> bytes:
+    """
+    Generate a payment receipt PDF (Reçu de paiement)
+    
+    Args:
+        payment: Payment record from invoice_payments collection
+        facture: The invoice being paid
+        client: Client information
+        entreprise: Company information
+        
+    Returns:
+        PDF as bytes
+    """
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=15*mm,
+        leftMargin=15*mm,
+        topMargin=15*mm,
+        bottomMargin=15*mm
+    )
+    
+    styles = getSampleStyleSheet()
+    elements = []
+    
+    # Currency from facture
+    devise = facture.get("devise", "EUR")
+    taux_change = facture.get("taux_change_eur", 1.0)
+    
+    # ===== HEADER WITH LOGO =====
+    header_data = []
+    
+    # Company info (left column)
+    company_info = []
+    company_name = entreprise.get("nom", "Entreprise")
+    company_info.append(Paragraph(f"<b>{company_name}</b>", styles["Heading2"]))
+    
+    if entreprise.get("adresse"):
+        company_info.append(Paragraph(entreprise["adresse"], styles["Normal"]))
+    
+    city_postal = []
+    if entreprise.get("code_postal"):
+        city_postal.append(entreprise["code_postal"])
+    if entreprise.get("ville"):
+        city_postal.append(entreprise["ville"])
+    if city_postal:
+        company_info.append(Paragraph(" ".join(city_postal), styles["Normal"]))
+    
+    if entreprise.get("telephone"):
+        company_info.append(Paragraph(f"Tél: {entreprise['telephone']}", styles["Normal"]))
+    if entreprise.get("email"):
+        company_info.append(Paragraph(entreprise["email"], styles["Normal"]))
+    
+    # SIRET/TVA
+    if entreprise.get("siret"):
+        company_info.append(Paragraph(f"SIRET: {entreprise['siret']}", styles["Normal"]))
+    if entreprise.get("tva_intracommunautaire"):
+        company_info.append(Paragraph(f"TVA: {entreprise['tva_intracommunautaire']}", styles["Normal"]))
+    
+    header_data.append([company_info, []])
+    
+    header_table = Table(header_data, colWidths=[90*mm, 90*mm])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(header_table)
+    elements.append(Spacer(1, 10*mm))
+    
+    # ===== RECEIPT TITLE =====
+    title_style = ParagraphStyle(
+        'ReceiptTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        textColor=colors.HexColor('#059669'),
+        alignment=TA_CENTER,
+        spaceAfter=5*mm
+    )
+    elements.append(Paragraph("REÇU DE PAIEMENT", title_style))
+    
+    # Receipt number and date
+    payment_date = get_local_time(payment.get("recorded_at", ""))
+    receipt_number = f"REC-{payment.get('id', '')[:8].upper()}"
+    
+    meta_style = ParagraphStyle('Meta', fontSize=10, textColor=colors.HexColor('#64748b'), alignment=TA_CENTER)
+    elements.append(Paragraph(f"N° {receipt_number} - {payment_date.strftime('%d/%m/%Y')}", meta_style))
+    elements.append(Spacer(1, 8*mm))
+    
+    # ===== CLIENT INFO =====
+    client_box_style = ParagraphStyle('ClientBox', fontSize=10, leading=14)
+    
+    client_info = f"<b>Reçu de:</b><br/>"
+    client_info += f"{client.get('prenom', '')} {client.get('nom', '')}<br/>"
+    if client.get("email"):
+        client_info += f"{client['email']}<br/>"
+    if client.get("telephone"):
+        client_info += f"{client['telephone']}<br/>"
+    if client.get("adresse"):
+        client_info += f"{client['adresse']}<br/>"
+        if client.get("code_postal") or client.get("ville"):
+            client_info += f"{client.get('code_postal', '')} {client.get('ville', '')}"
+    
+    client_table = Table([[Paragraph(client_info, client_box_style)]], colWidths=[180*mm])
+    client_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f0fdf4')),
+        ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#059669')),
+        ('TOPPADDING', (0, 0), (-1, -1), 4*mm),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4*mm),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4*mm),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4*mm),
+    ]))
+    elements.append(client_table)
+    elements.append(Spacer(1, 8*mm))
+    
+    # ===== PAYMENT DETAILS =====
+    section_style = ParagraphStyle('Section', fontSize=12, textColor=colors.HexColor('#1e293b'), spaceBefore=5*mm, spaceAfter=3*mm)
+    elements.append(Paragraph("<b>DÉTAILS DU PAIEMENT</b>", section_style))
+    
+    # Payment info table
+    payment_amount = payment.get("montant", 0)
+    payment_method = payment.get("mode_paiement", "Autre")
+    payment_methods_labels = {
+        "especes": "Espèces",
+        "carte": "Carte bancaire",
+        "virement": "Virement bancaire",
+        "cheque": "Chèque",
+        "en_ligne": "Paiement en ligne",
+        "stripe": "Stripe"
+    }
+    payment_method_label = payment_methods_labels.get(payment_method, payment_method.capitalize())
+    
+    payment_data = [
+        ["Facture concernée:", facture.get("numero_facture", "N/A")],
+        ["Montant payé:", format_currency_for_pdf(payment_amount, devise)],
+        ["Mode de paiement:", payment_method_label],
+        ["Date du paiement:", payment_date.strftime("%d/%m/%Y à %H:%M")],
+    ]
+    
+    if payment.get("reference"):
+        payment_data.append(["Référence:", payment["reference"]])
+    
+    if payment.get("notes"):
+        payment_data.append(["Notes:", payment["notes"]])
+    
+    payment_table = Table(payment_data, colWidths=[50*mm, 130*mm])
+    payment_table.setStyle(TableStyle([
+        ('FONT', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONT', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#475569')),
+        ('TEXTCOLOR', (1, 0), (1, -1), colors.HexColor('#1e293b')),
+        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+        ('TOPPADDING', (0, 0), (-1, -1), 2*mm),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2*mm),
+        ('LINEBELOW', (0, 0), (-1, -2), 0.25, colors.HexColor('#e2e8f0')),
+    ]))
+    elements.append(payment_table)
+    elements.append(Spacer(1, 8*mm))
+    
+    # ===== INVOICE SUMMARY =====
+    elements.append(Paragraph("<b>RÉCAPITULATIF DE LA FACTURE</b>", section_style))
+    
+    total_ttc = facture.get("total_ttc", 0)
+    montant_paye_total = facture.get("montant_paye", 0)
+    reste_a_payer = total_ttc - montant_paye_total
+    
+    summary_data = [
+        ["Total de la facture:", format_currency_for_pdf(total_ttc, devise)],
+        ["Total payé à ce jour:", format_currency_for_pdf(montant_paye_total, devise)],
+        ["Reste à payer:", format_currency_for_pdf(max(0, reste_a_payer), devise)],
+    ]
+    
+    summary_table = Table(summary_data, colWidths=[80*mm, 100*mm])
+    summary_table.setStyle(TableStyle([
+        ('FONT', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('TOPPADDING', (0, 0), (-1, -1), 2*mm),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2*mm),
+        ('LINEBELOW', (0, 0), (-1, -2), 0.25, colors.HexColor('#e2e8f0')),
+        # Highlight "Reste à payer" row
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#fef2f2') if reste_a_payer > 0 else colors.HexColor('#f0fdf4')),
+        ('TEXTCOLOR', (0, -1), (-1, -1), colors.HexColor('#dc2626') if reste_a_payer > 0 else colors.HexColor('#059669')),
+        ('FONT', (0, -1), (-1, -1), 'Helvetica-Bold'),
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 10*mm))
+    
+    # ===== STATUS BOX =====
+    if reste_a_payer <= 0:
+        status_text = "✓ FACTURE SOLDÉE"
+        status_bg = colors.HexColor('#dcfce7')
+        status_border = colors.HexColor('#059669')
+        status_text_color = colors.HexColor('#166534')
+    else:
+        status_text = f"SOLDE RESTANT: {format_currency_for_pdf(reste_a_payer, devise)}"
+        status_bg = colors.HexColor('#fef3c7')
+        status_border = colors.HexColor('#f59e0b')
+        status_text_color = colors.HexColor('#92400e')
+    
+    status_style = ParagraphStyle('StatusBox', fontSize=14, textColor=status_text_color, alignment=TA_CENTER)
+    status_table = Table([[Paragraph(f"<b>{status_text}</b>", status_style)]], colWidths=[180*mm])
+    status_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), status_bg),
+        ('BOX', (0, 0), (-1, -1), 1, status_border),
+        ('TOPPADDING', (0, 0), (-1, -1), 5*mm),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5*mm),
+    ]))
+    elements.append(status_table)
+    elements.append(Spacer(1, 15*mm))
+    
+    # ===== FOOTER =====
+    company_email = entreprise.get('email', "l'adresse indiquée")
+    company_name = entreprise.get('nom', 'votre entreprise')
+    gen_date = datetime.now().strftime('%d/%m/%Y à %H:%M')
+    footer_text = f"""
+    <font color='#94a3b8' size='8'>
+    Ce reçu a été généré automatiquement par ACTOOS PRO le {gen_date}.<br/>
+    Pour toute question, contactez {company_name} à {company_email}.
+    </font>
+    """
+    elements.append(Paragraph(footer_text, ParagraphStyle('Footer', alignment=TA_CENTER)))
+    
+    doc.build(elements)
+    return buffer.getvalue()

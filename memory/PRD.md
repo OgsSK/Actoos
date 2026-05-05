@@ -35,6 +35,17 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] **Paiements Partiels Factures** - Enregistrer plusieurs versements, statut 'partiel'
 - [x] **Historique Paiements** - Audit trail complet des transactions
 - [x] **Relances Intelligentes** - Rappels avec montant restant uniquement
+- [x] **Reçu de Paiement PDF** - Génération automatique après chaque paiement
+
+### Workflow Devis → Facture
+- [x] **Auto-génération Facture** - Création et envoi automatique lors signature devis (Pro/Enterprise)
+- [x] **Conversion manuelle** - Option conservée pour plan Startup
+
+### Invitations Techniciens
+- [x] **Invitation par SMS** - Code unique 6 chiffres envoyé par SMS
+- [x] **Inscription par téléphone** - Techniciens s'inscrivent avec leur numéro + code
+- [x] **Login par téléphone** - Connexion alternative avec numéro + mot de passe
+- [x] **Gestion invitations** - Liste, annulation, renvoi SMS (admin)
 
 ### PWA Technicien
 - [x] Installation comme app native
@@ -110,6 +121,7 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
 - [x] Endpoint nettoyage données de test
 - [x] **Authentification à deux facteurs (2FA)**
 - [x] **Mode Démo Cohérent et Professionnel**
+- [x] **Mode Démo 24h** - Réinitialisation toutes les 24h (au lieu de chaque session)
 - [x] **Cohérence Paramètres Documents (Devis/Factures)**
 - [x] **Cohérence Données Rapports vs Analytics**
 - [x] **Affichage Ajouter un Site (responsive + validation)**
@@ -215,6 +227,51 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - SignaturePad obligatoire avant completion dans TechnicianApp
   - Nom signataire et date enregistrés
 - **Tests validés** : 94% backend (16/17), 100% frontend
+
+### 2026-05-05 - Paiements Partiels & Relances Intelligentes (P0/P1)
+- **Paiements Partiels Factures** :
+  - `POST /api/factures/{id}/pay` - Enregistrer un paiement partiel ou total
+  - `GET /api/factures/{id}/payments` - Historique complet des paiements
+  - Statut automatique: `emise` → `partiel` (si paiement < total) → `payee` (si soldée)
+  - Collection `invoice_payments` pour audit trail des transactions
+  - Dashboard Admin: dialog paiement avec montant restant pré-calculé
+  - Client Portal: colonne "Reste dû" + bouton "Payer X€" avec montant restant
+- **Relances Intelligentes** :
+  - `POST /api/factures/{id}/relance` supporte statut `partiel`
+  - Email/SMS/WhatsApp mentionnent uniquement le `reste_a_payer`
+  - Lien de paiement personnalisé ou portail client
+- **UI Améliorée** :
+  - Badge "Paiement partiel" en orange/ambre dans la liste des factures
+  - Section "Payé" et "Reste dû" dans le détail de facture
+  - CSS `.status-partiel` ajouté dans index.css
+- **Tests validés** : 100% backend (15/15), 100% frontend (iteration_43)
+
+### 2026-05-05 - Mode Démo 24h + Auto-Facture + Invitations Techniciens + Reçu PDF
+- **Mode Démo 24h** :
+  - Réinitialisation automatique toutes les 24 heures (au lieu de chaque session)
+  - Paramètre `force=true` pour forcer réinitialisation manuelle
+  - Indicateur temps restant avant prochaine réinit
+  - Bannière mise à jour "Données conservées 24h"
+- **Workflow Devis → Facture Auto-génération (Pro/Enterprise)** :
+  - `POST /api/devis/{id}/sign` auto-crée la facture pour Pro/Enterprise
+  - Facture marquée `auto_generated=true`, `converted_from_devis=true`
+  - Auto-émission avec notification email/SMS
+  - Plan Startup: conversion manuelle conservée
+- **Invitations Techniciens par SMS/Téléphone** :
+  - `POST /api/users/invite` - Créer invitation avec code 6 chiffres
+  - `GET /api/users/invites` - Liste toutes les invitations (admin)
+  - `DELETE /api/users/invites/{id}` - Annuler invitation
+  - `POST /api/users/invites/{id}/resend` - Renvoyer SMS d'invitation
+  - `POST /api/auth/tech/verify-code` - Vérifier validité code
+  - `POST /api/auth/tech/register` - S'inscrire avec téléphone + code
+  - `POST /api/auth/tech/login` - Se connecter avec téléphone + mot de passe
+  - Collection `tech_invites` pour suivi des invitations
+  - Code valide 48 heures
+- **Reçu de Paiement PDF** :
+  - `GET /api/factures/{id}/payments/{payment_id}/receipt` - Générer PDF
+  - Design professionnel avec infos entreprise, client, paiement
+  - Récapitulatif facture: total, payé, reste dû
+  - Indicateur visuel "FACTURE SOLDÉE" ou "SOLDE RESTANT"
 
 ### 2026-05-05 - Archivage Client + QR Code Paiement
 - **Système d'archivage client** :

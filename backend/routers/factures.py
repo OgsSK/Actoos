@@ -494,6 +494,53 @@ async def cancel_payment(
     }
 
 
+@router.get("/{facture_id}/payments/{payment_id}/receipt")
+async def get_payment_receipt_pdf(
+    facture_id: str,
+    payment_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate and return a payment receipt PDF (Reçu de paiement)"""
+    from pdf_generator import generate_payment_receipt_pdf
+    
+    facture = await db.factures.find_one(
+        {"id": facture_id, "entreprise_id": current_user["entreprise_id"]},
+        {"_id": 0}
+    )
+    if not facture:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+    
+    payment = await db.invoice_payments.find_one(
+        {"id": payment_id, "facture_id": facture_id},
+        {"_id": 0}
+    )
+    if not payment:
+        raise HTTPException(status_code=404, detail="Paiement non trouvé")
+    
+    if payment.get("cancelled"):
+        raise HTTPException(status_code=400, detail="Ce paiement a été annulé")
+    
+    client = await db.clients.find_one({"id": facture["client_id"]}, {"_id": 0})
+    entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
+    
+    pdf_bytes = generate_payment_receipt_pdf(payment, facture, client, entreprise)
+    
+    await log_action(
+        current_user["entreprise_id"],
+        current_user["user_id"],
+        "download_receipt",
+        "payment",
+        payment_id,
+        {"facture_id": facture_id}
+    )
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=recu_paiement_{payment_id[:8]}.pdf"}
+    )
+
+
 @router.get("/{facture_id}/pdf")
 async def get_facture_pdf(facture_id: str, request: Request, current_user: dict = Depends(get_current_user)):
     """Generate and return facture PDF with intervention photos and signature"""

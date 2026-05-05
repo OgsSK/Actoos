@@ -307,20 +307,159 @@ class DevisSignRequest(BaseModel):
 async def sign_devis(
     devis_id: str,
     data: DevisSignRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user)
 ):
-    """Sign a devis - accepts JSON body with signature and nom_signataire"""
+    """
+    Sign a devis - accepts JSON body with signature and nom_signataire.
+    
+    For Pro/Enterprise plans: Automatically creates a facture and sends it.
+    For Startup plan: Only signs the devis, manual facture creation required.
+    """
+    from plan_limits import check_feature
+    
     now = datetime.now(timezone.utc).isoformat()
     
+    # Get the devis first to check its state
+    devis = await db.devis.find_one(
+        {"id": devis_id, "entreprise_id": current_user["entreprise_id"], "statut": {"$in": ["brouillon", "envoye"]}},
+        {"_id": 0}
+    )
+    
+    if not devis:
+        raise HTTPException(status_code=404, detail="Devis non trouvé ou déjà signé")
+    
+    # Update devis to signed status
     result = await db.devis.update_one(
         {"id": devis_id, "entreprise_id": current_user["entreprise_id"], "statut": {"$in": ["brouillon", "envoye"]}},
         {"$set": {"statut": "signe", "signature_client": data.signature, "nom_signataire": data.nom_signataire, "date_signature": now}}
     )
+    
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Devis non trouvé ou déjà signé")
     
     await log_action(current_user["entreprise_id"], current_user["user_id"], "sign", "devis", devis_id)
-    return {"message": "Devis signé", "date_signature": now}
+    
+    response = {
+        "message": "Devis signé",
+        "date_signature": now,
+        "auto_facture": None
+    }
+    
+    # Check if auto_devis_to_facture feature is available (Pro/Enterprise)
+    has_auto_facture = await check_feature(db, current_user["entreprise_id"], "auto_devis_to_facture")
+    
+    if has_auto_facture:
+        try:
+            # Get entreprise settings
+            entreprise = await db.entreprises.find_one(
+                {"id": current_user["entreprise_id"]}, 
+                {"_id": 0, "sequence_facture": 1, "auto_emit_facture": 1}
+            )
+            
+            # Create facture automatically
+            seq = entreprise.get("sequence_facture", 1)
+            year = datetime.now().year
+            numero_facture = f"F{year}-{seq:05d}"
+            
+            # Update sequence
+            await db.entreprises.update_one(
+                {"id": current_user["entreprise_id"]},
+                {"$inc": {"sequence_facture": 1}}
+            )
+            
+            # Create facture from devis data
+            facture_id = str(uuid.uuid4())
+            now_dt = datetime.now(timezone.utc)
+            
+            facture_dict = {
+                "id": facture_id,
+                "entreprise_id": current_user["entreprise_id"],
+                "client_id": devis["client_id"],
+                "devis_id": devis_id,
+                "intervention_id": devis.get("intervention_id"),
+                "numero_facture": numero_facture,
+                "numero_devis_origine": devis["numero_devis"],
+                "lignes": devis["lignes"],
+                "total_ht": devis["total_ht"],
+                "total_tva": devis["total_tva"],
+                "total_ttc": devis["total_ttc"],
+                "montant_paye": 0,
+                "devise": devis.get("devise", "EUR"),
+                "taux_change_eur": devis.get("taux_change_eur", 1.0),
+                "statut": "brouillon",
+                "conditions_paiement": devis.get("conditions_paiement", "Paiement à réception"),
+                "notes": devis.get("notes", ""),
+                "created_at": now_dt.isoformat(),
+                "date_echeance": (now_dt + timedelta(days=30)).isoformat(),
+                "created_by": current_user["user_id"],
+                "converted_from_devis": True,
+                "auto_generated": True
+            }
+            
+            await db.factures.insert_one(facture_dict)
+            
+            # Update devis status to 'converti'
+            await db.devis.update_one(
+                {"id": devis_id},
+                {"$set": {
+                    "statut": "converti",
+                    "facture_id": facture_id,
+                    "converted_at": now_dt.isoformat()
+                }}
+            )
+            
+            await log_action(
+                current_user["entreprise_id"],
+                current_user["user_id"],
+                "auto_convert_to_facture",
+                "devis",
+                devis_id,
+                {"facture_id": facture_id, "numero_facture": numero_facture}
+            )
+            
+            logger.info(f"Devis {devis['numero_devis']} auto-converted to facture {numero_facture}")
+            
+            response["auto_facture"] = {
+                "created": True,
+                "facture_id": facture_id,
+                "numero_facture": numero_facture
+            }
+            
+            # Auto-emit the facture (send to client)
+            try:
+                from routers.factures import emit_facture_internal
+                
+                # Build base URL
+                base_url = str(request.base_url).rstrip('/')
+                if '/api' in base_url:
+                    base_url = base_url.rsplit('/api', 1)[0]
+                
+                emit_result = await emit_facture_internal(facture_id, current_user, base_url)
+                response["auto_facture"]["emitted"] = True
+                response["auto_facture"]["notification"] = emit_result.get("notification", {})
+                logger.info(f"Facture {numero_facture} auto-emitted")
+            except Exception as e:
+                logger.error(f"Failed to auto-emit facture {numero_facture}: {str(e)}")
+                response["auto_facture"]["emitted"] = False
+                response["auto_facture"]["emit_error"] = str(e)
+            
+            response["message"] = f"Devis signé et facture {numero_facture} générée automatiquement"
+            
+        except Exception as e:
+            logger.error(f"Failed to auto-create facture from devis {devis_id}: {str(e)}")
+            response["auto_facture"] = {
+                "created": False,
+                "error": str(e)
+            }
+    else:
+        # Startup plan - manual facture creation required
+        response["auto_facture"] = {
+            "created": False,
+            "reason": "Plan Startup - création manuelle de facture requise"
+        }
+    
+    return response
 
 
 @router.post("/{devis_id}/convert-to-facture")

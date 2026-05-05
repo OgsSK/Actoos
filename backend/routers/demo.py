@@ -27,6 +27,7 @@ from auth import get_password_hash, get_current_user
 DEMO_EMAIL = "demo@actoos.com"
 DEMO_PASSWORD = "demo2024"
 DEMO_PLAN = "enterprise"  # Le plan simulé en démo
+DEMO_RESET_INTERVAL_HOURS = 24  # Réinitialisation toutes les 24 heures
 
 # Données de démonstration initiales
 DEMO_SEED_DATA = {
@@ -81,8 +82,76 @@ DEMO_SEED_DATA = {
 
 
 async def get_demo_entreprise():
-    """Récupère l'entreprise démo"""
-    return await db.entreprises.find_one({"is_demo": True})
+    """Récupère l'entreprise démo ou la crée si elle n'existe pas"""
+    entreprise = await db.entreprises.find_one({"is_demo": True}, {"_id": 0})
+    
+    if not entreprise:
+        # Créer l'entreprise démo
+        from subscription_service import PLANS
+        
+        entreprise_id = str(uuid.uuid4())
+        admin_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Récupérer les limites du plan enterprise
+        enterprise_plan = PLANS.get("enterprise", {})
+        
+        entreprise = {
+            "id": entreprise_id,
+            "nom": "Entreprise Démo",
+            "email": DEMO_EMAIL,
+            "telephone": "+33 1 23 45 67 89",
+            "adresse": "123 Avenue de la Démonstration",
+            "ville": "Paris",
+            "code_postal": "75001",
+            "plan": DEMO_PLAN,
+            "plan_limits": {
+                "max_admins": enterprise_plan.get("max_admins", -1),
+                "max_technicians": enterprise_plan.get("max_technicians", -1),
+                "max_interventions_month": enterprise_plan.get("max_interventions_month", -1),
+                "max_categories": enterprise_plan.get("max_categories", -1),
+                "multi_sites": enterprise_plan.get("multi_sites", True),
+                "offline_mode": enterprise_plan.get("offline_mode", True),
+                "geolocation": enterprise_plan.get("geolocation", True),
+                "auto_pdf_reports": enterprise_plan.get("auto_pdf_reports", True),
+                "advanced_analytics": enterprise_plan.get("advanced_analytics", True),
+                "white_label": enterprise_plan.get("white_label", True),
+                "api_access": enterprise_plan.get("api_access", True),
+                "advanced_branding": enterprise_plan.get("advanced_branding", True),
+                "smart_planning": enterprise_plan.get("smart_planning", True),
+                "auto_devis_to_facture": enterprise_plan.get("auto_devis_to_facture", True),
+                "team_validation": enterprise_plan.get("team_validation", True),
+                "sms_included": enterprise_plan.get("sms_included", 500)
+            },
+            "is_demo": True,
+            "demo_session_count": 0,
+            "demo_last_reset": now,
+            "sequence_facture": 1,
+            "sequence_devis": 1,
+            "created_at": now
+        }
+        
+        await db.entreprises.insert_one(entreprise)
+        
+        # Créer l'admin démo
+        admin = {
+            "id": admin_id,
+            "email": DEMO_EMAIL,
+            "password_hash": get_password_hash(DEMO_PASSWORD),
+            "nom": "Admin",
+            "prenom": "Demo",
+            "role": "admin",
+            "statut": "actif",
+            "is_active": True,
+            "is_demo": True,
+            "entreprise_id": entreprise_id,
+            "created_at": now
+        }
+        await db.users.insert_one(admin)
+        
+        logger.info(f"Created demo entreprise and admin: {entreprise_id}")
+    
+    return entreprise
 
 
 async def reset_demo_data(entreprise_id: str):
@@ -269,10 +338,11 @@ async def reset_demo_data(entreprise_id: str):
 
 
 @router.post("/init")
-async def init_demo_session():
+async def init_demo_session(force: bool = False):
     """
     Initialise une nouvelle session démo
-    - Réinitialise toutes les données
+    - Réinitialise les données SEULEMENT si plus de 24h depuis la dernière réinitialisation
+    - Paramètre force=true pour forcer la réinitialisation
     - Retourne les infos de connexion
     """
     entreprise = await get_demo_entreprise()
@@ -283,23 +353,52 @@ async def init_demo_session():
             detail="Compte démo non configuré. Contactez l'administrateur."
         )
     
-    # Réinitialiser les données
-    reset_stats = await reset_demo_data(entreprise["id"])
+    # Vérifier si on doit réinitialiser (plus de 24h depuis dernière réinit)
+    last_reset = entreprise.get("demo_last_reset")
+    should_reset = force  # Force reset if requested
     
-    # Mettre à jour le timestamp de dernière réinitialisation
-    await db.entreprises.update_one(
-        {"id": entreprise["id"]},
-        {"$set": {
-            "demo_last_reset": datetime.now(timezone.utc).isoformat(),
-            "demo_session_count": (entreprise.get("demo_session_count", 0) or 0) + 1
-        }}
-    )
+    if not should_reset:
+        if last_reset:
+            try:
+                last_reset_dt = datetime.fromisoformat(last_reset.replace('Z', '+00:00'))
+                hours_since_reset = (datetime.now(timezone.utc) - last_reset_dt).total_seconds() / 3600
+                should_reset = hours_since_reset >= DEMO_RESET_INTERVAL_HOURS
+            except:
+                should_reset = True  # Reset if we can't parse the date
+        else:
+            should_reset = True  # Reset if never reset before
+    
+    reset_stats = None
+    if should_reset:
+        # Réinitialiser les données
+        reset_stats = await reset_demo_data(entreprise["id"])
+        
+        # Mettre à jour le timestamp de dernière réinitialisation
+        await db.entreprises.update_one(
+            {"id": entreprise["id"]},
+            {"$set": {
+                "demo_last_reset": datetime.now(timezone.utc).isoformat(),
+                "demo_session_count": (entreprise.get("demo_session_count", 0) or 0) + 1
+            }}
+        )
+    
+    # Calculer le temps restant avant prochaine réinit
+    next_reset_in_hours = DEMO_RESET_INTERVAL_HOURS
+    if last_reset and not should_reset:
+        try:
+            last_reset_dt = datetime.fromisoformat(last_reset.replace('Z', '+00:00'))
+            hours_since = (datetime.now(timezone.utc) - last_reset_dt).total_seconds() / 3600
+            next_reset_in_hours = max(0, DEMO_RESET_INTERVAL_HOURS - hours_since)
+        except:
+            pass
     
     return {
         "success": True,
-        "message": "Session démo initialisée",
+        "message": "Session démo initialisée" if should_reset else "Session démo active (données conservées)",
+        "data_reset": should_reset,
         "plan": DEMO_PLAN,
         "reset_stats": reset_stats,
+        "next_reset_in_hours": round(next_reset_in_hours, 1),
         "credentials": {
             "email": DEMO_EMAIL,
             "password": DEMO_PASSWORD
@@ -329,23 +428,36 @@ async def get_demo_status(current_user: dict = Depends(get_current_user)):
             "message": None
         }
     
+    # Calculer le temps restant avant prochaine réinit
+    last_reset = entreprise.get("demo_last_reset") if entreprise else None
+    next_reset_in_hours = DEMO_RESET_INTERVAL_HOURS
+    if last_reset:
+        try:
+            last_reset_dt = datetime.fromisoformat(last_reset.replace('Z', '+00:00'))
+            hours_since = (datetime.now(timezone.utc) - last_reset_dt).total_seconds() / 3600
+            next_reset_in_hours = max(0, DEMO_RESET_INTERVAL_HOURS - hours_since)
+        except:
+            pass
+    
     return {
         "is_demo": True,
         "plan_simulated": DEMO_PLAN,
-        "last_reset": entreprise.get("demo_last_reset") if entreprise else None,
+        "last_reset": last_reset,
+        "next_reset_in_hours": round(next_reset_in_hours, 1),
+        "reset_interval_hours": DEMO_RESET_INTERVAL_HOURS,
         "session_count": entreprise.get("demo_session_count") or 0 if entreprise else 0,
         "restrictions": {
             "emails_simulated": True,
             "sms_simulated": True,
             "whatsapp_simulated": True,
             "stripe_disabled": True,
-            "data_not_persistent": True
+            "data_persistent_24h": True
         },
         "message": {
             "title": "Mode démonstration actif",
             "description": "Vous explorez actuellement une version simulée du dashboard administrateur.",
-            "details": "Certaines actions (emails, notifications, signatures) sont simulées pour vous permettre de tester l'application en toute sécurité.",
-            "cta": "Pour accéder à l'ensemble des fonctionnalités et à l'application technicien, veuillez activer un abonnement."
+            "details": f"Vos données sont conservées pendant {DEMO_RESET_INTERVAL_HOURS}h. Prochaine réinitialisation dans {round(next_reset_in_hours, 1)}h.",
+            "cta": "Pour accéder à l'ensemble des fonctionnalités, veuillez activer un abonnement."
         }
     }
 

@@ -120,7 +120,7 @@ export const DemoBanner = ({ variant = 'full' }) => {
               <RestrictionBadge icon={Mail} text="Emails simulés" />
               <RestrictionBadge icon={MessageSquare} text="SMS simulés" />
               <RestrictionBadge icon={Shield} text="Paiements désactivés" />
-              <RestrictionBadge icon={Database} text="Données temporaires" />
+              <RestrictionBadge icon={Database} text="Données 24h" />
             </div>
           </div>
         )}
@@ -132,7 +132,7 @@ export const DemoBanner = ({ variant = 'full' }) => {
             <RestrictionBadge icon={Mail} text="Emails" />
             <RestrictionBadge icon={MessageSquare} text="SMS / WhatsApp" />
             <RestrictionBadge icon={Shield} text="Paiements" />
-            <RestrictionBadge icon={Database} text="Données non persistantes" />
+            <RestrictionBadge icon={Database} text="Données conservées 24h" />
           </div>
         </div>
       </div>

@@ -737,3 +737,242 @@ async def delete_account(
         "message": "Compte supprimé définitivement",
         "deleted": deleted_counts
     }
+
+
+
+# ======================
+# Technician Phone Registration
+# ======================
+
+from pydantic import BaseModel
+from typing import Optional
+
+class TechPhoneRegister(BaseModel):
+    telephone: str
+    invite_code: str
+    password: str
+    
+class TechPhoneLogin(BaseModel):
+    telephone: str
+    password: str
+
+
+@router.post("/tech/register", response_model=TokenResponse)
+async def register_technician_with_phone(data: TechPhoneRegister):
+    """
+    Register a technician using their phone number and invite code.
+    This is the main registration flow for technicians invited via SMS.
+    """
+    # Clean phone number
+    phone = data.telephone.replace(" ", "").replace("-", "").replace(".", "")
+    if not phone.startswith("+"):
+        if phone.startswith("0"):
+            phone = "+33" + phone[1:]
+        else:
+            phone = "+33" + phone
+    
+    # Find the invite
+    invite = await db.tech_invites.find_one({
+        "telephone": phone,
+        "invite_code": data.invite_code,
+        "status": "pending"
+    }, {"_id": 0})
+    
+    if not invite:
+        raise HTTPException(
+            status_code=404, 
+            detail="Invitation non trouvée. Vérifiez votre numéro et le code d'invitation."
+        )
+    
+    # Check if expired
+    if datetime.fromisoformat(invite["expires_at"].replace('Z', '+00:00')) < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=400, 
+            detail="Cette invitation a expiré. Demandez à votre employeur de vous renvoyer une invitation."
+        )
+    
+    # Check if user already exists with this phone
+    existing = await db.users.find_one({
+        "telephone": {"$regex": phone.replace("+", "\\+"), "$options": "i"},
+        "entreprise_id": invite["entreprise_id"]
+    })
+    if existing:
+        raise HTTPException(
+            status_code=400, 
+            detail="Un compte existe déjà avec ce numéro de téléphone."
+        )
+    
+    # Create the technician user
+    user_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    
+    user_data = {
+        "id": user_id,
+        "telephone": phone,
+        "email": invite.get("email"),
+        "nom": invite["nom"],
+        "prenom": invite["prenom"],
+        "password_hash": get_password_hash(data.password),
+        "role": "technicien",
+        "statut": "actif",
+        "is_active": True,
+        "entreprise_id": invite["entreprise_id"],
+        "specialites": invite.get("specialites", []),
+        "registered_via": "phone_invite",
+        "invite_id": invite["id"],
+        "created_at": now
+    }
+    
+    await db.users.insert_one(user_data)
+    
+    # Mark invite as used
+    await db.tech_invites.update_one(
+        {"id": invite["id"]},
+        {"$set": {
+            "status": "accepted",
+            "accepted_at": now,
+            "user_id": user_id
+        }}
+    )
+    
+    # Create access token
+    access_token = create_access_token(
+        data={
+            "sub": user_id,
+            "entreprise_id": invite["entreprise_id"],
+            "role": "technicien"
+        }
+    )
+    
+    # Get entreprise info for response
+    entreprise = await db.entreprises.find_one(
+        {"id": invite["entreprise_id"]},
+        {"_id": 0, "nom": 1, "plan": 1}
+    )
+    
+    logger.info(f"Technician registered via phone: {phone}, user_id: {user_id}")
+    
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user_id=user_id,
+        role="technicien",
+        nom=invite["nom"],
+        prenom=invite["prenom"],
+        entreprise_id=invite["entreprise_id"],
+        entreprise_nom=entreprise.get("nom") if entreprise else None,
+        plan=entreprise.get("plan") if entreprise else None
+    )
+
+
+@router.post("/tech/login", response_model=TokenResponse)
+async def login_technician_with_phone(data: TechPhoneLogin):
+    """
+    Login a technician using their phone number and password.
+    Alternative login method for technicians who registered via phone.
+    """
+    # Clean phone number
+    phone = data.telephone.replace(" ", "").replace("-", "").replace(".", "")
+    if not phone.startswith("+"):
+        if phone.startswith("0"):
+            phone = "+33" + phone[1:]
+        else:
+            phone = "+33" + phone
+    
+    # Find user by phone number
+    user = await db.users.find_one({
+        "telephone": {"$regex": phone.replace("+", "\\+"), "$options": "i"},
+        "role": "technicien"
+    }, {"_id": 0})
+    
+    if not user:
+        raise HTTPException(
+            status_code=401, 
+            detail="Numéro de téléphone ou mot de passe incorrect"
+        )
+    
+    # Verify password
+    if not verify_password(data.password, user["password_hash"]):
+        raise HTTPException(
+            status_code=401, 
+            detail="Numéro de téléphone ou mot de passe incorrect"
+        )
+    
+    # Check if active
+    if user.get("statut") != "actif" or not user.get("is_active", True):
+        raise HTTPException(
+            status_code=403,
+            detail="Votre compte a été désactivé. Contactez votre employeur."
+        )
+    
+    # Create access token
+    access_token = create_access_token(
+        data={
+            "sub": user["id"],
+            "entreprise_id": user["entreprise_id"],
+            "role": user["role"]
+        }
+    )
+    
+    # Get entreprise info
+    entreprise = await db.entreprises.find_one(
+        {"id": user["entreprise_id"]},
+        {"_id": 0, "nom": 1, "plan": 1}
+    )
+    
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user_id=user["id"],
+        role=user["role"],
+        nom=user.get("nom"),
+        prenom=user.get("prenom"),
+        entreprise_id=user["entreprise_id"],
+        entreprise_nom=entreprise.get("nom") if entreprise else None,
+        plan=entreprise.get("plan") if entreprise else None
+    )
+
+
+@router.post("/tech/verify-code")
+async def verify_invite_code(telephone: str, invite_code: str):
+    """
+    Verify if an invite code is valid before showing registration form.
+    Used by the mobile app to check if the user should see registration or error.
+    """
+    # Clean phone number
+    phone = telephone.replace(" ", "").replace("-", "").replace(".", "")
+    if not phone.startswith("+"):
+        if phone.startswith("0"):
+            phone = "+33" + phone[1:]
+        else:
+            phone = "+33" + phone
+    
+    # Find the invite
+    invite = await db.tech_invites.find_one({
+        "telephone": phone,
+        "invite_code": invite_code,
+        "status": "pending"
+    }, {"_id": 0, "invite_code": 0})  # Don't expose code in response
+    
+    if not invite:
+        return {"valid": False, "error": "Code invalide ou invitation non trouvée"}
+    
+    # Check if expired
+    if datetime.fromisoformat(invite["expires_at"].replace('Z', '+00:00')) < datetime.now(timezone.utc):
+        return {"valid": False, "error": "Invitation expirée"}
+    
+    # Get entreprise name
+    entreprise = await db.entreprises.find_one(
+        {"id": invite["entreprise_id"]},
+        {"_id": 0, "nom": 1}
+    )
+    
+    return {
+        "valid": True,
+        "invite": {
+            "nom": invite["nom"],
+            "prenom": invite["prenom"],
+            "entreprise_nom": entreprise.get("nom") if entreprise else None,
+            "expires_at": invite["expires_at"]
+        }
+    }

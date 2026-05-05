@@ -440,8 +440,16 @@ class SyncRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: UserResponse
+    user: Optional[UserResponse] = None
     entreprise: Optional[dict] = None
+    # Additional fields for simplified tech login response
+    user_id: Optional[str] = None
+    role: Optional[str] = None
+    nom: Optional[str] = None
+    prenom: Optional[str] = None
+    entreprise_id: Optional[str] = None
+    entreprise_nom: Optional[str] = None
+    plan: Optional[str] = None
 
 class RegisterRequest(BaseModel):
     entreprise_nom: str
