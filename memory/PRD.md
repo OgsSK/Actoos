@@ -47,6 +47,27 @@ Il permet de configurer directement depuis l'interface :
 - **PGRST201** : Relation ambiguë interventions↔users → FK explicites ajoutées
 - **22P02** : Enum 'tech' invalide → Remplacé par 'technicien'
 - **22P02** : UUID vide à la création → Sanitisation des chaînes vides en null
+- **SSE Legacy** : Migré vers Supabase Realtime (plus d'erreurs 401)
+- **PlanUsageWidget** : Migré vers Supabase (plus d'appel /api/usage)
+
+## Politiques RLS Sécurisées
+
+**Fichier SQL prêt** : `/app/supabase/migrations/004_secure_rls_policies.sql`
+
+### Fonctionnalités :
+- ✅ Fonction `get_user_entreprise_id()` - Extrait l'entreprise_id du JWT
+- ✅ Fonction `is_super_admin()` - Vérifie si l'utilisateur est super_admin
+- ✅ Multi-tenant strict sur toutes les tables
+- ✅ Super admin peut voir toutes les données
+- ✅ Accès public pour signature devis via token
+
+### Tables protégées :
+- `users` - Accès entreprise uniquement
+- `entreprises` - Accès propre entreprise
+- `clients`, `interventions`, `devis`, `factures` - Multi-tenant
+- `categories`, `sites`, `user_invites` - Multi-tenant
+- `platform_config` - Super admin uniquement
+- `photos` - Via intervention → entreprise
 
 ## Credentials de Test
 - **Super Admin**: contact@actoos.com / Salifkane&&7
@@ -74,15 +95,14 @@ Il permet de configurer directement depuis l'interface :
 
 ## Prochaines Étapes
 
-### P1 - Améliorations mineures
-1. Désactiver/migrer les endpoints SSE legacy (401 dans la console mais non-bloquant)
-2. Réécrire les politiques RLS de manière sécurisée (actuellement `USING (true)`)
+### P1 - À faire par l'utilisateur
+1. **Exécuter le script RLS** : `/app/supabase/migrations/004_secure_rls_policies.sql` dans Supabase SQL Editor
+2. Activer Supabase Realtime sur les tables `interventions`, `devis`, `factures` (pour notifications temps réel)
 
 ### P2 - ACTOOS ONE
 1. Recevoir les spécifications de l'utilisateur
 2. Développer one.actoos.com
 
 ## Issues Restantes (Non-Bloquantes)
-- SSE `/api/events/stream` : 401 Unauthorized (endpoint Railway legacy)
-- `/api/usage` : 401 Unauthorized (endpoint Railway legacy)
-- Ces endpoints peuvent être ignorés ou migrés vers Supabase Realtime
+- Aucune issue bloquante restante
+- Les endpoints Railway legacy ont été complètement migrés

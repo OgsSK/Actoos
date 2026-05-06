@@ -293,20 +293,71 @@ const PlanUsageWidget = ({ compact = false }) => {
 
   const fetchData = async () => {
     try {
-      const [usageRes, plansRes, billingRes, availablePlansRes] = await Promise.all([
-        api.get('/usage'),
-        api.get('/plans'),
-        api.get('/billing-summary').catch(() => ({ data: null })),
-        api.get('/available-plans').catch(() => ({ data: null }))
+      // Fetch data from Supabase instead of Railway API
+      const { supabase } = await import('../lib/supabase');
+      const entrepriseId = user?.entreprise_id;
+      
+      if (!entrepriseId) {
+        setLoading(false);
+        return;
+      }
+
+      // Get entreprise data for plan info
+      const { data: entreprise } = await supabase
+        .from('entreprises')
+        .select('plan, subscription_status, subscription_end_date, max_users, max_interventions, max_clients')
+        .eq('id', entrepriseId)
+        .single();
+
+      // Count current usage
+      const [usersCount, interventionsCount, clientsCount, techniciensCount] = await Promise.all([
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('entreprise_id', entrepriseId),
+        supabase.from('interventions').select('id', { count: 'exact', head: true }).eq('entreprise_id', entrepriseId),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('entreprise_id', entrepriseId).neq('statut', 'archive'),
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('entreprise_id', entrepriseId).in('role', ['technicien'])
       ]);
-      setUsage(usageRes.data);
-      setPlans(plansRes.data);
-      if (billingRes.data) {
-        setBillingSummary(billingRes.data);
-      }
-      if (availablePlansRes.data) {
-        setAvailablePlans(availablePlansRes.data.plans || []);
-      }
+
+      // Set default limits based on plan
+      const planLimits = {
+        startup: { users: 3, techniciens: 2, clients: 100, interventions: 500 },
+        starter: { users: 3, techniciens: 2, clients: 100, interventions: 500 },
+        pro: { users: 10, techniciens: 5, clients: 500, interventions: 2000 },
+        enterprise: { users: -1, techniciens: -1, clients: -1, interventions: -1 } // Unlimited
+      };
+
+      const currentPlan = entreprise?.plan || 'startup';
+      const limits = planLimits[currentPlan] || planLimits.startup;
+
+      setUsage({
+        plan: currentPlan,
+        subscription_status: entreprise?.subscription_status || 'active',
+        subscription_end_date: entreprise?.subscription_end_date,
+        usage: {
+          users: { current: usersCount.count || 0, max: entreprise?.max_users || limits.users },
+          techniciens: { current: techniciensCount.count || 0, max: limits.techniciens },
+          clients: { current: clientsCount.count || 0, max: entreprise?.max_clients || limits.clients },
+          interventions: { current: interventionsCount.count || 0, max: entreprise?.max_interventions || limits.interventions },
+          features: {
+            api_access: currentPlan === 'enterprise',
+            white_label: currentPlan === 'enterprise',
+            support_priority: currentPlan !== 'startup'
+          }
+        }
+      });
+
+      // Set available plans
+      setPlans({
+        startup: PLAN_FEATURES.startup,
+        pro: PLAN_FEATURES.pro,
+        enterprise: PLAN_FEATURES.enterprise
+      });
+
+      setAvailablePlans([
+        { id: 'startup', ...PLAN_FEATURES.startup },
+        { id: 'pro', ...PLAN_FEATURES.pro },
+        { id: 'enterprise', ...PLAN_FEATURES.enterprise }
+      ]);
+
     } catch (error) {
       console.error('Error fetching usage:', error);
     } finally {
