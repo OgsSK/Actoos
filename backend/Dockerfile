@@ -34,7 +34,10 @@ COPY . .
 # Create static directory if not exists
 RUN mkdir -p /app/static
 
-# Environment variables (Railway will override these)
+# Make start script executable
+RUN chmod +x /app/start.sh
+
+# Environment variables
 ENV PORT=8001
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -44,7 +47,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT}/health || exit 1
 
 # Expose port
-EXPOSE ${PORT}
+EXPOSE 8001
 
-# Start command - use shell form for variable expansion
-CMD uvicorn server:app --host 0.0.0.0 --port ${PORT:-8001}
+# Start command using script
+CMD ["/app/start.sh"]
