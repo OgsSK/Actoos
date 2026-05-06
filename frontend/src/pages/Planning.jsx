@@ -297,10 +297,7 @@ export const PlanningPage = () => {
       setTechniciens((techsData || []).filter(u => u.statut === 'actif'));
     } catch (error) {
       console.error('Error loading planning data:', error);
-      // Only show error if it's not a permission issue
-      if (error.code !== 'PGRST301' && error.code !== '42501') {
-        toast.error('Erreur lors du chargement');
-      }
+      // Silently fail - just show empty planning
       setInterventions([]);
     } finally {
       setLoading(false);
