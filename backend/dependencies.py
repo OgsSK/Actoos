@@ -47,6 +47,7 @@ if USE_POSTGRES:
         
         pg_url = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://").replace("postgresql://", "postgresql+asyncpg://")
         
+        # Disable prepared statement cache for pgbouncer/Supabase Transaction Pooler compatibility
         pg_engine = create_async_engine(
             pg_url,
             echo=False,
@@ -55,6 +56,10 @@ if USE_POSTGRES:
             pool_timeout=30,
             pool_recycle=1800,
             pool_pre_ping=True,
+            connect_args={
+                "statement_cache_size": 0,
+                "prepared_statement_cache_size": 0,
+            }
         )
         
         pg_session_factory = async_sessionmaker(
