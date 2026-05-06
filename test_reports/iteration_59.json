@@ -1,0 +1,128 @@
+{
+  "summary": "TEST FINAL ABSOLU - Iteration 59. VALIDATION ÉCHOUÉE: 8 erreurs 400 persistent. Les colonnes Supabase (montant_total, max_users, max_interventions, max_clients) ne sont PAS correctement configurées ou n'existent pas.",
+  "backend_issues": {
+    "critical": [
+      {
+        "table": "devis",
+        "column": "montant_total",
+        "issue": "Colonne manquante ou mal configurée - cause 2 erreurs 400 sur Dashboard widgets",
+        "priority": "CRITICAL",
+        "error_url": "https://zmngftlkdimwvkxmduvr.supabase.co/rest/v1/devis?select=id,numero,statut,montant_total,created_at,client:clients(id,nom,prenom)"
+      },
+      {
+        "table": "factures",
+        "column": "montant_total",
+        "issue": "Colonne manquante ou mal configurée - cause 4 erreurs 400 sur Dashboard widgets",
+        "priority": "CRITICAL",
+        "error_url": "https://zmngftlkdimwvkxmduvr.supabase.co/rest/v1/factures?select=id,numero,statut,montant_total,created_at,client:clients(id,nom,prenom)"
+      },
+      {
+        "table": "entreprises",
+        "columns": ["max_users", "max_interventions", "max_clients"],
+        "issue": "Colonnes manquantes ou mal configurées - cause 2 erreurs 400 sur plan widget",
+        "priority": "CRITICAL",
+        "error_url": "https://zmngftlkdimwvkxmduvr.supabase.co/rest/v1/entreprises?select=plan,subscription_status,subscription_end_date,max_users,max_interventions,max_clients"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Dashboard widgets",
+        "issue": "Widgets 'Derniers devis' et 'Dernières factures' affichent 'Aucun élément récent' à cause des erreurs 400",
+        "affected_selectors": ["[data-testid='recent-devis']", "[data-testid='recent-factures']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_results": {
+    "latency_measurements": {
+      "login": {
+        "time_ms": 5907,
+        "status": "WARN",
+        "note": "Login plus lent que prévu (target < 2000ms)"
+      },
+      "dashboard": {
+        "time_ms": 3002,
+        "status": "WARN"
+      },
+      "clients": {
+        "time_ms": 2020,
+        "status": "PASS"
+      },
+      "interventions": {
+        "time_ms": 2020,
+        "status": "PASS"
+      },
+      "devis": {
+        "time_ms": 2017,
+        "status": "PASS"
+      },
+      "settings": {
+        "time_ms": "N/A - loaded successfully",
+        "status": "PASS"
+      }
+    },
+    "console_errors": {
+      "total_400_errors": 8,
+      "400_errors_breakdown": {
+        "devis_montant_total": 2,
+        "factures_montant_total": 4,
+        "entreprises_max_columns": 2
+      }
+    }
+  },
+  "validation_status": {
+    "zero_400_errors": false,
+    "target_met": false,
+    "actual_400_errors": 8,
+    "expected_400_errors": 0
+  },
+  "columns_still_missing_in_supabase": {
+    "devis": ["montant_total"],
+    "factures": ["montant_total"],
+    "entreprises": ["max_users", "max_interventions", "max_clients"]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_59.json"
+  ],
+  "action_items": [
+    "CRITIQUE: Vérifier que la colonne 'montant_total' (numeric) existe dans la table 'devis' sur Supabase",
+    "CRITIQUE: Vérifier que la colonne 'montant_total' (numeric) existe dans la table 'factures' sur Supabase",
+    "CRITIQUE: Vérifier que les colonnes 'max_users', 'max_interventions', 'max_clients' (integer) existent dans la table 'entreprises' sur Supabase",
+    "VÉRIFICATION: Utiliser le SQL Editor de Supabase pour confirmer: SELECT column_name FROM information_schema.columns WHERE table_name IN ('devis', 'factures', 'entreprises')",
+    "Si les colonnes existent mais erreurs persistent: Vérifier les permissions RLS (Row Level Security) sur ces colonnes"
+  ],
+  "critical_code_review_comments": [
+    "Les colonnes Supabase ne sont PAS correctement ajoutées malgré l'affirmation de l'utilisateur",
+    "Les erreurs 400 indiquent que Supabase ne reconnaît pas les colonnes demandées dans les requêtes SELECT",
+    "Possible cause: colonnes ajoutées avec mauvais noms ou types, ou RLS bloquant l'accès"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Frontend only test",
+    "frontend": "70% - Navigation OK, mais Dashboard widgets cassés par erreurs 400"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "contact@actoos.com",
+      "password": "Salifkane&&7"
+    }
+  },
+  "seed_data_creation": "Aucune",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Les colonnes Supabase (montant_total dans devis/factures, max_users/max_interventions/max_clients dans entreprises) causent toujours 8 erreurs 400. L'utilisateur affirme les avoir ajoutées mais les erreurs persistent. Vérifier via SQL Editor de Supabase que les colonnes existent réellement avec les bons noms et types.",
+  "rca_of_the_issue": {
+    "root_cause": "Colonnes Supabase manquantes ou mal configurées (montant_total, max_users, max_interventions, max_clients)",
+    "impact": "8 erreurs 400 par session, widgets Dashboard non fonctionnels",
+    "reproduction_steps": [
+      "1. Se connecter avec contact@actoos.com / Salifkane&&7",
+      "2. Observer les erreurs 400 dans la console réseau sur le Dashboard",
+      "3. Les widgets 'Derniers devis' et 'Dernières factures' affichent 'Aucun élément récent'"
+    ],
+    "mitigation": "Vérifier et ajouter les colonnes manquantes dans Supabase via SQL: ALTER TABLE devis ADD COLUMN IF NOT EXISTS montant_total NUMERIC; ALTER TABLE factures ADD COLUMN IF NOT EXISTS montant_total NUMERIC; ALTER TABLE entreprises ADD COLUMN IF NOT EXISTS max_users INTEGER; ALTER TABLE entreprises ADD COLUMN IF NOT EXISTS max_interventions INTEGER; ALTER TABLE entreprises ADD COLUMN IF NOT EXISTS max_clients INTEGER;"
+  }
+}
