@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDevis, useClients } from '../lib/supabaseHooks';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -211,30 +212,13 @@ const LineItem = ({ ligne, index, onChange, onRemove }) => (
 
 // Devis List Component
 export const DevisList = () => {
-  const [devisList, setDevisList] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [deleting, setDeleting] = useState(false);
-  const { api, isAdmin, formatAmount } = useAuth();
+  const { user, api, isAdmin, formatAmount } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchDevis();
-  }, [statusFilter]);
-
-  const fetchDevis = async () => {
-    try {
-      const params = statusFilter && statusFilter !== 'all' ? { statut: statusFilter } : {};
-      const response = await api.get('/devis', { params });
-      setDevisList(response.data);
-      setSelectedIds([]);
-    } catch (error) {
-      console.error('Error fetching devis:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+  const { data: devisList, loading, refetch: fetchDevis } = useDevis(user?.entreprise_id, { statut: statusFilter });
 
   const toggleSelection = (id, e) => {
     e.stopPropagation();

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useInterventions, useClients, useTechniciens, useCategories } from '../lib/supabaseHooks';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -30,27 +31,11 @@ import { toast } from 'sonner';
 
 // Intervention List Component
 export const InterventionsList = () => {
-  const [interventions, setInterventions] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
-  const { api } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchInterventions();
-  }, [statusFilter]);
-
-  const fetchInterventions = async () => {
-    try {
-      const params = statusFilter && statusFilter !== 'all' ? { statut: statusFilter } : {};
-      const response = await api.get('/interventions', { params });
-      setInterventions(response.data);
-    } catch (error) {
-      console.error('Error fetching interventions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+  const { data: interventions, loading, refetch } = useInterventions(user?.entreprise_id, { statut: statusFilter });
 
   return (
     <div className="space-y-6" data-testid="interventions-list">

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTechniciens, useCategories } from '../lib/supabaseHooks';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -126,12 +127,9 @@ const SkillsManager = ({ user, categories, onUpdate, onClose }) => {
 
 // Techniciens List Component
 export const TechniciensList = () => {
-  const [users, setUsers] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
-  const [inviteMethod, setInviteMethod] = useState('sms'); // 'sms' or 'email'
+  const [inviteMethod, setInviteMethod] = useState('sms');
   const [showSkills, setShowSkills] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [inviteData, setInviteData] = useState({ email: '', nom: '', prenom: '', telephone: '' });
@@ -139,34 +137,15 @@ export const TechniciensList = () => {
   const [inviteResult, setInviteResult] = useState(null);
   const [copied, setCopied] = useState(false);
   const [sendingSms, setSendingSms] = useState(null);
-  const { api, isAdmin } = useAuth();
+  const { user, api, isAdmin } = useAuth();
   const navigate = useNavigate();
 
+  const { data: users, loading, refetch: fetchUsers } = useTechniciens(user?.entreprise_id);
+  const { data: categories, refetch: fetchCategories } = useCategories(user?.entreprise_id);
+
   useEffect(() => {
-    fetchUsers();
-    fetchCategories();
     fetchPendingInvites();
   }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const response = await api.get('/users');
-      setUsers(response.data);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get('/categories');
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
 
   const fetchPendingInvites = async () => {
     try {
@@ -177,8 +156,8 @@ export const TechniciensList = () => {
     }
   };
 
-  const openSkillsDialog = (user) => {
-    setSelectedUser(user);
+  const openSkillsDialog = (userItem) => {
+    setSelectedUser(userItem);
     setShowSkills(true);
   };
 

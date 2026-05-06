@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useClients } from '../lib/supabaseHooks';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -28,46 +29,21 @@ import { toast } from 'sonner';
 
 // Client List Component
 export const ClientsList = () => {
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showArchived, setShowArchived] = useState(false);
-  const [archivedCount, setArchivedCount] = useState(0);
-  const { api } = useAuth();
+  const { user, api } = useAuth();
   const navigate = useNavigate();
+  
+  const { data: clients, loading, archivedCount, refetch } = useClients(user?.entreprise_id, { 
+    archivedOnly: showArchived,
+    search: search 
+  });
 
-  useEffect(() => {
-    fetchClients();
-    fetchArchivedCount();
-  }, [showArchived]);
-
-  const fetchClients = async (searchQuery = '') => {
-    try {
-      const params = { 
-        ...(searchQuery ? { search: searchQuery } : {}),
-        ...(showArchived ? { archived_only: true } : {})
-      };
-      const response = await api.get('/clients', { params });
-      setClients(response.data);
-    } catch (error) {
-      console.error('Error fetching clients:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchArchivedCount = async () => {
-    try {
-      const response = await api.get('/clients/archived/count');
-      setArchivedCount(response.data.count || 0);
-    } catch (error) {
-      console.error('Error fetching archived count:', error);
-    }
-  };
+  const fetchClients = () => refetch();
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchClients(search);
+    refetch();
   };
 
   return (

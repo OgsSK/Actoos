@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useFactures } from '../lib/supabaseHooks';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -27,30 +28,13 @@ import { toast } from 'sonner';
 
 // Factures List Component
 export const FacturesList = () => {
-  const [factures, setFactures] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [deleting, setDeleting] = useState(false);
-  const { api, isAdmin, formatAmount } = useAuth();
+  const { user, api, isAdmin, formatAmount } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchFactures();
-  }, [statusFilter]);
-
-  const fetchFactures = async () => {
-    try {
-      const params = statusFilter && statusFilter !== 'all' ? { statut: statusFilter } : {};
-      const response = await api.get('/factures', { params });
-      setFactures(response.data);
-      setSelectedIds([]);
-    } catch (error) {
-      console.error('Error fetching factures:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: factures, loading, refetch: fetchFactures } = useFactures(user?.entreprise_id, { statut: statusFilter });
 
   const toggleSelection = (id, e) => {
     e.stopPropagation();
