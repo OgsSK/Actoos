@@ -211,7 +211,7 @@ class PostgreSQLCollection:
         
         try:
             from sqlalchemy import text
-            async with pg_engine.connect() as conn:
+            async with pg_engine.begin() as conn:
                 result = await conn.execute(text(query), params)
                 row = result.fetchone()
                 return self._row_to_dict(row) if row else None
