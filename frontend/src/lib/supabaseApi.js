@@ -1,27 +1,50 @@
 /**
  * Supabase API Service - Complete replacement for Railway backend
  * All CRUD operations go directly to Supabase PostgREST
+ * 
+ * OPTIMIZATIONS:
+ * - Caching for frequently accessed data
+ * - Minimal select() to reduce payload
+ * - Parallel queries where possible
  */
 import { supabase } from './supabase';
+import { cachedFetch, cacheService } from './cacheService';
+
+// Cache keys
+const CACHE_KEYS = {
+  interventions: (id) => `interventions_${id}`,
+  clients: (id) => `clients_${id}`,
+  techniciens: (id) => `techniciens_${id}`,
+  devis: (id) => `devis_${id}`,
+  factures: (id) => `factures_${id}`,
+  categories: (id) => `categories_${id}`,
+  dashboard: (id) => `dashboard_${id}`,
+};
 
 // ==================== INTERVENTIONS ====================
 export const interventionsApi = {
   list: async (entrepriseId, filters = {}) => {
-    let query = supabase
-      .from('interventions')
-      .select(`*, client:clients(id, nom, prenom, telephone, adresse, ville, code_postal), technicien:users!interventions_technicien_id_fkey(id, nom, prenom, telephone)`)
-      .eq('entreprise_id', entrepriseId);
+    const cacheKey = `${CACHE_KEYS.interventions(entrepriseId)}_${JSON.stringify(filters)}`;
+    
+    return cachedFetch(cacheKey, async () => {
+      let query = supabase
+        .from('interventions')
+        .select(`id, titre, description, statut, date_prevue, duree_estimee, priorite, created_at, 
+          client:clients!interventions_client_id_fkey(id, nom, prenom, telephone), 
+          technicien:users!interventions_technicien_id_fkey(id, nom, prenom)`)
+        .eq('entreprise_id', entrepriseId);
 
-    if (filters.statut && filters.statut !== 'all') {
-      query = query.eq('statut', filters.statut);
-    }
-    if (filters.technicien_id) {
-      query = query.eq('technicien_id', filters.technicien_id);
-    }
+      if (filters.statut && filters.statut !== 'all') {
+        query = query.eq('statut', filters.statut);
+      }
+      if (filters.technicien_id) {
+        query = query.eq('technicien_id', filters.technicien_id);
+      }
 
-    const { data, error } = await query.order('date_prevue', { ascending: false }).limit(filters.limit || 200);
-    if (error) throw error;
-    return data || [];
+      const { data, error } = await query.order('date_prevue', { ascending: false }).limit(filters.limit || 100);
+      if (error) throw error;
+      return data || [];
+    }, 60000); // Cache 1 minute
   },
 
   get: async (id) => {
@@ -35,6 +58,9 @@ export const interventionsApi = {
   },
 
   create: async (intervention) => {
+    // Invalidate cache
+    cacheService.invalidate(/^interventions_/);
+    
     // Sanitize empty strings to null for UUID fields
     const sanitizedIntervention = { ...intervention };
     const uuidFields = ['client_id', 'technicien_id', 'categorie_id', 'site_id'];
@@ -60,6 +86,9 @@ export const interventionsApi = {
   },
 
   update: async (id, updates) => {
+    // Invalidate cache
+    cacheService.invalidate(/^interventions_/);
+    
     // Sanitize empty strings to null for UUID fields
     const sanitizedUpdates = { ...updates };
     const uuidFields = ['client_id', 'technicien_id', 'categorie_id', 'site_id'];
@@ -82,6 +111,7 @@ export const interventionsApi = {
   },
 
   delete: async (id) => {
+    cacheService.invalidate(/^interventions_/);
     const { error } = await supabase.from('interventions').delete().eq('id', id);
     if (error) throw error;
     return true;
@@ -106,24 +136,28 @@ export const interventionsApi = {
 // ==================== CLIENTS ====================
 export const clientsApi = {
   list: async (entrepriseId, options = {}) => {
-    let query = supabase
-      .from('clients')
-      .select('*')
-      .eq('entreprise_id', entrepriseId);
+    const cacheKey = `${CACHE_KEYS.clients(entrepriseId)}_${JSON.stringify(options)}`;
+    
+    return cachedFetch(cacheKey, async () => {
+      let query = supabase
+        .from('clients')
+        .select('id, nom, prenom, email, telephone, adresse, ville, code_postal, statut, created_at')
+        .eq('entreprise_id', entrepriseId);
 
-    if (options.archivedOnly) {
-      query = query.eq('statut', 'archive');
-    } else {
-      query = query.neq('statut', 'archive');
-    }
+      if (options.archivedOnly) {
+        query = query.eq('statut', 'archive');
+      } else {
+        query = query.neq('statut', 'archive');
+      }
 
-    if (options.search) {
-      query = query.or(`nom.ilike.%${options.search}%,prenom.ilike.%${options.search}%,email.ilike.%${options.search}%,telephone.ilike.%${options.search}%`);
-    }
+      if (options.search) {
+        query = query.or(`nom.ilike.%${options.search}%,prenom.ilike.%${options.search}%,email.ilike.%${options.search}%,telephone.ilike.%${options.search}%`);
+      }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
-    if (error) throw error;
-    return data || [];
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(100);
+      if (error) throw error;
+      return data || [];
+    }, 60000); // Cache 1 minute
   },
 
   get: async (id) => {
@@ -678,68 +712,76 @@ export const sitesApi = {
 // ==================== DASHBOARD ====================
 export const dashboardApi = {
   getStats: async (entrepriseId) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayISO = today.toISOString();
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+    const cacheKey = CACHE_KEYS.dashboard(entrepriseId) + '_stats';
+    
+    return cachedFetch(cacheKey, async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
 
-    const [
-      interventionsToday,
-      interventionsRetard,
-      devisAttente,
-      facturesImpayees,
-      clients,
-      techniciens,
-      facturesMois
-    ] = await Promise.all([
-      supabase.from('interventions').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).gte('date_prevue', todayISO)
-        .lt('date_prevue', new Date(today.getTime() + 86400000).toISOString()),
-      supabase.from('interventions').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).eq('statut', 'planifiee').lt('date_prevue', todayISO),
-      supabase.from('devis').select('id, montant_total', { count: 'exact' })
-        .eq('entreprise_id', entrepriseId).eq('statut', 'envoye'),
-      supabase.from('factures').select('id, montant_total', { count: 'exact' })
-        .eq('entreprise_id', entrepriseId).eq('statut', 'envoyee'),
-      supabase.from('clients').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).neq('statut', 'archive'),
-      supabase.from('users').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).in('role', ['technicien']),
-      supabase.from('factures').select('montant_total')
-        .eq('entreprise_id', entrepriseId).eq('statut', 'payee').gte('date_paiement', startOfMonth)
-    ]);
+      const [
+        interventionsToday,
+        interventionsRetard,
+        devisAttente,
+        facturesImpayees,
+        clients,
+        techniciens,
+        facturesMois
+      ] = await Promise.all([
+        supabase.from('interventions').select('id', { count: 'exact', head: true })
+          .eq('entreprise_id', entrepriseId).gte('date_prevue', todayISO)
+          .lt('date_prevue', new Date(today.getTime() + 86400000).toISOString()),
+        supabase.from('interventions').select('id', { count: 'exact', head: true })
+          .eq('entreprise_id', entrepriseId).eq('statut', 'planifiee').lt('date_prevue', todayISO),
+        supabase.from('devis').select('id, montant_total', { count: 'exact' })
+          .eq('entreprise_id', entrepriseId).eq('statut', 'envoye'),
+        supabase.from('factures').select('id, montant_total', { count: 'exact' })
+          .eq('entreprise_id', entrepriseId).eq('statut', 'envoyee'),
+        supabase.from('clients').select('id', { count: 'exact', head: true })
+          .eq('entreprise_id', entrepriseId).neq('statut', 'archive'),
+        supabase.from('users').select('id', { count: 'exact', head: true })
+          .eq('entreprise_id', entrepriseId).in('role', ['technicien']),
+        supabase.from('factures').select('montant_total')
+          .eq('entreprise_id', entrepriseId).eq('statut', 'payee').gte('date_paiement', startOfMonth)
+      ]);
 
-    return {
-      interventions_today: interventionsToday.count || 0,
-      interventions_en_retard: interventionsRetard.count || 0,
-      devis_en_attente: devisAttente.count || 0,
-      montant_devis_attente: devisAttente.data?.reduce((sum, d) => sum + (d.montant_total || 0), 0) || 0,
-      factures_impayees: facturesImpayees.count || 0,
-      montant_factures_impayees: facturesImpayees.data?.reduce((sum, f) => sum + (f.montant_total || 0), 0) || 0,
-      total_clients: clients.count || 0,
-      total_techniciens: techniciens.count || 0,
-      ca_mois: facturesMois.data?.reduce((sum, f) => sum + (f.montant_total || 0), 0) || 0
-    };
+      return {
+        interventions_today: interventionsToday.count || 0,
+        interventions_en_retard: interventionsRetard.count || 0,
+        devis_en_attente: devisAttente.count || 0,
+        montant_devis_attente: devisAttente.data?.reduce((sum, d) => sum + (d.montant_total || 0), 0) || 0,
+        factures_impayees: facturesImpayees.count || 0,
+        montant_factures_impayees: facturesImpayees.data?.reduce((sum, f) => sum + (f.montant_total || 0), 0) || 0,
+        total_clients: clients.count || 0,
+        total_techniciens: techniciens.count || 0,
+        ca_mois: facturesMois.data?.reduce((sum, f) => sum + (f.montant_total || 0), 0) || 0
+      };
+    }, 30000); // Cache 30 seconds for dashboard
   },
 
   getRecent: async (entrepriseId, limit = 5) => {
-    const [interventions, devis, factures] = await Promise.all([
-      supabase.from('interventions')
-        .select(`id, titre, statut, date_prevue, created_at, client:clients!interventions_client_id_fkey(id, nom, prenom)`)
-        .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit),
-      supabase.from('devis')
-        .select(`id, numero, statut, montant_total, created_at, client:clients(id, nom, prenom)`)
-        .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit),
-      supabase.from('factures')
-        .select(`id, numero, statut, montant_total, created_at, client:clients(id, nom, prenom)`)
-        .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit)
-    ]);
+    const cacheKey = CACHE_KEYS.dashboard(entrepriseId) + '_recent';
     
-    return {
-      interventions: interventions.data || [],
-      devis: devis.data || [],
-      factures: factures.data || []
-    };
+    return cachedFetch(cacheKey, async () => {
+      const [interventions, devis, factures] = await Promise.all([
+        supabase.from('interventions')
+          .select(`id, titre, statut, date_prevue, created_at, client:clients!interventions_client_id_fkey(id, nom, prenom)`)
+          .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit),
+        supabase.from('devis')
+          .select(`id, numero, statut, montant_total, created_at, client:clients(id, nom, prenom)`)
+          .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit),
+        supabase.from('factures')
+          .select(`id, numero, statut, montant_total, created_at, client:clients(id, nom, prenom)`)
+          .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit)
+      ]);
+      
+      return {
+        interventions: interventions.data || [],
+        devis: devis.data || [],
+        factures: factures.data || []
+      };
+    }, 30000); // Cache 30 seconds
   },
 
   getAlerts: async (entrepriseId) => {
