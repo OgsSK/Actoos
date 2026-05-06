@@ -1,0 +1,157 @@
+{
+  "summary": "PERFORMANCE TEST FINAL - Iteration 58. Latence mesurée après optimisations (cache + index). Login amélioré (1135ms vs 2171ms). MAIS cache inefficace (seulement 10.8% amélioration). TARGET < 500ms NON ATTEINT. 40 erreurs 400 persistent à cause des colonnes Supabase manquantes.",
+  "backend_issues": {
+    "critical": [
+      {
+        "table": "devis",
+        "column": "montant_total",
+        "issue": "Colonne manquante dans Supabase - cause erreurs 400 sur Dashboard widgets",
+        "priority": "CRITICAL"
+      },
+      {
+        "table": "factures",
+        "column": "montant_total",
+        "issue": "Colonne manquante dans Supabase - cause erreurs 400 sur Dashboard widgets",
+        "priority": "CRITICAL"
+      },
+      {
+        "table": "entreprises",
+        "columns": ["max_users", "max_interventions", "max_clients"],
+        "issue": "Colonnes manquantes dans Supabase - cause erreurs 400 sur plan widget",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Dashboard widgets",
+        "issue": "Widgets 'Derniers devis' et 'Dernières factures' affichent 'Aucun élément récent' à cause des erreurs 400",
+        "affected_selectors": ["[data-testid='recent-devis']", "[data-testid='recent-factures']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_results": {
+    "latency_measurements": {
+      "login": {
+        "time_ms": 1135,
+        "status": "PASS",
+        "improvement_vs_iteration_57": "1036ms faster (48% improvement)"
+      },
+      "dashboard_1st_load": {
+        "time_ms": 2414,
+        "status": "WARN",
+        "note": "Premier chargement sans cache"
+      },
+      "dashboard_2nd_load_cache": {
+        "time_ms": 2154,
+        "status": "FAIL",
+        "note": "Cache inefficace - seulement 261ms d'amélioration (10.8%)"
+      },
+      "clients": {
+        "time_ms": 2198,
+        "status": "WARN"
+      },
+      "interventions": {
+        "time_ms": 1989,
+        "status": "PASS"
+      }
+    },
+    "cache_effectiveness": {
+      "improvement_ms": 261,
+      "improvement_percent": 10.8,
+      "target_met": false,
+      "target": "< 500ms après cache",
+      "actual": "2154ms"
+    },
+    "console_errors": {
+      "javascript_errors": 45,
+      "total_400_errors": 40,
+      "400_errors_breakdown": {
+        "devis_montant_total": 10,
+        "factures_montant_total": 20,
+        "entreprises_max_columns": 10
+      }
+    }
+  },
+  "performance_comparison_vs_iteration_57": {
+    "login": {
+      "before": 2171,
+      "after": 1135,
+      "improvement": "48% faster"
+    },
+    "dashboard": {
+      "before": 1691,
+      "after": 2414,
+      "note": "Légèrement plus lent - probablement dû aux retries des erreurs 400"
+    },
+    "clients": {
+      "before": 1738,
+      "after": 2198,
+      "note": "Plus lent - erreurs 400 impactent la performance"
+    },
+    "interventions": {
+      "before": 1744,
+      "after": 1989,
+      "note": "Similaire"
+    }
+  },
+  "columns_still_missing": {
+    "devis": ["montant_total"],
+    "factures": ["montant_total"],
+    "entreprises": ["max_users", "max_interventions", "max_clients"]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_58.json"
+  ],
+  "action_items": [
+    "CRITIQUE: Ajouter colonne 'montant_total' (numeric) dans table 'devis' sur Supabase",
+    "CRITIQUE: Ajouter colonne 'montant_total' (numeric) dans table 'factures' sur Supabase",
+    "CRITIQUE: Ajouter colonne 'max_users' (integer) dans table 'entreprises' sur Supabase",
+    "CRITIQUE: Ajouter colonne 'max_interventions' (integer) dans table 'entreprises' sur Supabase",
+    "CRITIQUE: Ajouter colonne 'max_clients' (integer) dans table 'entreprises' sur Supabase",
+    "PERFORMANCE: Les erreurs 400 causent des retries qui dégradent la performance - corriger les colonnes manquantes devrait améliorer significativement la latence",
+    "CACHE: Vérifier que le système de cache côté client fonctionne correctement - l'amélioration de 10.8% est insuffisante"
+  ],
+  "critical_code_review_comments": [
+    "Les erreurs 400 répétées (40 par session) dégradent significativement la performance",
+    "Le cache côté client ne semble pas fonctionner efficacement (seulement 10.8% d'amélioration)",
+    "Les colonnes Supabase manquantes sont la cause racine des problèmes de performance",
+    "Une fois les colonnes ajoutées, la performance devrait s'améliorer significativement car les requêtes ne retourneront plus d'erreurs 400"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Frontend only test",
+    "frontend": "60% - Login OK, mais Dashboard/Clients/Interventions impactés par erreurs 400"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "contact@actoos.com",
+      "password": "Salifkane&&7"
+    }
+  },
+  "seed_data_creation": "Aucune",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Les colonnes Supabase manquantes (montant_total dans devis/factures, max_users/max_interventions/max_clients dans entreprises) causent 40 erreurs 400 par session. Ces erreurs dégradent la performance et empêchent le cache de fonctionner efficacement. Une fois les colonnes ajoutées, retester la performance pour vérifier l'amélioration.",
+  "validation_status": {
+    "zero_400_errors": false,
+    "latency_under_500ms_with_cache": false,
+    "login_improved": true,
+    "cache_effective": false
+  },
+  "rca_of_the_issue": {
+    "root_cause": "Colonnes Supabase manquantes (montant_total, max_users, max_interventions, max_clients)",
+    "impact": "40 erreurs 400 par session, cache inefficace, latence élevée (>2000ms)",
+    "reproduction_steps": [
+      "1. Se connecter avec contact@actoos.com",
+      "2. Observer les erreurs 400 dans la console réseau",
+      "3. Naviguer entre Dashboard/Clients/Interventions",
+      "4. Observer que le cache n'améliore pas significativement la performance"
+    ],
+    "mitigation": "Ajouter les colonnes manquantes dans Supabase via le dashboard ou SQL"
+  }
+}
