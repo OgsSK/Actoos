@@ -272,6 +272,11 @@ export const PlanningPage = () => {
   }, [currentWeekStart]);
   
   const loadData = async () => {
+    if (!user?.entreprise_id) {
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
       const dateDebut = format(currentWeekStart, 'yyyy-MM-dd');
@@ -283,7 +288,7 @@ export const PlanningPage = () => {
       });
       
       // Add technicien names
-      const interventionsWithNames = interventionsData.map(i => ({
+      const interventionsWithNames = (interventionsData || []).map(i => ({
         ...i,
         technicien_nom: i.technicien ? `${i.technicien.prenom} ${i.technicien.nom}` : null
       }));
@@ -292,7 +297,11 @@ export const PlanningPage = () => {
       setTechniciens((techsData || []).filter(u => u.statut === 'actif'));
     } catch (error) {
       console.error('Error loading planning data:', error);
-      toast.error('Erreur lors du chargement');
+      // Only show error if it's not a permission issue
+      if (error.code !== 'PGRST301' && error.code !== '42501') {
+        toast.error('Erreur lors du chargement');
+      }
+      setInterventions([]);
     } finally {
       setLoading(false);
     }
@@ -445,7 +454,13 @@ export const PlanningPage = () => {
               <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
             </div>
           ) : (
-            <div className="overflow-x-auto touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div 
+              className="overflow-x-auto" 
+              style={{ 
+                WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-x pan-y'
+              }}
+            >
               <div className="flex min-w-[700px] lg:min-w-0">
                 {weekDays.map((day) => (
                   <DayColumn
