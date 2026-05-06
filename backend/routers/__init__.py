@@ -8,7 +8,8 @@ from . import (
     factures, portal, sms, subscription, photos, rapports, audit, public_api,
     import_data, scheduled_tasks, sites, calendar, accounting_export,
     admin_analytics, gdpr, offline_sync, super_admin, settings,
-    integrations, dashboard, chat, two_factor, demo
+    integrations, dashboard, chat, two_factor, demo,
+    users_pg, clients_pg, interventions_pg
 )
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     'factures', 'portal', 'sms', 'subscription', 'photos', 'rapports', 'audit', 'public_api',
     'import_data', 'scheduled_tasks', 'sites', 'calendar', 'accounting_export',
     'admin_analytics', 'gdpr', 'offline_sync', 'super_admin', 'settings',
-    'integrations', 'dashboard', 'chat', 'two_factor', 'demo'
+    'integrations', 'dashboard', 'chat', 'two_factor', 'demo',
+    'users_pg', 'clients_pg', 'interventions_pg'
 ]
