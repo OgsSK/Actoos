@@ -91,84 +91,90 @@ export function useRealtimeEvents({
   const connect = useCallback(() => {
     if (!enabled || !user?.entreprise_id) return;
 
-    // Close existing channel
+    // Close existing channel first
     if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
+      try {
+        supabase.removeChannel(channelRef.current);
+      } catch (e) {
+        console.log('[Supabase Realtime] Error removing channel:', e);
+      }
+      channelRef.current = null;
     }
 
-    // Subscribe to Supabase Realtime for interventions table
-    const channel = supabase
-      .channel(`entreprise_${user.entreprise_id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'interventions',
-          filter: `entreprise_id=eq.${user.entreprise_id}`
-        },
-        (payload) => {
-          handleEvent(EventType.INTERVENTION_CREATED, payload.new);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'interventions',
-          filter: `entreprise_id=eq.${user.entreprise_id}`
-        },
-        (payload) => {
-          const newData = payload.new;
-          if (newData.statut === 'terminee') {
-            handleEvent(EventType.INTERVENTION_COMPLETED, newData);
-          } else if (newData.statut === 'en_cours') {
-            handleEvent(EventType.INTERVENTION_STARTED, newData);
-          } else {
-            handleEvent(EventType.INTERVENTION_UPDATED, newData);
+    try {
+      // Create a unique channel name to avoid conflicts
+      const channelName = `entreprise_${user.entreprise_id}_${Date.now()}`;
+      
+      // Subscribe to Supabase Realtime for interventions table
+      // Note: All .on() calls must be chained before .subscribe()
+      const channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+            schema: 'public',
+            table: 'interventions',
+            filter: `entreprise_id=eq.${user.entreprise_id}`
+          },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              handleEvent(EventType.INTERVENTION_CREATED, payload.new);
+            } else if (payload.eventType === 'UPDATE') {
+              const newData = payload.new;
+              if (newData.statut === 'terminee') {
+                handleEvent(EventType.INTERVENTION_COMPLETED, newData);
+              } else if (newData.statut === 'en_cours') {
+                handleEvent(EventType.INTERVENTION_STARTED, newData);
+              } else {
+                handleEvent(EventType.INTERVENTION_UPDATED, newData);
+              }
+            }
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'devis',
-          filter: `entreprise_id=eq.${user.entreprise_id}`
-        },
-        (payload) => {
-          if (payload.new.statut === 'signe') {
-            handleEvent(EventType.DEVIS_SIGNED, payload.new);
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'devis',
+            filter: `entreprise_id=eq.${user.entreprise_id}`
+          },
+          (payload) => {
+            if (payload.new?.statut === 'signe') {
+              handleEvent(EventType.DEVIS_SIGNED, payload.new);
+            }
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'factures',
-          filter: `entreprise_id=eq.${user.entreprise_id}`
-        },
-        (payload) => {
-          if (payload.new.statut === 'payee') {
-            handleEvent(EventType.FACTURE_PAID, payload.new);
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'factures',
+            filter: `entreprise_id=eq.${user.entreprise_id}`
+          },
+          (payload) => {
+            if (payload.new?.statut === 'payee') {
+              handleEvent(EventType.FACTURE_PAID, payload.new);
+            }
           }
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setIsConnected(true);
-          console.log('[Supabase Realtime] Connected');
-        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          setIsConnected(false);
-          console.log('[Supabase Realtime] Disconnected');
-        }
-      });
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            setIsConnected(true);
+            console.log('[Supabase Realtime] Connected');
+          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            setIsConnected(false);
+            console.log('[Supabase Realtime] Disconnected');
+          }
+        });
 
-    channelRef.current = channel;
+      channelRef.current = channel;
+    } catch (error) {
+      console.error('[Supabase Realtime] Error setting up channel:', error);
+      setIsConnected(false);
+    }
   }, [enabled, user?.entreprise_id, handleEvent]);
 
   const disconnect = useCallback(() => {

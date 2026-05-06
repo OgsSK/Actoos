@@ -460,7 +460,142 @@ CREATE POLICY "photos_delete_policy" ON public.photos
   );
 
 -- =====================================================
--- 16. GRANT PERMISSIONS
+-- 16. CHAT_MESSAGES TABLE POLICIES
+-- =====================================================
+-- Users can see messages they sent or received
+
+DROP POLICY IF EXISTS "chat_messages_temp_policy" ON public.chat_messages;
+DROP POLICY IF EXISTS "chat_messages_select_policy" ON public.chat_messages;
+DROP POLICY IF EXISTS "chat_messages_insert_policy" ON public.chat_messages;
+DROP POLICY IF EXISTS "chat_messages_update_policy" ON public.chat_messages;
+DROP POLICY IF EXISTS "chat_messages_delete_policy" ON public.chat_messages;
+
+CREATE POLICY "chat_messages_select_policy" ON public.chat_messages
+  FOR SELECT
+  USING (
+    entreprise_id = public.get_user_entreprise_id()
+  );
+
+CREATE POLICY "chat_messages_insert_policy" ON public.chat_messages
+  FOR INSERT
+  WITH CHECK (
+    entreprise_id = public.get_user_entreprise_id()
+  );
+
+CREATE POLICY "chat_messages_update_policy" ON public.chat_messages
+  FOR UPDATE
+  USING (
+    entreprise_id = public.get_user_entreprise_id()
+  );
+
+CREATE POLICY "chat_messages_delete_policy" ON public.chat_messages
+  FOR DELETE
+  USING (
+    entreprise_id = public.get_user_entreprise_id()
+  );
+
+-- =====================================================
+-- 17. DEVIS_LIGNES TABLE POLICIES
+-- =====================================================
+
+DROP POLICY IF EXISTS "devis_lignes_temp_policy" ON public.devis_lignes;
+DROP POLICY IF EXISTS "devis_lignes_select_policy" ON public.devis_lignes;
+DROP POLICY IF EXISTS "devis_lignes_insert_policy" ON public.devis_lignes;
+DROP POLICY IF EXISTS "devis_lignes_update_policy" ON public.devis_lignes;
+DROP POLICY IF EXISTS "devis_lignes_delete_policy" ON public.devis_lignes;
+
+CREATE POLICY "devis_lignes_select_policy" ON public.devis_lignes
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.devis d 
+      WHERE d.id = devis_id 
+      AND d.entreprise_id = public.get_user_entreprise_id()
+    )
+  );
+
+CREATE POLICY "devis_lignes_insert_policy" ON public.devis_lignes
+  FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.devis d 
+      WHERE d.id = devis_id 
+      AND d.entreprise_id = public.get_user_entreprise_id()
+    )
+  );
+
+CREATE POLICY "devis_lignes_update_policy" ON public.devis_lignes
+  FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.devis d 
+      WHERE d.id = devis_id 
+      AND d.entreprise_id = public.get_user_entreprise_id()
+    )
+  );
+
+CREATE POLICY "devis_lignes_delete_policy" ON public.devis_lignes
+  FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.devis d 
+      WHERE d.id = devis_id 
+      AND d.entreprise_id = public.get_user_entreprise_id()
+    )
+  );
+
+-- =====================================================
+-- 18. FACTURE_LIGNES TABLE POLICIES
+-- =====================================================
+
+DROP POLICY IF EXISTS "facture_lignes_temp_policy" ON public.facture_lignes;
+DROP POLICY IF EXISTS "facture_lignes_select_policy" ON public.facture_lignes;
+DROP POLICY IF EXISTS "facture_lignes_insert_policy" ON public.facture_lignes;
+DROP POLICY IF EXISTS "facture_lignes_update_policy" ON public.facture_lignes;
+DROP POLICY IF EXISTS "facture_lignes_delete_policy" ON public.facture_lignes;
+
+CREATE POLICY "facture_lignes_select_policy" ON public.facture_lignes
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.factures f 
+      WHERE f.id = facture_id 
+      AND f.entreprise_id = public.get_user_entreprise_id()
+    )
+  );
+
+CREATE POLICY "facture_lignes_insert_policy" ON public.facture_lignes
+  FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.factures f 
+      WHERE f.id = facture_id 
+      AND f.entreprise_id = public.get_user_entreprise_id()
+    )
+  );
+
+CREATE POLICY "facture_lignes_update_policy" ON public.facture_lignes
+  FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.factures f 
+      WHERE f.id = facture_id 
+      AND f.entreprise_id = public.get_user_entreprise_id()
+    )
+  );
+
+CREATE POLICY "facture_lignes_delete_policy" ON public.facture_lignes
+  FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.factures f 
+      WHERE f.id = facture_id 
+      AND f.entreprise_id = public.get_user_entreprise_id()
+    )
+  );
+
+-- =====================================================
+-- 19. GRANT PERMISSIONS
 -- =====================================================
 
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
