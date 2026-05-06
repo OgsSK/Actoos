@@ -1,0 +1,168 @@
+{
+  "summary": "Iteration 48 - Comprehensive testing of ACTOOS PRO Supabase migration. Login works, Client CRUD works, but several critical Supabase issues remain: 1) Interventions/Planning have relationship ambiguity error (PGRST201), 2) Techniciens query fails due to invalid enum value 'tech' (22P02), 3) SSE/Legacy API endpoints return 401 errors. Dashboard loads but shows 0 stats due to these errors.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "Supabase PostgREST - interventions table",
+        "issue": "PGRST201: Could not embed because more than one relationship was found for 'interventions' and 'users'. The query uses 'technicien:users(...)' but Supabase cannot determine which foreign key to use.",
+        "priority": "CRITICAL"
+      },
+      {
+        "endpoint": "Supabase PostgREST - users table (techniciens)",
+        "issue": "22P02: invalid input value for enum user_role: 'tech'. The role enum in Supabase doesn't include 'tech' value, only 'technicien' or other values.",
+        "priority": "CRITICAL"
+      },
+      {
+        "endpoint": "Intervention creation",
+        "issue": "22P02: invalid input syntax for type uuid: ''. Empty client_id being sent when creating intervention without selecting a client.",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "SSE /api/events/stream",
+        "issue": "401 Unauthorized - SSE connection fails repeatedly. Legacy Railway API endpoints not working with Supabase auth.",
+        "priority": "MEDIUM"
+      },
+      {
+        "endpoint": "Legacy API /api/usage",
+        "issue": "401 Unauthorized - Plan usage endpoint fails. AxiosError in console.",
+        "priority": "MEDIUM"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "Currency fetch",
+        "issue": "Console warning: 'Could not fetch entreprise currency' - Non-blocking but indicates missing data"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Interventions List",
+        "issue": "Shows 'Aucune intervention trouvée' due to PGRST201 relationship ambiguity error",
+        "affected_selectors": ["[data-testid='interventions-list']"]
+      },
+      {
+        "flow": "Techniciens List",
+        "issue": "Shows empty list due to invalid enum value 'tech' in role filter",
+        "affected_selectors": ["[data-testid='techniciens-list']"]
+      },
+      {
+        "flow": "Planning",
+        "issue": "Shows empty calendar due to same PGRST201 error as interventions",
+        "affected_selectors": ["[data-testid='planning']"]
+      },
+      {
+        "flow": "Dashboard Stats",
+        "issue": "All stats show 0 due to techniciens query failure and other errors",
+        "affected_selectors": ["[data-testid='dashboard-overview']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_48.json"
+  ],
+  "action_items": [
+    "CRITICAL: Fix Supabase interventions-users relationship ambiguity. In supabaseHooks.js and supabaseApi.js, change 'technicien:users(...)' to 'technicien:users!interventions_technicien_id_fkey(...)' to specify the exact foreign key",
+    "CRITICAL: Fix user_role enum in Supabase. Either add 'tech' to the enum or change all queries from .in('role', ['tech', 'technicien']) to .in('role', ['technicien'])",
+    "HIGH: Fix intervention creation form to handle empty client_id - either make client required or send null instead of empty string",
+    "MEDIUM: Disable or fix SSE connection - it's causing many 401 errors in console",
+    "MEDIUM: Fix legacy API endpoints or migrate them to Supabase Edge Functions"
+  ],
+  "critical_code_review_comments": [
+    "supabaseHooks.js line 248: Query 'technicien:users(...)' causes PGRST201 error - need to specify foreign key explicitly",
+    "supabaseHooks.js line 353: Query filters by role 'tech' which doesn't exist in Supabase enum - should use 'technicien' only",
+    "supabaseApi.js line 12: Same relationship ambiguity issue in interventionsApi.list()",
+    "supabaseApi.js line 402: usersApi.getTechniciens() uses .in('role', ['tech', 'technicien']) - 'tech' is invalid"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "40% (Login works, Clients CRUD works, but Interventions/Techniciens/Planning fail)",
+    "frontend": "70% (UI loads correctly, navigation works, but data operations partially fail)"
+  },
+  "test_credentials": {
+    "admin_enterprise": {
+      "email": "contact@actoos.com",
+      "password": "Salifkane&&7",
+      "status": "LOGIN WORKS"
+    }
+  },
+  "seed_data_creation": "Created test client: TEST_Client_Playwright Test (test.playwright@example.com)",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Login and Client CRUD work correctly. Main blockers are: 1) Supabase relationship ambiguity in interventions table (need to specify foreign key), 2) Invalid enum value 'tech' in user_role (should be 'technicien' only). These two issues block Interventions, Techniciens, Planning, and Dashboard stats.",
+  "features_tested": {
+    "login_enterprise": {
+      "status": "PASS",
+      "details": "Login with contact@actoos.com works via Supabase Edge Function"
+    },
+    "logout": {
+      "status": "PASS",
+      "details": "Logout works correctly"
+    },
+    "dashboard": {
+      "status": "PARTIAL",
+      "details": "UI loads but all stats show 0 due to query errors"
+    },
+    "clients_list": {
+      "status": "PASS",
+      "details": "Clients list loads correctly"
+    },
+    "clients_create": {
+      "status": "PASS",
+      "details": "Successfully created test client TEST_Client_Playwright"
+    },
+    "clients_search": {
+      "status": "PASS",
+      "details": "Search functionality works"
+    },
+    "interventions_list": {
+      "status": "FAIL",
+      "details": "PGRST201 error - relationship ambiguity between interventions and users"
+    },
+    "interventions_create": {
+      "status": "FAIL",
+      "details": "Form loads but submission fails with uuid error for empty client_id"
+    },
+    "devis_list": {
+      "status": "PASS",
+      "details": "Devis list loads (shows empty - no data)"
+    },
+    "factures_list": {
+      "status": "PASS",
+      "details": "Factures list loads (shows empty - no data)"
+    },
+    "techniciens_list": {
+      "status": "FAIL",
+      "details": "22P02 error - invalid enum value 'tech' for user_role"
+    },
+    "planning": {
+      "status": "FAIL",
+      "details": "PGRST201 error - same as interventions"
+    },
+    "settings": {
+      "status": "PASS",
+      "details": "Settings page loads and shows enterprise info correctly"
+    }
+  },
+  "rca_of_the_issue": {
+    "root_cause_1": {
+      "issue": "Supabase PostgREST relationship ambiguity (PGRST201)",
+      "cause": "The 'interventions' table has multiple foreign keys to 'users' table (likely technicien_id and created_by). When using 'technicien:users(...)' in the select, Supabase cannot determine which FK to use.",
+      "solution": "Specify the foreign key explicitly: 'technicien:users!interventions_technicien_id_fkey(...)'"
+    },
+    "root_cause_2": {
+      "issue": "Invalid enum value for user_role (22P02)",
+      "cause": "The Supabase user_role enum doesn't include 'tech' value. Frontend code filters by ['tech', 'technicien'] but only 'technicien' exists.",
+      "solution": "Either add 'tech' to the enum in Supabase, or change all frontend queries to use only 'technicien'"
+    },
+    "reproduction_steps": [
+      "1. Login with contact@actoos.com / Salifkane&&7",
+      "2. Navigate to Interventions page - observe PGRST201 error in console",
+      "3. Navigate to Techniciens page - observe 22P02 error in console",
+      "4. Navigate to Planning page - observe same PGRST201 error"
+    ]
+  }
+}
