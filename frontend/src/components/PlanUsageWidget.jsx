@@ -186,7 +186,7 @@ const PlanCard = ({ plan, isCurrentPlan, onSelect }) => {
 };
 
 const PlanUsageWidget = ({ compact = false }) => {
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const [usage, setUsage] = useState(null);
   const [plans, setPlans] = useState([]);
   const [billingSummary, setBillingSummary] = useState(null);
@@ -330,6 +330,7 @@ const PlanUsageWidget = ({ compact = false }) => {
 
       setUsage({
         plan: currentPlan,
+        plan_name: PLAN_FEATURES[currentPlan]?.name || 'Startup',
         subscription_status: entreprise?.subscription_status || 'active',
         subscription_end_date: entreprise?.subscription_end_date,
         usage: {
@@ -429,7 +430,8 @@ const PlanUsageWidget = ({ compact = false }) => {
 
   const currentPlanInfo = PLAN_FEATURES[usage.plan] || PLAN_FEATURES.starter;
   const Icon = currentPlanInfo.icon;
-  const isUnlimited = usage.usage.categories.max === -1;
+  // Check if techniciens limit is unlimited (-1)
+  const isUnlimited = usage.usage?.techniciens?.max === -1;
 
   // Compact version for dashboard sidebar or header
   if (compact) {
@@ -456,8 +458,8 @@ const PlanUsageWidget = ({ compact = false }) => {
 
           <div className="space-y-2">
             <UsageBar
-              current={usage.usage.technicians.current}
-              max={usage.usage.technicians.max}
+              current={usage.usage?.techniciens?.current || 0}
+              max={usage.usage?.techniciens?.max || 0}
               label="Techniciens"
               icon={Users}
             />
@@ -473,7 +475,7 @@ const PlanUsageWidget = ({ compact = false }) => {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid md:grid-cols-3 gap-4 mt-4">
-                {plans.map(plan => (
+                {availablePlans.map(plan => (
                   <PlanCard
                     key={plan.id}
                     plan={plan}
@@ -528,21 +530,21 @@ const PlanUsageWidget = ({ compact = false }) => {
               
               <div className="space-y-4">
                 <UsageBar
-                  current={usage.usage.technicians.current}
-                  max={usage.usage.technicians.max}
+                  current={usage.usage?.techniciens?.current || 0}
+                  max={usage.usage?.techniciens?.max || 0}
                   label="Techniciens"
                   icon={Users}
                 />
                 <UsageBar
-                  current={usage.usage.interventions_month.current}
-                  max={usage.usage.interventions_month.max}
-                  label="Interventions ce mois"
+                  current={usage.usage?.interventions?.current || 0}
+                  max={usage.usage?.interventions?.max || 0}
+                  label="Interventions"
                   icon={Calendar}
                 />
                 <UsageBar
-                  current={usage.usage.categories.current}
-                  max={usage.usage.categories.max}
-                  label="Catégories"
+                  current={usage.usage?.clients?.current || 0}
+                  max={usage.usage?.clients?.max || 0}
+                  label="Clients"
                   icon={FolderTree}
                 />
               </div>
@@ -557,29 +559,23 @@ const PlanUsageWidget = ({ compact = false }) => {
               
               <div className="space-y-3">
                 <FeatureItem 
-                  available={usage.usage.features.sms_included > 0 || usage.usage.features.sms_included === -1}
-                  label={
-                    usage.usage.features.sms_included === -1 
-                      ? 'SMS illimités' 
-                      : usage.usage.features.sms_included > 0 
-                        ? `${usage.usage.features.sms_included} SMS/mois inclus`
-                        : 'SMS non inclus'
-                  }
-                />
-                <FeatureItem 
-                  available={usage.usage.features.white_label}
-                  label="White-labeling (logo, couleurs personnalisées)"
-                />
-                <FeatureItem 
-                  available={usage.usage.features.api_access}
+                  available={usage.usage?.features?.api_access}
                   label="Accès API pour intégrations externes"
                 />
                 <FeatureItem 
-                  available={isUnlimited}
-                  label="Catégories illimitées"
+                  available={usage.usage?.features?.white_label}
+                  label="White-labeling (logo, couleurs personnalisées)"
                 />
                 <FeatureItem 
-                  available={usage.usage.interventions_month.max === -1}
+                  available={usage.usage?.features?.support_priority}
+                  label="Support prioritaire"
+                />
+                <FeatureItem 
+                  available={isUnlimited}
+                  label="Techniciens illimités"
+                />
+                <FeatureItem 
+                  available={usage.usage?.interventions?.max === -1}
                   label="Interventions illimitées"
                 />
               </div>
@@ -781,7 +777,7 @@ const PlanUsageWidget = ({ compact = false }) => {
           
           {/* Mobile: vertical stack, Desktop: 3 columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {plans.map(plan => (
+            {availablePlans.map(plan => (
               <PlanCard
                 key={plan.id}
                 plan={plan}
