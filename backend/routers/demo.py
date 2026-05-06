@@ -319,6 +319,21 @@ async def reset_password_hash(email: str, password: str):
     return {"success": True, "message": f"Mot de passe réinitialisé pour {email}"}
 
 
+@router.post("/fix-subscription")
+async def fix_subscription(email: str):
+    """Fix subscription status for an entreprise"""
+    user = await db.users.find_one({"email": email.lower()})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.entreprises.update_one(
+        {"id": user["entreprise_id"]},
+        {"$set": {"subscription_status": "active"}}
+    )
+    
+    return {"success": True, "message": f"Subscription fixed for {email}"}
+
+
 async def reset_demo_data(entreprise_id: str):
     """
     Réinitialise toutes les données de l'entreprise démo
