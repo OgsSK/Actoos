@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { fetchExchangeRates, convertFromEUR, formatCurrency, displayAmount, getRates } from '../utils/currency';
+import { supabase } from '../lib/supabase';
 
 const CurrencyContext = createContext();
 
 export function CurrencyProvider({ children }) {
-  const { api, user } = useAuth();
+  const { user } = useAuth();
   const [currency, setCurrency] = useState('EUR');
   const [rates, setRates] = useState({});
   const [loading, setLoading] = useState(true);
@@ -18,12 +19,17 @@ export function CurrencyProvider({ children }) {
         await fetchExchangeRates();
         setRates(getRates());
 
-        // If user is logged in, get their currency preference
-        if (user && api) {
+        // If user is logged in, get their currency preference from Supabase
+        if (user?.entreprise_id) {
           try {
-            const res = await api.get('/entreprise');
-            if (res.data?.devise) {
-              setCurrency(res.data.devise);
+            const { data: entreprise } = await supabase
+              .from('entreprises')
+              .select('devise')
+              .eq('id', user.entreprise_id)
+              .single();
+            
+            if (entreprise?.devise) {
+              setCurrency(entreprise.devise);
             }
           } catch (err) {
             console.log('Could not fetch entreprise currency');
@@ -37,20 +43,23 @@ export function CurrencyProvider({ children }) {
     };
 
     init();
-  }, [user, api]);
+  }, [user?.entreprise_id]);
 
-  // Change currency and save to backend
+  // Change currency and save to Supabase
   const changeCurrency = useCallback(async (newCurrency) => {
     setCurrency(newCurrency);
     
-    if (api) {
+    if (user?.entreprise_id) {
       try {
-        await api.put(`/entreprise/currency?devise=${newCurrency}`);
+        await supabase
+          .from('entreprises')
+          .update({ devise: newCurrency, updated_at: new Date().toISOString() })
+          .eq('id', user.entreprise_id);
       } catch (err) {
         console.error('Failed to save currency preference');
       }
     }
-  }, [api]);
+  }, [user?.entreprise_id]);
 
   // Format an amount in EUR to the current currency
   const format = useCallback((amountInEUR) => {

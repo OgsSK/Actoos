@@ -181,16 +181,20 @@ export function useRealtimeEvents({
 
   const reconnect = useCallback(() => {
     disconnect();
-    connect();
+    setTimeout(() => connect(), 100);
   }, [connect, disconnect]);
 
+  // Connect on mount and when user changes
   useEffect(() => {
-    connect();
+    if (enabled && user?.entreprise_id) {
+      connect();
+    }
     
     return () => {
       disconnect();
     };
-  }, [connect, disconnect]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, user?.entreprise_id]);
 
   return {
     isConnected,

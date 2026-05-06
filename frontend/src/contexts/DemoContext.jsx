@@ -12,7 +12,7 @@ export const useDemo = () => {
 };
 
 export const DemoProvider = ({ children }) => {
-  const { user, api, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [isDemo, setIsDemo] = useState(false);
   const [demoStatus, setDemoStatus] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,65 +21,51 @@ export const DemoProvider = ({ children }) => {
   useEffect(() => {
     if (user?.email === 'demo@actoos.com' || user?.is_demo) {
       setIsDemo(true);
-      fetchDemoStatus();
+      // Set default demo status without API call
+      setDemoStatus({
+        is_demo: true,
+        session_started: new Date().toISOString(),
+        actions_count: 0
+      });
     } else {
       setIsDemo(false);
       setDemoStatus(null);
     }
   }, [user]);
 
-  const fetchDemoStatus = async () => {
-    try {
-      const response = await api.get('/demo/status');
-      setDemoStatus(response.data);
-    } catch (error) {
-      console.error('Error fetching demo status:', error);
-    }
-  };
-
-  // Initialize demo session (reset data)
+  // Initialize demo session (reset data) - simplified
   const initDemoSession = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.post('/demo/init');
-      setDemoStatus(response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error initializing demo:', error);
-      throw error;
+      // Demo mode - just reset local state
+      setDemoStatus({
+        is_demo: true,
+        session_started: new Date().toISOString(),
+        actions_count: 0
+      });
+      return { success: true, message: 'Session démo initialisée' };
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
   // Simulate an action in demo mode
   const simulateAction = useCallback(async (actionType) => {
     if (!isDemo) return { success: true };
     
-    try {
-      const response = await api.post(`/demo/simulate-action?action_type=${actionType}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error simulating action:', error);
-      return {
-        success: false,
-        message: 'Erreur lors de la simulation',
-        demo_note: error.message
-      };
-    }
-  }, [api, isDemo]);
+    // Demo mode - always return success
+    return {
+      success: true,
+      message: `Action "${actionType}" simulée en mode démo`,
+      demo_note: 'Cette action est simulée en mode démonstration'
+    };
+  }, [isDemo]);
 
   // Check if a feature is available
   const checkFeature = useCallback(async (feature) => {
     if (!isDemo) return { available: true };
-    
-    try {
-      const response = await api.get(`/demo/feature-check/${feature}`);
-      return response.data;
-    } catch (error) {
-      return { available: true, is_demo: true };
-    }
-  }, [api, isDemo]);
+    return { available: true, is_demo: true };
+  }, [isDemo]);
 
   // Exit demo mode
   const exitDemo = useCallback(async () => {

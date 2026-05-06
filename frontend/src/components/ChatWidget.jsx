@@ -1,11 +1,12 @@
 /**
  * ChatWidget - Real-time chat between Admin and Technicians
  * 
- * Can be used in both Admin Dashboard and Technician App
+ * Migrated to use Supabase directly
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRealtimeEvents, EventType } from '../hooks/useRealtimeEvents';
+import { supabase } from '../lib/supabase';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
@@ -283,55 +284,122 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Load conversations
+  // Load conversations from Supabase
   const loadConversations = useCallback(async () => {
+    if (!user?.entreprise_id) return;
+    
     try {
       setLoading(true);
-      const response = await api.get('/chat/conversations');
-      setConversations(response.data);
+      // Get all users in the entreprise to show as potential conversations
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('id, nom, prenom, email, role')
+        .eq('entreprise_id', user.entreprise_id)
+        .neq('id', user.id)
+        .order('nom');
+      
+      if (error) throw error;
+      
+      // Get last message for each user
+      const conversationsWithLastMessage = await Promise.all(
+        (users || []).map(async (u) => {
+          const { data: lastMsg } = await supabase
+            .from('chat_messages')
+            .select('content, created_at, sender_id')
+            .or(`sender_id.eq.${u.id},recipient_id.eq.${u.id}`)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          
+          return {
+            user_id: u.id,
+            user_name: `${u.prenom || ''} ${u.nom || ''}`.trim() || u.email,
+            user_role: u.role,
+            last_message: lastMsg?.content || '',
+            last_message_time: lastMsg?.created_at || null
+          };
+        })
+      );
+      
+      setConversations(conversationsWithLastMessage.filter(c => c.last_message));
     } catch (error) {
       console.error('Error loading conversations:', error);
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, [user?.entreprise_id, user?.id]);
 
-  // Load messages for a conversation
+  // Load messages for a conversation from Supabase
   const loadMessages = useCallback(async (userId) => {
+    if (!user?.id) return;
+    
     try {
       setMessagesLoading(true);
-      const response = await api.get(`/chat/messages/${userId}`);
-      setMessages(response.data);
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .or(`and(sender_id.eq.${user.id},recipient_id.eq.${userId}),and(sender_id.eq.${userId},recipient_id.eq.${user.id})`)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      setMessages(data || []);
+      
+      // Mark messages as read
+      await supabase
+        .from('chat_messages')
+        .update({ read: true })
+        .eq('sender_id', userId)
+        .eq('recipient_id', user.id)
+        .eq('read', false);
+        
     } catch (error) {
       console.error('Error loading messages:', error);
     } finally {
       setMessagesLoading(false);
     }
-  }, [api]);
+  }, [user?.id]);
 
-  // Load unread count
+  // Load unread count from Supabase
   const loadUnreadCount = useCallback(async () => {
+    if (!user?.id) return;
+    
     try {
-      const response = await api.get('/chat/unread-count');
-      setUnreadCount(response.data.unread_count);
+      const { count, error } = await supabase
+        .from('chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', user.id)
+        .eq('read', false);
+      
+      if (error) throw error;
+      setUnreadCount(count || 0);
     } catch (error) {
       console.error('Error loading unread count:', error);
     }
-  }, [api]);
+  }, [user?.id]);
 
-  // Send message
+  // Send message via Supabase
   const handleSendMessage = async (content) => {
-    if (!selectedConversation) return;
+    if (!selectedConversation || !user?.id) return;
     
     try {
       setSendingMessage(true);
-      const response = await api.post('/chat/messages', {
-        recipient_id: selectedConversation.user_id,
-        content
-      });
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert({
+          sender_id: user.id,
+          recipient_id: selectedConversation.user_id,
+          content,
+          entreprise_id: user.entreprise_id,
+          read: false,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
       
       // Add message to list
-      setMessages(prev => [...prev, response.data]);
+      setMessages(prev => [...prev, data]);
       
       // Update conversation list
       loadConversations();
@@ -438,17 +506,26 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
 
 // Hook to get unread count
 export const useChatUnread = () => {
-  const { api } = useAuth();
+  const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
   const loadUnread = useCallback(async () => {
+    if (!user?.id) return;
+    
     try {
-      const response = await api.get('/chat/unread-count');
-      setUnreadCount(response.data.unread_count);
+      const { count, error } = await supabase
+        .from('chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', user.id)
+        .eq('read', false);
+      
+      if (!error) {
+        setUnreadCount(count || 0);
+      }
     } catch (error) {
       // Silently fail
     }
-  }, [api]);
+  }, [user?.id]);
 
   useEffect(() => {
     loadUnread();
