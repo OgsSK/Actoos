@@ -173,7 +173,13 @@ const HomeRedirect = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Show landing page for non-authenticated users
+  // On pro.actoos.com subdomain, redirect to login instead of landing page
+  const hostname = window.location.hostname;
+  if (hostname.startsWith('pro.') || hostname.includes('pro-actoos')) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Show landing page for non-authenticated users on main domain
   return <LandingPage />;
 };
 
