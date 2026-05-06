@@ -1,0 +1,121 @@
+{
+  "summary": "VALIDATION FINALE ACTOOS PRO - Iteration 57. Settings/Documents fonctionne SANS erreur 400 (BUG CORRIGÉ). Cependant, les colonnes Supabase (montant_total, max_users, max_interventions, max_clients) n'ont PAS été ajoutées - 48 erreurs 400 persistent sur le Dashboard et autres pages. Latence acceptable (< 2s) sur toutes les pages sauf login (2.1s).",
+  "backend_issues": {
+    "critical": [
+      {
+        "table": "devis",
+        "column": "montant_total",
+        "issue": "Colonne manquante dans Supabase - cause erreurs 400 sur Dashboard widgets",
+        "priority": "HIGH"
+      },
+      {
+        "table": "factures",
+        "column": "montant_total",
+        "issue": "Colonne manquante dans Supabase - cause erreurs 400 sur Dashboard widgets",
+        "priority": "HIGH"
+      },
+      {
+        "table": "entreprises",
+        "columns": ["max_users", "max_interventions", "max_clients"],
+        "issue": "Colonnes manquantes dans Supabase - cause erreurs 400 sur plan widget",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "latency_measurements": {
+      "login": {
+        "time_ms": 2171,
+        "status": "WARN",
+        "note": "Légèrement au-dessus de l'objectif 2000ms"
+      },
+      "dashboard": {
+        "time_ms": 1691,
+        "status": "PASS"
+      },
+      "clients": {
+        "time_ms": 1738,
+        "status": "PASS"
+      },
+      "interventions": {
+        "time_ms": 1744,
+        "status": "PASS"
+      },
+      "devis": {
+        "time_ms": 1767,
+        "status": "PASS"
+      },
+      "settings": {
+        "time_ms": 1718,
+        "status": "PASS"
+      }
+    },
+    "settings_documents": {
+      "status": "PASS",
+      "errors_400": 0,
+      "note": "BUG CORRIGÉ - La page Documents charge SANS erreur 400"
+    },
+    "console_errors": {
+      "javascript_errors": 0,
+      "total_400_errors": 48,
+      "400_errors_breakdown": {
+        "devis_montant_total": 12,
+        "factures_montant_total": 24,
+        "entreprises_max_columns": 12
+      }
+    }
+  },
+  "bug_fixes_verified": {
+    "settings_documents_400_error": {
+      "status": "FIXED",
+      "details": "Les colonnes document settings (message_client_devis, message_client_facture, validite_devis_jours, etc.) sont présentes. La page Settings/Documents charge correctement SANS erreur 400."
+    }
+  },
+  "columns_still_missing": {
+    "devis": ["montant_total"],
+    "factures": ["montant_total"],
+    "entreprises": ["max_users", "max_interventions", "max_clients"]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_57.json"
+  ],
+  "action_items": [
+    "CRITIQUE: Ajouter colonne 'montant_total' (numeric) dans table 'devis' sur Supabase",
+    "CRITIQUE: Ajouter colonne 'montant_total' (numeric) dans table 'factures' sur Supabase",
+    "CRITIQUE: Ajouter colonne 'max_users' (integer) dans table 'entreprises' sur Supabase",
+    "CRITIQUE: Ajouter colonne 'max_interventions' (integer) dans table 'entreprises' sur Supabase",
+    "CRITIQUE: Ajouter colonne 'max_clients' (integer) dans table 'entreprises' sur Supabase"
+  ],
+  "critical_code_review_comments": [
+    "Settings/Documents fonctionne correctement - toutes les colonnes document settings sont présentes",
+    "Les erreurs 400 restantes sont causées par des colonnes manquantes dans Supabase (pas dans le code frontend)",
+    "Le frontend fait des requêtes vers des colonnes qui n'existent pas encore dans la base de données",
+    "Ces colonnes doivent être ajoutées directement dans Supabase via le dashboard ou SQL"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Frontend only test",
+    "frontend": "85% - Settings/Documents OK, mais 48 erreurs 400 sur Dashboard"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "contact@actoos.com",
+      "password": "Salifkane&&7"
+    }
+  },
+  "seed_data_creation": "Aucune",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Settings/Documents est CORRIGÉ (0 erreur 400). Les erreurs 400 restantes (48 total) sont causées par des colonnes Supabase manquantes: montant_total (devis/factures), max_users/max_interventions/max_clients (entreprises). Ces colonnes doivent être ajoutées dans Supabase pour atteindre ZÉRO erreur 400.",
+  "validation_status": {
+    "zero_400_errors": false,
+    "latency_under_2s": "5/6 pages OK (login légèrement au-dessus)",
+    "settings_documents_fixed": true
+  }
+}
