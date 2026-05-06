@@ -44,18 +44,15 @@ if USE_POSTGRES:
     try:
         from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
         from sqlalchemy import text
+        from sqlalchemy.pool import NullPool
         
         pg_url = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://").replace("postgresql://", "postgresql+asyncpg://")
         
-        # Disable prepared statement cache for pgbouncer/Supabase Transaction Pooler compatibility
+        # Use NullPool for serverless/pooler compatibility (Supabase Transaction Pooler)
         pg_engine = create_async_engine(
             pg_url,
             echo=False,
-            pool_size=20,
-            max_overflow=30,
-            pool_timeout=30,
-            pool_recycle=1800,
-            pool_pre_ping=True,
+            poolclass=NullPool,  # Don't use SQLAlchemy connection pooling (Supabase handles it)
             connect_args={
                 "statement_cache_size": 0,
                 "prepared_statement_cache_size": 0,
