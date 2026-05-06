@@ -1,0 +1,130 @@
+{
+  "summary": "TEST ITERATION 60 - ÉCHEC: 8 erreurs 400 persistent malgré l'affirmation que les colonnes Supabase existent. Les colonnes montant_total (devis/factures) et max_users/max_interventions/max_clients (entreprises) ne sont toujours pas reconnues par Supabase.",
+  "backend_issues": {
+    "critical": [
+      {
+        "table": "devis",
+        "column": "montant_total",
+        "issue": "Colonne non reconnue par Supabase - 2 erreurs 400",
+        "priority": "CRITICAL",
+        "error_urls": [
+          "https://zmngftlkdimwvkxmduvr.supabase.co/rest/v1/devis?select=id,numero,statut,montant_total,created_at,client:clients(id,nom,prenom)"
+        ],
+        "frontend_files_affected": [
+          "/app/frontend/src/lib/supabaseApi.js (lignes 737, 771-773)"
+        ]
+      },
+      {
+        "table": "factures",
+        "column": "montant_total",
+        "issue": "Colonne non reconnue par Supabase - 4 erreurs 400",
+        "priority": "CRITICAL",
+        "error_urls": [
+          "https://zmngftlkdimwvkxmduvr.supabase.co/rest/v1/factures?select=id,numero,statut,montant_total,created_at,client:clients(id,nom,prenom)",
+          "https://zmngftlkdimwvkxmduvr.supabase.co/rest/v1/factures?select=id,numero,montant_total,date_echeance"
+        ],
+        "frontend_files_affected": [
+          "/app/frontend/src/lib/supabaseApi.js (lignes 739, 745-746, 774-776)"
+        ]
+      },
+      {
+        "table": "entreprises",
+        "columns": ["max_users", "max_interventions", "max_clients"],
+        "issue": "Colonnes non reconnues par Supabase - 2 erreurs 400",
+        "priority": "CRITICAL",
+        "error_urls": [
+          "https://zmngftlkdimwvkxmduvr.supabase.co/rest/v1/entreprises?select=plan,subscription_status,subscription_end_date,max_users,max_interventions,max_clients"
+        ],
+        "frontend_files_affected": [
+          "/app/frontend/src/components/PlanUsageWidget.jsx (lignes 306-310)"
+        ]
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Dashboard widgets",
+        "issue": "Widgets 'Derniers devis' et 'Dernières factures' affichent 'Aucun élément récent' à cause des erreurs 400",
+        "affected_selectors": ["[data-testid='recent-devis']", "[data-testid='recent-factures']"]
+      },
+      {
+        "flow": "Settings/Abonnement",
+        "issue": "Widget plan ne peut pas charger les limites max_users/max_interventions/max_clients",
+        "affected_selectors": []
+      }
+    ],
+    "design_issues": []
+  },
+  "test_results": {
+    "login": {
+      "status": "PASS",
+      "note": "Login réussi avec contact@actoos.com"
+    },
+    "dashboard": {
+      "status": "PARTIAL",
+      "note": "Dashboard charge mais widgets devis/factures cassés"
+    },
+    "settings": {
+      "status": "PARTIAL",
+      "note": "Page charge mais erreurs 400 sur plan widget"
+    },
+    "console_errors": {
+      "total_400_errors": 8,
+      "target": 0,
+      "status": "FAIL"
+    }
+  },
+  "validation_status": {
+    "zero_400_errors": false,
+    "target_met": false,
+    "actual_400_errors": 8,
+    "expected_400_errors": 0
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_60.json"
+  ],
+  "action_items": [
+    "CRITIQUE: Vérifier dans Supabase SQL Editor que les colonnes existent EXACTEMENT avec ces noms (sensible à la casse): montant_total, max_users, max_interventions, max_clients",
+    "CRITIQUE: Exécuter cette requête SQL pour vérifier: SELECT column_name, data_type FROM information_schema.columns WHERE table_name IN ('devis', 'factures', 'entreprises') AND column_name IN ('montant_total', 'max_users', 'max_interventions', 'max_clients');",
+    "Si colonnes n'existent pas, les créer avec: ALTER TABLE devis ADD COLUMN montant_total NUMERIC; ALTER TABLE factures ADD COLUMN montant_total NUMERIC; ALTER TABLE entreprises ADD COLUMN max_users INTEGER; ALTER TABLE entreprises ADD COLUMN max_interventions INTEGER; ALTER TABLE entreprises ADD COLUMN max_clients INTEGER;",
+    "Si colonnes existent mais erreurs persistent: Vérifier les permissions RLS (Row Level Security) - les colonnes peuvent être bloquées par des policies",
+    "ALTERNATIVE: Si impossible d'ajouter les colonnes, modifier le frontend pour ne pas les demander (fallback gracieux)"
+  ],
+  "critical_code_review_comments": [
+    "Le frontend demande des colonnes qui n'existent pas dans Supabase",
+    "Les erreurs 400 de Supabase indiquent 'column does not exist' ou 'permission denied'",
+    "Le code frontend n'a pas de fallback gracieux quand ces colonnes manquent"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Frontend only test",
+    "frontend": "60% - Navigation OK, mais 8 erreurs 400 persistent"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "contact@actoos.com",
+      "password": "Salifkane&&7"
+    }
+  },
+  "seed_data_creation": "Aucune",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Les colonnes Supabase (montant_total dans devis/factures, max_users/max_interventions/max_clients dans entreprises) causent 8 erreurs 400. L'utilisateur affirme les avoir ajoutées via SQL mais les erreurs persistent. Possibles causes: 1) Colonnes pas vraiment ajoutées, 2) Noms différents (casse), 3) RLS bloquant l'accès, 4) Cache Supabase. Vérifier via SQL Editor.",
+  "rca_of_the_issue": {
+    "root_cause": "Le frontend demande des colonnes Supabase qui ne sont pas accessibles (soit inexistantes, soit bloquées par RLS)",
+    "impact": "8 erreurs 400 par session, widgets Dashboard non fonctionnels, widget plan incomplet",
+    "reproduction_steps": [
+      "1. Se connecter avec contact@actoos.com / Salifkane&&7",
+      "2. Observer les erreurs 400 dans la console réseau sur le Dashboard",
+      "3. Les widgets 'Derniers devis' et 'Dernières factures' affichent 'Aucun élément récent'"
+    ],
+    "mitigation_options": [
+      "Option 1: Ajouter les colonnes manquantes dans Supabase",
+      "Option 2: Modifier le frontend pour ne pas demander ces colonnes (fallback)",
+      "Option 3: Vérifier et ajuster les policies RLS sur ces colonnes"
+    ]
+  }
+}
