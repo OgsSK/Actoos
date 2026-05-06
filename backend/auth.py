@@ -15,8 +15,8 @@ SECRET_KEY = os.environ.get("JWT_SECRET_KEY", secrets.token_urlsafe(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
-# Bcrypt with 10 rounds (secure but faster than default 12)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=10)
+# Bcrypt with 8 rounds (still secure, much faster for limited CPU)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=8)
 security = HTTPBearer()
 
 import logging

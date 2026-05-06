@@ -301,6 +301,24 @@ async def setup_technician(data: SetupTechnicianRequest):
         raise HTTPException(status_code=500, detail=f"Erreur lors de la création: {str(e)}")
 
 
+@router.post("/reset-password-hash")
+async def reset_password_hash(email: str, password: str):
+    """
+    Reset password hash for a user (use after changing bcrypt rounds)
+    """
+    user = await db.users.find_one({"email": email.lower()})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    new_hash = get_password_hash(password)
+    await db.users.update_one(
+        {"email": email.lower()},
+        {"$set": {"password_hash": new_hash}}
+    )
+    
+    return {"success": True, "message": f"Mot de passe réinitialisé pour {email}"}
+
+
 async def reset_demo_data(entreprise_id: str):
     """
     Réinitialise toutes les données de l'entreprise démo
