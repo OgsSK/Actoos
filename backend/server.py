@@ -120,11 +120,46 @@ api_router.include_router(demo_router.router)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Health check endpoint for Railway
+# Health check endpoint for Railway (both /health and /api/health)
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for Railway deployment"""
-    return {"status": "healthy", "service": "actoos-api"}
+    """Health check endpoint for Railway deployment with connection status"""
+    status = {
+        "status": "healthy",
+        "service": "actoos-api",
+        "version": "2.0.0"
+    }
+    
+    # Check PostgreSQL
+    try:
+        from database_pg import engine
+        if engine:
+            status["postgresql"] = "connected"
+        else:
+            status["postgresql"] = "not_configured"
+    except:
+        status["postgresql"] = "not_configured"
+    
+    # Check Redis
+    try:
+        from redis_service import is_redis_available
+        status["redis"] = "connected" if is_redis_available() else "fallback"
+    except:
+        status["redis"] = "fallback"
+    
+    # Check MongoDB
+    try:
+        await db.command("ping")
+        status["mongodb"] = "connected"
+    except:
+        status["mongodb"] = "disconnected"
+    
+    return status
+
+@api_router.get("/health")
+async def api_health_check():
+    """Health check via /api/health"""
+    return await health_check()
 
 # CORS configuration
 app.add_middleware(
@@ -278,16 +313,41 @@ async def run_intervention_reminders():
 
 @app.on_event("startup")
 async def startup():
+    # Initialize PostgreSQL (Supabase) if configured
+    pg_connected = False
+    try:
+        from database_pg import init_database, get_database_url
+        if get_database_url():
+            pg_connected = await init_database()
+            if pg_connected:
+                logger.info("✅ PostgreSQL (Supabase) connected - High Performance Mode")
+            else:
+                logger.info("⚠️ PostgreSQL not available - Using MongoDB fallback")
+        else:
+            logger.info("DATABASE_URL not set - Using MongoDB")
+    except Exception as e:
+        logger.warning(f"PostgreSQL init failed: {e} - Using MongoDB fallback")
+    
     # Initialize Redis service
+    redis_connected = False
     try:
         from redis_service import get_redis
         redis = await get_redis()
         if redis:
-            logger.info("Redis service initialized")
+            redis_connected = True
+            logger.info("✅ Redis (Upstash) connected - Caching enabled")
         else:
-            logger.info("Redis not configured - using in-memory fallback")
+            logger.info("⚠️ Redis not configured - Using in-memory fallback")
     except Exception as e:
         logger.warning(f"Redis init failed (optional): {e}")
+    
+    # Log performance mode status
+    if pg_connected and redis_connected:
+        logger.info("🚀 HIGH PERFORMANCE MODE ACTIVE (PostgreSQL + Redis)")
+    elif pg_connected:
+        logger.info("⚡ ENHANCED MODE (PostgreSQL only)")
+    else:
+        logger.info("📦 STANDARD MODE (MongoDB + In-memory cache)")
     
     # Initialize storage
     try:
@@ -301,7 +361,7 @@ async def startup():
     except Exception as e:
         logger.warning(f"Twilio init failed (optional): {e}")
     
-    # Create indexes
+    # Create MongoDB indexes (fallback)
     await db.users.create_index("email", unique=True)
     await db.users.create_index("entreprise_id")
     await db.clients.create_index("entreprise_id")
@@ -318,7 +378,7 @@ async def startup():
         asyncio.create_task(run_intervention_reminders())
         logger.info("Automated reminder tasks started")
     
-    logger.info("Actoos API started - Version 2.0.0 (Modular Architecture)")
+    logger.info("ACTOOS PRO API started - Version 2.0.0 (High Performance Architecture)")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

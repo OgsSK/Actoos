@@ -9,6 +9,31 @@ Application SaaS multi-tenant pour la gestion des interventions terrain avec :
   - **Pro**: 49,99€/mois ou 479,90€/an (-20%)
   - **Enterprise**: 89,99€/mois ou 863,90€/an (-20%)
 
+## 🚀 Architecture Haute Performance (EN COURS)
+
+### Nouvelles Technologies (Décembre 2025)
+- **Supabase (PostgreSQL)** : Base de données relationnelle pour performance <100ms
+- **Upstash (Redis)** : Cache distribué pour latence quasi-nulle
+- **Railway** : Hosting backend optimisé avec auto-scaling
+
+### Statut Migration
+- [x] Schéma PostgreSQL créé dans Supabase
+- [x] Credentials Supabase configurés
+- [x] Credentials Upstash Redis configurés
+- [x] Modèles SQLAlchemy définis (`database_pg.py`)
+- [x] Health check avec statut des connexions
+- [x] Dockerfile et railway.toml optimisés
+- [ ] **EN ATTENTE** : Déploiement Railway pour tests connexions réelles
+- [ ] Migration des routes backend (MongoDB → PostgreSQL)
+
+### Fichiers de Configuration
+- `/app/backend/Dockerfile` - Image Docker optimisée
+- `/app/backend/railway.toml` - Config Railway
+- `/app/backend/database_pg.py` - Modèles SQLAlchemy
+- `/app/backend/redis_service.py` - Service Redis avec fallback
+- `/app/memory/POSTGRESQL_SCHEMA.sql` - Schéma complet
+- `/app/memory/RAILWAY_DEPLOYMENT.md` - Guide de déploiement
+
 ## ✅ Fonctionnalités Implémentées
 
 ### Core
