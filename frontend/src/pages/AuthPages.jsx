@@ -6,13 +6,13 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Wrench, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Wrench, AlertCircle, Loader2 } from 'lucide-react';
+import { PasswordInput } from '../components/ui/password-input';
 import TwoFactorVerify from '../components/TwoFactorVerify';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -125,30 +125,15 @@ export const LoginPage = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-semibold text-slate-700">Mot de passe</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="h-11 pr-10"
-                    data-testid="login-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
+                <PasswordInput
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="h-11"
+                  data-testid="login-password"
+                />
               </div>
 
               <Button
@@ -316,9 +301,8 @@ export const ActivatePage = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="password">Mot de passe</Label>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -329,9 +313,8 @@ export const ActivatePage = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-                  <Input
+                  <PasswordInput
                     id="confirmPassword"
-                    type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
@@ -586,9 +569,8 @@ export const ResetPasswordPage = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="password">Nouveau mot de passe</Label>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -599,9 +581,8 @@ export const ResetPasswordPage = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-                  <Input
+                  <PasswordInput
                     id="confirmPassword"
-                    type="password"
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}

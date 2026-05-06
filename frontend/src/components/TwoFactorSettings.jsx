@@ -5,6 +5,7 @@ import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { PasswordInput } from './ui/password-input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { 
   Shield, ShieldCheck, ShieldOff, Smartphone, Mail, Key, 
@@ -397,8 +398,7 @@ const TwoFactorSettings = () => {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Mot de passe</Label>
-              <Input
-                type="password"
+              <PasswordInput
                 value={disablePassword}
                 onChange={(e) => setDisablePassword(e.target.value)}
                 placeholder="Votre mot de passe"

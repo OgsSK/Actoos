@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { PasswordInput } from '../components/ui/password-input';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -641,9 +642,8 @@ const SignupPage = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="adminPassword">Mot de passe *</Label>
-                        <Input
+                        <PasswordInput
                           id="adminPassword"
-                          type="password"
                           placeholder="••••••••"
                           value={formData.adminPassword}
                           onChange={e => setFormData(prev => ({ ...prev, adminPassword: e.target.value }))}
@@ -657,9 +657,8 @@ const SignupPage = () => {
 
                       <div className="space-y-2">
                         <Label htmlFor="adminPasswordConfirm">Confirmer *</Label>
-                        <Input
+                        <PasswordInput
                           id="adminPasswordConfirm"
-                          type="password"
                           placeholder="••••••••"
                           value={formData.adminPasswordConfirm}
                           onChange={e => setFormData(prev => ({ ...prev, adminPasswordConfirm: e.target.value }))}

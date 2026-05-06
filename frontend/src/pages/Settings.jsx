@@ -26,6 +26,7 @@ import {
 import { toast } from 'sonner';
 import PlanUsageWidget from '../components/PlanUsageWidget';
 import PlatformApiConfig from '../components/PlatformApiConfig';
+import { PasswordInput } from '../components/ui/password-input';
 import { categoriesApi, settingsApi, entrepriseApi } from '../lib/supabaseApi';
 
 // Default category icons and colors
@@ -819,9 +820,8 @@ const SMSConfiguration = ({ entrepriseId, smsStatus, onStatusChange }) => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="twilio_token">Auth Token</Label>
-                <Input
+                <PasswordInput
                   id="twilio_token"
-                  type="password"
                   value={customConfig.twilio_auth_token}
                   onChange={(e) => setCustomConfig(prev => ({ ...prev, twilio_auth_token: e.target.value }))}
                   placeholder="Votre Auth Token Twilio"
@@ -1188,8 +1188,7 @@ const IntegrationsHub = ({ entrepriseId }) => {
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label>Access Token (permanent)</Label>
-                    <Input
-                      type="password"
+                    <PasswordInput
                       value={whatsAppConfig.whatsapp_access_token}
                       onChange={(e) => setWhatsAppConfig(prev => ({ ...prev, whatsapp_access_token: e.target.value }))}
                       placeholder="EAAxxxxxxxx..."
@@ -1469,8 +1468,7 @@ const GoogleCalendarConfig = ({ entrepriseId, integrations, onStatusChange }) =>
                 </div>
                 <div className="space-y-2">
                   <Label>Client Secret</Label>
-                  <Input
-                    type="password"
+                  <PasswordInput
                     value={customConfig.google_client_secret}
                     onChange={(e) => setCustomConfig(prev => ({ ...prev, google_client_secret: e.target.value }))}
                     placeholder="GOCSPX-xxxxxx"
