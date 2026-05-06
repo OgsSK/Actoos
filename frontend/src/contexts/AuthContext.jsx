@@ -82,9 +82,27 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await api.get('/auth/me');
-      setUser(response.data.user);
-      setEntreprise(response.data.entreprise);
+      // Decode token to get user info
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userId = payload.sub;
+      const entrepriseId = payload.ent;
+      
+      // Fetch user and entreprise from Supabase directly
+      const [userResult, entrepriseResult] = await Promise.all([
+        supabase.from('users').select('*').eq('id', userId).single(),
+        supabase.from('entreprises').select('*').eq('id', entrepriseId).single()
+      ]);
+      
+      if (userResult.data) {
+        setUser({
+          ...userResult.data,
+          id: String(userResult.data.id),
+          entreprise_id: String(userResult.data.entreprise_id)
+        });
+      }
+      if (entrepriseResult.data) {
+        setEntreprise(entrepriseResult.data);
+      }
     } catch (error) {
       console.error('Auth error:', error);
       localStorage.removeItem('token');

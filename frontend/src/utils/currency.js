@@ -27,19 +27,12 @@ const CURRENCY_CONFIG = {
 let cachedRates = DEFAULT_RATES;
 
 /**
- * Fetch exchange rates from API
+ * Fetch exchange rates - Using default rates (no external API needed)
+ * In production, you could use a free API like exchangerate-api.com
  */
 export async function fetchExchangeRates() {
-  try {
-    const API_URL = process.env.REACT_APP_BACKEND_URL;
-    const response = await fetch(`${API_URL}/api/exchange-rates`);
-    if (response.ok) {
-      const data = await response.json();
-      cachedRates = data.rates || DEFAULT_RATES;
-    }
-  } catch (error) {
-    console.error('Failed to fetch exchange rates:', error);
-  }
+  // Use default rates - no need for Railway
+  // You can integrate a free exchange rate API later if needed
   return cachedRates;
 }
 
