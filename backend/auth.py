@@ -15,8 +15,16 @@ SECRET_KEY = os.environ.get("JWT_SECRET_KEY", secrets.token_urlsafe(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
-# Use argon2id (recommended by OWASP, faster than bcrypt)
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto", argon2__type="id")
+# Use argon2id with reduced parameters for Railway's limited CPU
+# time_cost=1, memory_cost=32768, parallelism=1 is still secure but faster
+pwd_context = CryptContext(
+    schemes=["argon2"], 
+    deprecated="auto", 
+    argon2__type="id",
+    argon2__time_cost=1,
+    argon2__memory_cost=32768,
+    argon2__parallelism=1
+)
 security = HTTPBearer()
 
 import logging
