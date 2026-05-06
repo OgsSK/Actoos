@@ -151,6 +151,89 @@ async def get_demo_entreprise():
     return entreprise
 
 
+# ==================== SETUP ADMIN PRINCIPAL ====================
+
+@router.post("/setup-admin")
+async def setup_main_admin(email: str, password: str, nom: str = "Admin", prenom: str = "Principal", entreprise_nom: str = "ACTOOS PRO"):
+    """
+    Endpoint unique pour créer le compte admin principal.
+    À utiliser une seule fois lors de l'initialisation.
+    """
+    # Vérifier si un admin existe déjà avec cet email
+    existing_user = await db.users.find_one({"email": email.lower()})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Un compte avec cet email existe déjà")
+    
+    from subscription_service import PLANS
+    
+    entreprise_id = str(uuid.uuid4())
+    admin_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Plan Enterprise pour l'admin principal
+    enterprise_plan = PLANS.get("enterprise", {})
+    
+    # Créer l'entreprise
+    entreprise = {
+        "id": entreprise_id,
+        "nom": entreprise_nom,
+        "email": email.lower(),
+        "telephone": "",
+        "adresse": "",
+        "ville": "",
+        "code_postal": "",
+        "plan": "enterprise",
+        "plan_limits": {
+            "max_admins": enterprise_plan.get("max_admins", -1),
+            "max_technicians": enterprise_plan.get("max_technicians", -1),
+            "max_interventions_month": enterprise_plan.get("max_interventions_month", -1),
+            "max_categories": enterprise_plan.get("max_categories", -1),
+            "multi_sites": True,
+            "offline_mode": True,
+            "geolocation": True,
+            "auto_pdf_reports": True,
+            "advanced_analytics": True,
+            "white_label": True,
+            "api_access": True,
+            "advanced_branding": True,
+            "smart_planning": True,
+            "auto_devis_to_facture": True,
+            "team_validation": True,
+            "sms_included": 500
+        },
+        "is_demo": False,
+        "sequence_facture": 1,
+        "sequence_devis": 1,
+        "created_at": now,
+        "updated_at": now
+    }
+    
+    await db.entreprises.insert_one(entreprise)
+    
+    # Créer l'admin
+    admin = {
+        "id": admin_id,
+        "email": email.lower(),
+        "password_hash": get_password_hash(password),
+        "nom": nom,
+        "prenom": prenom,
+        "role": "admin",
+        "statut": "actif",
+        "entreprise_id": entreprise_id,
+        "created_at": now,
+        "updated_at": now
+    }
+    await db.users.insert_one(admin)
+    
+    return {
+        "success": True,
+        "message": "Compte admin créé avec succès",
+        "entreprise_id": entreprise_id,
+        "admin_id": admin_id,
+        "email": email.lower()
+    }
+
+
 async def reset_demo_data(entreprise_id: str):
     """
     Réinitialise toutes les données de l'entreprise démo
