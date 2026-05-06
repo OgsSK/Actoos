@@ -217,7 +217,7 @@ export const ClientForm = () => {
   const { id } = useParams();
   const isEdit = !!id;
   const navigate = useNavigate();
-  const { api } = useAuth();
+  const { user, supabaseApi } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -241,8 +241,8 @@ export const ClientForm = () => {
   const fetchClient = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/clients/${id}`);
-      setFormData(response.data);
+      const data = await supabaseApi.clients.get(id);
+      setFormData(data);
     } catch (error) {
       console.error('Error fetching client:', error);
     } finally {
@@ -260,9 +260,9 @@ export const ClientForm = () => {
     setSaving(true);
     try {
       if (isEdit) {
-        await api.put(`/clients/${id}`, formData);
+        await supabaseApi.clients.update(id, formData);
       } else {
-        await api.post('/clients', formData);
+        await supabaseApi.clients.create({ ...formData, entreprise_id: user?.entreprise_id });
       }
       navigate('/dashboard/clients');
     } catch (error) {

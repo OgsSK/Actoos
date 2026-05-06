@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { formatCurrency, formatCurrencyCompact, getCurrencySymbol } from '../lib/currency';
+import { supabase } from '../lib/supabase';
+import supabaseApi from '../lib/supabaseApi';
 
+// Legacy API for endpoints not yet migrated (will be removed)
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Supabase Edge Function URL for ultra-fast login
@@ -294,6 +297,9 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     api,
+    // Supabase direct API (ultra-fast, no Railway)
+    supabaseApi,
+    supabase,
     refreshUser: fetchUser,
     // Currency helpers
     currency,

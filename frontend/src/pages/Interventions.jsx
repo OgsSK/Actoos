@@ -160,7 +160,7 @@ export const InterventionForm = () => {
   const location = useLocation();
   const isEdit = !!id;
   const navigate = useNavigate();
-  const { api } = useAuth();
+  const { user, supabaseApi } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [clients, setClients] = useState([]);
@@ -184,38 +184,36 @@ export const InterventionForm = () => {
   });
 
   useEffect(() => {
-    fetchClients();
-    fetchTechniciens();
-    fetchCategories();
-    if (isEdit) {
-      fetchIntervention();
-    }
+    loadFormData();
   }, [id]);
 
-  const fetchClients = async () => {
+  const loadFormData = async () => {
     try {
-      const response = await api.get('/clients');
-      setClients(response.data);
+      const [clientsData, techsData, catsData] = await Promise.all([
+        supabaseApi.clients.list(user?.entreprise_id),
+        supabaseApi.users.getTechniciens(user?.entreprise_id),
+        supabaseApi.categories.list(user?.entreprise_id)
+      ]);
+      setClients(clientsData);
+      setTechniciens(techsData.filter(t => t.statut === 'actif'));
+      setCategories(catsData);
+      
+      if (isEdit) {
+        setLoading(true);
+        const intervention = await supabaseApi.interventions.get(id);
+        setFormData({
+          ...intervention,
+          date_prevue: new Date(intervention.date_prevue),
+        });
+        if (intervention.client_id) {
+          const sitesData = await supabaseApi.sites.list(intervention.client_id);
+          setSites(sitesData);
+        }
+        setLoading(false);
+      }
     } catch (error) {
-      console.error('Error fetching clients:', error);
-    }
-  };
-
-  const fetchTechniciens = async () => {
-    try {
-      const response = await api.get('/users');
-      setTechniciens(response.data.filter(u => u.role === 'tech' && u.statut === 'actif'));
-    } catch (error) {
-      console.error('Error fetching techniciens:', error);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get('/categories');
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error('Error loading form data:', error);
+      setLoading(false);
     }
   };
 
@@ -226,8 +224,8 @@ export const InterventionForm = () => {
       return;
     }
     try {
-      const response = await api.get('/sites', { params: { client_id: clientId, actif: true } });
-      setSites(response.data);
+      const sitesData = await supabaseApi.sites.list(clientId);
+      setSites(sitesData);
     } catch (error) {
       console.error('Error fetching sites:', error);
       setSites([]);
@@ -243,22 +241,6 @@ export const InterventionForm = () => {
     }
   }, [formData.client_id]);
 
-  const fetchIntervention = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get(`/interventions/${id}`);
-      const data = response.data;
-      setFormData({
-        ...data,
-        date_prevue: new Date(data.date_prevue),
-      });
-    } catch (error) {
-      console.error('Error fetching intervention:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -270,14 +252,16 @@ export const InterventionForm = () => {
     try {
       const payload = {
         ...formData,
+        entreprise_id: user?.entreprise_id,
         date_prevue: formData.date_prevue.toISOString(),
         duree_estimee: parseInt(formData.duree_estimee),
+        statut: formData.statut || 'planifiee'
       };
       
       if (isEdit) {
-        await api.put(`/interventions/${id}`, payload);
+        await supabaseApi.interventions.update(id, payload);
       } else {
-        await api.post('/interventions', payload);
+        await supabaseApi.interventions.create(payload);
       }
       navigate('/dashboard/interventions');
     } catch (error) {
