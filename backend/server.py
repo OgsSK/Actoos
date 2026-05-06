@@ -1,12 +1,12 @@
 """
 Actoos API - Field Service Management SaaS
 Refactored modular architecture with all routes in /routers/
+PostgreSQL (Supabase) primary database
 """
 from fastapi import FastAPI, APIRouter
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
@@ -20,6 +20,9 @@ from storage import init_storage
 from sms_service import init_twilio
 from email_service import send_relance_email
 from sms_service import send_payment_reminder, send_intervention_reminder
+
+# Import dependencies with database
+from dependencies import db, USE_POSTGRES, USE_MONGO
 
 # Import routers
 from routers import (
@@ -63,14 +66,12 @@ from routers import (
 )
 import realtime_events
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
-
-# Initialize communication logging
-import communication_log
-communication_log.set_db(db)
+# Initialize communication logging (if MongoDB is available)
+if USE_MONGO:
+    import communication_log
+    from dependencies import mongo_db
+    if mongo_db:
+        communication_log.set_db(mongo_db)
 
 # Create the main app
 app = FastAPI(title="Actoos API", version="2.0.0")
@@ -127,17 +128,21 @@ async def health_check():
     status = {
         "status": "healthy",
         "service": "actoos-api",
-        "version": "2.0.0"
+        "version": "2.0.0",
+        "database_mode": "postgresql" if USE_POSTGRES else "mongodb" if USE_MONGO else "none"
     }
     
     # Check PostgreSQL
-    try:
-        from database_pg import engine
-        if engine:
+    if USE_POSTGRES:
+        try:
+            from dependencies import get_pg_session
+            from sqlalchemy import text
+            async with get_pg_session() as session:
+                await session.execute(text("SELECT 1"))
             status["postgresql"] = "connected"
-        else:
-            status["postgresql"] = "not_configured"
-    except:
+        except Exception as e:
+            status["postgresql"] = f"error: {str(e)[:50]}"
+    else:
         status["postgresql"] = "not_configured"
     
     # Check Redis
@@ -147,12 +152,19 @@ async def health_check():
     except:
         status["redis"] = "fallback"
     
-    # Check MongoDB
-    try:
-        await db.command("ping")
-        status["mongodb"] = "connected"
-    except:
-        status["mongodb"] = "disconnected"
+    # Check MongoDB (optional now)
+    if USE_MONGO:
+        try:
+            from dependencies import mongo_db
+            if mongo_db:
+                await mongo_db.command("ping")
+                status["mongodb"] = "connected"
+            else:
+                status["mongodb"] = "not_configured"
+        except:
+            status["mongodb"] = "error"
+    else:
+        status["mongodb"] = "not_configured"
     
     return status
 
