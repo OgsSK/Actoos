@@ -9,10 +9,34 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Shared Twilio credentials (Actoos account)
-const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-const TWILIO_PHONE_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER");
+// Get Twilio config from environment or database
+async function getTwilioConfig() {
+  // First try environment variables
+  let accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+  let authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+  let phoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
+  
+  // If not in env, try database
+  if (!accountSid || !authToken || !phoneNumber) {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { data: config } = await supabase
+      .from("platform_config")
+      .select("twilio_account_sid, twilio_auth_token, twilio_phone_number, sms_enabled")
+      .eq("id", 1)
+      .single();
+    
+    if (config && config.sms_enabled) {
+      accountSid = config.twilio_account_sid || accountSid;
+      authToken = config.twilio_auth_token || authToken;
+      phoneNumber = config.twilio_phone_number || phoneNumber;
+    }
+  }
+  
+  return { accountSid, authToken, phoneNumber };
+}
 
 interface SMSRequest {
   to: string;
@@ -89,10 +113,11 @@ serve(async (req) => {
       );
     }
 
-    // Get Twilio credentials (check enterprise config or use shared)
-    let accountSid = TWILIO_ACCOUNT_SID;
-    let authToken = TWILIO_AUTH_TOKEN;
-    let fromNumber = TWILIO_PHONE_NUMBER;
+    // Get platform Twilio credentials from env or database
+    const platformConfig = await getTwilioConfig();
+    let accountSid = platformConfig.accountSid;
+    let authToken = platformConfig.authToken;
+    let fromNumber = platformConfig.phoneNumber;
     let mode = "shared";
 
     if (entreprise_id) {

@@ -9,10 +9,34 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Shared WhatsApp credentials (Actoos account)
-const WHATSAPP_ACCESS_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN");
-const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
 const WHATSAPP_API_VERSION = "v18.0";
+
+// Get WhatsApp config from environment or database
+async function getWhatsAppConfig() {
+  // First try environment variables
+  let accessToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN");
+  let phoneNumberId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
+  
+  // If not in env, try database
+  if (!accessToken || !phoneNumberId) {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { data: config } = await supabase
+      .from("platform_config")
+      .select("whatsapp_access_token, whatsapp_phone_number_id, whatsapp_enabled")
+      .eq("id", 1)
+      .single();
+    
+    if (config && config.whatsapp_enabled) {
+      accessToken = config.whatsapp_access_token || accessToken;
+      phoneNumberId = config.whatsapp_phone_number_id || phoneNumberId;
+    }
+  }
+  
+  return { accessToken, phoneNumberId };
+}
 
 interface WhatsAppRequest {
   to: string;
@@ -83,9 +107,10 @@ serve(async (req) => {
       );
     }
 
-    // Get WhatsApp credentials (check enterprise config or use shared)
-    let accessToken = WHATSAPP_ACCESS_TOKEN;
-    let phoneNumberId = WHATSAPP_PHONE_NUMBER_ID;
+    // Get platform WhatsApp credentials from env or database
+    const platformConfig = await getWhatsAppConfig();
+    let accessToken = platformConfig.accessToken;
+    let phoneNumberId = platformConfig.phoneNumberId;
     let mode = "shared";
 
     if (entreprise_id) {

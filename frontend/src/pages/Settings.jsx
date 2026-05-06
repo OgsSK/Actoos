@@ -21,10 +21,11 @@ import {
   CheckCircle, XCircle, ExternalLink, Info, Palette, Upload, 
   Tags, Plus, Pencil, Trash2, Wrench, Globe, Coins, CreditCard,
   Calendar, Link2, Unlink, DollarSign, Shield, Clock, AlertTriangle,
-  Database, Trash, Eye, Lock, Key
+  Database, Trash, Eye, Lock, Key, Settings2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PlanUsageWidget from '../components/PlanUsageWidget';
+import PlatformApiConfig from '../components/PlatformApiConfig';
 import { categoriesApi, settingsApi, entrepriseApi } from '../lib/supabaseApi';
 
 // Default category icons and colors
@@ -1753,8 +1754,22 @@ export const SettingsPage = () => {
               <span className="hidden sm:inline">Sécurité</span>
               <span className="sm:hidden">Sécu.</span>
             </TabsTrigger>
+            {user?.role === 'super_admin' && (
+              <TabsTrigger value="platform-api" className="flex items-center gap-2 whitespace-nowrap">
+                <Settings2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Configuration API</span>
+                <span className="sm:hidden">API</span>
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
+
+        {/* Platform API Config Tab - Super Admin Only */}
+        {user?.role === 'super_admin' && (
+          <TabsContent value="platform-api">
+            <PlatformApiConfig entrepriseId={entreprise?.id} isSuperAdmin={true} />
+          </TabsContent>
+        )}
 
         {/* Abonnement Tab */}
         <TabsContent value="abonnement">

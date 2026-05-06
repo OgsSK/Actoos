@@ -9,7 +9,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+// Get config from environment or database
+async function getResendConfig() {
+  // First try environment variable
+  let apiKey = Deno.env.get("RESEND_API_KEY");
+  let fromEmail = "ACTOOS PRO <noreply@actoos.com>";
+  
+  // If not in env, try database
+  if (!apiKey) {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { data: config } = await supabase
+      .from("platform_config")
+      .select("resend_api_key, resend_from_email, resend_from_name, email_enabled")
+      .eq("id", 1)
+      .single();
+    
+    if (config && config.email_enabled) {
+      apiKey = config.resend_api_key;
+      if (config.resend_from_name && config.resend_from_email) {
+        fromEmail = `${config.resend_from_name} <${config.resend_from_email}>`;
+      }
+    }
+  }
+  
+  return { apiKey, fromEmail };
+}
+
 const DEFAULT_FROM = "ACTOOS PRO <noreply@actoos.com>";
 
 interface EmailRequest {
@@ -178,10 +206,13 @@ serve(async (req) => {
   }
 
   try {
+    // Get config from env or database
+    const { apiKey: RESEND_API_KEY, fromEmail: configuredFrom } = await getResendConfig();
+    
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY not configured");
       return new Response(
-        JSON.stringify({ error: "Email service not configured", status: "error" }),
+        JSON.stringify({ error: "Email service not configured. Configurez la clé API dans Paramètres > Configuration API.", status: "error" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -214,7 +245,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: from || DEFAULT_FROM,
+        from: from || configuredFrom || DEFAULT_FROM,
         to: Array.isArray(to) ? to : [to],
         subject: emailSubject,
         html: emailHtml,

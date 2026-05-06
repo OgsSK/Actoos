@@ -22,17 +22,24 @@ ACTOOS PRO est maintenant une application SaaS 100% serverless avec architecture
 | `/generate-pdf` | Génération PDF devis/factures | ✅ Prêt (à déployer) |
 | `/stripe-webhook` | Webhooks Stripe paiements | ✅ Prêt (à déployer) |
 
-## Secrets à Configurer (Supabase)
+## 🖥️ Interface Configuration API (NOUVEAU)
 
-| Secret | Service | Description |
-|--------|---------|-------------|
-| `RESEND_API_KEY` | Resend | Envoi d'emails |
-| `TWILIO_ACCOUNT_SID` | Twilio | SMS - Account SID |
-| `TWILIO_AUTH_TOKEN` | Twilio | SMS - Auth Token |
-| `TWILIO_PHONE_NUMBER` | Twilio | SMS - Numéro d'envoi |
-| `WHATSAPP_ACCESS_TOKEN` | Meta | WhatsApp - Token d'accès |
-| `WHATSAPP_PHONE_NUMBER_ID` | Meta | WhatsApp - Phone ID |
-| `STRIPE_WEBHOOK_SECRET` | Stripe | Webhooks - Secret |
+Un nouvel onglet **"Configuration API"** est disponible dans les Paramètres pour le **super_admin**.
+Il permet de configurer directement depuis l'interface :
+
+- **Email (Resend)** : Clé API, email expéditeur
+- **SMS (Twilio)** : Account SID, Auth Token, Numéro de téléphone
+- **WhatsApp (Meta)** : Access Token, Phone Number ID
+- **Paiements (Stripe)** : Clés publique/secrète, Webhook Secret
+
+Chaque section inclut :
+- ✅ Bouton "Aide" avec guide étape par étape
+- ✅ Liens directs vers les consoles des services
+- ✅ Masquage des clés sensibles
+- ✅ Bouton de test
+- ✅ Toggle pour activer/désactiver le service
+
+**Table associée :** `platform_config` (voir `/app/supabase/migrations/003_platform_config.sql`)
 
 ## Fichiers Migrés (100%)
 
@@ -57,6 +64,7 @@ Tables protégées:
 - `devis` - Multi-tenant + accès public via token
 - `factures` - Multi-tenant strict
 - `chat_messages` - Multi-tenant
+- `platform_config` - Super admin uniquement (NOUVEAU)
 
 ## Pages Légales Mises à Jour
 
@@ -65,20 +73,8 @@ Tables protégées:
 - ✅ `TermsPage.jsx` - CGU à jour
 - ✅ `CookiesPage.jsx` - Politique cookies
 
-## Déploiement
-
-### Guide complet
-```
-/app/DEPLOYMENT_GUIDE.md
-```
-
-### Script de déploiement
-```bash
-/app/supabase/deploy.sh
-```
-
 ## Credentials de Test
-- **Admin**: contact@actoos.com / Salifkane&&7
+- **Super Admin**: contact@actoos.com / Salifkane&&7
 - **Demo**: demo@actoos.com / demo2024
 
 ## Supabase Config
@@ -88,11 +84,13 @@ Tables protégées:
 ## Changelog
 
 ### 7 mai 2026
+- ✅ **Interface Configuration API** : Nouvel onglet dans Paramètres pour configurer les clés API
+- ✅ Composant `PlatformApiConfig.jsx` avec guides intégrés
+- ✅ Table `platform_config` pour stockage sécurisé des clés
+- ✅ Edge Functions mises à jour pour lire depuis la BDD si pas de variable d'env
 - ✅ Ajout Edge Function `/send-whatsapp` pour relances WhatsApp Business
 - ✅ Mise à jour page `LegalPage.jsx` - Hébergeurs corrigés (Railway → Vercel/Supabase)
 - ✅ Création guide de déploiement complet `/app/DEPLOYMENT_GUIDE.md`
-- ✅ Mise à jour `deploy.sh` avec WhatsApp et nouveaux secrets
-- ✅ Extension `supabaseApi.js` avec fonction `sendWhatsApp`
 
 ### 6 mai 2026
 - ✅ Migration 100% complète: 15 fichiers .jsx migrés
@@ -105,15 +103,15 @@ Tables protégées:
 ## Prochaines Étapes
 
 ### P0 - À faire par l'utilisateur
-1. Installer Supabase CLI
-2. Configurer les secrets (voir DEPLOYMENT_GUIDE.md)
-3. Déployer les 6 Edge Functions
-4. Appliquer les politiques RLS
+1. Exécuter `/app/supabase/migrations/003_platform_config.sql` dans Supabase SQL Editor
+2. Exécuter `/app/supabase/migrations/002_rls_policies.sql` dans Supabase SQL Editor
+3. Déployer les 6 Edge Functions avec Supabase CLI
+4. Configurer les clés API depuis **Paramètres > Configuration API**
 
 ### P1 - Après déploiement
-1. Tester l'application en production
-2. Valider l'envoi d'emails/SMS/WhatsApp
-3. Vérifier les webhooks Stripe
+1. Tester l'envoi d'emails/SMS/WhatsApp
+2. Vérifier les webhooks Stripe
+3. Valider le paiement en ligne
 
 ### P2 - ACTOOS ONE
 1. Recevoir le plan de l'utilisateur
