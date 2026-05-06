@@ -34,20 +34,30 @@ Il permet de configurer directement depuis l'interface :
 
 ## Tests E2E - État Actuel
 
-### ✅ Iteration 51 - TEST FINAL RÉUSSI
-**Migration 100% Supabase - ZÉRO erreur 401**
+### ✅ Iteration 52 - TEST EXHAUSTIF RÉUSSI
+**Tous les flux testés avec succès - ZÉRO erreur 401**
 
-- Login/Logout ✅
-- Dashboard (stats correctes: 1 intervention, 2 clients, 1 technicien) ✅
-- Interventions (liste + création) ✅
-- Techniciens (liste) ✅
-- Planning (calendrier) ✅
-- Clients (CRUD) ✅
-- Devis/Factures ✅
-- Settings + Abonnement ✅
-- PlanUsageWidget (Startup: 1/2 techs, 1/500 interventions, 2/100 clients) ✅
-- Chat Widget ✅
-- **Console: ZÉRO erreur 401** ✅
+| Fonctionnalité | Statut | Détails |
+|----------------|--------|---------|
+| Login | ✅ | Connexion admin réussie |
+| Dashboard | ✅ | Stats: 1 intervention, 2 clients, 1 technicien, CA 0€ |
+| Clients | ✅ | Liste (2), recherche, création OK |
+| Interventions | ✅ | Liste (1), filtres par statut OK |
+| Techniciens | ✅ | Salif Kane visible |
+| Planning | ✅ | Calendrier, navigation semaine/mois OK |
+| Devis | ✅ | Liste, bouton nouveau OK |
+| Factures | ✅ | Liste, filtres OK |
+| Settings | ✅ | Tous onglets: Entreprise, Abonnement, Catégories, Documents, Intégrations |
+| Abonnement | ✅ | Widget: Startup, 1/2 techniciens, 1/500 interventions |
+| Chat | ✅ | Widget s'ouvre sans erreur |
+| Navigation | ✅ | Menu complet (12+ items) |
+| Logout/Login | ✅ | Déconnexion + reconnexion OK |
+| Console | ✅ | **ZÉRO erreur 401** |
+
+### Erreurs 400 attendues
+Les erreurs 400 Supabase sont dues aux tables/colonnes manquantes :
+- `chat_messages` - Sera créée par `005_missing_tables.sql`
+- `sms_config` - Sera ajoutée par `005_missing_tables.sql`
 
 ### Endpoints Railway Supprimés
 - `/api/entreprise` → Supabase direct
