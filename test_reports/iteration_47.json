@@ -1,0 +1,154 @@
+{
+  "summary": "Iteration 47 - CRITICAL: Supabase RLS Policy Infinite Recursion blocks ALL CRUD operations. Login works via Edge Function, but all data operations fail due to 'infinite recursion detected in policy for relation users'. Client creation specifically fails due to missing 'statut' column AND RLS policy error.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "Supabase PostgREST - ALL tables",
+        "issue": "RLS Policy infinite recursion: 'infinite recursion detected in policy for relation users' - This blocks ALL CRUD operations on clients, interventions, devis, factures, techniciens",
+        "priority": "CRITICAL"
+      },
+      {
+        "endpoint": "Supabase clients table",
+        "issue": "Missing 'statut' column: 'column clients.statut does not exist' - Frontend code references this column for filtering and creating clients",
+        "priority": "CRITICAL"
+      },
+      {
+        "endpoint": "Supabase user_invites table",
+        "issue": "Table does not exist: 'Could not find the table public.user_invites in the schema cache' - Hint suggests using 'tech_invites' instead",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "Supabase interventions table",
+        "issue": "Relationship ambiguity: 'Could not embed because more than one relationship was found for interventions and users'",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "SSE /api/events/stream",
+        "issue": "401 Unauthorized errors - SSE connection fails after login",
+        "priority": "MEDIUM"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "CookieConsent",
+        "issue": "Cookie consent banner blocks login button - requires force click or JS removal",
+        "selector": "[class*='CookieConsent']",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Client Creation",
+        "issue": "Cannot create clients - Supabase returns error due to missing 'statut' column and RLS policy",
+        "affected_selectors": ["[data-testid='client-submit']"]
+      },
+      {
+        "flow": "All Data Listing",
+        "issue": "All list pages show empty data due to RLS policy infinite recursion error",
+        "affected_selectors": ["[data-testid='clients-list']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_47.json"
+  ],
+  "action_items": [
+    "CRITICAL: Fix Supabase RLS policy on 'users' table - Remove infinite recursion in policy definition",
+    "CRITICAL: Add 'statut' column to 'clients' table in Supabase with default value 'actif'",
+    "HIGH: Fix table name mismatch - Either rename 'tech_invites' to 'user_invites' or update frontend code in supabaseApi.js",
+    "HIGH: Fix interventions-users relationship ambiguity - Specify explicit foreign key in query",
+    "MEDIUM: Fix SSE authentication to use Supabase token properly"
+  ],
+  "critical_code_review_comments": [
+    "CRITICAL: supabaseApi.js line 92-96 and 122 reference 'statut' column that doesn't exist in Supabase clients table",
+    "CRITICAL: Supabase RLS policies need to be reviewed - current policy on 'users' table causes infinite recursion",
+    "HIGH: usersApi.getInvites() at line 449-457 queries 'user_invites' table but Supabase has 'tech_invites'",
+    "HIGH: interventionsApi.list() at line 12 has ambiguous relationship with users table - needs explicit foreign key specification"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "10% (only login works, all CRUD operations fail)",
+    "frontend": "60% (UI loads but data operations fail)"
+  },
+  "test_credentials": {
+    "admin_enterprise": {
+      "email": "contact@actoos.com",
+      "password": "Salifkane&&7",
+      "status": "LOGIN WORKS"
+    },
+    "admin_startup": {
+      "email": "startup@actoos.com",
+      "password": "Salifkane&&7",
+      "status": "LOGIN WORKS"
+    }
+  },
+  "seed_data_creation": "None - could not create data due to RLS policy errors",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "CRITICAL BLOCKER: Supabase RLS policy on 'users' table has infinite recursion that blocks ALL database operations. Login works via Edge Function but all PostgREST queries fail. Main agent needs to fix Supabase RLS policies before any CRUD testing can proceed. Also missing 'statut' column in clients table.",
+  "features_tested": {
+    "login_enterprise": {
+      "status": "PASS",
+      "details": "Login with contact@actoos.com works via Supabase Edge Function"
+    },
+    "login_startup": {
+      "status": "PASS",
+      "details": "Login with startup@actoos.com works via Supabase Edge Function"
+    },
+    "logout": {
+      "status": "PASS",
+      "details": "Logout redirects to login page correctly"
+    },
+    "dashboard": {
+      "status": "PARTIAL",
+      "details": "UI loads but shows empty data due to RLS errors"
+    },
+    "clients_list": {
+      "status": "FAIL",
+      "details": "RLS policy error + missing 'statut' column"
+    },
+    "clients_create": {
+      "status": "FAIL",
+      "details": "Cannot create client - 'statut' column does not exist + RLS policy error"
+    },
+    "interventions_list": {
+      "status": "FAIL",
+      "details": "RLS policy error + relationship ambiguity"
+    },
+    "devis_list": {
+      "status": "FAIL",
+      "details": "RLS policy infinite recursion error"
+    },
+    "factures_list": {
+      "status": "FAIL",
+      "details": "RLS policy infinite recursion error"
+    },
+    "techniciens_list": {
+      "status": "FAIL",
+      "details": "RLS policy error + missing user_invites table"
+    },
+    "planning": {
+      "status": "PARTIAL",
+      "details": "UI loads but no data due to RLS errors"
+    },
+    "settings": {
+      "status": "PASS",
+      "details": "Settings page loads and shows enterprise info"
+    }
+  },
+  "rca_of_the_issue": {
+    "root_cause": "Supabase RLS (Row Level Security) policy on the 'users' table contains a circular reference that causes infinite recursion when any query tries to check user permissions",
+    "reproduction_steps": [
+      "1. Login successfully via Supabase Edge Function",
+      "2. Navigate to any data page (Clients, Interventions, Devis, Factures)",
+      "3. Observe console error: 'infinite recursion detected in policy for relation users'",
+      "4. All data queries fail with 500 error"
+    ],
+    "mitigation": "Fix the RLS policy on 'users' table in Supabase to remove the circular reference. The policy likely references itself or another policy that references it back."
+  }
+}
