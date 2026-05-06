@@ -426,7 +426,7 @@ export const DevisForm = () => {
   const location = useLocation();
   const isEdit = !!id;
   const navigate = useNavigate();
-  const { api, formatAmount } = useAuth();
+  const { user, api, formatAmount } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [clients, setClients] = useState([]);
