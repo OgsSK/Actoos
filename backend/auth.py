@@ -15,15 +15,19 @@ SECRET_KEY = os.environ.get("JWT_SECRET_KEY", secrets.token_urlsafe(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
-# Bcrypt with 8 rounds (still secure, much faster for limited CPU)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=8)
+# Use argon2 (faster than bcrypt)
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
 import logging
 logger = logging.getLogger(__name__)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception as e:
+        logger.error(f"Password verify error: {e}")
+        return False
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
