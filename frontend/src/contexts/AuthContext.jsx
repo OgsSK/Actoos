@@ -56,8 +56,14 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [entreprise, setEntreprise] = useState(null);
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [entreprise, setEntreprise] = useState(() => {
+    const savedEntreprise = localStorage.getItem('entreprise');
+    return savedEntreprise ? JSON.parse(savedEntreprise) : null;
+  });
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
@@ -210,10 +216,19 @@ export const AuthProvider = ({ children }) => {
         };
       }
       
-      const { access_token, user: userData, entreprise: entData } = data;
+      // The Edge Function returns 'token', not 'access_token'
+      const authToken = data.token || data.access_token;
+      const userData = data.user;
+      const entData = data.entreprise;
       
-      localStorage.setItem('token', access_token);
-      setToken(access_token);
+      if (!authToken || !userData) {
+        throw new Error('Réponse invalide du serveur');
+      }
+      
+      localStorage.setItem('token', authToken);
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('entreprise', JSON.stringify(entData));
+      setToken(authToken);
       setUser(userData);
       setEntreprise(entData);
       
