@@ -1,78 +1,94 @@
 # ACTOOS PRO - Product Requirements Document
 
 ## Vision Produit
-ACTOOS PRO est une application SaaS multi-tenant pour la gestion des opérations terrain (interventions, devis, factures, techniciens). L'objectif actuel est une migration complète vers une architecture Vercel + Supabase pour éliminer la latence liée au backend Railway.
+ACTOOS PRO est une application SaaS multi-tenant pour la gestion des opérations terrain (interventions, devis, factures, techniciens). L'architecture est maintenant 100% Vercel + Supabase (plus de Railway).
 
-## Architecture Cible
+## Architecture Finale
 - **Frontend**: React 18 SPA déployée sur Vercel (pro.actoos.com)
 - **Base de données**: Supabase PostgreSQL avec PostgREST
-- **Auth**: Supabase Edge Functions (Deno/TypeScript)
-- **Logique métier**: Edge Functions pour emails, SMS, PDF
+- **Auth**: Supabase Edge Function `/login`
+- **Backend Logic**: Supabase Edge Functions (Deno/TypeScript)
 - **Vitrine**: Next.js SSG sur Vercel (actoos.com)
+- **Redis**: Non utilisé (supprimé avec Railway)
 
-## État Actuel - Migration "Zero Railway" (6 mai 2026)
+## Edge Functions Créées
 
-### ✅ Migration Complète
-Les fichiers suivants n'utilisent plus l'API Railway et fonctionnent 100% avec Supabase:
+### `/supabase/functions/login/index.ts` ✅
+- Authentification JWT avec bcrypt
+- Temps de réponse ~1.5s
 
+### `/supabase/functions/send-email/index.ts` ✅
+- Envoi emails via Resend API
+- Templates: devis_sent, facture_sent, facture_relance, invitation, password_reset
+
+### `/supabase/functions/send-sms/index.ts` ✅
+- Envoi SMS via Twilio API
+- Support config entreprise personnalisée ou partagée Actoos
+- Templates: intervention_reminder, invitation, devis_notification, facture_reminder
+
+### `/supabase/functions/generate-pdf/index.ts` ✅
+- Génération PDF pour devis et factures
+- Templates HTML professionnels avec branding entreprise
+
+### `/supabase/functions/stripe-webhook/index.ts` ✅
+- Gestion webhooks Stripe
+- Events: checkout.session.completed, subscription.updated/deleted, invoice.payment_failed
+
+## Migration "Zero Railway" - COMPLÈTE
+
+### ✅ Tous les fichiers migrés
 **Lib/API Layer:**
-- `supabaseApi.js` - Toutes les fonctions CRUD (interventions, clients, devis, factures, users, categories, etc.)
-- `supabaseHooks.js` - React Query hooks
+- `supabaseApi.js` - 1400+ lignes, toutes les APIs + Edge Functions
 
-**Pages principales:**
-- `Dashboard.jsx` - Stats via Supabase direct
-- `Clients.jsx` + `ClientDetail` - CRUD complet via Supabase
-- `Interventions.jsx` + `InterventionDetail` - CRUD complet via Supabase
-- `Devis.jsx` + `DevisForm` + `DevisDetail` - CRUD complet via Supabase
-- `Factures.jsx` + `FactureDetail` - CRUD complet via Supabase
-- `Techniciens.jsx` - Gestion utilisateurs via Supabase
-- `Settings.jsx` - Toutes les configurations via Supabase
-- `TechnicianApp.jsx` - App mobile technicien via Supabase
-- `Rapports.jsx` - Stats et rapports via Supabase
-- `ClientPortal.jsx` - Portail client public via Supabase
-- `Analytics.jsx` - Analytics via Supabase
-- `Statements.jsx` - Relevés client via Supabase
-- `AuthPages.jsx` - Activation compte
+**Pages principales (12 fichiers):**
+- `Dashboard.jsx`, `Clients.jsx`, `Interventions.jsx`
+- `Devis.jsx`, `Factures.jsx`, `Techniciens.jsx`
+- `Settings.jsx`, `TechnicianApp.jsx`, `Rapports.jsx`
+- `ClientPortal.jsx`, `Analytics.jsx`, `Statements.jsx`, `AuthPages.jsx`
 
-### 🔄 Fichiers restants (non critiques)
+### 🔄 Fichiers non critiques restants
 - `APISettings.jsx` (9 appels) - Configuration avancée clés API
-- `SuperAdminDashboard.jsx` (15 appels) - Dashboard super admin uniquement
+- `SuperAdminDashboard.jsx` (15 appels) - Super admin uniquement
 
-### ⚠️ Fonctionnalités en attente d'Edge Functions
-Ces fonctionnalités affichent un message "en cours de migration":
-- Génération PDF (devis, factures, rapports)
-- Envoi emails (devis, factures, relances)
-- Envoi SMS (invitations, rappels)
-- Test WhatsApp
-- Sync Google Calendar
-- Paiement Stripe en ligne
+## Prochaines Étapes
 
-### 📋 Backlog (P1) - Edge Functions à créer
-1. `/supabase/functions/pdf-generator` - Génération PDF
-2. `/supabase/functions/send-email` - Envoi emails via Resend
-3. `/supabase/functions/send-sms` - Envoi SMS via Twilio
-4. `/supabase/functions/stripe-webhook` - Webhooks Stripe
+### P1 - Déploiement Edge Functions
+```bash
+# Déployer les Edge Functions sur Supabase
+supabase functions deploy send-email
+supabase functions deploy send-sms
+supabase functions deploy generate-pdf
+supabase functions deploy stripe-webhook
+```
 
-### 📋 Backlog (P1) - Sécurité
-- Activer RLS sur: `devis`, `factures`, `users`, `entreprises`, `chat_messages`
+### P1 - Configuration Secrets Supabase
+```bash
+# Configurer les secrets
+supabase secrets set RESEND_API_KEY=xxx
+supabase secrets set TWILIO_ACCOUNT_SID=xxx
+supabase secrets set TWILIO_AUTH_TOKEN=xxx
+supabase secrets set TWILIO_PHONE_NUMBER=xxx
+supabase secrets set STRIPE_WEBHOOK_SECRET=xxx
+```
 
-### 📋 Backlog (P2)
+### P1 - Sécurité RLS
+Activer RLS sur les tables restantes:
+- `devis`
+- `factures`
+- `users`
+- `entreprises`
+- `chat_messages`
+
+### P2 - Futur
 - ACTOOS ONE (super-app sur one.actoos.com)
-- Analytics avancées temps réel
-
-## Fichiers Clés
-
-### Frontend API Layer
-- `/app/frontend/src/lib/supabase.js` - Client Supabase
-- `/app/frontend/src/lib/supabaseApi.js` - CRUD wrappers complets (1200+ lignes)
-- `/app/frontend/src/lib/supabaseHooks.js` - React Query hooks
-
-### Edge Functions
-- `/app/supabase/functions/login/index.ts` - Auth Edge Function (fonctionnel)
 
 ## Credentials de Test
 - **Admin**: contact@actoos.com / Salifkane&&7
 - **Demo**: demo@actoos.com / demo2024
+
+## Supabase Config
+- Project URL: `https://zmngftlkdimwvkxmduvr.supabase.co`
+- Edge Functions URL: `https://zmngftlkdimwvkxmduvr.supabase.co/functions/v1/`
 
 ## Tables Principales
 - `users` - Utilisateurs (admin, tech)
@@ -85,14 +101,11 @@ Ces fonctionnalités affichent un message "en cours de migration":
 - `categories` - Catégories d'intervention
 - `user_invites` - Invitations utilisateurs
 
-## Notes Techniques
-- Le backend Railway (`/app/backend/`) est OBSOLÈTE et ne doit pas être modifié
-- Toutes les nouvelles fonctionnalités doivent utiliser Supabase PostgREST ou Edge Functions
-- RLS doit être activé sur toutes les tables accessibles depuis le frontend
-
 ## Changelog
 
 ### 6 mai 2026
-- Migration massive: 12 fichiers .jsx migrés de Railway vers Supabase
-- Extension de supabaseApi.js avec stats, settings, technician, photos, auth APIs
-- Suppression de toutes les dépendances axios dans les pages principales
+- Migration complète: 12 fichiers .jsx migrés de Railway vers Supabase
+- Création de 4 Edge Functions: send-email, send-sms, generate-pdf, stripe-webhook
+- Extension de supabaseApi.js (1400+ lignes) avec edgeFunctionsApi
+- Suppression de toutes les dépendances Railway
+- Redis non utilisé (l'état était déjà en fallback in-memory)

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDevis, useClients } from '../lib/supabaseHooks';
-import { devisApi, clientsApi, facturesApi, settingsApi } from '../lib/supabaseApi';
+import { devisApi, clientsApi, facturesApi, settingsApi, edgeFunctionsApi } from '../lib/supabaseApi';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -801,8 +801,17 @@ export const DevisDetail = () => {
   };
 
   const downloadPDF = async () => {
-    // PDF generation requires Edge Function
-    toast.info('Téléchargement PDF en cours de migration vers Supabase');
+    try {
+      await edgeFunctionsApi.downloadPDF({ 
+        type: 'devis', 
+        id, 
+        entreprise_id: devis.entreprise_id,
+        filename: `devis_${devis.numero_devis || devis.numero || id.slice(0, 8)}.pdf`
+      });
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Erreur lors du téléchargement');
+    }
   };
 
   const handleDelete = async () => {

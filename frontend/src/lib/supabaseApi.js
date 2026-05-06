@@ -1282,6 +1282,94 @@ export const authApi = {
 };
 
 // Export all APIs
+// ==================== EDGE FUNCTIONS ====================
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
+
+export const edgeFunctionsApi = {
+  // Send email via Edge Function
+  sendEmail: async ({ to, subject, html, text, from, replyTo, template, templateData }) => {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ to, subject, html, text, from, replyTo, template, templateData })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to send email');
+    }
+    
+    return response.json();
+  },
+
+  // Send SMS via Edge Function
+  sendSMS: async ({ to, message, entreprise_id, template, templateData }) => {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ to, message, entreprise_id, template, templateData })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to send SMS');
+    }
+    
+    return response.json();
+  },
+
+  // Generate PDF via Edge Function
+  generatePDF: async ({ type, id, entreprise_id }) => {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-pdf`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ type, id, entreprise_id })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to generate PDF');
+    }
+    
+    // Return HTML that can be printed as PDF
+    const html = await response.text();
+    return html;
+  },
+
+  // Open PDF in new window for printing
+  downloadPDF: async ({ type, id, entreprise_id, filename }) => {
+    try {
+      const html = await edgeFunctionsApi.generatePDF({ type, id, entreprise_id });
+      
+      // Open in new window and trigger print
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        
+        // Wait for content to load then print
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('PDF download error:', error);
+      throw error;
+    }
+  }
+};
+
 export default {
   interventions: interventionsApi,
   clients: clientsApi,
@@ -1297,5 +1385,6 @@ export default {
   settings: settingsApi,
   technician: technicianApi,
   photos: photosApi,
-  auth: authApi
+  auth: authApi,
+  edge: edgeFunctionsApi
 };

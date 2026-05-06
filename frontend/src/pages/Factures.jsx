@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useFactures } from '../lib/supabaseHooks';
-import { facturesApi } from '../lib/supabaseApi';
+import { facturesApi, edgeFunctionsApi } from '../lib/supabaseApi';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -344,8 +344,17 @@ export const FactureDetail = () => {
   };
 
   const downloadPDF = async () => {
-    // PDF generation requires Edge Function
-    toast.info('Téléchargement PDF en cours de migration vers Supabase');
+    try {
+      await edgeFunctionsApi.downloadPDF({ 
+        type: 'facture', 
+        id, 
+        entreprise_id: facture.entreprise_id,
+        filename: `facture_${facture.numero_facture || facture.numero || id.slice(0, 8)}.pdf`
+      });
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Erreur lors du téléchargement');
+    }
   };
 
   if (loading) {
