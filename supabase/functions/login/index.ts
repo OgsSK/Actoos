@@ -1,9 +1,9 @@
 // Supabase Edge Function: Ultra-fast login
 // Verifies password against custom users table and returns JWT
+// Uses Web Crypto API compatible bcrypt verification
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,8 +13,20 @@ const corsHeaders = {
 // JWT Secret (same as backend)
 const JWT_SECRET = Deno.env.get("JWT_SECRET") || "actoos-pro-secret-key-2024-super-secure";
 
-// Create JWT token
-function createJWT(payload: Record<string, unknown>, expiresInHours = 24): string {
+// Simple bcrypt verification using the bcryptjs library (pure JS, no workers)
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  try {
+    // Import bcryptjs (pure JavaScript implementation)
+    const bcryptjs = await import("https://esm.sh/bcryptjs@2.4.3");
+    return bcryptjs.compareSync(password, hash);
+  } catch (error) {
+    console.error("Password verification error:", error);
+    return false;
+  }
+}
+
+// Create JWT token using Web Crypto API
+async function createJWT(payload: Record<string, unknown>, expiresInHours = 24): Promise<string> {
   const header = { alg: "HS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
   const exp = now + (expiresInHours * 60 * 60);
@@ -22,21 +34,12 @@ function createJWT(payload: Record<string, unknown>, expiresInHours = 24): strin
   const fullPayload = { ...payload, iat: now, exp };
   
   const encoder = new TextEncoder();
-  const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, "");
-  const payloadB64 = btoa(JSON.stringify(fullPayload)).replace(/=/g, "");
+  const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const payloadB64 = btoa(JSON.stringify(fullPayload)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   
   const data = encoder.encode(`${headerB64}.${payloadB64}`);
   const key = encoder.encode(JWT_SECRET);
   
-  // Simple HMAC-SHA256 implementation for Deno
-  const signature = crypto.subtle.sign
-    ? signHMAC(data, key)
-    : headerB64 + "." + payloadB64; // Fallback
-  
-  return `${headerB64}.${payloadB64}.${signature}`;
-}
-
-async function signHMAC(data: Uint8Array, key: Uint8Array): Promise<string> {
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
     key,
@@ -44,11 +47,14 @@ async function signHMAC(data: Uint8Array, key: Uint8Array): Promise<string> {
     false,
     ["sign"]
   );
+  
   const signature = await crypto.subtle.sign("HMAC", cryptoKey, data);
-  return btoa(String.fromCharCode(...new Uint8Array(signature)))
+  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=/g, "");
+  
+  return `${headerB64}.${payloadB64}.${signatureB64}`;
 }
 
 serve(async (req) => {
@@ -85,6 +91,7 @@ serve(async (req) => {
       .single();
 
     if (userError || !user) {
+      console.log("User not found:", email, userError);
       return new Response(
         JSON.stringify({ error: "Email ou mot de passe incorrect" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -92,9 +99,10 @@ serve(async (req) => {
     }
 
     // Verify password
-    const passwordValid = await bcrypt.compare(password, user.password_hash);
+    const passwordValid = await verifyPassword(password, user.password_hash);
     
     if (!passwordValid) {
+      console.log("Password invalid for user:", email);
       return new Response(
         JSON.stringify({ error: "Email ou mot de passe incorrect" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -142,68 +150,48 @@ serve(async (req) => {
       .then(() => {});
 
     // Create JWT token
-    const token = await createJWTAsync({
+    const token = await createJWT({
       sub: user.id,
       ent: user.entreprise_id,
       role: user.role,
     });
 
-    // Return success response
+    // Build response
+    const entrepriseData = Array.isArray(user.entreprise) ? user.entreprise[0] : user.entreprise;
+
+    const response = {
+      status: "success",
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        nom: user.nom,
+        prenom: user.prenom,
+        role: user.role,
+        statut: user.statut,
+        telephone: user.telephone,
+        entreprise_id: user.entreprise_id,
+        two_factor_enabled: user.two_factor_enabled,
+      },
+      entreprise: entrepriseData ? {
+        id: entrepriseData.id,
+        nom: entrepriseData.nom,
+        plan: entrepriseData.plan,
+        subscription_status: entrepriseData.subscription_status,
+        email: entrepriseData.email,
+      } : null,
+    };
+
     return new Response(
-      JSON.stringify({
-        access_token: token,
-        user: {
-          id: user.id,
-          entreprise_id: user.entreprise_id,
-          email: user.email,
-          nom: user.nom,
-          prenom: user.prenom,
-          telephone: user.telephone,
-          role: user.role,
-          statut: user.statut,
-          derniere_connexion: new Date().toISOString(),
-        },
-        entreprise: user.entreprise,
-      }),
+      JSON.stringify(response),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
     console.error("Login error:", error);
     return new Response(
-      JSON.stringify({ error: "Erreur serveur" }),
+      JSON.stringify({ error: "Erreur serveur", details: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
-
-async function createJWTAsync(payload: Record<string, unknown>, expiresInHours = 24): Promise<string> {
-  const header = { alg: "HS256", typ: "JWT" };
-  const now = Math.floor(Date.now() / 1000);
-  const exp = now + (expiresInHours * 60 * 60);
-  
-  const fullPayload = { ...payload, iat: now, exp };
-  
-  const encoder = new TextEncoder();
-  const headerB64 = btoa(JSON.stringify(header)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-  const payloadB64 = btoa(JSON.stringify(fullPayload)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-  
-  const data = encoder.encode(`${headerB64}.${payloadB64}`);
-  const key = encoder.encode(JWT_SECRET);
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    key,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  
-  const signature = await crypto.subtle.sign("HMAC", cryptoKey, data);
-  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
-  
-  return `${headerB64}.${payloadB64}.${signatureB64}`;
-}
