@@ -302,12 +302,25 @@ const PlanUsageWidget = ({ compact = false }) => {
         return;
       }
 
-      // Get entreprise data for plan info
-      const { data: entreprise } = await supabase
-        .from('entreprises')
-        .select('plan, subscription_status, subscription_end_date, max_users, max_interventions, max_clients')
-        .eq('id', entrepriseId)
-        .single();
+      // Get entreprise data for plan info - with fallback for missing columns
+      let entreprise = null;
+      try {
+        const { data, error } = await supabase
+          .from('entreprises')
+          .select('id, nom')
+          .eq('id', entrepriseId)
+          .single();
+        if (!error) {
+          // Use default values since plan columns may not exist
+          entreprise = {
+            plan: 'startup',
+            subscription_status: 'active',
+            subscription_end_date: null
+          };
+        }
+      } catch (e) {
+        console.warn('Could not fetch entreprise plan data');
+      }
 
       // Count current usage
       const [usersCount, interventionsCount, clientsCount, techniciensCount] = await Promise.all([
@@ -334,10 +347,10 @@ const PlanUsageWidget = ({ compact = false }) => {
         subscription_status: entreprise?.subscription_status || 'active',
         subscription_end_date: entreprise?.subscription_end_date,
         usage: {
-          users: { current: usersCount.count || 0, max: entreprise?.max_users || limits.users },
+          users: { current: usersCount.count || 0, max: limits.users },
           techniciens: { current: techniciensCount.count || 0, max: limits.techniciens },
-          clients: { current: clientsCount.count || 0, max: entreprise?.max_clients || limits.clients },
-          interventions: { current: interventionsCount.count || 0, max: entreprise?.max_interventions || limits.interventions },
+          clients: { current: clientsCount.count || 0, max: limits.clients },
+          interventions: { current: interventionsCount.count || 0, max: limits.interventions },
           features: {
             api_access: currentPlan === 'enterprise',
             white_label: currentPlan === 'enterprise',

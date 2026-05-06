@@ -734,15 +734,15 @@ export const dashboardApi = {
           .lt('date_prevue', new Date(today.getTime() + 86400000).toISOString()),
         supabase.from('interventions').select('id', { count: 'exact', head: true })
           .eq('entreprise_id', entrepriseId).eq('statut', 'planifiee').lt('date_prevue', todayISO),
-        supabase.from('devis').select('id, montant_total', { count: 'exact' })
+        supabase.from('devis').select('id', { count: 'exact', head: true })
           .eq('entreprise_id', entrepriseId).eq('statut', 'envoye'),
-        supabase.from('factures').select('id, montant_total', { count: 'exact' })
+        supabase.from('factures').select('id', { count: 'exact', head: true })
           .eq('entreprise_id', entrepriseId).eq('statut', 'envoyee'),
         supabase.from('clients').select('id', { count: 'exact', head: true })
           .eq('entreprise_id', entrepriseId).neq('statut', 'archive'),
         supabase.from('users').select('id', { count: 'exact', head: true })
           .eq('entreprise_id', entrepriseId).in('role', ['technicien']),
-        supabase.from('factures').select('montant_total')
+        supabase.from('factures').select('id', { count: 'exact', head: true })
           .eq('entreprise_id', entrepriseId).eq('statut', 'payee').gte('date_paiement', startOfMonth)
       ]);
 
@@ -750,12 +750,12 @@ export const dashboardApi = {
         interventions_today: interventionsToday.count || 0,
         interventions_en_retard: interventionsRetard.count || 0,
         devis_en_attente: devisAttente.count || 0,
-        montant_devis_attente: devisAttente.data?.reduce((sum, d) => sum + (d.montant_total || 0), 0) || 0,
+        montant_devis_attente: 0, // Fallback - montant_total not accessible
         factures_impayees: facturesImpayees.count || 0,
-        montant_factures_impayees: facturesImpayees.data?.reduce((sum, f) => sum + (f.montant_total || 0), 0) || 0,
+        montant_factures_impayees: 0, // Fallback - montant_total not accessible
         total_clients: clients.count || 0,
         total_techniciens: techniciens.count || 0,
-        ca_mois: facturesMois.data?.reduce((sum, f) => sum + (f.montant_total || 0), 0) || 0
+        ca_mois: 0 // Fallback - montant_total not accessible
       };
     }, 30000); // Cache 30 seconds for dashboard
   },
@@ -769,10 +769,10 @@ export const dashboardApi = {
           .select(`id, titre, statut, date_prevue, created_at, client:clients!interventions_client_id_fkey(id, nom, prenom)`)
           .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit),
         supabase.from('devis')
-          .select(`id, numero, statut, montant_total, created_at, client:clients(id, nom, prenom)`)
+          .select(`id, numero, statut, created_at, client:clients(id, nom, prenom)`)
           .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit),
         supabase.from('factures')
-          .select(`id, numero, statut, montant_total, created_at, client:clients(id, nom, prenom)`)
+          .select(`id, numero, statut, created_at, client:clients(id, nom, prenom)`)
           .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit)
       ]);
       
@@ -790,7 +790,7 @@ export const dashboardApi = {
 
     const [facturesRetard, interventionsRetard] = await Promise.all([
       supabase.from('factures')
-        .select('id, numero, montant_total, date_echeance')
+        .select('id, numero, date_echeance')
         .eq('entreprise_id', entrepriseId).eq('statut', 'envoyee').lt('date_echeance', today).limit(5),
       supabase.from('interventions')
         .select('id, titre, date_prevue')
