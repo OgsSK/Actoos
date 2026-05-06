@@ -7,12 +7,12 @@ import { Badge } from '../components/ui/badge';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Switch } from '../components/ui/switch';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '../components/ui/dialog';
 import { 
   Key, Mail, MessageSquare, Phone, CreditCard, Settings2,
   Check, Loader2, ExternalLink, Eye, EyeOff, Info, AlertTriangle,
-  CheckCircle, XCircle, Copy, HelpCircle
+  CheckCircle, XCircle, Copy, HelpCircle, Send, TestTube
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
@@ -24,6 +24,12 @@ const PlatformApiConfig = ({ entrepriseId, isSuperAdmin }) => {
   const [testing, setTesting] = useState({});
   const [showSecrets, setShowSecrets] = useState({});
   const [helpDialog, setHelpDialog] = useState(null);
+  const [testDialog, setTestDialog] = useState(null);
+  const [testData, setTestData] = useState({
+    email: '',
+    phone: '',
+    whatsapp: ''
+  });
   
   const [config, setConfig] = useState({
     // Resend (Email)
@@ -166,9 +172,20 @@ const PlatformApiConfig = ({ entrepriseId, isSuperAdmin }) => {
   };
 
   const handleTest = async (service) => {
+    // For services that need user input, show dialog first
+    if ((service === 'email' && !testData.email) ||
+        (service === 'sms' && !testData.phone) ||
+        (service === 'whatsapp' && !testData.whatsapp)) {
+      setTestDialog(service);
+      return;
+    }
+
     setTesting(prev => ({ ...prev, [service]: true }));
+    setTestDialog(null);
+    
     try {
       let success = false;
+      let message = '';
       
       switch (service) {
         case 'email':
@@ -180,27 +197,97 @@ const PlatformApiConfig = ({ entrepriseId, isSuperAdmin }) => {
               'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
             },
             body: JSON.stringify({
-              to: 'test@actoos.com',
-              subject: 'Test ACTOOS PRO',
-              html: '<p>Ceci est un test de configuration email.</p>'
+              to: testData.email,
+              subject: '✅ Test ACTOOS PRO - Email configuré !',
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+                  <div style="background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: white; padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
+                    <h1 style="margin: 0; font-size: 24px;">✅ Test réussi !</h1>
+                  </div>
+                  <div style="background: #f8fafc; padding: 20px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+                    <p style="color: #334155; font-size: 16px;">
+                      Félicitations ! Votre configuration email <strong>Resend</strong> fonctionne correctement.
+                    </p>
+                    <p style="color: #64748b; font-size: 14px;">
+                      ACTOOS PRO peut maintenant envoyer des emails automatiques pour les devis, factures et notifications.
+                    </p>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+                    <p style="color: #94a3b8; font-size: 12px; text-align: center;">
+                      Envoyé depuis ACTOOS PRO • ${new Date().toLocaleString('fr-FR')}
+                    </p>
+                  </div>
+                </div>
+              `
             })
           });
-          success = emailResponse.ok;
+          
+          if (emailResponse.ok) {
+            success = true;
+            message = `Email de test envoyé à ${testData.email}`;
+          } else {
+            const error = await emailResponse.json();
+            throw new Error(error.error || 'Échec de l\'envoi');
+          }
           break;
           
         case 'sms':
-          toast.info('Test SMS: Entrez un numéro de téléphone pour tester');
-          success = true;
+          // Test SMS sending
+          const smsResponse = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/functions/v1/send-sms`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({
+              to: testData.phone,
+              message: `✅ ACTOOS PRO: Test SMS réussi ! Votre configuration Twilio fonctionne. (${new Date().toLocaleTimeString('fr-FR')})`
+            })
+          });
+          
+          if (smsResponse.ok) {
+            success = true;
+            message = `SMS de test envoyé à ${testData.phone}`;
+          } else {
+            const error = await smsResponse.json();
+            throw new Error(error.error || 'Échec de l\'envoi SMS');
+          }
           break;
           
         case 'whatsapp':
-          toast.info('Test WhatsApp: Configuration vérifiée');
-          success = true;
+          // Test WhatsApp sending
+          const waResponse = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/functions/v1/send-whatsapp`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({
+              to: testData.whatsapp,
+              message: `✅ ACTOOS PRO: Test WhatsApp réussi ! Votre configuration Meta Business fonctionne.`
+            })
+          });
+          
+          if (waResponse.ok) {
+            success = true;
+            message = `Message WhatsApp de test envoyé à ${testData.whatsapp}`;
+          } else {
+            const error = await waResponse.json();
+            // WhatsApp often requires templates for business-initiated messages
+            if (error.code === 131030 || error.error?.includes('template')) {
+              throw new Error('WhatsApp nécessite un template pré-approuvé pour les messages initiés par l\'entreprise. Votre configuration est correcte, mais vous devez créer un template dans Meta Business.');
+            }
+            throw new Error(error.error || 'Échec de l\'envoi WhatsApp');
+          }
           break;
           
         case 'stripe':
-          toast.info('Test Stripe: Vérifiez le webhook dans le dashboard Stripe');
+          // Test Stripe connection by checking webhook configuration
+          toast.info('Pour tester Stripe, vérifiez votre Dashboard Stripe > Webhooks', {
+            description: 'Les webhooks doivent pointer vers votre Edge Function',
+            duration: 5000
+          });
           success = true;
+          message = 'Vérifiez la configuration webhook dans Stripe Dashboard';
           break;
       }
 
@@ -209,14 +296,18 @@ const PlatformApiConfig = ({ entrepriseId, isSuperAdmin }) => {
           ...prev,
           [service]: { ...prev[service], tested: true }
         }));
-        toast.success(`Test ${service} réussi`);
+        toast.success(message);
       }
     } catch (error) {
       console.error(`Error testing ${service}:`, error);
-      toast.error(`Erreur lors du test ${service}`);
+      toast.error(`Erreur: ${error.message}`, { duration: 6000 });
     } finally {
       setTesting(prev => ({ ...prev, [service]: false }));
     }
+  };
+
+  const handleTestSubmit = (service) => {
+    handleTest(service);
   };
 
   const toggleShowSecret = (key) => {
@@ -788,6 +879,151 @@ const PlatformApiConfig = ({ entrepriseId, isSuperAdmin }) => {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Test Dialog - Email */}
+      <Dialog open={testDialog === 'email'} onOpenChange={() => setTestDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TestTube className="w-5 h-5 text-blue-600" />
+              Tester l'envoi d'email
+            </DialogTitle>
+            <DialogDescription>
+              Un email de test sera envoyé à l'adresse que vous indiquez.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="test-email">Adresse email de test</Label>
+              <Input
+                id="test-email"
+                type="email"
+                value={testData.email}
+                onChange={(e) => setTestData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="votre@email.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTestDialog(null)}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={() => handleTestSubmit('email')}
+              disabled={!testData.email || testing.email}
+            >
+              {testing.email ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
+              Envoyer le test
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Test Dialog - SMS */}
+      <Dialog open={testDialog === 'sms'} onOpenChange={() => setTestDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TestTube className="w-5 h-5 text-green-600" />
+              Tester l'envoi de SMS
+            </DialogTitle>
+            <DialogDescription>
+              Un SMS de test sera envoyé au numéro que vous indiquez.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="test-phone">Numéro de téléphone</Label>
+              <Input
+                id="test-phone"
+                type="tel"
+                value={testData.phone}
+                onChange={(e) => setTestData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+33612345678 ou 0612345678"
+              />
+              <p className="text-xs text-slate-500">
+                Format français (+33) ou belge (+32) accepté
+              </p>
+            </div>
+            <Alert className="bg-amber-50 border-amber-200">
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <AlertDescription className="text-amber-800 text-sm">
+                Attention : Chaque SMS envoyé est facturé par Twilio (~0.07€/SMS)
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTestDialog(null)}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={() => handleTestSubmit('sms')}
+              disabled={!testData.phone || testing.sms}
+            >
+              {testing.sms ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
+              Envoyer le test
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Test Dialog - WhatsApp */}
+      <Dialog open={testDialog === 'whatsapp'} onOpenChange={() => setTestDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TestTube className="w-5 h-5 text-emerald-600" />
+              Tester WhatsApp Business
+            </DialogTitle>
+            <DialogDescription>
+              Un message WhatsApp de test sera envoyé au numéro indiqué.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="test-whatsapp">Numéro WhatsApp</Label>
+              <Input
+                id="test-whatsapp"
+                type="tel"
+                value={testData.whatsapp}
+                onChange={(e) => setTestData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                placeholder="+33612345678"
+              />
+            </div>
+            <Alert className="bg-blue-50 border-blue-200">
+              <Info className="w-4 h-4 text-blue-600" />
+              <AlertDescription className="text-blue-800 text-sm">
+                <strong>Note :</strong> WhatsApp Business API nécessite que le destinataire ait envoyé un message à votre numéro dans les dernières 24h, 
+                OU que vous utilisiez un template pré-approuvé.
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTestDialog(null)}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={() => handleTestSubmit('whatsapp')}
+              disabled={!testData.whatsapp || testing.whatsapp}
+            >
+              {testing.whatsapp ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
+              Envoyer le test
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
