@@ -47,7 +47,8 @@ export const FloatingChatButton = ({ onClick, unreadCount = 0 }) => {
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-20 right-4 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg flex items-center justify-center z-40 transition-transform active:scale-95"
+      className="fixed right-4 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg flex items-center justify-center z-40 transition-transform active:scale-95"
+      style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
       data-testid="floating-chat-button"
     >
       <MessageCircle className="w-6 h-6" />
