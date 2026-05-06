@@ -214,7 +214,7 @@ class PostgreSQLCollection:
         if "id" not in document:
             document["id"] = str(uuid.uuid4())
         if "created_at" not in document:
-            document["created_at"] = datetime.now(timezone.utc).isoformat()
+            document["created_at"] = datetime.now(timezone.utc)
         
         if not self._pg_available:
             if USE_MONGO:
@@ -223,9 +223,17 @@ class PostgreSQLCollection:
             raise RuntimeError("No database configured")
         
         doc = {k: v for k, v in document.items() if v is not None and k != "_id"}
+        
+        # Convert values for PostgreSQL
         for key in list(doc.keys()):
             if isinstance(doc[key], (list, dict)):
                 doc[key] = json.dumps(doc[key])
+            # Convert ISO datetime strings to datetime objects
+            elif isinstance(doc[key], str) and len(doc[key]) > 18 and 'T' in doc[key] and ('+' in doc[key] or doc[key].endswith('Z')):
+                try:
+                    doc[key] = datetime.fromisoformat(doc[key].replace('Z', '+00:00'))
+                except:
+                    pass
         
         columns = ", ".join(doc.keys())
         placeholders = ", ".join([f":{k}" for k in doc.keys()])

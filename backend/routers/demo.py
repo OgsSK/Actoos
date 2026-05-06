@@ -188,7 +188,7 @@ async def setup_main_admin(data: SetupAdminRequest):
         
         entreprise_id = str(uuid.uuid4())
         admin_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(timezone.utc)
         
         # Récupérer les limites du plan
         plan_data = PLANS.get(data.plan, PLANS.get("enterprise", {}))
@@ -267,7 +267,7 @@ async def setup_technician(data: SetupTechnicianRequest):
             raise HTTPException(status_code=404, detail="Entreprise non trouvée")
         
         tech_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(timezone.utc)
         
         # Créer le technicien
         technicien = {
