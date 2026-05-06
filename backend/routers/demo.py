@@ -153,85 +153,152 @@ async def get_demo_entreprise():
 
 # ==================== SETUP ADMIN PRINCIPAL ====================
 
+from pydantic import BaseModel
+
+class SetupAdminRequest(BaseModel):
+    email: str
+    password: str
+    nom: str = "Admin"
+    prenom: str = "Principal"
+    entreprise_nom: str = "ACTOOS PRO"
+    plan: str = "enterprise"
+
+class SetupTechnicianRequest(BaseModel):
+    email: str
+    password: str
+    nom: str
+    prenom: str
+    entreprise_id: str
+
 @router.post("/setup-admin")
-async def setup_main_admin(email: str, password: str, nom: str = "Admin", prenom: str = "Principal", entreprise_nom: str = "ACTOOS PRO"):
+async def setup_main_admin(data: SetupAdminRequest):
     """
-    Endpoint unique pour créer le compte admin principal.
-    À utiliser une seule fois lors de l'initialisation.
+    Endpoint pour créer un compte admin avec son entreprise.
     """
-    # Vérifier si un admin existe déjà avec cet email
-    existing_user = await db.users.find_one({"email": email.lower()})
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Un compte avec cet email existe déjà")
+    import logging
+    logger = logging.getLogger(__name__)
     
-    from subscription_service import PLANS
+    try:
+        # Vérifier si un admin existe déjà avec cet email
+        existing_user = await db.users.find_one({"email": data.email.lower()})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Un compte avec cet email existe déjà")
+        
+        from subscription_service import PLANS
+        
+        entreprise_id = str(uuid.uuid4())
+        admin_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Récupérer les limites du plan
+        plan_data = PLANS.get(data.plan, PLANS.get("enterprise", {}))
+        
+        # Créer l'entreprise
+        entreprise = {
+            "id": entreprise_id,
+            "nom": data.entreprise_nom,
+            "email": data.email.lower(),
+            "telephone": "",
+            "adresse": "",
+            "ville": "",
+            "code_postal": "",
+            "plan": data.plan,
+            "is_demo": False,
+            "sequence_facture": 1,
+            "sequence_devis": 1,
+            "created_at": now,
+            "updated_at": now
+        }
+        
+        logger.info(f"Creating entreprise: {entreprise_id}")
+        await db.entreprises.insert_one(entreprise)
+        logger.info(f"Entreprise created successfully")
+        
+        # Créer l'admin
+        admin = {
+            "id": admin_id,
+            "email": data.email.lower(),
+            "password_hash": get_password_hash(data.password),
+            "nom": data.nom,
+            "prenom": data.prenom,
+            "role": "admin",
+            "statut": "actif",
+            "entreprise_id": entreprise_id,
+            "created_at": now,
+            "updated_at": now
+        }
+        
+        logger.info(f"Creating admin user: {admin_id}")
+        await db.users.insert_one(admin)
+        logger.info(f"Admin created successfully")
+        
+        return {
+            "success": True,
+            "message": "Compte admin créé avec succès",
+            "entreprise_id": entreprise_id,
+            "admin_id": admin_id,
+            "email": data.email.lower(),
+            "plan": data.plan
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating admin: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la création: {str(e)}")
+
+
+@router.post("/setup-technician")
+async def setup_technician(data: SetupTechnicianRequest):
+    """
+    Endpoint pour créer un compte technicien dans une entreprise existante.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
     
-    entreprise_id = str(uuid.uuid4())
-    admin_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
-    
-    # Plan Enterprise pour l'admin principal
-    enterprise_plan = PLANS.get("enterprise", {})
-    
-    # Créer l'entreprise
-    entreprise = {
-        "id": entreprise_id,
-        "nom": entreprise_nom,
-        "email": email.lower(),
-        "telephone": "",
-        "adresse": "",
-        "ville": "",
-        "code_postal": "",
-        "plan": "enterprise",
-        "plan_limits": {
-            "max_admins": enterprise_plan.get("max_admins", -1),
-            "max_technicians": enterprise_plan.get("max_technicians", -1),
-            "max_interventions_month": enterprise_plan.get("max_interventions_month", -1),
-            "max_categories": enterprise_plan.get("max_categories", -1),
-            "multi_sites": True,
-            "offline_mode": True,
-            "geolocation": True,
-            "auto_pdf_reports": True,
-            "advanced_analytics": True,
-            "white_label": True,
-            "api_access": True,
-            "advanced_branding": True,
-            "smart_planning": True,
-            "auto_devis_to_facture": True,
-            "team_validation": True,
-            "sms_included": 500
-        },
-        "is_demo": False,
-        "sequence_facture": 1,
-        "sequence_devis": 1,
-        "created_at": now,
-        "updated_at": now
-    }
-    
-    await db.entreprises.insert_one(entreprise)
-    
-    # Créer l'admin
-    admin = {
-        "id": admin_id,
-        "email": email.lower(),
-        "password_hash": get_password_hash(password),
-        "nom": nom,
-        "prenom": prenom,
-        "role": "admin",
-        "statut": "actif",
-        "entreprise_id": entreprise_id,
-        "created_at": now,
-        "updated_at": now
-    }
-    await db.users.insert_one(admin)
-    
-    return {
-        "success": True,
-        "message": "Compte admin créé avec succès",
-        "entreprise_id": entreprise_id,
-        "admin_id": admin_id,
-        "email": email.lower()
-    }
+    try:
+        # Vérifier si un user existe déjà avec cet email
+        existing_user = await db.users.find_one({"email": data.email.lower()})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Un compte avec cet email existe déjà")
+        
+        # Vérifier que l'entreprise existe
+        entreprise = await db.entreprises.find_one({"id": data.entreprise_id})
+        if not entreprise:
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+        
+        tech_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Créer le technicien
+        technicien = {
+            "id": tech_id,
+            "email": data.email.lower(),
+            "password_hash": get_password_hash(data.password),
+            "nom": data.nom,
+            "prenom": data.prenom,
+            "role": "technicien",
+            "statut": "actif",
+            "entreprise_id": data.entreprise_id,
+            "created_at": now,
+            "updated_at": now
+        }
+        
+        logger.info(f"Creating technician: {tech_id}")
+        await db.users.insert_one(technicien)
+        logger.info(f"Technician created successfully")
+        
+        return {
+            "success": True,
+            "message": "Compte technicien créé avec succès",
+            "technician_id": tech_id,
+            "email": data.email.lower(),
+            "entreprise_id": data.entreprise_id
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating technician: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la création: {str(e)}")
 
 
 async def reset_demo_data(entreprise_id: str):
