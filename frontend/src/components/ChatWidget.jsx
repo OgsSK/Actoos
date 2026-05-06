@@ -347,10 +347,10 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
       // Mark messages as read
       await supabase
         .from('chat_messages')
-        .update({ read: true })
+        .update({ is_read: true })
         .eq('sender_id', userId)
         .eq('recipient_id', user.id)
-        .eq('read', false);
+        .eq('is_read', false);
         
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -368,7 +368,7 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
         .from('chat_messages')
         .select('id', { count: 'exact', head: true })
         .eq('recipient_id', user.id)
-        .eq('read', false);
+        .eq('is_read', false);
       
       if (error) throw error;
       setUnreadCount(count || 0);
@@ -390,7 +390,7 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
           recipient_id: selectedConversation.user_id,
           content,
           entreprise_id: user.entreprise_id,
-          read: false,
+          is_read: false,
           created_at: new Date().toISOString()
         })
         .select()
@@ -517,7 +517,7 @@ export const useChatUnread = () => {
         .from('chat_messages')
         .select('id', { count: 'exact', head: true })
         .eq('recipient_id', user.id)
-        .eq('read', false);
+        .eq('is_read', false);
       
       if (!error) {
         setUnreadCount(count || 0);

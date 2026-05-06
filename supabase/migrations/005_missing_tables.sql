@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
     sender_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     recipient_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    read BOOLEAN DEFAULT false,
+    is_read BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -29,7 +29,7 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_entreprise ON public.chat_messages(
 CREATE INDEX IF NOT EXISTS idx_chat_messages_sender ON public.chat_messages(sender_id);
 CREATE INDEX IF NOT EXISTS idx_chat_messages_recipient ON public.chat_messages(recipient_id);
 CREATE INDEX IF NOT EXISTS idx_chat_messages_created ON public.chat_messages(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_chat_messages_unread ON public.chat_messages(recipient_id, read) WHERE read = false;
+CREATE INDEX IF NOT EXISTS idx_chat_messages_unread ON public.chat_messages(recipient_id, is_read) WHERE is_read = false;
 
 -- =====================================================
 -- 2. COLONNE: sms_config sur entreprises
