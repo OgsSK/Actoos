@@ -426,6 +426,15 @@ export const usersApi = {
     return data;
   },
 
+  delete: async (id) => {
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    return true;
+  },
+
   updateSkills: async (id, skills) => {
     const { data, error } = await supabase
       .from('users')
@@ -435,6 +444,61 @@ export const usersApi = {
       .single();
     if (error) throw error;
     return data;
+  },
+
+  getInvites: async (entrepriseId) => {
+    const { data, error } = await supabase
+      .from('user_invites')
+      .select('*')
+      .eq('entreprise_id', entrepriseId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  invite: async (inviteData) => {
+    // Generate invite token
+    const inviteToken = crypto.randomUUID();
+    
+    const { data, error } = await supabase
+      .from('user_invites')
+      .insert({
+        ...inviteData,
+        invite_token: inviteToken,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Note: Actual SMS/Email sending requires Edge Function
+    return { ...data, invite_token: inviteToken };
+  },
+
+  resendInvite: async (inviteId) => {
+    // Update invite timestamp and trigger resend
+    const { data, error } = await supabase
+      .from('user_invites')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', inviteId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    // Note: Actual SMS sending requires Edge Function
+    return data;
+  },
+
+  cancelInvite: async (inviteId) => {
+    const { error } = await supabase
+      .from('user_invites')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('id', inviteId);
+    
+    if (error) throw error;
+    return true;
   }
 };
 

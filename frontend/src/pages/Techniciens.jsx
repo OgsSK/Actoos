@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTechniciens, useCategories } from '../lib/supabaseHooks';
+import { usersApi } from '../lib/supabaseApi';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -31,7 +32,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 const SkillsManager = ({ user, categories, onUpdate, onClose }) => {
   const [selectedSkills, setSelectedSkills] = useState(user.skills || []);
   const [saving, setSaving] = useState(false);
-  const { api } = useAuth();
 
   const toggleSkill = (categoryId) => {
     setSelectedSkills(prev => 
@@ -44,7 +44,7 @@ const SkillsManager = ({ user, categories, onUpdate, onClose }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put(`/users/${user.id}/skills`, { skills: selectedSkills });
+      await usersApi.update(user.id, { skills: selectedSkills });
       toast.success('Compétences mises à jour');
       onUpdate();
       onClose();
@@ -137,7 +137,7 @@ export const TechniciensList = () => {
   const [inviteResult, setInviteResult] = useState(null);
   const [copied, setCopied] = useState(false);
   const [sendingSms, setSendingSms] = useState(null);
-  const { user, api, isAdmin } = useAuth();
+  const { user, isAdmin, entreprise } = useAuth();
   const navigate = useNavigate();
 
   const { data: users, loading, refetch: fetchUsers } = useTechniciens(user?.entreprise_id);
@@ -149,8 +149,9 @@ export const TechniciensList = () => {
 
   const fetchPendingInvites = async () => {
     try {
-      const response = await api.get('/users/invites');
-      setPendingInvites(response.data.filter(inv => inv.status === 'pending'));
+      // Fetch pending invites from Supabase
+      const data = await usersApi.getInvites(user?.entreprise_id);
+      setPendingInvites(data.filter(inv => inv.status === 'pending'));
     } catch (error) {
       console.error('Error fetching invites:', error);
     }
@@ -165,12 +166,16 @@ export const TechniciensList = () => {
   const handleEmailInvite = async () => {
     setInviting(true);
     try {
-      const response = await api.post('/auth/invite', inviteData);
-      setInviteResult({ type: 'email', ...response.data });
+      const result = await usersApi.invite({
+        ...inviteData,
+        entreprise_id: user?.entreprise_id,
+        send_email: true
+      });
+      setInviteResult({ type: 'email', ...result });
       fetchUsers();
     } catch (error) {
       console.error('Error inviting user:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de l\'invitation');
+      toast.error(error.message || 'Erreur lors de l\'invitation');
     } finally {
       setInviting(false);
     }
@@ -180,20 +185,21 @@ export const TechniciensList = () => {
   const handleSmsInvite = async () => {
     setInviting(true);
     try {
-      const response = await api.post('/users/invite', {
+      const result = await usersApi.invite({
         telephone: inviteData.telephone,
         nom: inviteData.nom,
         prenom: inviteData.prenom,
         email: inviteData.email || null,
+        entreprise_id: user?.entreprise_id,
         send_sms: true
       });
-      setInviteResult({ type: 'sms', ...response.data });
+      setInviteResult({ type: 'sms', ...result });
       toast.success('Invitation SMS envoyée !');
       fetchUsers();
       fetchPendingInvites();
     } catch (error) {
       console.error('Error sending SMS invite:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de l\'envoi de l\'invitation');
+      toast.error(error.message || 'Erreur lors de l\'envoi de l\'invitation');
     } finally {
       setInviting(false);
     }
@@ -210,7 +216,7 @@ export const TechniciensList = () => {
   const handleResendInvite = async (inviteId) => {
     setSendingSms(inviteId);
     try {
-      await api.post(`/users/invites/${inviteId}/resend`);
+      await usersApi.resendInvite(inviteId);
       toast.success('SMS renvoyé !');
       fetchPendingInvites();
     } catch (error) {
@@ -222,7 +228,7 @@ export const TechniciensList = () => {
 
   const handleCancelInvite = async (inviteId) => {
     try {
-      await api.delete(`/users/invites/${inviteId}`);
+      await usersApi.cancelInvite(inviteId);
       toast.success('Invitation annulée');
       fetchPendingInvites();
     } catch (error) {
@@ -232,7 +238,7 @@ export const TechniciensList = () => {
 
   const handleStatusChange = async (userId, newStatus) => {
     try {
-      await api.put(`/users/${userId}/status`, null, { params: { statut: newStatus } });
+      await usersApi.update(userId, { statut: newStatus });
       toast.success(`Statut mis à jour`);
       fetchUsers();
     } catch (error) {
@@ -243,12 +249,12 @@ export const TechniciensList = () => {
 
   const handleDelete = async (userId, userName) => {
     try {
-      await api.delete(`/users/${userId}`);
+      await usersApi.delete(userId);
       toast.success(`${userName} a été supprimé`);
       fetchUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+      toast.error(error.message || 'Erreur lors de la suppression');
     }
   };
 

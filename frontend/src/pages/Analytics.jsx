@@ -151,12 +151,19 @@ const Analytics = () => {
   const handleExportCSV = async () => {
     setExporting(true);
     try {
-      const response = await api.get(`/analytics/export/csv?period=${period}`, {
-        responseType: 'blob'
-      });
+      // Build CSV from current data
+      let csv = 'Métrique,Valeur\n';
+      if (data) {
+        csv += `Chiffre d'affaires,${data.revenue?.current || 0}\n`;
+        csv += `Clients,${data.clients?.total || 0}\n`;
+        csv += `Interventions terminées,${data.interventions?.completed || 0}\n`;
+        csv += `Devis signés,${data.devis?.signed || 0}\n`;
+        csv += `Factures payées,${data.factures?.paid || 0}\n`;
+      }
       
       // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `analytics_${period}_${new Date().toISOString().split('T')[0]}.csv`);
@@ -177,10 +184,17 @@ const Analytics = () => {
   const handleExportJSON = async () => {
     setExporting(true);
     try {
-      const response = await api.get(`/analytics/export/json?period=${period}`);
+      // Export current data as JSON
+      const exportData = {
+        period,
+        generated_at: new Date().toISOString(),
+        data: data,
+        trends: trends,
+        technicians: technicians
+      };
       
       // Create download link
-      const dataStr = JSON.stringify(response.data, null, 2);
+      const dataStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -201,29 +215,8 @@ const Analytics = () => {
   };
 
   const handleExportPDF = async () => {
-    setExporting(true);
-    try {
-      const response = await api.get(`/analytics/export/pdf?period=${period}`, {
-        responseType: 'blob'
-      });
-      
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `rapport_analytics_${period}_${new Date().toISOString().split('T')[0]}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('Rapport PDF téléchargé');
-    } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Erreur lors de l\'export PDF');
-    } finally {
-      setExporting(false);
-    }
+    // PDF generation requires Edge Function
+    toast.info('Export PDF en cours de migration vers Supabase');
   };
 
   if (loading) {

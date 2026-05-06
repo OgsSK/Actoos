@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDevis, useClients } from '../lib/supabaseHooks';
+import { devisApi, clientsApi, facturesApi, settingsApi } from '../lib/supabaseApi';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -244,7 +245,7 @@ export const DevisList = () => {
     
     for (const id of selectedIds) {
       try {
-        await api.delete(`/devis/${id}`);
+        await devisApi.delete(id);
         deleted++;
       } catch (error) {
         errors++;
@@ -451,8 +452,8 @@ export const DevisForm = () => {
 
   const fetchClients = async () => {
     try {
-      const response = await api.get('/clients');
-      setClients(response.data);
+      const data = await clientsApi.list(user?.entreprise_id);
+      setClients(data);
     } catch (error) {
       console.error('Error fetching clients:', error);
     }
@@ -460,15 +461,14 @@ export const DevisForm = () => {
 
   const fetchDevisDefaults = async () => {
     try {
-      const response = await api.get('/settings/documents/defaults/devis');
-      const defaults = response.data;
+      const defaults = await settingsApi.getDocumentSettings(user?.entreprise_id);
       
       // Pre-fill form with global defaults
       setFormData(prev => ({
         ...prev,
-        conditions: defaults.conditions || '',
-        message_client: defaults.message_client || '',
-        validite_jours: defaults.validite_jours || 30,
+        conditions: defaults.conditions_generales || '',
+        message_client: defaults.message_client_devis || '',
+        validite_jours: defaults.validite_devis_jours || 30,
       }));
       setDefaultsLoaded(true);
     } catch (error) {
@@ -480,8 +480,8 @@ export const DevisForm = () => {
   const fetchDevis = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/devis/${id}`);
-      setFormData(response.data);
+      const data = await devisApi.get(id);
+      setFormData(data);
     } catch (error) {
       console.error('Error fetching devis:', error);
     } finally {
@@ -532,13 +532,14 @@ export const DevisForm = () => {
     try {
       const payload = {
         ...formData,
+        entreprise_id: user?.entreprise_id,
         validite_jours: parseInt(formData.validite_jours),
       };
       
       if (isEdit) {
-        await api.put(`/devis/${id}`, payload);
+        await devisApi.update(id, payload);
       } else {
-        await api.post('/devis', payload);
+        await devisApi.create(payload);
       }
       navigate('/dashboard/devis');
     } catch (error) {
@@ -732,8 +733,8 @@ export const DevisDetail = () => {
 
   const fetchDevis = async () => {
     try {
-      const response = await api.get(`/devis/${id}`);
-      setDevis(response.data);
+      const data = await devisApi.get(id);
+      setDevis(data);
     } catch (error) {
       console.error('Error fetching devis:', error);
     } finally {
@@ -744,14 +745,12 @@ export const DevisDetail = () => {
   const handleSend = async () => {
     setSending(true);
     try {
-      const response = await api.post(`/devis/${id}/send`);
-      if (response.data.email?.status === 'success') {
-        toast.success('Devis envoyé par email au client');
-      } else if (response.data.email?.status === 'skipped') {
-        toast.info('Devis marqué comme envoyé (client sans email)');
-      } else {
-        toast.success('Devis marqué comme envoyé');
-      }
+      await devisApi.update(id, { 
+        statut: 'envoye', 
+        date_envoi: new Date().toISOString() 
+      });
+      toast.success('Devis marqué comme envoyé');
+      // Note: Actual email sending requires Edge Function
       fetchDevis();
     } catch (error) {
       console.error('Error sending devis:', error);
@@ -763,8 +762,11 @@ export const DevisDetail = () => {
 
   const handleSign = async (signature, nom) => {
     try {
-      await api.post(`/devis/${id}/sign`, null, {
-        params: { signature, nom_signataire: nom }
+      await devisApi.update(id, {
+        statut: 'signe',
+        signature: signature,
+        signature_nom: nom,
+        signature_date: new Date().toISOString()
       });
       setShowSignature(false);
       fetchDevis();
@@ -775,51 +777,42 @@ export const DevisDetail = () => {
 
   const handleCreateFacture = async () => {
     try {
-      // Use the new convert-to-facture endpoint with plan check
-      const response = await api.post(`/devis/${id}/convert-to-facture`, null, {
-        params: { auto_emit: false }
-      });
-      toast.success(`Facture ${response.data.numero_facture} créée`);
-      navigate(`/dashboard/factures/${response.data.facture_id}`);
+      // Create facture from devis data
+      const factureData = {
+        client_id: devis.client_id,
+        entreprise_id: devis.entreprise_id,
+        devis_id: devis.id,
+        lignes: devis.lignes,
+        montant_ht: devis.montant_ht,
+        montant_tva: devis.montant_tva,
+        montant_ttc: devis.montant_ttc || devis.total_ttc,
+        statut: 'brouillon',
+        conditions: devis.conditions,
+        notes: devis.notes
+      };
+      
+      const newFacture = await facturesApi.create(factureData);
+      toast.success(`Facture créée`);
+      navigate(`/dashboard/factures/${newFacture.id}`);
     } catch (error) {
       console.error('Error creating facture:', error);
-      if (error.response?.data?.detail?.error === 'feature_not_available') {
-        toast.error(error.response.data.detail.message);
-      } else if (error.response?.data?.detail?.error === 'already_converted') {
-        toast.info('Ce devis a déjà été converti');
-        navigate(`/dashboard/factures/${error.response.data.detail.facture_id}`);
-      } else {
-        toast.error(error.response?.data?.detail || 'Erreur lors de la création de la facture');
-      }
+      toast.error(error.message || 'Erreur lors de la création de la facture');
     }
   };
 
   const downloadPDF = async () => {
-    try {
-      const response = await api.get(`/devis/${id}/pdf`, { responseType: 'blob' });
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `devis_${devis.numero_devis || devis.numero}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      toast.error('Erreur lors du téléchargement');
-    }
+    // PDF generation requires Edge Function
+    toast.info('Téléchargement PDF en cours de migration vers Supabase');
   };
 
   const handleDelete = async () => {
     try {
-      await api.delete(`/devis/${id}`);
+      await devisApi.delete(id);
       toast.success('Devis supprimé');
       navigate('/dashboard/devis');
     } catch (error) {
       console.error('Error deleting devis:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+      toast.error(error.message || 'Erreur lors de la suppression');
     }
   };
 

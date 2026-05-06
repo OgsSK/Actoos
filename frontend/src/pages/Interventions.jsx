@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useInterventions, useClients, useTechniciens, useCategories } from '../lib/supabaseHooks';
+import { interventionsApi } from '../lib/supabaseApi';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -603,7 +604,7 @@ export const InterventionForm = () => {
 export const InterventionDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { api, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const [intervention, setIntervention] = useState(null);
   const [loading, setLoading] = useState(true);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -614,8 +615,8 @@ export const InterventionDetail = () => {
 
   const fetchIntervention = async () => {
     try {
-      const response = await api.get(`/interventions/${id}`);
-      setIntervention(response.data);
+      const data = await interventionsApi.get(id);
+      setIntervention(data);
     } catch (error) {
       console.error('Error fetching intervention:', error);
     } finally {
@@ -625,7 +626,7 @@ export const InterventionDetail = () => {
 
   const handleStart = async () => {
     try {
-      await api.post(`/interventions/${id}/start`);
+      await interventionsApi.updateStatut(id, 'en_cours', { date_debut: new Date().toISOString() });
       fetchIntervention();
     } catch (error) {
       console.error('Error starting intervention:', error);
@@ -634,7 +635,7 @@ export const InterventionDetail = () => {
 
   const handleComplete = async () => {
     try {
-      await api.post(`/interventions/${id}/complete`);
+      await interventionsApi.updateStatut(id, 'terminee');
       toast.success('Intervention terminée');
       fetchIntervention();
     } catch (error) {
@@ -645,7 +646,7 @@ export const InterventionDetail = () => {
 
   const handleCancel = async () => {
     try {
-      await api.post(`/interventions/${id}/cancel`);
+      await interventionsApi.updateStatut(id, 'annulee');
       toast.success('Intervention annulée');
       fetchIntervention();
     } catch (error) {
@@ -656,61 +657,34 @@ export const InterventionDetail = () => {
 
   const handleDelete = async () => {
     try {
-      await api.delete(`/interventions/${id}`);
+      await interventionsApi.delete(id);
       toast.success('Intervention supprimée');
       navigate('/dashboard/interventions');
     } catch (error) {
       console.error('Error deleting intervention:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+      toast.error(error.message || 'Erreur lors de la suppression');
     }
   };
 
   // Download intervention report PDF
   const handleDownloadReport = async () => {
-    try {
-      toast.loading('Génération du rapport...', { id: 'report-loading' });
-      
-      const response = await api.get(`/interventions/${id}/report/pdf`, {
-        responseType: 'blob'
-      });
-      
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
-      
-      // Extract filename from header or generate default
-      const contentDisposition = response.headers['content-disposition'];
-      let filename = `Rapport_Intervention_${id.slice(0, 8)}.pdf`;
-      if (contentDisposition) {
-        const matches = contentDisposition.match(/filename="(.+)"/);
-        if (matches) filename = matches[1];
-      }
-      
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      toast.dismiss('report-loading');
-      toast.success('Rapport téléchargé');
-    } catch (error) {
-      console.error('Error downloading report:', error);
-      toast.dismiss('report-loading');
-      toast.error(error.response?.data?.detail || 'Erreur lors du téléchargement');
-    }
+    // PDF generation requires Edge Function - show info for now
+    toast.info('Téléchargement PDF en cours de migration vers Supabase');
   };
 
   // Validate intervention (admin only - for Startup plan)
   const handleValidateIntervention = async () => {
     try {
-      await api.post(`/interventions/${id}/validate`);
+      await interventionsApi.update(id, { 
+        statut: 'terminee', 
+        validation_admin: true,
+        date_validation: new Date().toISOString()
+      });
       toast.success('Intervention validée avec succès');
       fetchIntervention();
     } catch (error) {
       console.error('Error validating intervention:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la validation');
+      toast.error(error.message || 'Erreur lors de la validation');
     }
   };
 
@@ -721,13 +695,17 @@ export const InterventionDetail = () => {
       return;
     }
     try {
-      await api.post(`/interventions/${id}/reject-validation`, { reason: rejectionReason });
+      await interventionsApi.update(id, { 
+        statut: 'en_cours', 
+        motif_rejet: rejectionReason,
+        validation_admin: false
+      });
       toast.success('Validation rejetée - intervention remise en cours');
       setRejectionReason('');
       fetchIntervention();
     } catch (error) {
       console.error('Error rejecting validation:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors du rejet');
+      toast.error(error.message || 'Erreur lors du rejet');
     }
   };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useFactures } from '../lib/supabaseHooks';
+import { facturesApi } from '../lib/supabaseApi';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -60,7 +61,7 @@ export const FacturesList = () => {
     
     for (const id of selectedIds) {
       try {
-        await api.delete(`/factures/${id}`);
+        await facturesApi.delete(id);
         deleted++;
       } catch (error) {
         errors++;
@@ -249,11 +250,11 @@ export const FactureDetail = () => {
 
   const fetchFacture = async () => {
     try {
-      const response = await api.get(`/factures/${id}`);
-      setFacture(response.data);
+      const data = await facturesApi.get(id);
+      setFacture(data);
       setPaymentData(prev => ({
         ...prev,
-        montant: (response.data.total_ttc || response.data.montant_ttc) - (response.data.montant_paye || 0),
+        montant: (data.total_ttc || data.montant_ttc) - (data.montant_paye || 0),
       }));
     } catch (error) {
       console.error('Error fetching facture:', error);
@@ -264,12 +265,12 @@ export const FactureDetail = () => {
 
   const handleEmit = async () => {
     try {
-      const response = await api.post(`/factures/${id}/emit`);
-      if (response.data.email?.status === 'success') {
-        toast.success('Facture émise et email envoyé au client');
-      } else {
-        toast.success('Facture émise');
-      }
+      await facturesApi.update(id, { 
+        statut: 'envoyee', 
+        date_emission: new Date().toISOString() 
+      });
+      toast.success('Facture émise');
+      // Note: Email sending requires Edge Function
       fetchFacture();
     } catch (error) {
       console.error('Error emitting facture:', error);
@@ -280,15 +281,12 @@ export const FactureDetail = () => {
   const handleRelance = async () => {
     setSendingRelance(true);
     try {
-      const response = await api.post(`/factures/${id}/relance`);
-      if (response.data.email?.status === 'success') {
-        toast.success(`Relance envoyée (${response.data.jours_retard} jours de retard)`);
-      } else {
-        toast.error(response.data.email?.message || 'Erreur lors de l\'envoi');
-      }
+      // Note: Email sending requires Edge Function
+      toast.info('Envoi de relance en cours de migration vers Supabase');
+      fetchFacture();
     } catch (error) {
       console.error('Error sending relance:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de l\'envoi de la relance');
+      toast.error(error.message || 'Erreur lors de l\'envoi de la relance');
     } finally {
       setSendingRelance(false);
     }
@@ -306,26 +304,29 @@ export const FactureDetail = () => {
     
     setPaying(true);
     try {
-      const response = await api.post(`/factures/${id}/pay`, null, {
-        params: {
-          montant: paymentData.montant,
-          mode_paiement: paymentData.mode_paiement,
-          reference: paymentData.reference || null,
-          notes: paymentData.notes || null
-        }
+      const montantPaye = (facture.montant_paye || 0) + paymentData.montant;
+      const totalTTC = facture.total_ttc || facture.montant_ttc;
+      const isFullyPaid = montantPaye >= totalTTC;
+      
+      await facturesApi.update(id, {
+        montant_paye: montantPaye,
+        statut: isFullyPaid ? 'payee' : 'partiel',
+        date_paiement: isFullyPaid ? new Date().toISOString() : null,
+        mode_paiement: paymentData.mode_paiement,
+        reference_paiement: paymentData.reference || null
       });
       
-      if (response.data.is_fully_paid) {
+      if (isFullyPaid) {
         toast.success('Facture entièrement payée !');
       } else {
-        toast.success(`Paiement enregistré - Reste à payer: ${formatAmount(response.data.reste_a_payer)}`);
+        toast.success(`Paiement enregistré - Reste à payer: ${formatAmount(totalTTC - montantPaye)}`);
       }
       setShowPayment(false);
       setPaymentData({ montant: 0, mode_paiement: '', reference: '', notes: '' });
       fetchFacture();
     } catch (error) {
       console.error('Error recording payment:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de l\'enregistrement du paiement');
+      toast.error(error.message || 'Erreur lors de l\'enregistrement du paiement');
     } finally {
       setPaying(false);
     }
@@ -333,31 +334,18 @@ export const FactureDetail = () => {
 
   const handleDelete = async () => {
     try {
-      await api.delete(`/factures/${id}`);
+      await facturesApi.delete(id);
       toast.success('Facture supprimée');
       navigate('/dashboard/factures');
     } catch (error) {
       console.error('Error deleting facture:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+      toast.error(error.message || 'Erreur lors de la suppression');
     }
   };
 
   const downloadPDF = async () => {
-    try {
-      const response = await api.get(`/factures/${id}/pdf`, { responseType: 'blob' });
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `facture_${facture.numero_facture || facture.numero}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      toast.error('Erreur lors du téléchargement');
-    }
+    // PDF generation requires Edge Function
+    toast.info('Téléchargement PDF en cours de migration vers Supabase');
   };
 
   if (loading) {

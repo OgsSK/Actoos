@@ -22,9 +22,10 @@ import {
   Search, Share2, MessageCircle, Copy, Check
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { facturesApi, clientsApi } from '../lib/supabaseApi';
 
 const Statements = () => {
-  const { api, formatAmount } = useAuth();
+  const { formatAmount, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
@@ -80,26 +81,53 @@ const Statements = () => {
   }, [searchQuery, statements]);
 
   const fetchHistory = async () => {
-    try {
-      const response = await api.get('/statements/history');
-      setHistory(response.data);
-    } catch (error) {
-      console.error('Error fetching history:', error);
-    }
+    // Statements history - load from Supabase
+    // For now, return empty - this feature requires dedicated table
+    setHistory([]);
   };
 
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const response = await api.get(`/statements/generate?month=${selectedMonth}&year=${selectedYear}`);
-      const data = response.data.clients || [];
+      // Generate statements by fetching factures for the period
+      const startDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString();
+      const endDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59).toISOString();
+      
+      // Get all factures for the period
+      const factures = await facturesApi.list(user?.entreprise_id, {
+        date_start: startDate,
+        date_end: endDate
+      });
+      
+      // Group by client
+      const clientMap = {};
+      for (const facture of factures) {
+        if (!clientMap[facture.client_id]) {
+          // Fetch client info
+          const client = await clientsApi.get(facture.client_id);
+          clientMap[facture.client_id] = {
+            client_id: facture.client_id,
+            client_name: `${client.nom} ${client.prenom || ''}`.trim(),
+            client_email: client.email,
+            factures_count: 0,
+            total_ttc: 0,
+            total_paye: 0
+          };
+        }
+        clientMap[facture.client_id].factures_count += 1;
+        clientMap[facture.client_id].total_ttc += facture.montant_ttc || facture.total_ttc || 0;
+        clientMap[facture.client_id].total_paye += facture.montant_paye || 0;
+      }
+      
+      const data = Object.values(clientMap);
       setStatements(data);
       setFilteredStatements(data);
       setSearchQuery('');
-      if (response.data.generated === 0) {
+      
+      if (data.length === 0) {
         toast.info('Aucune facture trouvée pour cette période');
       } else {
-        toast.success(`${response.data.generated} relevé(s) généré(s)`);
+        toast.success(`${data.length} relevé(s) généré(s)`);
       }
     } catch (error) {
       console.error('Error generating statements:', error);
@@ -110,38 +138,16 @@ const Statements = () => {
   };
 
   const handleDownload = async (clientId, clientName) => {
-    try {
-      const response = await api.get(
-        `/statements/preview/${clientId}?month=${selectedMonth}&year=${selectedYear}`,
-        { responseType: 'blob' }
-      );
-      
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `releve_${clientName.replace(/\s/g, '_')}_${selectedMonth}_${selectedYear}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('Relevé téléchargé');
-    } catch (error) {
-      console.error('Error downloading statement:', error);
-      toast.error('Erreur lors du téléchargement');
-    }
+    // PDF generation requires Edge Function
+    toast.info('Téléchargement PDF en cours de migration vers Supabase');
   };
 
   const handleSendAll = async () => {
     setSending(true);
     setShowConfirmSend(false);
     try {
-      const response = await api.post(`/statements/send?month=${selectedMonth}&year=${selectedYear}`);
-      toast.success(`${response.data.queued} relevé(s) en cours d'envoi`);
-      if (response.data.failed > 0) {
-        toast.warning(`${response.data.failed} échec(s) - emails manquants`);
-      }
-      fetchHistory();
+      // Email sending requires Edge Function
+      toast.info('Envoi email en cours de migration vers Supabase');
     } catch (error) {
       console.error('Error sending statements:', error);
       toast.error('Erreur lors de l\'envoi');
