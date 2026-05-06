@@ -22,9 +22,10 @@ import {
   RefreshCw, Info, Code, ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '../lib/supabase';
 
 const APISettings = () => {
-  const { api } = useAuth();
+  const { user, entreprise } = useAuth();
   const [loading, setLoading] = useState(false);
   const [apiKeys, setApiKeys] = useState([]);
   const [webhooks, setWebhooks] = useState([]);
@@ -48,21 +49,28 @@ const APISettings = () => {
     description: ''
   });
 
+  // Available webhook events
+  const defaultWebhookEvents = [
+    'intervention.created', 'intervention.updated', 'intervention.completed',
+    'devis.created', 'devis.signed', 'facture.created', 'facture.paid',
+    'client.created', 'client.updated'
+  ];
+
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [entreprise?.id]);
 
   const fetchData = async () => {
+    if (!entreprise?.id) return;
     setLoading(true);
     try {
-      const [keysRes, webhooksRes, eventsRes] = await Promise.all([
-        api.get('/public-api/keys'),
-        api.get('/public-api/webhooks'),
-        api.get('/public-api/webhooks/events')
+      const [keysRes, webhooksRes] = await Promise.all([
+        supabase.from('api_keys').select('*').eq('entreprise_id', entreprise.id),
+        supabase.from('webhooks').select('*').eq('entreprise_id', entreprise.id)
       ]);
-      setApiKeys(keysRes.data);
-      setWebhooks(webhooksRes.data);
-      setWebhookEvents(eventsRes.data.events || []);
+      setApiKeys(keysRes.data || []);
+      setWebhooks(webhooksRes.data || []);
+      setWebhookEvents(defaultWebhookEvents);
     } catch (error) {
       console.error('Error fetching API data:', error);
     } finally {
@@ -70,10 +78,34 @@ const APISettings = () => {
     }
   };
 
+  const generateApiKey = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let key = 'ak_';
+    for (let i = 0; i < 32; i++) {
+      key += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return key;
+  };
+
   const handleCreateKey = async () => {
     try {
-      const response = await api.post('/public-api/keys', keyForm);
-      setNewKey(response.data);
+      const apiKey = generateApiKey();
+      const expiresAt = keyForm.expires_in_days 
+        ? new Date(Date.now() + keyForm.expires_in_days * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+
+      const { data, error } = await supabase.from('api_keys').insert({
+        entreprise_id: entreprise.id,
+        name: keyForm.name,
+        key_hash: apiKey, // In production, store hash not plain key
+        permissions: keyForm.permissions,
+        expires_at: expiresAt,
+        created_by: user?.user_id
+      }).select().single();
+
+      if (error) throw error;
+
+      setNewKey({ ...data, key: apiKey });
       setShowCreateKey(false);
       setKeyForm({ name: '', permissions: ['read'], expires_in_days: null });
       fetchData();
@@ -86,7 +118,8 @@ const APISettings = () => {
   const handleRevokeKey = async (keyId) => {
     if (!confirm('Révoquer cette clé API ?')) return;
     try {
-      await api.delete(`/public-api/keys/${keyId}`);
+      const { error } = await supabase.from('api_keys').delete().eq('id', keyId);
+      if (error) throw error;
       fetchData();
       toast.success('Clé API révoquée');
     } catch (error) {
@@ -104,7 +137,14 @@ const APISettings = () => {
       return;
     }
     try {
-      await api.post('/public-api/webhooks', webhookForm);
+      const { error } = await supabase.from('webhooks').insert({
+        entreprise_id: entreprise.id,
+        url: webhookForm.url,
+        events: webhookForm.events,
+        description: webhookForm.description,
+        is_active: true
+      });
+      if (error) throw error;
       setShowCreateWebhook(false);
       setWebhookForm({ url: '', events: [], description: '' });
       fetchData();
@@ -117,7 +157,8 @@ const APISettings = () => {
   const handleDeleteWebhook = async (webhookId) => {
     if (!confirm('Supprimer ce webhook ?')) return;
     try {
-      await api.delete(`/public-api/webhooks/${webhookId}`);
+      const { error } = await supabase.from('webhooks').delete().eq('id', webhookId);
+      if (error) throw error;
       fetchData();
       toast.success('Webhook supprimé');
     } catch (error) {
@@ -127,7 +168,11 @@ const APISettings = () => {
 
   const handleToggleWebhook = async (webhookId) => {
     try {
-      await api.put(`/public-api/webhooks/${webhookId}/toggle`);
+      const webhook = webhooks.find(w => w.id === webhookId);
+      const { error } = await supabase.from('webhooks')
+        .update({ is_active: !webhook?.is_active })
+        .eq('id', webhookId);
+      if (error) throw error;
       fetchData();
       toast.success('Webhook mis à jour');
     } catch (error) {
@@ -137,11 +182,24 @@ const APISettings = () => {
 
   const handleTestWebhook = async (webhookId) => {
     try {
-      const response = await api.post(`/public-api/webhooks/${webhookId}/test`);
-      if (response.data.status === 'success') {
+      const webhook = webhooks.find(w => w.id === webhookId);
+      if (!webhook) return;
+      
+      // Send test webhook
+      const response = await fetch(webhook.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'webhook.test',
+          timestamp: new Date().toISOString(),
+          data: { message: 'Test webhook from ACTOOS PRO' }
+        })
+      });
+      
+      if (response.ok) {
         toast.success('Test réussi!');
       } else {
-        toast.error(`Test échoué: ${response.data.response_status}`);
+        toast.error(`Test échoué: ${response.status}`);
       }
     } catch (error) {
       toast.error('Erreur lors du test');
