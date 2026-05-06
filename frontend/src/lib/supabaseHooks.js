@@ -128,19 +128,31 @@ export function useRecentActivity(entrepriseId, limit = 10) {
     if (!entrepriseId) return;
     
     try {
-      // Only fetch interventions - devis/factures tables have Supabase column/RLS issues
-      const interventions = await supabase
-        .from('interventions')
-        .select(`id, titre, statut, date_prevue, created_at`)
-        .eq('entreprise_id', entrepriseId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const [interventions, devis, factures] = await Promise.all([
+        supabase
+          .from('interventions')
+          .select(`id, titre, statut, date_prevue, created_at, client:clients!interventions_client_id_fkey(id, nom, prenom)`)
+          .eq('entreprise_id', entrepriseId)
+          .order('created_at', { ascending: false })
+          .limit(limit),
+        supabase
+          .from('devis')
+          .select(`id, numero, statut, created_at, client:clients(id, nom, prenom)`)
+          .eq('entreprise_id', entrepriseId)
+          .order('created_at', { ascending: false })
+          .limit(limit),
+        supabase
+          .from('factures')
+          .select(`id, numero, statut, created_at, client:clients(id, nom, prenom)`)
+          .eq('entreprise_id', entrepriseId)
+          .order('created_at', { ascending: false })
+          .limit(limit)
+      ]);
 
-      // Skip devis and factures queries - they cause 400 errors due to Supabase schema issues
       setData({
         interventions: interventions.data || [],
-        devis: [], // Disabled due to Supabase 400 errors
-        factures: [] // Disabled due to Supabase 400 errors
+        devis: devis.data || [],
+        factures: factures.data || []
       });
     } catch (err) {
       console.error('Recent activity error:', err);
@@ -168,16 +180,22 @@ export function useAlerts(entrepriseId) {
       const today = new Date().toISOString();
       const alertsList = [];
 
-      // Fetch interventions en retard (this table works)
-      const interventionsRetard = await supabase
-        .from('interventions')
-        .select('id, titre, date_prevue')
-        .eq('entreprise_id', entrepriseId)
-        .eq('statut', 'planifiee')
-        .lt('date_prevue', today)
-        .limit(5);
-
-      // Skip factures query - causes 400 errors due to Supabase schema issues
+      const [interventionsRetard, facturesRetard] = await Promise.all([
+        supabase
+          .from('interventions')
+          .select('id, titre, date_prevue')
+          .eq('entreprise_id', entrepriseId)
+          .eq('statut', 'planifiee')
+          .lt('date_prevue', today)
+          .limit(5),
+        supabase
+          .from('factures')
+          .select('id, numero, date_echeance')
+          .eq('entreprise_id', entrepriseId)
+          .eq('statut', 'envoyee')
+          .lt('date_echeance', today)
+          .limit(5)
+      ]);
 
       interventionsRetard.data?.forEach(i => {
         alertsList.push({
@@ -186,6 +204,16 @@ export function useAlerts(entrepriseId) {
           message: `Intervention "${i.titre}" en retard`,
           link: `/dashboard/interventions/${i.id}`,
           priority: 'medium'
+        });
+      });
+
+      facturesRetard.data?.forEach(f => {
+        alertsList.push({
+          id: `facture-${f.id}`,
+          type: 'facture_retard',
+          message: `Facture ${f.numero} impayée`,
+          link: `/dashboard/factures/${f.id}`,
+          priority: 'high'
         });
       });
 
