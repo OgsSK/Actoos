@@ -14,6 +14,7 @@ import {
 import { formatCurrency, formatDate } from '../lib/utils';
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, subYears } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { statsApi } from '../lib/supabaseApi';
 
 // Simple Chart Bar Component (no external lib needed)
 const ChartBar = ({ data, maxValue, label, color = 'bg-blue-500' }) => {
@@ -93,7 +94,7 @@ const StatsRow = ({ label, value, percentage, highlight = false }) => (
 );
 
 export const RapportsPage = () => {
-  const { api } = useAuth();
+  const { entreprise } = useAuth();
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('month');
   const [stats, setStats] = useState(null);
@@ -101,24 +102,26 @@ export const RapportsPage = () => {
   const [topClients, setTopClients] = useState([]);
 
   useEffect(() => {
-    loadStats();
-  }, [period]);
+    if (entreprise?.id) {
+      loadStats();
+    }
+  }, [period, entreprise?.id]);
 
   const loadStats = async () => {
+    if (!entreprise?.id) return;
+    
     setLoading(true);
     try {
-      // Load unified stats from /stats endpoint
-      const statsRes = await api.get('/stats');
-      setStats(statsRes.data);
+      // Load stats directly from Supabase
+      const [statsData, monthlyRevenue, clientsData] = await Promise.all([
+        statsApi.getStats(entreprise.id),
+        statsApi.getMonthlyRevenue(entreprise.id),
+        statsApi.getTopClients(entreprise.id)
+      ]);
 
-      // Load monthly revenue data
-      const monthlyRes = await api.get('/rapports/monthly-revenue');
-      setMonthlyData(monthlyRes.data || []);
-
-      // Load top clients
-      const clientsRes = await api.get('/rapports/top-clients');
-      setTopClients(clientsRes.data || []);
-
+      setStats(statsData);
+      setMonthlyData(monthlyRevenue || []);
+      setTopClients(clientsData || []);
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {
@@ -127,15 +130,30 @@ export const RapportsPage = () => {
   };
 
   const handleExport = async (type) => {
+    // Export CSV directly from current data
     try {
-      const response = await api.get(`/rapports/export/${type}`, {
-        responseType: 'blob'
-      });
+      let csvContent = '';
+      let filename = '';
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      if (type === 'devis') {
+        filename = `rapport_devis_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+        csvContent = 'Statistiques Devis\n';
+        csvContent += `En attente,${stats?.devis?.en_attente || 0}\n`;
+        csvContent += `Signés ce mois,${stats?.devis?.signes_mois || 0}\n`;
+        csvContent += `Taux de conversion,${stats?.taux_conversion || 0}%\n`;
+      } else {
+        filename = `rapport_factures_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+        csvContent = 'Statistiques Factures\n';
+        csvContent += `En attente,${stats?.factures?.en_attente || 0}\n`;
+        csvContent += `Montant en attente,${stats?.factures?.pending_amount || 0}\n`;
+        csvContent += `En retard,${stats?.factures?.en_retard || 0}\n`;
+        csvContent += `CA ce mois,${stats?.ca_mois || 0}\n`;
+      }
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `rapport_${type}_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -152,14 +170,14 @@ export const RapportsPage = () => {
     );
   }
 
-  // Use unified stats from backend (same as Analytics)
+  // Use stats from Supabase
   const tauxConversion = stats?.taux_conversion || 0;
-  const devisEnAttente = stats?.devis?.en_attente || stats?.devis_en_attente || 0;
-  const devisSignesMois = stats?.devis?.signes_mois || stats?.devis_signes_mois || 0;
+  const devisEnAttente = stats?.devis?.en_attente || 0;
+  const devisSignesMois = stats?.devis?.signes_mois || 0;
   const facturesEnAttente = stats?.factures?.en_attente || 0;
   const facturesPendingAmount = stats?.factures?.pending_amount || 0;
   const facturesEnRetard = stats?.factures?.en_retard || 0;
-  const caMois = stats?.ca_mois || stats?.revenue?.this_month || 0;
+  const caMois = stats?.ca_mois || 0;
   const clientsTotal = stats?.clients || 0;
   const techniciensActifs = stats?.techniciens_actifs || 0;
   const interventionsTerminees = stats?.interventions?.terminees || 0;

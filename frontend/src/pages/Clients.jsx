@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useClients } from '../lib/supabaseHooks';
+import { clientsApi, interventionsApi, devisApi, facturesApi, sitesApi } from '../lib/supabaseApi';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -618,7 +619,7 @@ const SiteForm = ({ initialData, onSubmit, onCancel, loading }) => {
 export const ClientDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { api, isAdmin, canUseMultiSites, currentPlan } = useAuth();
+  const { isAdmin, canUseMultiSites, currentPlan, user } = useAuth();
   const [client, setClient] = useState(null);
   const [interventions, setInterventions] = useState([]);
   const [devis, setDevis] = useState([]);
@@ -638,18 +639,18 @@ export const ClientDetail = () => {
 
   const fetchData = async () => {
     try {
-      const [clientRes, interventionsRes, devisRes, facturesRes, sitesRes] = await Promise.all([
-        api.get(`/clients/${id}`),
-        api.get('/interventions', { params: { client_id: id } }),
-        api.get('/devis', { params: { client_id: id } }),
-        api.get('/factures', { params: { client_id: id } }),
-        api.get('/sites', { params: { client_id: id } }),
+      const [clientData, interventionsData, devisData, facturesData, sitesData] = await Promise.all([
+        clientsApi.get(id),
+        interventionsApi.list(user?.entreprise_id, { client_id: id }),
+        devisApi.list(user?.entreprise_id, { client_id: id }),
+        facturesApi.list(user?.entreprise_id, { client_id: id }),
+        sitesApi.list(id),
       ]);
-      setClient(clientRes.data);
-      setInterventions(interventionsRes.data);
-      setDevis(devisRes.data);
-      setFactures(facturesRes.data);
-      setSites(sitesRes.data);
+      setClient(clientData);
+      setInterventions(interventionsData);
+      setDevis(devisData);
+      setFactures(facturesData);
+      setSites(sitesData);
     } catch (error) {
       console.error('Error fetching client data:', error);
     } finally {
@@ -659,34 +660,34 @@ export const ClientDetail = () => {
 
   const handleDelete = async () => {
     try {
-      await api.delete(`/clients/${id}`);
+      await clientsApi.update(id, { statut: 'archive' });
       toast.success('Client archivé');
       navigate('/dashboard/clients');
     } catch (error) {
       console.error('Error archiving client:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de l\'archivage');
+      toast.error(error.message || 'Erreur lors de l\'archivage');
     }
   };
 
   const handleRestore = async () => {
     try {
-      await api.post(`/clients/${id}/restore`);
+      await clientsApi.update(id, { statut: 'actif' });
       toast.success('Client restauré');
-      fetchClientData();
+      fetchData();
     } catch (error) {
       console.error('Error restoring client:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la restauration');
+      toast.error(error.message || 'Erreur lors de la restauration');
     }
   };
 
   const handlePermanentDelete = async () => {
     try {
-      const response = await api.delete(`/clients/${id}/permanent`);
+      await clientsApi.delete(id);
       toast.success('Client supprimé définitivement');
       navigate('/dashboard/clients');
     } catch (error) {
       console.error('Error permanently deleting client:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+      toast.error(error.message || 'Erreur lors de la suppression');
     }
   };
 
@@ -695,20 +696,20 @@ export const ClientDetail = () => {
     setSiteFormLoading(true);
     try {
       if (editingSite) {
-        await api.put(`/sites/${editingSite.id}`, siteData);
+        await sitesApi.update(editingSite.id, siteData);
         toast.success('Site mis à jour');
       } else {
-        await api.post('/sites', { ...siteData, client_id: id });
+        await sitesApi.create({ ...siteData, client_id: id });
         toast.success('Site créé');
       }
       setShowSiteDialog(false);
       setEditingSite(null);
       // Refresh sites
-      const sitesRes = await api.get('/sites', { params: { client_id: id } });
-      setSites(sitesRes.data);
+      const sitesData = await sitesApi.list(id);
+      setSites(sitesData);
     } catch (error) {
       console.error('Error saving site:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+      toast.error(error.message || 'Erreur lors de la sauvegarde');
     } finally {
       setSiteFormLoading(false);
     }
@@ -716,7 +717,7 @@ export const ClientDetail = () => {
 
   const handleDeleteSite = async (siteId) => {
     try {
-      await api.delete(`/sites/${siteId}`);
+      await sitesApi.delete(siteId);
       toast.success('Site supprimé');
       setSites(sites.filter(s => s.id !== siteId));
     } catch (error) {
@@ -737,9 +738,17 @@ export const ClientDetail = () => {
 
   const getPortalLink = async () => {
     try {
-      const response = await api.get(`/clients/${id}/portal-link`);
-      const fullUrl = `${window.location.origin}${response.data.portal_url}`;
-      setPortalLink(fullUrl);
+      // Generate portal link using client's portal_token or create one
+      if (client?.portal_token) {
+        const fullUrl = `${window.location.origin}/portal/client/${client.portal_token}`;
+        setPortalLink(fullUrl);
+      } else {
+        // Generate a new token and save it
+        const newToken = crypto.randomUUID();
+        await clientsApi.update(id, { portal_token: newToken });
+        const fullUrl = `${window.location.origin}/portal/client/${newToken}`;
+        setPortalLink(fullUrl);
+      }
     } catch (error) {
       console.error('Error getting portal link:', error);
     }

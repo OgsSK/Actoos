@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PlanUsageWidget from '../components/PlanUsageWidget';
+import { categoriesApi, settingsApi, entrepriseApi } from '../lib/supabaseApi';
 
 // Default category icons and colors
 const CATEGORY_ICONS = ['wrench', 'zap', 'sparkles', 'thermometer', 'hammer', 'cog', 'droplet', 'wind', 'home', 'tool'];
@@ -41,7 +42,7 @@ const CATEGORY_COLORS = [
 ];
 
 // Categories Manager Component
-const CategoriesManager = ({ api }) => {
+const CategoriesManager = ({ entrepriseId }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -56,13 +57,13 @@ const CategoriesManager = ({ api }) => {
   });
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    if (entrepriseId) fetchCategories();
+  }, [entrepriseId]);
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/categories');
-      setCategories(response.data);
+      const data = await categoriesApi.list(entrepriseId);
+      setCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast.error('Erreur lors du chargement des catégories');
@@ -105,17 +106,17 @@ const CategoriesManager = ({ api }) => {
     setSaving(true);
     try {
       if (editingCategory) {
-        await api.put(`/categories/${editingCategory.id}`, formData);
+        await categoriesApi.update(editingCategory.id, formData);
         toast.success('Catégorie mise à jour');
       } else {
-        await api.post('/categories', formData);
+        await categoriesApi.create({ ...formData, entreprise_id: entrepriseId });
         toast.success('Catégorie créée');
       }
       fetchCategories();
       resetForm();
     } catch (error) {
       console.error('Error saving category:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+      toast.error(error.message || 'Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
@@ -123,12 +124,12 @@ const CategoriesManager = ({ api }) => {
 
   const handleDelete = async (categoryId, categoryName) => {
     try {
-      await api.delete(`/categories/${categoryId}`);
+      await categoriesApi.delete(categoryId);
       toast.success(`Catégorie "${categoryName}" supprimée`);
       fetchCategories();
     } catch (error) {
       console.error('Error deleting category:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la suppression');
+      toast.error(error.message || 'Erreur lors de la suppression');
     }
   };
 
@@ -362,7 +363,7 @@ const CategoriesManager = ({ api }) => {
 };
 
 // Document Settings Component - Conditions générales, footers, etc.
-const DocumentSettingsForm = ({ api }) => {
+const DocumentSettingsForm = ({ entrepriseId }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
@@ -380,13 +381,13 @@ const DocumentSettingsForm = ({ api }) => {
   });
 
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (entrepriseId) loadSettings();
+  }, [entrepriseId]);
 
   const loadSettings = async () => {
     try {
-      const response = await api.get('/settings/documents');
-      setSettings(response.data);
+      const data = await settingsApi.getDocumentSettings(entrepriseId);
+      setSettings(prev => ({ ...prev, ...data }));
     } catch (error) {
       console.error('Error loading document settings:', error);
       toast.error('Erreur lors du chargement des paramètres');
@@ -403,11 +404,11 @@ const DocumentSettingsForm = ({ api }) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.put('/settings/documents', settings);
+      await settingsApi.updateDocumentSettings(entrepriseId, settings);
       toast.success('Paramètres des documents enregistrés');
     } catch (error) {
       console.error('Error saving document settings:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+      toast.error(error.message || 'Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
@@ -636,7 +637,7 @@ const DocumentSettingsForm = ({ api }) => {
 };
 
 // SMS Configuration Component - Supports shared Actoos or custom Twilio
-const SMSConfiguration = ({ api, smsStatus, onStatusChange }) => {
+const SMSConfiguration = ({ entrepriseId, smsStatus, onStatusChange }) => {
   const [mode, setMode] = useState(smsStatus?.use_shared !== false ? 'shared' : 'custom');
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -654,12 +655,14 @@ const SMSConfiguration = ({ api, smsStatus, onStatusChange }) => {
       // Switch to shared Actoos Twilio
       setSaving(true);
       try {
-        await api.put('/sms/config', { use_shared: true });
+        await entrepriseApi.update(entrepriseId, {
+          sms_config: { use_shared: true }
+        });
         toast.success('Configuration SMS mise à jour - Mode service Actoos');
         onStatusChange?.();
       } catch (error) {
         console.error('Error switching to shared mode:', error);
-        toast.error(error.response?.data?.detail || 'Erreur lors du changement de mode');
+        toast.error(error.message || 'Erreur lors du changement de mode');
       } finally {
         setSaving(false);
       }
@@ -676,16 +679,20 @@ const SMSConfiguration = ({ api, smsStatus, onStatusChange }) => {
     
     setSaving(true);
     try {
-      await api.put('/sms/config', {
-        use_shared: false,
-        ...customConfig
+      await entrepriseApi.update(entrepriseId, {
+        sms_config: {
+          use_shared: false,
+          twilio_account_sid: customConfig.twilio_account_sid,
+          twilio_auth_token: customConfig.twilio_auth_token,
+          twilio_phone_number: customConfig.twilio_phone_number
+        }
       });
       toast.success('Configuration Twilio personnalisée enregistrée');
       setShowCustomForm(false);
       onStatusChange?.();
     } catch (error) {
       console.error('Error saving custom config:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde. Vérifiez vos identifiants Twilio.');
+      toast.error(error.message || 'Erreur lors de la sauvegarde. Vérifiez vos identifiants Twilio.');
     } finally {
       setSaving(false);
     }
@@ -699,11 +706,11 @@ const SMSConfiguration = ({ api, smsStatus, onStatusChange }) => {
     
     setTesting(true);
     try {
-      const response = await api.post(`/sms/test?phone_number=${encodeURIComponent(testPhone)}`);
-      toast.success(`SMS de test envoyé à ${testPhone} (mode: ${response.data.mode})`);
+      // SMS test requires Edge Function - show info message
+      toast.info('Test SMS en cours de migration vers Supabase Edge Functions');
     } catch (error) {
       console.error('Error sending test SMS:', error);
-      toast.error(error.response?.data?.detail || 'Échec de l\'envoi du SMS de test');
+      toast.error(error.message || 'Échec de l\'envoi du SMS de test');
     } finally {
       setTesting(false);
     }
@@ -897,7 +904,7 @@ const SMSConfiguration = ({ api, smsStatus, onStatusChange }) => {
 };
 
 // WhatsApp & Integrations Hub Component
-const IntegrationsHub = ({ api }) => {
+const IntegrationsHub = ({ entrepriseId }) => {
   const [loading, setLoading] = useState(true);
   const [integrations, setIntegrations] = useState(null);
   const [savingWhatsApp, setSavingWhatsApp] = useState(false);
@@ -912,14 +919,14 @@ const IntegrationsHub = ({ api }) => {
   });
 
   useEffect(() => {
-    loadIntegrationsStatus();
-  }, []);
+    if (entrepriseId) loadIntegrationsStatus();
+  }, [entrepriseId]);
 
   const loadIntegrationsStatus = async () => {
     try {
-      const response = await api.get('/integrations/status');
-      setIntegrations(response.data);
-      setWhatsAppMode(response.data.whatsapp?.use_shared !== false ? 'shared' : 'custom');
+      const data = await settingsApi.getIntegrationsStatus(entrepriseId);
+      setIntegrations(data);
+      setWhatsAppMode(data.whatsapp?.use_shared !== false ? 'shared' : 'custom');
     } catch (error) {
       console.error('Error loading integrations:', error);
     } finally {
@@ -932,11 +939,13 @@ const IntegrationsHub = ({ api }) => {
     if (newMode === 'shared') {
       setSavingWhatsApp(true);
       try {
-        await api.put('/integrations/whatsapp/config', { use_shared: true });
+        await entrepriseApi.update(entrepriseId, { 
+          integrations_config: { whatsapp: { use_shared: true } }
+        });
         toast.success('WhatsApp configuré en mode service Actoos');
         loadIntegrationsStatus();
       } catch (error) {
-        toast.error(error.response?.data?.detail || 'Erreur');
+        toast.error(error.message || 'Erreur');
       } finally {
         setSavingWhatsApp(false);
       }
@@ -953,15 +962,21 @@ const IntegrationsHub = ({ api }) => {
     
     setSavingWhatsApp(true);
     try {
-      await api.put('/integrations/whatsapp/config', {
-        use_shared: false,
-        ...whatsAppConfig
+      await entrepriseApi.update(entrepriseId, {
+        integrations_config: {
+          whatsapp: {
+            use_shared: false,
+            access_token: whatsAppConfig.whatsapp_access_token,
+            phone_number_id: whatsAppConfig.whatsapp_phone_number_id,
+            business_account_id: whatsAppConfig.whatsapp_business_account_id
+          }
+        }
       });
       toast.success('Configuration WhatsApp personnalisée enregistrée');
       setShowWhatsAppForm(false);
       loadIntegrationsStatus();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la configuration');
+      toast.error(error.message || 'Erreur lors de la configuration');
     } finally {
       setSavingWhatsApp(false);
     }
@@ -975,10 +990,10 @@ const IntegrationsHub = ({ api }) => {
     
     setTestingWhatsApp(true);
     try {
-      const response = await api.post(`/integrations/whatsapp/test?phone_number=${encodeURIComponent(testPhone)}`);
-      toast.success(`Message WhatsApp envoyé à ${testPhone}`);
+      // WhatsApp test requires Edge Function - for now just show info
+      toast.info('Test WhatsApp non disponible - fonctionnalité en cours de migration');
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Échec de l\'envoi');
+      toast.error(error.message || 'Échec de l\'envoi');
     } finally {
       setTestingWhatsApp(false);
     }
@@ -986,7 +1001,7 @@ const IntegrationsHub = ({ api }) => {
 
   const handleMessagingPreference = async (channel) => {
     try {
-      await api.put('/integrations/messaging-preference', { preferred_channel: channel });
+      await entrepriseApi.update(entrepriseId, { messaging_preference: channel });
       toast.success(`Canal préféré: ${channel === 'whatsapp' ? 'WhatsApp' : channel === 'sms' ? 'SMS' : 'Email'}`);
       loadIntegrationsStatus();
     } catch (error) {
@@ -1257,13 +1272,13 @@ const IntegrationsHub = ({ api }) => {
       </Alert>
 
       {/* Google Calendar Configuration */}
-      <GoogleCalendarConfig api={api} integrations={integrations} onStatusChange={loadIntegrationsStatus} />
+      <GoogleCalendarConfig entrepriseId={entrepriseId} integrations={integrations} onStatusChange={loadIntegrationsStatus} />
     </div>
   );
 };
 
 // Google Calendar Configuration Component
-const GoogleCalendarConfig = ({ api, integrations, onStatusChange }) => {
+const GoogleCalendarConfig = ({ entrepriseId, integrations, onStatusChange }) => {
   const [mode, setMode] = useState(integrations?.google_calendar?.use_shared !== false ? 'shared' : 'custom');
   const [saving, setSaving] = useState(false);
   const [showCustomForm, setShowCustomForm] = useState(false);
@@ -1277,11 +1292,13 @@ const GoogleCalendarConfig = ({ api, integrations, onStatusChange }) => {
     if (newMode === 'shared') {
       setSaving(true);
       try {
-        await api.put('/integrations/google-calendar/config', { use_shared: true });
+        await entrepriseApi.update(entrepriseId, {
+          integrations_config: { google_calendar: { use_shared: true } }
+        });
         toast.success('Google Calendar configuré en mode service Actoos');
         onStatusChange?.();
       } catch (error) {
-        toast.error(error.response?.data?.detail || 'Erreur');
+        toast.error(error.message || 'Erreur');
       } finally {
         setSaving(false);
       }
@@ -1298,15 +1315,20 @@ const GoogleCalendarConfig = ({ api, integrations, onStatusChange }) => {
     
     setSaving(true);
     try {
-      await api.put('/integrations/google-calendar/config', {
-        use_shared: false,
-        ...customConfig
+      await entrepriseApi.update(entrepriseId, {
+        integrations_config: {
+          google_calendar: {
+            use_shared: false,
+            client_id: customConfig.google_client_id,
+            client_secret: customConfig.google_client_secret
+          }
+        }
       });
       toast.success('Configuration Google Calendar personnalisée enregistrée');
       setShowCustomForm(false);
       onStatusChange?.();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erreur lors de la configuration');
+      toast.error(error.message || 'Erreur lors de la configuration');
     } finally {
       setSaving(false);
     }
@@ -1484,7 +1506,7 @@ const GoogleCalendarConfig = ({ api, integrations, onStatusChange }) => {
 };
 
 export const SettingsPage = () => {
-  const { api, entreprise, user, refreshUser, canUseAdvancedBranding, currentPlan } = useAuth();
+  const { entreprise, user, refreshUser, canUseAdvancedBranding, currentPlan } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
@@ -1567,9 +1589,10 @@ export const SettingsPage = () => {
   }, [entreprise]);
 
   const loadSmsStatus = async () => {
+    if (!entreprise?.id) return;
     try {
-      const response = await api.get('/sms/status');
-      setSmsStatus(response.data);
+      const data = await settingsApi.getSmsStatus(entreprise.id);
+      setSmsStatus(data);
     } catch (error) {
       console.error('Error loading SMS status:', error);
     } finally {
@@ -1590,23 +1613,24 @@ export const SettingsPage = () => {
   useEffect(() => {
     const fetchCurrenciesAndLocales = async () => {
       try {
-        const [currRes, locRes] = await Promise.all([
-          api.get('/currencies'),
-          api.get('/locales')
+        const [currData, locData] = await Promise.all([
+          settingsApi.getCurrencies(),
+          settingsApi.getLocales()
         ]);
-        setCurrencies(currRes.data);
-        setLocales(locRes.data);
+        setCurrencies(currData);
+        setLocales(locData);
       } catch (error) {
         console.error('Error fetching currencies/locales:', error);
       }
     };
     fetchCurrenciesAndLocales();
-  }, [api]);
+  }, []);
 
   const handleCurrencyChange = async (devise) => {
+    if (!entreprise?.id) return;
     setSavingCurrency(true);
     try {
-      await api.put(`/entreprise/currency?devise=${devise}`);
+      await entrepriseApi.update(entreprise.id, { devise });
       setSelectedCurrency(devise);
       toast.success(`Devise changée en ${devise}`);
       refreshUser();
@@ -1619,9 +1643,10 @@ export const SettingsPage = () => {
   };
 
   const handleLocaleChange = async (locale) => {
+    if (!entreprise?.id) return;
     setSavingCurrency(true);
     try {
-      await api.put(`/entreprise/locale?locale=${locale}`);
+      await entrepriseApi.update(entreprise.id, { locale });
       setSelectedLocale(locale);
       toast.success('Langue mise à jour');
       refreshUser();
@@ -1635,10 +1660,11 @@ export const SettingsPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!entreprise?.id) return;
     setSaving(true);
     setSuccess('');
     try {
-      await api.put('/entreprise', formData);
+      await entrepriseApi.update(entreprise.id, formData);
       setSuccess('Paramètres enregistrés avec succès');
       refreshUser();
     } catch (error) {
@@ -1651,9 +1677,10 @@ export const SettingsPage = () => {
 
   const handleNotifSubmit = async (e) => {
     e.preventDefault();
+    if (!entreprise?.id) return;
     setSaving(true);
     try {
-      await api.put('/entreprise', {
+      await entrepriseApi.update(entreprise.id, {
         notification_settings: notifSettings
       });
       toast.success('Préférences de notification enregistrées');
@@ -1856,7 +1883,7 @@ export const SettingsPage = () => {
 
         {/* Categories Tab */}
         <TabsContent value="categories">
-          <CategoriesManager api={api} />
+          <CategoriesManager entrepriseId={entreprise?.id} />
         </TabsContent>
 
         {/* Notifications Tab */}
@@ -1891,7 +1918,7 @@ export const SettingsPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <SMSConfiguration api={api} smsStatus={smsStatus} onStatusChange={loadSmsStatus} />
+                <SMSConfiguration entrepriseId={entreprise?.id} smsStatus={smsStatus} onStatusChange={loadSmsStatus} />
               </CardContent>
             </Card>
 
@@ -2064,7 +2091,7 @@ export const SettingsPage = () => {
 
         {/* Documents Tab */}
         <TabsContent value="documents">
-          <DocumentSettingsForm api={api} />
+          <DocumentSettingsForm entrepriseId={entreprise?.id} />
         </TabsContent>
 
         {/* Branding / White-label Tab */}
@@ -2115,19 +2142,14 @@ export const SettingsPage = () => {
                         
                         setUploadingLogo(true);
                         try {
-                          const formData = new FormData();
-                          formData.append('file', file);
-                          
-                          const response = await api.post('/entreprise/logo', formData, {
-                            headers: { 'Content-Type': 'multipart/form-data' }
-                          });
-                          
-                          setBrandingData(prev => ({ ...prev, logo_url: response.data.logo_url }));
+                          // Upload to Supabase Storage
+                          const logoUrl = await entrepriseApi.uploadLogo(entreprise?.id, file);
+                          setBrandingData(prev => ({ ...prev, logo_url: logoUrl }));
                           toast.success('Logo mis à jour');
                           refreshUser();
                         } catch (error) {
                           console.error('Error uploading logo:', error);
-                          toast.error(error.response?.data?.detail || 'Erreur lors du téléchargement');
+                          toast.error(error.message || 'Erreur lors du téléchargement');
                         } finally {
                           setUploadingLogo(false);
                         }
@@ -2200,16 +2222,15 @@ export const SettingsPage = () => {
                     
                     <Button
                       onClick={async () => {
+                        if (!entreprise?.id) return;
                         setSavingBranding(true);
                         try {
-                          await api.put('/entreprise/branding', null, {
-                            params: { couleur_primaire: brandingData.couleur_primaire }
-                          });
+                          await entrepriseApi.update(entreprise.id, { couleur_primaire: brandingData.couleur_primaire });
                           toast.success('Couleur mise à jour');
                           refreshUser();
                         } catch (error) {
                           console.error('Error saving branding:', error);
-                          toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+                          toast.error(error.message || 'Erreur lors de la sauvegarde');
                         } finally {
                           setSavingBranding(false);
                         }
@@ -2340,19 +2361,19 @@ export const SettingsPage = () => {
         {/* Integrations Tab */}
         <TabsContent value="integrations">
           <div className="space-y-8">
-            <IntegrationsHub api={api} />
-            <CalendarIntegration api={api} />
+            <IntegrationsHub entrepriseId={entreprise?.id} />
+            <CalendarIntegration entrepriseId={entreprise?.id} />
           </div>
         </TabsContent>
 
         {/* GDPR Tab */}
         <TabsContent value="gdpr">
-          <GDPRSettings api={api} />
+          <GDPRSettings entrepriseId={entreprise?.id} />
         </TabsContent>
 
         {/* Security Tab - Password Management */}
         <TabsContent value="security">
-          <SecuritySettings api={api} />
+          <SecuritySettings entrepriseId={entreprise?.id} />
         </TabsContent>
       </Tabs>
     </div>
@@ -2360,7 +2381,7 @@ export const SettingsPage = () => {
 };
 
 // Security Settings Component - Password Management & 2FA
-const SecuritySettings = ({ api }) => {
+const SecuritySettings = ({ entrepriseId }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -2425,17 +2446,20 @@ const SecuritySettings = ({ api }) => {
 
     setLoading(true);
     try {
-      await api.post('/api/auth/change-password', {
-        current_password: formData.currentPassword,
-        new_password: formData.newPassword
+      // Use Supabase Auth for password change
+      const supabase = (await import('../lib/supabase')).default;
+      const { error } = await supabase.auth.updateUser({
+        password: formData.newPassword
       });
+      
+      if (error) throw error;
       
       toast.success('Mot de passe modifié avec succès');
       setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error) {
-      const message = error.response?.data?.detail || 'Erreur lors du changement de mot de passe';
+      const message = error.message || 'Erreur lors du changement de mot de passe';
       toast.error(message);
-      if (message.includes('actuel')) {
+      if (message.includes('actuel') || message.includes('current')) {
         setErrors({ currentPassword: message });
       }
     } finally {
@@ -2681,7 +2705,7 @@ const SecuritySettings = ({ api }) => {
 };
 
 // Calendar Integration Component
-const CalendarIntegration = ({ api }) => {
+const CalendarIntegration = ({ entrepriseId }) => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
@@ -2689,7 +2713,7 @@ const CalendarIntegration = ({ api }) => {
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
-    checkStatus();
+    if (entrepriseId) checkStatus();
     
     // Check URL for calendar connection callback
     const params = new URLSearchParams(window.location.search);
@@ -2699,12 +2723,12 @@ const CalendarIntegration = ({ api }) => {
       window.history.replaceState({}, '', window.location.pathname);
       checkStatus();
     }
-  }, []);
+  }, [entrepriseId]);
 
   const checkStatus = async () => {
     try {
-      const response = await api.get('/calendar/status');
-      setStatus(response.data);
+      const data = await settingsApi.getIntegrationsStatus(entrepriseId);
+      setStatus(data.google_calendar || { configured: false, connected: false });
     } catch (error) {
       console.error('Error checking calendar status:', error);
       setStatus({ configured: false, connected: false });
@@ -2716,12 +2740,12 @@ const CalendarIntegration = ({ api }) => {
   const handleConnect = async () => {
     setConnecting(true);
     try {
-      const response = await api.get('/calendar/connect');
-      // Redirect to Google OAuth
-      window.location.href = response.data.authorization_url;
+      // Calendar OAuth requires Edge Function - show info message
+      toast.info('Connexion Google Calendar en cours de migration vers Supabase');
+      setConnecting(false);
     } catch (error) {
       console.error('Error connecting calendar:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la connexion');
+      toast.error(error.message || 'Erreur lors de la connexion');
       setConnecting(false);
     }
   };
@@ -2729,7 +2753,9 @@ const CalendarIntegration = ({ api }) => {
   const handleDisconnect = async () => {
     setDisconnecting(true);
     try {
-      await api.post('/calendar/disconnect');
+      await entrepriseApi.update(entrepriseId, {
+        integrations_config: { google_calendar: { refresh_token: null } }
+      });
       toast.success('Google Calendar déconnecté');
       setStatus({ ...status, connected: false, google_email: null });
     } catch (error) {
@@ -2743,12 +2769,11 @@ const CalendarIntegration = ({ api }) => {
   const handleSyncAll = async () => {
     setSyncing(true);
     try {
-      const response = await api.post('/calendar/sync-all');
-      toast.success(`${response.data.synced} intervention(s) synchronisée(s)`);
-      checkStatus();
+      // Sync requires Edge Function - show info message
+      toast.info('Synchronisation en cours de migration vers Supabase');
     } catch (error) {
       console.error('Error syncing calendar:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la synchronisation');
+      toast.error(error.message || 'Erreur lors de la synchronisation');
     } finally {
       setSyncing(false);
     }
@@ -2927,7 +2952,7 @@ const CalendarIntegration = ({ api }) => {
 
 
 // GDPR Settings Component
-const GDPRSettings = ({ api }) => {
+const GDPRSettings = ({ entrepriseId }) => {
   const [settings, setSettings] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2936,13 +2961,23 @@ const GDPRSettings = ({ api }) => {
   const [showCleanupDialog, setShowCleanupDialog] = useState(false);
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (entrepriseId) fetchSettings();
+  }, [entrepriseId]);
 
   const fetchSettings = async () => {
     try {
-      const response = await api.get('/gdpr/settings');
-      setSettings(response.data);
+      // Load from entreprise table
+      const entreprise = await entrepriseApi.getById(entrepriseId);
+      setSettings(entreprise.gdpr_settings || {
+        photos_months: 24,
+        interventions_months: 36,
+        devis_months: 60,
+        factures_months: 120,
+        clients_inactifs_months: 36,
+        auto_cleanup_enabled: false,
+        notify_before_deletion: true,
+        notify_days_before: 30
+      });
     } catch (error) {
       console.error('Error fetching GDPR settings:', error);
       // Set defaults
@@ -2963,8 +2998,14 @@ const GDPRSettings = ({ api }) => {
 
   const fetchPreview = async () => {
     try {
-      const response = await api.get('/gdpr/preview');
-      setPreview(response.data);
+      // GDPR preview requires backend logic - show simplified version
+      setPreview({
+        photos: { count: 0, size_mb: 0 },
+        interventions: { count: 0 },
+        devis: { count: 0 },
+        clients: { count: 0 }
+      });
+      toast.info('Prévisualisation RGPD en cours de migration');
     } catch (error) {
       console.error('Error fetching preview:', error);
       toast.error('Erreur lors de la prévisualisation');
@@ -2974,11 +3015,11 @@ const GDPRSettings = ({ api }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put('/gdpr/settings', settings);
+      await entrepriseApi.update(entrepriseId, { gdpr_settings: settings });
       toast.success('Paramètres RGPD enregistrés');
     } catch (error) {
       console.error('Error saving settings:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la sauvegarde');
+      toast.error(error.message || 'Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
@@ -2987,11 +3028,9 @@ const GDPRSettings = ({ api }) => {
   const handleCleanup = async () => {
     setCleaning(true);
     try {
-      const response = await api.post('/gdpr/cleanup/execute?dry_run=false');
-      toast.success('Nettoyage lancé en arrière-plan');
+      // Cleanup requires Edge Function
+      toast.info('Nettoyage RGPD en cours de migration vers Supabase');
       setShowCleanupDialog(false);
-      // Refresh settings to get new last_cleanup
-      setTimeout(fetchSettings, 2000);
     } catch (error) {
       console.error('Error executing cleanup:', error);
       toast.error('Erreur lors du nettoyage');

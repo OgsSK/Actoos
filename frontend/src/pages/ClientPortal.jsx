@@ -15,10 +15,8 @@ import {
   Building2, Phone, Mail, Download, PenTool, Check, X, Loader2, CheckCircle,
   FileText, Receipt, Calendar, Clock, Euro, ExternalLink, ArrowLeft, CreditCard
 } from 'lucide-react';
-import axios from 'axios';
 import { toast } from 'sonner';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { supabase } from '../lib/supabase';
 
 // Signature Pad Component
 const SignaturePad = ({ onSave, onCancel }) => {
@@ -162,9 +160,24 @@ export const ClientPortalDevis = () => {
 
   const fetchDevis = async () => {
     try {
-      const response = await axios.get(`${API}/portal/devis/${token}`);
-      setData(response.data);
-      if (response.data.devis.statut === 'signe') {
+      // Fetch devis by public token from Supabase
+      const { data: devisData, error: devisError } = await supabase
+        .from('devis')
+        .select(`*, client:clients(*), entreprise:entreprises(*)`)
+        .eq('public_token', token)
+        .single();
+      
+      if (devisError || !devisData) {
+        throw new Error('Devis not found');
+      }
+      
+      setData({
+        devis: devisData,
+        client: devisData.client,
+        entreprise: devisData.entreprise
+      });
+      
+      if (devisData.statut === 'signe') {
         setSigned(true);
       }
     } catch (err) {
@@ -177,9 +190,19 @@ export const ClientPortalDevis = () => {
   const handleSign = async (signature, nom) => {
     setSigning(true);
     try {
-      await axios.post(`${API}/portal/devis/${token}/sign`, null, {
-        params: { signature, nom_signataire: nom }
-      });
+      const { error } = await supabase
+        .from('devis')
+        .update({
+          statut: 'signe',
+          signature: signature,
+          signature_nom: nom,
+          signature_date: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('public_token', token);
+      
+      if (error) throw error;
+      
       setSigned(true);
       setShowSignature(false);
       fetchDevis();
@@ -191,7 +214,8 @@ export const ClientPortalDevis = () => {
   };
 
   const downloadPDF = () => {
-    window.open(`${API}/portal/devis/${token}/pdf`, '_blank');
+    // PDF download requires Edge Function - show info for now
+    toast.info('Téléchargement PDF en cours de migration');
   };
 
   if (loading) {
@@ -499,8 +523,31 @@ export const ClientPortalDashboard = () => {
 
   const fetchDashboard = async () => {
     try {
-      const response = await axios.get(`${API}/portal/client/${token}`);
-      setData(response.data);
+      // Fetch client by public access token
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select(`*, entreprise:entreprises(*)`)
+        .eq('portal_token', token)
+        .single();
+      
+      if (clientError || !clientData) {
+        throw new Error('Client not found');
+      }
+      
+      // Fetch client's devis and factures
+      const [devisResult, facturesResult, interventionsResult] = await Promise.all([
+        supabase.from('devis').select('*').eq('client_id', clientData.id).order('created_at', { ascending: false }),
+        supabase.from('factures').select('*').eq('client_id', clientData.id).order('created_at', { ascending: false }),
+        supabase.from('interventions').select('*').eq('client_id', clientData.id).order('date_prevue', { ascending: false }).limit(10)
+      ]);
+      
+      setData({
+        client: clientData,
+        entreprise: clientData.entreprise,
+        devis: devisResult.data || [],
+        factures: facturesResult.data || [],
+        interventions: interventionsResult.data || []
+      });
     } catch (err) {
       setError('Ce lien n\'est pas valide ou a expiré.');
     } finally {
@@ -511,17 +558,12 @@ export const ClientPortalDashboard = () => {
   const handlePayFacture = async (facture) => {
     setPayingFacture(facture.id);
     try {
-      const response = await axios.post(
-        `${API}/portal/facture/${facture.id}/pay?token=${token}`
-      );
-      // Redirect to Stripe checkout
-      if (response.data.url) {
-        window.location.href = response.data.url;
-      }
+      // Stripe payment requires Edge Function
+      toast.info('Paiement en ligne en cours de migration vers Supabase');
+      setPayingFacture(null);
     } catch (err) {
       console.error('Payment error:', err);
-      const message = err.response?.data?.detail || 'Erreur lors de l\'initialisation du paiement';
-      toast.error(message);
+      toast.error('Erreur lors de l\'initialisation du paiement');
       setPayingFacture(null);
     }
   };

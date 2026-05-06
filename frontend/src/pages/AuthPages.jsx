@@ -219,7 +219,6 @@ export const ActivatePage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { api } = useAuth();
   const navigate = useNavigate();
 
   const token = new URLSearchParams(window.location.search).get('token');
@@ -241,11 +240,23 @@ export const ActivatePage = () => {
     setLoading(true);
 
     try {
-      await api.post('/auth/activate', { token, password });
+      // Call Supabase Edge Function for activation
+      const API_URL = process.env.REACT_APP_BACKEND_URL;
+      const response = await fetch(`${API_URL}/api/auth/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password })
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || 'Erreur lors de l\'activation');
+      }
+      
       setSuccess(true);
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erreur lors de l\'activation');
+      setError(err.message || 'Erreur lors de l\'activation');
     } finally {
       setLoading(false);
     }
