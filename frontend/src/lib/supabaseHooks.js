@@ -69,7 +69,7 @@ export function useDashboardStats(entrepriseId) {
           .from('users')
           .select('id', { count: 'exact', head: true })
           .eq('entreprise_id', entrepriseId)
-          .in('role', ['tech', 'technicien']),
+          .in('role', ['technicien']),
         
         supabase
           .from('devis')
@@ -245,7 +245,7 @@ export function useInterventions(entrepriseId, filters = {}) {
     try {
       let query = supabase
         .from('interventions')
-        .select(`*, client:clients(id, nom, prenom, telephone, adresse, ville, code_postal), technicien:users(id, nom, prenom, telephone)`)
+        .select(`*, client:clients!interventions_client_id_fkey(id, nom, prenom, telephone, adresse, ville, code_postal), technicien:users!interventions_technicien_id_fkey(id, nom, prenom, telephone)`)
         .eq('entreprise_id', entrepriseId);
 
       if (filters.statut && filters.statut !== 'all') {
@@ -350,7 +350,7 @@ export function useTechniciens(entrepriseId) {
         .from('users')
         .select('*')
         .eq('entreprise_id', entrepriseId)
-        .in('role', ['tech', 'technicien'])
+        .in('role', ['technicien'])
         .order('nom');
 
       if (error) throw error;
@@ -503,7 +503,7 @@ export function usePlanning(entrepriseId, dateRange = {}) {
     try {
       let query = supabase
         .from('interventions')
-        .select(`*, client:clients(id, nom, prenom, adresse, ville), technicien:users(id, nom, prenom, telephone)`)
+        .select(`*, client:clients!interventions_client_id_fkey(id, nom, prenom, adresse, ville), technicien:users!interventions_technicien_id_fkey(id, nom, prenom, telephone)`)
         .eq('entreprise_id', entrepriseId)
         .in('statut', ['planifiee', 'en_cours']);
 

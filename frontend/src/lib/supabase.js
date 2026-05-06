@@ -168,8 +168,8 @@ export const db = {
         .from('interventions')
         .select(`
           *,
-          client:clients(id, nom, prenom, telephone, adresse, ville),
-          technicien:users(id, nom, prenom, telephone)
+          client:clients!interventions_client_id_fkey(id, nom, prenom, telephone, adresse, ville),
+          technicien:users!interventions_technicien_id_fkey(id, nom, prenom, telephone)
         `)
         .eq('entreprise_id', entrepriseId);
       
@@ -188,8 +188,8 @@ export const db = {
         .from('interventions')
         .select(`
           *,
-          client:clients(*),
-          technicien:users(id, nom, prenom, telephone, email)
+          client:clients!interventions_client_id_fkey(*),
+          technicien:users!interventions_technicien_id_fkey(id, nom, prenom, telephone, email)
         `)
         .eq('id', id)
         .single();
@@ -228,7 +228,7 @@ export const db = {
         .from('users')
         .select('*')
         .eq('entreprise_id', entrepriseId)
-        .in('role', ['tech', 'technicien'])
+        .in('role', ['technicien'])
         .order('nom');
       return { data, error };
     },

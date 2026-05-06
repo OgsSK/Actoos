@@ -9,7 +9,7 @@ export const interventionsApi = {
   list: async (entrepriseId, filters = {}) => {
     let query = supabase
       .from('interventions')
-      .select(`*, client:clients(id, nom, prenom, telephone, adresse, ville, code_postal), technicien:users(id, nom, prenom, telephone)`)
+      .select(`*, client:clients(id, nom, prenom, telephone, adresse, ville, code_postal), technicien:users!interventions_technicien_id_fkey(id, nom, prenom, telephone)`)
       .eq('entreprise_id', entrepriseId);
 
     if (filters.statut && filters.statut !== 'all') {
@@ -27,7 +27,7 @@ export const interventionsApi = {
   get: async (id) => {
     const { data, error } = await supabase
       .from('interventions')
-      .select(`*, client:clients(*), technicien:users(id, nom, prenom, telephone, email)`)
+      .select(`*, client:clients(*), technicien:users!interventions_technicien_id_fkey(id, nom, prenom, telephone, email)`)
       .eq('id', id)
       .single();
     if (error) throw error;
@@ -35,10 +35,21 @@ export const interventionsApi = {
   },
 
   create: async (intervention) => {
+    // Sanitize empty strings to null for UUID fields
+    const sanitizedIntervention = { ...intervention };
+    const uuidFields = ['client_id', 'technicien_id', 'categorie_id', 'site_id'];
+    uuidFields.forEach(field => {
+      if (sanitizedIntervention[field] === '' || sanitizedIntervention[field] === undefined) {
+        sanitizedIntervention[field] = null;
+      }
+    });
+    // Remove devis_id if present (column doesn't exist in interventions table)
+    delete sanitizedIntervention.devis_id;
+    
     const { data, error } = await supabase
       .from('interventions')
       .insert({
-        ...intervention,
+        ...sanitizedIntervention,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -49,9 +60,20 @@ export const interventionsApi = {
   },
 
   update: async (id, updates) => {
+    // Sanitize empty strings to null for UUID fields
+    const sanitizedUpdates = { ...updates };
+    const uuidFields = ['client_id', 'technicien_id', 'categorie_id', 'site_id'];
+    uuidFields.forEach(field => {
+      if (sanitizedUpdates[field] === '' || sanitizedUpdates[field] === undefined) {
+        sanitizedUpdates[field] = null;
+      }
+    });
+    // Remove devis_id if present (column doesn't exist in interventions table)
+    delete sanitizedUpdates.devis_id;
+    
     const { data, error } = await supabase
       .from('interventions')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({ ...sanitizedUpdates, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single();
@@ -399,7 +421,7 @@ export const usersApi = {
       .from('users')
       .select('*')
       .eq('entreprise_id', entrepriseId)
-      .in('role', ['tech', 'technicien'])
+      .in('role', ['technicien'])
       .order('nom');
     if (error) throw error;
     return data || [];
@@ -682,7 +704,7 @@ export const dashboardApi = {
       supabase.from('clients').select('id', { count: 'exact', head: true })
         .eq('entreprise_id', entrepriseId).neq('statut', 'archive'),
       supabase.from('users').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).in('role', ['tech', 'technicien']),
+        .eq('entreprise_id', entrepriseId).in('role', ['technicien']),
       supabase.from('factures').select('montant_total')
         .eq('entreprise_id', entrepriseId).eq('statut', 'payee').gte('date_paiement', startOfMonth)
     ]);
@@ -703,7 +725,7 @@ export const dashboardApi = {
   getRecent: async (entrepriseId, limit = 5) => {
     const [interventions, devis, factures] = await Promise.all([
       supabase.from('interventions')
-        .select(`id, titre, statut, date_prevue, created_at, client:clients(id, nom, prenom)`)
+        .select(`id, titre, statut, date_prevue, created_at, client:clients!interventions_client_id_fkey(id, nom, prenom)`)
         .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit),
       supabase.from('devis')
         .select(`id, numero, statut, montant_total, created_at, client:clients(id, nom, prenom)`)
@@ -749,7 +771,7 @@ export const planningApi = {
   getInterventions: async (entrepriseId, dateRange = {}) => {
     let query = supabase
       .from('interventions')
-      .select(`*, client:clients(id, nom, prenom, adresse, ville), technicien:users(id, nom, prenom)`)
+      .select(`*, client:clients!interventions_client_id_fkey(id, nom, prenom, adresse, ville), technicien:users!interventions_technicien_id_fkey(id, nom, prenom)`)
       .eq('entreprise_id', entrepriseId)
       .in('statut', ['planifiee', 'en_cours', 'terminee']);
 
@@ -808,7 +830,7 @@ export const statsApi = {
       supabase.from('clients').select('id', { count: 'exact', head: true })
         .eq('entreprise_id', entrepriseId).neq('statut', 'archive'),
       supabase.from('users').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).in('role', ['tech', 'technicien'])
+        .eq('entreprise_id', entrepriseId).in('role', ['technicien'])
     ]);
 
     const montantDevisAttente = devisAttente.data?.reduce((sum, d) => sum + (d.montant_total || 0), 0) || 0;
@@ -1026,7 +1048,7 @@ export const technicianApi = {
 
     const { data, error } = await supabase
       .from('interventions')
-      .select(`*, client:clients(id, nom, prenom, telephone, adresse, ville, code_postal), technicien:users(id, nom, prenom)`)
+      .select(`*, client:clients!interventions_client_id_fkey(id, nom, prenom, telephone, adresse, ville, code_postal), technicien:users!interventions_technicien_id_fkey(id, nom, prenom)`)
       .eq('entreprise_id', entrepriseId)
       .eq('technicien_id', technicienId)
       .gte('date_prevue', todayISO)
@@ -1040,7 +1062,7 @@ export const technicianApi = {
   getWeekInterventions: async (entrepriseId, technicienId, startDate, endDate) => {
     let query = supabase
       .from('interventions')
-      .select(`*, client:clients(id, nom, prenom, telephone, adresse, ville, code_postal), technicien:users(id, nom, prenom)`)
+      .select(`*, client:clients!interventions_client_id_fkey(id, nom, prenom, telephone, adresse, ville, code_postal), technicien:users!interventions_technicien_id_fkey(id, nom, prenom)`)
       .eq('entreprise_id', entrepriseId)
       .eq('technicien_id', technicienId)
       .gte('date_prevue', startDate)
@@ -1055,7 +1077,7 @@ export const technicianApi = {
   getAvailableInterventions: async (entrepriseId) => {
     const { data, error } = await supabase
       .from('interventions')
-      .select(`*, client:clients(id, nom, prenom, adresse, ville), categorie:categories(id, nom, couleur)`)
+      .select(`*, client:clients!interventions_client_id_fkey(id, nom, prenom, adresse, ville), categorie:categories!interventions_categorie_id_fkey(id, nom, couleur)`)
       .eq('entreprise_id', entrepriseId)
       .is('technicien_id', null)
       .eq('statut', 'planifiee')
