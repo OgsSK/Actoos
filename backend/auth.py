@@ -15,14 +15,16 @@ SECRET_KEY = os.environ.get("JWT_SECRET_KEY", secrets.token_urlsafe(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
-# Use argon2id with reduced parameters for Railway's limited CPU
-# time_cost=1, memory_cost=32768, parallelism=1 is still secure but faster
+# Use argon2id with MINIMAL parameters for Railway's limited CPU
+# If still too slow, bcrypt fallback is available
+# Support bcrypt as fallback for existing hashes and performance
 pwd_context = CryptContext(
-    schemes=["argon2"], 
-    deprecated="auto", 
+    schemes=["bcrypt", "argon2"], 
+    deprecated=["argon2"],  # Prefer bcrypt for new hashes (faster on limited CPU)
+    bcrypt__rounds=10,  # Reduced rounds for speed
     argon2__type="id",
     argon2__time_cost=1,
-    argon2__memory_cost=32768,
+    argon2__memory_cost=16384,  # Reduced from 32768
     argon2__parallelism=1
 )
 security = HTTPBearer()
