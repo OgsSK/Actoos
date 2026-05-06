@@ -17,10 +17,72 @@ from auth import (
     get_password_hash, verify_password, create_access_token, decode_token,
     get_current_user, require_admin, create_invitation_token, create_reset_token
 )
-from dependencies import db, serialize_doc, log_action
+from dependencies import db, serialize_doc, log_action, USE_POSTGRES, pg_engine
 from plan_limits import check_technician_limit, raise_limit_error
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+# ==================== OPTIMIZED LOGIN (Direct PostgreSQL) ====================
+
+async def fast_login_postgres(email: str, password: str):
+    """
+    Optimized login using direct PostgreSQL query (single query with JOIN)
+    """
+    from sqlalchemy import text
+    
+    query = """
+    SELECT 
+        u.id, u.email, u.password_hash, u.nom, u.prenom, u.role, u.statut,
+        u.entreprise_id, u.telephone, u.two_factor_enabled,
+        e.nom as entreprise_nom, e.plan, e.subscription_status
+    FROM users u
+    JOIN entreprises e ON u.entreprise_id = e.id
+    WHERE u.email = :email
+    LIMIT 1
+    """
+    
+    async with pg_engine.begin() as conn:
+        result = await conn.execute(text(query), {"email": email.lower()})
+        row = result.fetchone()
+        
+        if not row:
+            return None, "Email ou mot de passe incorrect"
+        
+        user_data = dict(row._mapping)
+        
+        # Verify password
+        if not verify_password(password, user_data["password_hash"]):
+            return None, "Email ou mot de passe incorrect"
+        
+        # Check user status
+        if user_data["statut"] == "desactive":
+            return None, "Compte désactivé"
+        
+        if user_data["statut"] == "invite":
+            return None, "Veuillez d'abord activer votre compte via le lien d'invitation"
+        
+        # Check subscription for admin
+        if user_data["role"] == "admin":
+            sub_status = user_data.get("subscription_status") or "none"
+            if sub_status in ["expired", "cancelled", "none", "past_due"]:
+                return None, {
+                    "code": "subscription_required",
+                    "message": "Votre abonnement a expiré. Veuillez renouveler.",
+                    "subscription_status": sub_status,
+                    "redirect": "/pricing"
+                }
+        
+        # Update last login (async, don't wait)
+        try:
+            await conn.execute(
+                text("UPDATE users SET derniere_connexion = :now WHERE id = :id"),
+                {"now": datetime.now(timezone.utc), "id": user_data["id"]}
+            )
+        except:
+            pass
+        
+        return user_data, None
 
 
 @router.post("/register", response_model=TokenResponse)
@@ -230,6 +292,60 @@ async def register_from_checkout(session_id: str, password: str = None):
 @router.post("/login")
 async def login(data: UserLogin):
     """Login user with subscription validation and 2FA support"""
+    
+    # Use optimized PostgreSQL login if available
+    if USE_POSTGRES and pg_engine:
+        user_data, error = await fast_login_postgres(data.email, data.password)
+        
+        if error:
+            if isinstance(error, dict):
+                raise HTTPException(status_code=403, detail=error)
+            raise HTTPException(status_code=401, detail=error)
+        
+        # Check 2FA
+        if user_data.get("two_factor_enabled"):
+            temp_token = create_access_token(
+                {"sub": user_data["id"], "ent": user_data["entreprise_id"], "type": "2fa_pending"},
+                expires_delta=timedelta(minutes=10)
+            )
+            return {
+                "requires_2fa": True,
+                "method": "totp",
+                "temp_token": temp_token,
+                "message": "Authentification à deux facteurs requise"
+            }
+        
+        # Create token
+        token = create_access_token({
+            "sub": user_data["id"], 
+            "ent": user_data["entreprise_id"], 
+            "role": user_data["role"]
+        })
+        
+        return TokenResponse(
+            access_token=token,
+            user=UserResponse(
+                id=user_data["id"],
+                entreprise_id=user_data["entreprise_id"],
+                email=user_data["email"],
+                nom=user_data.get("nom"),
+                prenom=user_data.get("prenom"),
+                telephone=user_data.get("telephone"),
+                role=user_data["role"],
+                statut=user_data["statut"],
+                skills=[],
+                derniere_connexion=datetime.now(timezone.utc).isoformat(),
+                created_at=datetime.now(timezone.utc).isoformat()
+            ),
+            entreprise={
+                "id": user_data["entreprise_id"],
+                "nom": user_data.get("entreprise_nom"),
+                "plan": user_data.get("plan"),
+                "subscription_status": user_data.get("subscription_status")
+            }
+        )
+    
+    # Fallback to MongoDB-compatible login
     user = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
