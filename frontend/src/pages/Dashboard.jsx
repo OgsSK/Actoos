@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDashboardStats, useAlerts, useRecentActivity } from '../lib/supabaseHooks';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -421,58 +422,47 @@ const RecentItemsCard = ({ title, items, type, viewAllPath, formatAmount }) => {
 
 // Main Dashboard Component
 export const DashboardOverview = () => {
-  const [stats, setStats] = useState(null);
-  const [alerts, setAlerts] = useState([]);
-  const [recent, setRecent] = useState({ devis: [], factures: [] });
-  const [loading, setLoading] = useState(true);
-  const { api, formatAmount, currencySymbol } = useAuth();
+  const { user, formatAmount, currencySymbol } = useAuth();
+  const entrepriseId = user?.entreprise_id;
+  
+  // Use Supabase direct hooks for ultra-fast data fetching
+  const { stats, loading: statsLoading, refetch: refetchStats } = useDashboardStats(entrepriseId);
+  const { alerts, loading: alertsLoading, refetch: refetchAlerts } = useAlerts(entrepriseId);
+  const { data: recent, loading: recentLoading, refetch: refetchRecent } = useRecentActivity(entrepriseId, 5);
+  
+  const loading = statsLoading && !stats; // Only show loading on initial load
 
-  // Fetch dashboard data
-  const fetchData = useCallback(async () => {
-    try {
-      const [statsRes, alertsRes, recentRes] = await Promise.all([
-        api.get('/dashboard/stats'),
-        api.get('/dashboard/alerts'),
-        api.get('/dashboard/recent'),
-      ]);
-      setStats(statsRes.data);
-      setAlerts(alertsRes.data);
-      setRecent(recentRes.data);
-    } catch (error) {
-      console.error('Dashboard fetch error:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
+  // Combine refetch for real-time updates
+  const fetchData = useCallback(() => {
+    refetchStats();
+    refetchAlerts();
+    refetchRecent();
+  }, [refetchStats, refetchAlerts, refetchRecent]);
 
   // Real-time updates via SSE
   const { isConnected } = useRealtimeEvents({
     enabled: true,
     showToasts: true,
     onInterventionChange: (eventType, data) => {
-      // Refresh dashboard when any intervention changes
       console.log('[Dashboard] Intervention changed:', eventType, data);
       fetchData();
     },
     onDevisChange: (eventType, data) => {
-      // Refresh dashboard when devis changes
       console.log('[Dashboard] Devis changed:', eventType, data);
       fetchData();
     },
     onFactureChange: (eventType, data) => {
-      // Refresh dashboard when facture changes
       console.log('[Dashboard] Facture changed:', eventType, data);
       fetchData();
     },
     onSyncRequired: () => {
-      // Full refresh requested
       fetchData();
     }
   });
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    // Data is auto-fetched by hooks
+  }, []);
 
   if (loading) {
     return (
