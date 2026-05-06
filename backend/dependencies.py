@@ -271,12 +271,18 @@ class PostgreSQLCollection:
             raise RuntimeError("No database configured")
         
         where_clause, where_params = self._convert_filter_to_sql(filter_dict)
-        set_data = update.get("$set", update)
-        set_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        set_data = update.get("$set", update).copy()
+        set_data["updated_at"] = datetime.now(timezone.utc)
         
         for key in list(set_data.keys()):
             if isinstance(set_data[key], (list, dict)):
                 set_data[key] = json.dumps(set_data[key])
+            # Convert ISO datetime strings to datetime objects
+            elif isinstance(set_data[key], str) and len(set_data[key]) > 18 and 'T' in set_data[key]:
+                try:
+                    set_data[key] = datetime.fromisoformat(set_data[key].replace('Z', '+00:00'))
+                except:
+                    pass
         
         set_clause = ", ".join([f"{k} = :set_{k}" for k in set_data.keys()])
         set_params = {f"set_{k}": v for k, v in set_data.items()}
@@ -285,9 +291,10 @@ class PostgreSQLCollection:
         all_params = {**where_params, **set_params}
         
         try:
-            async with get_pg_session() as session:
-                from sqlalchemy import text
-                result = await session.execute(text(query), all_params)
+            from sqlalchemy import text
+            async with pg_engine.connect() as conn:
+                result = await conn.execute(text(query), all_params)
+                await conn.commit()
                 return type('UpdateResult', (), {'modified_count': result.rowcount, 'matched_count': result.rowcount})()
         except Exception as e:
             logger.error(f"PostgreSQL update_one error on {self.table_name}: {e}")
