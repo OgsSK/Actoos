@@ -3,6 +3,7 @@ Actoos API - Field Service Management SaaS
 Refactored modular architecture with all routes in /routers/
 """
 from fastapi import FastAPI, APIRouter
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -137,6 +138,11 @@ app.add_middleware(
 # Rate limiting middleware
 from rate_limit_middleware import RateLimitMiddleware
 app.add_middleware(RateLimitMiddleware)
+
+# Mount static files for SQL schema download
+static_dir = ROOT_DIR / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 # Keep clients portal link in server.py for backward compatibility
 from fastapi import HTTPException, Depends
