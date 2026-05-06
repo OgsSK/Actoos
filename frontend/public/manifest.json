@@ -58,8 +58,8 @@
       "purpose": "maskable"
     }
   ],
-  "start_url": "/",
-  "id": "/",
+  "start_url": "/login",
+  "id": "/app",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "theme_color": "#22C55E",
