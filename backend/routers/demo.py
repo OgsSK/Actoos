@@ -9,14 +9,11 @@ from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime, timezone, timedelta
 import uuid
 import os
-from motor.motor_asyncio import AsyncIOMotorClient
 
 router = APIRouter(prefix="/demo", tags=["demo"])
 
-# MongoDB connection
-mongo_url = os.environ.get('MONGO_URL')
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ.get('DB_NAME', 'actoos')]
+# Use shared database from dependencies
+from dependencies import db
 
 # Import auth utilities
 import sys
