@@ -1324,6 +1324,25 @@ export const edgeFunctionsApi = {
     return response.json();
   },
 
+  // Send WhatsApp via Edge Function
+  sendWhatsApp: async ({ to, message, template, entreprise_id }) => {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-whatsapp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ to, message, template, entreprise_id })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to send WhatsApp message');
+    }
+    
+    return response.json();
+  },
+
   // Generate PDF via Edge Function
   generatePDF: async ({ type, id, entreprise_id }) => {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-pdf`, {

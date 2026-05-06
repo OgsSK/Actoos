@@ -70,17 +70,25 @@ const LegalPage = () => {
             </h2>
             <div className="mt-4 text-slate-600 dark:text-slate-300 space-y-4">
               <p>
-                Le logiciel Actoos est hébergé sur des serveurs sécurisés fournis par :
+                Le logiciel Actoos est hébergé sur des infrastructures cloud sécurisées et conformes RGPD :
               </p>
               <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                <p><strong className="text-slate-900 dark:text-white">Railway Corporation</strong></p>
-                <p className="text-sm mt-1">Infrastructure cloud sécurisée</p>
-                <p className="text-sm">Site : <a href="https://railway.app" className="text-blue-600 hover:underline">railway.app</a></p>
+                <p><strong className="text-slate-900 dark:text-white">Vercel Inc.</strong></p>
+                <p className="text-sm mt-1">Application web et interface utilisateur</p>
+                <p className="text-sm">Site : <a href="https://vercel.com" className="text-blue-600 hover:underline">vercel.com</a></p>
+                <p className="text-xs text-slate-500 mt-1">Conformité : SOC 2 Type II, GDPR</p>
               </div>
               <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                <p><strong className="text-slate-900 dark:text-white">MongoDB Atlas</strong></p>
-                <p className="text-sm mt-1">Base de données cloud sécurisée</p>
-                <p className="text-sm">Site : <a href="https://www.mongodb.com/atlas" className="text-blue-600 hover:underline">mongodb.com/atlas</a></p>
+                <p><strong className="text-slate-900 dark:text-white">Supabase Inc.</strong></p>
+                <p className="text-sm mt-1">Base de données PostgreSQL, authentification et fonctions serverless</p>
+                <p className="text-sm">Site : <a href="https://supabase.com" className="text-blue-600 hover:underline">supabase.com</a></p>
+                <p className="text-xs text-slate-500 mt-1">Conformité : SOC 2 Type II, HIPAA, GDPR - Hébergement AWS EU (Francfort)</p>
+              </div>
+              <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                <p><strong className="text-slate-900 dark:text-white">Cloudflare Inc.</strong></p>
+                <p className="text-sm mt-1">CDN, protection DDoS et optimisation des performances</p>
+                <p className="text-sm">Site : <a href="https://cloudflare.com" className="text-blue-600 hover:underline">cloudflare.com</a></p>
+                <p className="text-xs text-slate-500 mt-1">Conformité : ISO 27001, SOC 2, GDPR</p>
               </div>
             </div>
           </section>
