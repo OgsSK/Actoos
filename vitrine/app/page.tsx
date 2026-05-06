@@ -1,13 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   Smartphone, Building2, ArrowRight, 
-  Layers, CreditCard, Menu, X
+  Layers, CreditCard, Menu, X, ChevronDown
 } from 'lucide-react';
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [portalDropdownOpen, setPortalDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setPortalDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const portals = [
+    { name: 'Actoos Pro', href: 'https://pro.actoos.com', color: '#10B981', desc: 'B2B Europe' },
+    { name: 'Actoos One', href: 'https://one.actoos.com', color: '#D4AF37', desc: 'Super-App Afrique' },
+  ];
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-orange-100/50">
@@ -38,12 +56,37 @@ export default function HomePage() {
             <a href="#contact" className="hover:text-black transition-colors">Contact</a>
           </div>
 
-          <a 
-            href="https://pro.actoos.com"
-            className="hidden md:block bg-slate-950 text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#D4AF37] transition-all shadow-2xl hover:shadow-yellow-500/20"
-          >
-            Global Portal
-          </a>
+          {/* Global Portal Dropdown */}
+          <div className="hidden md:block relative" ref={dropdownRef}>
+            <button 
+              onClick={() => setPortalDropdownOpen(!portalDropdownOpen)}
+              className="bg-slate-950 text-white px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#D4AF37] transition-all shadow-2xl hover:shadow-yellow-500/20 flex items-center space-x-2"
+            >
+              <span>Global Portal</span>
+              <ChevronDown size={14} className={`transition-transform ${portalDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {portalDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
+                {portals.map((portal) => (
+                  <a
+                    key={portal.name}
+                    href={portal.href}
+                    className="flex items-center space-x-3 px-4 py-3 hover:bg-slate-50 transition-colors group"
+                  >
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: portal.color }}
+                    />
+                    <div>
+                      <p className="font-bold text-sm text-slate-900 group-hover:text-slate-950">{portal.name}</p>
+                      <p className="text-[10px] text-slate-400">{portal.desc}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Mobile menu button */}
           <button 
@@ -61,12 +104,22 @@ export default function HomePage() {
             <a href="#products" className="block text-sm font-bold text-slate-600 hover:text-black">Software Suite</a>
             <a href="#vision" className="block text-sm font-bold text-slate-600 hover:text-black">Philosophy</a>
             <a href="#contact" className="block text-sm font-bold text-slate-600 hover:text-black">Contact</a>
-            <a 
-              href="https://pro.actoos.com"
-              className="block w-full bg-slate-950 text-white px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest text-center"
-            >
-              Global Portal
-            </a>
+            <div className="pt-2 border-t border-slate-100 space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Accès Portails</p>
+              {portals.map((portal) => (
+                <a 
+                  key={portal.name}
+                  href={portal.href}
+                  className="flex items-center space-x-3 py-2"
+                >
+                  <div 
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: portal.color }}
+                  />
+                  <span className="font-bold text-sm text-slate-700">{portal.name}</span>
+                </a>
+              ))}
+            </div>
           </div>
         )}
       </nav>
