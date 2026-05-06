@@ -46,5 +46,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE ${PORT}
 
-# Start command
-CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT}"]
+# Start command - use shell form for variable expansion
+CMD uvicorn server:app --host 0.0.0.0 --port ${PORT:-8001}
