@@ -4,6 +4,10 @@ import { formatCurrency, formatCurrencyCompact, getCurrencySymbol } from '../lib
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Supabase Edge Function URL for ultra-fast login
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://zmngftlkdimwvkxmduvr.supabase.co';
+const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptbmdmdGxrZGltd3ZreG1kdXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTQwNDksImV4cCI6MjA5MzU5MDA0OX0.uxXVKg1oIcakCPtnRxri9PPj1ZvAsgi-JVe6VhQNE2c';
+
 const AuthContext = createContext(null);
 
 // Function to update PWA manifest, favicon, and theme based on user role
@@ -159,29 +163,47 @@ export const AuthProvider = ({ children }) => {
   }, [entreprise?.couleur_primaire]);
 
   const login = async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
-    
-    // Check if 2FA is required
-    if (response.data.requires_2fa) {
-      // Return special object indicating 2FA is needed
-      return {
-        requires_2fa: true,
-        method: response.data.method,
-        temp_token: response.data.temp_token
-      };
+    // Use Supabase Edge Function for ultra-fast login
+    try {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur de connexion');
+      }
+      
+      // Check if 2FA is required
+      if (data.requires_2fa) {
+        return {
+          requires_2fa: true,
+          method: data.method,
+          temp_token: data.temp_token
+        };
+      }
+      
+      const { access_token, user: userData, entreprise: entData } = data;
+      
+      localStorage.setItem('token', access_token);
+      setToken(access_token);
+      setUser(userData);
+      setEntreprise(entData);
+      
+      // Update PWA manifest and icons based on user role
+      updatePWAForRole(userData.role);
+      
+      return userData;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-    
-    const { access_token, user: userData, entreprise: entData } = response.data;
-    
-    localStorage.setItem('token', access_token);
-    setToken(access_token);
-    setUser(userData);
-    setEntreprise(entData);
-    
-    // Update PWA manifest and icons based on user role
-    updatePWAForRole(userData.role);
-    
-    return userData;
   };
   
   // Complete login after 2FA verification
