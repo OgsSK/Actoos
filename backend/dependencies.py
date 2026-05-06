@@ -44,15 +44,18 @@ if USE_POSTGRES:
     try:
         from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
         from sqlalchemy import text
-        from sqlalchemy.pool import NullPool
         
         pg_url = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://").replace("postgresql://", "postgresql+asyncpg://")
         
-        # Use NullPool for serverless/pooler compatibility (Supabase Transaction Pooler)
+        # Use connection pooling for better performance
         pg_engine = create_async_engine(
             pg_url,
             echo=False,
-            poolclass=NullPool,  # Don't use SQLAlchemy connection pooling (Supabase handles it)
+            pool_size=5,
+            max_overflow=10,
+            pool_timeout=30,
+            pool_recycle=300,
+            pool_pre_ping=True,
             connect_args={
                 "statement_cache_size": 0,
                 "prepared_statement_cache_size": 0,
@@ -87,6 +90,9 @@ if USE_MONGO:
 
 # ==================== SESSION HELPER ====================
 
+# Global session for reuse within requests
+_current_session = None
+
 @asynccontextmanager
 async def get_pg_session():
     """Get PostgreSQL session with automatic cleanup"""
@@ -102,6 +108,17 @@ async def get_pg_session():
         raise
     finally:
         await session.close()
+
+
+async def execute_query(query: str, params: dict = None):
+    """Execute a query directly with minimal overhead"""
+    if not pg_engine:
+        raise RuntimeError("PostgreSQL not configured")
+    
+    from sqlalchemy import text
+    async with pg_engine.connect() as conn:
+        result = await conn.execute(text(query), params or {})
+        return result
 
 # ==================== MONGODB-COMPATIBLE POSTGRESQL INTERFACE ====================
 
@@ -193,9 +210,9 @@ class PostgreSQLCollection:
         query = f"SELECT * FROM {self.table_name} WHERE {where_clause} LIMIT 1"
         
         try:
-            async with get_pg_session() as session:
-                from sqlalchemy import text
-                result = await session.execute(text(query), params)
+            from sqlalchemy import text
+            async with pg_engine.connect() as conn:
+                result = await conn.execute(text(query), params)
                 row = result.fetchone()
                 return self._row_to_dict(row) if row else None
         except Exception as e:
