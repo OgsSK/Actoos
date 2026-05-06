@@ -277,3 +277,12 @@ credentials.json
 .credentials
 frontend/node_modules/.cache/default-development/33.pack
 vitrine/node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
+-e 
+# Environment and credential files
+.env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
