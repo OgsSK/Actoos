@@ -135,7 +135,7 @@ export default function LegalPage() {
             <p className="text-slate-600 leading-relaxed">
               Pour toute question concernant ces mentions légales :<br /><br />
               <strong>ACTOOS Group</strong><br />
-              Email : <a href="mailto:legal@actoos.com" className="text-[#D4AF37] hover:underline">legal@actoos.com</a><br />
+              Email : <a href="mailto:contact@actoos.com" className="text-[#D4AF37] hover:underline">contact@actoos.com</a><br />
               Adresse : Bruxelles, Belgique
             </p>
           </section>

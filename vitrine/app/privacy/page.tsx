@@ -117,7 +117,7 @@ export default function PrivacyPage() {
               <li><strong>Droit d&apos;opposition</strong> : vous opposer au traitement de vos données</li>
             </ul>
             <p className="text-slate-600 leading-relaxed mt-4">
-              Pour exercer ces droits, contactez-nous à : <a href="mailto:privacy@actoos.com" className="text-[#D4AF37] hover:underline">privacy@actoos.com</a>
+              Pour exercer ces droits, contactez-nous à : <a href="mailto:contact@actoos.com" className="text-[#D4AF37] hover:underline">contact@actoos.com</a>
             </p>
           </section>
 
@@ -135,7 +135,7 @@ export default function PrivacyPage() {
             <p className="text-slate-600 leading-relaxed">
               Pour toute question concernant cette politique ou vos données personnelles :<br /><br />
               <strong>ACTOOS Group</strong><br />
-              Email : <a href="mailto:privacy@actoos.com" className="text-[#D4AF37] hover:underline">privacy@actoos.com</a><br />
+              Email : <a href="mailto:contact@actoos.com" className="text-[#D4AF37] hover:underline">contact@actoos.com</a><br />
               Adresse : Bruxelles, Belgique
             </p>
           </section>
