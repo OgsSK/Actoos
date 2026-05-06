@@ -34,21 +34,38 @@ Il permet de configurer directement depuis l'interface :
 
 ## Tests E2E - État Actuel
 
-### ✅ Iteration 49 - TOUS LES TESTS PASSENT
+### ✅ Iteration 51 - TEST FINAL RÉUSSI
+**Migration 100% Supabase - ZÉRO erreur 401**
+
 - Login/Logout ✅
-- Dashboard (stats correctes) ✅
+- Dashboard (stats correctes: 1 intervention, 2 clients, 1 technicien) ✅
 - Interventions (liste + création) ✅
 - Techniciens (liste) ✅
 - Planning (calendrier) ✅
 - Clients (CRUD) ✅
 - Devis/Factures ✅
+- Settings + Abonnement ✅
+- PlanUsageWidget (Startup: 1/2 techs, 1/500 interventions, 2/100 clients) ✅
+- Chat Widget ✅
+- **Console: ZÉRO erreur 401** ✅
+
+### Endpoints Railway Supprimés
+- `/api/entreprise` → Supabase direct
+- `/api/chat/*` → Supabase direct
+- `/api/events/stream` → Supabase Realtime
+- `/api/usage` → Supabase direct
+- `/api/demo/*` → Désactivé
+- `/api/push/*` → Désactivé
 
 ### Bugs Corrigés (7 mai 2026)
 - **PGRST201** : Relation ambiguë interventions↔users → FK explicites ajoutées
 - **22P02** : Enum 'tech' invalide → Remplacé par 'technicien'
 - **22P02** : UUID vide à la création → Sanitisation des chaînes vides en null
 - **SSE Legacy** : Migré vers Supabase Realtime (plus d'erreurs 401)
-- **PlanUsageWidget** : Migré vers Supabase (plus d'appel /api/usage)
+- **PlanUsageWidget** : Migré vers Supabase (user undefined + data structure)
+- **ChatWidget** : Migré vers Supabase
+- **CurrencyContext** : Migré vers Supabase
+- **Boucle Realtime** : Corrigée (dépendances useEffect)
 
 ## Politiques RLS Sécurisées
 
