@@ -441,13 +441,19 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     
     entreprise = await db.entreprises.find_one({"id": current_user["entreprise_id"]}, {"_id": 0})
     
+    # Convert UUID objects to strings for Pydantic compatibility
+    user_id = str(user["id"]) if user.get("id") else ""
+    user_ent_id = str(user["entreprise_id"]) if user.get("entreprise_id") else ""
+    
     return TokenResponse(
         access_token="",
         user=UserResponse(
-            id=user["id"], entreprise_id=user["entreprise_id"], email=user["email"],
-            nom=user["nom"], prenom=user["prenom"], telephone=user.get("telephone"),
-            role=user["role"], statut=user["statut"], skills=user.get("skills", []),
-            derniere_connexion=user.get("derniere_connexion"), created_at=user["created_at"]
+            id=user_id, entreprise_id=user_ent_id, email=str(user["email"]),
+            nom=str(user.get("nom", "")), prenom=str(user.get("prenom", "")), 
+            telephone=str(user.get("telephone")) if user.get("telephone") else None,
+            role=str(user["role"]), statut=str(user["statut"]), skills=user.get("skills", []),
+            derniere_connexion=str(user.get("derniere_connexion")) if user.get("derniere_connexion") else None, 
+            created_at=str(user.get("created_at", ""))
         ),
         entreprise=entreprise
     )
