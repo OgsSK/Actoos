@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePlanning, useTechniciens } from '../lib/supabaseHooks';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -255,12 +256,15 @@ export const PlanningPage = () => {
   const [draggedIntervention, setDraggedIntervention] = useState(null);
   const [rescheduleData, setRescheduleData] = useState({ intervention: null, newDate: null });
   
-  const { api } = useAuth();
+  const { user, supabaseApi } = useAuth();
   const navigate = useNavigate();
   
   const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const today = new Date();
+  
+  // Use Supabase hooks
+  const { data: techsData } = useTechniciens(user?.entreprise_id);
   
   // Load data
   useEffect(() => {
@@ -273,22 +277,19 @@ export const PlanningPage = () => {
       const dateDebut = format(currentWeekStart, 'yyyy-MM-dd');
       const dateFin = format(weekEnd, 'yyyy-MM-dd');
       
-      const [interventionsRes, usersRes] = await Promise.all([
-        api.get('/interventions', { params: { date_debut: dateDebut, date_fin: dateFin } }),
-        api.get('/users')
-      ]);
+      const interventionsData = await supabaseApi.planning.getInterventions(user?.entreprise_id, {
+        start: dateDebut,
+        end: dateFin
+      });
       
       // Add technicien names
-      const users = usersRes.data;
-      const interventionsWithNames = interventionsRes.data.map(i => ({
+      const interventionsWithNames = interventionsData.map(i => ({
         ...i,
-        technicien_nom: i.technicien_id 
-          ? users.find(u => u.id === i.technicien_id)?.prenom + ' ' + users.find(u => u.id === i.technicien_id)?.nom
-          : null
+        technicien_nom: i.technicien ? `${i.technicien.prenom} ${i.technicien.nom}` : null
       }));
       
       setInterventions(interventionsWithNames);
-      setTechniciens(users.filter(u => u.role === 'tech' && u.statut === 'actif'));
+      setTechniciens((techsData || []).filter(u => u.statut === 'actif'));
     } catch (error) {
       console.error('Error loading planning data:', error);
       toast.error('Erreur lors du chargement');
@@ -338,7 +339,7 @@ export const PlanningPage = () => {
   
   const handleRescheduleConfirm = async (updateData) => {
     try {
-      await api.put(`/interventions/${rescheduleData.intervention.id}`, updateData);
+      await supabaseApi.interventions.update(rescheduleData.intervention.id, updateData);
       toast.success('Intervention replanifiée');
       setRescheduleData({ intervention: null, newDate: null });
       setDraggedIntervention(null);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -18,7 +19,7 @@ import {
 import { toast } from 'sonner';
 
 const Analytics = () => {
-  const { api, formatAmount, formatAmountCompact, currencySymbol } = useAuth();
+  const { user, formatAmount, formatAmountCompact, currencySymbol } = useAuth();
   const [period, setPeriod] = useState('month');
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -31,19 +32,83 @@ const Analytics = () => {
   }, [period]);
 
   const loadAnalytics = async () => {
+    if (!user?.entreprise_id) return;
     setLoading(true);
     try {
-      const [summaryRes, trendsRes, techsRes] = await Promise.all([
-        api.get('/analytics/summary', { params: { period } }),
-        api.get('/analytics/trends', { params: { metric: 'revenue', days: 30 } }),
-        api.get('/analytics/technicians', { params: { period } })
+      const entrepriseId = user.entreprise_id;
+      const now = new Date();
+      let startDate;
+      
+      switch (period) {
+        case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'quarter':
+          startDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+          break;
+        case 'year':
+          startDate = new Date(now.getFullYear(), 0, 1);
+          break;
+        default: // month
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+      
+      const startISO = startDate.toISOString();
+      
+      // Fetch data from Supabase directly
+      const [interventions, devis, factures, techs] = await Promise.all([
+        supabase.from('interventions').select('*').eq('entreprise_id', entrepriseId).gte('created_at', startISO),
+        supabase.from('devis').select('*').eq('entreprise_id', entrepriseId).gte('created_at', startISO),
+        supabase.from('factures').select('*').eq('entreprise_id', entrepriseId).gte('created_at', startISO),
+        supabase.from('users').select('*').eq('entreprise_id', entrepriseId).in('role', ['tech', 'technicien'])
       ]);
-      setData(summaryRes.data);
-      setTrends(trendsRes.data);
-      setTechnicians(techsRes.data);
+      
+      // Calculate stats
+      const totalInterventions = interventions.data?.length || 0;
+      const termineeInterventions = interventions.data?.filter(i => i.statut === 'terminee').length || 0;
+      const totalDevis = devis.data?.length || 0;
+      const signeDevis = devis.data?.filter(d => d.statut === 'signe').length || 0;
+      const totalFactures = factures.data?.length || 0;
+      const payeFactures = factures.data?.filter(f => f.statut === 'payee').length || 0;
+      const caTotal = factures.data?.filter(f => f.statut === 'payee').reduce((sum, f) => sum + (f.montant_total || 0), 0) || 0;
+      
+      setData({
+        interventions: {
+          total: totalInterventions,
+          completed: termineeInterventions,
+          completion_rate: totalInterventions > 0 ? Math.round((termineeInterventions / totalInterventions) * 100) : 0
+        },
+        devis: {
+          total: totalDevis,
+          signed: signeDevis,
+          conversion_rate: totalDevis > 0 ? Math.round((signeDevis / totalDevis) * 100) : 0
+        },
+        factures: {
+          total: totalFactures,
+          paid: payeFactures,
+          payment_rate: totalFactures > 0 ? Math.round((payeFactures / totalFactures) * 100) : 0
+        },
+        revenue: {
+          total: caTotal,
+          growth: 0 // Would need previous period comparison
+        }
+      });
+      
+      // Technicians performance
+      const techsWithStats = (techs.data || []).map(t => {
+        const techInterventions = interventions.data?.filter(i => i.technicien_id === t.id) || [];
+        const completed = techInterventions.filter(i => i.statut === 'terminee').length;
+        return {
+          ...t,
+          interventions: techInterventions.length,
+          completed,
+          completion_rate: techInterventions.length > 0 ? Math.round((completed / techInterventions.length) * 100) : 0
+        };
+      });
+      setTechnicians(techsWithStats);
+      
     } catch (error) {
       console.error('Error loading analytics:', error);
-      toast.error('Erreur lors du chargement des statistiques');
     } finally {
       setLoading(false);
     }
