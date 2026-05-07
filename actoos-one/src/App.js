@@ -656,11 +656,22 @@ function AppContent() {
     // Use pharmacy or restaurant data
     const checkoutEntity = selectedPharmacy || selectedRestaurant;
     return (
-      <CheckoutScreen
-        restaurant={checkoutEntity}
-        onBack={handleBackFromCheckout}
-        onOrderComplete={handleOrderComplete}
-      />
+      <>
+        <CheckoutScreen
+          restaurant={checkoutEntity}
+          onBack={handleBackFromCheckout}
+          onOrderComplete={handleOrderComplete}
+          onLoginRequired={() => setShowLoginSheet(true)}
+        />
+        {/* Login Sheet - disponible pendant le checkout */}
+        <LoginSheet
+          isOpen={showLoginSheet}
+          onClose={() => setShowLoginSheet(false)}
+          onSuccess={() => {
+            setShowLoginSheet(false);
+          }}
+        />
+      </>
     );
   }
 

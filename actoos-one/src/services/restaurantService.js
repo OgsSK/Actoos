@@ -48,7 +48,8 @@ export async function getRestaurants(options = {}) {
       deliveryTime: `${partner.avg_prep_time_minutes || 30}-${(partner.avg_prep_time_minutes || 30) + 15} min`,
       deliveryFee: 500,
       distance: '-- km',
-      isOpen: partner.is_open && !partner.is_paused,
+      // STANDARD UX: Ouvert par défaut sauf si explicitement fermé ou en pause
+      isOpen: partner.is_paused ? false : (partner.is_open !== false),
       isFeatured: partner.is_featured || false,
       hasOffers: partner.has_offers || false,
       acceptsPickup: partner.accepts_pickup || false,
@@ -120,7 +121,8 @@ export async function getRestaurantById(id) {
       image: partner.image_url,
       cuisine: partner.category,
       rating: partner.rating || 4.5,
-      isOpen: partner.is_open && !partner.is_paused,
+      // STANDARD UX: Ouvert par défaut sauf si explicitement fermé ou en pause
+      isOpen: partner.is_paused ? false : (partner.is_open !== false),
       accepts_cash: partner.accepts_cash,
       selfDelivery: partner.delivery_mode === 'self',
       preparationTime: partner.avg_prep_time_minutes || 30,
@@ -160,7 +162,8 @@ export async function searchRestaurants(query, options = {}) {
       image: partner.image_url,
       cuisine: partner.category,
       rating: partner.rating || 4.5,
-      isOpen: partner.is_open && !partner.is_paused,
+      // STANDARD UX: Ouvert par défaut sauf si explicitement fermé ou en pause
+      isOpen: partner.is_paused ? false : (partner.is_open !== false),
     }));
 
     return { data: transformed, error: null };

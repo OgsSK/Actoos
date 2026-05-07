@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -64,6 +64,33 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
   // Scheduled ordering
   const [isAsap, setIsAsap] = useState(true);
   const [scheduledSlot, setScheduledSlot] = useState(null);
+  
+  // Track si on attendait une connexion pour continuer
+  const [pendingAuthAction, setPendingAuthAction] = useState(false);
+
+  // STANDARD UX: Continuer automatiquement le checkout après connexion
+  useEffect(() => {
+    if (isAuthenticated && pendingAuthAction && currentStep === STEPS.DELIVERY_MODE) {
+      setPendingAuthAction(false);
+      // Continuer le flux avec le mode de livraison sélectionné
+      if (restaurant?.allowScheduledOrders) {
+        setCurrentStep(STEPS.SCHEDULE);
+      } else if (deliveryMode === 'pickup') {
+        setCurrentStep(STEPS.PHONE);
+      } else {
+        setCurrentStep(STEPS.ADDRESS);
+      }
+    }
+  }, [isAuthenticated, pendingAuthAction, currentStep, deliveryMode, restaurant?.allowScheduledOrders]);
+
+  // Pré-remplir les données du profil quand l'utilisateur se connecte
+  useEffect(() => {
+    if (profile) {
+      if (profile.address && !address) setAddress(profile.address);
+      if (profile.address_details && !addressDetails) setAddressDetails(profile.address_details);
+      if (profile.phone && phoneNumber === '+223 ') setPhoneNumber(profile.phone);
+    }
+  }, [profile, address, addressDetails, phoneNumber]);
 
   // Vérifier si l'utilisateur est connecté quand il veut passer commande
   const checkAuthAndProceed = (nextStep) => {
@@ -147,6 +174,17 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
   const finalTotal = Math.max(0, orderTotals.total - promoDiscount);
 
   const handleSelectDeliveryMode = (mode) => {
+    // STANDARD UX: Vérifier l'authentification AVANT de continuer le checkout
+    if (!isAuthenticated) {
+      // Sauvegarder le mode choisi pour après connexion
+      setDeliveryMode(mode);
+      setPendingAuthAction(true); // Marquer qu'on attend une connexion
+      if (onLoginRequired) {
+        onLoginRequired();
+      }
+      return;
+    }
+    
     setDeliveryMode(mode);
     // Si le restaurant permet les commandes programmées, aller à l'étape SCHEDULE
     if (restaurant?.allowScheduledOrders) {
@@ -260,6 +298,19 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
               <h2 className="text-xl font-bold text-gray-900">Mode de récupération</h2>
               <p className="text-sm text-gray-500 mt-1">Comment souhaitez-vous récupérer votre commande ?</p>
             </div>
+
+            {/* Bandeau connexion requise pour les non-connectés */}
+            {!isAuthenticated && (
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4 flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900">Connexion requise</p>
+                  <p className="text-xs text-blue-700">Connectez-vous pour passer commande</p>
+                </div>
+              </div>
+            )}
 
             {/* Livraison */}
             <button
