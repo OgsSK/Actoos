@@ -40,7 +40,7 @@
 - Heures de pointe et weekend pris en compte
 
 #### ACTOOS BLACK (`BlackScreen.jsx`):
-- Interface VTC Premium (design sombre)
+- Interface VTC Premium (MODE CLAIR - fond blanc, accents orange #FF5A00)
 - Sélection Point A → Point B
 - Destinations populaires (Aéroport, Gare, etc.)
 - 3 types de véhicules (Standard, Confort, Premium)
