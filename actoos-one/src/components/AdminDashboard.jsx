@@ -3,6 +3,7 @@
  * 
  * Dashboard administrateur avec données RÉELLES depuis Supabase.
  * Notifications en temps réel pour les nouvelles demandes d'inscription.
+ * Livreurs chargés depuis Supabase.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -34,6 +35,7 @@ import {
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { getOnboardingRequests, approveOnboardingRequest, rejectOnboardingRequest } from '../services/onboardingService';
 import { getAllOrders } from '../services/orderService';
+import { getAllDrivers, updateDriverOnlineStatus } from '../services/driverService';
 import { AdminPromotionsManager } from './AdminPromotionsManager';
 import { AdminGodMode } from './AdminGodMode';
 
@@ -44,17 +46,11 @@ const TABS = {
   SETTINGS: 'settings',
 };
 
-// Mock drivers for now (until driver table is populated)
-const mockDrivers = [
-  { id: 'd1', name: 'Amadou Diallo', phone: '+223 70 11 22 33', vehicle_type: 'moto', is_online: true, current_order_id: null, total_deliveries: 45, rating: 4.8 },
-  { id: 'd2', name: 'Moussa Keita', phone: '+223 70 22 33 44', vehicle_type: 'moto', is_online: true, current_order_id: 'order-1', total_deliveries: 120, rating: 4.9 },
-  { id: 'd3', name: 'Ibrahim Traore', phone: '+223 70 33 44 55', vehicle_type: 'voiture', is_online: false, current_order_id: null, total_deliveries: 30, rating: 4.6 },
-];
-
 export function AdminDashboard({ onBack }) {
   const [activeTab, setActiveTab] = useState(TABS.ONBOARDING); // Default to onboarding to see new requests
   const [orders, setOrders] = useState([]);
-  const [drivers] = useState(mockDrivers);
+  const [drivers, setDrivers] = useState([]);
+  const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
   const [onboardingRequests, setOnboardingRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,6 +62,25 @@ export function AdminDashboard({ onBack }) {
   
   // Settings sub-tab
   const [settingsTab, setSettingsTab] = useState('godmode');
+
+  // Load drivers from Supabase
+  const loadDrivers = useCallback(async () => {
+    if (!isSupabaseConfigured()) return;
+
+    setIsLoadingDrivers(true);
+    try {
+      const { data, error: fetchError } = await getAllDrivers();
+      
+      if (fetchError) throw fetchError;
+      
+      setDrivers(data || []);
+      console.log(`✅ Chargé ${(data || []).length} livreurs depuis Supabase`);
+    } catch (err) {
+      console.error('Erreur chargement livreurs:', err);
+    } finally {
+      setIsLoadingDrivers(false);
+    }
+  }, []);
 
   // Load onboarding requests from Supabase
   const loadOnboardingRequests = useCallback(async () => {
@@ -114,11 +129,11 @@ export function AdminDashboard({ onBack }) {
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      await Promise.all([loadOnboardingRequests(), loadOrders()]);
+      await Promise.all([loadOnboardingRequests(), loadOrders(), loadDrivers()]);
       setIsLoading(false);
     };
     loadData();
-  }, [loadOnboardingRequests, loadOrders]);
+  }, [loadOnboardingRequests, loadOrders, loadDrivers]);
 
   // Real-time subscription for new onboarding requests
   useEffect(() => {

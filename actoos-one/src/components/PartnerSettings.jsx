@@ -3,6 +3,7 @@
  * 
  * Paramètres du partenaire.
  * PRODUCTION MODE - Connecté à Supabase.
+ * Inclut upload de bannière.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -19,9 +20,13 @@ import {
   Banknote,
   Loader2,
   Save,
-  RefreshCw
+  RefreshCw,
+  Image as ImageIcon,
+  Camera,
+  X
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { uploadPartnerBanner } from '../services/storageService';
 import { BottomSheet } from './BottomSheet';
 
 // Default settings (fallback)
@@ -38,12 +43,14 @@ const DEFAULT_SETTINGS = {
   accepts_cash: true,
   opens_at: '08:00',
   closes_at: '22:00',
+  banner_url: '',
 };
 
 export function PartnerSettings({ partnerId }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [error, setError] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -52,6 +59,41 @@ export function PartnerSettings({ partnerId }) {
   const [showDeliverySheet, setShowDeliverySheet] = useState(false);
   const [showScheduleSheet, setShowScheduleSheet] = useState(false);
   const [showHoursSheet, setShowHoursSheet] = useState(false);
+
+  // Upload de la bannière
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Image trop volumineuse (max 10MB)');
+      return;
+    }
+
+    setIsUploadingBanner(true);
+    setError(null);
+
+    try {
+      const result = await uploadPartnerBanner(file, partnerId || 'general');
+      
+      if (result.error) {
+        // Fallback: utiliser preview locale
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          updateSetting('banner_url', ev.target.result);
+        };
+        reader.readAsDataURL(file);
+        console.warn('Storage non configuré, utilisation preview locale');
+      } else {
+        updateSetting('banner_url', result.url);
+      }
+    } catch (err) {
+      setError(err.message || 'Erreur upload bannière');
+    } finally {
+      setIsUploadingBanner(false);
+      e.target.value = '';
+    }
+  };
 
   // Charger les paramètres depuis Supabase
   const fetchSettings = useCallback(async () => {
@@ -146,6 +188,7 @@ export function PartnerSettings({ partnerId }) {
           accepts_cash: settings.accepts_cash,
           opens_at: settings.opens_at,
           closes_at: settings.closes_at,
+          banner_url: settings.banner_url || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', partnerId);
@@ -216,6 +259,63 @@ export function PartnerSettings({ partnerId }) {
           </button>
         </div>
       )}
+
+      {/* Bannière du restaurant */}
+      <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-700">
+          <div className="flex items-center gap-3">
+            <ImageIcon className="w-5 h-5 text-gray-400" />
+            <h3 className="font-semibold text-white">Bannière du restaurant</h3>
+          </div>
+        </div>
+
+        <div className="p-4">
+          {settings.banner_url ? (
+            <div className="relative">
+              <img 
+                src={settings.banner_url} 
+                alt="Bannière" 
+                className="w-full h-32 object-cover rounded-xl"
+              />
+              <button
+                type="button"
+                onClick={() => updateSetting('banner_url', '')}
+                className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <label className="cursor-pointer block">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={isUploadingBanner}
+                onChange={handleBannerUpload}
+              />
+              <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+                isUploadingBanner 
+                  ? 'border-[#FF5A00] bg-orange-900/20' 
+                  : 'border-gray-600 hover:border-[#FF5A00] hover:bg-gray-700/50'
+              }`}>
+                {isUploadingBanner ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 text-[#FF5A00] animate-spin" />
+                    <span className="text-sm text-gray-400">Upload en cours...</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <Camera className="w-10 h-10 text-gray-500" />
+                    <span className="text-sm text-gray-400">Ajouter une bannière</span>
+                    <span className="text-xs text-gray-500">Format recommandé: 1200x400px (max 10MB)</span>
+                  </div>
+                )}
+              </div>
+            </label>
+          )}
+        </div>
+      </div>
 
       {/* Temps de préparation */}
       <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">

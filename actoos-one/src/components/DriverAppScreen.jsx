@@ -2,7 +2,7 @@
  * ACTOOS ONE - Driver App Screen
  * 
  * Dashboard livreur avec missions en temps réel depuis Supabase.
- * PRODUCTION MODE
+ * PRODUCTION MODE - Wallet connecté à Supabase
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -25,13 +25,19 @@ import {
   Loader2,
   RefreshCw,
   Bell,
-  Car
+  Car,
+  History
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { updateOrderStatus } from '../services/orderService';
-
-// Commission livreur
-const DRIVER_COMMISSION_RATE = 0.15;
+import { 
+  getDriverWallet, 
+  getDriverTodayEarnings, 
+  getWalletTransactions,
+  updateDriverOnlineStatus,
+  creditDriverEarnings,
+  DRIVER_COMMISSION_RATE 
+} from '../services/driverService';
 
 export function DriverAppScreen({ driverId, onBack }) {
   const [isOnline, setIsOnline] = useState(false);
@@ -44,14 +50,81 @@ export function DriverAppScreen({ driverId, onBack }) {
   const [otpError, setOtpError] = useState(false);
   const [deliveryComplete, setDeliveryComplete] = useState(false);
   const [newMissionsCount, setNewMissionsCount] = useState(0);
+  const [showWalletHistory, setShowWalletHistory] = useState(false);
+  const [walletTransactions, setWalletTransactions] = useState([]);
   
-  // Wallet livreur
+  // Wallet livreur - Connecté à Supabase
   const [driverWallet, setDriverWallet] = useState({
+    id: null,
     balance: 0,
     pending_cash: 0,
     todayEarnings: 0,
     todayDeliveries: 0,
   });
+
+  // Charger le wallet du driver
+  const fetchDriverWallet = useCallback(async () => {
+    if (!isSupabaseConfigured()) return;
+    
+    // En mode test sans vrai userId, utiliser un user test
+    const testUserId = driverId || 'test-driver';
+    
+    // Chercher le driver pour obtenir son user_id
+    let userId = null;
+    if (driverId && driverId !== 'test-driver') {
+      const { data: driver } = await supabase
+        .from('drivers')
+        .select('user_id')
+        .eq('id', driverId)
+        .single();
+      userId = driver?.user_id;
+    }
+
+    if (!userId) {
+      // Mode test: wallet mock
+      console.log('📱 Driver mode test - wallet mock');
+      return;
+    }
+
+    try {
+      // 1. Charger le wallet
+      const { data: wallet, error: walletError } = await getDriverWallet(userId);
+      
+      if (walletError) {
+        console.error('Erreur wallet:', walletError);
+        return;
+      }
+
+      // 2. Charger les gains du jour
+      let todayData = { earnings: 0, deliveries: 0 };
+      if (wallet?.id) {
+        const { data } = await getDriverTodayEarnings(wallet.id);
+        todayData = data || { earnings: 0, deliveries: 0 };
+      }
+
+      setDriverWallet({
+        id: wallet?.id,
+        balance: parseFloat(wallet?.balance || 0),
+        pending_cash: 0, // Calculé séparément si besoin
+        todayEarnings: todayData.earnings,
+        todayDeliveries: todayData.deliveries,
+      });
+
+      console.log('✅ Wallet chargé:', wallet?.balance, 'FCFA');
+    } catch (err) {
+      console.error('Erreur fetchDriverWallet:', err);
+    }
+  }, [driverId]);
+
+  // Charger l'historique des transactions
+  const fetchWalletHistory = useCallback(async () => {
+    if (!driverWallet.id) return;
+
+    const { data, error } = await getWalletTransactions(driverWallet.id, { limit: 30 });
+    if (!error) {
+      setWalletTransactions(data || []);
+    }
+  }, [driverWallet.id]);
 
   // Charger les missions disponibles (commandes prêtes sans livreur)
   const fetchAvailableMissions = useCallback(async () => {
@@ -128,12 +201,13 @@ export function DriverAppScreen({ driverId, onBack }) {
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
+      await fetchDriverWallet();
       await fetchCurrentMission();
       if (isOnline) await fetchAvailableMissions();
       setIsLoading(false);
     };
     loadData();
-  }, [fetchAvailableMissions, fetchCurrentMission, isOnline]);
+  }, [fetchAvailableMissions, fetchCurrentMission, fetchDriverWallet, isOnline]);
 
   // Subscription temps réel aux nouvelles missions
   useEffect(() => {
@@ -304,18 +378,27 @@ export function DriverAppScreen({ driverId, onBack }) {
         return;
       }
 
-      // Calculer gains
+      // Calculer gains (100% des frais de livraison)
       const deliveryFee = currentMission.delivery_fee || 500;
-      const earnings = Math.round(deliveryFee * (1 - DRIVER_COMMISSION_RATE));
+      const earnings = deliveryFee; // Driver reçoit 100% des frais de livraison
 
-      if (currentMission.payment_method === 'cash') {
-        setDriverWallet(prev => ({
-          ...prev,
-          pending_cash: prev.pending_cash + currentMission.total_amount,
-          todayEarnings: prev.todayEarnings + earnings,
-          todayDeliveries: prev.todayDeliveries + 1,
-        }));
+      // Créditer le wallet via Supabase
+      if (driverId && driverId !== 'test-driver') {
+        const { error: creditError } = await creditDriverEarnings(
+          driverId, 
+          currentMission.id, 
+          earnings,
+          `Livraison ${currentMission.order_number || currentMission.id.slice(0, 8)}`
+        );
+        
+        if (creditError) {
+          console.error('Erreur crédit wallet:', creditError);
+        } else {
+          // Rafraîchir le wallet
+          await fetchDriverWallet();
+        }
       } else {
+        // Mode test: mise à jour locale
         setDriverWallet(prev => ({
           ...prev,
           balance: prev.balance + earnings,
@@ -337,10 +420,9 @@ export function DriverAppScreen({ driverId, onBack }) {
     }
   };
 
-  // Calculer l'estimation de gain pour une mission
+  // Calculer l'estimation de gain pour une mission (100% des frais de livraison)
   const estimateEarnings = (mission) => {
-    const deliveryFee = mission.delivery_fee || 500;
-    return Math.round(deliveryFee * (1 - DRIVER_COMMISSION_RATE));
+    return mission.delivery_fee || 500;
   };
 
   return (
