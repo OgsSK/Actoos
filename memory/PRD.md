@@ -31,6 +31,54 @@
 
 ## CHANGELOG
 
+### 2025-05-08 - KDS Menu CRUD & Partner Settings PRODUCTION ✅
+
+**Implémentation CRUD réel pour la gestion du menu et des paramètres partenaire**
+
+#### KDSMenuManager.jsx - Refonte Complète
+- **Chargement Supabase** : Articles chargés depuis `menu_items` table
+- **Toggle Disponibilité** : `supabase.from('menu_items').update()` en temps réel
+- **Max par commande** : Modifiable avec +/- avec persistance Supabase
+- **Ajout d'article** : Formulaire complet avec:
+  - Nom, Prix, Catégorie (Plats, Entrées, Desserts, Boissons, etc.)
+  - Description, URL image, Temps de préparation
+  - Toggles: Disponible, Populaire
+- **Modification** : Édition d'articles existants
+- **Suppression** : Avec confirmation
+
+#### PartnerSettings.jsx - Connecté à Supabase
+- **Chargement depuis `partners` table** 
+- **Temps de préparation** : Slider 10-60 min avec presets
+- **Horaires d'ouverture** : opens_at / closes_at
+- **Options de livraison** :
+  - Actoos Delivery (toggle)
+  - Self-Delivery avec frais et rayon
+  - Pickup (Click & Collect)
+- **Paiements** : Toggle acceptation Cash
+- **Commandes programmées** : Toggle + jours max
+- **Commander même fermé** : Toggle
+- **Sauvegarde** : Banner "Modifications non sauvegardées" + bouton
+
+#### Schéma SQL Additionnel
+- Fichier `/app/supabase/actoos_one/schema_additional_settings.sql`
+- Colonnes ajoutées à `menu_items` : `max_per_order`
+- Colonnes ajoutées à `partners` : `accepts_delivery`, `accepts_self_delivery`, `accepts_pickup`, `self_delivery_fee`, `self_delivery_radius_km`, `allows_scheduled_orders`, `max_schedule_days`, `accepts_orders_when_closed`, `accepts_cash`
+- Policies RLS pour UPDATE/INSERT/DELETE sur `menu_items` et `partners`
+- Realtime activé sur `menu_items` et `partners`
+
+#### Tests validés par Testing Agent (100% succès - iteration_75)
+- ✅ KDS Menu charge 102 articles depuis Supabase
+- ✅ Toggle disponibilité fonctionnel
+- ✅ Bouton Ajouter ouvre le formulaire
+- ✅ Config charge les paramètres partenaire
+- ✅ Tous les toggles sont interactifs
+- ✅ Sheet Temps de préparation fonctionne
+- ✅ Driver App charge en mode test
+- ✅ Admin Dashboard charge les demandes d'inscription
+
+---
+
+
 ### 2025-05-07 - MVP PRODUCTION : Flux Réels Supabase ✅
 
 **Transformation majeure : Toutes les fonctions mockées remplacées par de vrais appels Supabase**

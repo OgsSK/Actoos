@@ -289,9 +289,9 @@ export function PartnerSettings({ partnerId }) {
         </div>
 
         {/* Self-Delivery */}
-        <button
+        <div
           onClick={() => setShowDeliverySheet(true)}
-          className="w-full p-4 flex items-center justify-between border-b border-gray-700 active:bg-gray-700"
+          className="w-full p-4 flex items-center justify-between border-b border-gray-700 active:bg-gray-700 cursor-pointer"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-900/50 rounded-xl flex items-center justify-center">
@@ -314,7 +314,7 @@ export function PartnerSettings({ partnerId }) {
               testId="toggle-self-delivery"
             />
           </div>
-        </button>
+        </div>
 
         {/* Pickup */}
         <div className="p-4 flex items-center justify-between">
