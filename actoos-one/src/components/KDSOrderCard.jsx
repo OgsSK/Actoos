@@ -45,8 +45,8 @@ export function KDSOrderCard({ order, onMarkReady, isReady = false }) {
 
   return (
     <div
-      className={`bg-gray-800 rounded-2xl border-l-4 ${statusColors[order.status]} overflow-hidden ${
-        hasSpecialInstructions && !isReady ? 'ring-2 ring-red-500 animate-pulse' : 'border border-gray-700'
+      className={`bg-white rounded-2xl border-l-4 ${statusColors[order.status]} overflow-hidden shadow-sm ${
+        hasSpecialInstructions && !isReady ? 'ring-2 ring-red-500' : 'border border-gray-200'
       }`}
       data-testid={`order-card-${order.id}`}
     >
@@ -64,30 +64,30 @@ export function KDSOrderCard({ order, onMarkReady, isReady = false }) {
       )}
 
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
+      <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-2xl font-bold text-white">{order.orderNumber}</p>
-            <p className="text-sm text-gray-400">{order.clientName}</p>
+            <p className="text-2xl font-bold text-gray-900">{order.orderNumber}</p>
+            <p className="text-sm text-gray-500">{order.clientName}</p>
           </div>
           <div className="text-right">
-            <div className="flex items-center gap-1 text-gray-400">
+            <div className="flex items-center gap-1 text-gray-500">
               <Clock className="w-4 h-4" />
               <span className="text-sm font-medium">{elapsedTime}</span>
             </div>
             <div className="flex items-center gap-1 mt-1">
               {order.delivery_mode === 'pickup' ? (
-                <span className="flex items-center gap-1 text-xs text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full">
+                <span className="flex items-center gap-1 text-xs text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
                   <ShoppingBag className="w-3 h-3" />
                   À emporter
                 </span>
               ) : order.payment_method === 'cash' ? (
-                <span className="flex items-center gap-1 text-xs text-yellow-300 bg-yellow-500/20 px-2 py-0.5 rounded-full">
+                <span className="flex items-center gap-1 text-xs text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full">
                   <Banknote className="w-3 h-3" />
                   Cash
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-xs text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-full">
+                <span className="flex items-center gap-1 text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
                   <Smartphone className="w-3 h-3" />
                   Mobile
                 </span>
@@ -98,8 +98,8 @@ export function KDSOrderCard({ order, onMarkReady, isReady = false }) {
         
         {/* Code Handshake visible pour Pickup */}
         {order.delivery_mode === 'pickup' && order.delivery_code && (
-          <div className="mt-3 bg-gray-700 rounded-xl p-2 text-center">
-            <p className="text-xs text-gray-400">Code client</p>
+          <div className="mt-3 bg-gray-100 rounded-xl p-2 text-center">
+            <p className="text-xs text-gray-500">Code client</p>
             <p className="text-2xl font-bold text-[#FF5A00] tracking-widest">{order.delivery_code}</p>
           </div>
         )}
@@ -114,13 +114,13 @@ export function KDSOrderCard({ order, onMarkReady, isReady = false }) {
             </div>
             
             <div className="flex-1">
-              <p className="text-white font-semibold">{item.name}</p>
+              <p className="text-gray-900 font-semibold">{item.name}</p>
               {item.special_instructions && (
                 <div className={`mt-1 border rounded-lg px-3 py-2 ${
-                  isBlinking ? 'bg-red-500/30 border-red-500' : 'bg-red-500/20 border-red-500/50'
+                  isBlinking ? 'bg-red-100 border-red-400' : 'bg-red-50 border-red-300'
                 }`}>
-                  <p className="text-red-300 text-sm font-medium">
-                    {item.special_instructions}
+                  <p className="text-red-700 text-sm font-medium">
+                    ⚠️ {item.special_instructions}
                   </p>
                 </div>
               )}
@@ -130,10 +130,10 @@ export function KDSOrderCard({ order, onMarkReady, isReady = false }) {
       </div>
 
       {/* Total */}
-      <div className="px-4 py-3 bg-gray-900/50 border-t border-gray-700">
+      <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-400">Total</span>
-          <span className="text-white font-bold text-lg">
+          <span className="text-gray-500">Total</span>
+          <span className="text-gray-900 font-bold text-lg">
             {order.total_amount.toLocaleString()} FCFA
           </span>
         </div>
@@ -144,7 +144,7 @@ export function KDSOrderCard({ order, onMarkReady, isReady = false }) {
         <div className="p-4">
           <button
             onClick={onMarkReady}
-            className="w-full bg-[#FF5A00] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 active:bg-[#FF5A00]/80 transition-colors text-lg"
+            className="w-full bg-[#FF5A00] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 active:bg-[#E55100] transition-colors text-lg"
             data-testid={`mark-ready-${order.id}`}
           >
             <Check className="w-6 h-6" />
