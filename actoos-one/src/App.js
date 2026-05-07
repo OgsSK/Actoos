@@ -40,9 +40,10 @@ import { CartProvider } from './context/CartContext';
 import { WalletProvider } from './context/WalletContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
-import { restaurants, categories, navItems } from './data/mockData';
+import { categories, navItems } from './data/mockData';
 import { getRestaurantMenu } from './data/menuData';
 import { getPharmacyProducts, pharmacyProducts } from './data/healthData';
+import { getRestaurants, getRestaurantById } from './services/restaurantService';
 
 // App modes based on URL path
 const APP_MODES = {
@@ -176,31 +177,45 @@ function AppContent() {
     navigate(routes[tab] || '/');
   };
 
+  const [privacySheet, setPrivacySheet] = useState(false);
+  const [showLoginSheet, setShowLoginSheet] = useState(false);
+  
+  // PRODUCTION: Restaurants loaded from Supabase
+  const [restaurants, setRestaurants] = useState([]);
+  const [restaurantsLoading, setRestaurantsLoading] = useState(true);
+
+  // Load restaurants from Supabase on mount
+  useEffect(() => {
+    async function loadRestaurants() {
+      setRestaurantsLoading(true);
+      try {
+        const { data, error } = await getRestaurants();
+        if (error) {
+          console.error('Erreur chargement restaurants:', error);
+        }
+        setRestaurants(data || []);
+      } catch (err) {
+        console.error('Erreur:', err);
+        setRestaurants([]);
+      } finally {
+        setRestaurantsLoading(false);
+      }
+    }
+    loadRestaurants();
+  }, []);
+
   // Prepare restaurants with full menus for search
   const restaurantsWithMenus = useMemo(() => {
-    return restaurants.map(r => {
-      const menuData = getRestaurantMenu(r.id);
-      return menuData || {
-        ...r,
-        categories: [{
-          id: 'cat-default',
-          name: 'Menu',
-          items: [{
-            id: 'item-default-1',
-            name: 'Plat du jour',
-            price: 2500,
-          }],
-        }],
-      };
-    });
-  }, []);
+    return restaurants.map(r => ({
+      ...r,
+      categories: [], // Will be loaded on click
+    }));
+  }, [restaurants]);
 
   // Prepare pharmacies with products for search
   const pharmaciesWithProducts = useMemo(() => {
     return Object.values(pharmacyProducts || {});
   }, []);
-  const [privacySheet, setPrivacySheet] = useState(false);
-  const [showLoginSheet, setShowLoginSheet] = useState(false);
 
   // Load saved address from localStorage on mount
   useEffect(() => {
@@ -316,75 +331,64 @@ function AppContent() {
   }, []);
 
   // Filter restaurants by category and filters
-  const filteredRestaurants = restaurants.filter(r => {
-    // Category filter
-    if (activeCategory !== 'cat-all') {
-      const catName = categories.find(c => c.id === activeCategory)?.name.toLowerCase();
-      if (catName && !r.cuisine.toLowerCase().includes(catName)) {
+  const filteredRestaurants = useMemo(() => {
+    return restaurants.filter(r => {
+      // Category filter
+      if (activeCategory !== 'cat-all') {
+        const catName = categories.find(c => c.id === activeCategory)?.name.toLowerCase();
+        if (catName && !r.cuisine?.toLowerCase().includes(catName)) {
+          return false;
+        }
+      }
+      
+      // Apply active filters
+      if (activeFilters.includes('pickup') && !r.acceptsPickup) {
         return false;
       }
-    }
-    
-    // Apply active filters
-    if (activeFilters.includes('pickup') && !r.acceptsPickup) {
-      return false;
-    }
-    if (activeFilters.includes('offers') && !r.hasOffers) {
-      return false;
-    }
-    if (activeFilters.includes('top_rated') && r.rating < 4.5) {
-      return false;
-    }
-    
-    return true;
-  }).sort((a, b) => {
-    // Sort by rating if top_rated filter is active
-    if (activeFilters.includes('top_rated')) {
-      return b.rating - a.rating;
-    }
-    return 0;
-  });
+      if (activeFilters.includes('offers') && !r.hasOffers) {
+        return false;
+      }
+      if (activeFilters.includes('top_rated') && r.rating < 4.5) {
+        return false;
+      }
+      
+      return true;
+    }).sort((a, b) => {
+      // Sort by rating if top_rated filter is active
+      if (activeFilters.includes('top_rated')) {
+        return b.rating - a.rating;
+      }
+      return 0;
+    });
+  }, [restaurants, activeCategory, activeFilters]);
 
-  const handleRestaurantClick = (restaurant) => {
-    const menuData = getRestaurantMenu(restaurant.id);
-    if (menuData) {
-      // Merge restaurant scheduling data with menu data
+  const handleRestaurantClick = async (restaurant) => {
+    // Charger le restaurant avec son menu depuis Supabase
+    const { data: restaurantData, error } = await getRestaurantById(restaurant.id);
+    
+    if (error || !restaurantData) {
+      console.error('Erreur chargement restaurant:', error);
+      // Fallback: utiliser les données basiques du restaurant
       setSelectedRestaurant({
-        ...menuData,
-        // Carry over scheduling-related properties from restaurant
+        ...restaurant,
+        accepts_cash: false,
+        categories: [],
+      });
+    } else {
+      setSelectedRestaurant({
+        ...restaurantData,
+        // Carry over scheduling-related properties
         openingHours: restaurant.openingHours,
         acceptOrdersWhenClosed: restaurant.acceptOrdersWhenClosed,
         allowScheduledOrders: restaurant.allowScheduledOrders,
         maxScheduleDays: restaurant.maxScheduleDays,
-        selfDelivery: restaurant.selfDelivery,
+        selfDelivery: restaurant.selfDelivery || restaurantData.selfDelivery,
         isOpen: restaurant.isOpen,
       });
-    } else {
-      setSelectedRestaurant({
-        ...restaurant,
-        accepts_cash: false,
-        categories: [
-          {
-            id: 'cat-default',
-            name: 'Menu',
-            items: [
-              {
-                id: 'item-default-1',
-                name: 'Plat du jour',
-                description: 'Délicieux plat préparé avec soin',
-                price: 2500,
-                image: restaurant.image,
-                is_available: true,
-                max_per_order: 5,
-              },
-            ],
-          },
-        ],
-      });
     }
+    
     setCurrentScreen(SCREENS.RESTAURANT);
-    // Update URL for deep linking
-    navigate(`/restaurant/${restaurant.id}`);
+    navigateToRestaurant(restaurant);
   };
 
   const handleBackToHome = () => {
@@ -698,7 +702,7 @@ function AppContent() {
       {/* Restaurant Feed */}
       <RestaurantFeed
         restaurants={filteredRestaurants}
-        isLoading={isLoading}
+        isLoading={isLoading || restaurantsLoading}
         onRestaurantClick={handleRestaurantClick}
       />
 

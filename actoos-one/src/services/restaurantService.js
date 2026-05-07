@@ -6,10 +6,10 @@
  */
 
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { restaurants as mockRestaurants } from '../data/mockData';
 import { getRestaurantMenu } from '../data/menuData';
 
-const useMockData = !isSupabaseConfigured();
+// MODE PRODUCTION - Pas de fallback vers les données mockées
+const PRODUCTION_MODE = true;
 
 /**
  * Récupérer tous les restaurants/partenaires actifs
@@ -17,21 +17,9 @@ const useMockData = !isSupabaseConfigured();
 export async function getRestaurants(options = {}) {
   const { category, city = 'Bamako', limit = 50 } = options;
 
-  if (useMockData) {
-    let filtered = [...mockRestaurants];
-    
-    if (category && category !== 'cat-all') {
-      // Filtrer par catégorie
-      const categoryName = category.replace('cat-', '').toLowerCase();
-      filtered = filtered.filter(r => 
-        r.cuisine.toLowerCase().includes(categoryName)
-      );
-    }
-    
-    return {
-      data: filtered.slice(0, limit),
-      error: null,
-    };
+  if (!isSupabaseConfigured()) {
+    console.warn('[PRODUCTION] Supabase non configuré');
+    return { data: [], error: { message: 'Supabase non configuré' } };
   }
 
   try {
@@ -39,11 +27,11 @@ export async function getRestaurants(options = {}) {
       .from('partners')
       .select('*')
       .eq('is_active', true)
-      .eq('city', city)
       .limit(limit);
 
-    if (category && category !== 'restaurant') {
-      query = query.eq('category', category);
+    if (category && category !== 'cat-all' && category !== 'restaurant') {
+      const categoryName = category.replace('cat-', '');
+      query = query.ilike('category', `%${categoryName}%`);
     }
 
     const { data, error } = await query;
@@ -51,15 +39,15 @@ export async function getRestaurants(options = {}) {
     if (error) throw error;
 
     // Transformer les données pour matcher le format frontend
-    const transformed = data.map(partner => ({
+    const transformed = (data || []).map(partner => ({
       id: partner.id,
       name: partner.name,
       image: partner.image_url || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
       cuisine: partner.category,
       rating: partner.rating || 4.5,
       deliveryTime: `${partner.avg_prep_time_minutes || 30}-${(partner.avg_prep_time_minutes || 30) + 15} min`,
-      deliveryFee: 500, // Calculé dynamiquement en fonction de la distance
-      distance: '-- km', // Calculé dynamiquement
+      deliveryFee: 500,
+      distance: '-- km',
       isOpen: partner.is_open && !partner.is_paused,
       isFeatured: partner.is_featured || false,
       hasOffers: partner.has_offers || false,
@@ -80,29 +68,8 @@ export async function getRestaurants(options = {}) {
  * Récupérer un restaurant par ID avec son menu
  */
 export async function getRestaurantById(id) {
-  if (useMockData) {
-    const restaurant = mockRestaurants.find(r => r.id === id);
-    if (!restaurant) {
-      return { data: null, error: { message: 'Restaurant non trouvé' } };
-    }
-    
-    const menuData = getRestaurantMenu(id);
-    return {
-      data: menuData || {
-        ...restaurant,
-        accepts_cash: false,
-        categories: [{
-          id: 'cat-default',
-          name: 'Menu',
-          items: [{
-            id: 'item-default-1',
-            name: 'Plat du jour',
-            price: 2500,
-          }],
-        }],
-      },
-      error: null,
-    };
+  if (!isSupabaseConfigured()) {
+    return { data: null, error: { message: 'Supabase non configuré' } };
   }
 
   try {
@@ -127,7 +94,7 @@ export async function getRestaurantById(id) {
 
     // Grouper les items par catégorie
     const categoriesMap = {};
-    menuItems.forEach(item => {
+    (menuItems || []).forEach(item => {
       const catId = item.category || 'default';
       if (!categoriesMap[catId]) {
         categoriesMap[catId] = {
@@ -171,15 +138,10 @@ export async function getRestaurantById(id) {
  * Recherche de restaurants
  */
 export async function searchRestaurants(query, options = {}) {
-  const { city = 'Bamako', limit = 20 } = options;
+  const { limit = 20 } = options;
 
-  if (useMockData) {
-    const searchLower = query.toLowerCase();
-    const filtered = mockRestaurants.filter(r =>
-      r.name.toLowerCase().includes(searchLower) ||
-      r.cuisine.toLowerCase().includes(searchLower)
-    );
-    return { data: filtered.slice(0, limit), error: null };
+  if (!isSupabaseConfigured()) {
+    return { data: [], error: { message: 'Supabase non configuré' } };
   }
 
   try {
@@ -187,13 +149,12 @@ export async function searchRestaurants(query, options = {}) {
       .from('partners')
       .select('*')
       .eq('is_active', true)
-      .eq('city', city)
       .or(`name.ilike.%${query}%,category.ilike.%${query}%`)
       .limit(limit);
 
     if (error) throw error;
 
-    const transformed = data.map(partner => ({
+    const transformed = (data || []).map(partner => ({
       id: partner.id,
       name: partner.name,
       image: partner.image_url,
@@ -213,14 +174,11 @@ export async function searchRestaurants(query, options = {}) {
  * Récupérer les restaurants à proximité (nécessite coordonnées GPS)
  */
 export async function getNearbyRestaurants(latitude, longitude, radiusKm = 5) {
-  if (useMockData) {
-    // En mode mocké, retourner tous les restaurants
-    return { data: mockRestaurants, error: null };
+  if (!isSupabaseConfigured()) {
+    return { data: [], error: { message: 'Supabase non configuré' } };
   }
 
   try {
-    // Note: Cette requête nécessite une fonction PostGIS côté Supabase
-    // Pour l'instant, on retourne tous les restaurants de la ville
     const { data, error } = await supabase
       .from('partners')
       .select('*')
@@ -231,7 +189,7 @@ export async function getNearbyRestaurants(latitude, longitude, radiusKm = 5) {
     if (error) throw error;
 
     // Filtrer côté client par distance (approximation simple)
-    const filtered = data.filter(partner => {
+    const filtered = (data || []).filter(partner => {
       if (!partner.latitude || !partner.longitude) return false;
       const distance = calculateDistance(
         latitude, longitude,
