@@ -3,7 +3,7 @@ import { Minus, Plus, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { systemConfig } from '../data/mockData';
 
-export function AddToCartSheet({ isOpen, item, restaurant, onClose }) {
+export function AddToCartSheet({ isOpen, item, restaurant, onClose, canOrder = true }) {
   const [quantity, setQuantity] = useState(1);
   const [instructions, setInstructions] = useState('');
   const { addToCart } = useCart();
@@ -22,7 +22,13 @@ export function AddToCartSheet({ isOpen, item, restaurant, onClose }) {
   const canIncrease = quantity < item.max_per_order;
   const canDecrease = quantity > 1;
 
+  // Vérifier si on peut commander
+  const isRestaurantOpen = restaurant?.isOpen !== false;
+  const acceptsWhenClosed = restaurant?.acceptOrdersWhenClosed || restaurant?.accepts_orders_when_closed;
+  const orderAllowed = canOrder && (isRestaurantOpen || acceptsWhenClosed);
+
   const handleAdd = () => {
+    if (!orderAllowed) return;
     const success = addToCart(item, quantity, instructions, restaurant);
     if (success) {
       onClose();
@@ -132,16 +138,27 @@ export function AddToCartSheet({ isOpen, item, restaurant, onClose }) {
 
         {/* Footer fixe avec bouton */}
         <div className="p-4 bg-white border-t border-gray-100 flex-shrink-0">
-          <button
-            onClick={handleAdd}
-            className="w-full bg-primary text-white font-semibold py-4 px-6 rounded-2xl flex items-center justify-center gap-2 active:bg-primary/90 transition-colors"
-            data-testid="add-to-cart-btn"
-          >
-            <span>AJOUTER AU PANIER</span>
-            <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
-              {total.toLocaleString()} {systemConfig.currency}
-            </span>
-          </button>
+          {orderAllowed ? (
+            <button
+              onClick={handleAdd}
+              className="w-full bg-primary text-white font-semibold py-4 px-6 rounded-2xl flex items-center justify-center gap-2 active:bg-primary/90 transition-colors"
+              data-testid="add-to-cart-btn"
+            >
+              <span>AJOUTER AU PANIER</span>
+              <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                {total.toLocaleString()} {systemConfig.currency}
+              </span>
+            </button>
+          ) : (
+            <div className="text-center">
+              <div className="bg-gray-100 text-gray-500 font-semibold py-4 px-6 rounded-2xl mb-2">
+                Restaurant fermé
+              </div>
+              <p className="text-sm text-gray-400">
+                Ce restaurant n'accepte pas les commandes quand il est fermé
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

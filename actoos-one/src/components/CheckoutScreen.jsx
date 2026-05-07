@@ -284,6 +284,40 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               <p className="text-sm text-gray-500 mt-1">Où devons-nous livrer ?</p>
             </div>
 
+            {/* Option pour utiliser la position */}
+            <button
+              onClick={() => {
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      // Pour l'instant, on met juste une adresse basée sur la position
+                      setAddress('Bamako, Position actuelle');
+                      setAddressDetails(`Coordonnées GPS: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`);
+                    },
+                    (error) => {
+                      setError('Impossible d\'obtenir votre position. Sélectionnez un quartier manuellement.');
+                    }
+                  );
+                }
+              }}
+              className="w-full bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center gap-3 active:bg-blue-100 transition-colors mb-4"
+              data-testid="use-location-btn"
+            >
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <Navigation className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium text-blue-900">Utiliser ma position</p>
+                <p className="text-xs text-blue-600">Détection automatique</p>
+              </div>
+            </button>
+
+            <div className="relative flex items-center my-4">
+              <div className="flex-grow border-t border-gray-200"></div>
+              <span className="flex-shrink mx-4 text-gray-400 text-sm">ou</span>
+              <div className="flex-grow border-t border-gray-200"></div>
+            </div>
+
             <div>
               <label className="text-sm font-medium text-gray-700">Quartier / Zone</label>
               <select

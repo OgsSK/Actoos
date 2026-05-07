@@ -74,14 +74,22 @@ export function RestaurantScreen({ restaurant, onBack, onCheckout }) {
   // Scroll to category when nav item is clicked
   const scrollToCategory = (categoryId) => {
     const element = categoryRefs.current[categoryId];
-    if (element && containerRef.current) {
-      const navHeight = navRef.current?.offsetHeight || 0;
-      const elementTop = element.offsetTop;
+    if (element) {
+      // Utiliser scrollIntoView avec un offset
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       
-      containerRef.current.scrollTo({
-        top: elementTop - navHeight - 200, // Account for header image + nav
-        behavior: 'smooth'
-      });
+      // Ajuster pour le header sticky après le scroll
+      setTimeout(() => {
+        const navHeight = navRef.current?.offsetHeight || 60;
+        const headerHeight = 200; // Image height
+        if (containerRef.current) {
+          containerRef.current.scrollBy({
+            top: -(navHeight + 20), // Offset pour la nav sticky
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+      
       setActiveCategory(categoryId);
     }
   };
