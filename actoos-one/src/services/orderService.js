@@ -20,12 +20,19 @@ export function calculateOrderTotal(cartItems, deliveryFee) {
   };
 }
 
+// Générer un code Handshake format #A42 (lettre + 2 chiffres)
+function generateHandshakeCode() {
+  const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  const number = Math.floor(10 + Math.random() * 90); // 10-99
+  return `#${letter}${number}`;
+}
+
 // Créer une commande
 export async function createOrder(orderData) {
   return new Promise((resolve) => {
     setTimeout(() => {
-      // Générer un code de livraison (4 chiffres)
-      const deliveryCode = Math.floor(1000 + Math.random() * 9000).toString();
+      // Générer un code de livraison format #A42
+      const deliveryCode = generateHandshakeCode();
       
       // Générer un ID de commande
       const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;

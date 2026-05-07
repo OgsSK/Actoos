@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { 
   ArrowLeft,
   Power,
@@ -11,17 +11,29 @@ import {
   AlertCircle,
   Bike,
   User,
-  X
+  X,
+  Wallet,
+  Banknote,
+  AlertTriangle
 } from 'lucide-react';
 import { mockCurrentMission } from '../data/driverData';
+
+// Configuration des commissions Driver
+const DRIVER_COMMISSION_RATE = 0.15; // 15% de commission sur les courses
 
 export function DriverAppScreen({ onBack }) {
   const [isOnline, setIsOnline] = useState(true);
   const [currentMission, setCurrentMission] = useState(mockCurrentMission);
   const [showOTPModal, setShowOTPModal] = useState(false);
-  const [otpCode, setOtpCode] = useState(['', '', '', '']);
+  const [handshakeCode, setHandshakeCode] = useState('');
   const [otpError, setOtpError] = useState(false);
   const [deliveryComplete, setDeliveryComplete] = useState(false);
+  
+  // Wallet driver (mock)
+  const [driverWallet, setDriverWallet] = useState({
+    balance: 12500,
+    pending_cash: 0, // Cash collecté non encore reversé
+  });
 
   // Toggle online/offline
   const handleToggleOnline = () => {
@@ -35,57 +47,47 @@ export function DriverAppScreen({ onBack }) {
   // Ouvrir modal OTP pour confirmer livraison
   const handleConfirmDelivery = () => {
     setShowOTPModal(true);
-    setOtpCode(['', '', '', '']);
+    setHandshakeCode('');
     setOtpError(false);
   };
 
-  // Gestion du clavier numérique
-  const handleKeyPress = useCallback((digit) => {
+  // Gestion de l'entrée du code Handshake
+  const handleCodeChange = (e) => {
+    const value = e.target.value.toUpperCase();
+    // Format #A42 - max 4 caractères
+    if (value.length <= 4) {
+      setHandshakeCode(value);
+    }
     setOtpError(false);
-    setOtpCode(prev => {
-      const newCode = [...prev];
-      const emptyIndex = newCode.findIndex(d => d === '');
-      if (emptyIndex !== -1) {
-        newCode[emptyIndex] = digit;
+  };
+
+  // Valider le code Handshake
+  const handleValidateCode = () => {
+    const expectedCode = currentMission?.dropoff?.delivery_code;
+    if (handshakeCode === expectedCode) {
+      // Si paiement cash: calculer et débiter la commission automatiquement
+      if (currentMission?.payment_method === 'cash') {
+        const commission = Math.round(currentMission.total_amount * DRIVER_COMMISSION_RATE);
+        setDriverWallet(prev => ({
+          balance: prev.balance - commission, // Débit automatique commission
+          pending_cash: currentMission.total_amount, // Cash collecté
+        }));
       }
-      return newCode;
-    });
-  }, []);
-
-  const handleBackspace = useCallback(() => {
-    setOtpError(false);
-    setOtpCode(prev => {
-      const newCode = [...prev];
-      const lastFilledIndex = newCode.map((d, i) => d !== '' ? i : -1).filter(i => i !== -1).pop();
-      if (lastFilledIndex !== undefined) {
-        newCode[lastFilledIndex] = '';
-      }
-      return newCode;
-    });
-  }, []);
-
-  const handleClearOTP = useCallback(() => {
-    setOtpCode(['', '', '', '']);
-    setOtpError(false);
-  }, []);
-
-  // Valider le code OTP
-  const handleValidateOTP = () => {
-    const enteredCode = otpCode.join('');
-    if (enteredCode === currentMission?.dropoff?.delivery_code) {
+      
       setDeliveryComplete(true);
       setShowOTPModal(false);
       setTimeout(() => {
         setCurrentMission(null);
         setDeliveryComplete(false);
-      }, 3000);
+        setDriverWallet(prev => ({ ...prev, pending_cash: 0 }));
+      }, 4000);
     } else {
       setOtpError(true);
-      setOtpCode(['', '', '', '']);
+      setHandshakeCode('');
     }
   };
 
-  const isOTPComplete = otpCode.every(d => d !== '');
+  const isCodeValid = handshakeCode.length >= 3; // #A42 format
 
   // Calcul du temps écoulé
   const getElapsedTime = (dateStr) => {
@@ -132,12 +134,29 @@ export function DriverAppScreen({ onBack }) {
 
       {/* Content */}
       <div className="p-4">
+        {/* Driver Wallet Bar */}
+        <div className="bg-gray-50 rounded-2xl p-3 mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-[#FF5A00]" />
+            <span className="text-sm text-gray-600">Mon Wallet</span>
+          </div>
+          <span className="font-bold text-gray-900">{driverWallet.balance.toLocaleString()} FCFA</span>
+        </div>
+
         {/* Delivery Complete Message */}
         {deliveryComplete && (
           <div className="bg-green-50 border-2 border-green-500 rounded-3xl p-6 text-center mb-6" data-testid="delivery-complete">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-green-700">Livraison Confirmée !</h2>
-            <p className="text-green-600 mt-2">+500 FCFA crédités sur votre wallet</p>
+            <p className="text-green-600 mt-2">+{currentMission?.delivery_fee || 500} FCFA crédités sur votre wallet</p>
+            {driverWallet.pending_cash > 0 && (
+              <div className="mt-4 bg-yellow-50 border border-yellow-300 rounded-xl p-3">
+                <p className="text-sm text-yellow-800">
+                  💵 Cash collecté: <strong>{driverWallet.pending_cash.toLocaleString()} FCFA</strong>
+                </p>
+                <p className="text-xs text-yellow-600 mt-1">À reverser au prochain dépôt</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -254,6 +273,35 @@ export function DriverAppScreen({ onBack }) {
               </div>
             </div>
 
+            {/* Caution Zero-Loss - Affiché si paiement Cash */}
+            {currentMission.payment_method === 'cash' && (
+              <div className="bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-4" data-testid="cash-caution">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-yellow-800 mb-2">Paiement en Cash</p>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-yellow-700">Vous recevrez</span>
+                        <span className="font-semibold text-gray-900">{currentMission.total_amount.toLocaleString()} FCFA</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-yellow-700">Commission (15%)</span>
+                        <span className="font-semibold text-red-600">-{Math.round(currentMission.total_amount * DRIVER_COMMISSION_RATE).toLocaleString()} FCFA</span>
+                      </div>
+                      <div className="flex justify-between pt-2 border-t border-yellow-300">
+                        <span className="text-yellow-800 font-medium">Débit auto wallet</span>
+                        <span className="font-bold text-red-600">-{Math.round(currentMission.total_amount * DRIVER_COMMISSION_RATE).toLocaleString()} FCFA</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-yellow-600 mt-3">
+                      💡 La commission est automatiquement débitée de votre wallet à la confirmation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Big Orange Button */}
             <button
               onClick={handleConfirmDelivery}
@@ -265,18 +313,18 @@ export function DriverAppScreen({ onBack }) {
             </button>
 
             <p className="text-center text-sm text-gray-500">
-              Demandez le code à 4 chiffres au client
+              Demandez le code Handshake au client (ex: #A42)
             </p>
           </div>
         )}
       </div>
 
-      {/* OTP Modal */}
+      {/* Handshake Code Modal */}
       {showOTPModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" data-testid="otp-modal">
           <div className="bg-white w-full max-w-lg rounded-t-3xl p-6 animate-slide-up">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Code de livraison</h2>
+              <h2 className="text-xl font-bold text-gray-900">Code Handshake</h2>
               <button
                 onClick={() => setShowOTPModal(false)}
                 className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"
@@ -286,25 +334,27 @@ export function DriverAppScreen({ onBack }) {
             </div>
 
             <p className="text-gray-600 text-center mb-6">
-              Entrez le code à 4 chiffres donné par le client
+              Entrez le code dicté par le client (format: #A42)
             </p>
 
-            {/* OTP Display */}
-            <div className="flex justify-center gap-4 mb-6">
-              {otpCode.map((digit, index) => (
-                <div
-                  key={index}
-                  className={`w-16 h-20 border-2 rounded-2xl flex items-center justify-center text-3xl font-bold transition-colors ${
-                    otpError
-                      ? 'border-red-500 bg-red-50 text-red-600'
-                      : digit
-                      ? 'border-primary bg-primary/5 text-gray-900'
-                      : 'border-gray-300 bg-gray-50 text-gray-400'
-                  }`}
-                >
-                  {digit || '•'}
-                </div>
-              ))}
+            {/* Handshake Code Input */}
+            <div className="flex justify-center mb-6">
+              <input
+                type="text"
+                value={handshakeCode}
+                onChange={handleCodeChange}
+                placeholder="#A42"
+                maxLength={4}
+                className={`w-40 h-20 text-center text-4xl font-bold tracking-widest rounded-2xl border-2 outline-none transition-colors ${
+                  otpError
+                    ? 'border-red-500 bg-red-50 text-red-600 placeholder-red-300'
+                    : handshakeCode
+                    ? 'border-[#FF5A00] bg-[#FF5A00]/5 text-gray-900 placeholder-gray-400'
+                    : 'border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-400'
+                }`}
+                data-testid="handshake-code-input"
+                autoFocus
+              />
             </div>
 
             {/* Error Message */}
@@ -315,45 +365,22 @@ export function DriverAppScreen({ onBack }) {
               </div>
             )}
 
-            {/* Numeric Keypad */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
-                <button
-                  key={digit}
-                  onClick={() => handleKeyPress(String(digit))}
-                  className="h-16 bg-gray-100 rounded-2xl text-2xl font-bold text-gray-900 active:bg-gray-200 transition-colors"
-                  data-testid={`otp-key-${digit}`}
-                >
-                  {digit}
-                </button>
-              ))}
-              <button
-                onClick={handleClearOTP}
-                className="h-16 bg-gray-100 rounded-2xl text-sm font-semibold text-gray-600 active:bg-gray-200 transition-colors"
-              >
-                EFFACER
-              </button>
-              <button
-                onClick={() => handleKeyPress('0')}
-                className="h-16 bg-gray-100 rounded-2xl text-2xl font-bold text-gray-900 active:bg-gray-200 transition-colors"
-                data-testid="otp-key-0"
-              >
-                0
-              </button>
-              <button
-                onClick={handleBackspace}
-                className="h-16 bg-gray-100 rounded-2xl text-sm font-semibold text-gray-600 active:bg-gray-200 transition-colors"
-              >
-                ←
-              </button>
-            </div>
+            {/* Cash Warning in Modal */}
+            {currentMission?.payment_method === 'cash' && (
+              <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 mb-4">
+                <p className="text-sm text-yellow-800 text-center">
+                  <Banknote className="w-4 h-4 inline mr-1" />
+                  Collectez <strong>{currentMission.total_amount.toLocaleString()} FCFA</strong> en cash
+                </p>
+              </div>
+            )}
 
             {/* Validate Button */}
             <button
-              onClick={handleValidateOTP}
-              disabled={!isOTPComplete}
+              onClick={handleValidateCode}
+              disabled={!isCodeValid}
               className={`w-full py-5 rounded-2xl font-bold text-lg transition-colors ${
-                isOTPComplete
+                isCodeValid
                   ? 'bg-primary text-white active:bg-primary/80'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}

@@ -144,6 +144,7 @@ export const mockCurrentMission = {
   id: 'ORD-001',
   orderNumber: '#1247',
   status: 'picked_up', // pending, picked_up, delivering
+  payment_method: 'cash', // 'cash' ou 'mobile_money' - Cash pour démo Zero-Loss
   
   // Point A - Restaurant
   pickup: {
@@ -159,7 +160,7 @@ export const mockCurrentMission = {
     address: 'Badalabougou, Rue 310, Porte 15',
     phone: '+223 70 XX XX 56',
     coordinates: { lat: 12.6250, lng: -7.9850 },
-    delivery_code: '1366', // Code que le client donne au livreur
+    delivery_code: '#A42', // Code Handshake format #A42
   },
   
   items_summary: '2x Poulet Braisé, 2x Alloco',

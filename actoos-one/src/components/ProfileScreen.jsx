@@ -32,9 +32,9 @@ const MOCK_USER = {
   address: 'Bamako, Hamdallaye',
   email: '',
   isLoggedIn: true,
-  // Rôles validés par l'admin
-  role_partner: false,
-  role_driver: false,
+  // Rôles validés par l'admin (activés pour démo)
+  role_partner: true,
+  role_driver: true,
   role_admin: false,
   // Demandes en cours
   pending_partner: false,

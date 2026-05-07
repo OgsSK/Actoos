@@ -19,6 +19,7 @@ import { useCart } from '../context/CartContext';
 import { useWallet } from '../context/WalletContext';
 import { sendOTP, verifyOTP } from '../services/otpService';
 import { calculateOrderTotal, createOrder } from '../services/orderService';
+import { getNeighborhoodsByCommune } from '../data/locationData';
 
 const STEPS = {
   DELIVERY_MODE: 'delivery_mode',
@@ -264,11 +265,15 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
                 data-testid="address-select"
               >
                 <option value="">Sélectionner un quartier</option>
-                <option value="Bamako, Hamdallaye">Hamdallaye</option>
-                <option value="Bamako, ACI 2000">ACI 2000</option>
-                <option value="Bamako, Badalabougou">Badalabougou</option>
-                <option value="Bamako, Kalaban Coura">Kalaban Coura</option>
-                <option value="Bamako, Magnambougou">Magnambougou</option>
+                {Object.entries(getNeighborhoodsByCommune()).map(([commune, neighborhoods]) => (
+                  <optgroup key={commune} label={commune}>
+                    {neighborhoods.map((n) => (
+                      <option key={n.id} value={`Bamako, ${n.name}`}>
+                        {n.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
             </div>
 

@@ -30,6 +30,7 @@ import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { restaurants, categories, navItems } from './data/mockData';
 import { getRestaurantMenu } from './data/menuData';
 import { getPharmacyProducts } from './data/healthData';
+import { getNeighborhoodsByCommune, DEFAULT_ADDRESS } from './data/locationData';
 
 // Screens enum
 const SCREENS = {
@@ -56,7 +57,7 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('cat-1');
   const [activeTab, setActiveTab] = useState('eats');
-  const [address, setAddress] = useState('Bamako, Hamdallaye');
+  const [address, setAddress] = useState(DEFAULT_ADDRESS.label);
   const [userLocation, setUserLocation] = useState(null);
   
   // Navigation state
@@ -462,23 +463,35 @@ function AppContent() {
         onClose={() => setAddressSheet(false)}
         title="Adresse de livraison"
       >
-        <div className="space-y-3">
-          {['Bamako, Hamdallaye', 'Bamako, ACI 2000', 'Bamako, Badalabougou', 'Bamako, Kalaban Coura', 'Bamako, Magnambougou'].map((addr) => (
-            <button
-              key={addr}
-              onClick={() => {
-                setAddress(addr);
-                setAddressSheet(false);
-              }}
-              className={`w-full text-left px-4 py-3 rounded-2xl transition-colors ${
-                address === addr
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-700 active:bg-gray-200'
-              }`}
-              data-testid={`address-option-${addr}`}
-            >
-              {addr}
-            </button>
+        <div className="max-h-[60vh] overflow-y-auto space-y-4 pb-4">
+          {Object.entries(getNeighborhoodsByCommune()).map(([commune, neighborhoods]) => (
+            <div key={commune}>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">
+                {commune}
+              </h3>
+              <div className="space-y-2">
+                {neighborhoods.map((n) => {
+                  const addrLabel = `Bamako, ${n.name}`;
+                  return (
+                    <button
+                      key={n.id}
+                      onClick={() => {
+                        setAddress(addrLabel);
+                        setAddressSheet(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-2xl transition-colors ${
+                        address === addrLabel
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-100 text-gray-700 active:bg-gray-200'
+                      }`}
+                      data-testid={`address-option-${n.id}`}
+                    >
+                      {addrLabel}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </div>
       </BottomSheet>

@@ -30,6 +30,42 @@
 
 ## CHANGELOG
 
+### 2025-01-07 - Mission 12 Complete ✅
+**Phase 4 Polish - Code Handshake, Scanner Pickup, Zero-Loss Caution**
+
+#### LocationData Centralisé (`locationData.js`):
+- Quartiers de Bamako groupés par Commune (I à VI)
+- Helpers: `getNeighborhoodsByCommune()`, `getFormattedAddresses()`
+- Utilisé dans `App.js` (BottomSheet adresse) et `CheckoutScreen.jsx`
+
+#### Code Handshake #A42:
+- Format standardisé: lettre + 2 chiffres (ex: #A42, #B17)
+- Généré dans `orderService.js` via `generateHandshakeCode()`
+- Affiché au client sur l'écran de confirmation de commande
+- Visible dans le KDS pour les commandes "À emporter"
+
+#### Scanner Pickup (KDS):
+- Bouton "Scanner" orange dans le header KDS
+- Modal de saisie du code Handshake client
+- Validation du code contre les commandes "ready"
+- Feedback visuel (Validé / Code invalide)
+
+#### Driver Wallet Caution Zero-Loss:
+- Wallet driver affiché dans le header (12,500 FCFA)
+- Section "Paiement en Cash" pour les missions cash:
+  - Montant à collecter
+  - Commission (15%) en rouge
+  - Débit auto wallet en rouge
+  - Message explicatif
+- Modal de saisie du code Handshake (format #A42)
+- Rappel "Collectez X FCFA en cash" dans le modal
+
+#### Magic Switch activé pour démo:
+- `role_driver: true` et `role_partner: true` dans ProfileScreen
+- Permet de basculer entre Mode Client, Mode Livreur, Mode Restaurant
+
+---
+
 ### 2025-01-07 - Mission 11 Complete ✅
 **Surge Pricing, ACTOOS BLACK & BNPL**
 
@@ -329,10 +365,10 @@
 - [x] Mission 9: ACTOOS HEALTH (Pharmacies, Ordonnances)
 - [x] Mission 10: P2P & Corporate Wallet
 - [x] Mission 11: Surge Pricing, ACTOOS BLACK & BNPL
+- [x] Mission 12: Phase 4 Polish - Code Handshake, Scanner Pickup, Zero-Loss Caution
 
 ### P1 - Prochaines étapes
-- [ ] Mission 12: À définir selon votre prochain prompt
-- [ ] Connecter Supabase JS Client au frontend
+- [ ] Mission 13: Connecter Supabase JS Client au frontend
 - [ ] OTP réel côté serveur (Supabase Edge Functions)
 - [ ] TouchPay API réelle (sandbox)
 
