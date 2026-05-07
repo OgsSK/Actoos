@@ -5,7 +5,7 @@ import { AddToCartSheet } from './AddToCartSheet';
 import { useCart } from '../context/CartContext';
 import { systemConfig } from '../data/mockData';
 
-export function RestaurantScreen({ restaurant, onBack }) {
+export function RestaurantScreen({ restaurant, onBack, onCheckout }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const { getItemCount, getTotal } = useCart();
 
@@ -92,6 +92,7 @@ export function RestaurantScreen({ restaurant, onBack }) {
       {itemCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg" data-testid="cart-bar">
           <button
+            onClick={onCheckout}
             className="w-full bg-primary text-white font-semibold py-4 px-6 rounded-2xl flex items-center justify-between active:bg-primary/90 transition-colors"
             data-testid="view-cart-btn"
           >

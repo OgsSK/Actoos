@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { CategoryFilter } from './components/CategoryFilter';
 import { RestaurantFeed } from './components/RestaurantFeed';
 import { RestaurantScreen } from './components/RestaurantScreen';
+import { CheckoutScreen } from './components/CheckoutScreen';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -13,6 +14,13 @@ import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { restaurants, categories, navItems } from './data/mockData';
 import { getRestaurantMenu } from './data/menuData';
 
+// Screens enum
+const SCREENS = {
+  HOME: 'home',
+  RESTAURANT: 'restaurant',
+  CHECKOUT: 'checkout',
+};
+
 function AppContent() {
   const isOnline = useOnlineStatus();
   const [isLoading, setIsLoading] = useState(true);
@@ -21,6 +29,7 @@ function AppContent() {
   const [address, setAddress] = useState('Bamako, Hamdallaye');
   
   // Navigation state
+  const [currentScreen, setCurrentScreen] = useState(SCREENS.HOME);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   
   // Bottom Sheet states
@@ -53,6 +62,7 @@ function AppContent() {
       // Si pas de menu mockée, utiliser les données de base
       setSelectedRestaurant({
         ...restaurant,
+        accepts_cash: false,
         categories: [
           {
             id: 'cat-default',
@@ -72,9 +82,24 @@ function AppContent() {
         ],
       });
     }
+    setCurrentScreen(SCREENS.RESTAURANT);
   };
 
   const handleBackFromRestaurant = () => {
+    setCurrentScreen(SCREENS.HOME);
+    setSelectedRestaurant(null);
+  };
+
+  const handleGoToCheckout = () => {
+    setCurrentScreen(SCREENS.CHECKOUT);
+  };
+
+  const handleBackFromCheckout = () => {
+    setCurrentScreen(SCREENS.RESTAURANT);
+  };
+
+  const handleOrderComplete = () => {
+    setCurrentScreen(SCREENS.HOME);
     setSelectedRestaurant(null);
   };
 
@@ -87,17 +112,28 @@ function AppContent() {
     alert(`✅ Vous serez notifié dès que ${moduleId.toUpperCase()} sera disponible !`);
   };
 
-  // Si un restaurant est sélectionné, afficher son écran
-  if (selectedRestaurant) {
+  // Render based on current screen
+  if (currentScreen === SCREENS.CHECKOUT && selectedRestaurant) {
     return (
-      <RestaurantScreen
+      <CheckoutScreen
         restaurant={selectedRestaurant}
-        onBack={handleBackFromRestaurant}
+        onBack={handleBackFromCheckout}
+        onOrderComplete={handleOrderComplete}
       />
     );
   }
 
-  // Sinon, afficher la page d'accueil
+  if (currentScreen === SCREENS.RESTAURANT && selectedRestaurant) {
+    return (
+      <RestaurantScreen
+        restaurant={selectedRestaurant}
+        onBack={handleBackFromRestaurant}
+        onCheckout={handleGoToCheckout}
+      />
+    );
+  }
+
+  // Home screen
   return (
     <div className="min-h-screen bg-white">
       {/* Offline Banner */}
