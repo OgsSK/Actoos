@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Store, CheckCircle, Loader2, Check } from 'lucide-react';
+import { submitPartnerOnboarding } from '../services/onboardingService';
 
 const categoryOptions = [
   { id: 'restaurant', label: 'Restaurant' },
@@ -68,31 +69,26 @@ export function PartnerOnboardingScreen({ onBack, onSuccess }) {
     setError('');
 
     try {
-      // Simuler l'envoi à onboarding_requests
-      const payload = {
-        establishment_name: formData.establishmentName.trim(),
+      // Envoyer à Supabase via le service
+      const { data, error: submitError } = await submitPartnerOnboarding({
+        establishmentName: formData.establishmentName.trim(),
         category: formData.category,
-        city_neighborhood: formData.cityNeighborhood.trim(),
-        manager_name: formData.managerName.trim(),
+        cityNeighborhood: formData.cityNeighborhood.trim(),
+        managerName: formData.managerName.trim(),
         phone: formData.phone.trim(),
-        legal_id: formData.legalId.trim() || null,
-        delivery_model: formData.deliveryModel,
-        consent_representative: formData.consentRepresentative,
-        submitted_at: new Date().toISOString(),
-      };
-
-      // Simuler API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      console.log('📦 Onboarding Partner Request:', {
-        type: 'partner',
-        payload,
-        status: 'pending',
+        legalId: formData.legalId.trim() || null,
+        deliveryModel: formData.deliveryModel,
+        consentRepresentative: formData.consentRepresentative,
       });
 
+      if (submitError) {
+        throw new Error(submitError.message || 'Erreur lors de l\'envoi');
+      }
+
+      console.log('✅ Demande partenaire enregistrée:', data);
       setIsSuccess(true);
     } catch (err) {
-      setError('Erreur lors de l\'envoi. Veuillez réessayer.');
+      setError(err.message || 'Erreur lors de l\'envoi. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Bike, CheckCircle, Loader2 } from 'lucide-react';
+import { submitDriverOnboarding } from '../services/onboardingService';
 
 const vehicleOptions = [
   { id: 'moto', label: 'Moto (Djakarta)', icon: '🏍️' },
@@ -48,29 +49,24 @@ export function DriverOnboardingScreen({ onBack, onSuccess }) {
     setError('');
 
     try {
-      // Simuler l'envoi à onboarding_requests
-      const payload = {
-        full_name: formData.fullName.trim(),
+      // Envoyer à Supabase via le service
+      const { data, error: submitError } = await submitDriverOnboarding({
+        fullName: formData.fullName.trim(),
         phone: formData.phone.trim(),
-        vehicle_type: formData.vehicle,
-        id_number: formData.idNumber.trim() || null,
+        vehicle: formData.vehicle,
+        idNumber: formData.idNumber.trim() || null,
         neighborhood: formData.neighborhood.trim(),
-        consent_caution: formData.consentCaution,
-        submitted_at: new Date().toISOString(),
-      };
-
-      // Simuler API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      console.log('📦 Onboarding Driver Request:', {
-        type: 'driver',
-        payload,
-        status: 'pending',
+        consentCaution: formData.consentCaution,
       });
 
+      if (submitError) {
+        throw new Error(submitError.message || 'Erreur lors de l\'envoi');
+      }
+
+      console.log('✅ Demande livreur enregistrée:', data);
       setIsSuccess(true);
     } catch (err) {
-      setError('Erreur lors de l\'envoi. Veuillez réessayer.');
+      setError(err.message || 'Erreur lors de l\'envoi. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }
