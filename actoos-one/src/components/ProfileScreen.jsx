@@ -80,7 +80,19 @@ export function ProfileScreen({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState(null);
+  
+  // Privacy settings
+  const [privacySettings, setPrivacySettings] = useState(() => {
+    const stored = localStorage.getItem('actoos_privacy_settings');
+    return stored ? JSON.parse(stored) : {
+      shareLocation: true,
+      shareOrderHistory: false,
+      allowAnalytics: true,
+      allowMarketing: false,
+    };
+  });
   
   // Edit profile form
   const [editName, setEditName] = useState(user.name);
@@ -105,6 +117,15 @@ export function ProfileScreen({
         [key]: !prev.notifications[key],
       },
     }));
+  };
+
+  const togglePrivacy = (key) => {
+    const newSettings = {
+      ...privacySettings,
+      [key]: !privacySettings[key],
+    };
+    setPrivacySettings(newSettings);
+    localStorage.setItem('actoos_privacy_settings', JSON.stringify(newSettings));
   };
 
   return (
@@ -254,8 +275,9 @@ export function ProfileScreen({
           </button>
 
           <button 
-            onClick={onPrivacyClick}
+            onClick={() => setShowPrivacy(true)}
             className="w-full px-4 py-4 flex items-center gap-4 border-b border-gray-100 active:bg-gray-50"
+            data-testid="privacy-btn"
           >
             <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
               <Shield className="w-5 h-5 text-gray-600" />
@@ -533,6 +555,109 @@ export function ProfileScreen({
               Déconnexion
             </button>
           </div>
+        </div>
+      </BottomSheet>
+
+      {/* Privacy Settings Sheet */}
+      <BottomSheet
+        isOpen={showPrivacy}
+        onClose={() => setShowPrivacy(false)}
+        title="Confidentialité"
+      >
+        <div className="py-4 space-y-4">
+          <p className="text-gray-500 text-sm mb-4">Gérez vos paramètres de confidentialité et de données personnelles.</p>
+          
+          {/* Location Sharing */}
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div>
+              <p className="font-medium text-gray-900">Partage de localisation</p>
+              <p className="text-xs text-gray-500">Améliore les suggestions de restaurants</p>
+            </div>
+            <button
+              onClick={() => togglePrivacy('shareLocation')}
+              className={`w-12 h-7 rounded-full flex items-center transition-colors ${
+                privacySettings.shareLocation ? 'bg-[#FF5A00] justify-end' : 'bg-gray-300 justify-start'
+              }`}
+              data-testid="privacy-location-toggle"
+            >
+              <div className="w-5 h-5 bg-white rounded-full mx-1 shadow" />
+            </button>
+          </div>
+
+          {/* Order History Sharing */}
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div>
+              <p className="font-medium text-gray-900">Historique des commandes</p>
+              <p className="text-xs text-gray-500">Partager avec les partenaires</p>
+            </div>
+            <button
+              onClick={() => togglePrivacy('shareOrderHistory')}
+              className={`w-12 h-7 rounded-full flex items-center transition-colors ${
+                privacySettings.shareOrderHistory ? 'bg-[#FF5A00] justify-end' : 'bg-gray-300 justify-start'
+              }`}
+              data-testid="privacy-history-toggle"
+            >
+              <div className="w-5 h-5 bg-white rounded-full mx-1 shadow" />
+            </button>
+          </div>
+
+          {/* Analytics */}
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div>
+              <p className="font-medium text-gray-900">Données analytiques</p>
+              <p className="text-xs text-gray-500">Nous aider à améliorer l'app</p>
+            </div>
+            <button
+              onClick={() => togglePrivacy('allowAnalytics')}
+              className={`w-12 h-7 rounded-full flex items-center transition-colors ${
+                privacySettings.allowAnalytics ? 'bg-[#FF5A00] justify-end' : 'bg-gray-300 justify-start'
+              }`}
+              data-testid="privacy-analytics-toggle"
+            >
+              <div className="w-5 h-5 bg-white rounded-full mx-1 shadow" />
+            </button>
+          </div>
+
+          {/* Marketing */}
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div>
+              <p className="font-medium text-gray-900">Communications marketing</p>
+              <p className="text-xs text-gray-500">Recevoir des offres personnalisées</p>
+            </div>
+            <button
+              onClick={() => togglePrivacy('allowMarketing')}
+              className={`w-12 h-7 rounded-full flex items-center transition-colors ${
+                privacySettings.allowMarketing ? 'bg-[#FF5A00] justify-end' : 'bg-gray-300 justify-start'
+              }`}
+              data-testid="privacy-marketing-toggle"
+            >
+              <div className="w-5 h-5 bg-white rounded-full mx-1 shadow" />
+            </button>
+          </div>
+
+          {/* Data Management */}
+          <div className="mt-6 space-y-3">
+            <p className="text-sm font-medium text-gray-700">Gestion des données</p>
+            
+            <button 
+              className="w-full py-4 bg-gray-100 text-gray-700 rounded-2xl font-medium flex items-center justify-center gap-2"
+              data-testid="download-data-btn"
+            >
+              Télécharger mes données
+            </button>
+            
+            <button 
+              className="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-medium flex items-center justify-center gap-2"
+              data-testid="delete-account-btn"
+            >
+              Supprimer mon compte
+            </button>
+          </div>
+
+          {/* Info */}
+          <p className="text-xs text-gray-400 text-center mt-4">
+            ACTOOS ONE respecte votre vie privée. Consultez notre politique de confidentialité pour plus de détails.
+          </p>
         </div>
       </BottomSheet>
     </div>

@@ -66,7 +66,7 @@ export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsC
       </div>
 
       <p className="text-center text-[10px] text-gray-400 mt-4">
-        ACTOOS ONE. Tous droits réservés.
+        ACTOOS ONE tout droit réservé
       </p>
     </footer>
   );
