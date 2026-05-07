@@ -57,6 +57,15 @@
 - Toggle "Connexion" / "Créer un compte"
 - Validation côté client
 
+#### Dashboard Admin avec Notifications Temps Réel ✅
+- Refonte complète de `AdminDashboard.jsx` pour utiliser Supabase
+- **Supabase Realtime** : Souscription aux nouvelles inscriptions
+- **Cloche de notification** avec badge animé (pulse + bounce)
+- **Son de notification** via Web Audio API
+- **Statistiques en direct** : En attente / Approuvées / Rejetées
+- Approbation/Rejet des demandes avec mise à jour instantanée
+- Affichage des données JSON payload (nom, téléphone, véhicule, zone)
+
 #### Schéma SQL Production
 - Fichier `/app/supabase/actoos_one/production_schema.sql` complet
 - 9 tables, triggers, RLS policies

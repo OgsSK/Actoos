@@ -1,4 +1,11 @@
-import { useState } from 'react';
+/**
+ * ACTOOS ONE - Admin Dashboard
+ * 
+ * Dashboard administrateur avec données RÉELLES depuis Supabase.
+ * Notifications en temps réel pour les nouvelles demandes d'inscription.
+ */
+
+import { useState, useEffect, useCallback } from 'react';
 import { 
   ArrowLeft,
   Shield,
@@ -12,7 +19,6 @@ import {
   Bike,
   Car,
   Store,
-  Phone,
   MapPin,
   Zap,
   Settings,
@@ -20,10 +26,14 @@ import {
   Scale,
   Edit3,
   Save,
-  Plus,
-  Trash2
+  Bell,
+  BellRing,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
-import { mockBlockedOrders, mockDrivers, mockOnboardingRequests } from '../data/driverData';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { getOnboardingRequests, approveOnboardingRequest, rejectOnboardingRequest } from '../services/onboardingService';
+import { getAllOrders } from '../services/orderService';
 import { AdminPromotionsManager } from './AdminPromotionsManager';
 import { AdminGodMode } from './AdminGodMode';
 
@@ -34,16 +44,188 @@ const TABS = {
   SETTINGS: 'settings',
 };
 
+// Mock drivers for now (until driver table is populated)
+const mockDrivers = [
+  { id: 'd1', name: 'Amadou Diallo', phone: '+223 70 11 22 33', vehicle_type: 'moto', is_online: true, current_order_id: null, total_deliveries: 45, rating: 4.8 },
+  { id: 'd2', name: 'Moussa Keita', phone: '+223 70 22 33 44', vehicle_type: 'moto', is_online: true, current_order_id: 'order-1', total_deliveries: 120, rating: 4.9 },
+  { id: 'd3', name: 'Ibrahim Traore', phone: '+223 70 33 44 55', vehicle_type: 'voiture', is_online: false, current_order_id: null, total_deliveries: 30, rating: 4.6 },
+];
+
 export function AdminDashboard({ onBack }) {
-  const [activeTab, setActiveTab] = useState(TABS.ORDERS);
-  const [blockedOrders, setBlockedOrders] = useState(mockBlockedOrders);
+  const [activeTab, setActiveTab] = useState(TABS.ONBOARDING); // Default to onboarding to see new requests
+  const [orders, setOrders] = useState([]);
   const [drivers] = useState(mockDrivers);
-  const [onboardingRequests, setOnboardingRequests] = useState(mockOnboardingRequests);
+  const [onboardingRequests, setOnboardingRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Notification state
+  const [newRequestsCount, setNewRequestsCount] = useState(0);
+  const [hasNewNotification, setHasNewNotification] = useState(false);
+  const [lastSeenCount, setLastSeenCount] = useState(0);
   
   // Settings sub-tab
-  const [settingsTab, setSettingsTab] = useState('godmode'); // godmode, promos, legal, app
+  const [settingsTab, setSettingsTab] = useState('godmode');
 
-  // Force assign un livreur à une commande
+  // Load onboarding requests from Supabase
+  const loadOnboardingRequests = useCallback(async () => {
+    if (!isSupabaseConfigured()) {
+      setError('Supabase non configuré');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error: fetchError } = await getOnboardingRequests({ limit: 50 });
+      
+      if (fetchError) throw fetchError;
+      
+      setOnboardingRequests(data || []);
+      
+      // Check for new requests
+      const pendingCount = (data || []).filter(r => r.status === 'pending').length;
+      if (pendingCount > lastSeenCount && lastSeenCount > 0) {
+        setHasNewNotification(true);
+        // Play notification sound
+        playNotificationSound();
+      }
+      setNewRequestsCount(pendingCount);
+      
+    } catch (err) {
+      console.error('Erreur chargement demandes:', err);
+      setError(err.message);
+    }
+  }, [lastSeenCount]);
+
+  // Load orders from Supabase
+  const loadOrders = useCallback(async () => {
+    if (!isSupabaseConfigured()) return;
+
+    try {
+      const { data, error: fetchError } = await getAllOrders({ limit: 50, status: 'pending' });
+      if (fetchError) throw fetchError;
+      setOrders(data || []);
+    } catch (err) {
+      console.error('Erreur chargement commandes:', err);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([loadOnboardingRequests(), loadOrders()]);
+      setIsLoading(false);
+    };
+    loadData();
+  }, [loadOnboardingRequests, loadOrders]);
+
+  // Real-time subscription for new onboarding requests
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    const channel = supabase
+      .channel('admin-onboarding-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'onboarding_requests',
+        },
+        (payload) => {
+          console.log('🔔 Nouvelle demande reçue:', payload.new);
+          setOnboardingRequests(prev => [payload.new, ...prev]);
+          setNewRequestsCount(prev => prev + 1);
+          setHasNewNotification(true);
+          playNotificationSound();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'onboarding_requests',
+        },
+        (payload) => {
+          console.log('📝 Demande mise à jour:', payload.new);
+          setOnboardingRequests(prev => 
+            prev.map(r => r.id === payload.new.id ? payload.new : r)
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    try {
+      // Use Web Audio API for a simple beep
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.3;
+      
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.2);
+    } catch (e) {
+      console.log('Audio notification not supported');
+    }
+  };
+
+  // Mark notifications as seen when viewing onboarding tab
+  useEffect(() => {
+    if (activeTab === TABS.ONBOARDING) {
+      setHasNewNotification(false);
+      setLastSeenCount(newRequestsCount);
+    }
+  }, [activeTab, newRequestsCount]);
+
+  // Approve onboarding request
+  const handleApprove = async (requestId) => {
+    try {
+      const { error: approveError } = await approveOnboardingRequest(requestId, 'admin');
+      if (approveError) throw approveError;
+      
+      setOnboardingRequests(prev => 
+        prev.map(r => r.id === requestId ? { ...r, status: 'approved' } : r)
+      );
+      setNewRequestsCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      alert('Erreur: ' + err.message);
+    }
+  };
+
+  // Reject onboarding request
+  const handleReject = async (requestId) => {
+    const reason = prompt('Raison du rejet :');
+    if (!reason) return;
+    
+    try {
+      const { error: rejectError } = await rejectOnboardingRequest(requestId, 'admin', reason);
+      if (rejectError) throw rejectError;
+      
+      setOnboardingRequests(prev => 
+        prev.map(r => r.id === requestId ? { ...r, status: 'rejected', admin_note: reason } : r)
+      );
+      setNewRequestsCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      alert('Erreur: ' + err.message);
+    }
+  };
+
+  // Force assign driver to order
   const handleForceAssign = (orderId) => {
     const availableDrivers = drivers.filter(d => d.is_online && !d.current_order_id);
     if (availableDrivers.length === 0) {
@@ -52,25 +234,10 @@ export function AdminDashboard({ onBack }) {
     }
     const driver = availableDrivers[0];
     alert(`Commande ${orderId} assignée à ${driver.name} !`);
-    setBlockedOrders(prev => prev.filter(o => o.id !== orderId));
+    setOrders(prev => prev.filter(o => o.id !== orderId));
   };
 
-  // Approuver une demande d'onboarding
-  const handleApprove = (requestId) => {
-    alert(`Demande ${requestId} approuvée !`);
-    setOnboardingRequests(prev => prev.filter(r => r.id !== requestId));
-  };
-
-  // Rejeter une demande d'onboarding
-  const handleReject = (requestId) => {
-    const reason = prompt('Raison du rejet :');
-    if (reason) {
-      alert(`Demande ${requestId} rejetée. Raison: ${reason}`);
-      setOnboardingRequests(prev => prev.filter(r => r.id !== requestId));
-    }
-  };
-
-  // Calcul du temps écoulé
+  // Get elapsed time
   const getElapsedTime = (dateStr) => {
     const created = new Date(dateStr);
     const now = new Date();
@@ -92,6 +259,20 @@ export function AdminDashboard({ onBack }) {
   const onlineDrivers = drivers.filter(d => d.is_online);
   const busyDrivers = drivers.filter(d => d.current_order_id);
   const pendingOnboarding = onboardingRequests.filter(r => r.status === 'pending');
+  const pendingOrders = orders.filter(o => o.status === 'pending');
+
+  // Extract payload data from onboarding request
+  const getRequestData = (request) => {
+    const payload = request.payload || {};
+    return {
+      name: payload.full_name || payload.establishment_name || payload.manager_name || 'N/A',
+      phone: payload.phone || 'N/A',
+      type: request.type,
+      vehicle: payload.vehicle_type,
+      category: payload.category,
+      neighborhood: payload.neighborhood || payload.city_neighborhood,
+    };
+  };
 
   return (
     <div className="min-h-screen bg-gray-100" data-testid="admin-dashboard">
@@ -108,12 +289,32 @@ export function AdminDashboard({ onBack }) {
             </button>
             <div>
               <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary" />
+                <Shield className="w-5 h-5 text-[#FF5A00]" />
                 <h1 className="font-bold text-lg">GOD MODE</h1>
               </div>
               <p className="text-xs text-gray-400">Admin Dashboard</p>
             </div>
           </div>
+
+          {/* Notification Bell */}
+          <button
+            onClick={() => setActiveTab(TABS.ONBOARDING)}
+            className="relative w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center"
+            data-testid="notification-bell"
+          >
+            {hasNewNotification ? (
+              <BellRing className="w-5 h-5 text-[#FF5A00] animate-pulse" />
+            ) : (
+              <Bell className="w-5 h-5 text-gray-400" />
+            )}
+            {newRequestsCount > 0 && (
+              <span className={`absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center ${
+                hasNewNotification ? 'bg-red-500 animate-bounce' : 'bg-[#FF5A00]'
+              }`}>
+                {newRequestsCount > 9 ? '9+' : newRequestsCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Tabs */}
@@ -128,10 +329,10 @@ export function AdminDashboard({ onBack }) {
             data-testid="tab-blocked-orders"
           >
             <Package className="w-4 h-4" />
-            Bloquées
-            {blockedOrders.length > 0 && (
+            Commandes
+            {pendingOrders.length > 0 && (
               <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
-                {blockedOrders.length}
+                {pendingOrders.length}
               </span>
             )}
           </button>
@@ -139,7 +340,7 @@ export function AdminDashboard({ onBack }) {
             onClick={() => setActiveTab(TABS.DRIVERS)}
             className={`flex-1 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
               activeTab === TABS.DRIVERS
-                ? 'bg-primary text-white'
+                ? 'bg-[#FF5A00] text-white'
                 : 'bg-gray-800 text-gray-400'
             }`}
             data-testid="tab-drivers"
@@ -152,7 +353,7 @@ export function AdminDashboard({ onBack }) {
           </button>
           <button
             onClick={() => setActiveTab(TABS.ONBOARDING)}
-            className={`flex-1 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
+            className={`flex-1 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors relative ${
               activeTab === TABS.ONBOARDING
                 ? 'bg-blue-500 text-white'
                 : 'bg-gray-800 text-gray-400'
@@ -160,9 +361,11 @@ export function AdminDashboard({ onBack }) {
             data-testid="tab-onboarding"
           >
             <FileText className="w-4 h-4" />
-            Onboarding
+            Inscriptions
             {pendingOnboarding.length > 0 && (
-              <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+              <span className={`bg-white/20 px-2 py-0.5 rounded-full text-xs ${
+                hasNewNotification ? 'animate-pulse bg-red-500' : ''
+              }`}>
                 {pendingOnboarding.length}
               </span>
             )}
@@ -184,27 +387,53 @@ export function AdminDashboard({ onBack }) {
 
       {/* Content */}
       <div className="p-4">
-        {/* Blocked Orders Tab */}
-        {activeTab === TABS.ORDERS && (
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 text-[#FF5A00] animate-spin" />
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
+            <p className="text-red-700">{error}</p>
+            <button
+              onClick={() => { setError(null); loadOnboardingRequests(); }}
+              className="mt-2 text-red-600 font-medium flex items-center gap-1"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Réessayer
+            </button>
+          </div>
+        )}
+
+        {/* Orders Tab */}
+        {!isLoading && activeTab === TABS.ORDERS && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-gray-900">Commandes bloquées</h2>
-              <span className="text-sm text-gray-500">{blockedOrders.length} en attente</span>
+              <h2 className="font-bold text-gray-900">Commandes en attente</h2>
+              <button
+                onClick={loadOrders}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <RefreshCw className="w-5 h-5" />
+              </button>
             </div>
 
-            {blockedOrders.length === 0 ? (
+            {orders.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center">
                 <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                <p className="text-gray-600">Aucune commande bloquée</p>
+                <p className="text-gray-600">Aucune commande en attente</p>
               </div>
             ) : (
-              blockedOrders.map((order) => (
+              orders.map((order) => (
                 <div
                   key={order.id}
                   className={`bg-white rounded-2xl overflow-hidden border-2 ${
                     isUrgent(order.created_at) ? 'border-red-500' : 'border-gray-200'
                   }`}
-                  data-testid={`blocked-order-${order.id}`}
+                  data-testid={`order-${order.id}`}
                 >
                   {isUrgent(order.created_at) && (
                     <div className="bg-red-500 text-white px-4 py-2 flex items-center gap-2">
@@ -216,44 +445,28 @@ export function AdminDashboard({ onBack }) {
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <p className="font-bold text-lg text-gray-900">{order.orderNumber}</p>
-                        <p className="text-sm text-gray-500">{order.restaurant_name}</p>
+                        <p className="font-bold text-lg text-gray-900">{order.order_number || order.id.slice(0, 8)}</p>
+                        <p className="text-sm text-gray-500">{order.partners?.name || 'Restaurant'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-gray-900">{order.total_amount.toLocaleString()} FCFA</p>
-                        {!isUrgent(order.created_at) && (
-                          <p className="text-xs text-gray-500 flex items-center gap-1 justify-end">
-                            <Clock className="w-3 h-3" />
-                            {getElapsedTime(order.created_at)}
-                          </p>
-                        )}
+                        <p className="font-bold text-gray-900">{(order.total_amount || 0).toLocaleString()} FCFA</p>
+                        <p className="text-xs text-gray-500">{order.payment_method}</p>
                       </div>
                     </div>
 
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="w-4 h-4 text-blue-500 mt-0.5" />
-                        <div>
-                          <p className="text-gray-500">De:</p>
-                          <p className="text-gray-700">{order.restaurant_address}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
+                    {order.delivery_address && (
+                      <div className="flex items-start gap-2 text-sm mb-3">
                         <MapPin className="w-4 h-4 text-green-500 mt-0.5" />
-                        <div>
-                          <p className="text-gray-500">Vers:</p>
-                          <p className="text-gray-700">{order.client_address}</p>
-                        </div>
+                        <p className="text-gray-700">{order.delivery_address}</p>
                       </div>
-                    </div>
+                    )}
 
                     <button
                       onClick={() => handleForceAssign(order.id)}
-                      className="w-full mt-4 bg-red-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-red-600 transition-colors"
-                      data-testid={`force-assign-${order.id}`}
+                      className="w-full bg-red-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-red-600 transition-colors"
                     >
                       <Zap className="w-5 h-5" />
-                      FORCE ASSIGN
+                      ASSIGNER LIVREUR
                     </button>
                   </div>
                 </div>
@@ -263,7 +476,7 @@ export function AdminDashboard({ onBack }) {
         )}
 
         {/* Drivers Tab */}
-        {activeTab === TABS.DRIVERS && (
+        {!isLoading && activeTab === TABS.DRIVERS && (
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-white rounded-2xl p-4 text-center">
@@ -325,7 +538,7 @@ export function AdminDashboard({ onBack }) {
                       </span>
                     )}
                     <p className="text-xs text-gray-400 mt-1">
-                      {driver.total_deliveries} livraisons • ⭐ {driver.rating}
+                      {driver.total_deliveries} livraisons
                     </p>
                   </div>
                 </div>
@@ -335,91 +548,156 @@ export function AdminDashboard({ onBack }) {
         )}
 
         {/* Onboarding Tab */}
-        {activeTab === TABS.ONBOARDING && (
+        {!isLoading && activeTab === TABS.ONBOARDING && (
           <div className="space-y-4">
+            {/* New Requests Alert */}
+            {hasNewNotification && pendingOnboarding.length > 0 && (
+              <div className="bg-gradient-to-r from-[#FF5A00] to-orange-500 text-white rounded-2xl p-4 flex items-center gap-3 animate-pulse">
+                <BellRing className="w-6 h-6" />
+                <div>
+                  <p className="font-bold">Nouvelles demandes !</p>
+                  <p className="text-sm text-white/80">{pendingOnboarding.length} demande(s) en attente de validation</p>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-gray-900">Demandes en attente</h2>
-              <span className="text-sm text-gray-500">{pendingOnboarding.length} à traiter</span>
+              <h2 className="font-bold text-gray-900">Demandes d'inscription</h2>
+              <button
+                onClick={loadOnboardingRequests}
+                className="text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span className="text-sm">Actualiser</span>
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-yellow-50 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-bold text-yellow-600">{pendingOnboarding.length}</p>
+                <p className="text-xs text-yellow-600">En attente</p>
+              </div>
+              <div className="bg-green-50 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-bold text-green-600">
+                  {onboardingRequests.filter(r => r.status === 'approved').length}
+                </p>
+                <p className="text-xs text-green-600">Approuvées</p>
+              </div>
+              <div className="bg-red-50 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-bold text-red-600">
+                  {onboardingRequests.filter(r => r.status === 'rejected').length}
+                </p>
+                <p className="text-xs text-red-600">Rejetées</p>
+              </div>
             </div>
 
             {onboardingRequests.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                <p className="text-gray-600">Toutes les demandes ont été traitées</p>
+                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600">Aucune demande d'inscription</p>
+                <p className="text-sm text-gray-400 mt-1">Les nouvelles demandes apparaîtront ici en temps réel</p>
               </div>
             ) : (
-              onboardingRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="bg-white rounded-2xl p-4 border border-gray-200"
-                  data-testid={`onboarding-${request.id}`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      request.type === 'driver' ? 'bg-blue-100' : 'bg-primary/10'
-                    }`}>
-                      {request.type === 'driver' ? (
-                        <Bike className="w-6 h-6 text-blue-600" />
-                      ) : (
-                        <Store className="w-6 h-6 text-primary" />
-                      )}
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-gray-900">{request.name}</p>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          request.type === 'driver' 
-                            ? 'bg-blue-100 text-blue-700' 
-                            : 'bg-primary/10 text-primary'
-                        }`}>
-                          {request.type === 'driver' ? 'Livreur' : 'Partenaire'}
-                        </span>
+              onboardingRequests.map((request) => {
+                const data = getRequestData(request);
+                const isPending = request.status === 'pending';
+                
+                return (
+                  <div
+                    key={request.id}
+                    className={`bg-white rounded-2xl p-4 border-2 transition-all ${
+                      isPending ? 'border-yellow-400 shadow-lg' : 'border-gray-200'
+                    }`}
+                    data-testid={`onboarding-${request.id}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                        data.type === 'driver' ? 'bg-blue-100' : 'bg-[#FF5A00]/10'
+                      }`}>
+                        {data.type === 'driver' ? (
+                          <Bike className="w-6 h-6 text-blue-600" />
+                        ) : (
+                          <Store className="w-6 h-6 text-[#FF5A00]" />
+                        )}
                       </div>
-                      <p className="text-sm text-gray-500">{request.phone}</p>
-                      <p className="text-sm text-gray-500">{request.email}</p>
                       
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {request.documents.map((doc, i) => (
-                          <span key={i} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
-                            {doc}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-gray-900">{data.name}</p>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            data.type === 'driver' 
+                              ? 'bg-blue-100 text-blue-700' 
+                              : 'bg-[#FF5A00]/10 text-[#FF5A00]'
+                          }`}>
+                            {data.type === 'driver' ? 'Livreur' : 'Partenaire'}
                           </span>
-                        ))}
-                      </div>
-                      
-                      <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        Soumis il y a {getElapsedTime(request.submitted_at)}
-                      </p>
-                    </div>
-                  </div>
+                          {/* Status Badge */}
+                          {request.status === 'approved' && (
+                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                              Approuvé
+                            </span>
+                          )}
+                          {request.status === 'rejected' && (
+                            <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                              Rejeté
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500">{data.phone}</p>
+                        
+                        {data.vehicle && (
+                          <p className="text-sm text-gray-500">Véhicule: {data.vehicle}</p>
+                        )}
+                        {data.category && (
+                          <p className="text-sm text-gray-500">Catégorie: {data.category}</p>
+                        )}
+                        {data.neighborhood && (
+                          <p className="text-sm text-gray-500">Zone: {data.neighborhood}</p>
+                        )}
+                        
+                        <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Soumis il y a {getElapsedTime(request.created_at)}
+                        </p>
 
-                  <div className="flex gap-3 mt-4">
-                    <button
-                      onClick={() => handleReject(request.id)}
-                      className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-gray-200 transition-colors"
-                      data-testid={`reject-${request.id}`}
-                    >
-                      <XCircle className="w-5 h-5 text-red-500" />
-                      REJETER
-                    </button>
-                    <button
-                      onClick={() => handleApprove(request.id)}
-                      className="flex-1 bg-green-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-green-600 transition-colors"
-                      data-testid={`approve-${request.id}`}
-                    >
-                      <CheckCircle className="w-5 h-5" />
-                      APPROUVER
-                    </button>
+                        {request.admin_note && (
+                          <p className="text-xs text-red-500 mt-1">
+                            Raison: {request.admin_note}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {isPending && (
+                      <div className="flex gap-3 mt-4">
+                        <button
+                          onClick={() => handleReject(request.id)}
+                          className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-gray-200 transition-colors"
+                          data-testid={`reject-${request.id}`}
+                        >
+                          <XCircle className="w-5 h-5 text-red-500" />
+                          REJETER
+                        </button>
+                        <button
+                          onClick={() => handleApprove(request.id)}
+                          className="flex-1 bg-green-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-green-600 transition-colors"
+                          data-testid={`approve-${request.id}`}
+                        >
+                          <CheckCircle className="w-5 h-5" />
+                          APPROUVER
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
 
         {/* Settings Tab */}
-        {activeTab === TABS.SETTINGS && (
+        {!isLoading && activeTab === TABS.SETTINGS && (
           <div className="space-y-4">
             {/* Sub-tabs */}
             <div className="flex gap-2 bg-white rounded-2xl p-2">
@@ -452,147 +730,24 @@ export function AdminDashboard({ onBack }) {
               </button>
             </div>
 
-            {/* God Mode - System Config */}
-            {settingsTab === 'godmode' && (
-              <AdminGodMode />
-            )}
-
-            {/* Promos Management */}
-            {settingsTab === 'promos' && (
-              <AdminPromotionsManager />
-            )}
-
-            {/* Legal Management */}
+            {settingsTab === 'godmode' && <AdminGodMode />}
+            {settingsTab === 'promos' && <AdminPromotionsManager />}
             {settingsTab === 'legal' && (
               <div className="space-y-4">
                 <h2 className="font-bold text-gray-900">Textes légaux</h2>
                 <p className="text-sm text-gray-500">Modifiez les conditions d'utilisation et mentions légales.</p>
 
-                <div className="bg-white rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900">Conditions d'utilisation</h3>
-                    <button className="text-[#FF5A00] text-sm font-medium flex items-center gap-1">
-                      <Edit3 className="w-4 h-4" />
-                      Modifier
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Définissez les règles d'utilisation de l'application ACTOOS ONE.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900">Mentions légales</h3>
-                    <button className="text-[#FF5A00] text-sm font-medium flex items-center gap-1">
-                      <Edit3 className="w-4 h-4" />
-                      Modifier
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Informations sur l'éditeur, l'hébergeur et les données personnelles.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900">Politique de confidentialité</h3>
-                    <button className="text-[#FF5A00] text-sm font-medium flex items-center gap-1">
-                      <Edit3 className="w-4 h-4" />
-                      Modifier
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Comment ACTOOS ONE collecte et utilise les données personnelles.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900">Politique cookies</h3>
-                    <button className="text-[#FF5A00] text-sm font-medium flex items-center gap-1">
-                      <Edit3 className="w-4 h-4" />
-                      Modifier
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Utilisation des cookies et technologies similaires.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* App Settings */}
-            {settingsTab === 'app' && (
-              <div className="space-y-4">
-                <h2 className="font-bold text-gray-900">Paramètres de l'app</h2>
-
-                <div className="bg-white rounded-2xl p-4">
-                  <h3 className="font-semibold text-gray-900 mb-4">Informations générales</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-gray-600">Nom de l'application</label>
-                      <input
-                        type="text"
-                        defaultValue="ACTOOS ONE"
-                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600">Slogan</label>
-                      <input
-                        type="text"
-                        defaultValue="Tout le Mali, livré chez vous"
-                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600">Copyright</label>
-                      <input
-                        type="text"
-                        defaultValue="ACTOOS ONE tout droit réservé"
-                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
-                      />
+                {['Conditions d\'utilisation', 'Mentions légales', 'Politique de confidentialité', 'Politique cookies'].map((title) => (
+                  <div key={title} className="bg-white rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-gray-900">{title}</h3>
+                      <button className="text-[#FF5A00] text-sm font-medium flex items-center gap-1">
+                        <Edit3 className="w-4 h-4" />
+                        Modifier
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                <div className="bg-white rounded-2xl p-4">
-                  <h3 className="font-semibold text-gray-900 mb-4">Frais et commissions</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-gray-600">Frais de livraison par défaut (FCFA)</label>
-                      <input
-                        type="number"
-                        defaultValue="500"
-                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600">Commission livreur (%)</label>
-                      <input
-                        type="number"
-                        defaultValue="15"
-                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600">Commission partenaire (%)</label>
-                      <input
-                        type="number"
-                        defaultValue="20"
-                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <button className="w-full bg-[#FF5A00] text-white py-4 rounded-2xl font-semibold flex items-center justify-center gap-2">
-                  <Save className="w-5 h-5" />
-                  Enregistrer les modifications
-                </button>
+                ))}
               </div>
             )}
           </div>
