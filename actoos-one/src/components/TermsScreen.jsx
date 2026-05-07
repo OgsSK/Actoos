@@ -19,10 +19,6 @@ export function TermsScreen({ onBack }) {
 
       {/* Content */}
       <div className="p-4 prose prose-sm max-w-none">
-        <p className="text-gray-500 text-sm mb-6">
-          Dernière mise à jour : Décembre 2024
-        </p>
-
         <section className="mb-8">
           <h2 className="text-lg font-bold text-gray-900 mb-2">En-tête Légal</h2>
           <p className="text-gray-600 text-sm">
@@ -102,7 +98,7 @@ export function TermsScreen({ onBack }) {
 
         <div className="bg-gray-100 rounded-2xl p-4 mt-8">
           <p className="text-xs text-gray-500 text-center">
-            © 2024 ACTOOS ONE. Tous droits réservés.
+            ACTOOS ONE tout droit réservé
           </p>
         </div>
       </div>

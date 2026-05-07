@@ -103,7 +103,7 @@ export function LegalScreen({ onBack }) {
 
         <div className="bg-gray-100 rounded-2xl p-4 mt-8">
           <p className="text-xs text-gray-500 text-center">
-            © 2024 ACTOOS ONE. Tous droits réservés.
+            ACTOOS ONE tout droit réservé
           </p>
         </div>
       </div>

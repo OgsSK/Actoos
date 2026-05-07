@@ -1,9 +1,11 @@
-import { Star, Clock, Bike } from 'lucide-react';
+import { Star, Clock, Bike, Tag } from 'lucide-react';
 import { useLazyImage } from '../hooks/useLazyImage';
 import { systemConfig } from '../data/mockData';
+import { getRestaurantPromotions } from '../data/promotionsData';
 
 export function RestaurantCard({ restaurant, onClick }) {
   const { imgRef, isLoaded, isInView } = useLazyImage(restaurant.image);
+  const promos = getRestaurantPromotions(restaurant.id);
 
   return (
     <button
@@ -25,8 +27,20 @@ export function RestaurantCard({ restaurant, onClick }) {
           </>
         )}
         
-        {/* Featured Badge */}
-        {restaurant.isFeatured && (
+        {/* Promo Badge */}
+        {promos.length > 0 && restaurant.isOpen && (
+          <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full flex items-center gap-1 ${
+            promos[0].badge_color === 'green' ? 'bg-green-500' :
+            promos[0].badge_color === 'purple' ? 'bg-purple-500' :
+            'bg-[#FF5A00]'
+          }`}>
+            <Tag className="w-3 h-3 text-white" />
+            <span className="text-xs font-semibold text-white">{promos[0].badge}</span>
+          </div>
+        )}
+        
+        {/* Featured Badge - only if no promo */}
+        {restaurant.isFeatured && promos.length === 0 && (
           <div className="absolute top-3 left-3 bg-primary px-2.5 py-1 rounded-full">
             <span className="text-xs font-semibold text-white">Populaire</span>
           </div>
@@ -59,6 +73,13 @@ export function RestaurantCard({ restaurant, onClick }) {
           </div>
         </div>
 
+        {/* Promo text */}
+        {promos.length > 0 && restaurant.isOpen && (
+          <p className="text-xs text-[#FF5A00] font-medium mt-1.5 text-left">
+            {promos[0].title}
+          </p>
+        )}
+
         <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
           <div className="flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" />
@@ -66,7 +87,10 @@ export function RestaurantCard({ restaurant, onClick }) {
           </div>
           <div className="flex items-center gap-1">
             <Bike className="w-3.5 h-3.5" />
-            <span>{restaurant.deliveryFee} {systemConfig.currency}</span>
+            <span>{promos.some(p => p.discount_type === 'free_delivery') 
+              ? <span className="text-green-600 font-medium">Gratuit</span>
+              : `${restaurant.deliveryFee} ${systemConfig.currency}`
+            }</span>
           </div>
         </div>
       </div>

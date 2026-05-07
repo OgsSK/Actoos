@@ -15,6 +15,7 @@ import {
 import { OTPInput } from './OTPInput';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { TouchPaySheet } from './TouchPaySheet';
+import { PromoCodeInput } from './PromoCodeInput';
 import { useCart } from '../context/CartContext';
 import { useWallet } from '../context/WalletContext';
 import { sendOTP, verifyOTP } from '../services/otpService';
@@ -56,10 +57,20 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   
   // TopUp sheet for insufficient balance
   const [showTopUp, setShowTopUp] = useState(false);
+  
+  // Promo code
+  const [appliedPromo, setAppliedPromo] = useState(null);
 
   // Calculer le total - frais de livraison = 0 si pickup
   const deliveryFee = deliveryMode === 'pickup' ? 0 : (restaurant?.deliveryFee || 500);
-  const orderTotals = calculateOrderTotal(cartItems, deliveryFee);
+  
+  // Apply promo discount
+  const promoDiscount = appliedPromo?.discount || 0;
+  const freeDelivery = appliedPromo?.promo?.discount_type === 'free_delivery';
+  const finalDeliveryFee = freeDelivery ? 0 : deliveryFee;
+  
+  const orderTotals = calculateOrderTotal(cartItems, finalDeliveryFee);
+  const finalTotal = Math.max(0, orderTotals.total - promoDiscount);
 
   const handleSelectDeliveryMode = (mode) => {
     setDeliveryMode(mode);
@@ -530,6 +541,15 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               </div>
             </div>
 
+            {/* Promo Code */}
+            <PromoCodeInput
+              orderTotal={orderTotals.subtotal}
+              isFirstOrder={true}
+              appliedPromo={appliedPromo}
+              onApplyPromo={setAppliedPromo}
+              onRemovePromo={() => setAppliedPromo(null)}
+            />
+
             {/* Totals */}
             <div className="bg-white rounded-2xl p-4 border border-gray-200">
               <div className="space-y-2">
@@ -539,13 +559,21 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Livraison</span>
-                  <span className={deliveryMode === 'pickup' ? 'text-green-600' : ''}>
-                    {deliveryMode === 'pickup' ? 'Gratuit' : `${orderTotals.delivery.toLocaleString()} FCFA`}
+                  <span className={deliveryMode === 'pickup' || freeDelivery ? 'text-green-600' : ''}>
+                    {deliveryMode === 'pickup' ? 'Gratuit (À emporter)' : 
+                     freeDelivery ? 'Gratuit (Promo)' : 
+                     `${orderTotals.delivery.toLocaleString()} FCFA`}
                   </span>
                 </div>
+                {promoDiscount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Réduction ({appliedPromo?.promo?.code})</span>
+                    <span>-{promoDiscount.toLocaleString()} FCFA</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t">
                   <span>Total</span>
-                  <span className="text-[#FF5A00]">{orderTotals.total.toLocaleString()} FCFA</span>
+                  <span className="text-[#FF5A00]">{finalTotal.toLocaleString()} FCFA</span>
                 </div>
               </div>
             </div>
@@ -577,7 +605,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
                   Traitement...
                 </>
               ) : (
-                `Commander • ${orderTotals.total.toLocaleString()} FCFA`
+                `Commander • ${finalTotal.toLocaleString()} FCFA`
               )}
             </button>
           </div>

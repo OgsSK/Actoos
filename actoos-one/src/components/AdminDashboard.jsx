@@ -14,14 +14,23 @@ import {
   Store,
   Phone,
   MapPin,
-  Zap
+  Zap,
+  Settings,
+  Tag,
+  Scale,
+  Edit3,
+  Save,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { mockBlockedOrders, mockDrivers, mockOnboardingRequests } from '../data/driverData';
+import { activePromotions } from '../data/promotionsData';
 
 const TABS = {
   ORDERS: 'orders',
   DRIVERS: 'drivers',
   ONBOARDING: 'onboarding',
+  SETTINGS: 'settings',
 };
 
 export function AdminDashboard({ onBack }) {
@@ -29,6 +38,10 @@ export function AdminDashboard({ onBack }) {
   const [blockedOrders, setBlockedOrders] = useState(mockBlockedOrders);
   const [drivers] = useState(mockDrivers);
   const [onboardingRequests, setOnboardingRequests] = useState(mockOnboardingRequests);
+  const [promotions, setPromotions] = useState(activePromotions);
+  
+  // Settings sub-tab
+  const [settingsTab, setSettingsTab] = useState('promos'); // promos, legal, app
 
   // Force assign un livreur à une commande
   const handleForceAssign = (orderId) => {
@@ -153,6 +166,18 @@ export function AdminDashboard({ onBack }) {
                 {pendingOnboarding.length}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setActiveTab(TABS.SETTINGS)}
+            className={`flex-1 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
+              activeTab === TABS.SETTINGS
+                ? 'bg-purple-500 text-white'
+                : 'bg-gray-800 text-gray-400'
+            }`}
+            data-testid="tab-settings"
+          >
+            <Settings className="w-4 h-4" />
+            Config
           </button>
         </div>
       </header>
@@ -389,6 +414,226 @@ export function AdminDashboard({ onBack }) {
                   </div>
                 </div>
               ))
+            )}
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === TABS.SETTINGS && (
+          <div className="space-y-4">
+            {/* Sub-tabs */}
+            <div className="flex gap-2 bg-white rounded-2xl p-2">
+              <button
+                onClick={() => setSettingsTab('promos')}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  settingsTab === 'promos' ? 'bg-[#FF5A00] text-white' : 'text-gray-600'
+                }`}
+              >
+                <Tag className="w-4 h-4 inline mr-1" />
+                Promos
+              </button>
+              <button
+                onClick={() => setSettingsTab('legal')}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  settingsTab === 'legal' ? 'bg-[#FF5A00] text-white' : 'text-gray-600'
+                }`}
+              >
+                <Scale className="w-4 h-4 inline mr-1" />
+                Légal
+              </button>
+              <button
+                onClick={() => setSettingsTab('app')}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  settingsTab === 'app' ? 'bg-[#FF5A00] text-white' : 'text-gray-600'
+                }`}
+              >
+                <Settings className="w-4 h-4 inline mr-1" />
+                App
+              </button>
+            </div>
+
+            {/* Promos Management */}
+            {settingsTab === 'promos' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-bold text-gray-900">Gestion des promotions</h2>
+                  <button className="bg-[#FF5A00] text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Nouvelle
+                  </button>
+                </div>
+
+                {promotions.map((promo) => (
+                  <div key={promo.id} className="bg-white rounded-2xl p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-900">{promo.title}</h3>
+                          {promo.is_active ? (
+                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">Actif</span>
+                          ) : (
+                            <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-xs">Inactif</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">{promo.description}</p>
+                        {promo.code && (
+                          <p className="text-sm font-mono bg-gray-100 inline-block px-2 py-1 rounded mt-2">
+                            Code: {promo.code}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>Min: {promo.min_order?.toLocaleString() || 0} FCFA</span>
+                          {promo.valid_until && (
+                            <span>Expire: {new Date(promo.valid_until).toLocaleDateString()}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                          <Edit3 className="w-4 h-4 text-gray-600" />
+                        </button>
+                        <button className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Legal Management */}
+            {settingsTab === 'legal' && (
+              <div className="space-y-4">
+                <h2 className="font-bold text-gray-900">Textes légaux</h2>
+                <p className="text-sm text-gray-500">Modifiez les conditions d'utilisation et mentions légales.</p>
+
+                <div className="bg-white rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-900">Conditions d'utilisation</h3>
+                    <button className="text-[#FF5A00] text-sm font-medium flex items-center gap-1">
+                      <Edit3 className="w-4 h-4" />
+                      Modifier
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Définissez les règles d'utilisation de l'application ACTOOS ONE.
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-900">Mentions légales</h3>
+                    <button className="text-[#FF5A00] text-sm font-medium flex items-center gap-1">
+                      <Edit3 className="w-4 h-4" />
+                      Modifier
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Informations sur l'éditeur, l'hébergeur et les données personnelles.
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-900">Politique de confidentialité</h3>
+                    <button className="text-[#FF5A00] text-sm font-medium flex items-center gap-1">
+                      <Edit3 className="w-4 h-4" />
+                      Modifier
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Comment ACTOOS ONE collecte et utilise les données personnelles.
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-900">Politique cookies</h3>
+                    <button className="text-[#FF5A00] text-sm font-medium flex items-center gap-1">
+                      <Edit3 className="w-4 h-4" />
+                      Modifier
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Utilisation des cookies et technologies similaires.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* App Settings */}
+            {settingsTab === 'app' && (
+              <div className="space-y-4">
+                <h2 className="font-bold text-gray-900">Paramètres de l'app</h2>
+
+                <div className="bg-white rounded-2xl p-4">
+                  <h3 className="font-semibold text-gray-900 mb-4">Informations générales</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-gray-600">Nom de l'application</label>
+                      <input
+                        type="text"
+                        defaultValue="ACTOOS ONE"
+                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600">Slogan</label>
+                      <input
+                        type="text"
+                        defaultValue="Tout le Mali, livré chez vous"
+                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600">Copyright</label>
+                      <input
+                        type="text"
+                        defaultValue="ACTOOS ONE tout droit réservé"
+                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-4">
+                  <h3 className="font-semibold text-gray-900 mb-4">Frais et commissions</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-gray-600">Frais de livraison par défaut (FCFA)</label>
+                      <input
+                        type="number"
+                        defaultValue="500"
+                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600">Commission livreur (%)</label>
+                      <input
+                        type="number"
+                        defaultValue="15"
+                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600">Commission partenaire (%)</label>
+                      <input
+                        type="number"
+                        defaultValue="20"
+                        className="w-full mt-1 px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-[#FF5A00]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <button className="w-full bg-[#FF5A00] text-white py-4 rounded-2xl font-semibold flex items-center justify-center gap-2">
+                  <Save className="w-5 h-5" />
+                  Enregistrer les modifications
+                </button>
+              </div>
             )}
           </div>
         )}

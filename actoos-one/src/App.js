@@ -27,6 +27,7 @@ import { BottomSheet } from './components/BottomSheet';
 import { CookieConsentSheet } from './components/CookieConsentSheet';
 import { PrivacySettingsSheet } from './components/PrivacySettingsSheet';
 import { SearchSheet } from './components/SearchSheet';
+import { PromoBanner } from './components/PromoBanner';
 import { CartProvider } from './context/CartContext';
 import { WalletProvider } from './context/WalletContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -495,6 +496,9 @@ function AppContent() {
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
       />
+
+      {/* Promo Banner */}
+      <PromoBanner />
 
       {/* Restaurant Feed */}
       <RestaurantFeed
