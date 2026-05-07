@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { mockBlockedOrders, mockDrivers, mockOnboardingRequests } from '../data/driverData';
 import { AdminPromotionsManager } from './AdminPromotionsManager';
+import { AdminGodMode } from './AdminGodMode';
 
 const TABS = {
   ORDERS: 'orders',
@@ -40,7 +41,7 @@ export function AdminDashboard({ onBack }) {
   const [onboardingRequests, setOnboardingRequests] = useState(mockOnboardingRequests);
   
   // Settings sub-tab
-  const [settingsTab, setSettingsTab] = useState('promos'); // promos, legal, app
+  const [settingsTab, setSettingsTab] = useState('godmode'); // godmode, promos, legal, app
 
   // Force assign un livreur à une commande
   const handleForceAssign = (orderId) => {
@@ -423,6 +424,15 @@ export function AdminDashboard({ onBack }) {
             {/* Sub-tabs */}
             <div className="flex gap-2 bg-white rounded-2xl p-2">
               <button
+                onClick={() => setSettingsTab('godmode')}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  settingsTab === 'godmode' ? 'bg-red-500 text-white' : 'text-gray-600'
+                }`}
+              >
+                <Shield className="w-4 h-4 inline mr-1" />
+                God Mode
+              </button>
+              <button
                 onClick={() => setSettingsTab('promos')}
                 className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
                   settingsTab === 'promos' ? 'bg-[#FF5A00] text-white' : 'text-gray-600'
@@ -440,16 +450,12 @@ export function AdminDashboard({ onBack }) {
                 <Scale className="w-4 h-4 inline mr-1" />
                 Légal
               </button>
-              <button
-                onClick={() => setSettingsTab('app')}
-                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  settingsTab === 'app' ? 'bg-[#FF5A00] text-white' : 'text-gray-600'
-                }`}
-              >
-                <Settings className="w-4 h-4 inline mr-1" />
-                App
-              </button>
             </div>
+
+            {/* God Mode - System Config */}
+            {settingsTab === 'godmode' && (
+              <AdminGodMode />
+            )}
 
             {/* Promos Management */}
             {settingsTab === 'promos' && (

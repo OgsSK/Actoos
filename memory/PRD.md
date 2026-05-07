@@ -31,13 +31,74 @@
 
 ## CHANGELOG
 
+### 2025-05-07 - Phases 3 & 4: Dashboard Partenaire & Wallet Fintech ✅
+
+#### Phase 3: Dashboard Partenaire avancé
+
+**PartnerSettings.jsx - Paramètres Partenaire:**
+- Temps de préparation configurable (10-60 min avec slider)
+- Présets rapides: 15, 20, 30, 45 min
+- Options de livraison:
+  - Actoos Delivery (toggle)
+  - Self-Delivery avec frais personnalisés et rayon
+  - Pickup/Click & Collect (toggle)
+- Commandes programmées: toggle + nombre de jours (1-7)
+- Commandes même fermé: toggle
+- Banner "Modifications non sauvegardées"
+
+**AdminGodMode.jsx - Contrôle Admin Global:**
+- Feature toggles: Eats, Health, Wallet, P2P, Parrainage, Scheduled, Pickup, Surge
+- Surge Pricing avec slider (x1.0 - x2.0)
+- Configuration des commissions (Eats + Health par mode)
+- Configuration frais de livraison (base, /km, cap self-delivery, SOS)
+- Paramètres parrainage (montant récompense, commande min)
+- Tout sauvegardable via bouton central
+
+**Fichiers créés:**
+- `/app/actoos-one/src/components/PartnerSettings.jsx`
+- `/app/actoos-one/src/components/AdminGodMode.jsx`
+- Onglet "Config" ajouté dans PartnerKDSScreen
+- Onglet "God Mode" ajouté dans AdminDashboard
+
+#### Phase 4: Wallet Fintech avancé
+
+**WalletQRPayment.jsx - Paiements QR:**
+- **PayQRCodeSheet**: Générer QR pour recevoir paiement physique
+  - Saisie montant avec présets (500, 1000, 2000, 5000)
+  - QR code généré avec référence unique
+  - Timer d'expiration 15 min
+  - Bouton copier code référence
+- **ScanQRCodeSheet**: Scanner QR pour payer
+  - Zone caméra simulée
+  - Saisie manuelle du code
+  - Confirmation avec détails bénéficiaire
+- **WalletPINEntry**: Saisie PIN 4 chiffres
+  - 3 tentatives max avant blocage
+  - Affichage erreur + tentatives restantes
+  - Blocage wallet après 3 échecs
+
+**SubAccountManager.jsx - Gestion Sous-comptes:**
+- Liste des sous-comptes avec badges (bloqué, limites)
+- Création avec contraintes:
+  - Solde maximum
+  - Limite journalière
+  - Restriction horaire (de X à Y)
+- Gestion: modifier limites, bloquer/débloquer, supprimer
+- Confirmation avant blocage/suppression
+
+**Boutons ajoutés dans WalletScreen:**
+- "Payer" (icône QR) → PayQRCodeSheet
+- "Encaisser" (icône scanner) → ScanQRCodeSheet
+
+---
+
 ### 2025-05-07 - Phase 1 & 2: Modifications finales avant production ✅
 
 #### Phase 1: UI/UX de base
-**Splash Screen (style Uber):**
-- Animation "ACTOOS ONE" centré uniquement
-- Pas de logo ni slogan additionnel
-- Cercles animés et points de chargement
+**Splash Screen (simplifié):**
+- Animation simple: "ACTOOS ONE" fade in + scale
+- Timing optimisé: 1.3 secondes total
+- Pas de cercles ni points de chargement
 
 **Header épuré:**
 - Suppression logo ACTOOS ONE et slogan
@@ -52,11 +113,10 @@
 - Offres - Restaurants avec promotions
 - Mieux notés - Rating >= 4.5
 
-**Footer professionnel:**
-- "Rejoignez ACTOOS" avec cartes premium
-- Devenir Partenaire (gradient orange)
-- Devenir Livreur (gradient bleu)
-- "Bientôt disponible dans toute l'Afrique de l'Ouest"
+**Footer simplifié:**
+- "Développez votre activité et touchez plus de clients"
+- Cartes propres: juste titre + sous-titre (pas de détails superflus)
+- Copyright: "© 2025 ACTOOS ONE • Bamako, Mali"
 
 **Notification rappel:**
 - Composant ScheduledOrderReminder

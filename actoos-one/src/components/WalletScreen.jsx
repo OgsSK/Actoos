@@ -19,7 +19,9 @@ import {
   MessageSquare,
   Settings,
   Calendar,
-  X
+  X,
+  QrCode,
+  Scan
 } from 'lucide-react';
 import { useWallet, TRANSACTION_TYPES, TRANSACTION_STATUS } from '../context/WalletContext';
 import { TouchPaySheet } from './TouchPaySheet';
@@ -27,6 +29,8 @@ import { P2PTransferSheet } from './P2PTransferSheet';
 import { CreateSubWalletSheet } from './CreateSubWalletSheet';
 import { SwipeToDelete } from './SwipeToDelete';
 import { BottomSheet } from './BottomSheet';
+import { PayQRCodeSheet, ScanQRCodeSheet } from './WalletQRPayment';
+import { SubAccountManager } from './SubAccountManager';
 
 // Options de rétention d'historique
 const HISTORY_OPTIONS = [
@@ -56,6 +60,8 @@ export function WalletScreen({ onBack }) {
   const [showP2P, setShowP2P] = useState(false);
   const [showCreateSubWallet, setShowCreateSubWallet] = useState(false);
   const [showHistorySettings, setShowHistorySettings] = useState(false);
+  const [showPayQR, setShowPayQR] = useState(false);
+  const [showScanQR, setShowScanQR] = useState(false);
   const [activeSection, setActiveSection] = useState('main'); // main, subwallets, cards
   
   // History retention setting from localStorage
@@ -255,6 +261,26 @@ export function WalletScreen({ onBack }) {
             >
               <Send className="w-5 h-5" />
               Envoyer
+            </button>
+          </div>
+          
+          {/* QR Payment Buttons */}
+          <div className="flex gap-3 mt-3">
+            <button
+              onClick={() => setShowPayQR(true)}
+              className="flex-1 bg-white/10 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-white/20 transition-colors border border-white/30"
+              data-testid="pay-qr-btn"
+            >
+              <QrCode className="w-4 h-4" />
+              Payer
+            </button>
+            <button
+              onClick={() => setShowScanQR(true)}
+              className="flex-1 bg-white/10 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-white/20 transition-colors border border-white/30"
+              data-testid="scan-qr-btn"
+            >
+              <Scan className="w-4 h-4" />
+              Encaisser
             </button>
           </div>
         </div>
@@ -597,6 +623,21 @@ export function WalletScreen({ onBack }) {
           </div>
         </div>
       </BottomSheet>
+
+      {/* QR Payment Sheets */}
+      <PayQRCodeSheet
+        isOpen={showPayQR}
+        onClose={() => setShowPayQR(false)}
+      />
+      
+      <ScanQRCodeSheet
+        isOpen={showScanQR}
+        onClose={() => setShowScanQR(false)}
+        onPaymentConfirmed={(data) => {
+          console.log('Payment confirmed:', data);
+          // In production: update wallet balance
+        }}
+      />
     </div>
   );
 }

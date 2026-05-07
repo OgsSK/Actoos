@@ -11,13 +11,15 @@ import {
   ArrowLeft,
   Keyboard,
   Tag,
-  BarChart3
+  BarChart3,
+  Settings
 } from 'lucide-react';
 import { mockOrders, mockMenuItems } from '../data/kdsData';
 import { KDSOrderCard } from './KDSOrderCard';
 import { KDSMenuManager } from './KDSMenuManager';
 import { PartnerPromotionsManager } from './PartnerPromotionsManager';
 import { PartnerAnalytics } from './PartnerAnalytics';
+import { PartnerSettings } from './PartnerSettings';
 import { PARTNER_TYPES } from '../data/promotionsData';
 
 // Son de notification (base64 encoded beep)
@@ -28,6 +30,7 @@ const TABS = {
   MENU: 'menu',
   PROMOS: 'promos',
   ANALYTICS: 'analytics',
+  SETTINGS: 'settings',
 };
 
 export function PartnerKDSScreen({ onBack }) {
@@ -237,6 +240,18 @@ export function PartnerKDSScreen({ onBack }) {
             <BarChart3 className="w-4 h-4" />
             Stats
           </button>
+          <button
+            onClick={() => setActiveTab(TABS.SETTINGS)}
+            className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-colors text-sm ${
+              activeTab === TABS.SETTINGS
+                ? 'bg-[#FF5A00] text-white'
+                : 'bg-gray-100 text-gray-600'
+            }`}
+            data-testid="tab-settings"
+          >
+            <Settings className="w-4 h-4" />
+            Config
+          </button>
         </div>
       </header>
 
@@ -399,6 +414,14 @@ export function PartnerKDSScreen({ onBack }) {
             partnerName="Maquis Chez Tanti"
           />
         </div>
+      ) : activeTab === TABS.SETTINGS ? (
+        <PartnerSettings
+          partnerType="restaurant"
+          onSettingsChange={(settings) => {
+            console.log('Settings updated:', settings);
+            // In production, this would save to Supabase
+          }}
+        />
       ) : null}
     </div>
   );
