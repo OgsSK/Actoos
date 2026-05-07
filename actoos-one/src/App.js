@@ -33,6 +33,7 @@ import { SearchSheet } from './components/SearchSheet';
 import { PromoBanner } from './components/PromoBanner';
 import { FavoritesScreen } from './components/FavoritesScreen';
 import { RatingSheet } from './components/RatingSystem';
+import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WalletProvider } from './context/WalletContext';
 import { FavoritesProvider } from './context/FavoritesContext';
@@ -893,13 +894,15 @@ function AdminApp() {
 // Client App wrapped with providers
 function ClientApp() {
   return (
-    <FavoritesProvider>
-      <WalletProvider>
-        <CartProvider>
-          <AppContent />
-        </CartProvider>
-      </WalletProvider>
-    </FavoritesProvider>
+    <AuthProvider>
+      <FavoritesProvider>
+        <WalletProvider>
+          <CartProvider>
+            <AppContent />
+          </CartProvider>
+        </WalletProvider>
+      </FavoritesProvider>
+    </AuthProvider>
   );
 }
 

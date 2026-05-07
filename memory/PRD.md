@@ -13,7 +13,7 @@
 
 ## Architecture Technique
 - **Frontend**: React PWA (Mobile-First) - `/app/actoos-one/`
-- **Backend**: Supabase (PostgreSQL, RLS, Edge Functions) - À intégrer
+- **Backend**: Supabase (PostgreSQL, RLS, Edge Functions)
 - **Design System**: 
   - **MODE CLAIR** (Fond blanc)
   - Primary Orange: `#FF5A00`
@@ -30,6 +30,51 @@
 ---
 
 ## CHANGELOG
+
+### 2025-05-07 - Phase Supabase: Architecture Backend ✅
+
+**Infrastructure Supabase installée et configurée:**
+
+#### Client Supabase (`/src/services/supabaseClient.js`):
+- Client configuré avec gestion session et realtime
+- Support mode mocké (quand variables .env non définies)
+- Helpers: `isSupabaseConfigured()`, `getCurrentUser()`, `getCurrentSession()`
+
+#### AuthContext (`/src/context/AuthContext.jsx`):
+- Authentification téléphone + OTP
+- Support Supabase Auth natif ET mode mocké pour développement
+- Gestion états: LOADING, AUTHENTICATED, UNAUTHENTICATED, OTP_SENT
+- Rôles: CLIENT, PARTNER, DRIVER, ADMIN
+- Actions: sendOTP, verifyOTP, signOut, cancelOTP, updateProfile
+
+#### Services de données:
+- **restaurantService.js**: getRestaurants, getRestaurantById, searchRestaurants, getNearbyRestaurants
+- **orderService.js**: createOrder, getOrderById, getUserOrders, updateOrderStatus, cancelOrder, subscribeToOrder, calculateOrderTotal
+- **walletService.js**: getWallet, getTransactions, creditWallet, debitWallet, transferP2P, getSubWallets, createSubWallet
+
+#### Composant LoginSheet (`/src/components/LoginSheet.jsx`):
+- Bottom sheet authentification élégante style Uber
+- Entrée numéro téléphone avec préfixe +223
+- Input OTP 4 chiffres avec auto-focus et auto-submit
+- Indicateur mode démo
+- Gestion erreurs et états de chargement
+
+#### Configuration:
+- `.env.example` créé avec documentation
+- `.env` mis à jour avec variables Supabase (optionnelles)
+- Mode mocké automatique si Supabase non configuré
+
+**Schéma DB existant** (`/app/supabase/actoos_one/001_foundation.sql`):
+- 14 tables: users, wallets, ledger_transactions, partners, menu_items, orders, order_items, drivers, etc.
+- RLS activé sur toutes les tables
+- Indexes optimisés pour les requêtes fréquentes
+
+**Status**: Architecture en place, mode mocké fonctionnel. Pour passer en production:
+1. Configurer `REACT_APP_SUPABASE_URL` et `REACT_APP_SUPABASE_ANON_KEY` dans `.env`
+2. Exécuter `001_foundation.sql` dans Supabase SQL Editor
+3. Configurer les SMS OTP dans Supabase Auth (Twilio/etc.)
+
+---
 
 ### 2025-05-07 - Phases 3 & 4: Dashboard Partenaire & Wallet Fintech ✅
 
