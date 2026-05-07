@@ -164,6 +164,7 @@ export function AdminGodMode() {
           enabled={config.features.p2p_enabled}
           onChange={(v) => updateFeature('p2p_enabled', v)}
         />
+        {/* Parrainage désactivé pour MVP
         <FeatureToggle
           icon={<Gift className="w-5 h-5 text-pink-500" />}
           label="Parrainage"
@@ -172,6 +173,7 @@ export function AdminGodMode() {
           onChange={(v) => updateFeature('referral_enabled', v)}
           highlight
         />
+        */}
         <FeatureToggle
           icon={<Clock className="w-5 h-5 text-indigo-500" />}
           label="Commandes programmées"

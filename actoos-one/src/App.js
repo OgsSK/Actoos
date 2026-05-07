@@ -139,7 +139,8 @@ function AppContent() {
     
     // Tab routes
     if (path === '/health') {
-      setActiveTab('health');
+      // Module Pharmacie désactivé pour MVP - rediriger vers home
+      setActiveTab('eats');
       setCurrentScreen(SCREENS.HOME);
     } else if (path === '/wallet') {
       setActiveTab('wallet');
@@ -446,8 +447,9 @@ function AppContent() {
     if (tabId === 'wallet') {
       setCurrentScreen(SCREENS.WALLET);
     } else if (tabId === 'health') {
-      setCurrentScreen(SCREENS.HEALTH);
-      setSelectedPharmacy(null);
+      // Module Pharmacie désactivé pour MVP
+      setDisabledModuleSheet({ open: true, moduleId: 'pharmacy' });
+      return;
     } else if (tabId === 'profil') {
       setCurrentScreen(SCREENS.PROFIL);
     } else if (tabId === 'eats') {

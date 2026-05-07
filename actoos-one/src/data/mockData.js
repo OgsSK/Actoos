@@ -305,7 +305,8 @@ export const categories = [
 
 export const navItems = [
   { id: 'eats', label: 'Eats', icon: 'UtensilsCrossed', active: true, enabled: true },
-  { id: 'health', label: 'Health', icon: 'Heart', active: false, enabled: true },
+  // Health (Pharmacie) désactivé pour MVP
+  // { id: 'health', label: 'Health', icon: 'Heart', active: false, enabled: true },
   { id: 'wallet', label: 'Wallet', icon: 'Wallet', active: false, enabled: true },
   { id: 'profil', label: 'Profil', icon: 'User', active: false, enabled: true },
 ];

@@ -183,7 +183,8 @@ export function ProfileScreen({
           </div>
         </div>
 
-        {/* Section Parrainage */}
+        {/* Section Parrainage - DÉSACTIVÉ pour MVP */}
+        {/* 
         <div className="mb-6">
           <ReferralSection
             userId={user.id}
@@ -191,6 +192,7 @@ export function ProfileScreen({
             userPhone={user.phone}
           />
         </div>
+        */}
 
         {/* Demandes en attente - Visible si candidature soumise */}
         {(user.pending_driver || user.pending_partner) && (
