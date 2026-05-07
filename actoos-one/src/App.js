@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Header } from './components/Header';
 import { CategoryFilter } from './components/CategoryFilter';
 import { RestaurantFeed } from './components/RestaurantFeed';
@@ -26,12 +26,13 @@ import { DisabledModuleSheet } from './components/DisabledModuleSheet';
 import { BottomSheet } from './components/BottomSheet';
 import { CookieConsentSheet } from './components/CookieConsentSheet';
 import { PrivacySettingsSheet } from './components/PrivacySettingsSheet';
+import { SearchSheet } from './components/SearchSheet';
 import { CartProvider } from './context/CartContext';
 import { WalletProvider } from './context/WalletContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { restaurants, categories, navItems } from './data/mockData';
 import { getRestaurantMenu } from './data/menuData';
-import { getPharmacyProducts } from './data/healthData';
+import { getPharmacyProducts, pharmacyProducts } from './data/healthData';
 
 // App modes based on URL path
 const APP_MODES = {
@@ -87,6 +88,30 @@ function AppContent() {
   const [disabledModuleSheet, setDisabledModuleSheet] = useState({ open: false, moduleId: null });
   const [searchSheet, setSearchSheet] = useState(false);
   const [addressSheet, setAddressSheet] = useState(false);
+
+  // Prepare restaurants with full menus for search
+  const restaurantsWithMenus = useMemo(() => {
+    return restaurants.map(r => {
+      const menuData = getRestaurantMenu(r.id);
+      return menuData || {
+        ...r,
+        categories: [{
+          id: 'cat-default',
+          name: 'Menu',
+          items: [{
+            id: 'item-default-1',
+            name: 'Plat du jour',
+            price: 2500,
+          }],
+        }],
+      };
+    });
+  }, []);
+
+  // Prepare pharmacies with products for search
+  const pharmaciesWithProducts = useMemo(() => {
+    return Object.values(pharmacyProducts || {});
+  }, []);
   const [privacySheet, setPrivacySheet] = useState(false);
 
   // Load saved address from localStorage on mount
@@ -503,25 +528,21 @@ function AppContent() {
         onNotifyMe={handleNotifyMe}
       />
 
-      {/* Search Bottom Sheet */}
-      <BottomSheet
+      {/* Search Sheet */}
+      <SearchSheet
         isOpen={searchSheet}
         onClose={() => setSearchSheet(false)}
-        title="Rechercher"
-      >
-        <div className="py-2">
-          <input
-            type="text"
-            placeholder="Rechercher un restaurant, une cuisine..."
-            className="w-full bg-gray-100 text-gray-900 placeholder-gray-400 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
-            data-testid="search-input"
-            autoFocus
-          />
-          <p className="text-xs text-gray-500 mt-3 text-center">
-            Tapez pour rechercher parmi nos partenaires
-          </p>
-        </div>
-      </BottomSheet>
+        restaurants={restaurantsWithMenus}
+        pharmacies={pharmaciesWithProducts}
+        onSelectRestaurant={(restaurant) => {
+          setSelectedRestaurant(restaurant);
+          setCurrentScreen(SCREENS.RESTAURANT);
+        }}
+        onSelectPharmacy={(pharmacy) => {
+          setSelectedPharmacy(pharmacy);
+          setCurrentScreen(SCREENS.PHARMACY);
+        }}
+      />
 
       {/* Address Bottom Sheet */}
       <AddressSheet
