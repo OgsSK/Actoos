@@ -30,6 +30,82 @@
 
 ## CHANGELOG
 
+### 2025-05-07 - Order History & Live Order Tracking ✅
+**Implémentation de l'historique des commandes et du suivi en temps réel**
+
+#### Historique des commandes (Order History) :
+**Accès:**
+- Bouton "Mes commandes" ajouté dans ProfileScreen
+- data-testid='order-history-btn'
+
+**Liste des commandes:**
+- Affichage chronologique des commandes passées
+- Image restaurant, date/heure, articles, total
+- Badge statut coloré (Livrée vert, Annulée rouge)
+- Bouton "Commander à nouveau" pour commandes livrées
+
+**Détail commande:**
+- Image bannière restaurant avec overlay
+- Statut et code Handshake (#K42)
+- Mode de livraison (Livraison/À emporter)
+- Liste articles avec quantités et prix
+- Récapitulatif: sous-total, livraison, réduction, total
+- Note/avis si déjà noté
+- Bouton "Commander à nouveau" (reorder)
+
+**Fonctionnalité Reorder:**
+- Vide le panier actuel
+- Ajoute tous les articles de la commande
+- Navigue vers le restaurant pour commander
+
+#### Suivi de commande en temps réel (Order Tracking) :
+**Interface carte mockée:**
+- MockMapView avec simulation visuelle
+- Marqueur livreur animé (pulse)
+- Marqueur destination
+- Ligne de trajet simulée
+
+**Badge ETA:**
+- Heure d'arrivée estimée en haut à droite
+
+**Timeline de progression:**
+- Confirmée → En préparation → Prêt → En route → Arrivée imminente → Livrée
+- Horodatage pour chaque étape complétée
+- Progression automatique (démo 15s)
+
+**Carte livreur:**
+- Photo, nom, véhicule
+- Note moyenne
+- Boutons Appel et WhatsApp
+
+**Code de remise:**
+- Code Handshake affiché en grand
+- Bouton copier
+- Instructions pour le client
+
+**Fiche aide:**
+- Options: Retard, Article manquant, Problème adresse, Annuler
+- Lien WhatsApp support
+
+**Notation post-livraison:**
+- BottomSheet avec notation 5 étoiles
+- S'affiche automatiquement après livraison
+
+#### Fichiers créés/modifiés :
+- `/app/actoos-one/src/components/OrderHistoryScreen.jsx` - Écran historique complet
+- `/app/actoos-one/src/components/OrderTrackingScreen.jsx` - Écran suivi temps réel
+- `/app/actoos-one/src/components/ProfileScreen.jsx` - Bouton "Mes commandes" ajouté
+- `/app/actoos-one/src/components/CheckoutScreen.jsx` - Bouton "Suivre ma commande"
+- `/app/actoos-one/src/App.js` - Routes ORDER_HISTORY et ORDER_TRACKING
+
+#### Tests validés (100% pass - iteration_67) :
+- ✅ ProfileScreen affiche bouton "Mes commandes"
+- ✅ OrderHistory affiche liste commandes avec reorder
+- ✅ OrderDetail affiche tous les détails
+- ✅ OrderTracking composant complet implémenté
+- ✅ Design Light Mode avec accent orange
+
+---
 
 ### 2025-05-07 - Dashboard Analytics Partner & React Router DOM ✅
 **Implémentation du tableau de bord partenaire et migration vers React Router**
@@ -683,7 +759,7 @@
 ---
 
 ## Credentials & Config (MOCK)
-- **Mock OTP pour tests**: `1366`
+- **Mock OTP pour tests**: Code affiché en mode dev (ex: 3888, 7101...)
 - **Ville par défaut**: Bamako, Mali
 - **Préfixe téléphone**: +223
 
