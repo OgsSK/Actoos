@@ -134,14 +134,7 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
           </button>
         </div>
 
-        {/* Mode mocké indicator */}
-        {useMockAuth && (
-          <div className="mb-4 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
-            <p className="text-xs text-orange-700">
-              Mode démo : entrez n'importe quel code à 4 chiffres
-            </p>
-          </div>
-        )}
+        {/* Mode indication removed for production */}
 
         {/* Phone Input Step */}
         {status !== AUTH_STATUS.OTP_SENT && (
