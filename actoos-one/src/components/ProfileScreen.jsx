@@ -35,7 +35,7 @@ const MOCK_USER = {
   // Rôles validés par l'admin (activés pour démo)
   role_partner: true,
   role_driver: true,
-  role_admin: false,
+  role_admin: true, // GOD MODE activé
   // Demandes en cours
   pending_partner: false,
   pending_driver: false,
