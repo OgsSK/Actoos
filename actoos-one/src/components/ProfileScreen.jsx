@@ -21,10 +21,12 @@ import {
   Mail,
   ChevronDown,
   Package,
-  History
+  History,
+  Heart
 } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 import { ReferralSection } from './ReferralSection';
+import { useFavorites } from '../context/FavoritesContext';
 
 // Mock user data - CLIENT APP (no admin roles visible)
 const MOCK_USER = {
@@ -76,8 +78,11 @@ export function ProfileScreen({
   onPartnerOnboarding,
   onPrivacyClick,
   onTermsClick,
-  onOrderHistory
+  onOrderHistory,
+  onFavorites
 }) {
+  const { getFavoritesCount } = useFavorites();
+  const favoritesCount = getFavoritesCount();
   const [user, setUser] = useState(MOCK_USER);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -267,7 +272,7 @@ export function ProfileScreen({
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
           <button
             onClick={onOrderHistory}
-            className="w-full px-4 py-4 flex items-center gap-4 active:bg-gray-50"
+            className="w-full px-4 py-4 flex items-center gap-4 active:bg-gray-50 border-b border-gray-100"
             data-testid="order-history-btn"
           >
             <div className="w-12 h-12 bg-[#FF5A00]/10 rounded-2xl flex items-center justify-center">
@@ -277,6 +282,32 @@ export function ProfileScreen({
               <p className="font-semibold text-gray-900">Mes commandes</p>
               <p className="text-xs text-gray-500">Historique et commander à nouveau</p>
             </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
+          
+          {/* Mes favoris */}
+          <button
+            onClick={onFavorites}
+            className="w-full px-4 py-4 flex items-center gap-4 active:bg-gray-50"
+            data-testid="favorites-btn"
+          >
+            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center">
+              <Heart className="w-6 h-6 text-red-500" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-semibold text-gray-900">Mes favoris</p>
+              <p className="text-xs text-gray-500">
+                {favoritesCount > 0 
+                  ? `${favoritesCount} établissement${favoritesCount > 1 ? 's' : ''} sauvegardé${favoritesCount > 1 ? 's' : ''}`
+                  : 'Vos restaurants préférés'
+                }
+              </p>
+            </div>
+            {favoritesCount > 0 && (
+              <span className="w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {favoritesCount}
+              </span>
+            )}
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </button>
         </div>

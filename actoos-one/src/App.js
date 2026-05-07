@@ -31,8 +31,11 @@ import { CookieConsentSheet } from './components/CookieConsentSheet';
 import { PrivacySettingsSheet } from './components/PrivacySettingsSheet';
 import { SearchSheet } from './components/SearchSheet';
 import { PromoBanner } from './components/PromoBanner';
+import { FavoritesScreen } from './components/FavoritesScreen';
+import { RatingSheet } from './components/RatingSystem';
 import { CartProvider } from './context/CartContext';
 import { WalletProvider } from './context/WalletContext';
+import { FavoritesProvider } from './context/FavoritesContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { restaurants, categories, navItems } from './data/mockData';
 import { getRestaurantMenu } from './data/menuData';
@@ -73,6 +76,7 @@ const SCREENS = {
   PHARMACY: 'pharmacy',
   PROFIL: 'profil',
   ORDER_HISTORY: 'order_history',
+  FAVORITES: 'favorites',
 };
 
 function AppContent() {
@@ -532,6 +536,20 @@ function AppContent() {
     );
   }
 
+  if (currentScreen === SCREENS.FAVORITES) {
+    return (
+      <FavoritesScreen
+        onBack={() => setCurrentScreen(SCREENS.PROFIL)}
+        onSelectPartner={(partner) => {
+          const restaurant = restaurants.find(r => r.id === partner.id);
+          if (restaurant) {
+            handleRestaurantClick(restaurant);
+          }
+        }}
+      />
+    );
+  }
+
   if (currentScreen === SCREENS.PROFIL) {
     return (
       <>
@@ -545,6 +563,7 @@ function AppContent() {
           onPrivacyClick={() => setPrivacySheet(true)}
           onTermsClick={() => setCurrentScreen(SCREENS.TERMS)}
           onOrderHistory={() => setCurrentScreen(SCREENS.ORDER_HISTORY)}
+          onFavorites={() => setCurrentScreen(SCREENS.FAVORITES)}
         />
         <LocationPermissionSheet
           isOpen={showLocationPermission}
@@ -874,11 +893,13 @@ function AdminApp() {
 // Client App wrapped with providers
 function ClientApp() {
   return (
-    <WalletProvider>
-      <CartProvider>
-        <AppContent />
-      </CartProvider>
-    </WalletProvider>
+    <FavoritesProvider>
+      <WalletProvider>
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
+      </WalletProvider>
+    </FavoritesProvider>
   );
 }
 

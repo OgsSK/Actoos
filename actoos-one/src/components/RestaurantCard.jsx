@@ -1,11 +1,19 @@
-import { Star, Clock, Bike, Tag } from 'lucide-react';
+import { Star, Clock, Bike, Tag, Heart } from 'lucide-react';
 import { useLazyImage } from '../hooks/useLazyImage';
 import { systemConfig } from '../data/mockData';
 import { getRestaurantPromotions } from '../data/promotionsData';
+import { useFavorites } from '../context/FavoritesContext';
 
 export function RestaurantCard({ restaurant, onClick }) {
   const { imgRef, isLoaded, isInView } = useLazyImage(restaurant.image);
   const promos = getRestaurantPromotions(restaurant.id);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const isFav = isFavorite(restaurant.id);
+
+  const handleFavoriteClick = (e) => {
+    e.stopPropagation();
+    toggleFavorite(restaurant);
+  };
 
   return (
     <button
@@ -45,6 +53,20 @@ export function RestaurantCard({ restaurant, onClick }) {
             <span className="text-xs font-semibold text-white">Populaire</span>
           </div>
         )}
+
+        {/* Favorite Button */}
+        <button
+          onClick={handleFavoriteClick}
+          className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-95 ${
+            isFav 
+              ? 'bg-red-500 text-white' 
+              : 'bg-white/90 text-gray-600 backdrop-blur-sm shadow-md'
+          }`}
+          data-testid={`favorite-btn-${restaurant.id}`}
+          aria-label={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+        >
+          <Heart className={`w-4 h-4 ${isFav ? 'fill-white' : ''}`} />
+        </button>
         
         {/* Closed Overlay */}
         {!restaurant.isOpen && (
