@@ -130,16 +130,20 @@ export async function getDriverWallet(userId) {
   }
 
   try {
-    const { data: wallet, error } = await supabase
+    // Utiliser maybeSingle() au lieu de single() pour éviter l'erreur si pas de résultat
+    const { data: wallets, error } = await supabase
       .from('wallets')
       .select('*')
-      .eq('owner_id', userId)
-      .single();
+      .eq('owner_id', userId);
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error) throw error;
+
+    // Prendre le premier wallet si existe
+    const wallet = wallets && wallets.length > 0 ? wallets[0] : null;
 
     // Si pas de wallet, en créer un
     if (!wallet) {
+      console.log('📱 Création nouveau wallet pour user:', userId);
       const { data: newWallet, error: createError } = await supabase
         .from('wallets')
         .insert({ owner_id: userId, balance: 0 })
@@ -150,6 +154,7 @@ export async function getDriverWallet(userId) {
       return { data: newWallet, error: null };
     }
 
+    console.log('📱 Wallet trouvé:', wallet.id, '- Balance:', wallet.balance);
     return { data: wallet, error: null };
   } catch (error) {
     console.error('Erreur getDriverWallet:', error);
