@@ -1,0 +1,80 @@
+{
+  "summary": "ACTOOS ONE - KDS Menu and Partner Settings CRUD Testing. All 8 requested features tested successfully. KDS Menu loads 102 articles from Supabase, Ajouter button opens add item form, Config tab loads partner settings with all toggles interactive, Driver App loads in test mode, Admin Dashboard loads onboarding requests.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "PartnerSettings - Self-Delivery row",
+        "issues": ["HTML validation warning: Nested <button> elements - ToggleSwitch button is inside a parent button element. Should use <div> instead of <button> for the parent container."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_75.json"
+  ],
+  "action_items": [
+    "MINOR: Fix nested button HTML validation issue in PartnerSettings.jsx line 292-317 - change parent <button> to <div> for Self-Delivery row"
+  ],
+  "critical_code_review_comments": [
+    "PartnerSettings.jsx line 292-317: Nested buttons cause HTML validation error. The Self-Delivery row has a <button> parent containing a ToggleSwitch which is also a <button>. This causes React hydration warnings."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Frontend only testing",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "admin_email": "contact@actoos.com",
+    "admin_password": "Salifkane&&7",
+    "test_mode_access": "?test=true URL parameter for Partner KDS and Driver App"
+  },
+  "seed_data_creation": "None - used existing Supabase data",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "ACTOOS ONE PWA delivery app. KDS Menu and Partner Settings now use real Supabase CRUD. Access Partner KDS via /partner?test=true, Driver App via /driver?test=true. Admin dashboard requires email/password login.",
+  "features_tested": {
+    "1_kds_menu_loads_items_from_supabase": {
+      "status": "PASS",
+      "details": "KDS Menu tab loads 102 articles from Supabase menu_items table. Shows stats: 102 Articles disponibles, 0 En rupture. Items grouped by category (ACCOMPAGNEMENTS, etc.)"
+    },
+    "2_kds_menu_item_availability_toggle": {
+      "status": "PASS",
+      "details": "Toggle buttons present for all 102 menu items. Toggle click triggers Supabase update via toggleAvailability function. Visual state changes from green (available) to gray (unavailable)."
+    },
+    "3_kds_menu_ajouter_button": {
+      "status": "PASS",
+      "details": "Ajouter button opens BottomSheet with 'Nouvel article' form. Form includes: Nom de l'article, Prix (FCFA), Catégorie selection, Description, URL de l'image, Temps de préparation presets (10-45 min), Disponible maintenant toggle, Marquer comme populaire toggle."
+    },
+    "4_kds_config_loads_partner_settings": {
+      "status": "PASS",
+      "details": "Config tab loads PartnerSettings component with all settings from Supabase. Shows: Temps de préparation (20 min), Horaires d'ouverture (08:00 - 22:00), Options de livraison, Paiements, Commandes programmées."
+    },
+    "5_kds_config_toggles_interactive": {
+      "status": "PASS",
+      "details": "All toggles are interactive: Actoos Delivery (ON), Self-Delivery (OFF), Pickup (ON), Cash (ON), Commandes programmées (ON), Commander même fermé (ON). Toggle state changes trigger updateSetting function."
+    },
+    "6_kds_config_prep_time_sheet": {
+      "status": "PASS",
+      "details": "Temps de préparation button opens BottomSheet with slider (10-60 min range) and preset buttons (15, 20, 30, 45 min). Current value: 20 min. Confirmer button closes sheet."
+    },
+    "7_driver_app_test_mode": {
+      "status": "PASS",
+      "details": "Driver App loads correctly at /driver?test=true. Shows: ACTOOS Driver header, Hors ligne status, Stats (Solde: 0 F, Aujourd'hui: 0 F, Livraisons: 0), Online toggle, 'Passer en ligne' button."
+    },
+    "8_admin_dashboard_onboarding_requests": {
+      "status": "PASS",
+      "details": "Admin Dashboard loads after login. Inscriptions tab shows 'Demandes d'inscription' with stats: 0 En attente, 0 Approuvées, 0 Rejetées. Empty state message: 'Aucune demande d'inscription'."
+    }
+  },
+  "supabase_integration_verified": {
+    "menu_items": "REAL - 102 items loaded from menu_items table",
+    "partner_settings": "REAL - Settings loaded from partners table",
+    "toggle_updates": "REAL - Updates sent to Supabase on toggle click",
+    "realtime_subscriptions": "CONFIGURED - KDS subscribes to orders channel"
+  }
+}
