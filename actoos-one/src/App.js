@@ -12,6 +12,8 @@ import { PartnerKDSScreen } from './components/PartnerKDSScreen';
 import { DriverAppScreen } from './components/DriverAppScreen';
 import { AdminDashboard } from './components/AdminDashboard';
 import { WalletScreen } from './components/WalletScreen';
+import { HealthScreen } from './components/HealthScreen';
+import { PharmacyScreen } from './components/PharmacyScreen';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -24,6 +26,7 @@ import { WalletProvider } from './context/WalletContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { restaurants, categories, navItems } from './data/mockData';
 import { getRestaurantMenu } from './data/menuData';
+import { getPharmacyProducts } from './data/healthData';
 
 // Screens enum
 const SCREENS = {
@@ -38,6 +41,8 @@ const SCREENS = {
   DRIVER_APP: 'driver_app',
   ADMIN_DASHBOARD: 'admin_dashboard',
   WALLET: 'wallet',
+  HEALTH: 'health',
+  PHARMACY: 'pharmacy',
 };
 
 function AppContent() {
@@ -50,6 +55,7 @@ function AppContent() {
   // Navigation state
   const [currentScreen, setCurrentScreen] = useState(SCREENS.HOME);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [selectedPharmacy, setSelectedPharmacy] = useState(null);
   
   // Bottom Sheet states
   const [disabledModuleSheet, setDisabledModuleSheet] = useState({ open: false, moduleId: null });
@@ -104,6 +110,7 @@ function AppContent() {
   const handleBackToHome = () => {
     setCurrentScreen(SCREENS.HOME);
     setSelectedRestaurant(null);
+    setSelectedPharmacy(null);
   };
 
   const handleGoToCheckout = () => {
@@ -111,12 +118,18 @@ function AppContent() {
   };
 
   const handleBackFromCheckout = () => {
-    setCurrentScreen(SCREENS.RESTAURANT);
+    // Return to pharmacy or restaurant based on context
+    if (selectedPharmacy) {
+      setCurrentScreen(SCREENS.PHARMACY);
+    } else {
+      setCurrentScreen(SCREENS.RESTAURANT);
+    }
   };
 
   const handleOrderComplete = () => {
     setCurrentScreen(SCREENS.HOME);
     setSelectedRestaurant(null);
+    setSelectedPharmacy(null);
   };
 
   const handleDisabledTabClick = (item) => {
@@ -128,10 +141,33 @@ function AppContent() {
     setActiveTab(tabId);
     if (tabId === 'wallet') {
       setCurrentScreen(SCREENS.WALLET);
+    } else if (tabId === 'health') {
+      setCurrentScreen(SCREENS.HEALTH);
+      setSelectedPharmacy(null);
     } else if (tabId === 'eats') {
       setCurrentScreen(SCREENS.HOME);
       setSelectedRestaurant(null);
+      setSelectedPharmacy(null);
     }
+  };
+
+  // Health / Pharmacy handlers
+  const handlePharmacyClick = (pharmacy) => {
+    const pharmacyData = getPharmacyProducts(pharmacy.id);
+    if (pharmacyData) {
+      setSelectedPharmacy(pharmacyData);
+    } else {
+      setSelectedPharmacy({
+        ...pharmacy,
+        categories: [],
+      });
+    }
+    setCurrentScreen(SCREENS.PHARMACY);
+  };
+
+  const handleBackToHealth = () => {
+    setCurrentScreen(SCREENS.HEALTH);
+    setSelectedPharmacy(null);
   };
 
   const handleNotifyMe = (moduleId) => {
@@ -153,6 +189,25 @@ function AppContent() {
   };
 
   // Render based on current screen
+  if (currentScreen === SCREENS.HEALTH) {
+    return (
+      <HealthScreen
+        onBack={handleBackToHome}
+        onPharmacyClick={handlePharmacyClick}
+      />
+    );
+  }
+
+  if (currentScreen === SCREENS.PHARMACY && selectedPharmacy) {
+    return (
+      <PharmacyScreen
+        pharmacy={selectedPharmacy}
+        onBack={handleBackToHealth}
+        onCheckout={handleGoToCheckout}
+      />
+    );
+  }
+
   if (currentScreen === SCREENS.WALLET) {
     return <WalletScreen onBack={handleBackToHome} />;
   }
@@ -195,10 +250,12 @@ function AppContent() {
     );
   }
 
-  if (currentScreen === SCREENS.CHECKOUT && selectedRestaurant) {
+  if (currentScreen === SCREENS.CHECKOUT && (selectedRestaurant || selectedPharmacy)) {
+    // Use pharmacy or restaurant data
+    const checkoutEntity = selectedPharmacy || selectedRestaurant;
     return (
       <CheckoutScreen
-        restaurant={selectedRestaurant}
+        restaurant={checkoutEntity}
         onBack={handleBackFromCheckout}
         onOrderComplete={handleOrderComplete}
       />

@@ -30,6 +30,42 @@
 
 ## CHANGELOG
 
+### 2025-01-07 - Mission 9 Complete ✅
+**ACTOOS HEALTH - Pharmacies, Labos & Cliniques**
+
+#### Health Screen (`HealthScreen.jsx`):
+- Liste des pharmacies, laboratoires et cliniques mockés
+- Filtres par catégorie (Tout, Pharmacies, Laboratoires, Cliniques)
+- Barre de recherche
+- Cartes avec badges (type, ouvert/fermé, recommandé)
+- Indicateurs: rating, distance, temps livraison, "Accepte ordonnances"
+
+#### Pharmacy Screen (`PharmacyScreen.jsx`):
+- Détails pharmacie (image, nom, horaires, téléphone)
+- Bouton "Envoyer une ordonnance"
+- Liste des produits par catégorie
+- Badge "Ordonnance" pour médicaments sur prescription
+- Ajouter au panier avec quantité (max par commande)
+- Warning si produit nécessite ordonnance
+
+#### Ordonnance Upload Sheet (`OrdonnanceUploadSheet.jsx`):
+- Zone de drop/sélection de fichier (mock)
+- Aperçu de l'image uploadée
+- Notes pour le pharmacien
+- Explication du processus (4 étapes)
+- Simulation d'envoi avec feedback
+
+#### Données mockées (`healthData.js`):
+- 5 établissements (3 pharmacies, 1 labo, 1 clinique)
+- Produits par pharmacie (médicaments, vitamines, premiers soins)
+- Flags: requires_prescription, max_per_order, is_available
+
+#### Checkout:
+- Réutilise CheckoutScreen.jsx existant (Adresse → OTP → Wallet/Cash)
+- Compatible pharmacie et restaurant
+
+---
+
 ### 2025-01-07 - Mission 8 Complete ✅
 **Wallet & TouchPay Integration**
 
@@ -214,12 +250,18 @@
 - [x] Mission 6: KDS Restaurateur (ACTOOS PRO)
 - [x] Mission 7: Driver App & Admin Dashboard (GOD MODE)
 - [x] Mission 8: Wallet & TouchPay Integration
+- [x] Mission 9: ACTOOS HEALTH (Pharmacies, Ordonnances)
 
 ### P1 - Prochaines étapes
-- [ ] Mission 9: À définir selon votre prochain prompt
+- [ ] Mission 10: À définir selon votre prochain prompt
 - [ ] Connecter Supabase JS Client au frontend
 - [ ] OTP réel côté serveur (Supabase Edge Functions)
 - [ ] TouchPay API réelle (sandbox)
+
+### P2 - À venir
+- [ ] Module ACTOOS BLACK (VTC)
+- [ ] Module Profil utilisateur
+- [ ] Push Notifications
 
 ### P2 - À venir
 - [ ] OTP réel côté serveur (Supabase Edge Functions)
@@ -257,6 +299,9 @@
 │   │   ├── AdminDashboard.jsx
 │   │   ├── WalletScreen.jsx
 │   │   ├── TouchPaySheet.jsx
+│   │   ├── HealthScreen.jsx
+│   │   ├── PharmacyScreen.jsx
+│   │   ├── OrdonnanceUploadSheet.jsx
 │   │   ├── TermsScreen.jsx
 │   │   ├── LegalScreen.jsx
 │   │   ├── CookieConsentSheet.jsx
@@ -273,7 +318,8 @@
 │   │   ├── mockData.js
 │   │   ├── menuData.js
 │   │   ├── kdsData.js
-│   │   └── driverData.js
+│   │   ├── driverData.js
+│   │   └── healthData.js
 │   ├── hooks/
 │   │   ├── useOnlineStatus.js
 │   │   └── useLazyImage.js
