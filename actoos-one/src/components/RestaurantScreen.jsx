@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Star, Clock, Bike, ShoppingBag } from 'lucide-react';
 import { MenuItem } from './MenuItem';
 import { AddToCartSheet } from './AddToCartSheet';
@@ -7,13 +7,77 @@ import { systemConfig } from '../data/mockData';
 
 export function RestaurantScreen({ restaurant, onBack, onCheckout }) {
   const [selectedItem, setSelectedItem] = useState(null);
+  const [activeCategory, setActiveCategory] = useState(null);
   const { getItemCount, getTotal } = useCart();
+  
+  // Refs for category sections and nav
+  const categoryRefs = useRef({});
+  const navRef = useRef(null);
+  const containerRef = useRef(null);
 
   const itemCount = getItemCount();
   const total = getTotal();
 
+  // Set first category as active on mount
+  useEffect(() => {
+    if (restaurant?.categories?.length > 0 && !activeCategory) {
+      setActiveCategory(restaurant.categories[0].id);
+    }
+  }, [restaurant, activeCategory]);
+
+  // Handle scroll to detect active category
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+      
+      const scrollTop = containerRef.current.scrollTop;
+      const navHeight = navRef.current?.offsetHeight || 0;
+      const headerOffset = 200 + navHeight; // Image height + nav height
+      
+      // Find which category is currently in view
+      for (const category of restaurant?.categories || []) {
+        const element = categoryRefs.current[category.id];
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          const containerRect = containerRef.current.getBoundingClientRect();
+          const relativeTop = rect.top - containerRect.top;
+          
+          if (relativeTop <= headerOffset + 50 && relativeTop > -rect.height + 100) {
+            setActiveCategory(category.id);
+            break;
+          }
+        }
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [restaurant]);
+
+  // Scroll to category when nav item is clicked
+  const scrollToCategory = (categoryId) => {
+    const element = categoryRefs.current[categoryId];
+    if (element && containerRef.current) {
+      const navHeight = navRef.current?.offsetHeight || 0;
+      const elementTop = element.offsetTop;
+      
+      containerRef.current.scrollTo({
+        top: elementTop - navHeight - 200, // Account for header image + nav
+        behavior: 'smooth'
+      });
+      setActiveCategory(categoryId);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-32" data-testid="restaurant-screen">
+    <div 
+      ref={containerRef}
+      className="min-h-screen bg-gray-50 pb-32 overflow-y-auto" 
+      data-testid="restaurant-screen"
+    >
       {/* Header avec image */}
       <div className="relative">
         <img
@@ -60,10 +124,37 @@ export function RestaurantScreen({ restaurant, onBack, onCheckout }) {
         </div>
       </div>
 
+      {/* Category Navigation Bar - Sticky */}
+      <div 
+        ref={navRef}
+        className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm"
+      >
+        <div className="flex overflow-x-auto scrollbar-hide px-4 py-2 gap-2">
+          {restaurant.categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => scrollToCategory(category.id)}
+              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                activeCategory === category.id
+                  ? 'bg-[#FF5A00] text-white'
+                  : 'bg-gray-100 text-gray-700 active:bg-gray-200'
+              }`}
+              data-testid={`nav-category-${category.id}`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Menu par catégories */}
       <div className="px-4 py-4">
         {restaurant.categories.map((category) => (
-          <div key={category.id} className="mb-6">
+          <div 
+            key={category.id} 
+            ref={(el) => categoryRefs.current[category.id] = el}
+            className="mb-6"
+          >
             <h2 className="text-lg font-semibold text-gray-900 mb-3" data-testid={`category-${category.id}`}>
               {category.name}
             </h2>

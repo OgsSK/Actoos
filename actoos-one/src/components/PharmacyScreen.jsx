@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   ArrowLeft,
   Star,
@@ -24,9 +24,67 @@ export function PharmacyScreen({ pharmacy, onBack, onCheckout }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [showPrescriptionWarning, setShowPrescriptionWarning] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(null);
+
+  // Refs for category sections and nav
+  const categoryRefs = useRef({});
+  const navRef = useRef(null);
+  const containerRef = useRef(null);
 
   const cartTotal = getTotal();
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Set first category as active on mount
+  useEffect(() => {
+    if (pharmacy?.categories?.length > 0 && !activeCategory) {
+      setActiveCategory(pharmacy.categories[0].id);
+    }
+  }, [pharmacy, activeCategory]);
+
+  // Handle scroll to detect active category
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+      
+      const navHeight = navRef.current?.offsetHeight || 0;
+      const headerOffset = 300 + navHeight; // Image + info bar height + nav height
+      
+      for (const category of pharmacy?.categories || []) {
+        const element = categoryRefs.current[category.id];
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          const containerRect = containerRef.current.getBoundingClientRect();
+          const relativeTop = rect.top - containerRect.top;
+          
+          if (relativeTop <= headerOffset + 50 && relativeTop > -rect.height + 100) {
+            setActiveCategory(category.id);
+            break;
+          }
+        }
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [pharmacy]);
+
+  // Scroll to category when nav item is clicked
+  const scrollToCategory = (categoryId) => {
+    const element = categoryRefs.current[categoryId];
+    if (element && containerRef.current) {
+      const navHeight = navRef.current?.offsetHeight || 0;
+      const elementTop = element.offsetTop;
+      
+      containerRef.current.scrollTo({
+        top: elementTop - navHeight - 250,
+        behavior: 'smooth'
+      });
+      setActiveCategory(categoryId);
+    }
+  };
 
   const handleAddItem = (item) => {
     if (item.requires_prescription) {
@@ -55,7 +113,11 @@ export function PharmacyScreen({ pharmacy, onBack, onCheckout }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32" data-testid="pharmacy-screen">
+    <div 
+      ref={containerRef}
+      className="min-h-screen bg-gray-50 pb-32 overflow-y-auto" 
+      data-testid="pharmacy-screen"
+    >
       {/* Header Image */}
       <div className="relative h-48">
         <div
@@ -131,10 +193,39 @@ export function PharmacyScreen({ pharmacy, onBack, onCheckout }) {
         </div>
       )}
 
+      {/* Category Navigation Bar - Sticky */}
+      {pharmacy.categories && pharmacy.categories.length > 0 && (
+        <div 
+          ref={navRef}
+          className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm"
+        >
+          <div className="flex overflow-x-auto scrollbar-hide px-4 py-2 gap-2">
+            {pharmacy.categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => scrollToCategory(category.id)}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  activeCategory === category.id
+                    ? 'bg-[#FF5A00] text-white'
+                    : 'bg-gray-100 text-gray-700 active:bg-gray-200'
+                }`}
+                data-testid={`nav-category-${category.id}`}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Products */}
       <div className="p-4">
         {pharmacy.categories?.map((category) => (
-          <div key={category.id} className="mb-6">
+          <div 
+            key={category.id} 
+            ref={(el) => categoryRefs.current[category.id] = el}
+            className="mb-6"
+          >
             <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <Pill className="w-5 h-5 text-primary" />
               {category.name}
