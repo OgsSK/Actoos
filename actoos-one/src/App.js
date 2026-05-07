@@ -11,6 +11,7 @@ import { LegalScreen } from './components/LegalScreen';
 import { PartnerKDSScreen } from './components/PartnerKDSScreen';
 import { DriverAppScreen } from './components/DriverAppScreen';
 import { AdminDashboard } from './components/AdminDashboard';
+import { WalletScreen } from './components/WalletScreen';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -19,6 +20,7 @@ import { BottomSheet } from './components/BottomSheet';
 import { CookieConsentSheet } from './components/CookieConsentSheet';
 import { PrivacySettingsSheet } from './components/PrivacySettingsSheet';
 import { CartProvider } from './context/CartContext';
+import { WalletProvider } from './context/WalletContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { restaurants, categories, navItems } from './data/mockData';
 import { getRestaurantMenu } from './data/menuData';
@@ -35,6 +37,7 @@ const SCREENS = {
   PARTNER_KDS: 'partner_kds',
   DRIVER_APP: 'driver_app',
   ADMIN_DASHBOARD: 'admin_dashboard',
+  WALLET: 'wallet',
 };
 
 function AppContent() {
@@ -120,6 +123,17 @@ function AppContent() {
     setDisabledModuleSheet({ open: true, moduleId: item.id });
   };
 
+  // Handle tab change with navigation
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    if (tabId === 'wallet') {
+      setCurrentScreen(SCREENS.WALLET);
+    } else if (tabId === 'eats') {
+      setCurrentScreen(SCREENS.HOME);
+      setSelectedRestaurant(null);
+    }
+  };
+
   const handleNotifyMe = (moduleId) => {
     console.log('User wants notification for:', moduleId);
     alert(`✅ Vous serez notifié dès que ${moduleId.toUpperCase()} sera disponible !`);
@@ -139,6 +153,10 @@ function AppContent() {
   };
 
   // Render based on current screen
+  if (currentScreen === SCREENS.WALLET) {
+    return <WalletScreen onBack={handleBackToHome} />;
+  }
+
   if (currentScreen === SCREENS.ADMIN_DASHBOARD) {
     return <AdminDashboard onBack={handleBackToHome} />;
   }
@@ -247,7 +265,7 @@ function AppContent() {
       <BottomNav
         items={navItems}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         onDisabledTabClick={handleDisabledTabClick}
       />
 
@@ -317,9 +335,11 @@ function AppContent() {
 
 function App() {
   return (
-    <CartProvider>
-      <AppContent />
-    </CartProvider>
+    <WalletProvider>
+      <CartProvider>
+        <AppContent />
+      </CartProvider>
+    </WalletProvider>
   );
 }
 

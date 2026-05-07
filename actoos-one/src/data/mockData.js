@@ -88,7 +88,7 @@ export const categories = [
 export const navItems = [
   { id: 'eats', label: 'Eats', icon: 'UtensilsCrossed', active: true, enabled: true },
   { id: 'health', label: 'Health', icon: 'Heart', active: false, enabled: false },
-  { id: 'wallet', label: 'Wallet', icon: 'Wallet', active: false, enabled: false },
+  { id: 'wallet', label: 'Wallet', icon: 'Wallet', active: false, enabled: true },
   { id: 'black', label: 'Black', icon: 'Car', active: false, enabled: false },
   { id: 'profil', label: 'Profil', icon: 'User', active: false, enabled: false },
 ];
@@ -102,7 +102,7 @@ export const systemConfig = {
   featureFlags: {
     eats: true,
     health: false,
-    wallet: false,
+    wallet: true,
     black: false,
   },
 };

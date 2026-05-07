@@ -30,6 +30,42 @@
 
 ## CHANGELOG
 
+### 2025-01-07 - Mission 8 Complete ✅
+**Wallet & TouchPay Integration**
+
+#### Wallet Context (`WalletContext.jsx`):
+- État global du wallet (solde, transactions)
+- Méthodes: `topUp()`, `pay()`, `refund()`, `hasEnoughBalance()`
+- Types de transactions: TOPUP, PAYMENT, REFUND, EARNING
+- Transactions loggées dans ledger (format mock)
+
+#### Wallet Screen (`WalletScreen.jsx`):
+- Header orange avec solde en grand
+- Bouton "Recharger" → ouvre TouchPay
+- Historique des transactions avec icônes colorées
+- Statut et date pour chaque transaction
+
+#### TouchPay Sheet (`TouchPaySheet.jsx`):
+- Simulation de paiement TouchPay Mali
+- Montants prédéfinis (1000, 2000, 5000, 10000 FCFA)
+- Montant personnalisé
+- Champ téléphone +223
+- Animation de traitement et confirmation
+
+#### Checkout avec Wallet:
+- Option "ACTOOS Wallet" par défaut
+- Affichage du solde dans l'étape paiement
+- Alerte si solde insuffisant avec montant manquant
+- Boutons "Recharger maintenant" ou "Payer en Cash"
+- Jamais de commande impayée (blocage si wallet insuffisant)
+- Transaction PAYMENT loggée après paiement réussi
+
+#### Navigation:
+- Onglet Wallet activé dans BottomNav (`feature_wallet=true`)
+- Navigation vers WalletScreen depuis la navbar
+
+---
+
 ### 2025-01-07 - Mission 7 Complete ✅
 **Driver App & Admin Dashboard (GOD MODE)**
 
@@ -177,11 +213,13 @@
 - [x] Mission 5: Onboarding Funnels, Legal, Cookie Consent
 - [x] Mission 6: KDS Restaurateur (ACTOOS PRO)
 - [x] Mission 7: Driver App & Admin Dashboard (GOD MODE)
+- [x] Mission 8: Wallet & TouchPay Integration
 
 ### P1 - Prochaines étapes
-- [ ] Mission 8: À définir selon votre prochain prompt
+- [ ] Mission 9: À définir selon votre prochain prompt
 - [ ] Connecter Supabase JS Client au frontend
 - [ ] OTP réel côté serveur (Supabase Edge Functions)
+- [ ] TouchPay API réelle (sandbox)
 
 ### P2 - À venir
 - [ ] OTP réel côté serveur (Supabase Edge Functions)
@@ -217,6 +255,8 @@
 │   │   ├── KDSMenuManager.jsx
 │   │   ├── DriverAppScreen.jsx
 │   │   ├── AdminDashboard.jsx
+│   │   ├── WalletScreen.jsx
+│   │   ├── TouchPaySheet.jsx
 │   │   ├── TermsScreen.jsx
 │   │   ├── LegalScreen.jsx
 │   │   ├── CookieConsentSheet.jsx
@@ -227,7 +267,8 @@
 │   │   ├── Footer.jsx
 │   │   └── OfflineBanner.jsx
 │   ├── context/
-│   │   └── CartContext.jsx
+│   │   ├── CartContext.jsx
+│   │   └── WalletContext.jsx
 │   ├── data/
 │   │   ├── mockData.js
 │   │   ├── menuData.js

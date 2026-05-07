@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { ArrowLeft, MapPin, Phone, CreditCard, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, CreditCard, CheckCircle, Loader2, Wallet, AlertCircle } from 'lucide-react';
 import { OTPInput } from './OTPInput';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
+import { TouchPaySheet } from './TouchPaySheet';
 import { useCart } from '../context/CartContext';
+import { useWallet } from '../context/WalletContext';
 import { sendOTP, verifyOTP } from '../services/otpService';
 import { calculateOrderTotal, createOrder } from '../services/orderService';
 import { systemConfig } from '../data/mockData';
@@ -18,6 +20,7 @@ const STEPS = {
 
 export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   const { cartItems, getTotal, clearCart } = useCart();
+  const { balance, pay, hasEnoughBalance } = useWallet();
   const [currentStep, setCurrentStep] = useState(STEPS.ADDRESS);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,13 +30,16 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   const [addressDetails, setAddressDetails] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('+223 ');
   const [otp, setOtp] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('mobile_money');
+  const [paymentMethod, setPaymentMethod] = useState('wallet');
   
   // OTP dev helper
   const [devOtp, setDevOtp] = useState('');
   
   // Order result
   const [orderResult, setOrderResult] = useState(null);
+  
+  // TopUp sheet for insufficient balance
+  const [showTopUp, setShowTopUp] = useState(false);
 
   // Calculer le total
   const orderTotals = calculateOrderTotal(cartItems, restaurant?.deliveryFee || 500);
@@ -87,10 +93,28 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   };
 
   const handlePlaceOrder = async () => {
+    // Vérifier le solde si paiement wallet
+    if (paymentMethod === 'wallet') {
+      if (!hasEnoughBalance(orderTotals.total)) {
+        setError('Solde insuffisant');
+        setShowTopUp(true);
+        return;
+      }
+    }
+    
     setIsLoading(true);
     setError('');
     
     try {
+      // Si paiement wallet, débiter d'abord
+      if (paymentMethod === 'wallet') {
+        await pay(
+          orderTotals.total,
+          `ORD-${Date.now()}`,
+          `Commande - ${restaurant.name}`
+        );
+      }
+      
       const orderData = {
         restaurant_id: restaurant.id,
         restaurant_name: restaurant.name,
@@ -105,6 +129,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
         delivery_details: addressDetails,
         phone: phoneNumber,
         payment_method: paymentMethod,
+        payment_status: paymentMethod === 'cash' ? 'pending' : 'paid',
         ...orderTotals,
       };
       
@@ -118,10 +143,16 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
         setError(result.error || 'Erreur lors de la commande');
       }
     } catch (err) {
-      setError('Erreur de connexion');
+      setError(err.message || 'Erreur de connexion');
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  // Callback après recharge réussie
+  const handleTopUpSuccess = (amount) => {
+    setShowTopUp(false);
+    setError('');
   };
 
   const renderStepContent = () => {
@@ -296,6 +327,9 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
         );
 
       case STEPS.PAYMENT:
+        const insufficientBalance = paymentMethod === 'wallet' && !hasEnoughBalance(orderTotals.total);
+        const missingAmount = orderTotals.total - balance;
+        
         return (
           <div className="space-y-4">
             <div className="text-center mb-6">
@@ -306,10 +340,68 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               <p className="text-sm text-gray-500 mt-1">Comment souhaitez-vous payer ?</p>
             </div>
 
+            {/* Wallet Balance Display */}
+            <div className={`rounded-2xl p-4 flex items-center justify-between ${
+              insufficientBalance ? 'bg-red-50 border-2 border-red-200' : 'bg-green-50 border border-green-200'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  insufficientBalance ? 'bg-red-100' : 'bg-green-100'
+                }`}>
+                  <Wallet className={`w-5 h-5 ${insufficientBalance ? 'text-red-600' : 'text-green-600'}`} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Solde Wallet</p>
+                  <p className={`font-bold text-lg ${insufficientBalance ? 'text-red-600' : 'text-green-600'}`}>
+                    {balance.toLocaleString()} FCFA
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTopUp(true)}
+                className="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-xl"
+                data-testid="topup-checkout-btn"
+              >
+                Recharger
+              </button>
+            </div>
+
+            {/* Insufficient Balance Warning */}
+            {insufficientBalance && paymentMethod === 'wallet' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-yellow-800">Solde insuffisant</p>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Il vous manque <strong>{missingAmount.toLocaleString()} FCFA</strong> pour payer cette commande.
+                    </p>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => setShowTopUp(true)}
+                        className="bg-yellow-600 text-white text-sm font-semibold px-4 py-2 rounded-xl"
+                      >
+                        Recharger maintenant
+                      </button>
+                      {restaurant?.accepts_cash && (
+                        <button
+                          onClick={() => setPaymentMethod('cash')}
+                          className="bg-white text-yellow-700 border border-yellow-300 text-sm font-semibold px-4 py-2 rounded-xl"
+                        >
+                          Payer en Cash
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <PaymentMethodSelector
               selectedMethod={paymentMethod}
               onSelect={setPaymentMethod}
               acceptsCash={restaurant?.accepts_cash || false}
+              walletBalance={balance}
             />
 
             {/* Résumé commande */}
@@ -333,11 +425,15 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               </div>
             </div>
 
+            {error && (
+              <p className="text-red-500 text-sm text-center">{error}</p>
+            )}
+
             <button
               onClick={handlePlaceOrder}
-              disabled={isLoading}
+              disabled={isLoading || (paymentMethod === 'wallet' && insufficientBalance)}
               className={`w-full py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-colors ${
-                !isLoading
+                !isLoading && !(paymentMethod === 'wallet' && insufficientBalance)
                   ? 'bg-primary text-white active:bg-primary/90'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
@@ -457,6 +553,14 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
       <div className="p-4">
         {renderStepContent()}
       </div>
+
+      {/* TouchPay Sheet for TopUp */}
+      <TouchPaySheet
+        isOpen={showTopUp}
+        onClose={() => setShowTopUp(false)}
+        onSuccess={handleTopUpSuccess}
+        minimumAmount={orderTotals.total}
+      />
     </div>
   );
 }

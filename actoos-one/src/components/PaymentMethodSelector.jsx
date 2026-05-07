@@ -1,12 +1,21 @@
-import { Wallet, Banknote, Check } from 'lucide-react';
+import { Wallet, Banknote, Check, CreditCard } from 'lucide-react';
 
 const paymentMethods = [
+  {
+    id: 'wallet',
+    name: 'ACTOOS Wallet',
+    description: 'Paiement instantané depuis votre solde',
+    icon: Wallet,
+    requiresCash: false,
+    isWallet: true,
+  },
   {
     id: 'mobile_money',
     name: 'Mobile Money',
     description: 'Orange Money, Moov Money',
-    icon: Wallet,
+    icon: CreditCard,
     requiresCash: false,
+    isWallet: false,
   },
   {
     id: 'cash',
@@ -14,10 +23,11 @@ const paymentMethods = [
     description: 'Payer en espèces au livreur',
     icon: Banknote,
     requiresCash: true,
+    isWallet: false,
   },
 ];
 
-export function PaymentMethodSelector({ selectedMethod, onSelect, acceptsCash = false }) {
+export function PaymentMethodSelector({ selectedMethod, onSelect, acceptsCash = false, walletBalance = 0 }) {
   const availableMethods = paymentMethods.filter(
     (method) => !method.requiresCash || acceptsCash
   );
@@ -51,7 +61,12 @@ export function PaymentMethodSelector({ selectedMethod, onSelect, acceptsCash = 
               <p className={`font-semibold ${isSelected ? 'text-primary' : 'text-gray-900'}`}>
                 {method.name}
               </p>
-              <p className="text-xs text-gray-500">{method.description}</p>
+              <p className="text-xs text-gray-500">
+                {method.isWallet 
+                  ? `Solde: ${walletBalance.toLocaleString()} FCFA`
+                  : method.description
+                }
+              </p>
             </div>
 
             {isSelected && (
