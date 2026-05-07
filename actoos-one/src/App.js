@@ -15,6 +15,8 @@ import { WalletScreen } from './components/WalletScreen';
 import { HealthScreen } from './components/HealthScreen';
 import { PharmacyScreen } from './components/PharmacyScreen';
 import { ProfileScreen } from './components/ProfileScreen';
+import { SplashScreen } from './components/SplashScreen';
+import { LocationPermissionSheet } from './components/LocationPermissionSheet';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -49,10 +51,13 @@ const SCREENS = {
 
 function AppContent() {
   const isOnline = useOnlineStatus();
+  const [showSplash, setShowSplash] = useState(true);
+  const [showLocationPermission, setShowLocationPermission] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('cat-1');
   const [activeTab, setActiveTab] = useState('eats');
   const [address, setAddress] = useState('Bamako, Hamdallaye');
+  const [userLocation, setUserLocation] = useState(null);
   
   // Navigation state
   const [currentScreen, setCurrentScreen] = useState(SCREENS.HOME);
@@ -64,6 +69,65 @@ function AppContent() {
   const [searchSheet, setSearchSheet] = useState(false);
   const [addressSheet, setAddressSheet] = useState(false);
   const [privacySheet, setPrivacySheet] = useState(false);
+
+  // Handle splash screen completion
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    
+    // Vérifier si on a déjà demandé la permission de localisation
+    const locationPermission = localStorage.getItem('actoos_location_permission');
+    if (!locationPermission) {
+      // Première visite - montrer la demande de localisation après les cookies
+      // On attend que le cookie consent soit géré d'abord
+      setTimeout(() => {
+        const cookieConsent = localStorage.getItem('actoos_cookie_consent');
+        if (cookieConsent) {
+          setShowLocationPermission(true);
+        }
+      }, 500);
+    } else if (locationPermission === 'granted') {
+      // Permission déjà accordée - charger la position sauvegardée
+      const savedLocation = localStorage.getItem('actoos_user_location');
+      if (savedLocation) {
+        setUserLocation(JSON.parse(savedLocation));
+      }
+    }
+  };
+
+  // Handle location permission granted
+  const handleLocationAllowed = (location) => {
+    setUserLocation(location);
+    setShowLocationPermission(false);
+    // Optionnellement, mettre à jour l'adresse basée sur la position
+  };
+
+  // Handle location permission denied
+  const handleLocationDenied = () => {
+    setShowLocationPermission(false);
+  };
+
+  // Vérifier le cookie consent pour afficher la localisation
+  useEffect(() => {
+    const checkLocationPrompt = () => {
+      const cookieConsent = localStorage.getItem('actoos_cookie_consent');
+      const locationPermission = localStorage.getItem('actoos_location_permission');
+      
+      if (cookieConsent && !locationPermission && !showSplash) {
+        setShowLocationPermission(true);
+      }
+    };
+
+    // Écouter les changements de localStorage (pour détecter quand les cookies sont acceptés)
+    window.addEventListener('storage', checkLocationPrompt);
+    
+    // Vérifier aussi périodiquement (pour le même onglet)
+    const interval = setInterval(checkLocationPrompt, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', checkLocationPrompt);
+      clearInterval(interval);
+    };
+  }, [showSplash]);
 
   // Simulate initial loading
   useEffect(() => {
@@ -182,6 +246,11 @@ function AppContent() {
   // Cookie consent handlers
   const handleCookieAccept = () => {
     console.log('Cookies accepted');
+    // Après acceptation des cookies, vérifier si on doit demander la localisation
+    const locationPermission = localStorage.getItem('actoos_location_permission');
+    if (!locationPermission) {
+      setTimeout(() => setShowLocationPermission(true), 500);
+    }
   };
 
   const handleCookieCustomize = () => {
@@ -190,19 +259,36 @@ function AppContent() {
 
   const handleCookieDecline = () => {
     console.log('Cookies declined - essential only');
+    // Même si refusé, on peut demander la localisation
+    const locationPermission = localStorage.getItem('actoos_location_permission');
+    if (!locationPermission) {
+      setTimeout(() => setShowLocationPermission(true), 500);
+    }
   };
+
+  // Splash Screen
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
 
   // Render based on current screen
   if (currentScreen === SCREENS.PROFIL) {
     return (
-      <ProfileScreen
-        onBack={handleBackToHome}
-        onDriverOnboarding={() => setCurrentScreen(SCREENS.DRIVER_ONBOARDING)}
-        onPartnerOnboarding={() => setCurrentScreen(SCREENS.PARTNER_ONBOARDING)}
-        onSwitchToDriver={() => setCurrentScreen(SCREENS.DRIVER_APP)}
-        onSwitchToPartner={() => setCurrentScreen(SCREENS.PARTNER_KDS)}
-        onSwitchToAdmin={() => setCurrentScreen(SCREENS.ADMIN_DASHBOARD)}
-      />
+      <>
+        <ProfileScreen
+          onBack={handleBackToHome}
+          onDriverOnboarding={() => setCurrentScreen(SCREENS.DRIVER_ONBOARDING)}
+          onPartnerOnboarding={() => setCurrentScreen(SCREENS.PARTNER_ONBOARDING)}
+          onSwitchToDriver={() => setCurrentScreen(SCREENS.DRIVER_APP)}
+          onSwitchToPartner={() => setCurrentScreen(SCREENS.PARTNER_KDS)}
+          onSwitchToAdmin={() => setCurrentScreen(SCREENS.ADMIN_DASHBOARD)}
+        />
+        <LocationPermissionSheet
+          isOpen={showLocationPermission}
+          onAllow={handleLocationAllowed}
+          onDeny={handleLocationDenied}
+        />
+      </>
     );
   }
 
@@ -402,6 +488,13 @@ function AppContent() {
       <PrivacySettingsSheet
         isOpen={privacySheet}
         onClose={() => setPrivacySheet(false)}
+      />
+
+      {/* Location Permission Sheet */}
+      <LocationPermissionSheet
+        isOpen={showLocationPermission}
+        onAllow={handleLocationAllowed}
+        onDeny={handleLocationDenied}
       />
     </div>
   );
