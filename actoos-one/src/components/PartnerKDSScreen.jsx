@@ -8,14 +8,15 @@ import {
   ChefHat,
   Package,
   Utensils,
-  ArrowLeft
+  ArrowLeft,
+  Keyboard
 } from 'lucide-react';
 import { mockOrders, mockMenuItems } from '../data/kdsData';
 import { KDSOrderCard } from './KDSOrderCard';
 import { KDSMenuManager } from './KDSMenuManager';
 
 // Son de notification (base64 encoded beep)
-const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp+fm5eTj4d8b2JXTUZCPz07Ojk4Nzk7PUFGTFVfanuNnqqxs7CqoZWJfXFmXVVPSUVCQD8/P0BCRUlOVl9qeYyepq2wr6uklox/cmZdVE5IRkRCQUFCQ0ZKTVRZYG17jZ6mrK2tqaKZjn5wa2NcVlFNSkdGRUVGR0lMUFZdZW96i5ulq62sqKOckoZ6bmVdV1JOS0lIR0dISUpNUVZcYmt3hpOgo6eopqKdloqAd25nYVtWUk9NTEtLS0xOUVVZXmRsdoOQnKOlpqShn5mRiX1zbmljXllVUk9OTU1OT1FUV1teZGt0foqVnqKkpKKgm5aPh3xybGZhXFlWU1FQT09QUVNWWV1hZm1ze4aPmJ6ho6KgnpqVjoR6cGpmYl5aV1VTUlFRUlNVV1ldYWVqcHh/h5CYnaChn5yZlI6GfXRtaGRgXFpXVVRTU1NUVVdZXGBkZ2xye4KKkpicn5+dnJmUjoZ+dnBrZmJfXFpYVlVVVVZXWVtdYGRobnR7gYmRl5udnp2bmJONhX12cGtmY2BdW1lYV1dXWFlaXF9iZmtwd36EjJOYm52dnJqXko2FfnhybGdjYF5cWllYWFhZWltdX2JlaW50eoGHjpSYm5ycm5mWkYuEfXdzb2xoZGJgXlxbWlpaW1xdX2FkZ2twd3yChYuRl5qbnJuZl5ONiIJ+eXVxbmpmZGJgX15dXV1eX2BhY2ZpbHB0eX6ChYqOk5eZmpqZl5WSjoqFgHt3c3BtamdjYmBfX15eXl9gYWNlZ2pscHR5fYGFiY2RlZeYmJeWlJGOioaCfnp2c3BtamhkY2FgX19eXl9gYWJkZmhqbXF1eXyCg4aIi42Pk5aXlpSSkI6KhoJ+e3dzcW5ramloZmVkY2NjY2NkZGVmZ2hqbG1vcXN2eHt9f4GChomLjY6QkZOTk5KQj42KiIWDgH58enh2dHJwb21saWhnZmZlZWVlZmZmZ2hpamtsbm9xc3V2eHl7fH5/gYKEhYeIiYqLjI2Oj5CQj46OjYuJiIaEgoB/fXt6eHd2dXRzcnFwb25tbGxsbGxsbG1tbm5vb3BxcnNzdHV2d3h5ent8fX5/gIGBgoOEhIWGhoeIiImJiomJiYiIh4aFhIOCgYB/fn18e3p5eHh3dnZ1dXR0dHR0dHR0dHV1dXZ2d3d4eHl5ent7fH19fn5/gIGBgoKDg4SEhYWGhoaHh4eHh4eHhoaGhYWEhIODgoKBgYCAf39+fn19fHx8e3t7e3t7e3t7e3t7e3x8fHx9fX1+fn5/f4CAgIGBgYKCgoODg4ODhISEhISEhISEhIODg4OCgoKBgYGAgIB/f35+fX19fHx8fHx8fHx8fHx8fH19fX19fn5+fn9/f4CAgICAgYGBgYGBgoKCgoKCgoKCgoKCgoKCgoKCgYGBgYGAgICAgH9/f39/fn5+fn5+fn5+fn5+fn5+f39/f39/f4CAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgICAgH9/f39+fn5+fn5+fn5+fn5+fn5+fn5+fn5/f39/f39/f39/gICAgICAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgICAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgICAgICAgICAgICBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAf39/f39/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgICAgICBgYGBgYGBgYGBgYGAgICAgICAgIB/f39/f39/f39/fn5+fn5+fn5+fn5+fn5+fn5/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIB/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fn5+fn5/f39/f39/f39/gICAgICAgICAgICAgICAgICAgICAgICAgICAgIB/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fn5+fn5+f39/f39/f39/gICAgICAg==';
+const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp+fm5eTj4d8b2JXTUZCPz07Ojk4Nzk7PUFGTFVfanuNnqqxs7CqoZWJfXFmXVVPSUVCQD8/P0BCRUlOVl9qeYyepq2wr6uklox/cmZdVE5IRkRCQUFCQ0ZKTVRZYG17jZ6mrK2tqaKZjn5wa2NcVlFNSkdGRUVGR0lMUFZdZW96i5ulq62sqKOckoZ6bmVdV1JOS0lIR0dISUpNUVZcYmt3hpOgo6eopqKdloqAd25nYVtWUk9NTEtLS0xOUVVZXmRsdoOQnKOlpqShn5mRiX1zbmljXllVUk9OTU1OT1FUV1teZGt0foqVnqKkpKKgm5aPh3xybGZhXFlWU1FQT09QUVNWWV1hZm1ze4aPmJ6ho6KgnpqVjoR6cGpmYl5aV1VTUlFRUlNVV1ldYWVqcHh/h5CYnaChn5yZlI6GfXRtaGRgXFpXVVRTU1NUVVdZXGBkZ2xye4KKkpicn5+dnJmUjoZ+dnBrZmJfXFpYVlVVVVZXWVtdYGRobnR7gYmRl5udnp2bmJONhX12cGtmY2BdW1lYV1dXWFlaXF9iZmtwd36EjJOYm52dnJqXko2FfnhybGdjYF5cWllYWFhZWltdX2JlaW50eoGHjpSYm5ycm5mWkYuEfXdzb2xoZGJgXlxbWlpaW1xdX2FkZ2twd3yChYuRl5qbnJuZl5ONiIJ+eXVxbmpmZGJgX15dXV1eX2BhY2ZpbHB0eX6ChYqOk5eZmpqZl5WSjoqFgHt3c3BtamdjYmBfX15eXl9gYWNlZ2pscHR5fYGFiY2RlZeYmJeWlJGOioaCfnp2c3BtamhkY2FgX19eXl9gYWJkZmhqbXF1eXyCg4aIi42Pk5aXlpSSkI6KhoJ+e3dzcW5ramloZmVkY2NjY2NkZGVmZ2hqbG1vcXN2eHt9f4GChomLjY6QkZOTk5KQj42KiIWDgH58enh2dHJwb21saWhnZmZlZWVlZmZmZ2hpamtsbm9xc3V2eHl7fH5/gYKEhYeIiYqLjI2Oj5CQj46OjYuJiIaEgoB/fXt6eHd2dXRzcnFwb25tbGxsbGxsbG1tbm5vb3BxcnNzdHV2d3h5ent8fX5/gIGBgoOEhIWGhoeIiImJiomJiYiIh4aFhIOCgYB/fn18e3p5eHh3dnZ1dXR0dHR0dHR0dHV1dXZ2d3d4eHl5ent7fH19fn5/gIGBgoKDg4SEhYWGhoaHh4eHh4eHhoaGhYWEhIODgoKBgYCAf39+fn19fHx8e3t7e3t7e3t7e3t7e3x8fHx9fX1+fn5/f4CAgIGBgYKCgoODg4ODhISEhISEhISEhIODg4OCgoKBgYGAgIB/f35+fX19fHx8fHx8fHx8fHx8fH19fX19fn5+fn9/f4CAgICAgYGBgYGBgoKCgoKCgoKCgoKCgoKCgoKCgYGBgYGAgICAgH9/f39/fn5+fn5+fn5+fn5+fn5+f39/f39/f4CAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgICAgH9/f39+fn5+fn5+fn5+fn5+fn5+fn5+fn5/f39/f39/f39/gICAgICAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgICAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgICAgICAgICAgICBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAf39/f39/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgICAgICBgYGBgYGBgYGBgYGAgICAgICAgIB/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fn5+fn5/f39/f39/f39/gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIB/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fn5+fn5+f39/f39/f39/gICAgICAg==';
 
 const TABS = {
   ORDERS: 'orders',
@@ -29,6 +30,9 @@ export function PartnerKDSScreen({ onBack }) {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showPickupScanner, setShowPickupScanner] = useState(false);
+  const [pickupCode, setPickupCode] = useState('');
+  const [pickupResult, setPickupResult] = useState(null);
   const audioRef = useRef(null);
   const previousOrdersCount = useRef(0);
 
@@ -79,6 +83,29 @@ export function PartnerKDSScreen({ onBack }) {
     ));
   }, []);
 
+  // Valider code Pickup (Scanner Client)
+  const validatePickupCode = useCallback(() => {
+    const formattedCode = pickupCode.toUpperCase();
+    const matchingOrder = orders.find(
+      o => o.delivery_code === formattedCode && o.status === 'ready'
+    );
+    
+    if (matchingOrder) {
+      setPickupResult({ success: true, order: matchingOrder });
+      setOrders(prev => prev.map(order => 
+        order.id === matchingOrder.id ? { ...order, status: 'delivered' } : order
+      ));
+      // Reset après 3 secondes
+      setTimeout(() => {
+        setPickupResult(null);
+        setPickupCode('');
+        setShowPickupScanner(false);
+      }, 3000);
+    } else {
+      setPickupResult({ success: false, error: 'Code invalide ou commande non prête' });
+    }
+  }, [pickupCode, orders]);
+
   // Toggle disponibilité d'un article
   const toggleItemAvailability = useCallback((itemId) => {
     setMenuItems(prev => prev.map(item =>
@@ -98,38 +125,48 @@ export function PartnerKDSScreen({ onBack }) {
   const readyOrders = orders.filter(o => o.status === 'ready');
 
   return (
-    <div className="min-h-screen bg-gray-50" data-testid="partner-kds-screen">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-3">
+    <div className="min-h-screen bg-gray-900" data-testid="partner-kds-screen">
+      {/* Header - DARK MODE */}
+      <header className="sticky top-0 z-40 bg-gray-800 border-b border-gray-700 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center active:bg-gray-200 transition-colors"
+              className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center active:bg-gray-600 transition-colors"
               data-testid="kds-back-btn"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-5 h-5 text-gray-300" />
             </button>
             <div>
-              <h1 className="font-bold text-gray-900 text-lg">KDS Partenaire</h1>
-              <p className="text-xs text-gray-500">Maquis Chez Tanti</p>
+              <h1 className="font-bold text-white text-lg">KDS Partenaire</h1>
+              <p className="text-xs text-gray-400">Maquis Chez Tanti</p>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Scanner Pickup Button */}
+            <button
+              onClick={() => setShowPickupScanner(true)}
+              className="h-10 px-3 bg-[#FF5A00] rounded-xl flex items-center gap-2 text-white font-semibold text-sm"
+              data-testid="scanner-pickup-btn"
+            >
+              <Keyboard className="w-4 h-4" />
+              Scanner
+            </button>
+            
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
               className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                soundEnabled ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
+                soundEnabled ? 'bg-[#FF5A00] text-white' : 'bg-gray-700 text-gray-400'
               }`}
               data-testid="sound-toggle"
             >
               {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
             </button>
             
-            <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
-              <RefreshCw className={`w-4 h-4 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="text-xs text-gray-500">
+            <div className="flex items-center gap-2 bg-gray-700 rounded-xl px-3 py-2">
+              <RefreshCw className={`w-4 h-4 text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="text-xs text-gray-400">
                 {lastRefresh.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </span>
             </div>
@@ -142,8 +179,8 @@ export function PartnerKDSScreen({ onBack }) {
             onClick={() => setActiveTab(TABS.ORDERS)}
             className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors ${
               activeTab === TABS.ORDERS
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 text-gray-600'
+                ? 'bg-[#FF5A00] text-white'
+                : 'bg-gray-700 text-gray-300'
             }`}
             data-testid="tab-orders"
           >
@@ -151,7 +188,7 @@ export function PartnerKDSScreen({ onBack }) {
             Commandes
             {pendingOrders.length > 0 && (
               <span className={`px-2 py-0.5 rounded-full text-sm ${
-                activeTab === TABS.ORDERS ? 'bg-white/20' : 'bg-primary text-white'
+                activeTab === TABS.ORDERS ? 'bg-white/20' : 'bg-[#FF5A00] text-white'
               }`}>
                 {pendingOrders.length}
               </span>
@@ -161,8 +198,8 @@ export function PartnerKDSScreen({ onBack }) {
             onClick={() => setActiveTab(TABS.MENU)}
             className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors ${
               activeTab === TABS.MENU
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 text-gray-600'
+                ? 'bg-[#FF5A00] text-white'
+                : 'bg-gray-700 text-gray-300'
             }`}
             data-testid="tab-menu"
           >
@@ -172,35 +209,103 @@ export function PartnerKDSScreen({ onBack }) {
         </div>
       </header>
 
+      {/* Pickup Scanner Modal */}
+      {showPickupScanner && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-3xl p-6 w-full max-w-sm">
+            <h2 className="text-white text-xl font-bold text-center mb-2">Scanner Client</h2>
+            <p className="text-gray-400 text-sm text-center mb-6">
+              Entrez le code Handshake du client
+            </p>
+            
+            {pickupResult ? (
+              <div className={`text-center py-8 ${pickupResult.success ? 'text-green-400' : 'text-red-400'}`}>
+                {pickupResult.success ? (
+                  <>
+                    <Check className="w-16 h-16 mx-auto mb-4" />
+                    <p className="text-2xl font-bold">Validé !</p>
+                    <p className="text-gray-400 mt-2">Commande {pickupResult.order.orderNumber}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xl font-bold">{pickupResult.error}</p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-center mb-6">
+                  <input
+                    type="text"
+                    value={pickupCode}
+                    onChange={(e) => setPickupCode(e.target.value.toUpperCase().slice(0, 4))}
+                    placeholder="#A42"
+                    maxLength={4}
+                    className="w-40 h-20 bg-gray-700 border-2 border-gray-600 rounded-2xl text-center text-white text-4xl font-bold tracking-widest placeholder-gray-500 focus:border-[#FF5A00] outline-none"
+                    data-testid="pickup-code-input"
+                    autoFocus
+                  />
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowPickupScanner(false);
+                      setPickupCode('');
+                      setPickupResult(null);
+                    }}
+                    className="flex-1 py-4 bg-gray-700 text-gray-300 rounded-2xl font-semibold"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={validatePickupCode}
+                    disabled={pickupCode.length < 3}
+                    className={`flex-1 py-4 rounded-2xl font-semibold ${
+                      pickupCode.length >= 3
+                        ? 'bg-[#FF5A00] text-white'
+                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    }`}
+                    data-testid="validate-pickup-btn"
+                  >
+                    Valider
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       {activeTab === TABS.ORDERS ? (
         <div className="p-4">
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3 mb-6">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center">
-              <p className="text-3xl font-bold text-yellow-600">{pendingOrders.length}</p>
-              <p className="text-xs text-yellow-600 mt-1">En attente</p>
+            <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-2xl p-4 text-center">
+              <p className="text-3xl font-bold text-yellow-400">{pendingOrders.length}</p>
+              <p className="text-xs text-yellow-400 mt-1">En attente</p>
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
-              <p className="text-3xl font-bold text-blue-600">{preparingOrders.length}</p>
-              <p className="text-xs text-blue-600 mt-1">En préparation</p>
+            <div className="bg-blue-500/20 border border-blue-500/30 rounded-2xl p-4 text-center">
+              <p className="text-3xl font-bold text-blue-400">{preparingOrders.length}</p>
+              <p className="text-xs text-blue-400 mt-1">En préparation</p>
             </div>
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
-              <p className="text-3xl font-bold text-green-600">{readyOrders.length}</p>
-              <p className="text-xs text-green-600 mt-1">Prêtes</p>
+            <div className="bg-green-500/20 border border-green-500/30 rounded-2xl p-4 text-center">
+              <p className="text-3xl font-bold text-green-400">{readyOrders.length}</p>
+              <p className="text-xs text-green-400 mt-1">Prêtes</p>
             </div>
           </div>
 
           {orders.length === 0 ? (
             <div className="text-center py-12">
-              <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <Package className="w-16 h-16 text-gray-600 mx-auto mb-4" />
               <p className="text-gray-500">Aucune commande pour le moment</p>
             </div>
           ) : (
             <div className="space-y-6">
               {pendingOrders.length > 0 && (
                 <div>
-                  <h2 className="text-yellow-600 font-semibold mb-3 flex items-center gap-2">
+                  <h2 className="text-yellow-400 font-semibold mb-3 flex items-center gap-2">
                     <Clock className="w-5 h-5" />
                     En attente ({pendingOrders.length})
                   </h2>
@@ -214,7 +319,7 @@ export function PartnerKDSScreen({ onBack }) {
 
               {preparingOrders.length > 0 && (
                 <div>
-                  <h2 className="text-blue-600 font-semibold mb-3 flex items-center gap-2">
+                  <h2 className="text-blue-400 font-semibold mb-3 flex items-center gap-2">
                     <ChefHat className="w-5 h-5" />
                     En préparation ({preparingOrders.length})
                   </h2>
@@ -228,7 +333,7 @@ export function PartnerKDSScreen({ onBack }) {
 
               {readyOrders.length > 0 && (
                 <div>
-                  <h2 className="text-green-600 font-semibold mb-3 flex items-center gap-2">
+                  <h2 className="text-green-400 font-semibold mb-3 flex items-center gap-2">
                     <Check className="w-5 h-5" />
                     Prêtes ({readyOrders.length})
                   </h2>

@@ -9,6 +9,8 @@ export const mockOrders = [
     clientPhone: '+223 70 XX XX 56',
     status: 'pending',
     payment_method: 'mobile_money',
+    delivery_mode: 'delivery', // 'delivery' ou 'pickup'
+    delivery_code: '#A42', // Code Handshake
     created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 min ago
     items: [
       {
@@ -36,6 +38,8 @@ export const mockOrders = [
     clientPhone: '+223 76 XX XX 12',
     status: 'pending',
     payment_method: 'cash',
+    delivery_mode: 'pickup', // À emporter
+    delivery_code: '#B17',
     created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(), // 2 min ago
     items: [
       {
@@ -54,7 +58,7 @@ export const mockOrders = [
       },
     ],
     total_amount: 3500,
-    delivery_fee: 500,
+    delivery_fee: 0,
   },
   {
     id: 'ORD-003',
@@ -63,6 +67,8 @@ export const mockOrders = [
     clientPhone: '+223 66 XX XX 89',
     status: 'preparing',
     payment_method: 'mobile_money',
+    delivery_mode: 'delivery',
+    delivery_code: '#C89',
     created_at: new Date(Date.now() - 12 * 60 * 1000).toISOString(), // 12 min ago
     items: [
       {
@@ -82,6 +88,28 @@ export const mockOrders = [
     ],
     total_amount: 9900,
     delivery_fee: 500,
+  },
+  {
+    id: 'ORD-004',
+    orderNumber: '#1250',
+    clientName: 'Mariam S.',
+    clientPhone: '+223 79 XX XX 34',
+    status: 'ready',
+    payment_method: 'mobile_money',
+    delivery_mode: 'pickup',
+    delivery_code: '#D56',
+    created_at: new Date(Date.now() - 20 * 60 * 1000).toISOString(), // 20 min ago
+    items: [
+      {
+        id: 'item-001',
+        name: 'Poulet Braisé',
+        quantity: 1,
+        price_at_time: 3500,
+        special_instructions: null,
+      },
+    ],
+    total_amount: 3500,
+    delivery_fee: 0,
   },
 ];
 

@@ -12,25 +12,25 @@ export function KDSMenuManager({ items, onToggleAvailability, onUpdateMaxPerOrde
   return (
     <div className="p-4" data-testid="kds-menu-manager">
       <div className="mb-4">
-        <h2 className="text-gray-900 font-bold text-xl">Gestion du Menu</h2>
-        <p className="text-gray-500 text-sm mt-1">
+        <h2 className="text-white font-bold text-xl">Gestion du Menu</h2>
+        <p className="text-gray-400 text-sm mt-1">
           Activez/désactivez les articles et gérez les quantités maximales
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
-          <p className="text-2xl font-bold text-green-600">
+        <div className="bg-green-500/20 border border-green-500/30 rounded-2xl p-4">
+          <p className="text-2xl font-bold text-green-400">
             {items.filter(i => i.is_available).length}
           </p>
-          <p className="text-xs text-green-600">Articles disponibles</p>
+          <p className="text-xs text-green-400">Articles disponibles</p>
         </div>
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-          <p className="text-2xl font-bold text-red-600">
+        <div className="bg-red-500/20 border border-red-500/30 rounded-2xl p-4">
+          <p className="text-2xl font-bold text-red-400">
             {items.filter(i => !i.is_available).length}
           </p>
-          <p className="text-xs text-red-600">En rupture</p>
+          <p className="text-xs text-red-400">En rupture</p>
         </div>
       </div>
 
@@ -45,7 +45,7 @@ export function KDSMenuManager({ items, onToggleAvailability, onUpdateMaxPerOrde
               {categoryItems.map((item) => (
                 <div
                   key={item.id}
-                  className={`bg-white rounded-2xl p-4 border border-gray-200 shadow-sm ${
+                  className={`bg-gray-800 rounded-2xl p-4 border border-gray-700 ${
                     !item.is_available ? 'opacity-60' : ''
                   }`}
                   data-testid={`menu-item-row-${item.id}`}
@@ -53,15 +53,15 @@ export function KDSMenuManager({ items, onToggleAvailability, onUpdateMaxPerOrde
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="text-gray-900 font-semibold">{item.name}</p>
+                        <p className="text-white font-semibold">{item.name}</p>
                         {!item.is_available && (
-                          <span className="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <span className="bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
                             Rupture
                           </span>
                         )}
                       </div>
-                      <p className="text-primary font-medium text-sm mt-0.5">
+                      <p className="text-[#FF5A00] font-medium text-sm mt-0.5">
                         {item.price.toLocaleString()} FCFA
                       </p>
                     </div>
@@ -69,7 +69,7 @@ export function KDSMenuManager({ items, onToggleAvailability, onUpdateMaxPerOrde
                     <button
                       onClick={() => onToggleAvailability(item.id)}
                       className={`w-14 h-8 rounded-full flex items-center transition-colors ${
-                        item.is_available ? 'bg-green-500 justify-end' : 'bg-gray-300 justify-start'
+                        item.is_available ? 'bg-green-500 justify-end' : 'bg-gray-600 justify-start'
                       }`}
                       data-testid={`toggle-${item.id}`}
                     >
@@ -83,28 +83,28 @@ export function KDSMenuManager({ items, onToggleAvailability, onUpdateMaxPerOrde
                     </button>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div className="mt-3 pt-3 border-t border-gray-700">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500 text-sm">Max par commande</span>
+                      <span className="text-gray-400 text-sm">Max par commande</span>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => onUpdateMaxPerOrder(item.id, item.max_per_order - 1)}
                           disabled={item.max_per_order <= 1}
                           className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
                             item.max_per_order <= 1
-                              ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                              : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+                              ? 'bg-gray-700 text-gray-600 cursor-not-allowed'
+                              : 'bg-gray-700 text-gray-300 active:bg-gray-600'
                           }`}
                           data-testid={`max-minus-${item.id}`}
                         >
                           <Minus className="w-4 h-4" />
                         </button>
-                        <span className="text-gray-900 font-bold text-lg w-8 text-center">
+                        <span className="text-white font-bold text-lg w-8 text-center">
                           {item.max_per_order}
                         </span>
                         <button
                           onClick={() => onUpdateMaxPerOrder(item.id, item.max_per_order + 1)}
-                          className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center active:bg-gray-200 transition-colors"
+                          className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 flex items-center justify-center active:bg-gray-600 transition-colors"
                           data-testid={`max-plus-${item.id}`}
                         >
                           <Plus className="w-4 h-4" />

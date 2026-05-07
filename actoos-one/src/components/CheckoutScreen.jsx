@@ -1,5 +1,17 @@
 import { useState } from 'react';
-import { ArrowLeft, MapPin, Phone, CreditCard, CheckCircle, Loader2, Wallet, AlertCircle, Building2, Clock, Zap } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  MapPin, 
+  Phone, 
+  CheckCircle, 
+  Loader2, 
+  Wallet, 
+  AlertCircle, 
+  Building2, 
+  ShoppingBag,
+  Truck,
+  Navigation
+} from 'lucide-react';
 import { OTPInput } from './OTPInput';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { TouchPaySheet } from './TouchPaySheet';
@@ -7,11 +19,9 @@ import { useCart } from '../context/CartContext';
 import { useWallet } from '../context/WalletContext';
 import { sendOTP, verifyOTP } from '../services/otpService';
 import { calculateOrderTotal, createOrder } from '../services/orderService';
-import { getBNPLDetails } from '../services/bnplService';
-import { getSurgeDetails, calculateDeliveryFeeWithSurge } from '../services/surgeService';
-import { systemConfig } from '../data/mockData';
 
 const STEPS = {
+  DELIVERY_MODE: 'delivery_mode',
   ADDRESS: 'address',
   PHONE: 'phone',
   OTP: 'otp',
@@ -23,9 +33,12 @@ const STEPS = {
 export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   const { cartItems, getTotal, clearCart } = useCart();
   const { balance, pay, hasEnoughBalance, checkCorporateLimit, walletType, dailySpendLimit, getTodaySpending } = useWallet();
-  const [currentStep, setCurrentStep] = useState(STEPS.ADDRESS);
+  const [currentStep, setCurrentStep] = useState(STEPS.DELIVERY_MODE);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Delivery mode: 'delivery' ou 'pickup'
+  const [deliveryMode, setDeliveryMode] = useState('delivery');
   
   // Form data
   const [address, setAddress] = useState('');
@@ -43,13 +56,19 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   // TopUp sheet for insufficient balance
   const [showTopUp, setShowTopUp] = useState(false);
 
-  // Calculer le total avec surge pricing
-  const surgeDetails = getSurgeDetails();
-  const deliveryWithSurge = calculateDeliveryFeeWithSurge(restaurant?.deliveryFee || 500);
-  const orderTotals = calculateOrderTotal(cartItems, deliveryWithSurge.finalPrice);
-  
-  // BNPL eligibility
-  const bnplDetails = getBNPLDetails(orderTotals.total);
+  // Calculer le total - frais de livraison = 0 si pickup
+  const deliveryFee = deliveryMode === 'pickup' ? 0 : (restaurant?.deliveryFee || 500);
+  const orderTotals = calculateOrderTotal(cartItems, deliveryFee);
+
+  const handleSelectDeliveryMode = (mode) => {
+    setDeliveryMode(mode);
+    if (mode === 'pickup') {
+      // Skip address step for pickup
+      setCurrentStep(STEPS.PHONE);
+    } else {
+      setCurrentStep(STEPS.ADDRESS);
+    }
+  };
 
   const handleSendOTP = async () => {
     if (!phoneNumber || phoneNumber.length < 12) {
@@ -100,6 +119,15 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   };
 
   const handlePlaceOrder = async () => {
+    // Vérifier limite corporate si applicable
+    if (walletType === 'employee' && dailySpendLimit) {
+      const limitCheck = checkCorporateLimit(orderTotals.total);
+      if (!limitCheck.allowed) {
+        setError(`Limite journalière atteinte. Reste: ${limitCheck.remaining.toLocaleString()} FCFA`);
+        return;
+      }
+    }
+
     // Vérifier le solde si paiement wallet
     if (paymentMethod === 'wallet') {
       if (!hasEnoughBalance(orderTotals.total)) {
@@ -132,8 +160,9 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
           price_at_time: item.price_at_time,
           instructions: item.instructions,
         })),
-        delivery_address: address,
-        delivery_details: addressDetails,
+        delivery_mode: deliveryMode,
+        delivery_address: deliveryMode === 'delivery' ? address : null,
+        delivery_details: deliveryMode === 'delivery' ? addressDetails : null,
         phone: phoneNumber,
         payment_method: paymentMethod,
         payment_status: paymentMethod === 'cash' ? 'pending' : 'paid',
@@ -164,12 +193,63 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
 
   const renderStepContent = () => {
     switch (currentStep) {
+      case STEPS.DELIVERY_MODE:
+        return (
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Mode de récupération</h2>
+              <p className="text-sm text-gray-500 mt-1">Comment souhaitez-vous récupérer votre commande ?</p>
+            </div>
+
+            {/* Livraison */}
+            <button
+              onClick={() => handleSelectDeliveryMode('delivery')}
+              className="w-full bg-white border-2 border-gray-200 rounded-3xl p-5 flex items-center gap-4 hover:border-[#FF5A00] transition-colors active:bg-gray-50"
+              data-testid="select-delivery"
+            >
+              <div className="w-14 h-14 bg-[#FF5A00]/10 rounded-2xl flex items-center justify-center">
+                <Truck className="w-7 h-7 text-[#FF5A00]" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-bold text-gray-900 text-lg">Livraison</p>
+                <p className="text-sm text-gray-500">Livré à votre adresse</p>
+                <p className="text-[#FF5A00] font-semibold mt-1">
+                  +{(restaurant?.deliveryFee || 500).toLocaleString()} FCFA
+                </p>
+              </div>
+            </button>
+
+            {/* Pickup (À emporter) */}
+            <button
+              onClick={() => handleSelectDeliveryMode('pickup')}
+              className="w-full bg-white border-2 border-gray-200 rounded-3xl p-5 flex items-center gap-4 hover:border-[#FF5A00] transition-colors active:bg-gray-50"
+              data-testid="select-pickup"
+            >
+              <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center">
+                <ShoppingBag className="w-7 h-7 text-purple-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-bold text-gray-900 text-lg">À emporter</p>
+                <p className="text-sm text-gray-500">Récupérer au restaurant</p>
+                <p className="text-green-600 font-semibold mt-1">Gratuit</p>
+              </div>
+            </button>
+
+            {/* Restaurant Info pour Pickup */}
+            <div className="bg-gray-50 rounded-2xl p-4 mt-4">
+              <p className="text-sm text-gray-500 mb-2">Adresse du restaurant</p>
+              <p className="font-medium text-gray-900">{restaurant?.name}</p>
+              <p className="text-sm text-gray-600">Bamako, Mali</p>
+            </div>
+          </div>
+        );
+
       case STEPS.ADDRESS:
         return (
           <div className="space-y-4">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <MapPin className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 bg-[#FF5A00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <MapPin className="w-8 h-8 text-[#FF5A00]" />
               </div>
               <h2 className="text-xl font-bold text-gray-900">Adresse de livraison</h2>
               <p className="text-sm text-gray-500 mt-1">Où devons-nous livrer ?</p>
@@ -180,7 +260,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               <select
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full mt-2 bg-gray-100 text-gray-900 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
+                className="w-full mt-2 bg-gray-100 text-gray-900 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#FF5A00]"
                 data-testid="address-select"
               >
                 <option value="">Sélectionner un quartier</option>
@@ -198,7 +278,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
                 value={addressDetails}
                 onChange={(e) => setAddressDetails(e.target.value)}
                 placeholder="Ex: Près de la pharmacie, portail bleu..."
-                className="w-full mt-2 bg-gray-100 text-gray-900 placeholder-gray-400 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary resize-none"
+                className="w-full mt-2 bg-gray-100 text-gray-900 placeholder-gray-400 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#FF5A00] resize-none"
                 rows={3}
                 data-testid="address-details"
               />
@@ -209,7 +289,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               disabled={!address}
               className={`w-full py-4 rounded-2xl font-semibold transition-colors ${
                 address
-                  ? 'bg-primary text-white active:bg-primary/90'
+                  ? 'bg-[#FF5A00] text-white active:bg-[#E55100]'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
               data-testid="continue-to-phone"
@@ -223,11 +303,16 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
         return (
           <div className="space-y-4">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Phone className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 bg-[#FF5A00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Phone className="w-8 h-8 text-[#FF5A00]" />
               </div>
               <h2 className="text-xl font-bold text-gray-900">Votre numéro</h2>
-              <p className="text-sm text-gray-500 mt-1">Pour vous contacter lors de la livraison</p>
+              <p className="text-sm text-gray-500 mt-1">
+                {deliveryMode === 'pickup' 
+                  ? 'Pour vous notifier quand la commande est prête'
+                  : 'Pour vous contacter lors de la livraison'
+                }
+              </p>
             </div>
 
             <div>
@@ -237,21 +322,21 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder="+223 XX XX XX XX"
-                className="w-full mt-2 bg-gray-100 text-gray-900 placeholder-gray-400 rounded-2xl px-4 py-4 text-lg outline-none focus:ring-2 focus:ring-primary"
+                className="w-full mt-2 bg-gray-100 text-gray-900 placeholder-gray-400 rounded-2xl px-4 py-4 text-lg outline-none focus:ring-2 focus:ring-[#FF5A00]"
                 data-testid="phone-input"
               />
             </div>
 
             {error && (
-              <p className="text-danger text-sm text-center">{error}</p>
+              <p className="text-red-500 text-sm text-center">{error}</p>
             )}
 
             <button
               onClick={handleSendOTP}
               disabled={isLoading || phoneNumber.length < 12}
               className={`w-full py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-colors ${
-                phoneNumber.length >= 12 && !isLoading
-                  ? 'bg-primary text-white active:bg-primary/90'
+                phoneNumber.length >= 12
+                  ? 'bg-[#FF5A00] text-white active:bg-[#E55100]'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
               data-testid="send-otp-btn"
@@ -262,7 +347,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
                   Envoi en cours...
                 </>
               ) : (
-                'Recevoir le code SMS'
+                'Recevoir le code'
               )}
             </button>
           </div>
@@ -272,39 +357,40 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
         return (
           <div className="space-y-4">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Phone className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 bg-[#FF5A00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Phone className="w-8 h-8 text-[#FF5A00]" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Vérification</h2>
+              <h2 className="text-xl font-bold text-gray-900">Code de vérification</h2>
               <p className="text-sm text-gray-500 mt-1">
-                Code envoyé au {phoneNumber}
+                Entrez le code envoyé au {phoneNumber}
               </p>
             </div>
 
-            <OTPInput
-              length={4}
-              value={otp}
-              onChange={setOtp}
-              disabled={isLoading}
-            />
-
-            {/* Dev helper - afficher le code en dev */}
+            {/* Code OTP visible en dev */}
             {devOtp && (
-              <p className="text-xs text-center text-gray-400 bg-gray-100 py-2 rounded-lg">
-                🔧 Dev: Code = <span className="font-mono font-bold text-primary">{devOtp}</span>
-              </p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-3 text-center">
+                <p className="text-xs text-yellow-700">Mode dev - Code OTP:</p>
+                <p className="text-2xl font-bold text-yellow-800 tracking-widest">{devOtp}</p>
+              </div>
             )}
 
+            <OTPInput
+              value={otp}
+              onChange={setOtp}
+              length={4}
+              onComplete={handleVerifyOTP}
+            />
+
             {error && (
-              <p className="text-danger text-sm text-center">{error}</p>
+              <p className="text-red-500 text-sm text-center">{error}</p>
             )}
 
             <button
               onClick={handleVerifyOTP}
               disabled={isLoading || otp.length !== 4}
               className={`w-full py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-colors ${
-                otp.length === 4 && !isLoading
-                  ? 'bg-primary text-white active:bg-primary/90'
+                otp.length === 4
+                  ? 'bg-[#FF5A00] text-white active:bg-[#E55100]'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
               data-testid="verify-otp-btn"
@@ -322,233 +408,171 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
             <button
               onClick={() => {
                 setOtp('');
-                setError('');
-                handleSendOTP();
+                setCurrentStep(STEPS.PHONE);
               }}
-              disabled={isLoading}
-              className="w-full py-3 text-primary font-medium"
+              className="w-full py-3 text-gray-500 text-sm"
             >
-              Renvoyer le code
+              Modifier le numéro
             </button>
           </div>
         );
 
       case STEPS.PAYMENT:
-        const insufficientBalance = paymentMethod === 'wallet' && !hasEnoughBalance(orderTotals.total);
-        const missingAmount = orderTotals.total - balance;
-        
-        // Check corporate limit
-        const corporateLimitCheck = checkCorporateLimit(orderTotals.total);
-        const isEmployee = walletType === 'employee';
-        const corporateLimitExceeded = isEmployee && !corporateLimitCheck.allowed;
-        
         return (
           <div className="space-y-4">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <CreditCard className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 bg-[#FF5A00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Wallet className="w-8 h-8 text-[#FF5A00]" />
               </div>
               <h2 className="text-xl font-bold text-gray-900">Paiement</h2>
               <p className="text-sm text-gray-500 mt-1">Comment souhaitez-vous payer ?</p>
             </div>
 
-            {/* Corporate Limit Warning */}
-            {corporateLimitExceeded && paymentMethod === 'wallet' && (
-              <div className="bg-orange-50 border-2 border-orange-300 rounded-2xl p-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Building2 className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-orange-800">Limite journalière atteinte</p>
-                    <p className="text-sm text-orange-700 mt-1">
-                      Votre limite corporate de <strong>{corporateLimitCheck.daily_limit?.toLocaleString()} FCFA/jour</strong> est atteinte.
-                    </p>
-                    <p className="text-sm text-orange-700 mt-1">
-                      Dépensé aujourd'hui: <strong>{corporateLimitCheck.today_spent?.toLocaleString()} FCFA</strong>
-                    </p>
-                    <p className="text-sm text-orange-700">
-                      Reste disponible: <strong>{corporateLimitCheck.remaining?.toLocaleString()} FCFA</strong>
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                      {restaurant?.accepts_cash && (
-                        <button
-                          onClick={() => setPaymentMethod('cash')}
-                          className="bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-xl"
-                        >
-                          Payer en Cash
-                        </button>
-                      )}
-                      <button
-                        onClick={() => alert('Contactez votre employeur pour augmenter votre limite.')}
-                        className="bg-white text-orange-700 border border-orange-300 text-sm font-semibold px-4 py-2 rounded-xl"
-                      >
-                        Contacter employeur
-                      </button>
-                    </div>
-                  </div>
+            {/* Corporate Wallet Info */}
+            {walletType === 'employee' && dailySpendLimit && (
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="w-5 h-5 text-blue-600" />
+                  <span className="font-semibold text-blue-900">Wallet Entreprise</span>
                 </div>
-              </div>
-            )}
-
-            {/* Wallet Balance Display */}
-            <div className={`rounded-2xl p-4 flex items-center justify-between ${
-              insufficientBalance || corporateLimitExceeded ? 'bg-red-50 border-2 border-red-200' : 'bg-green-50 border border-green-200'
-            }`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  insufficientBalance || corporateLimitExceeded ? 'bg-red-100' : 'bg-green-100'
-                }`}>
-                  <Wallet className={`w-5 h-5 ${insufficientBalance || corporateLimitExceeded ? 'text-red-600' : 'text-green-600'}`} />
+                <div className="flex justify-between text-sm">
+                  <span className="text-blue-700">Dépensé aujourd'hui</span>
+                  <span className="font-medium text-blue-900">
+                    {getTodaySpending().toLocaleString()} / {dailySpendLimit.toLocaleString()} FCFA
+                  </span>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Solde Wallet</p>
-                  <p className={`font-bold text-lg ${insufficientBalance || corporateLimitExceeded ? 'text-red-600' : 'text-green-600'}`}>
-                    {balance.toLocaleString()} FCFA
-                  </p>
-                  {isEmployee && dailySpendLimit && !corporateLimitExceeded && (
-                    <p className="text-xs text-gray-500">
-                      Limite: {corporateLimitCheck.remaining?.toLocaleString()} F restants aujourd'hui
-                    </p>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={() => setShowTopUp(true)}
-                className="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-xl"
-                data-testid="topup-checkout-btn"
-              >
-                Recharger
-              </button>
-            </div>
-
-            {/* Insufficient Balance Warning */}
-            {insufficientBalance && paymentMethod === 'wallet' && !corporateLimitExceeded && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-yellow-800">Solde insuffisant</p>
-                    <p className="text-sm text-yellow-700 mt-1">
-                      Il vous manque <strong>{missingAmount.toLocaleString()} FCFA</strong> pour payer cette commande.
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        onClick={() => setShowTopUp(true)}
-                        className="bg-yellow-600 text-white text-sm font-semibold px-4 py-2 rounded-xl"
-                      >
-                        Recharger maintenant
-                      </button>
-                      {restaurant?.accepts_cash && (
-                        <button
-                          onClick={() => setPaymentMethod('cash')}
-                          className="bg-white text-yellow-700 border border-yellow-300 text-sm font-semibold px-4 py-2 rounded-xl"
-                        >
-                          Payer en Cash
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                <div className="mt-2 h-2 bg-blue-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-600 rounded-full transition-all"
+                    style={{ width: `${Math.min((getTodaySpending() / dailySpendLimit) * 100, 100)}%` }}
+                  />
                 </div>
               </div>
             )}
 
             <PaymentMethodSelector
-              selectedMethod={paymentMethod}
-              onSelect={setPaymentMethod}
-              acceptsCash={restaurant?.accepts_cash || false}
+              selected={paymentMethod}
+              onChange={setPaymentMethod}
               walletBalance={balance}
-              bnplEligible={bnplDetails.isEligible}
-              bnplMessage={bnplDetails.message}
+              orderTotal={orderTotals.total}
+              acceptsCash={restaurant?.accepts_cash !== false}
             />
 
-            {/* BNPL Option - Only if eligible */}
-            {bnplDetails.isEligible && paymentMethod !== 'bnpl' && (
-              <button
-                onClick={() => setPaymentMethod('bnpl')}
-                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl p-4 text-white text-left"
-                data-testid="bnpl-option"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                    <Clock className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Mangez maintenant, payez plus tard</p>
-                    <p className="text-sm text-white/80">Payez dans 7 jours • Sans frais</p>
-                  </div>
-                </div>
-              </button>
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-3 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500" />
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
             )}
 
-            {/* Résumé commande */}
-            <div className="bg-gray-50 rounded-2xl p-4 mt-6">
-              <h3 className="font-semibold text-gray-900 mb-3">Résumé</h3>
-              
-              {/* Surge Badge */}
-              {surgeDetails.isActive && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-3 flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-yellow-600" />
-                  <div>
-                    <p className="text-sm font-semibold text-yellow-800">Forte Demande</p>
-                    <p className="text-xs text-yellow-600">
-                      Frais de livraison majorés (x{surgeDetails.multiplier})
-                    </p>
-                  </div>
-                </div>
+            <button
+              onClick={() => setCurrentStep(STEPS.CONFIRM)}
+              className="w-full py-4 rounded-2xl font-semibold bg-[#FF5A00] text-white active:bg-[#E55100] transition-colors"
+              data-testid="continue-to-confirm"
+            >
+              Continuer
+            </button>
+          </div>
+        );
+
+      case STEPS.CONFIRM:
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-gray-900 text-center">Récapitulatif</h2>
+
+            {/* Restaurant */}
+            <div className="bg-white rounded-2xl p-4 border border-gray-200">
+              <p className="text-sm text-gray-500">Restaurant</p>
+              <p className="font-semibold text-gray-900">{restaurant?.name}</p>
+            </div>
+
+            {/* Mode */}
+            <div className="bg-white rounded-2xl p-4 border border-gray-200">
+              <p className="text-sm text-gray-500">Mode</p>
+              <div className="flex items-center gap-2 mt-1">
+                {deliveryMode === 'pickup' ? (
+                  <>
+                    <ShoppingBag className="w-5 h-5 text-purple-600" />
+                    <span className="font-semibold text-gray-900">À emporter</span>
+                  </>
+                ) : (
+                  <>
+                    <Truck className="w-5 h-5 text-[#FF5A00]" />
+                    <span className="font-semibold text-gray-900">Livraison</span>
+                  </>
+                )}
+              </div>
+              {deliveryMode === 'delivery' && address && (
+                <p className="text-sm text-gray-600 mt-1">{address}</p>
               )}
-              
-              <div className="space-y-2 text-sm">
+            </div>
+
+            {/* Items */}
+            <div className="bg-white rounded-2xl p-4 border border-gray-200">
+              <p className="text-sm text-gray-500 mb-3">Articles ({cartItems.length})</p>
+              <div className="space-y-2">
+                {cartItems.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <p className="text-gray-900">{item.quantity}x {item.name}</p>
+                      {item.instructions && (
+                        <p className="text-xs text-orange-600">⚠️ {item.instructions}</p>
+                      )}
+                    </div>
+                    <p className="text-gray-600">{(item.price_at_time * item.quantity).toLocaleString()} F</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Totals */}
+            <div className="bg-white rounded-2xl p-4 border border-gray-200">
+              <div className="space-y-2">
                 <div className="flex justify-between text-gray-600">
                   <span>Sous-total</span>
-                  <span>{orderTotals.subtotal.toLocaleString()} {systemConfig.currency}</span>
+                  <span>{orderTotals.subtotal.toLocaleString()} FCFA</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span className="flex items-center gap-1">
-                    Livraison
-                    {deliveryWithSurge.isActive && (
-                      <span className="text-xs text-yellow-600">(surge)</span>
-                    )}
+                  <span>Livraison</span>
+                  <span className={deliveryMode === 'pickup' ? 'text-green-600' : ''}>
+                    {deliveryMode === 'pickup' ? 'Gratuit' : `${orderTotals.delivery.toLocaleString()} FCFA`}
                   </span>
-                  <div className="text-right">
-                    {deliveryWithSurge.isActive && (
-                      <span className="text-xs text-gray-400 line-through mr-2">
-                        {deliveryWithSurge.originalPrice.toLocaleString()}
-                      </span>
-                    )}
-                    <span>{deliveryWithSurge.finalPrice.toLocaleString()} {systemConfig.currency}</span>
-                  </div>
                 </div>
-                <div className="border-t border-gray-200 pt-2 mt-2">
-                  <div className="flex justify-between font-semibold text-gray-900">
-                    <span>Total</span>
-                    <span className="text-primary">{orderTotals.total.toLocaleString()} {systemConfig.currency}</span>
-                  </div>
+                <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t">
+                  <span>Total</span>
+                  <span className="text-[#FF5A00]">{orderTotals.total.toLocaleString()} FCFA</span>
                 </div>
               </div>
             </div>
 
+            {/* Payment Method */}
+            <div className="bg-white rounded-2xl p-4 border border-gray-200">
+              <p className="text-sm text-gray-500">Paiement</p>
+              <p className="font-semibold text-gray-900">
+                {paymentMethod === 'wallet' ? '💳 Wallet Actoos' : '💵 Cash à la livraison'}
+              </p>
+            </div>
+
             {error && (
-              <p className="text-red-500 text-sm text-center">{error}</p>
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-3 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500" />
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
             )}
 
             <button
               onClick={handlePlaceOrder}
-              disabled={isLoading || (paymentMethod === 'wallet' && (insufficientBalance || corporateLimitExceeded))}
-              className={`w-full py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-colors ${
-                !isLoading && !(paymentMethod === 'wallet' && (insufficientBalance || corporateLimitExceeded))
-                  ? 'bg-primary text-white active:bg-primary/90'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
+              disabled={isLoading}
+              className="w-full py-5 rounded-2xl font-bold text-lg bg-[#FF5A00] text-white active:bg-[#E55100] transition-colors flex items-center justify-center gap-2"
               data-testid="place-order-btn"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Commande en cours...
+                  Traitement...
                 </>
               ) : (
-                'COMMANDER'
+                `Commander • ${orderTotals.total.toLocaleString()} FCFA`
               )}
             </button>
           </div>
@@ -557,36 +581,58 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
       case STEPS.SUCCESS:
         return (
           <div className="text-center py-8">
-            <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-10 h-10 text-success" />
+            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-12 h-12 text-green-500" />
             </div>
+            
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Commande confirmée !</h2>
             <p className="text-gray-500 mb-6">
-              Votre commande a été envoyée au restaurant
+              {deliveryMode === 'pickup' 
+                ? 'Présentez ce code au restaurant'
+                : 'Dictez ce code au livreur'
+              }
             </p>
 
-            {orderResult && (
-              <div className="bg-gray-50 rounded-2xl p-4 mb-6 text-left">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">N° commande</span>
-                    <span className="font-mono font-medium text-gray-900">{orderResult.id}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Code livraison</span>
-                    <span className="font-mono font-bold text-2xl text-primary">{orderResult.delivery_code}</span>
+            {/* Code Handshake #A42 */}
+            <div className="bg-[#FF5A00] rounded-3xl p-6 mb-6">
+              <p className="text-white/80 text-sm mb-2">Code Handshake</p>
+              <p className="text-white text-5xl font-bold tracking-widest" data-testid="handshake-code">
+                {orderResult?.delivery_code || '#A42'}
+              </p>
+            </div>
+
+            {/* Order Info */}
+            <div className="bg-gray-50 rounded-2xl p-4 mb-6 text-left">
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-500">Commande</span>
+                <span className="font-semibold">{orderResult?.id || '#1247'}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-500">Restaurant</span>
+                <span className="font-semibold">{restaurant?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Total payé</span>
+                <span className="font-bold text-[#FF5A00]">{orderTotals.total.toLocaleString()} FCFA</span>
+              </div>
+            </div>
+
+            {/* Pickup Map Placeholder */}
+            {deliveryMode === 'pickup' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <Navigation className="w-6 h-6 text-blue-600" />
+                  <div className="text-left">
+                    <p className="font-semibold text-blue-900">Itinéraire vers le restaurant</p>
+                    <p className="text-sm text-blue-700">{restaurant?.name} - Bamako</p>
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-3">
-                  Donnez ce code au livreur pour récupérer votre commande
-                </p>
               </div>
             )}
 
             <button
               onClick={onOrderComplete}
-              className="w-full py-4 rounded-2xl font-semibold bg-primary text-white active:bg-primary/90 transition-colors"
-              data-testid="back-to-home-btn"
+              className="w-full py-4 rounded-2xl font-semibold bg-gray-100 text-gray-900 active:bg-gray-200 transition-colors"
             >
               Retour à l'accueil
             </button>
@@ -598,71 +644,71 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
     }
   };
 
-  const getStepNumber = () => {
-    const steps = [STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT];
-    const index = steps.indexOf(currentStep);
-    return index >= 0 ? index + 1 : 0;
-  };
-
-  const canGoBack = currentStep !== STEPS.SUCCESS && currentStep !== STEPS.ADDRESS;
-
-  const handleBack = () => {
-    const stepOrder = [STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT];
-    const currentIndex = stepOrder.indexOf(currentStep);
-    if (currentIndex > 0) {
-      setCurrentStep(stepOrder[currentIndex - 1]);
-      setError('');
-    } else {
-      onBack();
-    }
+  // Progress indicator
+  const getProgress = () => {
+    const steps = deliveryMode === 'pickup' 
+      ? [STEPS.DELIVERY_MODE, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS]
+      : [STEPS.DELIVERY_MODE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS];
+    
+    const currentIndex = steps.indexOf(currentStep);
+    return ((currentIndex + 1) / steps.length) * 100;
   };
 
   return (
-    <div className="min-h-screen bg-white" data-testid="checkout-screen">
+    <div className="min-h-screen bg-gray-50" data-testid="checkout-screen">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 py-4">
-        <div className="flex items-center gap-4">
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-4">
+        <div className="flex items-center gap-3">
           <button
-            onClick={handleBack}
-            className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center active:bg-gray-200 transition-colors"
+            onClick={() => {
+              if (currentStep === STEPS.SUCCESS) {
+                onOrderComplete();
+              } else if (currentStep === STEPS.DELIVERY_MODE) {
+                onBack();
+              } else if (currentStep === STEPS.PHONE && deliveryMode === 'pickup') {
+                setCurrentStep(STEPS.DELIVERY_MODE);
+              } else {
+                // Go back one step
+                const steps = [STEPS.DELIVERY_MODE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM];
+                const currentIndex = steps.indexOf(currentStep);
+                if (currentIndex > 0) {
+                  setCurrentStep(steps[currentIndex - 1]);
+                }
+              }
+            }}
+            className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"
             data-testid="checkout-back-btn"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
           <div className="flex-1">
-            <h1 className="font-semibold text-gray-900">Checkout</h1>
-            {currentStep !== STEPS.SUCCESS && (
-              <p className="text-xs text-gray-500">Étape {getStepNumber()} sur 4</p>
-            )}
+            <h1 className="font-bold text-gray-900">Checkout</h1>
+            <p className="text-xs text-gray-500">{restaurant?.name}</p>
           </div>
         </div>
 
         {/* Progress bar */}
         {currentStep !== STEPS.SUCCESS && (
-          <div className="flex gap-1 mt-3">
-            {[1, 2, 3, 4].map((step) => (
-              <div
-                key={step}
-                className={`h-1 flex-1 rounded-full ${
-                  step <= getStepNumber() ? 'bg-primary' : 'bg-gray-200'
-                }`}
-              />
-            ))}
+          <div className="mt-3 h-1 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-[#FF5A00] rounded-full transition-all duration-300"
+              style={{ width: `${getProgress()}%` }}
+            />
           </div>
         )}
       </header>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 pb-8">
         {renderStepContent()}
       </div>
 
-      {/* TouchPay Sheet for TopUp */}
+      {/* TopUp Sheet */}
       <TouchPaySheet
         isOpen={showTopUp}
         onClose={() => setShowTopUp(false)}
         onSuccess={handleTopUpSuccess}
-        minimumAmount={orderTotals.total}
+        requiredAmount={orderTotals.total - balance}
       />
     </div>
   );
