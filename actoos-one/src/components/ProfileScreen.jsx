@@ -19,7 +19,9 @@ import {
   X,
   MessageCircle,
   Mail,
-  ChevronDown
+  ChevronDown,
+  Package,
+  History
 } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 import { ReferralSection } from './ReferralSection';
@@ -73,7 +75,8 @@ export function ProfileScreen({
   onDriverOnboarding, 
   onPartnerOnboarding,
   onPrivacyClick,
-  onTermsClick
+  onTermsClick,
+  onOrderHistory
 }) {
   const [user, setUser] = useState(MOCK_USER);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -259,6 +262,24 @@ export function ProfileScreen({
             </button>
           </div>
         )}
+
+        {/* Mes commandes - Quick Access */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+          <button
+            onClick={onOrderHistory}
+            className="w-full px-4 py-4 flex items-center gap-4 active:bg-gray-50"
+            data-testid="order-history-btn"
+          >
+            <div className="w-12 h-12 bg-[#FF5A00]/10 rounded-2xl flex items-center justify-center">
+              <History className="w-6 h-6 text-[#FF5A00]" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-semibold text-gray-900">Mes commandes</p>
+              <p className="text-xs text-gray-500">Historique et commander à nouveau</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
 
         {/* Paramètres */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">

@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { OrderHistoryScreen } from './components/OrderHistoryScreen';
+import { OrderTrackingScreen } from './components/OrderTrackingScreen';
 import { Header } from './components/Header';
 import { CategoryFilter } from './components/CategoryFilter';
 import { RestaurantFeed } from './components/RestaurantFeed';
@@ -58,6 +60,7 @@ const SCREENS = {
   HOME: 'home',
   RESTAURANT: 'restaurant',
   CHECKOUT: 'checkout',
+  ORDER_TRACKING: 'order_tracking',
   DRIVER_ONBOARDING: 'driver_onboarding',
   PARTNER_ONBOARDING: 'partner_onboarding',
   TERMS: 'terms',
@@ -69,6 +72,7 @@ const SCREENS = {
   HEALTH: 'health',
   PHARMACY: 'pharmacy',
   PROFIL: 'profil',
+  ORDER_HISTORY: 'order_history',
 };
 
 function AppContent() {
@@ -88,6 +92,7 @@ function AppContent() {
   const [currentScreen, setCurrentScreen] = useState(SCREENS.HOME);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [selectedPharmacy, setSelectedPharmacy] = useState(null);
+  const [activeOrder, setActiveOrder] = useState(null); // For order tracking
   
   // Bottom Sheet states
   const [disabledModuleSheet, setDisabledModuleSheet] = useState({ open: false, moduleId: null });
@@ -375,7 +380,21 @@ function AppContent() {
     }
   };
 
-  const handleOrderComplete = () => {
+  const handleOrderComplete = (orderData) => {
+    // If we have order data, show tracking screen
+    if (orderData) {
+      setActiveOrder(orderData);
+      setCurrentScreen(SCREENS.ORDER_TRACKING);
+    } else {
+      setCurrentScreen(SCREENS.HOME);
+      setSelectedRestaurant(null);
+      setSelectedPharmacy(null);
+      navigate('/');
+    }
+  };
+
+  const handleTrackingComplete = () => {
+    setActiveOrder(null);
     setCurrentScreen(SCREENS.HOME);
     setSelectedRestaurant(null);
     setSelectedPharmacy(null);
@@ -459,6 +478,37 @@ function AppContent() {
   }
 
   // Render based on current screen
+  if (currentScreen === SCREENS.ORDER_TRACKING) {
+    return (
+      <OrderTrackingScreen
+        order={activeOrder}
+        onBack={handleTrackingComplete}
+        onComplete={handleTrackingComplete}
+      />
+    );
+  }
+
+  if (currentScreen === SCREENS.ORDER_HISTORY) {
+    return (
+      <OrderHistoryScreen
+        onBack={() => setCurrentScreen(SCREENS.PROFIL)}
+        onReorder={(order) => {
+          // Navigate to the restaurant of the order
+          const restaurant = restaurants.find(r => r.id === order.restaurant_id);
+          if (restaurant) {
+            handleRestaurantClick(restaurant);
+          }
+        }}
+        onViewRestaurant={(order) => {
+          const restaurant = restaurants.find(r => r.id === order.restaurant_id);
+          if (restaurant) {
+            handleRestaurantClick(restaurant);
+          }
+        }}
+      />
+    );
+  }
+
   if (currentScreen === SCREENS.PROFIL) {
     return (
       <>
@@ -471,6 +521,7 @@ function AppContent() {
           onSwitchToAdmin={() => setCurrentScreen(SCREENS.ADMIN_DASHBOARD)}
           onPrivacyClick={() => setPrivacySheet(true)}
           onTermsClick={() => setCurrentScreen(SCREENS.TERMS)}
+          onOrderHistory={() => setCurrentScreen(SCREENS.ORDER_HISTORY)}
         />
         <LocationPermissionSheet
           isOpen={showLocationPermission}

@@ -689,6 +689,43 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
         );
 
       case STEPS.SUCCESS:
+        // Build order data for tracking
+        const trackingOrderData = {
+          id: orderResult?.id || `ORD-${Date.now().toString(36).toUpperCase()}`,
+          status: 'confirmed',
+          restaurant: {
+            id: restaurant?.id,
+            name: restaurant?.name,
+            address: restaurant?.address || 'Bamako',
+            phone: restaurant?.phone || '+223 70 00 00 01',
+          },
+          delivery_address: address || 'Adresse non spécifiée',
+          delivery_mode: deliveryMode,
+          items: cartItems.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+          })),
+          total: orderResult?.final_total || finalTotal,
+          handshake_code: orderResult?.delivery_code || '#A42',
+          estimated_arrival: new Date(Date.now() + 35 * 60000).toLocaleTimeString('fr-FR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          created_at: new Date().toISOString(),
+          scheduled_time: !isAsap && scheduledSlot ? {
+            day: scheduledSlot.day.dayLabel,
+            time: scheduledSlot.slot.time,
+          } : null,
+          timeline: [
+            { status: 'confirmed', time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }), completed: true },
+            { status: 'preparing', time: null, completed: false },
+            { status: 'ready', time: null, completed: false },
+            { status: 'picked_up', time: null, completed: false },
+            { status: 'arriving', time: null, completed: false },
+            { status: 'delivered', time: null, completed: false },
+          ],
+        };
+
         return (
           <div className="text-center py-8">
             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -715,7 +752,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
             <div className="bg-gray-50 rounded-2xl p-4 mb-6 text-left">
               <div className="flex justify-between mb-2">
                 <span className="text-gray-500">Commande</span>
-                <span className="font-semibold">{orderResult?.id || '#1247'}</span>
+                <span className="font-semibold">{trackingOrderData.id}</span>
               </div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-500">Restaurant</span>
@@ -750,8 +787,20 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               </div>
             )}
 
+            {/* Track Order Button - Only for delivery */}
+            {deliveryMode === 'delivery' && (
+              <button
+                onClick={() => onOrderComplete(trackingOrderData)}
+                className="w-full py-4 rounded-2xl font-semibold bg-[#FF5A00] text-white active:bg-[#E55100] transition-colors mb-3 flex items-center justify-center gap-2"
+                data-testid="track-order-btn"
+              >
+                <Truck className="w-5 h-5" />
+                Suivre ma commande
+              </button>
+            )}
+
             <button
-              onClick={onOrderComplete}
+              onClick={() => onOrderComplete(null)}
               className="w-full py-4 rounded-2xl font-semibold bg-gray-100 text-gray-900 active:bg-gray-200 transition-colors"
             >
               Retour à l'accueil
