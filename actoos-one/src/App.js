@@ -9,6 +9,8 @@ import { PartnerOnboardingScreen } from './components/PartnerOnboardingScreen';
 import { TermsScreen } from './components/TermsScreen';
 import { LegalScreen } from './components/LegalScreen';
 import { PartnerKDSScreen } from './components/PartnerKDSScreen';
+import { DriverAppScreen } from './components/DriverAppScreen';
+import { AdminDashboard } from './components/AdminDashboard';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -31,6 +33,8 @@ const SCREENS = {
   TERMS: 'terms',
   LEGAL: 'legal',
   PARTNER_KDS: 'partner_kds',
+  DRIVER_APP: 'driver_app',
+  ADMIN_DASHBOARD: 'admin_dashboard',
 };
 
 function AppContent() {
@@ -135,6 +139,14 @@ function AppContent() {
   };
 
   // Render based on current screen
+  if (currentScreen === SCREENS.ADMIN_DASHBOARD) {
+    return <AdminDashboard onBack={handleBackToHome} />;
+  }
+
+  if (currentScreen === SCREENS.DRIVER_APP) {
+    return <DriverAppScreen onBack={handleBackToHome} />;
+  }
+
   if (currentScreen === SCREENS.PARTNER_KDS) {
     return <PartnerKDSScreen onBack={handleBackToHome} />;
   }
@@ -227,6 +239,8 @@ function AppContent() {
         onTermsClick={() => setCurrentScreen(SCREENS.TERMS)}
         onLegalClick={() => setCurrentScreen(SCREENS.LEGAL)}
         onKDSClick={() => setCurrentScreen(SCREENS.PARTNER_KDS)}
+        onDriverAppClick={() => setCurrentScreen(SCREENS.DRIVER_APP)}
+        onAdminClick={() => setCurrentScreen(SCREENS.ADMIN_DASHBOARD)}
       />
 
       {/* Bottom Navigation */}
