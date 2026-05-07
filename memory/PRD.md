@@ -31,7 +31,41 @@
 
 ## CHANGELOG
 
-### 2025-05-08 - KDS Menu CRUD & Partner Settings PRODUCTION ✅
+### 2025-05-08 - Driver Wallet & Admin Drivers & Banner Upload ✅
+
+**Implémentations complètes connectées à Supabase**
+
+#### 1. Driver Wallet - Supabase (`driverService.js`)
+- **getDriverWallet()** : Charge le solde depuis `wallets` table
+- **getDriverTodayEarnings()** : Calcule les gains du jour depuis `wallet_transactions`
+- **creditDriverEarnings()** : Crédite le wallet après une livraison
+- **Driver reçoit 100%** des frais de livraison (au lieu de 85%)
+- Affichage : Solde, Aujourd'hui, Livraisons dans le header
+- Transactions créées avec type 'commission' et référence commande
+
+#### 2. Admin Dashboard - Vrais Drivers
+- **getAllDrivers()** : Charge les livreurs depuis `drivers` JOIN `users`
+- Plus de mock data - affiche les vrais drivers
+- Stats dynamiques : Total, En ligne, En mission
+- Détection mission en cours via `orders.driver_id`
+
+#### 3. Partner Settings - Upload Bannière
+- **Section "Bannière du restaurant"** dans Config
+- Upload via Supabase Storage bucket `partner-banners`
+- Compression automatique (max 1200px)
+- Preview immédiate avec bouton supprimer
+- Format recommandé : 1200x400px (max 10MB)
+
+#### Tests validés (100% succès - iteration_77)
+- ✅ Driver wallet stats connecté à Supabase
+- ✅ Driver missions montrent 100% frais livraison (+700 F)
+- ✅ Admin charge les vrais drivers (0 car table vide)
+- ✅ Partner Settings montre section bannière
+- ✅ Upload zone avec icône caméra et format
+
+---
+
+
 
 **Implémentation CRUD réel pour la gestion du menu et des paramètres partenaire**
 
