@@ -856,8 +856,10 @@ function DriverApp() {
     
     if (testMode) {
       // Test mode - skip authentication
-      console.log('🧪 Driver App - Mode Test activé');
-      setTestDriverId(driverId || 'test-driver');
+      // Use a real driver ID from seeded data if not provided
+      const realDriverId = driverId || 'a1111111-1111-1111-1111-111111111111'; // Amadou Diallo
+      console.log('🧪 Driver App - Mode Test activé avec driver:', realDriverId);
+      setTestDriverId(realDriverId);
       setIsAuthenticated(true);
       return;
     }
