@@ -1,3 +1,10 @@
+/**
+ * ACTOOS ONE - Partner KDS Screen (Kitchen Display System)
+ * 
+ * Dashboard partenaire avec commandes en temps réel depuis Supabase.
+ * PRODUCTION MODE
+ */
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   RefreshCw, 
@@ -12,18 +19,18 @@ import {
   Keyboard,
   Tag,
   BarChart3,
-  Settings
+  Settings,
+  Loader2,
+  AlertCircle,
+  Bell
 } from 'lucide-react';
-import { mockOrders, mockMenuItems } from '../data/kdsData';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { getPartnerOrders, updateOrderStatus } from '../services/orderService';
 import { KDSOrderCard } from './KDSOrderCard';
 import { KDSMenuManager } from './KDSMenuManager';
 import { PartnerPromotionsManager } from './PartnerPromotionsManager';
 import { PartnerAnalytics } from './PartnerAnalytics';
 import { PartnerSettings } from './PartnerSettings';
-import { PARTNER_TYPES } from '../data/promotionsData';
-
-// Son de notification (base64 encoded beep)
-const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp+fm5eTj4d8b2JXTUZCPz07Ojk4Nzk7PUFGTFVfanuNnqqxs7CqoZWJfXFmXVVPSUVCQD8/P0BCRUlOVl9qeYyepq2wr6uklox/cmZdVE5IRkRCQUFCQ0ZKTVRZYG17jZ6mrK2tqaKZjn5wa2NcVlFNSkdGRUVGR0lMUFZdZW96i5ulq62sqKOckoZ6bmVdV1JOS0lIR0dISUpNUVZcYmt3hpOgo6eopqKdloqAd25nYVtWUk9NTEtLS0xOUVVZXmRsdoOQnKOlpqShn5mRiX1zbmljXllVUk9OTU1OT1FUV1teZGt0foqVnqKkpKKgm5aPh3xybGZhXFlWU1FQT09QUVNWWV1hZm1ze4aPmJ6ho6KgnpqVjoR6cGpmYl5aV1VTUlFRUlNVV1ldYWVqcHh/h5CYnaChn5yZlI6GfXRtaGRgXFpXVVRTU1NUVVdZXGBkZ2xye4KKkpicn5+dnJmUjoZ+dnBrZmJfXFpYVlVVVVZXWVtdYGRobnR7gYmRl5udnp2bmJONhX12cGtmY2BdW1lYV1dXWFlaXF9iZmtwd36EjJOYm52dnJqXko2FfnhybGdjYF5cWllYWFhZWltdX2JlaW50eoGHjpSYm5ycm5mWkYuEfXdzb2xoZGJgXlxbWlpaW1xdX2FkZ2twd3yChYuRl5qbnJuZl5ONiIJ+eXVxbmpmZGJgX15dXV1eX2BhY2ZpbHB0eX6ChYqOk5eZmpqZl5WSjoqFgHt3c3BtamdjYmBfX15eXl9gYWNlZ2pscHR5fYGFiY2RlZeYmJeWlJGOioaCfnp2c3BtamhkY2FgX19eXl9gYWJkZmhqbXF1eXyCg4aIi42Pk5aXlpSSkI6KhoJ+e3dzcW5ramloZmVkY2NjY2NkZGVmZ2hqbG1vcXN2eHt9f4GChomLjY6QkZOTk5KQj42KiIWDgH58enh2dHJwb21saWhnZmZlZWVlZmZmZ2hpamtsbm9xc3V2eHl7fH5/gYKEhYeIiYqLjI2Oj5CQj46OjYuJiIaEgoB/fXt6eHd2dXRzcnFwb25tbGxsbGxsbG1tbm5vb3BxcnNzdHV2d3h5ent8fX5/gIGBgoOEhIWGhoeIiImJiomJiYiIh4aFhIOCgYB/fn18e3p5eHh3dnZ1dXR0dHR0dHR0dHV1dXZ2d3d4eHl5ent7fH19fn5/gIGBgoKDg4SEhYWGhoaHh4eHh4eHhoaGhYWEhIODgoKBgYCAf39+fn19fHx8e3t7e3t7e3t7e3t7e3x8fHx9fX1+fn5/f4CAgIGBgYKCgoODg4ODhISEhISEhISEhIODg4OCgoKBgYGAgIB/f35+fX19fHx8fHx8fHx8fHx8fH19fX19fn5+fn9/f4CAgICAgYGBgYGBgoKCgoKCgoKCgoKCgoKCgoKCgYGBgYGAgICAgH9/f39/fn5+fn5+fn5+fn5+fn5+f39/f39/f4CAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgICAgH9/f39+fn5+fn5+fn5+fn5+fn5+fn5+fn5/f39/f39/f39/gICAgICAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgICAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgICAgICBgYGBgYGBgYGBgYGAgICAgICAgIB/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fn5+fn5/f39/f39/f39/gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIB/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fn5+fn5+f39/f39/f39/gICAgICAg==';
 
 const TABS = {
   ORDERS: 'orders',
@@ -33,396 +40,595 @@ const TABS = {
   SETTINGS: 'settings',
 };
 
-export function PartnerKDSScreen({ onBack }) {
+// Statuts des commandes pour KDS
+const ORDER_STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'ready'];
+
+export function PartnerKDSScreen({ partnerId, onBack }) {
   const [activeTab, setActiveTab] = useState(TABS.ORDERS);
   const [orders, setOrders] = useState([]);
-  const [menuItems, setMenuItems] = useState(mockMenuItems);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPickupScanner, setShowPickupScanner] = useState(false);
   const [pickupCode, setPickupCode] = useState('');
   const [pickupResult, setPickupResult] = useState(null);
-  const audioRef = useRef(null);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
   const previousOrdersCount = useRef(0);
-
-  // Créer l'élément audio
-  useEffect(() => {
-    audioRef.current = new Audio(NOTIFICATION_SOUND);
-    audioRef.current.volume = 0.5;
-  }, []);
 
   // Jouer le son de notification
   const playNotificationSound = useCallback(() => {
-    if (soundEnabled && audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
+    if (!soundEnabled) return;
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.3;
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (e) {
+      console.log('Audio not supported');
     }
   }, [soundEnabled]);
 
-  // Charger les commandes (simulé)
-  const fetchOrders = useCallback(() => {
+  // Charger les commandes depuis Supabase
+  const fetchOrders = useCallback(async () => {
+    if (!isSupabaseConfigured()) {
+      setError('Supabase non configuré');
+      setIsLoading(false);
+      return;
+    }
+
     setIsRefreshing(true);
-    
-    setTimeout(() => {
-      const newOrders = [...mockOrders];
+
+    try {
+      // Récupérer toutes les commandes du partenaire (pas seulement pending)
+      const { data, error: fetchError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (*)
+        `)
+        .eq('partner_id', partnerId)
+        .in('status', ['pending', 'confirmed', 'preparing', 'ready'])
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (fetchError) throw fetchError;
+
+      const ordersData = data || [];
       
-      const pendingCount = newOrders.filter(o => o.status === 'pending').length;
-      if (pendingCount > previousOrdersCount.current) {
+      // Détecter nouvelles commandes
+      const pendingCount = ordersData.filter(o => o.status === 'pending').length;
+      if (pendingCount > previousOrdersCount.current && previousOrdersCount.current > 0) {
         playNotificationSound();
+        setNewOrdersCount(prev => prev + (pendingCount - previousOrdersCount.current));
       }
       previousOrdersCount.current = pendingCount;
-      
-      setOrders(newOrders);
-      setLastRefresh(new Date());
-      setIsRefreshing(false);
-    }, 500);
-  }, [playNotificationSound]);
 
-  // Auto-refresh toutes les 5 secondes
+      setOrders(ordersData);
+      setLastRefresh(new Date());
+      setError(null);
+    } catch (err) {
+      console.error('Erreur fetchOrders:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [partnerId, playNotificationSound]);
+
+  // Charger au démarrage
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 5000);
-    return () => clearInterval(interval);
   }, [fetchOrders]);
 
-  // Marquer une commande comme prête
-  const markOrderReady = useCallback((orderId) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId ? { ...order, status: 'ready' } : order
-    ));
+  // Souscription Realtime aux commandes
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !partnerId) return;
+
+    console.log('🔔 KDS: Subscribing to orders for partner:', partnerId);
+
+    const channel = supabase
+      .channel(`kds-orders-${partnerId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'orders',
+          filter: `partner_id=eq.${partnerId}`,
+        },
+        (payload) => {
+          console.log('📦 Nouvelle commande KDS:', payload.new);
+          setOrders(prev => [payload.new, ...prev]);
+          playNotificationSound();
+          setNewOrdersCount(prev => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `partner_id=eq.${partnerId}`,
+        },
+        (payload) => {
+          console.log('📝 Commande mise à jour KDS:', payload.new);
+          setOrders(prev => 
+            prev.map(o => o.id === payload.new.id ? { ...o, ...payload.new } : o)
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔕 KDS: Unsubscribing');
+      supabase.removeChannel(channel);
+    };
+  }, [partnerId, playNotificationSound]);
+
+  // Confirmer une commande
+  const confirmOrder = useCallback(async (orderId) => {
+    const { data, error } = await updateOrderStatus(orderId, 'confirmed');
+    if (error) {
+      alert('Erreur: ' + error.message);
+    } else {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'confirmed' } : o));
+    }
   }, []);
 
-  // Valider code Pickup (Scanner Client)
-  const validatePickupCode = useCallback(() => {
-    const formattedCode = pickupCode.toUpperCase();
+  // Commencer la préparation
+  const startPreparing = useCallback(async (orderId) => {
+    const { data, error } = await updateOrderStatus(orderId, 'preparing');
+    if (error) {
+      alert('Erreur: ' + error.message);
+    } else {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'preparing' } : o));
+    }
+  }, []);
+
+  // Marquer comme prêt
+  const markReady = useCallback(async (orderId) => {
+    const { data, error } = await updateOrderStatus(orderId, 'ready');
+    if (error) {
+      alert('Erreur: ' + error.message);
+    } else {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'ready' } : o));
+    }
+  }, []);
+
+  // Valider code pickup
+  const validatePickupCode = useCallback(async () => {
+    const formattedCode = pickupCode.trim().replace('#', '');
     const matchingOrder = orders.find(
       o => o.delivery_code === formattedCode && o.status === 'ready'
     );
-    
+
     if (matchingOrder) {
-      setPickupResult({ success: true, order: matchingOrder });
-      setOrders(prev => prev.map(order => 
-        order.id === matchingOrder.id ? { ...order, status: 'delivered' } : order
-      ));
-      // Reset après 3 secondes
-      setTimeout(() => {
-        setPickupResult(null);
-        setPickupCode('');
-        setShowPickupScanner(false);
-      }, 3000);
+      // Marquer comme récupéré
+      const { error } = await updateOrderStatus(matchingOrder.id, 'picked_up');
+      if (error) {
+        setPickupResult({ success: false, message: 'Erreur de mise à jour' });
+      } else {
+        setPickupResult({
+          success: true,
+          message: `Commande ${matchingOrder.order_number || matchingOrder.id.slice(0, 8)} remise au client !`,
+        });
+        setOrders(prev => prev.filter(o => o.id !== matchingOrder.id));
+      }
     } else {
-      setPickupResult({ success: false, error: 'Code invalide ou commande non prête' });
+      setPickupResult({
+        success: false,
+        message: 'Code invalide ou commande non prête',
+      });
     }
+
+    setPickupCode('');
+    setTimeout(() => setPickupResult(null), 3000);
   }, [pickupCode, orders]);
 
-  // Toggle disponibilité d'un article
-  const toggleItemAvailability = useCallback((itemId) => {
-    setMenuItems(prev => prev.map(item =>
-      item.id === itemId ? { ...item, is_available: !item.is_available } : item
-    ));
-  }, []);
-
-  // Modifier max_per_order
-  const updateMaxPerOrder = useCallback((itemId, newMax) => {
-    setMenuItems(prev => prev.map(item =>
-      item.id === itemId ? { ...item, max_per_order: Math.max(1, newMax) } : item
-    ));
-  }, []);
-
+  // Grouper les commandes par statut
   const pendingOrders = orders.filter(o => o.status === 'pending');
+  const confirmedOrders = orders.filter(o => o.status === 'confirmed');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
   const readyOrders = orders.filter(o => o.status === 'ready');
 
+  // Stats
+  const stats = {
+    pending: pendingOrders.length,
+    confirmed: confirmedOrders.length,
+    preparing: preparingOrders.length,
+    ready: readyOrders.length,
+    total: orders.length,
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50" data-testid="partner-kds-screen">
-      {/* Header - MODE CLAIR */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
+    <div className="min-h-screen bg-gray-900" data-testid="partner-kds-screen">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-gray-800 border-b border-gray-700 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center active:bg-gray-200 transition-colors"
+              className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-white"
               data-testid="kds-back-btn"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="font-bold text-gray-900 text-lg">KDS Partenaire</h1>
-              <p className="text-xs text-gray-500">Maquis Chez Tanti</p>
+              <div className="flex items-center gap-2">
+                <ChefHat className="w-5 h-5 text-[#FF5A00]" />
+                <h1 className="font-bold text-lg text-white">KDS Partenaire</h1>
+              </div>
+              <p className="text-xs text-gray-400">
+                Mise à jour: {lastRefresh.toLocaleTimeString('fr-FR')}
+              </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            {/* Scanner Pickup Button */}
-            <button
-              onClick={() => setShowPickupScanner(true)}
-              className="h-10 px-3 bg-[#FF5A00] rounded-xl flex items-center gap-2 text-white font-semibold text-sm"
-              data-testid="scanner-pickup-btn"
-            >
-              <Keyboard className="w-4 h-4" />
-              Scanner
-            </button>
-            
+            {/* New orders badge */}
+            {newOrdersCount > 0 && (
+              <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold animate-pulse flex items-center gap-1">
+                <Bell className="w-4 h-4" />
+                {newOrdersCount} nouvelle(s)
+              </div>
+            )}
+
+            {/* Sound toggle */}
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                soundEnabled ? 'bg-[#FF5A00] text-white' : 'bg-gray-200 text-gray-400'
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                soundEnabled ? 'bg-green-600' : 'bg-gray-700'
               }`}
-              data-testid="sound-toggle"
             >
-              {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              {soundEnabled ? (
+                <Volume2 className="w-5 h-5 text-white" />
+              ) : (
+                <VolumeX className="w-5 h-5 text-gray-400" />
+              )}
             </button>
-            
-            <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
-              <RefreshCw className={`w-4 h-4 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="text-xs text-gray-500">
-                {lastRefresh.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-              </span>
-            </div>
+
+            {/* Refresh */}
+            <button
+              onClick={() => { fetchOrders(); setNewOrdersCount(0); }}
+              disabled={isRefreshing}
+              className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-white"
+            >
+              <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+
+            {/* Pickup scanner */}
+            <button
+              onClick={() => setShowPickupScanner(!showPickupScanner)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                showPickupScanner ? 'bg-[#FF5A00]' : 'bg-gray-700'
+              }`}
+            >
+              <Keyboard className="w-5 h-5 text-white" />
+            </button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mt-4">
+        <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
           <button
-            onClick={() => setActiveTab(TABS.ORDERS)}
-            className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-colors text-sm ${
+            onClick={() => { setActiveTab(TABS.ORDERS); setNewOrdersCount(0); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap ${
               activeTab === TABS.ORDERS
                 ? 'bg-[#FF5A00] text-white'
-                : 'bg-gray-100 text-gray-600'
+                : 'bg-gray-700 text-gray-300'
             }`}
-            data-testid="tab-orders"
           >
             <Package className="w-4 h-4" />
             Commandes
-            {pendingOrders.length > 0 && (
-              <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                activeTab === TABS.ORDERS ? 'bg-white/20' : 'bg-[#FF5A00] text-white'
-              }`}>
-                {pendingOrders.length}
-              </span>
-            )}
+            <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+              {stats.total}
+            </span>
           </button>
           <button
             onClick={() => setActiveTab(TABS.MENU)}
-            className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-colors text-sm ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap ${
               activeTab === TABS.MENU
                 ? 'bg-[#FF5A00] text-white'
-                : 'bg-gray-100 text-gray-600'
+                : 'bg-gray-700 text-gray-300'
             }`}
-            data-testid="tab-menu"
           >
             <Utensils className="w-4 h-4" />
             Menu
           </button>
           <button
             onClick={() => setActiveTab(TABS.PROMOS)}
-            className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-colors text-sm ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap ${
               activeTab === TABS.PROMOS
                 ? 'bg-[#FF5A00] text-white'
-                : 'bg-gray-100 text-gray-600'
+                : 'bg-gray-700 text-gray-300'
             }`}
-            data-testid="tab-promos"
           >
             <Tag className="w-4 h-4" />
             Promos
           </button>
           <button
             onClick={() => setActiveTab(TABS.ANALYTICS)}
-            className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-colors text-sm ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap ${
               activeTab === TABS.ANALYTICS
                 ? 'bg-[#FF5A00] text-white'
-                : 'bg-gray-100 text-gray-600'
+                : 'bg-gray-700 text-gray-300'
             }`}
-            data-testid="tab-analytics"
           >
             <BarChart3 className="w-4 h-4" />
             Stats
           </button>
           <button
             onClick={() => setActiveTab(TABS.SETTINGS)}
-            className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-colors text-sm ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap ${
               activeTab === TABS.SETTINGS
                 ? 'bg-[#FF5A00] text-white'
-                : 'bg-gray-100 text-gray-600'
+                : 'bg-gray-700 text-gray-300'
             }`}
-            data-testid="tab-settings"
           >
             <Settings className="w-4 h-4" />
             Config
           </button>
         </div>
-      </header>
 
-      {/* Pickup Scanner Modal */}
-      {showPickupScanner && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl">
-            <h2 className="text-gray-900 text-xl font-bold text-center mb-2">Scanner Client</h2>
-            <p className="text-gray-500 text-sm text-center mb-6">
-              Entrez le code Handshake du client
-            </p>
-            
-            {pickupResult ? (
-              <div className={`text-center py-8 ${pickupResult.success ? 'text-green-600' : 'text-red-600'}`}>
-                {pickupResult.success ? (
-                  <>
-                    <Check className="w-16 h-16 mx-auto mb-4" />
-                    <p className="text-2xl font-bold">Validé !</p>
-                    <p className="text-gray-500 mt-2">Commande {pickupResult.order.orderNumber}</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-xl font-bold">{pickupResult.error}</p>
-                  </>
-                )}
+        {/* Pickup Scanner */}
+        {showPickupScanner && (
+          <div className="mt-3 bg-gray-700 rounded-xl p-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={pickupCode}
+                onChange={(e) => setPickupCode(e.target.value.toUpperCase())}
+                onKeyPress={(e) => e.key === 'Enter' && validatePickupCode()}
+                placeholder="Entrer code client (ex: 1234)"
+                className="flex-1 bg-gray-600 text-white rounded-lg px-4 py-2 placeholder-gray-400"
+                autoFocus
+                data-testid="pickup-code-input"
+              />
+              <button
+                onClick={validatePickupCode}
+                className="bg-[#FF5A00] text-white px-4 py-2 rounded-lg font-medium"
+              >
+                Valider
+              </button>
+            </div>
+            {pickupResult && (
+              <div className={`mt-2 p-2 rounded-lg text-center font-medium ${
+                pickupResult.success ? 'bg-green-600' : 'bg-red-600'
+              } text-white`}>
+                {pickupResult.message}
               </div>
-            ) : (
-              <>
-                <div className="flex justify-center mb-6">
-                  <input
-                    type="text"
-                    value={pickupCode}
-                    onChange={(e) => setPickupCode(e.target.value.toUpperCase().slice(0, 4))}
-                    placeholder="#A42"
-                    maxLength={4}
-                    className="w-40 h-20 bg-gray-100 border-2 border-gray-200 rounded-2xl text-center text-gray-900 text-4xl font-bold tracking-widest placeholder-gray-400 focus:border-[#FF5A00] outline-none"
-                    data-testid="pickup-code-input"
-                    autoFocus
-                  />
-                </div>
-                
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setShowPickupScanner(false);
-                      setPickupCode('');
-                      setPickupResult(null);
-                    }}
-                    className="flex-1 py-4 bg-gray-100 text-gray-700 rounded-2xl font-semibold"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={validatePickupCode}
-                    disabled={pickupCode.length < 3}
-                    className={`flex-1 py-4 rounded-2xl font-semibold ${
-                      pickupCode.length >= 3
-                        ? 'bg-[#FF5A00] text-white'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
-                    data-testid="validate-pickup-btn"
-                  >
-                    Valider
-                  </button>
-                </div>
-              </>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </header>
 
       {/* Content */}
-      {activeTab === TABS.ORDERS ? (
-        <div className="p-4">
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center">
-              <p className="text-3xl font-bold text-yellow-600">{pendingOrders.length}</p>
-              <p className="text-xs text-yellow-600 mt-1">En attente</p>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
-              <p className="text-3xl font-bold text-blue-600">{preparingOrders.length}</p>
-              <p className="text-xs text-blue-600 mt-1">En préparation</p>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
-              <p className="text-3xl font-bold text-green-600">{readyOrders.length}</p>
-              <p className="text-xs text-green-600 mt-1">Prêtes</p>
-            </div>
+      <div className="p-4">
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-10 h-10 text-[#FF5A00] animate-spin" />
           </div>
+        )}
 
-          {orders.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Aucune commande pour le moment</p>
+        {/* Error */}
+        {error && !isLoading && (
+          <div className="bg-red-900/50 border border-red-500 rounded-xl p-4 text-center">
+            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+            <p className="text-red-200">{error}</p>
+            <button
+              onClick={fetchOrders}
+              className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg"
+            >
+              Réessayer
+            </button>
+          </div>
+        )}
+
+        {/* Orders Tab */}
+        {!isLoading && !error && activeTab === TABS.ORDERS && (
+          <div className="space-y-6">
+            {/* Stats bar */}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-yellow-900/50 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
+                <p className="text-xs text-yellow-200">En attente</p>
+              </div>
+              <div className="bg-blue-900/50 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-blue-400">{stats.confirmed}</p>
+                <p className="text-xs text-blue-200">Confirmées</p>
+              </div>
+              <div className="bg-orange-900/50 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-orange-400">{stats.preparing}</p>
+                <p className="text-xs text-orange-200">En prépa</p>
+              </div>
+              <div className="bg-green-900/50 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-green-400">{stats.ready}</p>
+                <p className="text-xs text-green-200">Prêtes</p>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {pendingOrders.length > 0 && (
-                <div>
-                  <h2 className="text-yellow-600 font-semibold mb-3 flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    En attente ({pendingOrders.length})
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {pendingOrders.map(order => (
-                      <KDSOrderCard key={order.id} order={order} onMarkReady={() => markOrderReady(order.id)} />
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {preparingOrders.length > 0 && (
-                <div>
-                  <h2 className="text-blue-600 font-semibold mb-3 flex items-center gap-2">
-                    <ChefHat className="w-5 h-5" />
-                    En préparation ({preparingOrders.length})
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {preparingOrders.map(order => (
-                      <KDSOrderCard key={order.id} order={order} onMarkReady={() => markOrderReady(order.id)} />
-                    ))}
-                  </div>
-                </div>
-              )}
+            {/* No orders */}
+            {orders.length === 0 && (
+              <div className="text-center py-20">
+                <Package className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400 text-lg">Aucune commande en cours</p>
+                <p className="text-gray-500 text-sm mt-1">Les nouvelles commandes apparaîtront ici en temps réel</p>
+              </div>
+            )}
 
-              {readyOrders.length > 0 && (
-                <div>
-                  <h2 className="text-green-600 font-semibold mb-3 flex items-center gap-2">
-                    <Check className="w-5 h-5" />
-                    Prêtes ({readyOrders.length})
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60">
-                    {readyOrders.map(order => (
-                      <KDSOrderCard key={order.id} order={order} onMarkReady={() => {}} isReady />
-                    ))}
-                  </div>
+            {/* Pending Orders - Need confirmation */}
+            {pendingOrders.length > 0 && (
+              <div>
+                <h3 className="text-yellow-400 font-bold mb-3 flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  En attente de confirmation ({pendingOrders.length})
+                </h3>
+                <div className="space-y-3">
+                  {pendingOrders.map(order => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      onAction={() => confirmOrder(order.id)}
+                      actionLabel="CONFIRMER"
+                      actionColor="bg-blue-600"
+                    />
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-      ) : activeTab === TABS.MENU ? (
-        <KDSMenuManager
-          items={menuItems}
-          onToggleAvailability={toggleItemAvailability}
-          onUpdateMaxPerOrder={updateMaxPerOrder}
-        />
-      ) : activeTab === TABS.PROMOS ? (
-        <div className="p-4">
-          <PartnerPromotionsManager
-            partnerId="rest-001"
-            partnerName="Maquis Chez Tanti"
-            partnerType={PARTNER_TYPES.RESTAURANT}
-          />
-        </div>
-      ) : activeTab === TABS.ANALYTICS ? (
-        <div className="p-4">
-          <PartnerAnalytics
-            partnerId="rest-001"
-            partnerName="Maquis Chez Tanti"
-          />
-        </div>
-      ) : activeTab === TABS.SETTINGS ? (
-        <PartnerSettings
-          partnerType="restaurant"
-          onSettingsChange={(settings) => {
-            console.log('Settings updated:', settings);
-            // In production, this would save to Supabase
-          }}
-        />
-      ) : null}
+              </div>
+            )}
+
+            {/* Confirmed Orders - Start preparing */}
+            {confirmedOrders.length > 0 && (
+              <div>
+                <h3 className="text-blue-400 font-bold mb-3 flex items-center gap-2">
+                  <Check className="w-5 h-5" />
+                  Confirmées ({confirmedOrders.length})
+                </h3>
+                <div className="space-y-3">
+                  {confirmedOrders.map(order => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      onAction={() => startPreparing(order.id)}
+                      actionLabel="COMMENCER PRÉPA"
+                      actionColor="bg-orange-600"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Preparing Orders - Mark ready */}
+            {preparingOrders.length > 0 && (
+              <div>
+                <h3 className="text-orange-400 font-bold mb-3 flex items-center gap-2">
+                  <ChefHat className="w-5 h-5" />
+                  En préparation ({preparingOrders.length})
+                </h3>
+                <div className="space-y-3">
+                  {preparingOrders.map(order => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      onAction={() => markReady(order.id)}
+                      actionLabel="PRÊT"
+                      actionColor="bg-green-600"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Ready Orders - Waiting for pickup */}
+            {readyOrders.length > 0 && (
+              <div>
+                <h3 className="text-green-400 font-bold mb-3 flex items-center gap-2">
+                  <Package className="w-5 h-5" />
+                  Prêtes - En attente ({readyOrders.length})
+                </h3>
+                <div className="space-y-3">
+                  {readyOrders.map(order => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      showPickupCode
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Menu Tab */}
+        {activeTab === TABS.MENU && (
+          <KDSMenuManager partnerId={partnerId} />
+        )}
+
+        {/* Promos Tab */}
+        {activeTab === TABS.PROMOS && (
+          <PartnerPromotionsManager partnerId={partnerId} />
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === TABS.ANALYTICS && (
+          <PartnerAnalytics partnerId={partnerId} />
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === TABS.SETTINGS && (
+          <PartnerSettings partnerId={partnerId} />
+        )}
+      </div>
     </div>
   );
 }
+
+// Simple Order Card component for KDS
+function OrderCard({ order, onAction, actionLabel, actionColor, showPickupCode }) {
+  const items = order.order_items || [];
+  const elapsed = Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000);
+
+  return (
+    <div className="bg-gray-800 rounded-xl p-4 border border-gray-700" data-testid={`order-${order.id}`}>
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <p className="text-white font-bold text-lg">
+            {order.order_number || `#${order.id.slice(0, 6)}`}
+          </p>
+          <p className="text-gray-400 text-sm">
+            {order.delivery_type === 'pickup' ? '🏃 À emporter' : '🚚 Livraison'}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-[#FF5A00] font-bold">{(order.total_amount || 0).toLocaleString()} F</p>
+          <p className={`text-xs ${elapsed > 15 ? 'text-red-400' : 'text-gray-400'}`}>
+            {elapsed} min
+          </p>
+        </div>
+      </div>
+
+      {/* Items */}
+      <div className="space-y-1 mb-3">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex justify-between text-sm">
+            <span className="text-gray-300">
+              <span className="text-[#FF5A00] font-bold">{item.quantity}x</span> {item.name}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Pickup code for ready orders */}
+      {showPickupCode && order.delivery_code && (
+        <div className="bg-green-900/50 rounded-lg p-3 mb-3 text-center">
+          <p className="text-xs text-green-300">Code remise</p>
+          <p className="text-3xl font-mono font-bold text-green-400">#{order.delivery_code}</p>
+        </div>
+      )}
+
+      {/* Action button */}
+      {onAction && (
+        <button
+          onClick={onAction}
+          className={`w-full ${actionColor} text-white font-bold py-3 rounded-xl`}
+          data-testid={`action-${order.id}`}
+        >
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default PartnerKDSScreen;

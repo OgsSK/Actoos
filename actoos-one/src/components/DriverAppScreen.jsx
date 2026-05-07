@@ -1,4 +1,11 @@
-import { useState } from 'react';
+/**
+ * ACTOOS ONE - Driver App Screen
+ * 
+ * Dashboard livreur avec missions en temps réel depuis Supabase.
+ * PRODUCTION MODE
+ */
+
+import { useState, useEffect, useCallback } from 'react';
 import { 
   ArrowLeft,
   Power,
@@ -14,379 +21,612 @@ import {
   X,
   Wallet,
   Banknote,
-  AlertTriangle
+  AlertTriangle,
+  Loader2,
+  RefreshCw,
+  Bell,
+  Car
 } from 'lucide-react';
-import { mockCurrentMission } from '../data/driverData';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { updateOrderStatus } from '../services/orderService';
 
-// Configuration des commissions Driver
-const DRIVER_COMMISSION_RATE = 0.15; // 15% de commission sur les courses
+// Commission livreur
+const DRIVER_COMMISSION_RATE = 0.15;
 
-export function DriverAppScreen({ onBack }) {
-  const [isOnline, setIsOnline] = useState(true);
-  const [currentMission, setCurrentMission] = useState(mockCurrentMission);
+export function DriverAppScreen({ driverId, onBack }) {
+  const [isOnline, setIsOnline] = useState(false);
+  const [currentMission, setCurrentMission] = useState(null);
+  const [availableMissions, setAvailableMissions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [handshakeCode, setHandshakeCode] = useState('');
   const [otpError, setOtpError] = useState(false);
   const [deliveryComplete, setDeliveryComplete] = useState(false);
+  const [newMissionsCount, setNewMissionsCount] = useState(0);
   
-  // Wallet driver (mock)
+  // Wallet livreur
   const [driverWallet, setDriverWallet] = useState({
-    balance: 12500,
-    pending_cash: 0, // Cash collecté non encore reversé
+    balance: 0,
+    pending_cash: 0,
+    todayEarnings: 0,
+    todayDeliveries: 0,
   });
 
+  // Charger les missions disponibles (commandes prêtes sans livreur)
+  const fetchAvailableMissions = useCallback(async () => {
+    if (!isSupabaseConfigured() || !isOnline) return;
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          partners (name, address, phone),
+          order_items (*)
+        `)
+        .eq('status', 'ready')
+        .is('driver_id', null)
+        .eq('delivery_type', 'delivery')
+        .order('created_at', { ascending: true })
+        .limit(20);
+
+      if (fetchError) throw fetchError;
+
+      setAvailableMissions(data || []);
+      setError(null);
+    } catch (err) {
+      console.error('Erreur fetchAvailableMissions:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isOnline]);
+
+  // Charger la mission en cours
+  const fetchCurrentMission = useCallback(async () => {
+    if (!isSupabaseConfigured() || !driverId) return;
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          partners (name, address, phone),
+          order_items (*)
+        `)
+        .eq('driver_id', driverId)
+        .in('status', ['picked_up', 'delivering'])
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
+      if (data) {
+        setCurrentMission({
+          ...data,
+          pickup: {
+            name: data.partners?.name || 'Restaurant',
+            address: data.partners?.address || 'Adresse non disponible',
+            phone: data.partners?.phone,
+          },
+          dropoff: {
+            address: data.delivery_address || 'Adresse client',
+            delivery_code: data.delivery_code,
+            phone: '+223 70 00 00 00', // TODO: get from user
+          },
+          items: data.order_items || [],
+        });
+      }
+    } catch (err) {
+      console.error('Erreur fetchCurrentMission:', err);
+    }
+  }, [driverId]);
+
+  // Charger au démarrage
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      await fetchCurrentMission();
+      if (isOnline) await fetchAvailableMissions();
+      setIsLoading(false);
+    };
+    loadData();
+  }, [fetchAvailableMissions, fetchCurrentMission, isOnline]);
+
+  // Subscription temps réel aux nouvelles missions
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !isOnline) return;
+
+    console.log('🔔 Driver: Subscribing to available missions');
+
+    const channel = supabase
+      .channel('driver-missions')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+        },
+        (payload) => {
+          // Si une commande devient "ready" et n'a pas de livreur
+          if (payload.new.status === 'ready' && !payload.new.driver_id) {
+            console.log('📦 Nouvelle mission disponible:', payload.new.id);
+            setAvailableMissions(prev => {
+              if (prev.find(m => m.id === payload.new.id)) return prev;
+              return [...prev, payload.new];
+            });
+            setNewMissionsCount(prev => prev + 1);
+            playNotificationSound();
+          }
+          // Si une commande a été prise par un autre livreur
+          if (payload.new.driver_id && payload.new.driver_id !== driverId) {
+            setAvailableMissions(prev => prev.filter(m => m.id !== payload.new.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOnline, driverId]);
+
+  // Son de notification
+  const playNotificationSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.frequency.value = 600;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.3;
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.4);
+    } catch (e) {}
+  };
+
   // Toggle online/offline
-  const handleToggleOnline = () => {
+  const handleToggleOnline = async () => {
     if (currentMission) {
       alert('Impossible de passer hors ligne pendant une mission !');
       return;
     }
-    setIsOnline(!isOnline);
+
+    const newStatus = !isOnline;
+    setIsOnline(newStatus);
+
+    // Mettre à jour le statut en base
+    if (isSupabaseConfigured() && driverId) {
+      await supabase
+        .from('drivers')
+        .update({ is_online: newStatus })
+        .eq('id', driverId);
+    }
+
+    if (newStatus) {
+      fetchAvailableMissions();
+    } else {
+      setAvailableMissions([]);
+    }
   };
 
-  // Ouvrir modal OTP pour confirmer livraison
+  // Accepter une mission
+  const acceptMission = async (mission) => {
+    if (!isSupabaseConfigured()) return;
+
+    try {
+      // Assigner le livreur à la commande
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          driver_id: driverId,
+          status: 'picked_up',
+          picked_up_at: new Date().toISOString(),
+        })
+        .eq('id', mission.id)
+        .is('driver_id', null); // S'assurer qu'elle n'est pas déjà prise
+
+      if (error) throw error;
+
+      // Charger la mission complète
+      const { data: fullMission } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          partners (name, address, phone),
+          order_items (*)
+        `)
+        .eq('id', mission.id)
+        .single();
+
+      if (fullMission) {
+        setCurrentMission({
+          ...fullMission,
+          pickup: {
+            name: fullMission.partners?.name || 'Restaurant',
+            address: fullMission.partners?.address || 'Adresse',
+            phone: fullMission.partners?.phone,
+          },
+          dropoff: {
+            address: fullMission.delivery_address,
+            delivery_code: fullMission.delivery_code,
+            phone: '+223 70 00 00 00',
+          },
+          items: fullMission.order_items || [],
+        });
+      }
+
+      // Retirer de la liste des missions disponibles
+      setAvailableMissions(prev => prev.filter(m => m.id !== mission.id));
+      
+      console.log('✅ Mission acceptée:', mission.id);
+    } catch (err) {
+      console.error('Erreur acceptMission:', err);
+      alert('Erreur: Mission déjà prise par un autre livreur');
+      fetchAvailableMissions();
+    }
+  };
+
+  // Marquer en route vers client
+  const startDelivery = async () => {
+    if (!currentMission) return;
+
+    const { error } = await updateOrderStatus(currentMission.id, 'delivering');
+    if (error) {
+      alert('Erreur: ' + error.message);
+    } else {
+      setCurrentMission(prev => ({ ...prev, status: 'delivering' }));
+    }
+  };
+
+  // Ouvrir modal validation code
   const handleConfirmDelivery = () => {
     setShowOTPModal(true);
     setHandshakeCode('');
     setOtpError(false);
   };
 
-  // Gestion de l'entrée du code Handshake
-  const handleCodeChange = (e) => {
-    const value = e.target.value.toUpperCase();
-    // Format #A42 - max 4 caractères
-    if (value.length <= 4) {
-      setHandshakeCode(value);
-    }
-    setOtpError(false);
-  };
-
-  // Valider le code Handshake
-  const handleValidateCode = () => {
-    const expectedCode = currentMission?.dropoff?.delivery_code;
+  // Valider code handshake
+  const handleValidateCode = async () => {
+    const expectedCode = currentMission?.dropoff?.delivery_code || currentMission?.delivery_code;
+    
     if (handshakeCode === expectedCode) {
-      // Si paiement cash: calculer et débiter la commission automatiquement
-      if (currentMission?.payment_method === 'cash') {
-        const commission = Math.round(currentMission.total_amount * DRIVER_COMMISSION_RATE);
+      // Marquer comme livré
+      const { error } = await updateOrderStatus(currentMission.id, 'delivered');
+      
+      if (error) {
+        alert('Erreur: ' + error.message);
+        return;
+      }
+
+      // Calculer gains
+      const deliveryFee = currentMission.delivery_fee || 500;
+      const earnings = Math.round(deliveryFee * (1 - DRIVER_COMMISSION_RATE));
+
+      if (currentMission.payment_method === 'cash') {
         setDriverWallet(prev => ({
-          balance: prev.balance - commission, // Débit automatique commission
-          pending_cash: currentMission.total_amount, // Cash collecté
+          ...prev,
+          pending_cash: prev.pending_cash + currentMission.total_amount,
+          todayEarnings: prev.todayEarnings + earnings,
+          todayDeliveries: prev.todayDeliveries + 1,
+        }));
+      } else {
+        setDriverWallet(prev => ({
+          ...prev,
+          balance: prev.balance + earnings,
+          todayEarnings: prev.todayEarnings + earnings,
+          todayDeliveries: prev.todayDeliveries + 1,
         }));
       }
-      
+
       setDeliveryComplete(true);
       setShowOTPModal(false);
+      
       setTimeout(() => {
         setCurrentMission(null);
         setDeliveryComplete(false);
-        setDriverWallet(prev => ({ ...prev, pending_cash: 0 }));
-      }, 4000);
+        fetchAvailableMissions();
+      }, 3000);
     } else {
       setOtpError(true);
-      setHandshakeCode('');
     }
   };
 
-  const isCodeValid = handshakeCode.length >= 3; // #A42 format
-
-  // Calcul du temps écoulé
-  const getElapsedTime = (dateStr) => {
-    const created = new Date(dateStr);
-    const now = new Date();
-    const diffMins = Math.floor((now - created) / 60000);
-    return `${diffMins} min`;
+  // Calculer l'estimation de gain pour une mission
+  const estimateEarnings = (mission) => {
+    const deliveryFee = mission.delivery_fee || 500;
+    return Math.round(deliveryFee * (1 - DRIVER_COMMISSION_RATE));
   };
 
   return (
-    <div className="min-h-screen bg-white" data-testid="driver-app-screen">
+    <div className="min-h-screen bg-gray-100" data-testid="driver-app-screen">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-3">
+      <header className="sticky top-0 z-40 bg-gray-900 text-white px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center active:bg-gray-200 transition-colors"
+              className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center"
               data-testid="driver-back-btn"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="font-bold text-gray-900 text-lg">Mode Livreur</h1>
-              <p className="text-xs text-gray-500">Moussa Diallo</p>
+              <div className="flex items-center gap-2">
+                <Bike className="w-5 h-5 text-[#FF5A00]" />
+                <h1 className="font-bold text-lg">ACTOOS Driver</h1>
+              </div>
+              <p className="text-xs text-gray-400">
+                {isOnline ? '🟢 En ligne' : '⚫ Hors ligne'}
+              </p>
             </div>
           </div>
 
-          {/* Toggle Online/Offline */}
-          <button
-            onClick={handleToggleOnline}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full font-semibold transition-all ${
-              isOnline
-                ? 'bg-green-500 text-white'
-                : 'bg-gray-300 text-gray-600'
-            }`}
-            data-testid="online-toggle"
-          >
-            <Power className="w-5 h-5" />
-            {isOnline ? 'EN LIGNE' : 'HORS LIGNE'}
-          </button>
+          <div className="flex items-center gap-3">
+            {/* New missions badge */}
+            {newMissionsCount > 0 && isOnline && (
+              <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+                {newMissionsCount} nouvelle(s)
+              </div>
+            )}
+
+            {/* Online toggle */}
+            <button
+              onClick={handleToggleOnline}
+              disabled={!!currentMission}
+              className={`w-14 h-8 rounded-full flex items-center px-1 transition-colors ${
+                isOnline ? 'bg-green-500' : 'bg-gray-600'
+              } ${currentMission ? 'opacity-50' : ''}`}
+              data-testid="online-toggle"
+            >
+              <div className={`w-6 h-6 bg-white rounded-full shadow transition-transform ${
+                isOnline ? 'translate-x-6' : 'translate-x-0'
+              }`}>
+                <Power className={`w-4 h-4 m-1 ${isOnline ? 'text-green-500' : 'text-gray-400'}`} />
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Wallet summary */}
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          <div className="bg-gray-800 rounded-xl p-2 text-center">
+            <p className="text-xs text-gray-400">Solde</p>
+            <p className="font-bold text-green-400">{driverWallet.balance.toLocaleString()} F</p>
+          </div>
+          <div className="bg-gray-800 rounded-xl p-2 text-center">
+            <p className="text-xs text-gray-400">Aujourd'hui</p>
+            <p className="font-bold text-[#FF5A00]">{driverWallet.todayEarnings.toLocaleString()} F</p>
+          </div>
+          <div className="bg-gray-800 rounded-xl p-2 text-center">
+            <p className="text-xs text-gray-400">Livraisons</p>
+            <p className="font-bold text-white">{driverWallet.todayDeliveries}</p>
+          </div>
         </div>
       </header>
 
       {/* Content */}
       <div className="p-4">
-        {/* Driver Wallet Bar */}
-        <div className="bg-gray-50 rounded-2xl p-3 mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-[#FF5A00]" />
-            <span className="text-sm text-gray-600">Mon Wallet</span>
-          </div>
-          <span className="font-bold text-gray-900">{driverWallet.balance.toLocaleString()} FCFA</span>
-        </div>
-
-        {/* Delivery Complete Message */}
-        {deliveryComplete && (
-          <div className="bg-green-50 border-2 border-green-500 rounded-3xl p-6 text-center mb-6" data-testid="delivery-complete">
-            <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-green-700">Livraison Confirmée !</h2>
-            <p className="text-green-600 mt-2">+{currentMission?.delivery_fee || 500} FCFA crédités sur votre wallet</p>
-            {driverWallet.pending_cash > 0 && (
-              <div className="mt-4 bg-yellow-50 border border-yellow-300 rounded-xl p-3">
-                <p className="text-sm text-yellow-800">
-                  💵 Cash collecté: <strong>{driverWallet.pending_cash.toLocaleString()} FCFA</strong>
-                </p>
-                <p className="text-xs text-yellow-600 mt-1">À reverser au prochain dépôt</p>
-              </div>
-            )}
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-10 h-10 text-[#FF5A00] animate-spin" />
           </div>
         )}
 
-        {/* No Mission State */}
-        {!currentMission && !deliveryComplete && (
-          <div className="text-center py-16">
-            {isOnline ? (
-              <>
-                <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Bike className="w-12 h-12 text-primary" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">En attente de mission</h2>
-                <p className="text-gray-500">Vous recevrez une notification dès qu'une commande sera disponible</p>
-                <div className="mt-8 flex items-center justify-center gap-2 text-green-600">
-                  <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                  Recherche en cours...
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Power className="w-12 h-12 text-gray-400" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Vous êtes hors ligne</h2>
-                <p className="text-gray-500">Passez en ligne pour recevoir des missions</p>
-              </>
-            )}
+        {/* Offline message */}
+        {!isLoading && !isOnline && !currentMission && (
+          <div className="text-center py-20">
+            <Power className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600 text-lg font-medium">Vous êtes hors ligne</p>
+            <p className="text-gray-500 text-sm mt-1">Passez en ligne pour recevoir des missions</p>
+            <button
+              onClick={handleToggleOnline}
+              className="mt-6 bg-green-500 text-white px-8 py-3 rounded-xl font-bold"
+            >
+              Passer en ligne
+            </button>
+          </div>
+        )}
+
+        {/* Delivery Complete Animation */}
+        {deliveryComplete && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+            <div className="bg-white rounded-3xl p-8 text-center mx-4 animate-bounce">
+              <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900">Livraison terminée !</h2>
+              <p className="text-gray-600 mt-2">Excellent travail 🎉</p>
+            </div>
           </div>
         )}
 
         {/* Current Mission */}
         {currentMission && !deliveryComplete && (
           <div className="space-y-4">
-            {/* Mission Header */}
-            <div className="bg-primary text-white rounded-3xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm opacity-80">Mission en cours</p>
-                  <p className="text-2xl font-bold">{currentMission.orderNumber}</p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span className="text-sm">{getElapsedTime(currentMission.created_at)}</span>
+            <div className="bg-[#FF5A00] text-white rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="w-5 h-5" />
+                <span className="font-bold">MISSION EN COURS</span>
+              </div>
+              <p className="text-2xl font-bold">
+                {currentMission.order_number || `#${currentMission.id?.slice(0, 6)}`}
+              </p>
+              <p className="text-white/80 text-sm">{currentMission.status === 'picked_up' ? 'Récupérée - En route' : 'En livraison'}</p>
+            </div>
+
+            {/* Pickup info */}
+            <div className="bg-white rounded-2xl p-4 border-l-4 border-blue-500">
+              <p className="text-xs text-gray-500 mb-1">RETRAIT</p>
+              <p className="font-bold text-gray-900">{currentMission.pickup?.name}</p>
+              <p className="text-sm text-gray-600">{currentMission.pickup?.address}</p>
+              {currentMission.pickup?.phone && (
+                <a href={`tel:${currentMission.pickup.phone}`} className="text-blue-500 text-sm flex items-center gap-1 mt-1">
+                  <Phone className="w-4 h-4" /> {currentMission.pickup.phone}
+                </a>
+              )}
+            </div>
+
+            {/* Dropoff info */}
+            <div className="bg-white rounded-2xl p-4 border-l-4 border-green-500">
+              <p className="text-xs text-gray-500 mb-1">LIVRAISON</p>
+              <p className="font-bold text-gray-900">{currentMission.dropoff?.address}</p>
+              {currentMission.dropoff?.phone && (
+                <a href={`tel:${currentMission.dropoff.phone}`} className="text-blue-500 text-sm flex items-center gap-1 mt-1">
+                  <Phone className="w-4 h-4" /> {currentMission.dropoff.phone}
+                </a>
+              )}
+            </div>
+
+            {/* Items */}
+            <div className="bg-white rounded-2xl p-4">
+              <p className="text-xs text-gray-500 mb-2">ARTICLES ({currentMission.items?.length || 0})</p>
+              <div className="space-y-1">
+                {(currentMission.items || []).map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <span>{item.quantity}x {item.name}</span>
                   </div>
-                  <p className="text-lg font-bold mt-1">{currentMission.delivery_fee} FCFA</p>
-                </div>
+                ))}
               </div>
+              <div className="flex justify-between font-bold mt-3 pt-3 border-t">
+                <span>Total</span>
+                <span className="text-[#FF5A00]">{(currentMission.total_amount || 0).toLocaleString()} FCFA</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Paiement: {currentMission.payment_method === 'cash' ? '💵 Cash' : '💳 Wallet'}
+              </p>
             </div>
 
-            {/* Point A - Pickup */}
-            <div className="bg-gray-50 border-2 border-gray-200 rounded-3xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold">A</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-blue-600 font-semibold uppercase">Point de retrait</p>
-                  <p className="text-lg font-bold text-gray-900">{currentMission.pickup.name}</p>
-                  <p className="text-sm text-gray-600 mt-1">{currentMission.pickup.address}</p>
-                  <a
-                    href={`tel:${currentMission.pickup.phone}`}
-                    className="inline-flex items-center gap-2 mt-2 text-blue-600 text-sm font-medium"
-                  >
-                    <Phone className="w-4 h-4" />
-                    Appeler le restaurant
-                  </a>
-                </div>
-                <button className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <Navigation className="w-6 h-6 text-blue-600" />
+            {/* Action buttons */}
+            <div className="space-y-3">
+              {currentMission.status === 'picked_up' && (
+                <button
+                  onClick={startDelivery}
+                  className="w-full bg-blue-500 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2"
+                >
+                  <Navigation className="w-5 h-5" />
+                  EN ROUTE VERS CLIENT
                 </button>
-              </div>
-            </div>
+              )}
 
-            {/* Arrow */}
-            <div className="flex justify-center">
-              <div className="w-1 h-8 bg-gray-300 rounded-full"></div>
-            </div>
-
-            {/* Point B - Dropoff */}
-            <div className="bg-green-50 border-2 border-green-500 rounded-3xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold">B</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-green-600 font-semibold uppercase">Point de livraison</p>
-                  <p className="text-lg font-bold text-gray-900">{currentMission.dropoff.name}</p>
-                  <p className="text-sm text-gray-600 mt-1">{currentMission.dropoff.address}</p>
-                  <a
-                    href={`tel:${currentMission.dropoff.phone}`}
-                    className="inline-flex items-center gap-2 mt-2 text-green-600 text-sm font-medium"
-                  >
-                    <Phone className="w-4 h-4" />
-                    Appeler le client
-                  </a>
-                </div>
-                <button className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                  <Navigation className="w-6 h-6 text-green-600" />
+              {currentMission.status === 'delivering' && (
+                <button
+                  onClick={handleConfirmDelivery}
+                  className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-5 h-5" />
+                  CONFIRMER LIVRAISON
                 </button>
-              </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Available Missions */}
+        {!currentMission && isOnline && !isLoading && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-gray-900">Missions disponibles</h2>
+              <button
+                onClick={() => { fetchAvailableMissions(); setNewMissionsCount(0); }}
+                className="text-gray-500"
+              >
+                <RefreshCw className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Order Summary */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Package className="w-5 h-5 text-gray-500" />
-                <span className="font-semibold text-gray-900">Contenu de la commande</span>
+            {availableMissions.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-2xl">
+                <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">Aucune mission disponible</p>
+                <p className="text-gray-400 text-sm">Les nouvelles missions apparaîtront ici</p>
               </div>
-              <p className="text-gray-600">{currentMission.items_summary}</p>
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                <span className="text-gray-500">Total commande</span>
-                <span className="font-bold text-gray-900">{currentMission.total_amount.toLocaleString()} FCFA</span>
-              </div>
-            </div>
-
-            {/* Caution Zero-Loss - Affiché si paiement Cash */}
-            {currentMission.payment_method === 'cash' && (
-              <div className="bg-yellow-50 border-2 border-yellow-400 rounded-2xl p-4" data-testid="cash-caution">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-yellow-800 mb-2">Paiement en Cash</p>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-yellow-700">Vous recevrez</span>
-                        <span className="font-semibold text-gray-900">{currentMission.total_amount.toLocaleString()} FCFA</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-yellow-700">Commission (15%)</span>
-                        <span className="font-semibold text-red-600">-{Math.round(currentMission.total_amount * DRIVER_COMMISSION_RATE).toLocaleString()} FCFA</span>
-                      </div>
-                      <div className="flex justify-between pt-2 border-t border-yellow-300">
-                        <span className="text-yellow-800 font-medium">Débit auto wallet</span>
-                        <span className="font-bold text-red-600">-{Math.round(currentMission.total_amount * DRIVER_COMMISSION_RATE).toLocaleString()} FCFA</span>
-                      </div>
+            ) : (
+              availableMissions.map(mission => (
+                <div 
+                  key={mission.id} 
+                  className="bg-white rounded-2xl p-4 border-2 border-gray-200"
+                  data-testid={`mission-${mission.id}`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-bold text-gray-900">{mission.partners?.name || 'Restaurant'}</p>
+                      <p className="text-sm text-gray-500">{mission.partners?.address}</p>
                     </div>
-                    <p className="text-xs text-yellow-600 mt-3">
-                      💡 La commission est automatiquement débitée de votre wallet à la confirmation.
-                    </p>
+                    <div className="text-right">
+                      <p className="text-green-600 font-bold">+{estimateEarnings(mission)} F</p>
+                      <p className="text-xs text-gray-400">estimation</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+                    <MapPin className="w-4 h-4 text-[#FF5A00]" />
+                    <span className="truncate">{mission.delivery_address || 'Adresse client'}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      mission.payment_method === 'cash' 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {mission.payment_method === 'cash' ? '💵 Cash' : '💳 Wallet'}
+                    </span>
+                    
+                    <button
+                      onClick={() => acceptMission(mission)}
+                      className="bg-[#FF5A00] text-white px-6 py-2 rounded-xl font-bold"
+                      data-testid={`accept-${mission.id}`}
+                    >
+                      ACCEPTER
+                    </button>
                   </div>
                 </div>
-              </div>
+              ))
             )}
-
-            {/* Big Orange Button */}
-            <button
-              onClick={handleConfirmDelivery}
-              className="w-full bg-primary text-white font-bold py-6 rounded-3xl flex items-center justify-center gap-3 active:bg-primary/80 transition-colors text-xl shadow-lg shadow-primary/30"
-              data-testid="confirm-delivery-btn"
-            >
-              <CheckCircle2 className="w-8 h-8" />
-              CONFIRMER LIVRAISON
-            </button>
-
-            <p className="text-center text-sm text-gray-500">
-              Demandez le code Handshake au client (ex: #A42)
-            </p>
           </div>
         )}
       </div>
 
-      {/* Handshake Code Modal */}
+      {/* OTP Modal */}
       {showOTPModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" data-testid="otp-modal">
-          <div className="bg-white w-full max-w-lg rounded-t-3xl p-6 animate-slide-up">
+        <div className="fixed inset-0 bg-black/60 flex items-end z-50">
+          <div className="w-full bg-white rounded-t-3xl p-6 animate-slide-up">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Code Handshake</h2>
-              <button
-                onClick={() => setShowOTPModal(false)}
-                className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"
-              >
-                <X className="w-5 h-5 text-gray-600" />
+              <h3 className="text-xl font-bold text-gray-900">Code de livraison</h3>
+              <button onClick={() => setShowOTPModal(false)}>
+                <X className="w-6 h-6 text-gray-500" />
               </button>
             </div>
 
-            <p className="text-gray-600 text-center mb-6">
-              Entrez le code dicté par le client (format: #A42)
-            </p>
+            <p className="text-gray-600 mb-4">Demandez le code au client pour confirmer la livraison</p>
 
-            {/* Handshake Code Input */}
-            <div className="flex justify-center mb-6">
-              <input
-                type="text"
-                value={handshakeCode}
-                onChange={handleCodeChange}
-                placeholder="#A42"
-                maxLength={4}
-                className={`w-40 h-20 text-center text-4xl font-bold tracking-widest rounded-2xl border-2 outline-none transition-colors ${
-                  otpError
-                    ? 'border-red-500 bg-red-50 text-red-600 placeholder-red-300'
-                    : handshakeCode
-                    ? 'border-[#FF5A00] bg-[#FF5A00]/5 text-gray-900 placeholder-gray-400'
-                    : 'border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-400'
-                }`}
-                data-testid="handshake-code-input"
-                autoFocus
-              />
-            </div>
+            <input
+              type="text"
+              value={handshakeCode}
+              onChange={(e) => { setHandshakeCode(e.target.value.toUpperCase()); setOtpError(false); }}
+              placeholder="Ex: 1234"
+              maxLength={4}
+              className={`w-full text-center text-4xl font-mono font-bold py-4 border-2 rounded-2xl ${
+                otpError ? 'border-red-500 text-red-500' : 'border-gray-300'
+              }`}
+              autoFocus
+              data-testid="handshake-input"
+            />
 
-            {/* Error Message */}
             {otpError && (
-              <div className="flex items-center justify-center gap-2 text-red-600 mb-4">
-                <AlertCircle className="w-5 h-5" />
-                <span className="font-medium">Code incorrect, réessayez</span>
-              </div>
+              <p className="text-red-500 text-center mt-2">Code incorrect</p>
             )}
 
-            {/* Cash Warning in Modal */}
-            {currentMission?.payment_method === 'cash' && (
-              <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 mb-4">
-                <p className="text-sm text-yellow-800 text-center">
-                  <Banknote className="w-4 h-4 inline mr-1" />
-                  Collectez <strong>{currentMission.total_amount.toLocaleString()} FCFA</strong> en cash
-                </p>
-              </div>
-            )}
-
-            {/* Validate Button */}
             <button
               onClick={handleValidateCode}
-              disabled={!isCodeValid}
-              className={`w-full py-5 rounded-2xl font-bold text-lg transition-colors ${
-                isCodeValid
-                  ? 'bg-primary text-white active:bg-primary/80'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-              data-testid="validate-otp-btn"
+              disabled={handshakeCode.length !== 4}
+              className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold mt-6 disabled:opacity-50"
+              data-testid="validate-code-btn"
             >
-              VALIDER LE CODE
+              VALIDER
             </button>
           </div>
         </div>
@@ -404,3 +644,5 @@ export function DriverAppScreen({ onBack }) {
     </div>
   );
 }
+
+export default DriverAppScreen;
