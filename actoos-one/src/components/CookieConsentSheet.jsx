@@ -48,30 +48,30 @@ export function CookieConsentSheet({ onAccept, onCustomize, onDecline }) {
       <div className="absolute inset-0 bg-black/30" />
       
       {/* Sheet */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gray-900 rounded-t-3xl bottom-sheet-enter safe-area-bottom">
+      <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl bottom-sheet-enter safe-area-bottom">
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-2">
-          <div className="w-10 h-1 bg-gray-700 rounded-full" />
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
         </div>
 
         {/* Content */}
         <div className="px-4 pb-6">
           {/* Header */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <Shield className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-gray-900">
               Votre expérience, votre sécurité.
             </h2>
           </div>
 
           {/* Description */}
-          <p className="text-sm text-gray-300 mb-4">
+          <p className="text-sm text-gray-600 mb-4">
             Actoos utilise des cookies et technologies similaires pour :
           </p>
 
-          <ul className="text-sm text-gray-400 space-y-1.5 mb-6 pl-4">
+          <ul className="text-sm text-gray-500 space-y-1.5 mb-6 pl-4">
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">•</span>
               <span>sécuriser les paiements et le Wallet Actoos,</span>
@@ -94,7 +94,7 @@ export function CookieConsentSheet({ onAccept, onCustomize, onDecline }) {
             </li>
           </ul>
 
-          <p className="text-xs text-gray-500 mb-6">
+          <p className="text-xs text-gray-400 mb-6">
             Certaines données techniques et de localisation peuvent être utilisées pour améliorer nos algorithmes logistiques et financiers.
           </p>
 
@@ -112,7 +112,7 @@ export function CookieConsentSheet({ onAccept, onCustomize, onDecline }) {
             {/* Secondary CTA */}
             <button
               onClick={handleCustomize}
-              className="w-full bg-gray-700 text-gray-200 font-medium py-3 rounded-2xl flex items-center justify-center gap-2 active:bg-gray-600 transition-colors"
+              className="w-full bg-gray-100 text-gray-700 font-medium py-3 rounded-2xl flex items-center justify-center gap-2 active:bg-gray-200 transition-colors"
               data-testid="cookie-customize-btn"
             >
               <Settings className="w-4 h-4" />
@@ -122,11 +122,11 @@ export function CookieConsentSheet({ onAccept, onCustomize, onDecline }) {
             {/* Text link */}
             <button
               onClick={handleDecline}
-              className="w-full text-gray-500 text-sm py-2"
+              className="w-full text-gray-400 text-sm py-2"
               data-testid="cookie-decline-btn"
             >
               Continuer sans accepter
-              <span className="block text-xs text-gray-600">
+              <span className="block text-xs text-gray-400">
                 (seuls les cookies strictement nécessaires resteront actifs)
               </span>
             </button>
