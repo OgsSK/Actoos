@@ -16,18 +16,6 @@ import { useLazyImage } from '../hooks/useLazyImage';
 function PharmacyCard({ pharmacy, onClick }) {
   const { imageSrc, isLoaded } = useLazyImage(pharmacy.image);
 
-  const typeLabels = {
-    pharmacy: 'Pharmacie',
-    laboratory: 'Laboratoire',
-    clinic: 'Clinique',
-  };
-
-  const typeColors = {
-    pharmacy: 'bg-green-100 text-green-700',
-    laboratory: 'bg-blue-100 text-blue-700',
-    clinic: 'bg-purple-100 text-purple-700',
-  };
-
   return (
     <button
       onClick={onClick}
@@ -46,8 +34,8 @@ function PharmacyCard({ pharmacy, onClick }) {
         
         {/* Badges */}
         <div className="absolute top-3 left-3 flex gap-2">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${typeColors[pharmacy.type]}`}>
-            {typeLabels[pharmacy.type]}
+          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+            Pharmacie
           </span>
           {pharmacy.isFeatured && (
             <span className="bg-primary text-white px-2 py-1 rounded-full text-xs font-medium">
@@ -113,15 +101,14 @@ function PharmacyCard({ pharmacy, onClick }) {
 }
 
 export function HealthScreen({ onBack, onPharmacyClick }) {
-  const [activeCategory, setActiveCategory] = useState('health-cat-1');
+  const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter pharmacies
   const filteredPharmacies = pharmacies.filter(p => {
     // Category filter
-    if (activeCategory === 'health-cat-2' && p.type !== 'pharmacy') return false;
-    if (activeCategory === 'health-cat-3' && p.type !== 'laboratory') return false;
-    if (activeCategory === 'health-cat-4' && p.type !== 'clinic') return false;
+    if (activeCategory === 'open' && !p.isOpen) return false;
+    if (activeCategory === '24h' && p.openHours !== '24h/24') return false;
 
     // Search filter
     if (searchQuery) {
