@@ -1,6 +1,6 @@
-import { Store, Bike, Shield } from 'lucide-react';
+import { Store, Bike, Shield, ChefHat } from 'lucide-react';
 
-export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsClick, onLegalClick }) {
+export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsClick, onLegalClick, onKDSClick }) {
   return (
     <footer className="bg-gray-50 border-t border-gray-200 py-6 px-4 mb-16" data-testid="footer">
       <div className="text-center mb-4">
@@ -36,6 +36,16 @@ export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsC
           </div>
         </button>
       </div>
+
+      {/* KDS Access (Dev/Demo) */}
+      <button
+        onClick={onKDSClick}
+        className="w-full mt-3 bg-gray-900 rounded-2xl p-4 flex items-center justify-center gap-3 active:bg-gray-800 transition-colors"
+        data-testid="kds-access-btn"
+      >
+        <ChefHat className="w-5 h-5 text-primary" />
+        <span className="text-white font-medium">Accès KDS Partenaire (Démo)</span>
+      </button>
 
       {/* Legal Links */}
       <div className="flex items-center justify-center gap-4 mt-6 text-xs">

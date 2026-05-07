@@ -8,6 +8,7 @@ import { DriverOnboardingScreen } from './components/DriverOnboardingScreen';
 import { PartnerOnboardingScreen } from './components/PartnerOnboardingScreen';
 import { TermsScreen } from './components/TermsScreen';
 import { LegalScreen } from './components/LegalScreen';
+import { PartnerKDSScreen } from './components/PartnerKDSScreen';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -29,6 +30,7 @@ const SCREENS = {
   PARTNER_ONBOARDING: 'partner_onboarding',
   TERMS: 'terms',
   LEGAL: 'legal',
+  PARTNER_KDS: 'partner_kds',
 };
 
 function AppContent() {
@@ -133,6 +135,10 @@ function AppContent() {
   };
 
   // Render based on current screen
+  if (currentScreen === SCREENS.PARTNER_KDS) {
+    return <PartnerKDSScreen onBack={handleBackToHome} />;
+  }
+
   if (currentScreen === SCREENS.TERMS) {
     return <TermsScreen onBack={handleBackToHome} />;
   }
