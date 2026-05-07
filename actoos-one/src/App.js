@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Header } from './components/Header';
 import { CategoryFilter } from './components/CategoryFilter';
 import { RestaurantFeed } from './components/RestaurantFeed';
@@ -43,9 +44,9 @@ const APP_MODES = {
   ADMIN: 'admin',        // /admin
 };
 
-// Get app mode from URL
-function getAppMode() {
-  const path = window.location.pathname.toLowerCase();
+// Get app mode from URL path
+function getAppModeFromPath(pathname) {
+  const path = pathname.toLowerCase();
   if (path.startsWith('/partner')) return APP_MODES.PARTNER;
   if (path.startsWith('/driver')) return APP_MODES.DRIVER;
   if (path.startsWith('/admin')) return APP_MODES.ADMIN;
@@ -72,6 +73,9 @@ const SCREENS = {
 
 function AppContent() {
   const isOnline = useOnlineStatus();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   const [showSplash, setShowSplash] = useState(true);
   const [showLocationPermission, setShowLocationPermission] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,6 +93,9 @@ function AppContent() {
   const [disabledModuleSheet, setDisabledModuleSheet] = useState({ open: false, moduleId: null });
   const [searchSheet, setSearchSheet] = useState(false);
   const [addressSheet, setAddressSheet] = useState(false);
+
+  // Determine app mode from current route
+  const appMode = getAppModeFromPath(location.pathname);
 
   // Prepare restaurants with full menus for search
   const restaurantsWithMenus = useMemo(() => {
@@ -711,28 +718,36 @@ function AdminApp() {
   );
 }
 
-// Main App Router
-function App() {
-  const [appMode] = useState(getAppMode());
+// Client App wrapped with providers
+function ClientApp() {
+  return (
+    <WalletProvider>
+      <CartProvider>
+        <AppContent />
+      </CartProvider>
+    </WalletProvider>
+  );
+}
 
-  // Route to appropriate portal based on URL
-  switch (appMode) {
-    case APP_MODES.PARTNER:
-      return <PartnerApp />;
-    case APP_MODES.DRIVER:
-      return <DriverApp />;
-    case APP_MODES.ADMIN:
-      return <AdminApp />;
-    default:
-      // Client app with full providers
-      return (
-        <WalletProvider>
-          <CartProvider>
-            <AppContent />
-          </CartProvider>
-        </WalletProvider>
-      );
-  }
+// Main App with React Router
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Partner Portal */}
+        <Route path="/partner/*" element={<PartnerApp />} />
+        
+        {/* Driver Portal */}
+        <Route path="/driver/*" element={<DriverApp />} />
+        
+        {/* Admin Portal (GOD MODE) */}
+        <Route path="/admin/*" element={<AdminApp />} />
+        
+        {/* Client App - All other routes */}
+        <Route path="/*" element={<ClientApp />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;

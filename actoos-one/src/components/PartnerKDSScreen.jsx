@@ -10,12 +10,14 @@ import {
   Utensils,
   ArrowLeft,
   Keyboard,
-  Tag
+  Tag,
+  BarChart3
 } from 'lucide-react';
 import { mockOrders, mockMenuItems } from '../data/kdsData';
 import { KDSOrderCard } from './KDSOrderCard';
 import { KDSMenuManager } from './KDSMenuManager';
 import { PartnerPromotionsManager } from './PartnerPromotionsManager';
+import { PartnerAnalytics } from './PartnerAnalytics';
 import { PARTNER_TYPES } from '../data/promotionsData';
 
 // Son de notification (base64 encoded beep)
@@ -25,6 +27,7 @@ const TABS = {
   ORDERS: 'orders',
   MENU: 'menu',
   PROMOS: 'promos',
+  ANALYTICS: 'analytics',
 };
 
 export function PartnerKDSScreen({ onBack }) {
@@ -178,20 +181,20 @@ export function PartnerKDSScreen({ onBack }) {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-1 mt-4">
           <button
             onClick={() => setActiveTab(TABS.ORDERS)}
-            className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors ${
+            className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-colors text-sm ${
               activeTab === TABS.ORDERS
                 ? 'bg-[#FF5A00] text-white'
                 : 'bg-gray-100 text-gray-600'
             }`}
             data-testid="tab-orders"
           >
-            <Package className="w-5 h-5" />
+            <Package className="w-4 h-4" />
             Commandes
             {pendingOrders.length > 0 && (
-              <span className={`px-2 py-0.5 rounded-full text-sm ${
+              <span className={`px-1.5 py-0.5 rounded-full text-xs ${
                 activeTab === TABS.ORDERS ? 'bg-white/20' : 'bg-[#FF5A00] text-white'
               }`}>
                 {pendingOrders.length}
@@ -200,27 +203,39 @@ export function PartnerKDSScreen({ onBack }) {
           </button>
           <button
             onClick={() => setActiveTab(TABS.MENU)}
-            className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors ${
+            className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-colors text-sm ${
               activeTab === TABS.MENU
                 ? 'bg-[#FF5A00] text-white'
                 : 'bg-gray-100 text-gray-600'
             }`}
             data-testid="tab-menu"
           >
-            <Utensils className="w-5 h-5" />
+            <Utensils className="w-4 h-4" />
             Menu
           </button>
           <button
             onClick={() => setActiveTab(TABS.PROMOS)}
-            className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors ${
+            className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-colors text-sm ${
               activeTab === TABS.PROMOS
                 ? 'bg-[#FF5A00] text-white'
                 : 'bg-gray-100 text-gray-600'
             }`}
             data-testid="tab-promos"
           >
-            <Tag className="w-5 h-5" />
+            <Tag className="w-4 h-4" />
             Promos
+          </button>
+          <button
+            onClick={() => setActiveTab(TABS.ANALYTICS)}
+            className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-colors text-sm ${
+              activeTab === TABS.ANALYTICS
+                ? 'bg-[#FF5A00] text-white'
+                : 'bg-gray-100 text-gray-600'
+            }`}
+            data-testid="tab-analytics"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Stats
           </button>
         </div>
       </header>
@@ -369,7 +384,7 @@ export function PartnerKDSScreen({ onBack }) {
           onToggleAvailability={toggleItemAvailability}
           onUpdateMaxPerOrder={updateMaxPerOrder}
         />
-      ) : (
+      ) : activeTab === TABS.PROMOS ? (
         <div className="p-4">
           <PartnerPromotionsManager
             partnerId="rest-001"
@@ -377,7 +392,14 @@ export function PartnerKDSScreen({ onBack }) {
             partnerType={PARTNER_TYPES.RESTAURANT}
           />
         </div>
-      )}
+      ) : activeTab === TABS.ANALYTICS ? (
+        <div className="p-4">
+          <PartnerAnalytics
+            partnerId="rest-001"
+            partnerName="Maquis Chez Tanti"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

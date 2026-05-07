@@ -31,6 +31,56 @@
 ## CHANGELOG
 
 
+### 2025-05-07 - Dashboard Analytics Partner & React Router DOM ✅
+**Implémentation du tableau de bord partenaire et migration vers React Router**
+
+#### Dashboard Analytics Partenaire :
+**KPIs affichés :**
+- Chiffre d'affaires (Aujourd'hui / Semaine / Mois)
+- Nombre de commandes
+- Panier moyen
+- Promos utilisées
+- Trend vs période précédente (+X%)
+
+**Visualisations :**
+- Graphique barres ventes 7 jours
+- Performance des promotions (utilisations, CA généré)
+- Top 5 Produits avec barres de progression
+- Heures de pointe (12h, 13h, 19h, 20h, 21h)
+- Stats clients (nouveaux, fidèles, cmd/client)
+
+**Actions rapides :**
+- Créer une promo
+- Voir historique
+
+#### React Router DOM v7 :
+**Routes configurées :**
+```
+/             → Client App (Eats, Health, Wallet, Profil)
+/partner/*    → Portal Partenaire (KDS, Menu, Promos, Stats)
+/driver/*     → Portal Livreur
+/admin/*      → Portal Admin (GOD MODE)
+```
+
+**Avantages :**
+- Navigation sans rechargement de page
+- Historique navigateur fonctionnel (bouton retour)
+- Deep linking possible (partager URL directe)
+- Structure scalable pour futures routes
+
+#### Fichiers créés/modifiés :
+- `/app/actoos-one/src/components/PartnerAnalytics.jsx` - Nouveau dashboard complet
+- `/app/actoos-one/src/components/PartnerKDSScreen.jsx` - Onglet Stats ajouté
+- `/app/actoos-one/src/App.js` - Migration vers BrowserRouter
+
+#### Screenshots validés :
+- ✅ Dashboard Stats : KPIs, graphique ventes, performance promos
+- ✅ Scroll : Top produits, heures de pointe, stats clients
+- ✅ Routes React Router : /, /partner, /admin fonctionnelles
+
+---
+
+
 ### 2025-05-07 - Scheduled Orders & Order When Closed ✅
 **Implémentation des commandes programmées et commandes quand fermé style Uber Eats**
 
