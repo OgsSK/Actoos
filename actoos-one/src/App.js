@@ -97,6 +97,72 @@ function AppContent() {
   // Determine app mode from current route
   const appMode = getAppModeFromPath(location.pathname);
 
+  // Deep linking - Handle URL routes
+  useEffect(() => {
+    const path = location.pathname;
+    
+    // Restaurant deep link: /restaurant/:id
+    const restaurantMatch = path.match(/^\/restaurant\/([^/]+)/);
+    if (restaurantMatch) {
+      const restaurantId = restaurantMatch[1];
+      const restaurant = restaurants.find(r => r.id === restaurantId);
+      if (restaurant) {
+        handleRestaurantClick(restaurant);
+      }
+      return;
+    }
+    
+    // Pharmacy deep link: /pharmacy/:id
+    const pharmacyMatch = path.match(/^\/pharmacy\/([^/]+)/);
+    if (pharmacyMatch) {
+      const pharmacyId = pharmacyMatch[1];
+      const pharmacy = pharmacyProducts.find(p => p.id === pharmacyId);
+      if (pharmacy) {
+        handlePharmacyClick(pharmacy);
+      }
+      return;
+    }
+    
+    // Tab routes
+    if (path === '/health') {
+      setActiveTab('health');
+      setCurrentScreen(SCREENS.HOME);
+    } else if (path === '/wallet') {
+      setActiveTab('wallet');
+      setCurrentScreen(SCREENS.WALLET);
+    } else if (path === '/profile' || path === '/profil') {
+      setActiveTab('profil');
+      setCurrentScreen(SCREENS.PROFIL);
+    } else if (path === '/' || path === '/eats') {
+      setActiveTab('eats');
+      setCurrentScreen(SCREENS.HOME);
+    }
+  }, [location.pathname]);
+
+  // Update URL when navigating
+  const navigateToRestaurant = (restaurant) => {
+    navigate(`/restaurant/${restaurant.id}`);
+  };
+  
+  const navigateToPharmacy = (pharmacy) => {
+    navigate(`/pharmacy/${pharmacy.id}`);
+  };
+  
+  const navigateToHome = () => {
+    navigate('/');
+    setCurrentScreen(SCREENS.HOME);
+  };
+  
+  const navigateToTab = (tab) => {
+    const routes = {
+      eats: '/',
+      health: '/health',
+      wallet: '/wallet',
+      profil: '/profile',
+    };
+    navigate(routes[tab] || '/');
+  };
+
   // Prepare restaurants with full menus for search
   const restaurantsWithMenus = useMemo(() => {
     return restaurants.map(r => {
@@ -281,12 +347,15 @@ function AppContent() {
       });
     }
     setCurrentScreen(SCREENS.RESTAURANT);
+    // Update URL for deep linking
+    navigate(`/restaurant/${restaurant.id}`);
   };
 
   const handleBackToHome = () => {
     setCurrentScreen(SCREENS.HOME);
     setSelectedRestaurant(null);
     setSelectedPharmacy(null);
+    navigate('/');
   };
 
   const handleGoToCheckout = () => {
@@ -297,8 +366,12 @@ function AppContent() {
     // Return to pharmacy or restaurant based on context
     if (selectedPharmacy) {
       setCurrentScreen(SCREENS.PHARMACY);
-    } else {
+      navigate(`/pharmacy/${selectedPharmacy.id}`);
+    } else if (selectedRestaurant) {
       setCurrentScreen(SCREENS.RESTAURANT);
+      navigate(`/restaurant/${selectedRestaurant.id}`);
+    } else {
+      navigate('/');
     }
   };
 
@@ -306,6 +379,7 @@ function AppContent() {
     setCurrentScreen(SCREENS.HOME);
     setSelectedRestaurant(null);
     setSelectedPharmacy(null);
+    navigate('/');
   };
 
   const handleDisabledTabClick = (item) => {
@@ -341,11 +415,14 @@ function AppContent() {
       });
     }
     setCurrentScreen(SCREENS.PHARMACY);
+    // Update URL for deep linking
+    navigate(`/pharmacy/${pharmacy.id}`);
   };
 
   const handleBackToHealth = () => {
     setCurrentScreen(SCREENS.HEALTH);
     setSelectedPharmacy(null);
+    navigate('/health');
   };
 
   const handleNotifyMe = (moduleId) => {
