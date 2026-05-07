@@ -1,6 +1,6 @@
-import { Store, Bike, Shield, ChefHat, Truck, ShieldAlert } from 'lucide-react';
+import { Store, Bike, Shield } from 'lucide-react';
 
-export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsClick, onLegalClick, onKDSClick, onDriverAppClick, onAdminClick }) {
+export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsClick, onLegalClick }) {
   return (
     <footer className="bg-gray-50 border-t border-gray-200 py-6 px-4 mb-16" data-testid="footer">
       <div className="text-center mb-4">
@@ -37,43 +37,6 @@ export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsC
         </button>
       </div>
 
-      {/* Demo Access Buttons */}
-      <div className="mt-4 space-y-2">
-        <p className="text-xs text-gray-400 text-center mb-2">Accès Démo (Dev)</p>
-        
-        <div className="grid grid-cols-3 gap-2">
-          {/* KDS Access */}
-          <button
-            onClick={onKDSClick}
-            className="bg-gray-900 rounded-xl p-3 flex flex-col items-center gap-1 active:bg-gray-800 transition-colors"
-            data-testid="kds-access-btn"
-          >
-            <ChefHat className="w-5 h-5 text-primary" />
-            <span className="text-white text-xs font-medium">KDS</span>
-          </button>
-
-          {/* Driver App Access */}
-          <button
-            onClick={onDriverAppClick}
-            className="bg-green-600 rounded-xl p-3 flex flex-col items-center gap-1 active:bg-green-700 transition-colors"
-            data-testid="driver-app-btn"
-          >
-            <Truck className="w-5 h-5 text-white" />
-            <span className="text-white text-xs font-medium">Livreur</span>
-          </button>
-
-          {/* Admin Access */}
-          <button
-            onClick={onAdminClick}
-            className="bg-red-600 rounded-xl p-3 flex flex-col items-center gap-1 active:bg-red-700 transition-colors"
-            data-testid="admin-btn"
-          >
-            <ShieldAlert className="w-5 h-5 text-white" />
-            <span className="text-white text-xs font-medium">Admin</span>
-          </button>
-        </div>
-      </div>
-
       {/* Legal Links */}
       <div className="flex items-center justify-center gap-4 mt-6 text-xs">
         <button
@@ -103,7 +66,7 @@ export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsC
       </div>
 
       <p className="text-center text-[10px] text-gray-400 mt-4">
-        © 2024 ACTOOS ONE. Tous droits réservés.
+        ACTOOS ONE. Tous droits réservés.
       </p>
     </footer>
   );

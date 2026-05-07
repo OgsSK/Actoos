@@ -416,9 +416,6 @@ function AppContent() {
         onPrivacyClick={() => setPrivacySheet(true)}
         onTermsClick={() => setCurrentScreen(SCREENS.TERMS)}
         onLegalClick={() => setCurrentScreen(SCREENS.LEGAL)}
-        onKDSClick={() => setCurrentScreen(SCREENS.PARTNER_KDS)}
-        onDriverAppClick={() => setCurrentScreen(SCREENS.DRIVER_APP)}
-        onAdminClick={() => setCurrentScreen(SCREENS.ADMIN_DASHBOARD)}
       />
 
       {/* Bottom Navigation */}
