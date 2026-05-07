@@ -15,6 +15,7 @@ import { PartnerKDSScreen } from './components/PartnerKDSScreen';
 import { DriverAppScreen } from './components/DriverAppScreen';
 import { AdminDashboard } from './components/AdminDashboard';
 import { PortalLogin } from './components/PortalLogin';
+import { AdminLogin } from './components/AdminLogin';
 import { WalletScreen } from './components/WalletScreen';
 import { HealthScreen } from './components/HealthScreen';
 import { PharmacyScreen } from './components/PharmacyScreen';
@@ -876,8 +877,7 @@ function AdminApp() {
 
   if (!isAuthenticated) {
     return (
-      <PortalLogin 
-        portalType="admin" 
+      <AdminLogin 
         onSuccess={handleLoginSuccess}
         onBack={() => window.location.href = '/'}
       />
