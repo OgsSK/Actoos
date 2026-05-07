@@ -16,17 +16,32 @@ import {
   Trash2,
   AlertCircle,
   Lock,
-  MessageSquare
+  MessageSquare,
+  Settings,
+  Calendar,
+  X
 } from 'lucide-react';
 import { useWallet, TRANSACTION_TYPES, TRANSACTION_STATUS } from '../context/WalletContext';
 import { TouchPaySheet } from './TouchPaySheet';
 import { P2PTransferSheet } from './P2PTransferSheet';
 import { CreateSubWalletSheet } from './CreateSubWalletSheet';
+import { SwipeToDelete } from './SwipeToDelete';
+import { BottomSheet } from './BottomSheet';
+
+// Options de rétention d'historique
+const HISTORY_OPTIONS = [
+  { id: 'standard', label: 'Standard', description: 'Garder tout l\'historique', days: null },
+  { id: '7days', label: '7 jours', description: 'Supprimer après 7 jours', days: 7 },
+  { id: '30days', label: '30 jours', description: 'Supprimer après 30 jours', days: 30 },
+  { id: '90days', label: '90 jours', description: 'Supprimer après 90 jours', days: 90 },
+  { id: 'none', label: 'Pas d\'historique', description: 'Ne pas conserver l\'historique', days: 0 },
+];
 
 export function WalletScreen({ onBack }) {
   const { 
     balance, 
-    transactions, 
+    transactions,
+    deleteTransaction,
     pendingTransfers,
     isLoading, 
     walletType, 
@@ -40,7 +55,45 @@ export function WalletScreen({ onBack }) {
   const [showTopUp, setShowTopUp] = useState(false);
   const [showP2P, setShowP2P] = useState(false);
   const [showCreateSubWallet, setShowCreateSubWallet] = useState(false);
+  const [showHistorySettings, setShowHistorySettings] = useState(false);
   const [activeSection, setActiveSection] = useState('main'); // main, subwallets, cards
+  
+  // History retention setting from localStorage
+  const [historyRetention, setHistoryRetention] = useState(() => {
+    return localStorage.getItem('actoos_history_retention') || 'standard';
+  });
+
+  // Handle history setting change
+  const handleHistorySettingChange = (optionId) => {
+    setHistoryRetention(optionId);
+    localStorage.setItem('actoos_history_retention', optionId);
+    setShowHistorySettings(false);
+  };
+
+  // Filter transactions based on retention setting
+  const getFilteredTransactions = () => {
+    const option = HISTORY_OPTIONS.find(o => o.id === historyRetention);
+    if (!option || option.days === null) {
+      return transactions; // Standard - show all
+    }
+    if (option.days === 0) {
+      return []; // No history
+    }
+    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - option.days);
+    
+    return transactions.filter(txn => new Date(txn.created_at) >= cutoffDate);
+  };
+
+  const filteredTransactions = getFilteredTransactions();
+
+  // Handle delete transaction
+  const handleDeleteTransaction = (txnId) => {
+    if (deleteTransaction) {
+      deleteTransaction(txnId);
+    }
+  };
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -243,8 +296,21 @@ export function WalletScreen({ onBack }) {
         {activeSection === 'main' && (
           <>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-gray-900">Historique</h2>
-              <span className="text-sm text-gray-500">{transactions.length} transactions</span>
+              <div>
+                <h2 className="font-bold text-gray-900">Historique</h2>
+                <p className="text-xs text-gray-500">
+                  {historyRetention === 'standard' ? 'Tout l\'historique' : 
+                   historyRetention === 'none' ? 'Historique désactivé' :
+                   `${HISTORY_OPTIONS.find(o => o.id === historyRetention)?.days} derniers jours`}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowHistorySettings(true)}
+                className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center active:bg-gray-200 transition-colors"
+                data-testid="history-settings-btn"
+              >
+                <Settings className="w-5 h-5 text-gray-600" />
+              </button>
             </div>
 
             {/* Transferts en attente */}
@@ -268,42 +334,65 @@ export function WalletScreen({ onBack }) {
               </div>
             )}
 
-            {transactions.length === 0 ? (
+            {historyRetention === 'none' ? (
+              <div className="bg-white rounded-2xl p-8 text-center">
+                <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 mb-2">Historique désactivé</p>
+                <p className="text-xs text-gray-400">
+                  Vous avez choisi de ne pas conserver l'historique des transactions.
+                </p>
+                <button
+                  onClick={() => setShowHistorySettings(true)}
+                  className="mt-4 text-[#FF5A00] font-medium text-sm"
+                >
+                  Modifier les paramètres
+                </button>
+              </div>
+            ) : filteredTransactions.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center">
                 <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">Aucune transaction</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {transactions.map((txn) => (
-                  <div
-                    key={txn.id}
-                    className="bg-white rounded-2xl p-4 flex items-center gap-4"
-                    data-testid={`transaction-${txn.id}`}
-                  >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getTransactionColor(txn.transaction_type, txn.status)}`}>
-                      {getTransactionIcon(txn.transaction_type, txn.status)}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{txn.description}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-gray-500">{formatDate(txn.created_at)}</span>
-                        {getStatusBadge(txn.status)}
-                      </div>
-                    </div>
+              <>
+                <p className="text-xs text-gray-400 mb-2 text-center">
+                  ← Glissez vers la gauche pour supprimer
+                </p>
+                <div className="space-y-3">
+                  {filteredTransactions.map((txn) => (
+                    <SwipeToDelete
+                      key={txn.id}
+                      onDelete={() => handleDeleteTransaction(txn.id)}
+                    >
+                      <div
+                        className="bg-white rounded-2xl p-4 flex items-center gap-4"
+                        data-testid={`transaction-${txn.id}`}
+                      >
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getTransactionColor(txn.transaction_type, txn.status)}`}>
+                          {getTransactionIcon(txn.transaction_type, txn.status)}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">{txn.description}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-gray-500">{formatDate(txn.created_at)}</span>
+                            {getStatusBadge(txn.status)}
+                          </div>
+                        </div>
 
-                    <div className="text-right">
-                      <p className={`font-bold ${txn.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}>
-                        {txn.amount > 0 ? '+' : ''}{txn.amount.toLocaleString()} F
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        Solde: {txn.balance_after.toLocaleString()} F
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        <div className="text-right">
+                          <p className={`font-bold ${txn.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}>
+                            {txn.amount > 0 ? '+' : ''}{txn.amount.toLocaleString()} F
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Solde: {txn.balance_after.toLocaleString()} F
+                          </p>
+                        </div>
+                      </div>
+                    </SwipeToDelete>
+                  ))}
+                </div>
+              </>
             )}
           </>
         )}
@@ -463,6 +552,51 @@ export function WalletScreen({ onBack }) {
         isOpen={showCreateSubWallet}
         onClose={() => setShowCreateSubWallet(false)}
       />
+
+      {/* History Settings Sheet */}
+      <BottomSheet
+        isOpen={showHistorySettings}
+        onClose={() => setShowHistorySettings(false)}
+        title="Paramètres d'historique"
+      >
+        <div className="space-y-2 pb-4">
+          <p className="text-sm text-gray-500 mb-4">
+            Choisissez la durée de conservation de votre historique de transactions.
+          </p>
+          
+          {HISTORY_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => handleHistorySettingChange(option.id)}
+              className={`w-full p-4 rounded-2xl flex items-center justify-between transition-colors ${
+                historyRetention === option.id
+                  ? 'bg-[#FF5A00] text-white'
+                  : 'bg-gray-100 text-gray-900 active:bg-gray-200'
+              }`}
+              data-testid={`history-option-${option.id}`}
+            >
+              <div className="text-left">
+                <p className="font-semibold">{option.label}</p>
+                <p className={`text-sm ${historyRetention === option.id ? 'text-white/80' : 'text-gray-500'}`}>
+                  {option.description}
+                </p>
+              </div>
+              {historyRetention === option.id && (
+                <CheckCircle className="w-6 h-6 flex-shrink-0" />
+              )}
+            </button>
+          ))}
+
+          <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+            <p className="text-xs text-yellow-700 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>
+                La suppression de l'historique est irréversible. Les transactions supprimées ne pourront pas être récupérées.
+              </span>
+            </p>
+          </div>
+        </div>
+      </BottomSheet>
     </div>
   );
 }

@@ -440,6 +440,11 @@ export function WalletProvider({ children }) {
     return { success: true, refunded: subWallet.balance };
   }, [subWallets]);
 
+  // Supprimer une transaction de l'historique
+  const deleteTransaction = useCallback((transactionId) => {
+    setTransactions(prev => prev.filter(txn => txn.id !== transactionId));
+  }, []);
+
   const hasEnoughBalance = useCallback((amount) => {
     return wallet.balance >= amount;
   }, [wallet.balance]);
@@ -462,6 +467,7 @@ export function WalletProvider({ children }) {
     // Transactions
     transactions,
     pendingTransfers,
+    deleteTransaction,
     
     // Actions
     topUp,
