@@ -14,23 +14,21 @@ import {
   Clock,
   Calendar
 } from 'lucide-react';
-import { OTPInput } from './OTPInput';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { TouchPaySheet } from './TouchPaySheet';
 import { PromoCodeInput } from './PromoCodeInput';
 import { TimeSlotPicker, SelectedTimeSlotBadge } from './TimeSlotPicker';
 import { useCart } from '../context/CartContext';
 import { useWallet } from '../context/WalletContext';
-import { sendOTP, verifyOTP } from '../services/otpService';
+import { useAuth } from '../context/AuthContext';
 import { calculateOrderTotal, createOrder } from '../services/orderService';
 import { getNeighborhoodsByCommune } from '../data/locationData';
 
 const STEPS = {
   DELIVERY_MODE: 'delivery_mode',
-  SCHEDULE: 'schedule',     // Nouvelle étape pour programmer la livraison
+  SCHEDULE: 'schedule',
   ADDRESS: 'address',
   PHONE: 'phone',
-  OTP: 'otp',
   PAYMENT: 'payment',
   CONFIRM: 'confirm',
   SUCCESS: 'success',
@@ -39,6 +37,7 @@ const STEPS = {
 export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   const { cartItems, getTotal, clearCart } = useCart();
   const { balance, pay, hasEnoughBalance, checkCorporateLimit, walletType, dailySpendLimit, getTodaySpending } = useWallet();
+  const { user, profile } = useAuth();
   const [currentStep, setCurrentStep] = useState(STEPS.DELIVERY_MODE);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,12 +48,8 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   // Form data
   const [address, setAddress] = useState('');
   const [addressDetails, setAddressDetails] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('+223 ');
-  const [otp, setOtp] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('wallet');
-  
-  // OTP dev helper
-  const [devOtp, setDevOtp] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(profile?.phone || '+223 ');
+  const [paymentMethod, setPaymentMethod] = useState('cash'); // Default to cash for simplicity
   
   // Order result
   const [orderResult, setOrderResult] = useState(null);
@@ -101,52 +96,14 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
     }
   };
 
-  const handleSendOTP = async () => {
-    if (!phoneNumber || phoneNumber.length < 12) {
+  // Simplified phone validation - no OTP needed since user is already authenticated
+  const handlePhoneSubmit = () => {
+    if (!phoneNumber || phoneNumber.replace(/\s/g, '').length < 11) {
       setError('Veuillez entrer un numéro valide');
       return;
     }
-    
-    setIsLoading(true);
     setError('');
-    
-    try {
-      const result = await sendOTP(phoneNumber);
-      if (result.success) {
-        setDevOtp(result._devOtp); // Dev only
-        setCurrentStep(STEPS.OTP);
-      } else {
-        setError(result.error || 'Erreur lors de l\'envoi');
-      }
-    } catch (err) {
-      setError('Erreur de connexion');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyOTP = async () => {
-    if (otp.length !== 4) {
-      setError('Veuillez entrer le code à 4 chiffres');
-      return;
-    }
-    
-    setIsLoading(true);
-    setError('');
-    
-    try {
-      const result = await verifyOTP(phoneNumber, otp);
-      if (result.success) {
-        setCurrentStep(STEPS.PAYMENT);
-      } else {
-        setError(result.error);
-        setOtp('');
-      }
-    } catch (err) {
-      setError('Erreur de vérification');
-    } finally {
-      setIsLoading(false);
-    }
+    setCurrentStep(STEPS.PAYMENT);
   };
 
   const handlePlaceOrder = async () => {
@@ -181,43 +138,36 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
         );
       }
       
+      // Préparer les items pour la vraie commande Supabase
+      const orderItems = cartItems.map(item => ({
+        menu_item_id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        unit_price: item.price_at_time || item.price,
+        special_instructions: item.instructions || null,
+      }));
+
       const orderData = {
-        restaurant_id: restaurant.id,
-        restaurant_name: restaurant.name,
-        items: cartItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          price_at_time: item.price_at_time,
-          instructions: item.instructions,
-        })),
-        delivery_mode: deliveryMode,
-        delivery_address: deliveryMode === 'delivery' ? address : null,
-        delivery_details: deliveryMode === 'delivery' ? addressDetails : null,
-        phone: phoneNumber,
-        payment_method: paymentMethod,
-        payment_status: paymentMethod === 'cash' ? 'pending' : 'paid',
-        ...orderTotals,
-        promo_code: appliedPromo?.promo?.code || null,
-        promo_discount: promoDiscount,
-        final_total: finalTotal,
-        // Scheduled ordering info
-        is_scheduled: !isAsap,
-        scheduled_date: scheduledSlot?.day?.date?.toISOString() || null,
-        scheduled_time: scheduledSlot?.slot?.time || null,
-        scheduled_label: scheduledSlot ? `${scheduledSlot.day.dayLabel} à ${scheduledSlot.slot.time}` : null,
+        userId: user?.id || null, // Peut être null pour commande guest
+        partnerId: restaurant.id,
+        items: orderItems,
+        deliveryType: deliveryMode,
+        paymentMethod: paymentMethod,
+        deliveryAddress: deliveryMode === 'delivery' ? `${address} - ${addressDetails}` : null,
+        deliveryInstructions: addressDetails || null,
       };
       
-      const result = await createOrder(orderData);
+      const { data: createdOrder, error: orderError } = await createOrder(orderData);
       
-      if (result.success) {
-        setOrderResult(result.order);
-        setCurrentStep(STEPS.SUCCESS);
-        clearCart();
-      } else {
-        setError(result.error || 'Erreur lors de la commande');
+      if (orderError) {
+        throw new Error(orderError.message || 'Erreur lors de la commande');
       }
+
+      setOrderResult(createdOrder);
+      setCurrentStep(STEPS.SUCCESS);
+      clearCart();
     } catch (err) {
+      console.error('Erreur commande:', err);
       setError(err.message || 'Erreur de connexion');
     } finally {
       setIsLoading(false);
@@ -415,87 +365,23 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
             )}
 
             <button
-              onClick={handleSendOTP}
-              disabled={isLoading || phoneNumber.length < 12}
+              onClick={handlePhoneSubmit}
+              disabled={isLoading || phoneNumber.replace(/\s/g, '').length < 11}
               className={`w-full py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-colors ${
-                phoneNumber.length >= 12
+                phoneNumber.replace(/\s/g, '').length >= 11
                   ? 'bg-[#FF5A00] text-white active:bg-[#E55100]'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
-              data-testid="send-otp-btn"
+              data-testid="continue-to-payment"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Envoi en cours...
+                  Chargement...
                 </>
               ) : (
-                'Recevoir le code'
+                'Continuer'
               )}
-            </button>
-          </div>
-        );
-
-      case STEPS.OTP:
-        return (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-[#FF5A00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Phone className="w-8 h-8 text-[#FF5A00]" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Code de vérification</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Entrez le code envoyé au {phoneNumber}
-              </p>
-            </div>
-
-            {/* Code OTP visible en dev */}
-            {devOtp && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-3 text-center">
-                <p className="text-xs text-yellow-700">Mode dev - Code OTP:</p>
-                <p className="text-2xl font-bold text-yellow-800 tracking-widest">{devOtp}</p>
-              </div>
-            )}
-
-            <OTPInput
-              value={otp}
-              onChange={setOtp}
-              length={4}
-              onComplete={handleVerifyOTP}
-            />
-
-            {error && (
-              <p className="text-red-500 text-sm text-center">{error}</p>
-            )}
-
-            <button
-              onClick={handleVerifyOTP}
-              disabled={isLoading || otp.length !== 4}
-              className={`w-full py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-colors ${
-                otp.length === 4
-                  ? 'bg-[#FF5A00] text-white active:bg-[#E55100]'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-              data-testid="verify-otp-btn"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Vérification...
-                </>
-              ) : (
-                'Vérifier'
-              )}
-            </button>
-
-            <button
-              onClick={() => {
-                setOtp('');
-                setCurrentStep(STEPS.PHONE);
-              }}
-              className="w-full py-3 text-gray-500 text-sm"
-            >
-              Modifier le numéro
             </button>
           </div>
         );
@@ -639,7 +525,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
                   <span className={deliveryMode === 'pickup' || freeDelivery ? 'text-green-600' : ''}>
                     {deliveryMode === 'pickup' ? 'Gratuit (À emporter)' : 
                      freeDelivery ? 'Gratuit (Promo)' : 
-                     `${orderTotals.delivery.toLocaleString()} FCFA`}
+                     `${(orderTotals.deliveryFee || 0).toLocaleString()} FCFA`}
                   </span>
                 </div>
                 {promoDiscount > 0 && (
@@ -770,7 +656,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Total payé</span>
-                <span className="font-bold text-[#FF5A00]">{(orderResult?.final_total || finalTotal).toLocaleString()} FCFA</span>
+                <span className="font-bold text-[#FF5A00]">{(orderResult?.total_amount || finalTotal).toLocaleString()} FCFA</span>
               </div>
             </div>
 
@@ -818,12 +704,12 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
     let steps;
     if (deliveryMode === 'pickup') {
       steps = restaurant?.allowScheduledOrders 
-        ? [STEPS.DELIVERY_MODE, STEPS.SCHEDULE, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS]
-        : [STEPS.DELIVERY_MODE, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS];
+        ? [STEPS.DELIVERY_MODE, STEPS.SCHEDULE, STEPS.PHONE, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS]
+        : [STEPS.DELIVERY_MODE, STEPS.PHONE, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS];
     } else {
       steps = restaurant?.allowScheduledOrders 
-        ? [STEPS.DELIVERY_MODE, STEPS.SCHEDULE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS]
-        : [STEPS.DELIVERY_MODE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS];
+        ? [STEPS.DELIVERY_MODE, STEPS.SCHEDULE, STEPS.ADDRESS, STEPS.PHONE, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS]
+        : [STEPS.DELIVERY_MODE, STEPS.ADDRESS, STEPS.PHONE, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS];
     }
     
     const currentIndex = steps.indexOf(currentStep);
@@ -852,8 +738,8 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               } else {
                 // Go back one step
                 const steps = restaurant?.allowScheduledOrders 
-                  ? [STEPS.DELIVERY_MODE, STEPS.SCHEDULE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM]
-                  : [STEPS.DELIVERY_MODE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM];
+                  ? [STEPS.DELIVERY_MODE, STEPS.SCHEDULE, STEPS.ADDRESS, STEPS.PHONE, STEPS.PAYMENT, STEPS.CONFIRM]
+                  : [STEPS.DELIVERY_MODE, STEPS.ADDRESS, STEPS.PHONE, STEPS.PAYMENT, STEPS.CONFIRM];
                 const currentIndex = steps.indexOf(currentStep);
                 if (currentIndex > 0) {
                   setCurrentStep(steps[currentIndex - 1]);

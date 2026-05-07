@@ -1,48 +1,47 @@
 /**
  * ACTOOS ONE - Login Sheet
  * 
- * Bottom sheet pour l'authentification par téléphone + OTP.
+ * Bottom sheet pour l'authentification Email/Password.
+ * PRODUCTION MODE - Connexion réelle à Supabase Auth.
  * Design minimaliste style Uber/Deliveroo.
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { X, Phone, ArrowRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Mail, Lock, User, Phone, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth, AUTH_STATUS } from '../context/AuthContext';
 import { BottomSheet } from './BottomSheet';
 
 export function LoginSheet({ isOpen, onClose, onSuccess }) {
   const { 
     status, 
-    sendOTP, 
-    verifyOTP, 
-    cancelOTP,
+    signIn, 
+    signUp,
     error, 
     isLoading,
-    pendingPhone,
-    useMockAuth,
+    clearError,
   } = useAuth();
 
+  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '']);
+  const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState(null);
-  
-  const otpRefs = [useRef(), useRef(), useRef(), useRef()];
 
   // Reset quand on ouvre/ferme
   useEffect(() => {
     if (!isOpen) {
+      setEmail('');
+      setPassword('');
+      setName('');
       setPhone('');
-      setOtp(['', '', '', '']);
       setLocalError(null);
+      setMode('login');
+      setShowPassword(false);
+      clearError?.();
     }
-  }, [isOpen]);
-
-  // Focus premier input OTP quand on passe à la vérification
-  useEffect(() => {
-    if (status === AUTH_STATUS.OTP_SENT && otpRefs[0].current) {
-      setTimeout(() => otpRefs[0].current?.focus(), 100);
-    }
-  }, [status]);
+  }, [isOpen, clearError]);
 
   // Succès d'auth
   useEffect(() => {
@@ -52,68 +51,68 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
     }
   }, [status, isOpen, onSuccess, onClose]);
 
-  const handlePhoneSubmit = async (e) => {
+  const validateEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLocalError(null);
-    
-    // Valider le numéro
-    const cleanPhone = phone.replace(/\s/g, '');
-    if (cleanPhone.length < 8) {
-      setLocalError('Numéro de téléphone invalide');
+
+    if (!validateEmail(email)) {
+      setLocalError('Email invalide');
       return;
     }
 
-    const result = await sendOTP(cleanPhone);
+    if (password.length < 6) {
+      setLocalError('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    const result = await signIn(email, password);
     if (!result.success) {
       setLocalError(result.error);
     }
   };
 
-  const handleOtpChange = (index, value) => {
-    // N'accepter que les chiffres
-    if (value && !/^\d$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus suivant
-    if (value && index < 3) {
-      otpRefs[index + 1].current?.focus();
-    }
-
-    // Auto-submit quand complet
-    if (value && index === 3 && newOtp.every(d => d)) {
-      handleOtpSubmit(newOtp.join(''));
-    }
-  };
-
-  const handleOtpKeyDown = (index, e) => {
-    // Backspace → focus précédent
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpRefs[index - 1].current?.focus();
-    }
-  };
-
-  const handleOtpSubmit = async (code) => {
+  const handleSignUp = async (e) => {
+    e.preventDefault();
     setLocalError(null);
-    const result = await verifyOTP(code || otp.join(''));
+
+    if (!name.trim()) {
+      setLocalError('Veuillez entrer votre nom');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setLocalError('Email invalide');
+      return;
+    }
+
+    if (password.length < 6) {
+      setLocalError('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    const result = await signUp(email, password, { 
+      name: name.trim(),
+      phone: phone ? `+223${phone.replace(/\s/g, '')}` : null,
+    });
+    
     if (!result.success) {
       setLocalError(result.error);
-      setOtp(['', '', '', '']);
-      otpRefs[0].current?.focus();
     }
-  };
-
-  const handleBack = () => {
-    cancelOTP();
-    setOtp(['', '', '', '']);
-    setLocalError(null);
   };
 
   const handleClose = () => {
-    cancelOTP();
+    clearError?.();
     onClose();
+  };
+
+  const toggleMode = () => {
+    setMode(mode === 'login' ? 'signup' : 'login');
+    setLocalError(null);
+    clearError?.();
   };
 
   const displayError = localError || error;
@@ -124,38 +123,56 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900">
-            {status === AUTH_STATUS.OTP_SENT ? 'Vérification' : 'Connexion'}
+            {mode === 'login' ? 'Connexion' : 'Créer un compte'}
           </h2>
           <button 
             onClick={handleClose}
             className="p-2 -mr-2 text-gray-500 hover:text-gray-700"
+            data-testid="close-login-sheet"
           >
             <X size={24} />
           </button>
         </div>
 
-        {/* Mode indication removed for production */}
-
-        {/* Phone Input Step */}
-        {status !== AUTH_STATUS.OTP_SENT && (
-          <form onSubmit={handlePhoneSubmit} className="space-y-4">
+        {/* Login Form */}
+        {mode === 'login' && (
+          <form onSubmit={handleLogin} className="space-y-4">
             <p className="text-gray-600 text-sm">
-              Entrez votre numéro de téléphone pour recevoir un code de vérification.
+              Connectez-vous avec votre email et mot de passe.
             </p>
 
+            {/* Email */}
             <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center text-gray-500">
-                <Phone size={20} className="mr-2" />
-                <span className="text-gray-900 font-medium">+223</span>
-              </div>
+              <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="70 00 00 00"
-                className="w-full pl-24 pr-4 py-4 text-lg border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                className="w-full pl-11 pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
                 autoFocus
+                data-testid="login-email-input"
               />
+            </div>
+
+            {/* Password */}
+            <div className="relative">
+              <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mot de passe"
+                className="w-full pl-11 pr-12 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                data-testid="login-password-input"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
 
             {displayError && (
@@ -167,86 +184,139 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
 
             <button
               type="submit"
-              disabled={isLoading || phone.replace(/\s/g, '').length < 8}
+              disabled={isLoading || !email || !password}
               className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
+              data-testid="login-submit-btn"
             >
               {isLoading ? (
                 <Loader2 size={20} className="animate-spin" />
               ) : (
                 <>
-                  Continuer
+                  Se connecter
                   <ArrowRight size={20} />
                 </>
               )}
             </button>
+
+            <div className="text-center pt-2">
+              <p className="text-gray-600 text-sm">
+                Pas encore de compte ?{' '}
+                <button 
+                  type="button"
+                  onClick={toggleMode}
+                  className="text-[#FF5A00] font-medium hover:underline"
+                >
+                  Créer un compte
+                </button>
+              </p>
+            </div>
           </form>
         )}
 
-        {/* OTP Verification Step */}
-        {status === AUTH_STATUS.OTP_SENT && (
-          <div className="space-y-4">
+        {/* Signup Form */}
+        {mode === 'signup' && (
+          <form onSubmit={handleSignUp} className="space-y-4">
             <p className="text-gray-600 text-sm">
-              Code envoyé au <span className="font-medium text-gray-900">{pendingPhone}</span>
+              Créez votre compte ACTOOS ONE pour commander.
             </p>
 
-            {/* OTP Input */}
-            <div className="flex justify-center gap-3">
-              {otp.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={otpRefs[index]}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                  className="w-14 h-14 text-center text-2xl font-semibold border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
-                />
-              ))}
+            {/* Name */}
+            <div className="relative">
+              <User size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nom complet"
+                className="w-full pl-11 pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                autoFocus
+                data-testid="signup-name-input"
+              />
+            </div>
+
+            {/* Email */}
+            <div className="relative">
+              <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                className="w-full pl-11 pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                data-testid="signup-email-input"
+              />
+            </div>
+
+            {/* Phone (optional) */}
+            <div className="relative">
+              <Phone size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <span className="absolute left-11 top-1/2 -translate-y-1/2 text-gray-500 text-sm">+223</span>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="70 00 00 00 (optionnel)"
+                className="w-full pl-24 pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                data-testid="signup-phone-input"
+              />
+            </div>
+
+            {/* Password */}
+            <div className="relative">
+              <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mot de passe (min. 6 caractères)"
+                className="w-full pl-11 pr-12 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                data-testid="signup-password-input"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
 
             {displayError && (
-              <div className="flex items-center justify-center gap-2 text-red-600 text-sm">
+              <div className="flex items-center gap-2 text-red-600 text-sm">
                 <AlertCircle size={16} />
                 <span>{displayError}</span>
               </div>
             )}
 
-            {isLoading && (
-              <div className="flex justify-center">
-                <Loader2 size={24} className="animate-spin text-[#FF5A00]" />
-              </div>
-            )}
+            <button
+              type="submit"
+              disabled={isLoading || !email || !password || !name}
+              className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
+              data-testid="signup-submit-btn"
+            >
+              {isLoading ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <>
+                  Créer mon compte
+                  <ArrowRight size={20} />
+                </>
+              )}
+            </button>
 
-            {/* Actions */}
-            <div className="flex flex-col gap-2 pt-2">
-              <button
-                onClick={() => handleOtpSubmit()}
-                disabled={isLoading || otp.some(d => !d)}
-                className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
-              >
-                Vérifier
-              </button>
-
-              <div className="flex items-center justify-between text-sm">
-                <button
-                  onClick={handleBack}
-                  disabled={isLoading}
-                  className="text-gray-500 hover:text-gray-700"
+            <div className="text-center pt-2">
+              <p className="text-gray-600 text-sm">
+                Déjà un compte ?{' '}
+                <button 
+                  type="button"
+                  onClick={toggleMode}
+                  className="text-[#FF5A00] font-medium hover:underline"
                 >
-                  Modifier le numéro
+                  Se connecter
                 </button>
-                <button
-                  onClick={() => sendOTP(pendingPhone)}
-                  disabled={isLoading}
-                  className="text-[#FF5A00] hover:text-[#E55100] font-medium"
-                >
-                  Renvoyer le code
-                </button>
-              </div>
+              </p>
             </div>
-          </div>
+          </form>
         )}
 
         {/* Footer */}

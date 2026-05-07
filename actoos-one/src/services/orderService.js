@@ -2,25 +2,11 @@
  * ACTOOS ONE - Order Service
  * 
  * Service pour la gestion des commandes.
- * Supporte mode Supabase et mode mocké.
+ * PRODUCTION MODE - Toutes les commandes sont enregistrées dans Supabase.
  */
 
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { calculateDeliveryFee, calculateCommission } from '../config/businessConfig';
-
-const useMockData = !isSupabaseConfigured();
-
-// Stockage local pour les commandes mockées
-const MOCK_ORDERS_KEY = 'actoos_mock_orders';
-
-function getMockOrders() {
-  const stored = localStorage.getItem(MOCK_ORDERS_KEY);
-  return stored ? JSON.parse(stored) : [];
-}
-
-function saveMockOrders(orders) {
-  localStorage.setItem(MOCK_ORDERS_KEY, JSON.stringify(orders));
-}
+import { calculateDeliveryFee } from '../config/businessConfig';
 
 /**
  * Calculer le total d'une commande
@@ -49,21 +35,22 @@ export async function createOrder(orderData) {
   const {
     userId,
     partnerId,
-    items, // Array of { item_id, quantity, price_at_time, special_instructions }
+    items, // Array of { menu_item_id, name, quantity, unit_price, special_instructions }
     deliveryType = 'delivery', // 'delivery' | 'pickup'
-    paymentMethod = 'wallet', // 'wallet' | 'cash' | 'mobile_money'
+    paymentMethod = 'cash', // 'wallet' | 'cash' | 'mobile_money'
     deliveryAddress,
     deliveryLatitude,
     deliveryLongitude,
     deliveryInstructions,
     distanceKm = 2,
-    isScheduled = false,
-    scheduledFor = null,
-    vertical = 'eats',
   } = orderData;
 
+  if (!isSupabaseConfigured()) {
+    return { data: null, error: { message: 'Supabase non configuré' } };
+  }
+
   // Calculer les montants
-  const subtotal = items.reduce((sum, item) => sum + (item.price_at_time * item.quantity), 0);
+  const subtotal = items.reduce((sum, item) => sum + ((item.unit_price || item.price) * item.quantity), 0);
   
   const deliveryResult = deliveryType === 'pickup' 
     ? { fee: 0 }
@@ -72,49 +59,17 @@ export async function createOrder(orderData) {
   const deliveryFee = deliveryResult.fee;
   const total = subtotal + deliveryFee;
 
-  // Générer un code de livraison (4 chiffres)
-  const deliveryCode = String(Math.floor(1000 + Math.random() * 9000));
-
-  if (useMockData) {
-    const mockOrder = {
-      id: `order-${Date.now()}`,
-      client_id: userId || 'guest',
-      partner_id: partnerId,
-      driver_id: null,
-      status: 'pending',
-      delivery_type: deliveryType,
-      subtotal,
-      delivery_fee: deliveryFee,
-      service_fee: 0,
-      total_amount: total,
-      payment_method: paymentMethod,
-      payment_status: paymentMethod === 'wallet' ? 'completed' : 'pending',
-      delivery_address: deliveryAddress,
-      delivery_latitude: deliveryLatitude,
-      delivery_longitude: deliveryLongitude,
-      delivery_instructions: deliveryInstructions,
-      delivery_code: deliveryCode,
-      is_scheduled: isScheduled,
-      scheduled_for: scheduledFor,
-      items: items,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    const orders = getMockOrders();
-    orders.unshift(mockOrder);
-    saveMockOrders(orders);
-
-    return { data: mockOrder, error: null };
-  }
+  // Generate delivery_code for handshake
+  const deliveryCode = `#${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
 
   try {
-    // Créer la commande dans Supabase
+    // 1. Créer la commande
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
-        client_id: userId,
+        client_id: userId || null,
         partner_id: partnerId,
+        delivery_code: deliveryCode,
         status: 'pending',
         delivery_type: deliveryType,
         subtotal,
@@ -127,20 +82,21 @@ export async function createOrder(orderData) {
         delivery_latitude: deliveryLatitude,
         delivery_longitude: deliveryLongitude,
         delivery_instructions: deliveryInstructions,
-        delivery_code: deliveryCode,
       })
       .select()
       .single();
 
     if (orderError) throw orderError;
 
-    // Créer les items de la commande
+    // 2. Créer les items de la commande
     const orderItems = items.map(item => ({
       order_id: order.id,
-      item_id: item.item_id,
+      menu_item_id: item.menu_item_id || item.id,
+      name: item.name,
       quantity: item.quantity,
-      price_at_time: item.price_at_time,
-      special_instructions: item.special_instructions,
+      unit_price: item.unit_price || item.price,
+      total_price: (item.unit_price || item.price) * item.quantity,
+      special_instructions: item.special_instructions || null,
     }));
 
     const { error: itemsError } = await supabase
@@ -151,10 +107,8 @@ export async function createOrder(orderData) {
       console.error('Erreur création items:', itemsError);
     }
 
-    // Logger l'événement
-    await logOrderEvent(order.id, 'created', userId, 'client');
-
-    return { data: { ...order, items }, error: null };
+    console.log('✅ Commande créée:', order.id);
+    return { data: { ...order, delivery_code: deliveryCode, items: orderItems }, error: null };
   } catch (error) {
     console.error('Erreur createOrder:', error);
     return { data: null, error };
@@ -165,10 +119,8 @@ export async function createOrder(orderData) {
  * Récupérer une commande par ID
  */
 export async function getOrderById(orderId) {
-  if (useMockData) {
-    const orders = getMockOrders();
-    const order = orders.find(o => o.id === orderId);
-    return { data: order || null, error: order ? null : { message: 'Commande non trouvée' } };
+  if (!isSupabaseConfigured()) {
+    return { data: null, error: { message: 'Supabase non configuré' } };
   }
 
   try {
@@ -180,8 +132,7 @@ export async function getOrderById(orderId) {
           *,
           menu_items (name, image_url)
         ),
-        partners (name, image_url),
-        drivers (users (name))
+        partners (name, image_url)
       `)
       .eq('id', orderId)
       .single();
@@ -200,12 +151,8 @@ export async function getOrderById(orderId) {
 export async function getUserOrders(userId, options = {}) {
   const { limit = 20, status = null } = options;
 
-  if (useMockData) {
-    let orders = getMockOrders().filter(o => o.client_id === userId || o.client_id === 'guest');
-    if (status) {
-      orders = orders.filter(o => o.status === status);
-    }
-    return { data: orders.slice(0, limit), error: null };
+  if (!isSupabaseConfigured()) {
+    return { data: [], error: { message: 'Supabase non configuré' } };
   }
 
   try {
@@ -214,7 +161,7 @@ export async function getUserOrders(userId, options = {}) {
       .select(`
         *,
         partners (name, image_url),
-        order_items (quantity, price_at_time, menu_items (name))
+        order_items (quantity, unit_price, name)
       `)
       .eq('client_id', userId)
       .order('created_at', { ascending: false })
@@ -235,9 +182,44 @@ export async function getUserOrders(userId, options = {}) {
 }
 
 /**
+ * Récupérer les commandes d'un partenaire
+ */
+export async function getPartnerOrders(partnerId, options = {}) {
+  const { limit = 50, status = null } = options;
+
+  if (!isSupabaseConfigured()) {
+    return { data: [], error: { message: 'Supabase non configuré' } };
+  }
+
+  try {
+    let query = supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items (*)
+      `)
+      .eq('partner_id', partnerId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    console.error('Erreur getPartnerOrders:', error);
+    return { data: [], error };
+  }
+}
+
+/**
  * Mettre à jour le statut d'une commande
  */
-export async function updateOrderStatus(orderId, newStatus, actorId = null, actorType = 'system') {
+export async function updateOrderStatus(orderId, newStatus, actorId = null) {
   const validTransitions = {
     pending: ['confirmed', 'cancelled'],
     confirmed: ['preparing', 'cancelled'],
@@ -247,33 +229,8 @@ export async function updateOrderStatus(orderId, newStatus, actorId = null, acto
     delivering: ['delivered'],
   };
 
-  if (useMockData) {
-    const orders = getMockOrders();
-    const orderIndex = orders.findIndex(o => o.id === orderId);
-    
-    if (orderIndex === -1) {
-      return { data: null, error: { message: 'Commande non trouvée' } };
-    }
-
-    const order = orders[orderIndex];
-    const allowedStatuses = validTransitions[order.status] || [];
-    
-    if (!allowedStatuses.includes(newStatus)) {
-      return { 
-        data: null, 
-        error: { message: `Transition ${order.status} → ${newStatus} non autorisée` } 
-      };
-    }
-
-    orders[orderIndex] = {
-      ...order,
-      status: newStatus,
-      [`${newStatus}_at`]: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    
-    saveMockOrders(orders);
-    return { data: orders[orderIndex], error: null };
+  if (!isSupabaseConfigured()) {
+    return { data: null, error: { message: 'Supabase non configuré' } };
   }
 
   try {
@@ -304,10 +261,6 @@ export async function updateOrderStatus(orderId, newStatus, actorId = null, acto
     const timestampField = `${newStatus}_at`;
     updateData[timestampField] = new Date().toISOString();
 
-    if (newStatus === 'cancelled') {
-      updateData.cancelled_at = new Date().toISOString();
-    }
-
     const { data, error } = await supabase
       .from('orders')
       .update(updateData)
@@ -317,9 +270,7 @@ export async function updateOrderStatus(orderId, newStatus, actorId = null, acto
 
     if (error) throw error;
 
-    // Logger l'événement
-    await logOrderEvent(orderId, `status_${newStatus}`, actorId, actorType);
-
+    console.log('✅ Statut commande mis à jour:', orderId, '→', newStatus);
     return { data, error: null };
   } catch (error) {
     console.error('Erreur updateOrderStatus:', error);
@@ -330,35 +281,9 @@ export async function updateOrderStatus(orderId, newStatus, actorId = null, acto
 /**
  * Annuler une commande
  */
-export async function cancelOrder(orderId, reason, userId, userType = 'client') {
-  if (useMockData) {
-    const orders = getMockOrders();
-    const orderIndex = orders.findIndex(o => o.id === orderId);
-    
-    if (orderIndex === -1) {
-      return { data: null, error: { message: 'Commande non trouvée' } };
-    }
-
-    const order = orders[orderIndex];
-    const cancellableStatuses = ['pending', 'confirmed', 'preparing'];
-    
-    if (!cancellableStatuses.includes(order.status)) {
-      return { 
-        data: null, 
-        error: { message: 'Cette commande ne peut plus être annulée' } 
-      };
-    }
-
-    orders[orderIndex] = {
-      ...order,
-      status: 'cancelled',
-      cancelled_at: new Date().toISOString(),
-      cancellation_reason: reason,
-      updated_at: new Date().toISOString(),
-    };
-    
-    saveMockOrders(orders);
-    return { data: orders[orderIndex], error: null };
+export async function cancelOrder(orderId, reason, userId) {
+  if (!isSupabaseConfigured()) {
+    return { data: null, error: { message: 'Supabase non configuré' } };
   }
 
   try {
@@ -377,8 +302,7 @@ export async function cancelOrder(orderId, reason, userId, userType = 'client') 
 
     if (error) throw error;
 
-    await logOrderEvent(orderId, 'cancelled', userId, userType, { reason });
-
+    console.log('✅ Commande annulée:', orderId);
     return { data, error: null };
   } catch (error) {
     console.error('Erreur cancelOrder:', error);
@@ -387,39 +311,12 @@ export async function cancelOrder(orderId, reason, userId, userType = 'client') 
 }
 
 /**
- * Logger un événement de commande
- */
-async function logOrderEvent(orderId, eventType, actorId, actorType, metadata = {}) {
-  if (useMockData) return; // Pas de logs en mode mocké
-
-  try {
-    await supabase.from('order_logs').insert({
-      order_id: orderId,
-      event_type: eventType,
-      actor_id: actorId,
-      actor_type: actorType,
-      metadata,
-    });
-  } catch (error) {
-    console.error('Erreur logOrderEvent:', error);
-  }
-}
-
-/**
  * Souscrire aux mises à jour d'une commande en temps réel
  */
 export function subscribeToOrder(orderId, callback) {
-  if (useMockData) {
-    // En mode mocké, simuler des mises à jour périodiques
-    const interval = setInterval(() => {
-      const orders = getMockOrders();
-      const order = orders.find(o => o.id === orderId);
-      if (order) {
-        callback(order);
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
+  if (!isSupabaseConfigured()) {
+    console.error('Supabase non configuré pour realtime');
+    return () => {};
   }
 
   const channel = supabase
@@ -443,11 +340,48 @@ export function subscribeToOrder(orderId, callback) {
   };
 }
 
+/**
+ * Récupérer toutes les commandes (Admin)
+ */
+export async function getAllOrders(options = {}) {
+  const { limit = 100, status = null } = options;
+
+  if (!isSupabaseConfigured()) {
+    return { data: [], error: { message: 'Supabase non configuré' } };
+  }
+
+  try {
+    let query = supabase
+      .from('orders')
+      .select(`
+        *,
+        partners (name),
+        order_items (*)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    console.error('Erreur getAllOrders:', error);
+    return { data: [], error };
+  }
+}
+
 export default {
   createOrder,
   getOrderById,
   getUserOrders,
+  getPartnerOrders,
   updateOrderStatus,
   cancelOrder,
   subscribeToOrder,
+  getAllOrders,
 };

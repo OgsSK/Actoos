@@ -2,12 +2,10 @@
  * ACTOOS ONE - Onboarding Service
  * 
  * Service pour les inscriptions livreurs et partenaires.
- * Enregistre les demandes dans Supabase.
+ * PRODUCTION MODE - Toutes les données sont enregistrées dans Supabase.
  */
 
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-
-const useMockData = !isSupabaseConfigured();
 
 /**
  * Soumettre une demande d'inscription livreur
@@ -26,18 +24,9 @@ export async function submitDriverOnboarding(data) {
     status: 'pending',
   };
 
-  if (useMockData) {
-    // Mode mocké - sauvegarder en localStorage
-    const requests = JSON.parse(localStorage.getItem('actoos_onboarding_requests') || '[]');
-    const newRequest = {
-      id: `onb-${Date.now()}`,
-      ...payload,
-      created_at: new Date().toISOString(),
-    };
-    requests.push(newRequest);
-    localStorage.setItem('actoos_onboarding_requests', JSON.stringify(requests));
-    
-    return { data: newRequest, error: null };
+  if (!isSupabaseConfigured()) {
+    console.error('Supabase non configuré');
+    return { data: null, error: { message: 'Configuration Supabase manquante' } };
   }
 
   try {
@@ -48,6 +37,7 @@ export async function submitDriverOnboarding(data) {
       .single();
 
     if (error) throw error;
+    console.log('✅ Demande livreur enregistrée:', result.id);
     return { data: result, error: null };
   } catch (error) {
     console.error('Erreur submitDriverOnboarding:', error);
@@ -74,18 +64,9 @@ export async function submitPartnerOnboarding(data) {
     status: 'pending',
   };
 
-  if (useMockData) {
-    // Mode mocké
-    const requests = JSON.parse(localStorage.getItem('actoos_onboarding_requests') || '[]');
-    const newRequest = {
-      id: `onb-${Date.now()}`,
-      ...payload,
-      created_at: new Date().toISOString(),
-    };
-    requests.push(newRequest);
-    localStorage.setItem('actoos_onboarding_requests', JSON.stringify(requests));
-    
-    return { data: newRequest, error: null };
+  if (!isSupabaseConfigured()) {
+    console.error('Supabase non configuré');
+    return { data: null, error: { message: 'Configuration Supabase manquante' } };
   }
 
   try {
@@ -96,6 +77,7 @@ export async function submitPartnerOnboarding(data) {
       .single();
 
     if (error) throw error;
+    console.log('✅ Demande partenaire enregistrée:', result.id);
     return { data: result, error: null };
   } catch (error) {
     console.error('Erreur submitPartnerOnboarding:', error);
@@ -109,11 +91,8 @@ export async function submitPartnerOnboarding(data) {
 export async function getOnboardingRequests(options = {}) {
   const { type = null, status = null, limit = 50 } = options;
 
-  if (useMockData) {
-    let requests = JSON.parse(localStorage.getItem('actoos_onboarding_requests') || '[]');
-    if (type) requests = requests.filter(r => r.type === type);
-    if (status) requests = requests.filter(r => r.status === status);
-    return { data: requests.slice(0, limit), error: null };
+  if (!isSupabaseConfigured()) {
+    return { data: [], error: { message: 'Supabase non configuré' } };
   }
 
   try {
@@ -139,17 +118,8 @@ export async function getOnboardingRequests(options = {}) {
  * Approuver une demande d'inscription (Admin)
  */
 export async function approveOnboardingRequest(requestId, adminId) {
-  if (useMockData) {
-    const requests = JSON.parse(localStorage.getItem('actoos_onboarding_requests') || '[]');
-    const index = requests.findIndex(r => r.id === requestId);
-    if (index !== -1) {
-      requests[index].status = 'approved';
-      requests[index].reviewed_at = new Date().toISOString();
-      requests[index].reviewed_by = adminId;
-      localStorage.setItem('actoos_onboarding_requests', JSON.stringify(requests));
-      return { data: requests[index], error: null };
-    }
-    return { data: null, error: { message: 'Demande non trouvée' } };
+  if (!isSupabaseConfigured()) {
+    return { data: null, error: { message: 'Supabase non configuré' } };
   }
 
   try {
@@ -176,18 +146,8 @@ export async function approveOnboardingRequest(requestId, adminId) {
  * Rejeter une demande d'inscription (Admin)
  */
 export async function rejectOnboardingRequest(requestId, adminId, reason) {
-  if (useMockData) {
-    const requests = JSON.parse(localStorage.getItem('actoos_onboarding_requests') || '[]');
-    const index = requests.findIndex(r => r.id === requestId);
-    if (index !== -1) {
-      requests[index].status = 'rejected';
-      requests[index].reviewed_at = new Date().toISOString();
-      requests[index].reviewed_by = adminId;
-      requests[index].admin_note = reason;
-      localStorage.setItem('actoos_onboarding_requests', JSON.stringify(requests));
-      return { data: requests[index], error: null };
-    }
-    return { data: null, error: { message: 'Demande non trouvée' } };
+  if (!isSupabaseConfigured()) {
+    return { data: null, error: { message: 'Supabase non configuré' } };
   }
 
   try {

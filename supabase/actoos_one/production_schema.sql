@@ -232,7 +232,25 @@ CREATE TABLE wallet_transactions (
 CREATE INDEX idx_wallet_txn_wallet ON wallet_transactions(wallet_id);
 
 -- =====================================================
--- 9. FONCTION: Générer numéro de commande
+-- 9. TABLE ONBOARDING_REQUESTS (demandes d'inscription)
+-- =====================================================
+CREATE TABLE onboarding_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  type VARCHAR(20) NOT NULL CHECK (type IN ('partner', 'driver')),
+  payload JSONB NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  reviewed_by UUID REFERENCES users(id),
+  reviewed_at TIMESTAMPTZ,
+  admin_note TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_onboarding_type ON onboarding_requests(type);
+CREATE INDEX idx_onboarding_status ON onboarding_requests(status);
+
+-- =====================================================
+-- 10. FONCTION: Générer numéro de commande
 -- =====================================================
 CREATE OR REPLACE FUNCTION generate_order_number()
 RETURNS TRIGGER AS $$
@@ -251,7 +269,7 @@ CREATE TRIGGER set_order_number
   EXECUTE FUNCTION generate_order_number();
 
 -- =====================================================
--- 10. FONCTION: Créer wallet automatiquement
+-- 11. FONCTION: Créer wallet automatiquement
 -- =====================================================
 CREATE OR REPLACE FUNCTION create_user_wallet()
 RETURNS TRIGGER AS $$
@@ -268,7 +286,7 @@ CREATE TRIGGER auto_create_wallet
   EXECUTE FUNCTION create_user_wallet();
 
 -- =====================================================
--- 11. COMPTE ADMIN
+-- 12. COMPTE ADMIN
 -- =====================================================
 INSERT INTO users (id, email, name, role, is_active, email_verified)
 VALUES (
@@ -281,7 +299,7 @@ VALUES (
 ) ON CONFLICT (id) DO UPDATE SET role = 'admin', email = 'contact@actoos.com';
 
 -- =====================================================
--- 12. ACTIVER RLS (Row Level Security)
+-- 13. ACTIVER RLS (Row Level Security)
 -- =====================================================
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE partners ENABLE ROW LEVEL SECURITY;
@@ -291,6 +309,7 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wallets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wallet_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE onboarding_requests ENABLE ROW LEVEL SECURITY;
 
 -- Policies pour lecture publique des restaurants et menus
 CREATE POLICY "Partners are viewable by everyone" ON partners FOR SELECT USING (true);
@@ -313,6 +332,9 @@ CREATE POLICY "Anyone can insert partners" ON partners FOR INSERT WITH CHECK (tr
 CREATE POLICY "Anyone can insert drivers" ON drivers FOR INSERT WITH CHECK (true);
 CREATE POLICY "Anyone can insert orders" ON orders FOR INSERT WITH CHECK (true);
 CREATE POLICY "Anyone can insert order_items" ON order_items FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can insert onboarding_requests" ON onboarding_requests FOR INSERT WITH CHECK (true);
+CREATE POLICY "Admins can view all onboarding_requests" ON onboarding_requests FOR SELECT USING (true);
+CREATE POLICY "Admins can update onboarding_requests" ON onboarding_requests FOR UPDATE USING (true);
 
 -- =====================================================
 -- TERMINÉ - Schéma prêt pour production
