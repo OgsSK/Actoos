@@ -76,7 +76,7 @@ export function CookieConsentSheet({ onAccept, onCustomize, onDecline }) {
           
           <button
             onClick={handleDecline}
-            className="px-5 py-2.5 text-sm font-medium text-gray-900 bg-white border-2 border-gray-900 rounded-full hover:bg-gray-100 transition-colors"
+            className="px-5 py-2.5 text-sm font-medium text-primary bg-white border-2 border-primary rounded-full hover:bg-primary/5 transition-colors"
             data-testid="cookie-decline-btn"
           >
             Refuser
@@ -84,7 +84,7 @@ export function CookieConsentSheet({ onAccept, onCustomize, onDecline }) {
           
           <button
             onClick={handleAccept}
-            className="px-5 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-full hover:bg-gray-800 active:bg-black transition-colors"
+            className="px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-full hover:bg-primary/90 active:bg-primary/80 transition-colors"
             data-testid="cookie-accept-btn"
           >
             Accepter
