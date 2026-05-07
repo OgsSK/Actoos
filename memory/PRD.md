@@ -31,6 +31,42 @@
 
 ## CHANGELOG
 
+### 2025-05-08 - Standard UX Delivery App (Auth Guard, Geolocation, Restaurants Open) ✅
+
+**Implémentations des standards UX apps de livraison (Uber Eats, Glovo)**
+
+#### 1. Auth Guard Checkout
+- **Blocage utilisateurs non connectés** : Quand un invité clique sur "Livraison" ou "À emporter", la popup de connexion s'ouvre automatiquement
+- **Bandeau "Connexion requise"** : Visible sur l'écran checkout pour les non-connectés
+- **Continuation automatique** : Après connexion réussie, le checkout reprend automatiquement à l'étape suivante (ADDRESS ou PHONE selon le mode choisi)
+- **Pré-remplissage profil** : Adresse et téléphone pré-remplis si disponibles dans le profil utilisateur
+
+#### 2. Géolocalisation Réelle
+- **Bouton "Utiliser ma position"** dans l'étape ADDRESS
+- **navigator.geolocation** avec options haute précision (enableHighAccuracy: true, timeout: 10s)
+- **Reverse geocoding** via Nominatim (gratuit) pour convertir coordonnées → adresse lisible
+- **Gestion d'erreurs** : Messages clairs pour PERMISSION_DENIED, POSITION_UNAVAILABLE, TIMEOUT
+- **Indicateur de chargement** pendant la localisation
+
+#### 3. Restaurants Ouverts par Défaut
+- **Logique corrigée** : `isOpen: partner.is_paused ? false : (partner.is_open !== false)`
+- Les restaurants sont maintenant **ouverts par défaut** sauf s'ils sont explicitement fermés ou en pause
+- Plus de badge "Fermé" systématique sur tous les restaurants
+
+#### Fichiers modifiés :
+- `/app/actoos-one/src/components/CheckoutScreen.jsx` - Auth guard, useEffect pour continuation, géolocalisation
+- `/app/actoos-one/src/App.js` - LoginSheet ajouté dans le rendu checkout
+- `/app/actoos-one/src/services/restaurantService.js` - Logique isOpen corrigée
+
+#### Tests validés (100% succès - iteration_78) :
+- ✅ Auth guard bloque les non-connectés et affiche login popup
+- ✅ Restaurants affichés comme OUVERTS (plus de "Fermé" par défaut)
+- ✅ Bouton géolocalisation déclenche navigator.geolocation
+- ✅ Checkout continue automatiquement après login
+- ✅ Formulaire Email/Password fonctionne avec Supabase Auth
+
+---
+
 ### 2025-05-08 - Driver Wallet & Admin Drivers & Banner Upload ✅
 
 **Implémentations complètes connectées à Supabase**
