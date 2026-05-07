@@ -66,10 +66,18 @@
 - Approbation/Rejet des demandes avec mise à jour instantanée
 - Affichage des données JSON payload (nom, téléphone, véhicule, zone)
 
-#### Schéma SQL Production
-- Fichier `/app/supabase/actoos_one/production_schema.sql` complet
-- 9 tables, triggers, RLS policies
-- À exécuter dans Supabase Dashboard
+#### Suivi Commandes en Temps Réel ✅
+- `OrderTrackingScreen.jsx` refactorisé pour utiliser Supabase Realtime
+- Souscription automatique aux mises à jour de statut de commande
+- Timeline dynamique construite à partir des timestamps (confirmed_at, preparing_at, etc.)
+- Toast visuel "Statut mis à jour !" quand le statut change
+- Écran de chargement et gestion d'erreur
+- Rating automatique proposé à la livraison
+
+#### Schéma SQL Production + Seed
+- Fichier `/app/supabase/actoos_one/schema_supabase_clean.sql` - Schéma complet
+- Fichier `/app/supabase/actoos_one/seed_restaurants.sql` - 8 restaurants + menus
+- Realtime activé sur tables `orders` et `onboarding_requests`
 
 #### Tests validés par Testing Agent (85% succès)
 - ✅ Restaurants chargés depuis Supabase
