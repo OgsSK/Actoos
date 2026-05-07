@@ -6,6 +6,8 @@ import { RestaurantScreen } from './components/RestaurantScreen';
 import { CheckoutScreen } from './components/CheckoutScreen';
 import { DriverOnboardingScreen } from './components/DriverOnboardingScreen';
 import { PartnerOnboardingScreen } from './components/PartnerOnboardingScreen';
+import { TermsScreen } from './components/TermsScreen';
+import { LegalScreen } from './components/LegalScreen';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -25,6 +27,8 @@ const SCREENS = {
   CHECKOUT: 'checkout',
   DRIVER_ONBOARDING: 'driver_onboarding',
   PARTNER_ONBOARDING: 'partner_onboarding',
+  TERMS: 'terms',
+  LEGAL: 'legal',
 };
 
 function AppContent() {
@@ -129,6 +133,14 @@ function AppContent() {
   };
 
   // Render based on current screen
+  if (currentScreen === SCREENS.TERMS) {
+    return <TermsScreen onBack={handleBackToHome} />;
+  }
+
+  if (currentScreen === SCREENS.LEGAL) {
+    return <LegalScreen onBack={handleBackToHome} />;
+  }
+
   if (currentScreen === SCREENS.DRIVER_ONBOARDING) {
     return (
       <DriverOnboardingScreen
@@ -206,6 +218,8 @@ function AppContent() {
         onPartnerClick={() => setCurrentScreen(SCREENS.PARTNER_ONBOARDING)}
         onDriverClick={() => setCurrentScreen(SCREENS.DRIVER_ONBOARDING)}
         onPrivacyClick={() => setPrivacySheet(true)}
+        onTermsClick={() => setCurrentScreen(SCREENS.TERMS)}
+        onLegalClick={() => setCurrentScreen(SCREENS.LEGAL)}
       />
 
       {/* Bottom Navigation */}

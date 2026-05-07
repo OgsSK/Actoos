@@ -1,6 +1,6 @@
 import { Store, Bike, Shield } from 'lucide-react';
 
-export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick }) {
+export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsClick, onLegalClick }) {
   return (
     <footer className="bg-gray-50 border-t border-gray-200 py-6 px-4 mb-16" data-testid="footer">
       <div className="text-center mb-4">
@@ -48,11 +48,19 @@ export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick }) {
           <span>Confidentialité</span>
         </button>
         <span className="text-gray-300">|</span>
-        <button className="text-gray-500 active:text-primary transition-colors">
+        <button 
+          onClick={onTermsClick}
+          className="text-gray-500 active:text-primary transition-colors"
+          data-testid="terms-btn"
+        >
           CGU
         </button>
         <span className="text-gray-300">|</span>
-        <button className="text-gray-500 active:text-primary transition-colors">
+        <button 
+          onClick={onLegalClick}
+          className="text-gray-500 active:text-primary transition-colors"
+          data-testid="legal-btn"
+        >
           Mentions légales
         </button>
       </div>
