@@ -10,7 +10,7 @@ export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsC
           <h3 className="text-lg font-bold text-gray-900">Rejoignez ACTOOS</h3>
         </div>
         <p className="text-sm text-gray-500 mb-4">
-          Développez votre activité avec la première super-app d'Afrique de l'Ouest
+          Développez votre activité et touchez plus de clients
         </p>
       </div>
 
@@ -88,9 +88,6 @@ export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsC
       <div className="text-center mt-6">
         <p className="text-[11px] text-gray-400">
           © 2025 ACTOOS ONE • Bamako, Mali
-        </p>
-        <p className="text-[10px] text-gray-300 mt-1">
-          Bientôt disponible dans toute l'Afrique de l'Ouest
         </p>
       </div>
     </footer>

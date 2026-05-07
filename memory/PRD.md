@@ -808,6 +808,8 @@
 │   │   ├── orderService.js
 │   │   ├── surgeService.js
 │   │   └── bnplService.js
+│   ├── config/
+│   │   └── businessConfig.js    # Règles tarifaires et commissions
 │   ├── App.js
 │   ├── index.js
 │   └── index.css
@@ -819,6 +821,89 @@
 ├── 001_foundation.sql
 └── 002_consents.sql
 ```
+
+---
+
+## LOGIQUE MÉTIER FINANCIÈRE
+
+### 1. Frais de Livraison (Delivery Fees)
+
+**ACTOOS DELIVERY (On fournit la moto):**
+- **Base**: 700 FCFA (couvre 0-2 km)
+- **Supplément**: +200 FCFA par km au-delà de 2 km
+- Exemples:
+  - 1.5 km = 700 FCFA
+  - 3 km = 700 + (1×200) = 900 FCFA
+  - 5.5 km = 700 + (3.5×200) = 1,400 FCFA
+
+**SELF-DELIVERY (Partenaire livre):**
+- Le partenaire fixe le prix MAIS plafond de **250 FCFA/km** maximum
+- Empêche les abus tarifaires
+
+**PICKUP (Click & Collect):**
+- 0 FCFA
+
+**MODIFICATEURS:**
+- **SOS/Urgence (Health)**: +500 FCFA (100% au livreur)
+- **Surge Pricing**: Multiplicateur (x1.2, x1.5, x2.0)
+
+### 2. Surge Pricing (Tarification Dynamique)
+
+| Condition | Multiplicateur |
+|-----------|---------------|
+| Normal | x1.0 |
+| Pluie | x1.3 |
+| Heure de pointe | x1.2 |
+| Événement spécial (match) | x1.5 |
+| Demande extrême | x2.0 (max) |
+
+Exemple sous la pluie pour 5.5 km (1,400F): 1,400 × 1.5 = **2,100 FCFA**
+
+### 3. Matrice des Commissions
+
+**RÈGLE D'OR**: Actoos prélève sa commission UNIQUEMENT sur le prix des articles.
+Actoos ne prend JAMAIS de commission sur les frais de livraison (100% au livreur/partenaire).
+
+**EATS (Restaurants):**
+| Mode | Commission | Partenaire reçoit |
+|------|-----------|------------------|
+| Actoos Delivery | 15% | 85% du plat |
+| Self-Delivery | 10% | 90% du plat + 100% livraison |
+| Pickup | 10% | 90% du plat |
+
+**HEALTH (Pharmacies):**
+| Mode | Commission | Pharmacie reçoit |
+|------|-----------|------------------|
+| Actoos Delivery | 5% | 95% du médicament |
+| Self-Delivery | 2% | 98% du médicament + 100% livraison |
+| Pickup | 2% | 98% du médicament |
+
+### 4. Exemple de Transaction Complète
+
+**Scénario**: Dibi Mouton 10,000F, Actoos Delivery, 4 km
+
+- Client paie: 10,000F + 1,100F = **11,100 FCFA**
+- Livreur reçoit: **1,100 FCFA** (100% livraison)
+- Restaurant reçoit: 10,000 - 15% = **8,500 FCFA**
+- Actoos gagne: 10,000 × 15% = **1,500 FCFA**
+
+### 5. Wallet & Retraits
+
+**Règlement Instantané:**
+- Dès que le code Handshake #A42 est tapé, les fonds sont crédités immédiatement
+- Pas de "clôture comptable hebdomadaire"
+
+**Frais de retrait:**
+- Actoos: **0%** (aucun frais)
+- Frais télécom à la charge de l'utilisateur:
+  - Orange Money: ~1%
+  - Wave: ~0.5%
+  - Virement bancaire: 1,000 FCFA fixe (24-48h)
+
+**Flux Livreur (Cash vs Virtuel):**
+- Trop de cash physique → "Recharger Caution" via Mobile Money
+- Trop de virtuel → "Retirer" vers Mobile Money
+- Caution minimum: 5,000 FCFA pour recevoir des courses
 
 ---
 
@@ -834,3 +919,4 @@
 2. **1 PWA, 4 Modules** - Ne PAS créer 4 apps séparées
 3. **Localisation Bamako** - Pas Abidjan
 4. **Guest-First** - Navigation sans login
+5. **Commissions sur articles UNIQUEMENT** - Jamais sur les frais de livraison
