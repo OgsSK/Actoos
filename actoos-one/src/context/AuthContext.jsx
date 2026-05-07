@@ -71,7 +71,9 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const useMockAuth = !isSupabaseConfigured();
+  // TOUJOURS utiliser le mode mocké pour l'OTP client jusqu'à ce que Twilio soit configuré
+  // Changer cette valeur à false quand Twilio est configuré dans Supabase
+  const useMockAuth = true;
 
   // Charger le profil utilisateur depuis la DB
   const loadProfile = useCallback(async (userId, phone) => {

@@ -16,6 +16,7 @@ import { DriverAppScreen } from './components/DriverAppScreen';
 import { AdminDashboard } from './components/AdminDashboard';
 import { PortalLogin } from './components/PortalLogin';
 import { AdminLogin } from './components/AdminLogin';
+import { LoginSheet } from './components/LoginSheet';
 import { WalletScreen } from './components/WalletScreen';
 import { HealthScreen } from './components/HealthScreen';
 import { PharmacyScreen } from './components/PharmacyScreen';
@@ -34,7 +35,7 @@ import { SearchSheet } from './components/SearchSheet';
 import { PromoBanner } from './components/PromoBanner';
 import { FavoritesScreen } from './components/FavoritesScreen';
 import { RatingSheet } from './components/RatingSystem';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WalletProvider } from './context/WalletContext';
 import { FavoritesProvider } from './context/FavoritesContext';
@@ -199,6 +200,7 @@ function AppContent() {
     return Object.values(pharmacyProducts || {});
   }, []);
   const [privacySheet, setPrivacySheet] = useState(false);
+  const [showLoginSheet, setShowLoginSheet] = useState(false);
 
   // Load saved address from localStorage on mount
   useEffect(() => {
@@ -677,6 +679,8 @@ function AppContent() {
         address={address}
         onAddressClick={() => setAddressSheet(true)}
         onSearchClick={() => setSearchSheet(true)}
+        onProfileClick={() => setShowLoginSheet(true)}
+        onFavoritesClick={() => setCurrentScreen(SCREENS.FAVORITES)}
       />
 
       {/* Categories */}
@@ -753,6 +757,16 @@ function AppContent() {
       <PrivacySettingsSheet
         isOpen={privacySheet}
         onClose={() => setPrivacySheet(false)}
+      />
+
+      {/* Login Sheet */}
+      <LoginSheet
+        isOpen={showLoginSheet}
+        onClose={() => setShowLoginSheet(false)}
+        onSuccess={() => {
+          setShowLoginSheet(false);
+          // Optionally navigate to profile or refresh
+        }}
       />
 
       {/* Location Permission Sheet */}

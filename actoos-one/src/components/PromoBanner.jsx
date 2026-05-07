@@ -94,33 +94,15 @@ export function PromoBanner({ onPromoClick }) {
           ))}
         </div>
 
-        {/* Navigation Arrows - Hidden on mobile, visible on desktop, positioned outside */}
+        {/* Dots only - no arrows */}
         {promos.length > 1 && (
-          <>
-            <button
-              onClick={prevSlide}
-              className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 w-10 h-10 bg-white hover:bg-gray-50 rounded-full items-center justify-center shadow-lg border border-gray-200 transition-all z-10"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-700" />
-            </button>
-            <button
-              onClick={nextSlide}
-              className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 bg-white hover:bg-gray-50 rounded-full items-center justify-center shadow-lg border border-gray-200 transition-all z-10"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-700" />
-            </button>
-          </>
-        )}
-
-        {/* Dots */}
-        {promos.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
             {promos.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentSlide ? 'bg-white' : 'bg-white/50'
+                className={`w-2.5 h-2.5 rounded-full transition-all ${
+                  index === currentSlide ? 'bg-white scale-110' : 'bg-white/50 hover:bg-white/70'
                 }`}
               />
             ))}
