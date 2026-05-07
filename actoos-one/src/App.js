@@ -14,6 +14,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { WalletScreen } from './components/WalletScreen';
 import { HealthScreen } from './components/HealthScreen';
 import { PharmacyScreen } from './components/PharmacyScreen';
+import { BlackScreen } from './components/BlackScreen';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -43,6 +44,7 @@ const SCREENS = {
   WALLET: 'wallet',
   HEALTH: 'health',
   PHARMACY: 'pharmacy',
+  BLACK: 'black',
 };
 
 function AppContent() {
@@ -144,6 +146,8 @@ function AppContent() {
     } else if (tabId === 'health') {
       setCurrentScreen(SCREENS.HEALTH);
       setSelectedPharmacy(null);
+    } else if (tabId === 'black') {
+      setCurrentScreen(SCREENS.BLACK);
     } else if (tabId === 'eats') {
       setCurrentScreen(SCREENS.HOME);
       setSelectedRestaurant(null);
@@ -189,6 +193,10 @@ function AppContent() {
   };
 
   // Render based on current screen
+  if (currentScreen === SCREENS.BLACK) {
+    return <BlackScreen onBack={handleBackToHome} />;
+  }
+
   if (currentScreen === SCREENS.HEALTH) {
     return (
       <HealthScreen

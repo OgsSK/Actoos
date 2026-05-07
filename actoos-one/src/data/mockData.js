@@ -89,7 +89,7 @@ export const navItems = [
   { id: 'eats', label: 'Eats', icon: 'UtensilsCrossed', active: true, enabled: true },
   { id: 'health', label: 'Health', icon: 'Heart', active: false, enabled: true },
   { id: 'wallet', label: 'Wallet', icon: 'Wallet', active: false, enabled: true },
-  { id: 'black', label: 'Black', icon: 'Car', active: false, enabled: false },
+  { id: 'black', label: 'Black', icon: 'Car', active: false, enabled: true },
   { id: 'profil', label: 'Profil', icon: 'User', active: false, enabled: false },
 ];
 
@@ -104,6 +104,7 @@ export const systemConfig = {
     health: true,
     wallet: true,
     p2p: true,
-    black: false,
+    black: true,
+    bnpl: true,
   },
 };

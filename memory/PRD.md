@@ -30,6 +30,42 @@
 
 ## CHANGELOG
 
+### 2025-01-07 - Mission 11 Complete ✅
+**Surge Pricing, ACTOOS BLACK & BNPL**
+
+#### Surge Pricing (`surgeService.js`):
+- Multiplicateur x1.2 si `online_drivers < 5`
+- Badge "Forte Demande" visible
+- Prix de livraison majoré avec explication
+- Heures de pointe et weekend pris en compte
+
+#### ACTOOS BLACK (`BlackScreen.jsx`):
+- Interface VTC Premium (design sombre)
+- Sélection Point A → Point B
+- Destinations populaires (Aéroport, Gare, etc.)
+- 3 types de véhicules (Standard, Confort, Premium)
+- Prix avec surge affiché (original barré + nouveau prix)
+- Confirmation et booking avec paiement Wallet
+
+#### BNPL - Buy Now, Pay Later (`bnplService.js`):
+- "Mangez maintenant, payez plus tard"
+- Éligibilité basée sur score composite (jamais total_spent seul):
+  - Ancienneté compte >= 30 jours
+  - Commandes complétées >= 5
+  - Taux annulation <= 10%
+  - Score transactions >= 70
+  - Score fraude <= 20
+- Limite max: 10,000 FCFA par commande
+- Délai: 7 jours pour payer
+- Option visible dans PaymentMethodSelector si éligible
+
+#### Checkout amélioré:
+- Badge "Forte Demande" si surge actif
+- Prix livraison avec surge visible
+- Option BNPL si éligible (badge "NOUVEAU")
+
+---
+
 ### 2025-01-07 - Mission 10 Complete ✅
 **P2P & Corporate Wallet**
 
@@ -292,18 +328,19 @@
 - [x] Mission 8: Wallet & TouchPay Integration
 - [x] Mission 9: ACTOOS HEALTH (Pharmacies, Ordonnances)
 - [x] Mission 10: P2P & Corporate Wallet
+- [x] Mission 11: Surge Pricing, ACTOOS BLACK & BNPL
 
 ### P1 - Prochaines étapes
-- [ ] Mission 11: À définir selon votre prochain prompt
+- [ ] Mission 12: À définir selon votre prochain prompt
 - [ ] Connecter Supabase JS Client au frontend
 - [ ] OTP réel côté serveur (Supabase Edge Functions)
 - [ ] TouchPay API réelle (sandbox)
 
 ### P2 - À venir
-- [ ] Module ACTOOS BLACK (VTC)
 - [ ] Module Profil utilisateur
 - [ ] Push Notifications
 - [ ] Row-locking réel avec Supabase
+- [ ] Intégration paiement réel
 
 ### P2 - À venir
 - [ ] OTP réel côté serveur (Supabase Edge Functions)
@@ -346,6 +383,7 @@
 │   │   ├── OrdonnanceUploadSheet.jsx
 │   │   ├── P2PTransferSheet.jsx
 │   │   ├── PINValidationModal.jsx
+│   │   ├── BlackScreen.jsx
 │   │   ├── TermsScreen.jsx
 │   │   ├── LegalScreen.jsx
 │   │   ├── CookieConsentSheet.jsx
@@ -369,7 +407,9 @@
 │   │   └── useLazyImage.js
 │   ├── services/
 │   │   ├── otpService.js
-│   │   └── orderService.js
+│   │   ├── orderService.js
+│   │   ├── surgeService.js
+│   │   └── bnplService.js
 │   ├── App.js
 │   ├── index.js
 │   └── index.css

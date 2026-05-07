@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, MapPin, Phone, CreditCard, CheckCircle, Loader2, Wallet, AlertCircle, Building2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, CreditCard, CheckCircle, Loader2, Wallet, AlertCircle, Building2, Clock, Zap } from 'lucide-react';
 import { OTPInput } from './OTPInput';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { TouchPaySheet } from './TouchPaySheet';
@@ -7,6 +7,8 @@ import { useCart } from '../context/CartContext';
 import { useWallet } from '../context/WalletContext';
 import { sendOTP, verifyOTP } from '../services/otpService';
 import { calculateOrderTotal, createOrder } from '../services/orderService';
+import { getBNPLDetails } from '../services/bnplService';
+import { getSurgeDetails, calculateDeliveryFeeWithSurge } from '../services/surgeService';
 import { systemConfig } from '../data/mockData';
 
 const STEPS = {
@@ -41,8 +43,13 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   // TopUp sheet for insufficient balance
   const [showTopUp, setShowTopUp] = useState(false);
 
-  // Calculer le total
-  const orderTotals = calculateOrderTotal(cartItems, restaurant?.deliveryFee || 500);
+  // Calculer le total avec surge pricing
+  const surgeDetails = getSurgeDetails();
+  const deliveryWithSurge = calculateDeliveryFeeWithSurge(restaurant?.deliveryFee || 500);
+  const orderTotals = calculateOrderTotal(cartItems, deliveryWithSurge.finalPrice);
+  
+  // BNPL eligibility
+  const bnplDetails = getBNPLDetails(orderTotals.total);
 
   const handleSendOTP = async () => {
     if (!phoneNumber || phoneNumber.length < 12) {
@@ -451,19 +458,66 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               onSelect={setPaymentMethod}
               acceptsCash={restaurant?.accepts_cash || false}
               walletBalance={balance}
+              bnplEligible={bnplDetails.isEligible}
+              bnplMessage={bnplDetails.message}
             />
+
+            {/* BNPL Option - Only if eligible */}
+            {bnplDetails.isEligible && paymentMethod !== 'bnpl' && (
+              <button
+                onClick={() => setPaymentMethod('bnpl')}
+                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl p-4 text-white text-left"
+                data-testid="bnpl-option"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Clock className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Mangez maintenant, payez plus tard</p>
+                    <p className="text-sm text-white/80">Payez dans 7 jours • Sans frais</p>
+                  </div>
+                </div>
+              </button>
+            )}
 
             {/* Résumé commande */}
             <div className="bg-gray-50 rounded-2xl p-4 mt-6">
               <h3 className="font-semibold text-gray-900 mb-3">Résumé</h3>
+              
+              {/* Surge Badge */}
+              {surgeDetails.isActive && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-3 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-yellow-800">Forte Demande</p>
+                    <p className="text-xs text-yellow-600">
+                      Frais de livraison majorés (x{surgeDetails.multiplier})
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-600">
                   <span>Sous-total</span>
                   <span>{orderTotals.subtotal.toLocaleString()} {systemConfig.currency}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Livraison</span>
-                  <span>{orderTotals.deliveryFee.toLocaleString()} {systemConfig.currency}</span>
+                  <span className="flex items-center gap-1">
+                    Livraison
+                    {deliveryWithSurge.isActive && (
+                      <span className="text-xs text-yellow-600">(surge)</span>
+                    )}
+                  </span>
+                  <div className="text-right">
+                    {deliveryWithSurge.isActive && (
+                      <span className="text-xs text-gray-400 line-through mr-2">
+                        {deliveryWithSurge.originalPrice.toLocaleString()}
+                      </span>
+                    )}
+                    <span>{deliveryWithSurge.finalPrice.toLocaleString()} {systemConfig.currency}</span>
+                  </div>
                 </div>
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <div className="flex justify-between font-semibold text-gray-900">
