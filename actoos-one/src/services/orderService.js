@@ -49,6 +49,22 @@ export async function createOrder(orderData) {
     return { data: null, error: { message: 'Supabase non configuré' } };
   }
 
+  // Vérifier si l'utilisateur existe dans la table users (pour éviter FK constraint)
+  let validClientId = null;
+  if (userId) {
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+    
+    if (existingUser) {
+      validClientId = userId;
+    } else {
+      console.warn('User not found in users table, creating order without client_id');
+    }
+  }
+
   // Calculer les montants
   const subtotal = items.reduce((sum, item) => sum + ((item.unit_price || item.price) * item.quantity), 0);
   
@@ -67,7 +83,7 @@ export async function createOrder(orderData) {
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
-        client_id: userId || null,
+        client_id: validClientId,
         partner_id: partnerId,
         delivery_code: deliveryCode,
         status: 'pending',

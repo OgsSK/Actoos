@@ -88,7 +88,7 @@ export async function getRestaurantById(id) {
       .select('*')
       .eq('partner_id', id)
       .eq('is_available', true)
-      .order('sort_order');
+      .order('category');
 
     if (menuError) throw menuError;
 
