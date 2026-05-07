@@ -24,7 +24,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { mockBlockedOrders, mockDrivers, mockOnboardingRequests } from '../data/driverData';
-import { activePromotions } from '../data/promotionsData';
+import { AdminPromotionsManager } from './AdminPromotionsManager';
 
 const TABS = {
   ORDERS: 'orders',
@@ -38,7 +38,6 @@ export function AdminDashboard({ onBack }) {
   const [blockedOrders, setBlockedOrders] = useState(mockBlockedOrders);
   const [drivers] = useState(mockDrivers);
   const [onboardingRequests, setOnboardingRequests] = useState(mockOnboardingRequests);
-  const [promotions, setPromotions] = useState(activePromotions);
   
   // Settings sub-tab
   const [settingsTab, setSettingsTab] = useState('promos'); // promos, legal, app
@@ -454,52 +453,7 @@ export function AdminDashboard({ onBack }) {
 
             {/* Promos Management */}
             {settingsTab === 'promos' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-bold text-gray-900">Gestion des promotions</h2>
-                  <button className="bg-[#FF5A00] text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    Nouvelle
-                  </button>
-                </div>
-
-                {promotions.map((promo) => (
-                  <div key={promo.id} className="bg-white rounded-2xl p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-gray-900">{promo.title}</h3>
-                          {promo.is_active ? (
-                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">Actif</span>
-                          ) : (
-                            <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-xs">Inactif</span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">{promo.description}</p>
-                        {promo.code && (
-                          <p className="text-sm font-mono bg-gray-100 inline-block px-2 py-1 rounded mt-2">
-                            Code: {promo.code}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <span>Min: {promo.min_order?.toLocaleString() || 0} FCFA</span>
-                          {promo.valid_until && (
-                            <span>Expire: {new Date(promo.valid_until).toLocaleDateString()}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                          <Edit3 className="w-4 h-4 text-gray-600" />
-                        </button>
-                        <button className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <AdminPromotionsManager />
             )}
 
             {/* Legal Management */}

@@ -9,11 +9,14 @@ import {
   Package,
   Utensils,
   ArrowLeft,
-  Keyboard
+  Keyboard,
+  Tag
 } from 'lucide-react';
 import { mockOrders, mockMenuItems } from '../data/kdsData';
 import { KDSOrderCard } from './KDSOrderCard';
 import { KDSMenuManager } from './KDSMenuManager';
+import { PartnerPromotionsManager } from './PartnerPromotionsManager';
+import { PARTNER_TYPES } from '../data/promotionsData';
 
 // Son de notification (base64 encoded beep)
 const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp+fm5eTj4d8b2JXTUZCPz07Ojk4Nzk7PUFGTFVfanuNnqqxs7CqoZWJfXFmXVVPSUVCQD8/P0BCRUlOVl9qeYyepq2wr6uklox/cmZdVE5IRkRCQUFCQ0ZKTVRZYG17jZ6mrK2tqaKZjn5wa2NcVlFNSkdGRUVGR0lMUFZdZW96i5ulq62sqKOckoZ6bmVdV1JOS0lIR0dISUpNUVZcYmt3hpOgo6eopqKdloqAd25nYVtWUk9NTEtLS0xOUVVZXmRsdoOQnKOlpqShn5mRiX1zbmljXllVUk9OTU1OT1FUV1teZGt0foqVnqKkpKKgm5aPh3xybGZhXFlWU1FQT09QUVNWWV1hZm1ze4aPmJ6ho6KgnpqVjoR6cGpmYl5aV1VTUlFRUlNVV1ldYWVqcHh/h5CYnaChn5yZlI6GfXRtaGRgXFpXVVRTU1NUVVdZXGBkZ2xye4KKkpicn5+dnJmUjoZ+dnBrZmJfXFpYVlVVVVZXWVtdYGRobnR7gYmRl5udnp2bmJONhX12cGtmY2BdW1lYV1dXWFlaXF9iZmtwd36EjJOYm52dnJqXko2FfnhybGdjYF5cWllYWFhZWltdX2JlaW50eoGHjpSYm5ycm5mWkYuEfXdzb2xoZGJgXlxbWlpaW1xdX2FkZ2twd3yChYuRl5qbnJuZl5ONiIJ+eXVxbmpmZGJgX15dXV1eX2BhY2ZpbHB0eX6ChYqOk5eZmpqZl5WSjoqFgHt3c3BtamdjYmBfX15eXl9gYWNlZ2pscHR5fYGFiY2RlZeYmJeWlJGOioaCfnp2c3BtamhkY2FgX19eXl9gYWJkZmhqbXF1eXyCg4aIi42Pk5aXlpSSkI6KhoJ+e3dzcW5ramloZmVkY2NjY2NkZGVmZ2hqbG1vcXN2eHt9f4GChomLjY6QkZOTk5KQj42KiIWDgH58enh2dHJwb21saWhnZmZlZWVlZmZmZ2hpamtsbm9xc3V2eHl7fH5/gYKEhYeIiYqLjI2Oj5CQj46OjYuJiIaEgoB/fXt6eHd2dXRzcnFwb25tbGxsbGxsbG1tbm5vb3BxcnNzdHV2d3h5ent8fX5/gIGBgoOEhIWGhoeIiImJiomJiYiIh4aFhIOCgYB/fn18e3p5eHh3dnZ1dXR0dHR0dHR0dHV1dXZ2d3d4eHl5ent7fH19fn5/gIGBgoKDg4SEhYWGhoaHh4eHh4eHhoaGhYWEhIODgoKBgYCAf39+fn19fHx8e3t7e3t7e3t7e3t7e3x8fHx9fX1+fn5/f4CAgIGBgYKCgoODg4ODhISEhISEhISEhIODg4OCgoKBgYGAgIB/f35+fX19fHx8fHx8fHx8fHx8fH19fX19fn5+fn9/f4CAgICAgYGBgYGBgoKCgoKCgoKCgoKCgoKCgoKCgYGBgYGAgICAgH9/f39/fn5+fn5+fn5+fn5+fn5+f39/f39/f4CAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgICAgH9/f39+fn5+fn5+fn5+fn5+fn5+fn5+fn5/f39/f39/f39/gICAgICAgICAgICAgYGBgYGBgYGBgYGBgYGBgYGBgICAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgICAgICBgYGBgYGBgYGBgYGAgICAgICAgIB/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fn5+fn5/f39/f39/f39/gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIB/f39/f39/f35+fn5+fn5+fn5+fn5+fn5+fn5+fn5+f39/f39/f39/gICAgICAg==';
@@ -21,6 +24,7 @@ const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAA
 const TABS = {
   ORDERS: 'orders',
   MENU: 'menu',
+  PROMOS: 'promos',
 };
 
 export function PartnerKDSScreen({ onBack }) {
@@ -204,7 +208,19 @@ export function PartnerKDSScreen({ onBack }) {
             data-testid="tab-menu"
           >
             <Utensils className="w-5 h-5" />
-            Mon Menu
+            Menu
+          </button>
+          <button
+            onClick={() => setActiveTab(TABS.PROMOS)}
+            className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors ${
+              activeTab === TABS.PROMOS
+                ? 'bg-[#FF5A00] text-white'
+                : 'bg-gray-100 text-gray-600'
+            }`}
+            data-testid="tab-promos"
+          >
+            <Tag className="w-5 h-5" />
+            Promos
           </button>
         </div>
       </header>
@@ -347,12 +363,20 @@ export function PartnerKDSScreen({ onBack }) {
             </div>
           )}
         </div>
-      ) : (
+      ) : activeTab === TABS.MENU ? (
         <KDSMenuManager
           items={menuItems}
           onToggleAvailability={toggleItemAvailability}
           onUpdateMaxPerOrder={updateMaxPerOrder}
         />
+      ) : (
+        <div className="p-4">
+          <PartnerPromotionsManager
+            partnerId="rest-001"
+            partnerName="Maquis Chez Tanti"
+            partnerType={PARTNER_TYPES.RESTAURANT}
+          />
+        </div>
       )}
     </div>
   );

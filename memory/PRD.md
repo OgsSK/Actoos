@@ -30,6 +30,58 @@
 
 ## CHANGELOG
 
+### 2025-05-07 - Système de Promotions Multi-Niveau ✅
+**Implémentation complète du système de promotions avec 3 niveaux de contrôle**
+
+#### Architecture des Promotions :
+1. **Niveau Platform (Admin GOD MODE)**
+   - Promos créées par l'admin, s'appliquent partout
+   - Types: %, Montant fixe, Livraison gratuite, Flash Deals, Première commande
+   - Codes: BIENVENUE, ACTOOS20, FREEWEEKEND
+
+2. **Niveau Partner (Restaurant/Pharmacie)**
+   - Promos créées par les partenaires pour leur établissement
+   - **Restrictions par mode de livraison**:
+     - Self Delivery → Peut offrir livraison gratuite
+     - ACTOOS Delivery → NE peut PAS offrir livraison gratuite
+   - **Restrictions Pharmacie**:
+     - BOGO interdit sur médicaments (sécurité)
+     - Tout autorisé sur parapharmacie
+
+3. **Niveau Referral (Parrainage Utilisateur)**
+   - Chaque utilisateur a un code unique (ACTOOS-XX00)
+   - Filleul: -1,500 FCFA sur 1ère commande
+   - Parrain: +1,000 FCFA en wallet
+   - Admin contrôle les montants et peut activer/désactiver
+
+#### Interfaces créées :
+- **KDS Partner** → Nouvel onglet "Promos" avec:
+  - Liste des promos actives du partenaire
+  - Modal de création avec types autorisés selon delivery mode
+  - Warning si ACTOOS Delivery (pas de livraison gratuite)
+  
+- **Admin GOD MODE** → Section Promos améliorée avec:
+  - Sous-onglets: Plateforme | Partenaires | Parrainage
+  - Contrôle total sur toutes les promos (modifier/désactiver)
+  - Config parrainage (bonus, minimum, activation)
+  - Top Parrains leaderboard
+
+#### Fichiers créés/modifiés :
+- `/app/actoos-one/src/data/promotionsData.js` - Refonte complète avec 3 niveaux
+- `/app/actoos-one/src/components/PartnerPromotionsManager.jsx` - Interface partenaire
+- `/app/actoos-one/src/components/AdminPromotionsManager.jsx` - Interface admin complète
+- `/app/actoos-one/src/components/ReferralSection.jsx` - Section parrainage utilisateur
+- `/app/actoos-one/src/components/PartnerKDSScreen.jsx` - Ajout onglet Promos
+- `/app/actoos-one/src/components/AdminDashboard.jsx` - Intégration AdminPromotionsManager
+
+#### Screenshots validés :
+- ✅ Partner KDS → Onglet Promos avec promo "-15% sur tout le menu"
+- ✅ Admin → Plateforme avec 4 promos (BIENVENUE, ACTOOS20, FREEWEEKEND, Flash Deal)
+- ✅ Admin → Parrainage avec stats et Top Parrains
+
+---
+
+
 ### 2025-05-07 - Bug Fix: Checkout CONFIRM Step & Promo Code System ✅
 **Correction du flux Checkout et du système de codes promo**
 
