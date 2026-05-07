@@ -11,7 +11,7 @@ const iconMap = {
 export function BottomNav({ items, activeTab, onTabChange, onDisabledTabClick }) {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 safe-area-bottom z-50"
+      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 safe-area-bottom z-50 md:hidden"
       data-testid="bottom-nav"
     >
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto">

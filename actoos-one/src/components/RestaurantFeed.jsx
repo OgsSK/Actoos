@@ -3,10 +3,12 @@ import { RestaurantCard, RestaurantCardSkeleton } from './RestaurantCard';
 export function RestaurantFeed({ restaurants, isLoading, onRestaurantClick }) {
   if (isLoading) {
     return (
-      <div className="px-4 pb-24 space-y-4" data-testid="restaurant-feed-loading">
-        {[1, 2, 3].map((i) => (
-          <RestaurantCardSkeleton key={i} />
-        ))}
+      <div className="px-4 md:px-6 lg:px-10 pb-24 md:pb-12" data-testid="restaurant-feed-loading">
+        <div className="restaurant-grid">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <RestaurantCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -20,19 +22,21 @@ export function RestaurantFeed({ restaurants, isLoading, onRestaurantClick }) {
   }
 
   return (
-    <div className="px-4 pb-24 space-y-4" data-testid="restaurant-feed">
-      {restaurants.map((restaurant, index) => (
-        <div
-          key={restaurant.id}
-          className="fade-in"
-          style={{ animationDelay: `${index * 0.05}s` }}
-        >
-          <RestaurantCard
-            restaurant={restaurant}
-            onClick={onRestaurantClick}
-          />
-        </div>
-      ))}
+    <div className="px-4 md:px-6 lg:px-10 pb-24 md:pb-12" data-testid="restaurant-feed">
+      <div className="restaurant-grid">
+        {restaurants.map((restaurant, index) => (
+          <div
+            key={restaurant.id}
+            className="fade-in restaurant-card"
+            style={{ animationDelay: `${index * 0.05}s` }}
+          >
+            <RestaurantCard
+              restaurant={restaurant}
+              onClick={onRestaurantClick}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

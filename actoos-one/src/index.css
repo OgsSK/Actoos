@@ -12,56 +12,128 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #F5F5F5;
+  background-color: #FFFFFF;
   color: #111827;
   min-height: 100vh;
   overflow-x: hidden;
 }
 
-/* ===== DESKTOP RESPONSIVE CONTAINER ===== */
-#root {
-  max-width: 100%;
+/* ===== RESPONSIVE CONTAINER ===== */
+.app-container {
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 0 16px;
 }
 
-/* Desktop: Center app like mobile simulator */
 @media (min-width: 768px) {
-  body {
-    background-color: #E5E7EB;
-  }
-  
-  #root {
-    max-width: 480px;
-    min-height: 100vh;
-    background-color: #FFFFFF;
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.15);
-    position: relative;
+  .app-container {
+    padding: 0 24px;
   }
 }
 
-/* Large desktop: Even more centered */
 @media (min-width: 1024px) {
-  #root {
-    max-width: 420px;
-    border-radius: 0;
+  .app-container {
+    padding: 0 40px;
+  }
+}
+
+/* ===== RESPONSIVE GRID FOR RESTAURANTS ===== */
+.restaurant-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .restaurant-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .restaurant-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .restaurant-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ===== DESKTOP HEADER ===== */
+@media (min-width: 768px) {
+  .desktop-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: white;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 16px 0;
   }
   
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, #FF5A00 0%, #FF8533 50%, #FFB380 100%);
-    z-index: -1;
-    opacity: 0.1;
+  .desktop-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+  
+  .desktop-search {
+    flex: 1;
+    max-width: 500px;
+  }
+}
+
+/* ===== DESKTOP BOTTOM NAV HIDDEN ===== */
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+  
+  .desktop-nav {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .desktop-nav {
+    display: none !important;
+  }
+}
+
+/* ===== RESPONSIVE PROMO BANNER ===== */
+@media (min-width: 768px) {
+  .promo-banner {
+    border-radius: 16px;
+    margin: 0 0 24px 0;
+  }
+}
+
+/* ===== RESPONSIVE CATEGORIES ===== */
+@media (min-width: 768px) {
+  .categories-scroll {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
   }
 }
 
 /* PWA Safe Area */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+@media (min-width: 768px) {
+  .safe-area-bottom {
+    padding-bottom: 0;
+  }
 }
 
 /* Touch-friendly tap highlights */
@@ -134,4 +206,39 @@ img.lazy {
 
 img.lazy.loaded {
   opacity: 1;
+}
+
+/* ===== RESPONSIVE RESTAURANT CARD ===== */
+.restaurant-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (min-width: 768px) {
+  .restaurant-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+  
+  .restaurant-card img {
+    transition: transform 0.3s ease;
+  }
+  
+  .restaurant-card:hover img {
+    transform: scale(1.05);
+  }
+}
+
+/* ===== DESKTOP FOOTER ===== */
+@media (min-width: 768px) {
+  .site-footer {
+    margin-top: 60px;
+    padding: 40px 0;
+    border-top: 1px solid #E5E7EB;
+  }
+  
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 40px;
+  }
 }

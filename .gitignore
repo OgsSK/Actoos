@@ -618,3 +618,4 @@ credentials.json
 *.pem
 *.key
 .credentials
+actoos-one/node_modules/.cache/default-development/1.pack
