@@ -18,7 +18,7 @@ export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsC
           </div>
           <div className="text-left">
             <p className="text-sm font-medium text-gray-900">Devenir Partenaire</p>
-            <p className="text-xs text-gray-500">Inscrivez votre restaurant</p>
+            <p className="text-xs text-gray-500">Restaurant, Pharmacie...</p>
           </div>
         </button>
 

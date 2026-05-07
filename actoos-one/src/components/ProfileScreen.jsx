@@ -262,7 +262,7 @@ export function ProfileScreen({
               </div>
               <div className="flex-1 text-left">
                 <p className="font-semibold text-gray-900">Devenir Partenaire</p>
-                <p className="text-xs text-gray-500">Inscrivez votre restaurant</p>
+                <p className="text-xs text-gray-500">Restaurant, Pharmacie...</p>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
