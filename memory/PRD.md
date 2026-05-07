@@ -33,13 +33,16 @@
 ### 2025-05-07 - Bug Fix: Checkout CONFIRM Step & Promo Code System ✅
 **Correction du flux Checkout et du système de codes promo**
 
-#### Bug corrigé:
-- **Erreur**: `Cannot read properties of undefined (reading 'toLocaleString')` sur l'étape CONFIRM du Checkout
-- **Cause**: Incohérence de nom dans `orderService.js` (`deliveryFee` vs `delivery`)
-- **Fix**: Renommé `deliveryFee` en `delivery` dans la réponse de `calculateOrderTotal()`
+#### Bugs corrigés:
+1. **Erreur CONFIRM**: `Cannot read properties of undefined (reading 'toLocaleString')` sur l'étape CONFIRM
+   - **Cause**: Incohérence de nom dans `orderService.js` (`deliveryFee` vs `delivery`)
+   - **Fix**: Renommé `deliveryFee` en `delivery` dans la réponse de `calculateOrderTotal()`
+
+2. **Total payé = 0 sur SUCCESS**: Le total affichait 0 FCFA car `finalTotal` était recalculé après `clearCart()`
+   - **Cause**: Cart vidé avant le rendu du SUCCESS, donc `finalTotal` = 0
+   - **Fix**: Utilisation de `orderResult?.final_total || finalTotal` dans l'écran SUCCESS
 
 #### Améliorations du système Promo:
-- Correction de l'affichage du total avec réduction dans l'écran SUCCESS
 - Le `finalTotal` (après promo) est maintenant utilisé pour:
   - Vérification du solde wallet
   - Débit du paiement
@@ -48,13 +51,14 @@
 
 #### Fichiers modifiés:
 - `/app/actoos-one/src/services/orderService.js` - Fix du nom de propriété + protection null
-- `/app/actoos-one/src/components/CheckoutScreen.jsx` - Utilisation de `finalTotal` partout
+- `/app/actoos-one/src/components/CheckoutScreen.jsx` - Utilisation de `finalTotal` et `orderResult?.final_total`
 
-#### Tests validés:
+#### Tests validés (iteration_66.json - 100% success):
 - ✅ Navigation complète du flux Checkout (7 étapes)
 - ✅ Application du code promo "BIENVENUE" (-2,000 FCFA)
-- ✅ Calcul correct du total avec réduction
-- ✅ Commande confirmée avec Code Handshake
+- ✅ Calcul correct: 5000 (sous-total) + 500 (livraison) - 2000 (promo) = 3,500 FCFA
+- ✅ Écran SUCCESS affiche le bon total (3,500 FCFA)
+- ✅ Code Handshake format #A42 généré correctement (#B99, #I66)
 
 ---
 
