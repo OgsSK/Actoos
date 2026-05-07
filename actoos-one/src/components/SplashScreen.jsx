@@ -1,90 +1,89 @@
 import { useState, useEffect } from 'react';
 
 export function SplashScreen({ onComplete }) {
-  const [phase, setPhase] = useState('logo'); // 'logo', 'pulse', 'slide'
+  const [phase, setPhase] = useState('initial'); // 'initial', 'expand', 'fadeOut'
 
   useEffect(() => {
-    // Phase 1: Logo apparaît (déjà visible)
-    const pulseTimer = setTimeout(() => {
-      setPhase('pulse');
-    }, 300);
+    // Phase 1: Initial state (text small, centered)
+    const expandTimer = setTimeout(() => {
+      setPhase('expand');
+    }, 400);
 
-    // Phase 2: Pulse + slide up
-    const slideTimer = setTimeout(() => {
-      setPhase('slide');
-    }, 900);
+    // Phase 2: Expand animation
+    const fadeTimer = setTimeout(() => {
+      setPhase('fadeOut');
+    }, 1200);
 
-    // Phase 3: Terminer
+    // Phase 3: Complete
     const completeTimer = setTimeout(() => {
       onComplete();
-    }, 1500);
+    }, 1800);
 
     return () => {
-      clearTimeout(pulseTimer);
-      clearTimeout(slideTimer);
+      clearTimeout(expandTimer);
+      clearTimeout(fadeTimer);
       clearTimeout(completeTimer);
     };
   }, [onComplete]);
 
   return (
     <div 
-      className={`fixed inset-0 z-[100] bg-white flex items-center justify-center transition-transform duration-500 ease-out ${
-        phase === 'slide' ? '-translate-y-full' : 'translate-y-0'
+      className={`fixed inset-0 z-[100] bg-white flex items-center justify-center transition-opacity duration-500 ${
+        phase === 'fadeOut' ? 'opacity-0' : 'opacity-100'
       }`}
       data-testid="splash-screen"
     >
-      {/* Pulse rings */}
-      <div className="relative">
-        {/* Outer pulse ring */}
+      {/* Centered ACTOOS ONE - Uber style animation */}
+      <div className="flex flex-col items-center justify-center">
+        {/* Animated background circle */}
         <div 
-          className={`absolute inset-0 rounded-full transition-all duration-700 ${
-            phase === 'pulse' || phase === 'slide'
-              ? 'scale-[3] opacity-0' 
-              : 'scale-100 opacity-0'
+          className={`absolute rounded-full bg-[#FF5A00]/5 transition-all duration-700 ease-out ${
+            phase === 'initial' 
+              ? 'w-0 h-0 opacity-0' 
+              : phase === 'expand'
+                ? 'w-[300px] h-[300px] opacity-100'
+                : 'w-[600px] h-[600px] opacity-0'
           }`}
-          style={{
-            width: '120px',
-            height: '120px',
-            marginLeft: '-10px',
-            marginTop: '-10px',
-            background: 'radial-gradient(circle, rgba(255, 90, 0, 0.3) 0%, rgba(255, 90, 0, 0) 70%)',
-          }}
         />
         
-        {/* Middle pulse ring */}
+        {/* Inner pulse ring */}
         <div 
-          className={`absolute inset-0 rounded-full transition-all duration-500 delay-100 ${
-            phase === 'pulse' || phase === 'slide'
-              ? 'scale-[2.5] opacity-0' 
-              : 'scale-100 opacity-0'
+          className={`absolute rounded-full border-2 border-[#FF5A00]/20 transition-all duration-500 ease-out ${
+            phase === 'initial' 
+              ? 'w-0 h-0 opacity-0' 
+              : phase === 'expand'
+                ? 'w-[200px] h-[200px] opacity-100'
+                : 'w-[400px] h-[400px] opacity-0'
           }`}
-          style={{
-            width: '100px',
-            height: '100px',
-            background: 'radial-gradient(circle, rgba(255, 90, 0, 0.4) 0%, rgba(255, 90, 0, 0) 70%)',
-          }}
         />
 
-        {/* Logo "A" */}
+        {/* Main text - ACTOOS ONE */}
+        <h1 
+          className={`relative font-black text-[#FF5A00] tracking-tight transition-all duration-500 ease-out ${
+            phase === 'initial' 
+              ? 'text-3xl scale-90 opacity-0' 
+              : phase === 'expand'
+                ? 'text-4xl scale-100 opacity-100'
+                : 'text-5xl scale-110 opacity-0'
+          }`}
+          style={{
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          ACTOOS ONE
+        </h1>
+
+        {/* Subtle loading indicator */}
         <div 
-          className={`relative w-[100px] h-[100px] bg-[#FF5A00] rounded-3xl flex items-center justify-center shadow-xl transition-transform duration-300 ${
-            phase === 'logo' ? 'scale-90' : 'scale-100'
+          className={`mt-8 flex gap-1 transition-opacity duration-300 ${
+            phase === 'expand' ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          <span className="text-white text-6xl font-black tracking-tighter">A</span>
+          <div className="w-2 h-2 bg-[#FF5A00] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+          <div className="w-2 h-2 bg-[#FF5A00] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="w-2 h-2 bg-[#FF5A00] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
         </div>
-      </div>
-
-      {/* App name (appears after pulse) */}
-      <div 
-        className={`absolute bottom-20 transition-all duration-500 ${
-          phase === 'pulse' || phase === 'slide'
-            ? 'opacity-100 translate-y-0' 
-            : 'opacity-0 translate-y-4'
-        }`}
-      >
-        <p className="text-[#FF5A00] font-bold text-2xl tracking-wide">ACTOOS ONE</p>
-        <p className="text-gray-400 text-sm text-center mt-1">Tout. Tout de suite. Partout.</p>
       </div>
     </div>
   );

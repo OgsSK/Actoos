@@ -83,7 +83,8 @@ function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [showLocationPermission, setShowLocationPermission] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('cat-1');
+  const [activeCategory, setActiveCategory] = useState('cat-all');
+  const [activeFilters, setActiveFilters] = useState([]); // ['pickup', 'offers', 'top_rated']
   const [activeTab, setActiveTab] = useState('eats');
   const [address, setAddress] = useState(null); // null = pas d'adresse définie
   const [userLocation, setUserLocation] = useState(null);
@@ -306,13 +307,35 @@ function AppContent() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Filter restaurants by category
-  const filteredRestaurants = activeCategory === 'cat-1'
-    ? restaurants
-    : restaurants.filter(r => {
-        const catName = categories.find(c => c.id === activeCategory)?.name.toLowerCase();
-        return r.cuisine.toLowerCase().includes(catName || '');
-      });
+  // Filter restaurants by category and filters
+  const filteredRestaurants = restaurants.filter(r => {
+    // Category filter
+    if (activeCategory !== 'cat-all') {
+      const catName = categories.find(c => c.id === activeCategory)?.name.toLowerCase();
+      if (catName && !r.cuisine.toLowerCase().includes(catName)) {
+        return false;
+      }
+    }
+    
+    // Apply active filters
+    if (activeFilters.includes('pickup') && !r.acceptsPickup) {
+      return false;
+    }
+    if (activeFilters.includes('offers') && !r.hasOffers) {
+      return false;
+    }
+    if (activeFilters.includes('top_rated') && r.rating < 4.5) {
+      return false;
+    }
+    
+    return true;
+  }).sort((a, b) => {
+    // Sort by rating if top_rated filter is active
+    if (activeFilters.includes('top_rated')) {
+      return b.rating - a.rating;
+    }
+    return 0;
+  });
 
   const handleRestaurantClick = (restaurant) => {
     const menuData = getRestaurantMenu(restaurant.id);
@@ -640,6 +663,8 @@ function AppContent() {
         categories={categories}
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
+        activeFilters={activeFilters}
+        onFilterChange={setActiveFilters}
       />
 
       {/* Promo Banner */}
