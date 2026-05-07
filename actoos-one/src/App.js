@@ -12,6 +12,7 @@ import { OfflineBanner } from './components/OfflineBanner';
 import { DisabledModuleSheet } from './components/DisabledModuleSheet';
 import { BottomSheet } from './components/BottomSheet';
 import { CookieConsentSheet } from './components/CookieConsentSheet';
+import { PrivacySettingsSheet } from './components/PrivacySettingsSheet';
 import { CartProvider } from './context/CartContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { restaurants, categories, navItems } from './data/mockData';
@@ -41,6 +42,7 @@ function AppContent() {
   const [disabledModuleSheet, setDisabledModuleSheet] = useState({ open: false, moduleId: null });
   const [searchSheet, setSearchSheet] = useState(false);
   const [addressSheet, setAddressSheet] = useState(false);
+  const [privacySheet, setPrivacySheet] = useState(false);
 
   // Simulate initial loading
   useEffect(() => {
@@ -119,7 +121,7 @@ function AppContent() {
   };
 
   const handleCookieCustomize = () => {
-    alert('Personnalisation des cookies à venir');
+    setPrivacySheet(true);
   };
 
   const handleCookieDecline = () => {
@@ -203,6 +205,7 @@ function AppContent() {
       <Footer
         onPartnerClick={() => setCurrentScreen(SCREENS.PARTNER_ONBOARDING)}
         onDriverClick={() => setCurrentScreen(SCREENS.DRIVER_ONBOARDING)}
+        onPrivacyClick={() => setPrivacySheet(true)}
       />
 
       {/* Bottom Navigation */}
@@ -267,6 +270,12 @@ function AppContent() {
           ))}
         </div>
       </BottomSheet>
+
+      {/* Privacy Settings Sheet */}
+      <PrivacySettingsSheet
+        isOpen={privacySheet}
+        onClose={() => setPrivacySheet(false)}
+      />
     </div>
   );
 }

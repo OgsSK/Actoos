@@ -1,6 +1,6 @@
-import { Store, Bike } from 'lucide-react';
+import { Store, Bike, Shield } from 'lucide-react';
 
-export function Footer({ onPartnerClick, onDriverClick }) {
+export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick }) {
   return (
     <footer className="bg-gray-50 border-t border-gray-200 py-6 px-4 mb-16" data-testid="footer">
       <div className="text-center mb-4">
@@ -37,7 +37,27 @@ export function Footer({ onPartnerClick, onDriverClick }) {
         </button>
       </div>
 
-      <p className="text-center text-[10px] text-gray-400 mt-6">
+      {/* Legal Links */}
+      <div className="flex items-center justify-center gap-4 mt-6 text-xs">
+        <button
+          onClick={onPrivacyClick}
+          className="flex items-center gap-1 text-gray-500 active:text-primary transition-colors"
+          data-testid="privacy-settings-btn"
+        >
+          <Shield className="w-3.5 h-3.5" />
+          <span>Confidentialité</span>
+        </button>
+        <span className="text-gray-300">|</span>
+        <button className="text-gray-500 active:text-primary transition-colors">
+          CGU
+        </button>
+        <span className="text-gray-300">|</span>
+        <button className="text-gray-500 active:text-primary transition-colors">
+          Mentions légales
+        </button>
+      </div>
+
+      <p className="text-center text-[10px] text-gray-400 mt-4">
         © 2024 ACTOOS ONE. Tous droits réservés.
       </p>
     </footer>
