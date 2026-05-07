@@ -30,6 +30,59 @@
 
 ## CHANGELOG
 
+
+### 2025-05-07 - Scheduled Orders & Order When Closed ✅
+**Implémentation des commandes programmées et commandes quand fermé style Uber Eats**
+
+#### Scheduled Orders (Commander pour plus tard) :
+- Nouvelle étape **SCHEDULE** après DELIVERY_MODE dans le checkout
+- **TimeSlotPicker** avec sélection:
+  - "Dès que possible" (30-45 min) par défaut
+  - "Programmer pour plus tard" avec sélecteur jour/heure
+- Créneaux générés automatiquement selon les horaires d'ouverture
+- Intervalles de 30 minutes
+- Jusqu'à 7 jours à l'avance (configurable par partenaire)
+- Créneau affiché dans récapitulatif et écran SUCCESS
+
+#### Order When Closed :
+- Banner dans RestaurantScreen quand restaurant fermé
+- Si `acceptOrdersWhenClosed: true` → Bouton "Commander" visible
+- Affichage du prochain horaire d'ouverture
+- L'utilisateur peut ajouter au panier et commander pour plus tard
+
+#### Section Parrainage Client (ReferralSection) :
+- Intégrée dans ProfileScreen
+- Affiche le code parrainage de l'utilisateur (ACTOOS-XXXX)
+- Boutons Copier et Partager
+- Explication du fonctionnement en 3 étapes
+- Stats : nombre de parrainages et FCFA gagnés
+
+#### Données restaurants enrichies :
+```javascript
+{
+  openingHours: { monday: {...}, tuesday: {...}, ... },
+  acceptOrdersWhenClosed: true/false,
+  allowScheduledOrders: true/false,
+  maxScheduleDays: 7,
+  selfDelivery: true/false
+}
+```
+
+#### Fichiers créés/modifiés :
+- `/app/actoos-one/src/components/TimeSlotPicker.jsx` - Nouveau composant
+- `/app/actoos-one/src/components/CheckoutScreen.jsx` - Étape SCHEDULE ajoutée
+- `/app/actoos-one/src/components/RestaurantScreen.jsx` - Banner "Fermé"
+- `/app/actoos-one/src/components/ProfileScreen.jsx` - ReferralSection intégrée
+- `/app/actoos-one/src/data/mockData.js` - Horaires d'ouverture ajoutés
+- `/app/actoos-one/src/App.js` - Merge des données scheduling
+
+#### Screenshots validés :
+- ✅ Étape SCHEDULE avec "Dès que possible" / "Programmer"
+- ✅ Sélecteur de créneaux étendu avec jours et heures
+- ✅ Profil client avec section Parrainage complète
+
+---
+
 ### 2025-05-07 - Système de Promotions Multi-Niveau ✅
 **Implémentation complète du système de promotions avec 3 niveaux de contrôle**
 

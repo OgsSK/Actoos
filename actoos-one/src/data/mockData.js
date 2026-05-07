@@ -1,6 +1,27 @@
 // Mock data for ACTOOS ONE Home PWA
 // Données simulées pour le feed restaurant Guest-First
 
+// Horaires d'ouverture par défaut (style Uber Eats)
+const DEFAULT_OPENING_HOURS = {
+  monday: { closed: false, periods: [{ open: '11:00', close: '14:30' }, { open: '18:00', close: '23:00' }] },
+  tuesday: { closed: false, periods: [{ open: '11:00', close: '14:30' }, { open: '18:00', close: '23:00' }] },
+  wednesday: { closed: false, periods: [{ open: '11:00', close: '14:30' }, { open: '18:00', close: '23:00' }] },
+  thursday: { closed: false, periods: [{ open: '11:00', close: '14:30' }, { open: '18:00', close: '23:00' }] },
+  friday: { closed: false, periods: [{ open: '11:00', close: '14:30' }, { open: '18:00', close: '00:00' }] },
+  saturday: { closed: false, periods: [{ open: '11:00', close: '00:00' }] },
+  sunday: { closed: false, periods: [{ open: '12:00', close: '22:00' }] },
+};
+
+const FAST_FOOD_HOURS = {
+  monday: { closed: false, periods: [{ open: '10:00', close: '23:00' }] },
+  tuesday: { closed: false, periods: [{ open: '10:00', close: '23:00' }] },
+  wednesday: { closed: false, periods: [{ open: '10:00', close: '23:00' }] },
+  thursday: { closed: false, periods: [{ open: '10:00', close: '23:00' }] },
+  friday: { closed: false, periods: [{ open: '10:00', close: '00:00' }] },
+  saturday: { closed: false, periods: [{ open: '10:00', close: '00:00' }] },
+  sunday: { closed: false, periods: [{ open: '11:00', close: '22:00' }] },
+};
+
 export const restaurants = [
   {
     id: 'rest-001',
@@ -13,6 +34,12 @@ export const restaurants = [
     distance: '1.2 km',
     isOpen: true,
     isFeatured: true,
+    // Nouvelles propriétés pour Scheduled Orders
+    openingHours: DEFAULT_OPENING_HOURS,
+    acceptOrdersWhenClosed: true,  // Permet de commander même fermé
+    allowScheduledOrders: true,    // Permet les commandes programmées
+    maxScheduleDays: 7,            // Jusqu'à 7 jours à l'avance
+    selfDelivery: true,            // Livraison par le restaurant
   },
   {
     id: 'rest-002',
@@ -25,6 +52,11 @@ export const restaurants = [
     distance: '2.5 km',
     isOpen: true,
     isFeatured: false,
+    openingHours: DEFAULT_OPENING_HOURS,
+    acceptOrdersWhenClosed: true,
+    allowScheduledOrders: true,
+    maxScheduleDays: 3,
+    selfDelivery: false,           // Livraison par ACTOOS
   },
   {
     id: 'rest-003',
@@ -37,6 +69,11 @@ export const restaurants = [
     distance: '0.8 km',
     isOpen: true,
     isFeatured: true,
+    openingHours: FAST_FOOD_HOURS,
+    acceptOrdersWhenClosed: true,
+    allowScheduledOrders: true,
+    maxScheduleDays: 7,
+    selfDelivery: true,
   },
   {
     id: 'rest-004',
@@ -49,6 +86,11 @@ export const restaurants = [
     distance: '3.8 km',
     isOpen: false,
     isFeatured: false,
+    openingHours: DEFAULT_OPENING_HOURS,
+    acceptOrdersWhenClosed: true,  // Permet de commander même fermé
+    allowScheduledOrders: true,
+    maxScheduleDays: 5,
+    selfDelivery: false,
   },
   {
     id: 'rest-005',
@@ -61,6 +103,11 @@ export const restaurants = [
     distance: '1.5 km',
     isOpen: true,
     isFeatured: false,
+    openingHours: FAST_FOOD_HOURS,
+    acceptOrdersWhenClosed: false, // NE permet PAS de commander quand fermé
+    allowScheduledOrders: true,
+    maxScheduleDays: 3,
+    selfDelivery: true,
   },
   {
     id: 'rest-006',
@@ -73,6 +120,11 @@ export const restaurants = [
     distance: '1.0 km',
     isOpen: true,
     isFeatured: true,
+    openingHours: DEFAULT_OPENING_HOURS,
+    acceptOrdersWhenClosed: true,
+    allowScheduledOrders: false,   // NE permet PAS les commandes programmées
+    maxScheduleDays: 0,
+    selfDelivery: true,
   },
 ];
 

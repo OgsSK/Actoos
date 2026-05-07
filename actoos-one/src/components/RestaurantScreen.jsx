@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Star, Clock, Bike, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Star, Clock, Bike, ShoppingBag, Moon, Calendar } from 'lucide-react';
 import { MenuItem } from './MenuItem';
 import { AddToCartSheet } from './AddToCartSheet';
 import { useCart } from '../context/CartContext';
 import { systemConfig } from '../data/mockData';
+import { isRestaurantOpen, getNextOpeningTime } from './TimeSlotPicker';
 
 export function RestaurantScreen({ restaurant, onBack, onCheckout }) {
   const [selectedItem, setSelectedItem] = useState(null);
@@ -17,6 +18,19 @@ export function RestaurantScreen({ restaurant, onBack, onCheckout }) {
 
   const itemCount = getItemCount();
   const total = getTotal();
+
+  // Vérifier si le restaurant est ouvert
+  const actuallyOpen = restaurant?.openingHours 
+    ? isRestaurantOpen(restaurant.openingHours) 
+    : restaurant?.isOpen;
+  
+  // Obtenir le prochain horaire d'ouverture si fermé
+  const nextOpening = !actuallyOpen && restaurant?.openingHours 
+    ? getNextOpeningTime(restaurant.openingHours) 
+    : null;
+  
+  // Peut-on commander même fermé ?
+  const canOrderWhenClosed = restaurant?.acceptOrdersWhenClosed && !actuallyOpen;
 
   // Set first category as active on mount
   useEffect(() => {
@@ -123,6 +137,47 @@ export function RestaurantScreen({ restaurant, onBack, onCheckout }) {
           <span>{restaurant.deliveryFee} {systemConfig.currency} livraison</span>
         </div>
       </div>
+
+      {/* Banner Fermé - si restaurant fermé */}
+      {!actuallyOpen && (
+        <div className={`px-4 py-4 ${canOrderWhenClosed ? 'bg-[#FF5A00]/10' : 'bg-gray-100'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              canOrderWhenClosed ? 'bg-[#FF5A00]/20' : 'bg-gray-200'
+            }`}>
+              <Moon className={`w-6 h-6 ${canOrderWhenClosed ? 'text-[#FF5A00]' : 'text-gray-500'}`} />
+            </div>
+            <div className="flex-1">
+              <p className={`font-semibold ${canOrderWhenClosed ? 'text-gray-900' : 'text-gray-700'}`}>
+                Fermé actuellement
+              </p>
+              {nextOpening && (
+                <p className="text-sm text-gray-500">
+                  Ouvre {nextOpening.dayLabel} à {nextOpening.time}
+                </p>
+              )}
+            </div>
+            {canOrderWhenClosed && nextOpening && (
+              <button
+                onClick={() => {
+                  // L'utilisateur peut toujours ajouter au panier
+                  // Le checkout gérera la programmation
+                }}
+                className="px-4 py-2 bg-[#FF5A00] text-white rounded-xl text-sm font-semibold flex items-center gap-2"
+                data-testid="order-when-closed-btn"
+              >
+                <Calendar className="w-4 h-4" />
+                Commander
+              </button>
+            )}
+          </div>
+          {canOrderWhenClosed && (
+            <p className="text-xs text-[#FF5A00] mt-2">
+              Vous pouvez commander maintenant pour {nextOpening?.dayLabel || 'plus tard'}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Category Navigation Bar - Sticky */}
       <div 

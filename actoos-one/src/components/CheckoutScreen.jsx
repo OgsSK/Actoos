@@ -10,12 +10,15 @@ import {
   Building2, 
   ShoppingBag,
   Truck,
-  Navigation
+  Navigation,
+  Clock,
+  Calendar
 } from 'lucide-react';
 import { OTPInput } from './OTPInput';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { TouchPaySheet } from './TouchPaySheet';
 import { PromoCodeInput } from './PromoCodeInput';
+import { TimeSlotPicker, SelectedTimeSlotBadge } from './TimeSlotPicker';
 import { useCart } from '../context/CartContext';
 import { useWallet } from '../context/WalletContext';
 import { sendOTP, verifyOTP } from '../services/otpService';
@@ -24,6 +27,7 @@ import { getNeighborhoodsByCommune } from '../data/locationData';
 
 const STEPS = {
   DELIVERY_MODE: 'delivery_mode',
+  SCHEDULE: 'schedule',     // Nouvelle étape pour programmer la livraison
   ADDRESS: 'address',
   PHONE: 'phone',
   OTP: 'otp',
@@ -61,6 +65,10 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   // Promo code
   const [appliedPromo, setAppliedPromo] = useState(null);
 
+  // Scheduled ordering
+  const [isAsap, setIsAsap] = useState(true);
+  const [scheduledSlot, setScheduledSlot] = useState(null);
+
   // Calculer le total - frais de livraison = 0 si pickup
   const deliveryFee = deliveryMode === 'pickup' ? 0 : (restaurant?.deliveryFee || 500);
   
@@ -74,8 +82,19 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
 
   const handleSelectDeliveryMode = (mode) => {
     setDeliveryMode(mode);
-    if (mode === 'pickup') {
+    // Si le restaurant permet les commandes programmées, aller à l'étape SCHEDULE
+    if (restaurant?.allowScheduledOrders) {
+      setCurrentStep(STEPS.SCHEDULE);
+    } else if (mode === 'pickup') {
       // Skip address step for pickup
+      setCurrentStep(STEPS.PHONE);
+    } else {
+      setCurrentStep(STEPS.ADDRESS);
+    }
+  };
+
+  const handleScheduleSelection = () => {
+    if (deliveryMode === 'pickup') {
       setCurrentStep(STEPS.PHONE);
     } else {
       setCurrentStep(STEPS.ADDRESS);
@@ -182,6 +201,11 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
         promo_code: appliedPromo?.promo?.code || null,
         promo_discount: promoDiscount,
         final_total: finalTotal,
+        // Scheduled ordering info
+        is_scheduled: !isAsap,
+        scheduled_date: scheduledSlot?.day?.date?.toISOString() || null,
+        scheduled_time: scheduledSlot?.slot?.time || null,
+        scheduled_label: scheduledSlot ? `${scheduledSlot.day.dayLabel} à ${scheduledSlot.slot.time}` : null,
       };
       
       const result = await createOrder(orderData);
@@ -256,6 +280,46 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               <p className="font-medium text-gray-900">{restaurant?.name}</p>
               <p className="text-sm text-gray-600">Bamako, Mali</p>
             </div>
+          </div>
+        );
+
+      case STEPS.SCHEDULE:
+        return (
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-[#FF5A00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Clock className="w-8 h-8 text-[#FF5A00]" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Quand souhaitez-vous recevoir ?</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {deliveryMode === 'delivery' ? 'Livraison' : 'Retrait'} chez {restaurant?.name}
+              </p>
+            </div>
+
+            {restaurant?.openingHours && (
+              <TimeSlotPicker
+                openingHours={restaurant.openingHours}
+                selectedSlot={scheduledSlot}
+                isAsap={isAsap}
+                maxDays={restaurant.maxScheduleDays || 7}
+                onSelectAsap={() => {
+                  setIsAsap(true);
+                  setScheduledSlot(null);
+                }}
+                onSelectSlot={(day, slot) => {
+                  setIsAsap(false);
+                  setScheduledSlot({ day, slot });
+                }}
+              />
+            )}
+
+            <button
+              onClick={handleScheduleSelection}
+              className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-2xl active:bg-[#E55100]"
+              data-testid="continue-from-schedule"
+            >
+              Continuer
+            </button>
           </div>
         );
 
@@ -526,6 +590,16 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               )}
             </div>
 
+            {/* Créneau horaire */}
+            {restaurant?.allowScheduledOrders && (
+              <div className="bg-white rounded-2xl p-4 border border-gray-200">
+                <p className="text-sm text-gray-500">Heure de livraison</p>
+                <div className="mt-1">
+                  <SelectedTimeSlotBadge isAsap={isAsap} selectedSlot={scheduledSlot} />
+                </div>
+              </div>
+            )}
+
             {/* Items */}
             <div className="bg-white rounded-2xl p-4 border border-gray-200">
               <p className="text-sm text-gray-500 mb-3">Articles ({cartItems.length})</p>
@@ -647,6 +721,16 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
                 <span className="text-gray-500">Restaurant</span>
                 <span className="font-semibold">{restaurant?.name}</span>
               </div>
+              {/* Scheduled time */}
+              {!isAsap && scheduledSlot && (
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-500">Heure prévue</span>
+                  <span className="font-semibold text-[#FF5A00] flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    {scheduledSlot.day.dayLabel} à {scheduledSlot.slot.time}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Total payé</span>
                 <span className="font-bold text-[#FF5A00]">{(orderResult?.final_total || finalTotal).toLocaleString()} FCFA</span>
@@ -682,9 +766,16 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
 
   // Progress indicator
   const getProgress = () => {
-    const steps = deliveryMode === 'pickup' 
-      ? [STEPS.DELIVERY_MODE, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS]
-      : [STEPS.DELIVERY_MODE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS];
+    let steps;
+    if (deliveryMode === 'pickup') {
+      steps = restaurant?.allowScheduledOrders 
+        ? [STEPS.DELIVERY_MODE, STEPS.SCHEDULE, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS]
+        : [STEPS.DELIVERY_MODE, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS];
+    } else {
+      steps = restaurant?.allowScheduledOrders 
+        ? [STEPS.DELIVERY_MODE, STEPS.SCHEDULE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS]
+        : [STEPS.DELIVERY_MODE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM, STEPS.SUCCESS];
+    }
     
     const currentIndex = steps.indexOf(currentStep);
     return ((currentIndex + 1) / steps.length) * 100;
@@ -701,11 +792,19 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
                 onOrderComplete();
               } else if (currentStep === STEPS.DELIVERY_MODE) {
                 onBack();
-              } else if (currentStep === STEPS.PHONE && deliveryMode === 'pickup') {
+              } else if (currentStep === STEPS.SCHEDULE) {
                 setCurrentStep(STEPS.DELIVERY_MODE);
+              } else if (currentStep === STEPS.PHONE && deliveryMode === 'pickup' && !restaurant?.allowScheduledOrders) {
+                setCurrentStep(STEPS.DELIVERY_MODE);
+              } else if (currentStep === STEPS.PHONE && deliveryMode === 'pickup' && restaurant?.allowScheduledOrders) {
+                setCurrentStep(STEPS.SCHEDULE);
+              } else if (currentStep === STEPS.ADDRESS && restaurant?.allowScheduledOrders) {
+                setCurrentStep(STEPS.SCHEDULE);
               } else {
                 // Go back one step
-                const steps = [STEPS.DELIVERY_MODE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM];
+                const steps = restaurant?.allowScheduledOrders 
+                  ? [STEPS.DELIVERY_MODE, STEPS.SCHEDULE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM]
+                  : [STEPS.DELIVERY_MODE, STEPS.ADDRESS, STEPS.PHONE, STEPS.OTP, STEPS.PAYMENT, STEPS.CONFIRM];
                 const currentIndex = steps.indexOf(currentStep);
                 if (currentIndex > 0) {
                   setCurrentStep(steps[currentIndex - 1]);

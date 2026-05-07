@@ -22,6 +22,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
+import { ReferralSection } from './ReferralSection';
 
 // Mock user data - CLIENT APP (no admin roles visible)
 const MOCK_USER = {
@@ -172,6 +173,15 @@ export function ProfileScreen({
               <Edit3 className="w-5 h-5 text-gray-600" />
             </button>
           </div>
+        </div>
+
+        {/* Section Parrainage */}
+        <div className="mb-6">
+          <ReferralSection
+            userId={user.id}
+            userName={user.name}
+            userPhone={user.phone}
+          />
         </div>
 
         {/* Demandes en attente - Visible si candidature soumise */}

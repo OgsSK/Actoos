@@ -239,7 +239,17 @@ function AppContent() {
   const handleRestaurantClick = (restaurant) => {
     const menuData = getRestaurantMenu(restaurant.id);
     if (menuData) {
-      setSelectedRestaurant(menuData);
+      // Merge restaurant scheduling data with menu data
+      setSelectedRestaurant({
+        ...menuData,
+        // Carry over scheduling-related properties from restaurant
+        openingHours: restaurant.openingHours,
+        acceptOrdersWhenClosed: restaurant.acceptOrdersWhenClosed,
+        allowScheduledOrders: restaurant.allowScheduledOrders,
+        maxScheduleDays: restaurant.maxScheduleDays,
+        selfDelivery: restaurant.selfDelivery,
+        isOpen: restaurant.isOpen,
+      });
     } else {
       setSelectedRestaurant({
         ...restaurant,
