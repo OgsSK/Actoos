@@ -11,7 +11,7 @@ const iconMap = {
 export function BottomNav({ items, activeTab, onTabChange, onDisabledTabClick }) {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-dark/95 backdrop-blur-md border-t border-gray-800 safe-area-bottom z-50"
+      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 safe-area-bottom z-50"
       data-testid="bottom-nav"
     >
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
@@ -34,8 +34,8 @@ export function BottomNav({ items, activeTab, onTabChange, onDisabledTabClick })
                 isActive
                   ? 'text-primary'
                   : isDisabled
-                  ? 'text-gray-600'
-                  : 'text-gray-400 active:text-gray-300'
+                  ? 'text-gray-300'
+                  : 'text-gray-500 active:text-gray-700'
               }`}
               data-testid={`nav-${item.id}`}
             >

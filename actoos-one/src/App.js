@@ -54,7 +54,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-dark">
+    <div className="min-h-screen bg-white">
       {/* Offline Banner */}
       {!isOnline && <OfflineBanner />}
 
@@ -111,7 +111,7 @@ function App() {
           <input
             type="text"
             placeholder="Rechercher un restaurant, une cuisine..."
-            className="w-full bg-gray-800 text-white placeholder-gray-500 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
+            className="w-full bg-gray-100 text-gray-900 placeholder-gray-400 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
             data-testid="search-input"
             autoFocus
           />
@@ -138,7 +138,7 @@ function App() {
               className={`w-full text-left px-4 py-3 rounded-2xl transition-colors ${
                 address === addr
                   ? 'bg-primary text-white'
-                  : 'bg-gray-800 text-gray-300 active:bg-gray-700'
+                  : 'bg-gray-100 text-gray-700 active:bg-gray-200'
               }`}
               data-testid={`address-option-${addr}`}
             >
@@ -156,7 +156,7 @@ function App() {
       >
         <div className="text-center py-4">
           <div className="text-5xl mb-4">🏪</div>
-          <p className="text-gray-400 text-sm mb-6">
+          <p className="text-gray-600 text-sm mb-6">
             Inscrivez votre restaurant sur ACTOOS et touchez des milliers de clients.
           </p>
           <button
@@ -177,7 +177,7 @@ function App() {
       >
         <div className="text-center py-4">
           <div className="text-5xl mb-4">🛵</div>
-          <p className="text-gray-400 text-sm mb-6">
+          <p className="text-gray-600 text-sm mb-6">
             Rejoignez notre flotte de livreurs et gagnez de l'argent à votre rythme.
           </p>
           <button

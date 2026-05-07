@@ -35,9 +35,9 @@ export function DisabledModuleSheet({ isOpen, onClose, moduleId, onNotifyMe }) {
     <BottomSheet isOpen={isOpen} onClose={onClose} title={info.title}>
       <div className="text-center py-4">
         <div className="text-5xl mb-4">{info.icon}</div>
-        <p className="text-gray-400 text-sm mb-6">{info.description}</p>
+        <p className="text-gray-600 text-sm mb-6">{info.description}</p>
         
-        <div className="flex items-center justify-center gap-2 text-gray-500 text-xs mb-6">
+        <div className="flex items-center justify-center gap-2 text-gray-400 text-xs mb-6">
           <Clock className="w-4 h-4" />
           <span>Bientôt disponible</span>
         </div>
