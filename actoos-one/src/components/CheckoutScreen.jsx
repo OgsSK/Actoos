@@ -310,7 +310,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               <textarea
                 value={addressDetails}
                 onChange={(e) => setAddressDetails(e.target.value)}
-                placeholder="Ex: Près de la pharmacie, portail bleu..."
+                placeholder="Ex: Près du marché, portail bleu..."
                 className="w-full mt-2 bg-gray-100 text-gray-900 placeholder-gray-400 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#FF5A00] resize-none"
                 rows={3}
                 data-testid="address-details"

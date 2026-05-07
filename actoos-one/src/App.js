@@ -87,8 +87,10 @@ function AppContent() {
   const isOnline = useOnlineStatus();
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, user: authUser, profile: authProfile } = useAuth();
   
   const [showSplash, setShowSplash] = useState(true);
+  const [showLoginSheet, setShowLoginSheet] = useState(false);
   const [showLocationPermission, setShowLocationPermission] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('cat-all');
@@ -148,6 +150,9 @@ function AppContent() {
     } else if (path === '/profile' || path === '/profil') {
       setActiveTab('profil');
       setCurrentScreen(SCREENS.PROFIL);
+    } else if (path === '/favorites') {
+      setActiveTab('profil');
+      setCurrentScreen(SCREENS.FAVORITES);
     } else if (path === '/' || path === '/eats') {
       setActiveTab('eats');
       setCurrentScreen(SCREENS.HOME);
@@ -179,7 +184,6 @@ function AppContent() {
   };
 
   const [privacySheet, setPrivacySheet] = useState(false);
-  const [showLoginSheet, setShowLoginSheet] = useState(false);
   
   // PRODUCTION: Restaurants loaded from Supabase
   const [restaurants, setRestaurants] = useState([]);
@@ -574,6 +578,9 @@ function AppContent() {
           onTermsClick={() => setCurrentScreen(SCREENS.TERMS)}
           onOrderHistory={() => setCurrentScreen(SCREENS.ORDER_HISTORY)}
           onFavorites={() => setCurrentScreen(SCREENS.FAVORITES)}
+          isLoggedIn={isAuthenticated}
+          currentUser={authProfile}
+          onLoginClick={() => setShowLoginSheet(true)}
         />
         <LocationPermissionSheet
           isOpen={showLocationPermission}

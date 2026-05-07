@@ -5,8 +5,8 @@ import { submitPartnerOnboarding } from '../services/onboardingService';
 const categoryOptions = [
   { id: 'restaurant', label: 'Restaurant' },
   { id: 'fast-food', label: 'Fast-Food' },
-  { id: 'pharmacie', label: 'Pharmacie' },
   { id: 'superette', label: 'Superette' },
+  { id: 'commerce', label: 'Commerce' },
   { id: 'autre', label: 'Autre' },
 ];
 

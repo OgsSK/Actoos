@@ -94,7 +94,7 @@ export function LocationPermissionSheet({ isOpen, onAllow, onDeny }) {
         
         {/* Description */}
         <p className="text-gray-500 text-center mb-6">
-          Pour vous montrer les restaurants et pharmacies près de vous, et optimiser vos livraisons.
+          Pour vous montrer les restaurants près de vous et optimiser vos livraisons.
         </p>
 
         {/* Benefits */}

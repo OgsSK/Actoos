@@ -13,7 +13,7 @@ import { useWallet } from '../context/WalletContext';
 
 const CATEGORY_OPTIONS = [
   { id: 'restaurant', name: 'Restaurants', emoji: '🍽️' },
-  { id: 'pharmacie', name: 'Pharmacies', emoji: '💊' },
+  { id: 'commerce', name: 'Commerces', emoji: '🛍️' },
 ];
 
 export function CreateSubWalletSheet({ isOpen, onClose }) {

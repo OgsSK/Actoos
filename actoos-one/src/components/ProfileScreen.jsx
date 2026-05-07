@@ -79,11 +79,16 @@ export function ProfileScreen({
   onPrivacyClick,
   onTermsClick,
   onOrderHistory,
-  onFavorites
+  onFavorites,
+  currentUser,
+  isLoggedIn,
+  onLoginClick
 }) {
   const { getFavoritesCount } = useFavorites();
   const favoritesCount = getFavoritesCount();
-  const [user, setUser] = useState(MOCK_USER);
+  
+  // Utiliser currentUser si connecté, sinon un user vide
+  const [user, setUser] = useState(currentUser || MOCK_USER);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -153,6 +158,79 @@ export function ProfileScreen({
         </div>
       </header>
 
+      {/* Si pas connecté - Écran de connexion */}
+      {!isLoggedIn ? (
+        <div className="p-4 pb-24">
+          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-6 text-center">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <User className="w-10 h-10 text-gray-400" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Bienvenue sur ACTOOS</h2>
+            <p className="text-gray-500 mb-6">Connectez-vous pour accéder à votre profil, vos commandes et vos favoris.</p>
+            <button
+              onClick={onLoginClick}
+              className="w-full py-4 bg-[#FF5A00] text-white rounded-2xl font-semibold active:bg-[#E54E00] transition-colors"
+              data-testid="login-btn"
+            >
+              Se connecter
+            </button>
+          </div>
+
+          {/* Devenir Partenaire / Livreur - Accessible sans connexion */}
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+            <div className="px-4 py-3 bg-[#FF5A00]/5 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900">Rejoignez-nous</h3>
+              <p className="text-xs text-gray-500">Devenez partenaire ou livreur ACTOOS</p>
+            </div>
+            
+            <button
+              onClick={onPartnerOnboarding}
+              className="w-full px-4 py-4 flex items-center gap-4 border-b border-gray-100 active:bg-gray-50"
+            >
+              <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
+                <Briefcase className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-semibold text-gray-900">Devenir Partenaire</p>
+                <p className="text-xs text-gray-500">Restaurant, Commerce...</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </button>
+
+            <button
+              onClick={onDriverOnboarding}
+              className="w-full px-4 py-4 flex items-center gap-4 active:bg-gray-50"
+            >
+              <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
+                <Truck className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-semibold text-gray-900">Devenir Livreur</p>
+                <p className="text-xs text-gray-500">Livrez et gagnez</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+
+          {/* Aide */}
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <button
+              onClick={() => setShowHelp(true)}
+              className="w-full px-4 py-4 flex items-center gap-4 active:bg-gray-50"
+            >
+              <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center">
+                <HelpCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-semibold text-gray-900">Aide & FAQ</p>
+                <p className="text-xs text-gray-500">Questions fréquentes</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+        </div>
+      ) : (
+      /* Si connecté - Profil complet */
       <div className="p-4 pb-24">
         {/* User Card - Editable */}
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
@@ -248,7 +326,7 @@ export function ProfileScreen({
               </div>
               <div className="flex-1 text-left">
                 <p className="font-semibold text-gray-900">Devenir Partenaire</p>
-                <p className="text-xs text-gray-500">Restaurant, Pharmacie...</p>
+                <p className="text-xs text-gray-500">Restaurant, Commerce...</p>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
@@ -388,6 +466,7 @@ export function ProfileScreen({
           ACTOOS ONE v1.0.0 • Mali
         </p>
       </div>
+      )}
 
       {/* Edit Profile Sheet */}
       <BottomSheet

@@ -221,7 +221,7 @@ export function SearchSheet({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Restaurant, plat, pharmacie..."
+            placeholder="Restaurant, plat..."
             className="w-full bg-gray-100 rounded-2xl pl-12 pr-10 py-4 text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#FF5A00]"
             data-testid="search-input"
             autoFocus
@@ -345,7 +345,7 @@ export function SearchSheet({
 
               {/* Help Text */}
               <p className="text-center text-sm text-gray-400 pb-4">
-                Recherchez un restaurant, un plat ou une pharmacie
+                Recherchez un restaurant ou un plat
               </p>
             </>
           )}
