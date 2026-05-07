@@ -103,6 +103,7 @@ export const systemConfig = {
     eats: true,
     health: true,
     wallet: true,
+    p2p: true,
     black: false,
   },
 };

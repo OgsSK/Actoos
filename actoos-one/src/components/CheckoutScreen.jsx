@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, MapPin, Phone, CreditCard, CheckCircle, Loader2, Wallet, AlertCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, CreditCard, CheckCircle, Loader2, Wallet, AlertCircle, Building2 } from 'lucide-react';
 import { OTPInput } from './OTPInput';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { TouchPaySheet } from './TouchPaySheet';
@@ -20,7 +20,7 @@ const STEPS = {
 
 export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   const { cartItems, getTotal, clearCart } = useCart();
-  const { balance, pay, hasEnoughBalance } = useWallet();
+  const { balance, pay, hasEnoughBalance, checkCorporateLimit, walletType, dailySpendLimit, getTodaySpending } = useWallet();
   const [currentStep, setCurrentStep] = useState(STEPS.ADDRESS);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -330,6 +330,11 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
         const insufficientBalance = paymentMethod === 'wallet' && !hasEnoughBalance(orderTotals.total);
         const missingAmount = orderTotals.total - balance;
         
+        // Check corporate limit
+        const corporateLimitCheck = checkCorporateLimit(orderTotals.total);
+        const isEmployee = walletType === 'employee';
+        const corporateLimitExceeded = isEmployee && !corporateLimitCheck.allowed;
+        
         return (
           <div className="space-y-4">
             <div className="text-center mb-6">
@@ -340,21 +345,65 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               <p className="text-sm text-gray-500 mt-1">Comment souhaitez-vous payer ?</p>
             </div>
 
+            {/* Corporate Limit Warning */}
+            {corporateLimitExceeded && paymentMethod === 'wallet' && (
+              <div className="bg-orange-50 border-2 border-orange-300 rounded-2xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-orange-800">Limite journalière atteinte</p>
+                    <p className="text-sm text-orange-700 mt-1">
+                      Votre limite corporate de <strong>{corporateLimitCheck.daily_limit?.toLocaleString()} FCFA/jour</strong> est atteinte.
+                    </p>
+                    <p className="text-sm text-orange-700 mt-1">
+                      Dépensé aujourd'hui: <strong>{corporateLimitCheck.today_spent?.toLocaleString()} FCFA</strong>
+                    </p>
+                    <p className="text-sm text-orange-700">
+                      Reste disponible: <strong>{corporateLimitCheck.remaining?.toLocaleString()} FCFA</strong>
+                    </p>
+                    <div className="flex gap-2 mt-3">
+                      {restaurant?.accepts_cash && (
+                        <button
+                          onClick={() => setPaymentMethod('cash')}
+                          className="bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-xl"
+                        >
+                          Payer en Cash
+                        </button>
+                      )}
+                      <button
+                        onClick={() => alert('Contactez votre employeur pour augmenter votre limite.')}
+                        className="bg-white text-orange-700 border border-orange-300 text-sm font-semibold px-4 py-2 rounded-xl"
+                      >
+                        Contacter employeur
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Wallet Balance Display */}
             <div className={`rounded-2xl p-4 flex items-center justify-between ${
-              insufficientBalance ? 'bg-red-50 border-2 border-red-200' : 'bg-green-50 border border-green-200'
+              insufficientBalance || corporateLimitExceeded ? 'bg-red-50 border-2 border-red-200' : 'bg-green-50 border border-green-200'
             }`}>
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  insufficientBalance ? 'bg-red-100' : 'bg-green-100'
+                  insufficientBalance || corporateLimitExceeded ? 'bg-red-100' : 'bg-green-100'
                 }`}>
-                  <Wallet className={`w-5 h-5 ${insufficientBalance ? 'text-red-600' : 'text-green-600'}`} />
+                  <Wallet className={`w-5 h-5 ${insufficientBalance || corporateLimitExceeded ? 'text-red-600' : 'text-green-600'}`} />
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Solde Wallet</p>
-                  <p className={`font-bold text-lg ${insufficientBalance ? 'text-red-600' : 'text-green-600'}`}>
+                  <p className={`font-bold text-lg ${insufficientBalance || corporateLimitExceeded ? 'text-red-600' : 'text-green-600'}`}>
                     {balance.toLocaleString()} FCFA
                   </p>
+                  {isEmployee && dailySpendLimit && !corporateLimitExceeded && (
+                    <p className="text-xs text-gray-500">
+                      Limite: {corporateLimitCheck.remaining?.toLocaleString()} F restants aujourd'hui
+                    </p>
+                  )}
                 </div>
               </div>
               <button
@@ -367,7 +416,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
             </div>
 
             {/* Insufficient Balance Warning */}
-            {insufficientBalance && paymentMethod === 'wallet' && (
+            {insufficientBalance && paymentMethod === 'wallet' && !corporateLimitExceeded && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
@@ -431,9 +480,9 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
 
             <button
               onClick={handlePlaceOrder}
-              disabled={isLoading || (paymentMethod === 'wallet' && insufficientBalance)}
+              disabled={isLoading || (paymentMethod === 'wallet' && (insufficientBalance || corporateLimitExceeded))}
               className={`w-full py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-colors ${
-                !isLoading && !(paymentMethod === 'wallet' && insufficientBalance)
+                !isLoading && !(paymentMethod === 'wallet' && (insufficientBalance || corporateLimitExceeded))
                   ? 'bg-primary text-white active:bg-primary/90'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}

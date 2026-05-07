@@ -30,6 +30,46 @@
 
 ## CHANGELOG
 
+### 2025-01-07 - Mission 10 Complete ✅
+**P2P & Corporate Wallet**
+
+#### P2P Transfer (`P2PTransferSheet.jsx`):
+- Recherche destinataire par numéro (+223)
+- Contacts récents avec avatars
+- Montants rapides (500, 1000, 2000, 5000 FCFA)
+- Montant personnalisé
+- Récapitulatif avec frais (Gratuit entre ACTOOS)
+- Transaction type: `transfer_out` / `transfer_in`
+
+#### PIN Validation (`PINValidationModal.jsx`):
+- Modal sécurisée 4 chiffres
+- Message de sécurité
+- Auto-focus et auto-submit
+- Mode démo: PIN = 1234
+
+#### Corporate Wallet:
+- Types wallet: `personal`, `corporate`, `employee`
+- `parent_wallet_id` pour hiérarchie
+- `daily_spend_limit` pour employés
+- Barre de progression limite journalière
+- Blocage checkout si limite atteinte
+
+#### WalletContext amélioré:
+- `transfer()` pour P2P avec row-locking simulé
+- `checkCorporateLimit()` vérifie limite avant paiement
+- `getTodaySpending()` calcule dépenses du jour
+- `setWalletType()` pour changer type (démo)
+- Mock utilisateurs P2P
+
+#### SQL Schema (`003_p2p_corporate.sql`):
+- Table `p2p_contacts` (favoris)
+- Fonction `execute_p2p_transfer()` avec `SELECT FOR UPDATE`
+- Fonction `check_corporate_limit()`
+- Vue `employee_daily_spending`
+- RLS policies
+
+---
+
 ### 2025-01-07 - Mission 9 Complete ✅
 **ACTOOS HEALTH - Pharmacies, Labos & Cliniques**
 
@@ -251,9 +291,10 @@
 - [x] Mission 7: Driver App & Admin Dashboard (GOD MODE)
 - [x] Mission 8: Wallet & TouchPay Integration
 - [x] Mission 9: ACTOOS HEALTH (Pharmacies, Ordonnances)
+- [x] Mission 10: P2P & Corporate Wallet
 
 ### P1 - Prochaines étapes
-- [ ] Mission 10: À définir selon votre prochain prompt
+- [ ] Mission 11: À définir selon votre prochain prompt
 - [ ] Connecter Supabase JS Client au frontend
 - [ ] OTP réel côté serveur (Supabase Edge Functions)
 - [ ] TouchPay API réelle (sandbox)
@@ -262,6 +303,7 @@
 - [ ] Module ACTOOS BLACK (VTC)
 - [ ] Module Profil utilisateur
 - [ ] Push Notifications
+- [ ] Row-locking réel avec Supabase
 
 ### P2 - À venir
 - [ ] OTP réel côté serveur (Supabase Edge Functions)
@@ -302,6 +344,8 @@
 │   │   ├── HealthScreen.jsx
 │   │   ├── PharmacyScreen.jsx
 │   │   ├── OrdonnanceUploadSheet.jsx
+│   │   ├── P2PTransferSheet.jsx
+│   │   ├── PINValidationModal.jsx
 │   │   ├── TermsScreen.jsx
 │   │   ├── LegalScreen.jsx
 │   │   ├── CookieConsentSheet.jsx

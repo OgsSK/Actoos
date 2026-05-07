@@ -3,19 +3,23 @@ import {
   ArrowLeft,
   Wallet,
   Plus,
+  Send,
   ArrowUpRight,
   ArrowDownLeft,
   RotateCcw,
   Clock,
   CheckCircle,
-  CreditCard
+  CreditCard,
+  Building2
 } from 'lucide-react';
 import { useWallet, TRANSACTION_TYPES } from '../context/WalletContext';
 import { TouchPaySheet } from './TouchPaySheet';
+import { P2PTransferSheet } from './P2PTransferSheet';
 
 export function WalletScreen({ onBack }) {
-  const { balance, transactions, isLoading } = useWallet();
+  const { balance, transactions, isLoading, walletType, dailySpendLimit, companyName, getTodaySpending } = useWallet();
   const [showTopUp, setShowTopUp] = useState(false);
+  const [showP2P, setShowP2P] = useState(false);
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -32,8 +36,11 @@ export function WalletScreen({ onBack }) {
   const getTransactionIcon = (type) => {
     switch (type) {
       case TRANSACTION_TYPES.TOPUP:
+      case TRANSACTION_TYPES.TRANSFER_IN:
+      case TRANSACTION_TYPES.CORPORATE_TOPUP:
         return <ArrowDownLeft className="w-5 h-5 text-green-600" />;
       case TRANSACTION_TYPES.PAYMENT:
+      case TRANSACTION_TYPES.TRANSFER_OUT:
         return <ArrowUpRight className="w-5 h-5 text-red-500" />;
       case TRANSACTION_TYPES.REFUND:
         return <RotateCcw className="w-5 h-5 text-blue-500" />;
@@ -45,8 +52,11 @@ export function WalletScreen({ onBack }) {
   const getTransactionColor = (type) => {
     switch (type) {
       case TRANSACTION_TYPES.TOPUP:
+      case TRANSACTION_TYPES.TRANSFER_IN:
+      case TRANSACTION_TYPES.CORPORATE_TOPUP:
         return 'bg-green-100';
       case TRANSACTION_TYPES.PAYMENT:
+      case TRANSACTION_TYPES.TRANSFER_OUT:
         return 'bg-red-100';
       case TRANSACTION_TYPES.REFUND:
         return 'bg-blue-100';
@@ -54,6 +64,10 @@ export function WalletScreen({ onBack }) {
         return 'bg-gray-100';
     }
   };
+
+  const isEmployee = walletType === 'employee';
+  const todaySpent = isEmployee ? getTodaySpending() : 0;
+  const remainingLimit = isEmployee && dailySpendLimit ? dailySpendLimit - todaySpent : null;
 
   return (
     <div className="min-h-screen bg-gray-50" data-testid="wallet-screen">
@@ -67,7 +81,15 @@ export function WalletScreen({ onBack }) {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="font-bold text-lg">Mon Wallet</h1>
+          <div>
+            <h1 className="font-bold text-lg">Mon Wallet</h1>
+            {isEmployee && companyName && (
+              <p className="text-xs text-white/70 flex items-center gap-1">
+                <Building2 className="w-3 h-3" />
+                {companyName}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Balance Card */}
@@ -79,16 +101,53 @@ export function WalletScreen({ onBack }) {
           <p className="text-4xl font-bold" data-testid="wallet-balance">
             {balance.toLocaleString()} <span className="text-2xl">FCFA</span>
           </p>
+
+          {/* Corporate Limit Info */}
+          {isEmployee && dailySpendLimit && (
+            <div className="mt-4 bg-white/10 rounded-xl p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-white/70">Limite journalière</span>
+                <span className="font-medium">{dailySpendLimit.toLocaleString()} F</span>
+              </div>
+              <div className="flex items-center justify-between text-sm mt-1">
+                <span className="text-white/70">Dépensé aujourd'hui</span>
+                <span className="font-medium">{todaySpent.toLocaleString()} F</span>
+              </div>
+              <div className="h-2 bg-white/20 rounded-full mt-2 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all ${
+                    remainingLimit <= 0 ? 'bg-red-400' : remainingLimit < dailySpendLimit * 0.2 ? 'bg-yellow-400' : 'bg-white'
+                  }`}
+                  style={{ width: `${Math.min(100, (todaySpent / dailySpendLimit) * 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-white/70 mt-1 text-right">
+                Reste: {(remainingLimit || 0).toLocaleString()} F
+              </p>
+            </div>
+          )}
           
-          <button
-            onClick={() => setShowTopUp(true)}
-            disabled={isLoading}
-            className="mt-6 w-full bg-white text-primary font-bold py-4 rounded-2xl flex items-center justify-center gap-2 active:bg-gray-100 transition-colors disabled:opacity-50"
-            data-testid="topup-btn"
-          >
-            <Plus className="w-6 h-6" />
-            Recharger
-          </button>
+          {/* Action Buttons */}
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={() => setShowTopUp(true)}
+              disabled={isLoading}
+              className="flex-1 bg-white text-primary font-bold py-4 rounded-2xl flex items-center justify-center gap-2 active:bg-gray-100 transition-colors disabled:opacity-50"
+              data-testid="topup-btn"
+            >
+              <Plus className="w-5 h-5" />
+              Recharger
+            </button>
+            <button
+              onClick={() => setShowP2P(true)}
+              disabled={isLoading || balance < 100}
+              className="flex-1 bg-white/20 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 active:bg-white/30 transition-colors disabled:opacity-50"
+              data-testid="send-btn"
+            >
+              <Send className="w-5 h-5" />
+              Envoyer
+            </button>
+          </div>
         </div>
       </header>
 
@@ -147,6 +206,12 @@ export function WalletScreen({ onBack }) {
       <TouchPaySheet
         isOpen={showTopUp}
         onClose={() => setShowTopUp(false)}
+      />
+
+      {/* P2P Transfer Sheet */}
+      <P2PTransferSheet
+        isOpen={showP2P}
+        onClose={() => setShowP2P(false)}
       />
     </div>
   );
