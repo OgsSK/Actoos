@@ -4,7 +4,7 @@
 export const restaurants = [
   {
     id: 'rest-001',
-    name: 'Maquis Chez Tantie',
+    name: 'Maquis Chez Tanti',
     image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
     cuisine: 'Africain',
     rating: 4.8,
@@ -16,9 +16,9 @@ export const restaurants = [
   },
   {
     id: 'rest-002',
-    name: 'Le Palmier Doré',
+    name: 'Le Djoliba',
     image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop',
-    cuisine: 'Ivoirien',
+    cuisine: 'Malien',
     rating: 4.5,
     deliveryTime: '30-40 min',
     deliveryFee: 750,
@@ -28,7 +28,7 @@ export const restaurants = [
   },
   {
     id: 'rest-003',
-    name: 'Fast Food Express',
+    name: 'Fast Food Bamako',
     image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop',
     cuisine: 'Burgers',
     rating: 4.2,
@@ -40,7 +40,7 @@ export const restaurants = [
   },
   {
     id: 'rest-004',
-    name: 'Saveurs du Sahel',
+    name: 'Saveurs du Niger',
     image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop',
     cuisine: 'Sénégalais',
     rating: 4.6,
@@ -64,7 +64,7 @@ export const restaurants = [
   },
   {
     id: 'rest-006',
-    name: 'Grillades du Marché',
+    name: 'Grillades de Bamako',
     image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop',
     cuisine: 'Grillades',
     rating: 4.7,
@@ -95,8 +95,9 @@ export const navItems = [
 
 export const systemConfig = {
   appName: 'ACTOOS ONE',
-  slogan: 'Commande. Paye. Vis.',
-  defaultAddress: 'Abidjan, Cocody',
+  slogan: 'Tout. Tout de suite. Partout.',
+  defaultAddress: 'Bamako, Hamdallaye',
+  countryCode: '+223',
   currency: 'FCFA',
   featureFlags: {
     eats: true,

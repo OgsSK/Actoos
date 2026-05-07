@@ -15,7 +15,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('cat-1');
   const [activeTab, setActiveTab] = useState('eats');
-  const [address, setAddress] = useState(systemConfig.defaultAddress);
+  const [address, setAddress] = useState('Bamako, Hamdallaye');
   
   // Bottom Sheet states
   const [disabledModuleSheet, setDisabledModuleSheet] = useState({ open: false, moduleId: null });
@@ -128,7 +128,7 @@ function App() {
         title="Adresse de livraison"
       >
         <div className="space-y-3">
-          {['Abidjan, Cocody', 'Abidjan, Plateau', 'Abidjan, Marcory', 'Abidjan, Yopougon'].map((addr) => (
+          {['Bamako, Hamdallaye', 'Bamako, ACI 2000', 'Bamako, Badalabougou', 'Bamako, Kalaban Coura', 'Bamako, Magnambougou'].map((addr) => (
             <button
               key={addr}
               onClick={() => {
