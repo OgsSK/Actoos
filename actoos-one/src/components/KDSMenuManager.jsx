@@ -17,10 +17,12 @@ import {
   Image as ImageIcon,
   Trash2,
   Edit2,
-  Save
+  Save,
+  Camera
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { BottomSheet } from './BottomSheet';
+import { uploadMenuImage } from '../services/storageService';
 
 export function KDSMenuManager({ partnerId }) {
   const [items, setItems] = useState([]);
@@ -396,7 +398,9 @@ function AddEditMenuItemSheet({ isOpen, onClose, partnerId, editingItem, onSucce
     is_popular: false,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState(null);
+  const fileInputRef = useCallback((node) => node, []);
 
   // Categories prédéfinies
   const categories = ['Plats', 'Entrées', 'Desserts', 'Boissons', 'Accompagnements', 'Snacks', 'Petit-déjeuner'];
@@ -568,24 +572,113 @@ function AddEditMenuItemSheet({ isOpen, onClose, partnerId, editingItem, onSucce
           />
         </div>
 
-        {/* URL Image */}
+        {/* Photo du plat - Upload ou URL */}
         <div>
-          <label className="text-sm text-gray-500 mb-1 block">URL de l'image (optionnel)</label>
-          <input
-            type="url"
-            value={formData.image_url}
-            onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-            placeholder="https://..."
-            className="w-full bg-gray-100 rounded-xl px-4 py-3 text-gray-900 outline-none focus:ring-2 focus:ring-[#FF5A00]"
-          />
+          <label className="text-sm text-gray-500 mb-1 block">Photo du plat</label>
+          
+          {/* Preview actuelle */}
           {formData.image_url && (
-            <img 
-              src={formData.image_url} 
-              alt="Preview" 
-              className="mt-2 w-20 h-20 rounded-lg object-cover"
-              onError={(e) => e.target.style.display = 'none'}
-            />
+            <div className="relative w-32 h-32 mb-3">
+              <img 
+                src={formData.image_url} 
+                alt="Preview" 
+                className="w-full h-full rounded-xl object-cover"
+                onError={(e) => e.target.style.display = 'none'}
+              />
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, image_url: '' })}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           )}
+
+          {/* Zone d'upload */}
+          {!formData.image_url && (
+            <div className="flex gap-3">
+              {/* Bouton Upload */}
+              <label className="flex-1 cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={isUploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    
+                    // Validation
+                    if (file.size > 5 * 1024 * 1024) {
+                      setError('Image trop volumineuse (max 5MB)');
+                      return;
+                    }
+                    
+                    setIsUploading(true);
+                    setError(null);
+                    
+                    try {
+                      const result = await uploadMenuImage(file, partnerId, formData.name);
+                      if (result.error) {
+                        // Si Storage n'est pas configuré, on utilise l'URL locale temporaire
+                        if (result.error.message?.includes('bucket') || result.error.message?.includes('not found')) {
+                          // Créer une URL data pour preview (temporaire)
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            setFormData(prev => ({ ...prev, image_url: ev.target.result }));
+                          };
+                          reader.readAsDataURL(file);
+                          console.warn('Storage non configuré, utilisation preview locale');
+                        } else {
+                          setError(result.error.message || 'Erreur upload');
+                        }
+                      } else {
+                        setFormData(prev => ({ ...prev, image_url: result.url }));
+                      }
+                    } catch (err) {
+                      setError(err.message || 'Erreur upload');
+                    } finally {
+                      setIsUploading(false);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${
+                  isUploading 
+                    ? 'border-[#FF5A00] bg-orange-50' 
+                    : 'border-gray-300 hover:border-[#FF5A00] hover:bg-orange-50'
+                }`}>
+                  {isUploading ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="w-8 h-8 text-[#FF5A00] animate-spin" />
+                      <span className="text-sm text-gray-500">Upload en cours...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <Camera className="w-8 h-8 text-gray-400" />
+                      <span className="text-sm text-gray-500">Prendre ou choisir une photo</span>
+                      <span className="text-xs text-gray-400">Max 5MB</span>
+                    </div>
+                  )}
+                </div>
+              </label>
+            </div>
+          )}
+
+          {/* Option URL manuelle (collapsed) */}
+          <details className="mt-2">
+            <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
+              Ou entrer une URL d'image
+            </summary>
+            <input
+              type="url"
+              value={formData.image_url}
+              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+              placeholder="https://..."
+              className="w-full mt-2 bg-gray-100 rounded-xl px-4 py-2 text-gray-900 text-sm outline-none focus:ring-2 focus:ring-[#FF5A00]"
+            />
+          </details>
         </div>
 
         {/* Temps de préparation */}
