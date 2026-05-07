@@ -282,6 +282,8 @@ function AppContent() {
           onSwitchToDriver={() => setCurrentScreen(SCREENS.DRIVER_APP)}
           onSwitchToPartner={() => setCurrentScreen(SCREENS.PARTNER_KDS)}
           onSwitchToAdmin={() => setCurrentScreen(SCREENS.ADMIN_DASHBOARD)}
+          onPrivacyClick={() => setPrivacySheet(true)}
+          onTermsClick={() => setCurrentScreen(SCREENS.TERMS)}
         />
         <LocationPermissionSheet
           isOpen={showLocationPermission}
