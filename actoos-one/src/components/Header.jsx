@@ -1,7 +1,11 @@
-import { Search, MapPin, ChevronDown } from 'lucide-react';
+import { Search, MapPin, ChevronDown, Navigation } from 'lucide-react';
 import { systemConfig } from '../data/mockData';
 
-export function Header({ address, onAddressClick, onSearchClick }) {
+export function Header({ address, onAddressClick, onSearchClick, hasLocation }) {
+  // Determine what to display
+  const displayAddress = address || null;
+  const showAddPrompt = !displayAddress;
+
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200" data-testid="header">
       {/* Logo & Slogan */}
@@ -24,11 +28,25 @@ export function Header({ address, onAddressClick, onSearchClick }) {
         className="w-full px-4 py-2 flex items-center gap-2 active:bg-gray-100 transition-colors"
         data-testid="address-selector"
       >
-        <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-        <span className="text-sm text-gray-800 truncate flex-1 text-left font-medium">
-          {address || systemConfig.defaultAddress}
-        </span>
-        <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        {showAddPrompt ? (
+          <>
+            <div className="w-8 h-8 bg-[#FF5A00]/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <Navigation className="w-4 h-4 text-[#FF5A00]" />
+            </div>
+            <span className="text-sm text-[#FF5A00] font-medium flex-1 text-left">
+              Ajouter une adresse de livraison
+            </span>
+            <ChevronDown className="w-4 h-4 text-[#FF5A00] flex-shrink-0" />
+          </>
+        ) : (
+          <>
+            <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+            <span className="text-sm text-gray-800 truncate flex-1 text-left font-medium">
+              {displayAddress}
+            </span>
+            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </>
+        )}
       </button>
 
       {/* Search Bar */}

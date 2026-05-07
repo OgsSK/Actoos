@@ -11,8 +11,7 @@ import {
   LogOut,
   Briefcase,
   Truck,
-  RefreshCw,
-  Crown,
+  Clock,
   Bell,
   CreditCard,
   Edit3,
@@ -24,7 +23,7 @@ import {
 } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 
-// Mock user data
+// Mock user data - CLIENT APP (no admin roles visible)
 const MOCK_USER = {
   id: 'user-001',
   name: 'Amadou Diallo',
@@ -32,11 +31,12 @@ const MOCK_USER = {
   address: 'Bamako, Hamdallaye',
   email: '',
   isLoggedIn: true,
-  // Rôles validés par l'admin (activés pour démo)
-  role_partner: true,
-  role_driver: true,
-  role_admin: true, // GOD MODE activé
-  // Demandes en cours
+  // Rôles validés - Ces infos sont stockées mais NON VISIBLES dans l'app client
+  // L'accès se fait via URLs séparées: /partner, /driver, /admin
+  role_partner: false,
+  role_driver: false,
+  role_admin: false,
+  // Demandes en cours (visibles pour le client)
   pending_partner: false,
   pending_driver: false,
   // Préférences notifications
@@ -71,9 +71,6 @@ export function ProfileScreen({
   onBack, 
   onDriverOnboarding, 
   onPartnerOnboarding,
-  onSwitchToDriver,
-  onSwitchToPartner,
-  onSwitchToAdmin,
   onPrivacyClick,
   onTermsClick
 }) {
@@ -156,35 +153,18 @@ export function ProfileScreen({
           </div>
         </div>
 
-        {/* Magic Switch Section - Seulement si rôles validés */}
-        {(user.role_driver || user.role_partner || user.role_admin || user.pending_driver || user.pending_partner) && (
+        {/* Demandes en attente - Visible si candidature soumise */}
+        {(user.pending_driver || user.pending_partner) && (
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+            <div className="px-4 py-3 bg-yellow-50 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <RefreshCw className="w-5 h-5 text-[#FF5A00]" />
-                Changer de Mode
+                <Clock className="w-5 h-5 text-yellow-600" />
+                Demandes en cours
               </h3>
             </div>
 
-            {/* Mode Livreur */}
-            {user.role_driver && (
-              <button
-                onClick={onSwitchToDriver}
-                className="w-full px-4 py-4 flex items-center gap-4 border-b border-gray-100 active:bg-gray-50"
-                data-testid="switch-driver-btn"
-              >
-                <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
-                  <Truck className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-semibold text-gray-900">Mode Livreur</p>
-                  <p className="text-xs text-gray-500">Gérer vos courses</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              </button>
-            )}
             {user.pending_driver && (
-              <div className="w-full px-4 py-4 flex items-center gap-4 border-b border-gray-100 opacity-60">
+              <div className="w-full px-4 py-4 flex items-center gap-4 border-b border-gray-100">
                 <div className="w-12 h-12 bg-yellow-100 rounded-2xl flex items-center justify-center">
                   <Truck className="w-6 h-6 text-yellow-600" />
                 </div>
@@ -195,25 +175,8 @@ export function ProfileScreen({
               </div>
             )}
 
-            {/* Mode Partenaire */}
-            {user.role_partner && (
-              <button
-                onClick={onSwitchToPartner}
-                className="w-full px-4 py-4 flex items-center gap-4 border-b border-gray-100 active:bg-gray-50"
-                data-testid="switch-partner-btn"
-              >
-                <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
-                  <Briefcase className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-semibold text-gray-900">Mode Restaurant</p>
-                  <p className="text-xs text-gray-500">Gérer vos commandes (KDS)</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              </button>
-            )}
             {user.pending_partner && (
-              <div className="w-full px-4 py-4 flex items-center gap-4 border-b border-gray-100 opacity-60">
+              <div className="w-full px-4 py-4 flex items-center gap-4">
                 <div className="w-12 h-12 bg-yellow-100 rounded-2xl flex items-center justify-center">
                   <Briefcase className="w-6 h-6 text-yellow-600" />
                 </div>
@@ -223,29 +186,11 @@ export function ProfileScreen({
                 </div>
               </div>
             )}
-
-            {/* Mode Admin (si validé) */}
-            {user.role_admin && (
-              <button
-                onClick={onSwitchToAdmin}
-                className="w-full px-4 py-4 flex items-center gap-4 active:bg-gray-50"
-                data-testid="switch-admin-btn"
-              >
-                <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center">
-                  <Crown className="w-6 h-6 text-red-600" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-semibold text-gray-900">Mode Admin</p>
-                  <p className="text-xs text-gray-500">Tableau de bord</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              </button>
-            )}
           </div>
         )}
 
-        {/* Devenir Partenaire / Livreur - Si pas encore de rôle */}
-        {!user.role_driver && !user.role_partner && !user.pending_driver && !user.pending_partner && (
+        {/* Devenir Partenaire / Livreur - Si pas encore de demande */}
+        {!user.pending_driver && !user.pending_partner && (
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
             <div className="px-4 py-3 bg-[#FF5A00]/5 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">Rejoignez-nous</h3>

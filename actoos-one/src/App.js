@@ -11,12 +11,14 @@ import { LegalScreen } from './components/LegalScreen';
 import { PartnerKDSScreen } from './components/PartnerKDSScreen';
 import { DriverAppScreen } from './components/DriverAppScreen';
 import { AdminDashboard } from './components/AdminDashboard';
+import { PortalLogin } from './components/PortalLogin';
 import { WalletScreen } from './components/WalletScreen';
 import { HealthScreen } from './components/HealthScreen';
 import { PharmacyScreen } from './components/PharmacyScreen';
 import { ProfileScreen } from './components/ProfileScreen';
 import { SplashScreen } from './components/SplashScreen';
 import { LocationPermissionSheet } from './components/LocationPermissionSheet';
+import { AddressSheet } from './components/AddressSheet';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -30,7 +32,23 @@ import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { restaurants, categories, navItems } from './data/mockData';
 import { getRestaurantMenu } from './data/menuData';
 import { getPharmacyProducts } from './data/healthData';
-import { getNeighborhoodsByCommune, DEFAULT_ADDRESS } from './data/locationData';
+
+// App modes based on URL path
+const APP_MODES = {
+  CLIENT: 'client',      // / (default)
+  PARTNER: 'partner',    // /partner
+  DRIVER: 'driver',      // /driver  
+  ADMIN: 'admin',        // /admin
+};
+
+// Get app mode from URL
+function getAppMode() {
+  const path = window.location.pathname.toLowerCase();
+  if (path.startsWith('/partner')) return APP_MODES.PARTNER;
+  if (path.startsWith('/driver')) return APP_MODES.DRIVER;
+  if (path.startsWith('/admin')) return APP_MODES.ADMIN;
+  return APP_MODES.CLIENT;
+}
 
 // Screens enum
 const SCREENS = {
@@ -57,7 +75,7 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('cat-1');
   const [activeTab, setActiveTab] = useState('eats');
-  const [address, setAddress] = useState(DEFAULT_ADDRESS.label);
+  const [address, setAddress] = useState(null); // null = pas d'adresse définie
   const [userLocation, setUserLocation] = useState(null);
   
   // Navigation state
@@ -70,6 +88,14 @@ function AppContent() {
   const [searchSheet, setSearchSheet] = useState(false);
   const [addressSheet, setAddressSheet] = useState(false);
   const [privacySheet, setPrivacySheet] = useState(false);
+
+  // Load saved address from localStorage on mount
+  useEffect(() => {
+    const savedAddress = localStorage.getItem('actoos_delivery_address');
+    if (savedAddress) {
+      setAddress(savedAddress);
+    }
+  }, []);
 
   // Handle splash screen completion
   const handleSplashComplete = () => {
@@ -99,12 +125,52 @@ function AppContent() {
   const handleLocationAllowed = (location) => {
     setUserLocation(location);
     setShowLocationPermission(false);
-    // Optionnellement, mettre à jour l'adresse basée sur la position
+    // Auto-détecter le quartier basé sur GPS (mock pour l'instant)
+    // En production, on utiliserait reverse geocoding
+    if (location) {
+      const detectedAddress = 'Bamako, Hamdallaye'; // Mock - serait déterminé par GPS
+      handleAddressSelect(detectedAddress);
+    }
   };
 
   // Handle location permission denied
   const handleLocationDenied = () => {
     setShowLocationPermission(false);
+  };
+
+  // Handle address selection
+  const handleAddressSelect = (newAddress) => {
+    setAddress(newAddress);
+    localStorage.setItem('actoos_delivery_address', newAddress);
+  };
+
+  // Request location from AddressSheet
+  const handleRequestLocation = () => {
+    return new Promise((resolve, reject) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            setUserLocation(location);
+            localStorage.setItem('actoos_location_permission', 'granted');
+            localStorage.setItem('actoos_user_location', JSON.stringify(location));
+            // Mock: detect neighborhood from GPS
+            const detectedAddress = 'Bamako, Hamdallaye';
+            handleAddressSelect(detectedAddress);
+            resolve(location);
+          },
+          (error) => {
+            console.error('Geolocation error:', error);
+            reject(error);
+          }
+        );
+      } else {
+        reject(new Error('Geolocation not supported'));
+      }
+    });
   };
 
   // Vérifier le cookie consent pour afficher la localisation
@@ -458,43 +524,14 @@ function AppContent() {
       </BottomSheet>
 
       {/* Address Bottom Sheet */}
-      <BottomSheet
+      <AddressSheet
         isOpen={addressSheet}
         onClose={() => setAddressSheet(false)}
-        title="Adresse de livraison"
-      >
-        <div className="max-h-[60vh] overflow-y-auto space-y-4 pb-4">
-          {Object.entries(getNeighborhoodsByCommune()).map(([commune, neighborhoods]) => (
-            <div key={commune}>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">
-                {commune}
-              </h3>
-              <div className="space-y-2">
-                {neighborhoods.map((n) => {
-                  const addrLabel = `Bamako, ${n.name}`;
-                  return (
-                    <button
-                      key={n.id}
-                      onClick={() => {
-                        setAddress(addrLabel);
-                        setAddressSheet(false);
-                      }}
-                      className={`w-full text-left px-4 py-3 rounded-2xl transition-colors ${
-                        address === addrLabel
-                          ? 'bg-primary text-white'
-                          : 'bg-gray-100 text-gray-700 active:bg-gray-200'
-                      }`}
-                      data-testid={`address-option-${n.id}`}
-                    >
-                      {addrLabel}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </BottomSheet>
+        currentAddress={address}
+        onSelectAddress={handleAddressSelect}
+        userLocation={userLocation}
+        onRequestLocation={handleRequestLocation}
+      />
 
       {/* Privacy Settings Sheet */}
       <PrivacySettingsSheet
@@ -512,14 +549,155 @@ function AppContent() {
   );
 }
 
-function App() {
+// Partner Portal App
+function PartnerApp() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+
+  // Check for existing session
+  useEffect(() => {
+    const session = localStorage.getItem('actoos_partner_session');
+    if (session) {
+      setUser(JSON.parse(session));
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLoginSuccess = (userData) => {
+    localStorage.setItem('actoos_partner_session', JSON.stringify(userData));
+    setUser(userData);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('actoos_partner_session');
+    setIsAuthenticated(false);
+    setUser(null);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <PortalLogin 
+        portalType="partner" 
+        onSuccess={handleLoginSuccess}
+        onBack={() => window.location.href = '/'}
+      />
+    );
+  }
+
   return (
-    <WalletProvider>
-      <CartProvider>
-        <AppContent />
-      </CartProvider>
-    </WalletProvider>
+    <PartnerKDSScreen 
+      onBack={handleLogout}
+    />
   );
+}
+
+// Driver Portal App
+function DriverApp() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const session = localStorage.getItem('actoos_driver_session');
+    if (session) {
+      setUser(JSON.parse(session));
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLoginSuccess = (userData) => {
+    localStorage.setItem('actoos_driver_session', JSON.stringify(userData));
+    setUser(userData);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('actoos_driver_session');
+    setIsAuthenticated(false);
+    setUser(null);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <PortalLogin 
+        portalType="driver" 
+        onSuccess={handleLoginSuccess}
+        onBack={() => window.location.href = '/'}
+      />
+    );
+  }
+
+  return (
+    <DriverAppScreen 
+      onBack={handleLogout}
+    />
+  );
+}
+
+// Admin Portal App
+function AdminApp() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const session = localStorage.getItem('actoos_admin_session');
+    if (session) {
+      setUser(JSON.parse(session));
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLoginSuccess = (userData) => {
+    localStorage.setItem('actoos_admin_session', JSON.stringify(userData));
+    setUser(userData);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('actoos_admin_session');
+    setIsAuthenticated(false);
+    setUser(null);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <PortalLogin 
+        portalType="admin" 
+        onSuccess={handleLoginSuccess}
+        onBack={() => window.location.href = '/'}
+      />
+    );
+  }
+
+  return (
+    <AdminDashboard 
+      onBack={handleLogout}
+    />
+  );
+}
+
+// Main App Router
+function App() {
+  const [appMode] = useState(getAppMode());
+
+  // Route to appropriate portal based on URL
+  switch (appMode) {
+    case APP_MODES.PARTNER:
+      return <PartnerApp />;
+    case APP_MODES.DRIVER:
+      return <DriverApp />;
+    case APP_MODES.ADMIN:
+      return <AdminApp />;
+    default:
+      // Client app with full providers
+      return (
+        <WalletProvider>
+          <CartProvider>
+            <AppContent />
+          </CartProvider>
+        </WalletProvider>
+      );
+  }
 }
 
 export default App;

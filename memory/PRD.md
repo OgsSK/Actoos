@@ -30,6 +30,40 @@
 
 ## CHANGELOG
 
+### 2025-01-07 - Correction UX Majeure ✅
+**Séparation des portails + UX Adresse pro style Uber Eats**
+
+#### 1. UX Adresse professionnelle (style Uber Eats/Deliveroo):
+- **Header dynamique**:
+  - Sans adresse: "Ajouter une adresse de livraison" en orange
+  - Avec adresse: "Bamako, Hamdallaye" en noir
+- **AddressSheet** avec:
+  - Barre de recherche avec autocomplete
+  - "Utiliser ma position" (GPS)
+  - Adresses enregistrées (Maison, Bureau)
+  - Adresses récentes (localStorage)
+  - Recherche filtrant les quartiers de Bamako
+- Plus de longue liste déroulante de quartiers
+
+#### 2. Séparation des portails (comme Uber Eats):
+- `/` → App Client (Guest-first)
+- `/partner` → Espace Partenaire (login requis)
+- `/driver` → Espace Livreur (login requis)
+- `/admin` → Admin GOD MODE (login requis)
+
+#### 3. PortalLogin Component:
+- Login téléphone + OTP pour chaque portail
+- Headers colorés par rôle (violet/bleu/rouge)
+- Bouton retour vers app client
+- Session persistante (localStorage)
+
+#### 4. Nettoyage ProfileScreen Client:
+- Suppression complète du "Magic Switch"
+- Section "Rejoignez-nous" pour devenir Partenaire/Livreur
+- Section "Demandes en cours" si candidature soumise
+
+---
+
 ### 2025-01-07 - Mission 12 Complete ✅
 **Phase 4 Polish - Code Handshake, Scanner Pickup, Zero-Loss Caution**
 
