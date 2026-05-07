@@ -13,7 +13,7 @@
 
 ## Architecture Technique
 - **Frontend**: React PWA (Mobile-First) - `/app/actoos-one/`
-- **Backend**: Supabase (PostgreSQL, RLS, Edge Functions)
+- **Backend**: Supabase (PostgreSQL, Auth, RLS, Realtime)
 - **Design System**: 
   - **MODE CLAIR** (Fond blanc)
   - Primary Orange: `#FF5A00`
@@ -30,6 +30,46 @@
 ---
 
 ## CHANGELOG
+
+### 2025-05-07 - MVP PRODUCTION : Flux Réels Supabase ✅
+
+**Transformation majeure : Toutes les fonctions mockées remplacées par de vrais appels Supabase**
+
+#### Authentification RÉELLE (Email/Password)
+- `AuthContext.jsx` refactorisé : `signUp()` et `signIn()` utilisent `supabase.auth`
+- Création automatique d'une entrée dans la table `users` après inscription
+- Sessions persistantes via Supabase Auth
+- Suppression du système OTP mocké (Twilio à intégrer plus tard)
+
+#### Onboarding RÉEL
+- `onboardingService.js` : `submitPartnerOnboarding()` et `submitDriverOnboarding()` insèrent dans `onboarding_requests`
+- Table `onboarding_requests` ajoutée au schéma avec colonnes type, payload (JSONB), status
+- Dashboard Admin peut approuver/rejeter les demandes
+
+#### Commandes RÉELLES
+- `orderService.js` : `createOrder()` insère dans `orders` et `order_items`
+- Numéro de commande auto-généré via trigger SQL (ACT-YYMMDD-XXXX)
+- Code de livraison 4 chiffres auto-généré
+- `CheckoutScreen.jsx` simplifié (sans vérification OTP)
+
+#### LoginSheet refait
+- Formulaire Email + Password (plus d'OTP)
+- Toggle "Connexion" / "Créer un compte"
+- Validation côté client
+
+#### Schéma SQL Production
+- Fichier `/app/supabase/actoos_one/production_schema.sql` complet
+- 9 tables, triggers, RLS policies
+- À exécuter dans Supabase Dashboard
+
+#### Tests validés par Testing Agent (85% succès)
+- ✅ Restaurants chargés depuis Supabase
+- ✅ Onboarding Livreur enregistré (ID: 61ad0c22-ecc3-417d-99c5-e27af612972c)
+- ✅ Onboarding Partenaire enregistré (ID: 4824a433-7c11-4987-9bdf-9af62adf3f55)
+- ✅ Commande créée (ID: c09a1fc6-bd53-4f22-9d70-0b122c2f0c76)
+- ⚠️ Auth Signup : Supabase rejette les emails de test (config Supabase)
+
+---
 
 ### 2025-05-07 - Phase Supabase: Architecture Backend ✅
 
