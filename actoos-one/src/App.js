@@ -2,20 +2,26 @@ import { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { CategoryFilter } from './components/CategoryFilter';
 import { RestaurantFeed } from './components/RestaurantFeed';
+import { RestaurantScreen } from './components/RestaurantScreen';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
 import { DisabledModuleSheet } from './components/DisabledModuleSheet';
 import { BottomSheet } from './components/BottomSheet';
+import { CartProvider } from './context/CartContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
-import { restaurants, categories, navItems, systemConfig } from './data/mockData';
+import { restaurants, categories, navItems } from './data/mockData';
+import { getRestaurantMenu } from './data/menuData';
 
-function App() {
+function AppContent() {
   const isOnline = useOnlineStatus();
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('cat-1');
   const [activeTab, setActiveTab] = useState('eats');
   const [address, setAddress] = useState('Bamako, Hamdallaye');
+  
+  // Navigation state
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   
   // Bottom Sheet states
   const [disabledModuleSheet, setDisabledModuleSheet] = useState({ open: false, moduleId: null });
@@ -39,9 +45,37 @@ function App() {
       });
 
   const handleRestaurantClick = (restaurant) => {
-    // Guest-first: allow viewing but prompt login on checkout
-    console.log('Restaurant clicked:', restaurant.name);
-    alert(`🍽️ ${restaurant.name}\n\nDétails du menu à venir...\n(Guest-First: pas de login requis pour naviguer)`);
+    // Récupérer le menu complet du restaurant
+    const menuData = getRestaurantMenu(restaurant.id);
+    if (menuData) {
+      setSelectedRestaurant(menuData);
+    } else {
+      // Si pas de menu mockée, utiliser les données de base
+      setSelectedRestaurant({
+        ...restaurant,
+        categories: [
+          {
+            id: 'cat-default',
+            name: 'Menu',
+            items: [
+              {
+                id: 'item-default-1',
+                name: 'Plat du jour',
+                description: 'Délicieux plat préparé avec soin',
+                price: 2500,
+                image: restaurant.image,
+                is_available: true,
+                max_per_order: 5,
+              },
+            ],
+          },
+        ],
+      });
+    }
+  };
+
+  const handleBackFromRestaurant = () => {
+    setSelectedRestaurant(null);
   };
 
   const handleDisabledTabClick = (item) => {
@@ -53,6 +87,17 @@ function App() {
     alert(`✅ Vous serez notifié dès que ${moduleId.toUpperCase()} sera disponible !`);
   };
 
+  // Si un restaurant est sélectionné, afficher son écran
+  if (selectedRestaurant) {
+    return (
+      <RestaurantScreen
+        restaurant={selectedRestaurant}
+        onBack={handleBackFromRestaurant}
+      />
+    );
+  }
+
+  // Sinon, afficher la page d'accueil
   return (
     <div className="min-h-screen bg-white">
       {/* Offline Banner */}
@@ -162,7 +207,7 @@ function App() {
           <button
             className="w-full bg-primary text-white font-semibold py-3 px-6 rounded-2xl active:bg-primary/90 transition-colors"
             data-testid="partner-register-btn"
-            onClick={() => alert('📝 Formulaire partenaire à venir (Mission 3)')}
+            onClick={() => alert('📝 Formulaire partenaire à venir')}
           >
             Commencer l'inscription
           </button>
@@ -183,13 +228,21 @@ function App() {
           <button
             className="w-full bg-primary text-white font-semibold py-3 px-6 rounded-2xl active:bg-primary/90 transition-colors"
             data-testid="driver-register-btn"
-            onClick={() => alert('📝 Formulaire livreur à venir (Mission 3)')}
+            onClick={() => alert('📝 Formulaire livreur à venir')}
           >
             Commencer l'inscription
           </button>
         </div>
       </BottomSheet>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <CartProvider>
+      <AppContent />
+    </CartProvider>
   );
 }
 
