@@ -6,7 +6,7 @@
 -- =====================================================
 
 -- 1. CRÉER LES UTILISATEURS LIVREURS
-INSERT INTO users (id, phone, name, email, role, is_verified, created_at) VALUES
+INSERT INTO users (id, phone, name, email, role, is_active, created_at) VALUES
   ('d1111111-1111-1111-1111-111111111111', '+223 70 11 22 33', 'Amadou Diallo', 'amadou.driver@actoos.com', 'driver', true, NOW()),
   ('d2222222-2222-2222-2222-222222222222', '+223 70 22 33 44', 'Moussa Keita', 'moussa.driver@actoos.com', 'driver', true, NOW()),
   ('d3333333-3333-3333-3333-333333333333', '+223 70 33 44 55', 'Ibrahim Traore', 'ibrahim.driver@actoos.com', 'driver', true, NOW()),
