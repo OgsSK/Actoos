@@ -9,10 +9,11 @@
 ## Localisation
 - **Ville par défaut**: Bamako, Mali
 - **Préfixe téléphone**: +223
+- **Expansion prévue**: Mali → Afrique de l'Ouest → Afrique
 
 ## Architecture Technique
 - **Frontend**: React PWA (Mobile-First) - `/app/actoos-one/`
-- **Backend**: Supabase (PostgreSQL, RLS, Edge Functions)
+- **Backend**: Supabase (PostgreSQL, RLS, Edge Functions) - À intégrer
 - **Design System**: 
   - **MODE CLAIR** (Fond blanc)
   - Primary Orange: `#FF5A00`
@@ -29,6 +30,69 @@
 ---
 
 ## CHANGELOG
+
+### 2025-05-07 - Phase 1 & 2: Modifications finales avant production ✅
+
+#### Phase 1: UI/UX de base
+**Splash Screen (style Uber):**
+- Animation "ACTOOS ONE" centré uniquement
+- Pas de logo ni slogan additionnel
+- Cercles animés et points de chargement
+
+**Header épuré:**
+- Suppression logo ACTOOS ONE et slogan
+- Conserve sélecteur d'adresse et barre de recherche
+
+**Catégories enrichies:**
+- Tout, Africain, Fast Food, Sushi, Café, Sandwich, Dessert, Ice Cream, Smoothie, Bubble Tea, Grillades, Healthy
+
+**Système de filtres:**
+- Bouton filtre avec icône slider
+- Pickup - Restaurants acceptant le retrait
+- Offres - Restaurants avec promotions
+- Mieux notés - Rating >= 4.5
+
+**Footer professionnel:**
+- "Rejoignez ACTOOS" avec cartes premium
+- Devenir Partenaire (gradient orange)
+- Devenir Livreur (gradient bleu)
+- "Bientôt disponible dans toute l'Afrique de l'Ouest"
+
+**Notification rappel:**
+- Composant ScheduledOrderReminder
+- Affiche 30 min avant livraison programmée
+- NotificationToast et NotificationPermissionSheet
+
+#### Phase 2: Fonctionnalités Client
+
+**Système de Favoris:**
+- FavoritesContext avec localStorage
+- Bouton coeur sur chaque carte restaurant
+- "Mes favoris" dans Profil avec compteur
+- FavoritesScreen avec liste et option Retirer
+
+**Système de Notation:**
+- RatingSheet pour noter restaurant ET livreur
+- 5 étoiles avec feedback tags (positif/négatif)
+- QuickRatingPrompt post-livraison
+- Tags: Qualité, Rapidité, Emballage, Politesse, etc.
+
+**Fichiers créés/modifiés:**
+- `/app/actoos-one/src/components/SplashScreen.jsx` - Animation Uber
+- `/app/actoos-one/src/components/Header.jsx` - Sans logo/slogan
+- `/app/actoos-one/src/components/CategoryFilter.jsx` - Avec filtres
+- `/app/actoos-one/src/components/Footer.jsx` - Design pro
+- `/app/actoos-one/src/components/NotificationReminder.jsx` - Rappel 30min
+- `/app/actoos-one/src/components/FavoritesScreen.jsx` - Liste favoris
+- `/app/actoos-one/src/components/RatingSystem.jsx` - Notation complète
+- `/app/actoos-one/src/context/FavoritesContext.jsx` - Context favoris
+- `/app/actoos-one/src/data/mockData.js` - Catégories + config étendues
+
+**Tests validés:**
+- iteration_68.json - Phase 1: 100% pass
+- iteration_69.json - Phase 2: 100% pass
+
+---
 
 ### 2025-05-07 - Order History & Live Order Tracking ✅
 **Implémentation de l'historique des commandes et du suivi en temps réel**

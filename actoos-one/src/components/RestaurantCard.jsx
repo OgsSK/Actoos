@@ -15,10 +15,17 @@ export function RestaurantCard({ restaurant, onClick }) {
     toggleFavorite(restaurant);
   };
 
+  const handleCardClick = () => {
+    onClick(restaurant);
+  };
+
   return (
-    <button
-      onClick={() => onClick(restaurant)}
-      className="w-full bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 active:scale-[0.98] transition-transform"
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleCardClick}
+      onKeyDown={(e) => e.key === 'Enter' && handleCardClick()}
+      className="w-full bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 active:scale-[0.98] transition-transform cursor-pointer"
       data-testid={`restaurant-card-${restaurant.id}`}
     >
       {/* Image Container */}
@@ -116,7 +123,7 @@ export function RestaurantCard({ restaurant, onClick }) {
           </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
