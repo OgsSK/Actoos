@@ -133,7 +133,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   const handlePlaceOrder = async () => {
     // Vérifier limite corporate si applicable
     if (walletType === 'employee' && dailySpendLimit) {
-      const limitCheck = checkCorporateLimit(orderTotals.total);
+      const limitCheck = checkCorporateLimit(finalTotal);
       if (!limitCheck.allowed) {
         setError(`Limite journalière atteinte. Reste: ${limitCheck.remaining.toLocaleString()} FCFA`);
         return;
@@ -142,7 +142,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
 
     // Vérifier le solde si paiement wallet
     if (paymentMethod === 'wallet') {
-      if (!hasEnoughBalance(orderTotals.total)) {
+      if (!hasEnoughBalance(finalTotal)) {
         setError('Solde insuffisant');
         setShowTopUp(true);
         return;
@@ -156,7 +156,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
       // Si paiement wallet, débiter d'abord
       if (paymentMethod === 'wallet') {
         await pay(
-          orderTotals.total,
+          finalTotal,
           `ORD-${Date.now()}`,
           `Commande - ${restaurant.name}`
         );
@@ -179,6 +179,9 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
         payment_method: paymentMethod,
         payment_status: paymentMethod === 'cash' ? 'pending' : 'paid',
         ...orderTotals,
+        promo_code: appliedPromo?.promo?.code || null,
+        promo_discount: promoDiscount,
+        final_total: finalTotal,
       };
       
       const result = await createOrder(orderData);
@@ -646,7 +649,7 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Total payé</span>
-                <span className="font-bold text-[#FF5A00]">{orderTotals.total.toLocaleString()} FCFA</span>
+                <span className="font-bold text-[#FF5A00]">{(orderResult?.final_total || finalTotal).toLocaleString()} FCFA</span>
               </div>
             </div>
 

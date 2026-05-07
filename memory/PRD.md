@@ -30,6 +30,35 @@
 
 ## CHANGELOG
 
+### 2025-05-07 - Bug Fix: Checkout CONFIRM Step & Promo Code System ✅
+**Correction du flux Checkout et du système de codes promo**
+
+#### Bug corrigé:
+- **Erreur**: `Cannot read properties of undefined (reading 'toLocaleString')` sur l'étape CONFIRM du Checkout
+- **Cause**: Incohérence de nom dans `orderService.js` (`deliveryFee` vs `delivery`)
+- **Fix**: Renommé `deliveryFee` en `delivery` dans la réponse de `calculateOrderTotal()`
+
+#### Améliorations du système Promo:
+- Correction de l'affichage du total avec réduction dans l'écran SUCCESS
+- Le `finalTotal` (après promo) est maintenant utilisé pour:
+  - Vérification du solde wallet
+  - Débit du paiement
+  - Affichage du "Total payé" dans la confirmation
+- Ajout des champs `promo_code`, `promo_discount`, `final_total` dans les données de commande
+
+#### Fichiers modifiés:
+- `/app/actoos-one/src/services/orderService.js` - Fix du nom de propriété + protection null
+- `/app/actoos-one/src/components/CheckoutScreen.jsx` - Utilisation de `finalTotal` partout
+
+#### Tests validés:
+- ✅ Navigation complète du flux Checkout (7 étapes)
+- ✅ Application du code promo "BIENVENUE" (-2,000 FCFA)
+- ✅ Calcul correct du total avec réduction
+- ✅ Commande confirmée avec Code Handshake
+
+---
+
+
 ### 2025-01-07 - Correction UX Majeure ✅
 **Séparation des portails + UX Adresse pro style Uber Eats**
 

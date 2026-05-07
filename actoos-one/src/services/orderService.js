@@ -7,14 +7,14 @@ import { systemConfig } from '../data/mockData';
 export function calculateOrderTotal(cartItems, deliveryFee) {
   // Recalculer les montants côté serveur (ne jamais faire confiance au client)
   const subtotal = cartItems.reduce((sum, item) => {
-    return sum + item.price_at_time * item.quantity;
+    return sum + (item.price_at_time || 0) * item.quantity;
   }, 0);
   
   const total = subtotal + deliveryFee;
   
   return {
     subtotal,
-    deliveryFee,
+    delivery: deliveryFee, // Renamed to match CheckoutScreen expectations
     total,
     currency: systemConfig.currency,
   };
