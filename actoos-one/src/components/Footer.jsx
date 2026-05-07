@@ -65,7 +65,7 @@ export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsC
       {/* Copyright */}
       <div className="text-center mt-6">
         <p className="text-[11px] text-gray-400">
-          © 2025 ACTOOS ONE • Bamako, Mali
+          © ACTOOS ONE • Bamako, Mali
         </p>
       </div>
     </footer>
