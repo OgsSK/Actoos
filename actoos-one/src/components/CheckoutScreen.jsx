@@ -34,22 +34,23 @@ const STEPS = {
   SUCCESS: 'success',
 };
 
-export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
+export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginRequired }) {
   const { cartItems, getTotal, clearCart } = useCart();
   const { balance, pay, hasEnoughBalance, checkCorporateLimit, walletType, dailySpendLimit, getTodaySpending } = useWallet();
-  const { user, profile } = useAuth();
+  const { user, profile, isAuthenticated } = useAuth();
   const [currentStep, setCurrentStep] = useState(STEPS.DELIVERY_MODE);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isLocating, setIsLocating] = useState(false);
   
   // Delivery mode: 'delivery' ou 'pickup'
   const [deliveryMode, setDeliveryMode] = useState('delivery');
   
-  // Form data
-  const [address, setAddress] = useState('');
-  const [addressDetails, setAddressDetails] = useState('');
+  // Form data - pré-rempli avec les données du profil si connecté
+  const [address, setAddress] = useState(profile?.address || '');
+  const [addressDetails, setAddressDetails] = useState(profile?.address_details || '');
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone || '+223 ');
-  const [paymentMethod, setPaymentMethod] = useState('cash'); // Default to cash for simplicity
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   
   // Order result
   const [orderResult, setOrderResult] = useState(null);
@@ -63,6 +64,76 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
   // Scheduled ordering
   const [isAsap, setIsAsap] = useState(true);
   const [scheduledSlot, setScheduledSlot] = useState(null);
+
+  // Vérifier si l'utilisateur est connecté quand il veut passer commande
+  const checkAuthAndProceed = (nextStep) => {
+    if (!isAuthenticated) {
+      // Demander connexion
+      if (onLoginRequired) {
+        onLoginRequired();
+      }
+      return;
+    }
+    setCurrentStep(nextStep);
+  };
+
+  // Géolocalisation réelle
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      setError('La géolocalisation n\'est pas supportée par votre navigateur');
+      return;
+    }
+
+    setIsLocating(true);
+    setError('');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        // Reverse geocoding avec Nominatim (gratuit)
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`
+          );
+          const data = await response.json();
+          
+          if (data && data.address) {
+            const addr = data.address;
+            const formattedAddress = `Bamako, ${addr.suburb || addr.neighbourhood || addr.city_district || 'Position actuelle'}`;
+            setAddress(formattedAddress);
+            setAddressDetails(`Coordonnées: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+          } else {
+            setAddress('Bamako, Position actuelle');
+            setAddressDetails(`GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+          }
+        } catch (err) {
+          // Fallback si reverse geocoding échoue
+          setAddress('Bamako, Position actuelle');
+          setAddressDetails(`GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+        }
+        
+        setIsLocating(false);
+      },
+      (error) => {
+        setIsLocating(false);
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            setError('Vous avez refusé l\'accès à votre position. Veuillez l\'activer dans les paramètres.');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setError('Position indisponible. Vérifiez votre GPS.');
+            break;
+          case error.TIMEOUT:
+            setError('Délai d\'attente dépassé. Réessayez.');
+            break;
+          default:
+            setError('Erreur de géolocalisation. Sélectionnez manuellement.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   // Calculer le total - frais de livraison = 0 si pickup
   const deliveryFee = deliveryMode === 'pickup' ? 0 : (restaurant?.deliveryFee || 500);
@@ -286,31 +357,38 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete }) {
 
             {/* Option pour utiliser la position */}
             <button
-              onClick={() => {
-                if (navigator.geolocation) {
-                  navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                      // Pour l'instant, on met juste une adresse basée sur la position
-                      setAddress('Bamako, Position actuelle');
-                      setAddressDetails(`Coordonnées GPS: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`);
-                    },
-                    (error) => {
-                      setError('Impossible d\'obtenir votre position. Sélectionnez un quartier manuellement.');
-                    }
-                  );
-                }
-              }}
-              className="w-full bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center gap-3 active:bg-blue-100 transition-colors mb-4"
+              onClick={handleUseLocation}
+              disabled={isLocating}
+              className={`w-full border rounded-2xl p-4 flex items-center gap-3 transition-colors mb-4 ${
+                isLocating 
+                  ? 'bg-blue-100 border-blue-300' 
+                  : 'bg-blue-50 border-blue-200 active:bg-blue-100'
+              }`}
               data-testid="use-location-btn"
             >
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Navigation className="w-5 h-5 text-blue-600" />
+                {isLocating ? (
+                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                ) : (
+                  <Navigation className="w-5 h-5 text-blue-600" />
+                )}
               </div>
               <div className="flex-1 text-left">
-                <p className="font-medium text-blue-900">Utiliser ma position</p>
-                <p className="text-xs text-blue-600">Détection automatique</p>
+                <p className="font-medium text-blue-900">
+                  {isLocating ? 'Localisation en cours...' : 'Utiliser ma position'}
+                </p>
+                <p className="text-xs text-blue-600">
+                  {isLocating ? 'Veuillez patienter' : 'Détection automatique'}
+                </p>
               </div>
             </button>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
 
             <div className="relative flex items-center my-4">
               <div className="flex-grow border-t border-gray-200"></div>
