@@ -87,17 +87,24 @@ export function PartnerKDSScreen({ partnerId, onBack }) {
     setIsRefreshing(true);
 
     try {
-      // Récupérer toutes les commandes du partenaire (pas seulement pending)
-      const { data, error: fetchError } = await supabase
+      // Build query - if no partnerId, show all orders (test/admin mode)
+      let query = supabase
         .from('orders')
         .select(`
           *,
+          partners (name, address, phone),
           order_items (*)
         `)
-        .eq('partner_id', partnerId)
         .in('status', ['pending', 'confirmed', 'preparing', 'ready'])
         .order('created_at', { ascending: false })
         .limit(50);
+
+      // Filter by partner if provided
+      if (partnerId) {
+        query = query.eq('partner_id', partnerId);
+      }
+
+      const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
 
@@ -130,23 +137,24 @@ export function PartnerKDSScreen({ partnerId, onBack }) {
 
   // Souscription Realtime aux commandes
   useEffect(() => {
-    if (!isSupabaseConfigured() || !partnerId) return;
+    if (!isSupabaseConfigured()) return;
 
-    console.log('🔔 KDS: Subscribing to orders for partner:', partnerId);
+    console.log('🔔 KDS: Subscribing to orders', partnerId ? `for partner: ${partnerId}` : '(all orders)');
 
     const channel = supabase
-      .channel(`kds-orders-${partnerId}`)
+      .channel(`kds-orders-${partnerId || 'all'}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'orders',
-          filter: `partner_id=eq.${partnerId}`,
+          ...(partnerId && { filter: `partner_id=eq.${partnerId}` }),
         },
         (payload) => {
           console.log('📦 Nouvelle commande KDS:', payload.new);
-          setOrders(prev => [payload.new, ...prev]);
+          // Fetch the full order with relations
+          fetchOrders();
           playNotificationSound();
           setNewOrdersCount(prev => prev + 1);
         }
@@ -157,7 +165,7 @@ export function PartnerKDSScreen({ partnerId, onBack }) {
           event: 'UPDATE',
           schema: 'public',
           table: 'orders',
-          filter: `partner_id=eq.${partnerId}`,
+          ...(partnerId && { filter: `partner_id=eq.${partnerId}` }),
         },
         (payload) => {
           console.log('📝 Commande mise à jour KDS:', payload.new);
@@ -172,7 +180,7 @@ export function PartnerKDSScreen({ partnerId, onBack }) {
       console.log('🔕 KDS: Unsubscribing');
       supabase.removeChannel(channel);
     };
-  }, [partnerId, playNotificationSound]);
+  }, [partnerId, playNotificationSound, fetchOrders]);
 
   // Confirmer une commande
   const confirmOrder = useCallback(async (orderId) => {

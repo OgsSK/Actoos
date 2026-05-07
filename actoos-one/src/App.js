@@ -787,9 +787,23 @@ function AppContent() {
 function PartnerApp() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [testPartnerId, setTestPartnerId] = useState(null);
 
-  // Check for existing session
+  // Check for existing session or test mode
   useEffect(() => {
+    // Check for test mode via URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const testMode = urlParams.get('test') === 'true';
+    const partnerId = urlParams.get('partner_id');
+    
+    if (testMode) {
+      // Test mode - skip authentication
+      console.log('🧪 Partner KDS - Mode Test activé');
+      setTestPartnerId(partnerId || null);
+      setIsAuthenticated(true);
+      return;
+    }
+
     const session = localStorage.getItem('actoos_partner_session');
     if (session) {
       setUser(JSON.parse(session));
@@ -807,6 +821,7 @@ function PartnerApp() {
     localStorage.removeItem('actoos_partner_session');
     setIsAuthenticated(false);
     setUser(null);
+    window.location.href = '/partner';
   };
 
   if (!isAuthenticated) {
@@ -821,6 +836,7 @@ function PartnerApp() {
 
   return (
     <PartnerKDSScreen 
+      partnerId={testPartnerId || user?.partner_id}
       onBack={handleLogout}
     />
   );
@@ -830,8 +846,22 @@ function PartnerApp() {
 function DriverApp() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [testDriverId, setTestDriverId] = useState(null);
 
   useEffect(() => {
+    // Check for test mode via URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const testMode = urlParams.get('test') === 'true';
+    const driverId = urlParams.get('driver_id');
+    
+    if (testMode) {
+      // Test mode - skip authentication
+      console.log('🧪 Driver App - Mode Test activé');
+      setTestDriverId(driverId || 'test-driver');
+      setIsAuthenticated(true);
+      return;
+    }
+
     const session = localStorage.getItem('actoos_driver_session');
     if (session) {
       setUser(JSON.parse(session));
@@ -849,6 +879,7 @@ function DriverApp() {
     localStorage.removeItem('actoos_driver_session');
     setIsAuthenticated(false);
     setUser(null);
+    window.location.href = '/driver';
   };
 
   if (!isAuthenticated) {
@@ -863,6 +894,7 @@ function DriverApp() {
 
   return (
     <DriverAppScreen 
+      driverId={testDriverId || user?.driver_id}
       onBack={handleLogout}
     />
   );

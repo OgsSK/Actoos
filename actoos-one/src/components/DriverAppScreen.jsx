@@ -85,7 +85,9 @@ export function DriverAppScreen({ driverId, onBack }) {
 
   // Charger la mission en cours
   const fetchCurrentMission = useCallback(async () => {
-    if (!isSupabaseConfigured() || !driverId) return;
+    if (!isSupabaseConfigured()) return;
+    // Skip if no real driverId (test mode without specific driver)
+    if (!driverId || driverId === 'test-driver') return;
 
     try {
       const { data, error: fetchError } = await supabase
