@@ -4,11 +4,14 @@ import { CategoryFilter } from './components/CategoryFilter';
 import { RestaurantFeed } from './components/RestaurantFeed';
 import { RestaurantScreen } from './components/RestaurantScreen';
 import { CheckoutScreen } from './components/CheckoutScreen';
+import { DriverOnboardingScreen } from './components/DriverOnboardingScreen';
+import { PartnerOnboardingScreen } from './components/PartnerOnboardingScreen';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
 import { DisabledModuleSheet } from './components/DisabledModuleSheet';
 import { BottomSheet } from './components/BottomSheet';
+import { CookieConsentSheet } from './components/CookieConsentSheet';
 import { CartProvider } from './context/CartContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { restaurants, categories, navItems } from './data/mockData';
@@ -19,6 +22,8 @@ const SCREENS = {
   HOME: 'home',
   RESTAURANT: 'restaurant',
   CHECKOUT: 'checkout',
+  DRIVER_ONBOARDING: 'driver_onboarding',
+  PARTNER_ONBOARDING: 'partner_onboarding',
 };
 
 function AppContent() {
@@ -36,8 +41,6 @@ function AppContent() {
   const [disabledModuleSheet, setDisabledModuleSheet] = useState({ open: false, moduleId: null });
   const [searchSheet, setSearchSheet] = useState(false);
   const [addressSheet, setAddressSheet] = useState(false);
-  const [partnerSheet, setPartnerSheet] = useState(false);
-  const [driverSheet, setDriverSheet] = useState(false);
 
   // Simulate initial loading
   useEffect(() => {
@@ -54,12 +57,10 @@ function AppContent() {
       });
 
   const handleRestaurantClick = (restaurant) => {
-    // Récupérer le menu complet du restaurant
     const menuData = getRestaurantMenu(restaurant.id);
     if (menuData) {
       setSelectedRestaurant(menuData);
     } else {
-      // Si pas de menu mockée, utiliser les données de base
       setSelectedRestaurant({
         ...restaurant,
         accepts_cash: false,
@@ -85,7 +86,7 @@ function AppContent() {
     setCurrentScreen(SCREENS.RESTAURANT);
   };
 
-  const handleBackFromRestaurant = () => {
+  const handleBackToHome = () => {
     setCurrentScreen(SCREENS.HOME);
     setSelectedRestaurant(null);
   };
@@ -112,7 +113,38 @@ function AppContent() {
     alert(`✅ Vous serez notifié dès que ${moduleId.toUpperCase()} sera disponible !`);
   };
 
+  // Cookie consent handlers
+  const handleCookieAccept = () => {
+    console.log('Cookies accepted');
+  };
+
+  const handleCookieCustomize = () => {
+    alert('Personnalisation des cookies à venir');
+  };
+
+  const handleCookieDecline = () => {
+    console.log('Cookies declined - essential only');
+  };
+
   // Render based on current screen
+  if (currentScreen === SCREENS.DRIVER_ONBOARDING) {
+    return (
+      <DriverOnboardingScreen
+        onBack={handleBackToHome}
+        onSuccess={handleBackToHome}
+      />
+    );
+  }
+
+  if (currentScreen === SCREENS.PARTNER_ONBOARDING) {
+    return (
+      <PartnerOnboardingScreen
+        onBack={handleBackToHome}
+        onSuccess={handleBackToHome}
+      />
+    );
+  }
+
   if (currentScreen === SCREENS.CHECKOUT && selectedRestaurant) {
     return (
       <CheckoutScreen
@@ -127,7 +159,7 @@ function AppContent() {
     return (
       <RestaurantScreen
         restaurant={selectedRestaurant}
-        onBack={handleBackFromRestaurant}
+        onBack={handleBackToHome}
         onCheckout={handleGoToCheckout}
       />
     );
@@ -136,6 +168,13 @@ function AppContent() {
   // Home screen
   return (
     <div className="min-h-screen bg-white">
+      {/* Cookie Consent */}
+      <CookieConsentSheet
+        onAccept={handleCookieAccept}
+        onCustomize={handleCookieCustomize}
+        onDecline={handleCookieDecline}
+      />
+
       {/* Offline Banner */}
       {!isOnline && <OfflineBanner />}
 
@@ -162,8 +201,8 @@ function AppContent() {
 
       {/* Footer */}
       <Footer
-        onPartnerClick={() => setPartnerSheet(true)}
-        onDriverClick={() => setDriverSheet(true)}
+        onPartnerClick={() => setCurrentScreen(SCREENS.PARTNER_ONBOARDING)}
+        onDriverClick={() => setCurrentScreen(SCREENS.DRIVER_ONBOARDING)}
       />
 
       {/* Bottom Navigation */}
@@ -226,48 +265,6 @@ function AppContent() {
               {addr}
             </button>
           ))}
-        </div>
-      </BottomSheet>
-
-      {/* Partner Onboarding Bottom Sheet */}
-      <BottomSheet
-        isOpen={partnerSheet}
-        onClose={() => setPartnerSheet(false)}
-        title="Devenir Partenaire"
-      >
-        <div className="text-center py-4">
-          <div className="text-5xl mb-4">🏪</div>
-          <p className="text-gray-600 text-sm mb-6">
-            Inscrivez votre restaurant sur ACTOOS et touchez des milliers de clients.
-          </p>
-          <button
-            className="w-full bg-primary text-white font-semibold py-3 px-6 rounded-2xl active:bg-primary/90 transition-colors"
-            data-testid="partner-register-btn"
-            onClick={() => alert('📝 Formulaire partenaire à venir')}
-          >
-            Commencer l'inscription
-          </button>
-        </div>
-      </BottomSheet>
-
-      {/* Driver Onboarding Bottom Sheet */}
-      <BottomSheet
-        isOpen={driverSheet}
-        onClose={() => setDriverSheet(false)}
-        title="Devenir Livreur"
-      >
-        <div className="text-center py-4">
-          <div className="text-5xl mb-4">🛵</div>
-          <p className="text-gray-600 text-sm mb-6">
-            Rejoignez notre flotte de livreurs et gagnez de l'argent à votre rythme.
-          </p>
-          <button
-            className="w-full bg-primary text-white font-semibold py-3 px-6 rounded-2xl active:bg-primary/90 transition-colors"
-            data-testid="driver-register-btn"
-            onClick={() => alert('📝 Formulaire livreur à venir')}
-          >
-            Commencer l'inscription
-          </button>
         </div>
       </BottomSheet>
     </div>
