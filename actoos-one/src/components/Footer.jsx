@@ -63,11 +63,8 @@ export function Footer({ onPartnerClick, onDriverClick, onPrivacyClick, onTermsC
           <div className="grid grid-cols-4 gap-10 mb-10">
             {/* Brand */}
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 bg-[#FF5A00] rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">A</span>
-                </div>
-                <span className="text-xl font-bold text-gray-900">ACTOOS</span>
+              <div className="mb-4">
+                <span className="text-2xl font-black text-[#FF5A00]">ACTOOS</span>
               </div>
               <p className="text-sm text-gray-500 mb-4">
                 Livraison rapide, paiement facile. Tout ce dont vous avez besoin, livré chez vous.

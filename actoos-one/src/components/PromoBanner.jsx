@@ -33,7 +33,7 @@ export function PromoBanner({ onPromoClick }) {
   if (promos.length === 0) return null;
 
   return (
-    <div className="px-4 mb-4">
+    <div className="px-4 md:px-8 mb-4">
       {/* Flash Deal Alert */}
       {flashDeals.length > 0 && (
         <div className="mb-3 bg-red-500 text-white rounded-2xl p-3 flex items-center gap-3 animate-pulse">
@@ -94,18 +94,18 @@ export function PromoBanner({ onPromoClick }) {
           ))}
         </div>
 
-        {/* Navigation Arrows */}
+        {/* Navigation Arrows - Hidden on mobile, visible on desktop, positioned outside */}
         {promos.length > 1 && (
           <>
             <button
               onClick={prevSlide}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-lg active:scale-95"
+              className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 w-10 h-10 bg-white hover:bg-gray-50 rounded-full items-center justify-center shadow-lg border border-gray-200 transition-all z-10"
             >
               <ChevronLeft className="w-5 h-5 text-gray-700" />
             </button>
             <button
               onClick={nextSlide}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-lg active:scale-95"
+              className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 bg-white hover:bg-gray-50 rounded-full items-center justify-center shadow-lg border border-gray-200 transition-all z-10"
             >
               <ChevronRight className="w-5 h-5 text-gray-700" />
             </button>

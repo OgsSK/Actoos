@@ -10,13 +10,10 @@ export function Header({ address, onAddressClick, onSearchClick, onProfileClick,
       <header className="hidden md:block sticky top-0 z-40 bg-white border-b border-gray-200" data-testid="desktop-header">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-4">
           <div className="flex items-center gap-6">
-            {/* Logo */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-10 h-10 bg-[#FF5A00] rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">A</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">ACTOOS</span>
-            </div>
+            {/* Logo - Just text, clean */}
+            <a href="/" className="flex-shrink-0">
+              <span className="text-2xl font-black text-[#FF5A00]">ACTOOS</span>
+            </a>
 
             {/* Address Selector */}
             <button
