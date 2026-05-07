@@ -41,10 +41,21 @@
 - **Max par commande** : Modifiable avec +/- avec persistance Supabase
 - **Ajout d'article** : Formulaire complet avec:
   - Nom, Prix, Catégorie (Plats, Entrées, Desserts, Boissons, etc.)
-  - Description, URL image, Temps de préparation
+  - Description, Temps de préparation
   - Toggles: Disponible, Populaire
+- **Upload d'images** : Zone d'upload avec icône caméra (remplace URL)
+  - Compression automatique (max 800px, qualité 80%)
+  - Preview avant sauvegarde
+  - Option URL manuelle collapsed
 - **Modification** : Édition d'articles existants
 - **Suppression** : Avec confirmation
+
+#### Service de Storage (`storageService.js`)
+- **uploadMenuImage()** : Upload vers bucket `menu-images`
+- **uploadPartnerBanner()** : Upload vers bucket `partner-banners`
+- **uploadProfilePhoto()** : Upload vers bucket `profile-photos`
+- **compressImage()** : Compression côté client via Canvas
+- **generateFileName()** : Noms uniques avec timestamp
 
 #### PartnerSettings.jsx - Connecté à Supabase
 - **Chargement depuis `partners` table** 
@@ -59,22 +70,25 @@
 - **Commander même fermé** : Toggle
 - **Sauvegarde** : Banner "Modifications non sauvegardées" + bouton
 
-#### Schéma SQL Additionnel
-- Fichier `/app/supabase/actoos_one/schema_additional_settings.sql`
-- Colonnes ajoutées à `menu_items` : `max_per_order`
-- Colonnes ajoutées à `partners` : `accepts_delivery`, `accepts_self_delivery`, `accepts_pickup`, `self_delivery_fee`, `self_delivery_radius_km`, `allows_scheduled_orders`, `max_schedule_days`, `accepts_orders_when_closed`, `accepts_cash`
-- Policies RLS pour UPDATE/INSERT/DELETE sur `menu_items` et `partners`
-- Realtime activé sur `menu_items` et `partners`
+#### Admin Dashboard Vérifié
+- **Onglet Commandes** : Charge les vraies commandes Supabase avec bouton ASSIGNER LIVREUR
+- **Onglet Livreurs** : Liste des livreurs (MOCKÉ pour l'instant)
+- **Onglet Inscriptions** : Demandes d'onboarding en temps réel
 
-#### Tests validés par Testing Agent (100% succès - iteration_75)
-- ✅ KDS Menu charge 102 articles depuis Supabase
-- ✅ Toggle disponibilité fonctionnel
-- ✅ Bouton Ajouter ouvre le formulaire
-- ✅ Config charge les paramètres partenaire
-- ✅ Tous les toggles sont interactifs
-- ✅ Sheet Temps de préparation fonctionne
-- ✅ Driver App charge en mode test
-- ✅ Admin Dashboard charge les demandes d'inscription
+#### Driver App Vérifié
+- **Toggle En ligne/Hors ligne** fonctionnel
+- **Missions disponibles** : Charge les vraies commandes `ready` depuis Supabase
+- **Détails mission** : Restaurant, adresses, gains estimés, badge Cash
+- **Bouton ACCEPTER** pour prendre une mission
+
+#### Tests validés par Testing Agent (100% succès - iteration_76)
+- ✅ KDS Menu montre zone upload photo avec icône caméra
+- ✅ Admin Dashboard login fonctionne
+- ✅ Admin Commandes charge les vraies commandes
+- ✅ Admin Livreurs affiche la liste (mockée)
+- ✅ Driver App toggle online/offline
+- ✅ Driver App missions depuis Supabase
+- ✅ Détails mission complets
 
 ---
 
