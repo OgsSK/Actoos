@@ -32,7 +32,9 @@ import {
   RefreshCw,
   Loader2,
   Wallet,
-  ArrowDownCircle
+  ArrowDownCircle,
+  TrendingUp,
+  Globe
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { getOnboardingRequests, approveOnboardingRequest, rejectOnboardingRequest } from '../services/onboardingService';
@@ -43,8 +45,11 @@ import { AdminGodMode } from './AdminGodMode';
 import { AdminWithdrawalsManager } from './AdminWithdrawalsManager';
 import { AdminWalletsOverview } from './AdminWalletsOverview';
 import { AdminRefundsManager } from './AdminRefundsManager';
+import { AdminCountryStats } from './AdminCountryStats';
+import { COUNTRIES } from '../config/countriesConfig';
 
 const TABS = {
+  STATS: 'stats', // NEW: Stats multi-pays
   ORDERS: 'orders',
   DRIVERS: 'drivers',
   ONBOARDING: 'onboarding',
@@ -55,9 +60,10 @@ const TABS = {
 };
 
 export function AdminDashboard({ onBack }) {
-  const [activeTab, setActiveTab] = useState(TABS.ONBOARDING); // Default to onboarding to see new requests
+  const [activeTab, setActiveTab] = useState(TABS.STATS); // Default to stats multi-pays
   const [orders, setOrders] = useState([]);
   const [drivers, setDrivers] = useState([]);
+  const [selectedCountryFilter, setSelectedCountryFilter] = useState('ALL'); // Filtre pays global
   const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
   const [onboardingRequests, setOnboardingRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -343,10 +349,22 @@ export function AdminDashboard({ onBack }) {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+          <button
+            onClick={() => setActiveTab(TABS.STATS)}
+            className={`flex-shrink-0 py-2 px-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
+              activeTab === TABS.STATS
+                ? 'bg-[#FF5A00] text-white'
+                : 'bg-gray-800 text-gray-400'
+            }`}
+            data-testid="tab-stats"
+          >
+            <TrendingUp className="w-4 h-4" />
+            Stats
+          </button>
           <button
             onClick={() => setActiveTab(TABS.ORDERS)}
-            className={`flex-1 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
+            className={`flex-shrink-0 py-2 px-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
               activeTab === TABS.ORDERS
                 ? 'bg-red-500 text-white'
                 : 'bg-gray-800 text-gray-400'
@@ -467,6 +485,16 @@ export function AdminDashboard({ onBack }) {
               Réessayer
             </button>
           </div>
+        )}
+
+        {/* Stats Tab - Multi-Pays */}
+        {!isLoading && activeTab === TABS.STATS && (
+          <AdminCountryStats 
+            onSelectCountry={(countryCode) => {
+              setSelectedCountryFilter(countryCode);
+              // Optionally switch to another tab to see filtered data
+            }}
+          />
         )}
 
         {/* Orders Tab */}

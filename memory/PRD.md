@@ -327,21 +327,27 @@ Si aucun restaurant n'est disponible dans le pays/ville de l'utilisateur:
   - 10 pays Afrique de l'Ouest avec drapeaux, codes téléphoniques, devises
   - Filtrage restaurants par ville (Bamako: 16, Dakar: 4)
   - Sélecteur de ville/pays intégré dans AddressSheet
-  - Coming Soon screen si aucun restaurant
+  - Écran "Coming Soon" pour pays sans restaurants (testé avec Côte d'Ivoire)
   
-- ✅ **Authentification Téléphone (+223, +221, etc.)**
-  - Onglets Téléphone/Email
-  - Téléphone obligatoire, email optionnel à l'inscription
-  - Validation multi-pays, device fingerprinting
+- ✅ **Dashboard Admin Multi-Pays**
+  - Onglet "Stats" avec vue globale et par pays
+  - Filtres 🌍 Tous | 🇲🇱 Mali | 🇸🇳 Sénégal | etc.
+  - Stats: Restaurants, Livreurs, Clients, Commandes, CA, Panier Moyen
+  - Graphique CA par pays (bar chart)
+  - Graphique Répartition Partenaires (pie chart)
+  - Détail par pays avec CA et commandes
 
-- ✅ **Compte Admin Créé**
-  - Email: contact@actoos.com
-  - Password: Salifkane&&7
+- ✅ **Authentification Téléphone Multi-Pays**
+  - Onglets Téléphone/Email
+  - Validation par pays (+223 Mali, +221 Sénégal, etc.)
+
+- ✅ **Compte Admin** : contact@actoos.com / Salifkane&&7
 
 ### P1 (Important - EN ATTENTE)
-- ⏳ **Twilio SMS** : Utilisateur doit créer compte (voir `/docs/TWILIO_SETUP_GUIDE.md`)
+- ⏳ **Migration SQL** : `/supabase/migrations/20260508_multi_country.sql`
+- ⏳ **Firebase Push** : Guide créé (`/docs/FIREBASE_PUSH_SETUP_GUIDE.md`)
+- ⏳ **Twilio SMS** : Guide créé (`/docs/TWILIO_SETUP_GUIDE.md`)
 - ⏳ **TouchPay/Orange Money** : Clés API à obtenir
-- ⏳ **Migration SQL** : Exécuter `/supabase/migrations/20260508_multi_country.sql` dans Supabase
 
 ### P2 (Normal)
 - [ ] Validation codes promo via Supabase
