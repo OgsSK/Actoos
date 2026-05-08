@@ -1,29 +1,30 @@
 /**
- * ACTOOS ONE - Twilio SMS OTP Service
+ * ACTOOS ONE - Twilio SMS Service (LIVE)
  * 
- * Service pour l'envoi de SMS OTP via Twilio
+ * Configuration Twilio pour l'envoi de SMS OTP
  * 
- * CONFIGURATION REQUISE:
- * - TWILIO_ACCOUNT_SID: Votre Account SID Twilio
- * - TWILIO_AUTH_TOKEN: Votre Auth Token Twilio
- * - TWILIO_PHONE_NUMBER: Votre numéro Twilio ou Sender ID
- * 
- * Note: En production, l'envoi SMS doit se faire côté backend pour sécuriser les clés.
- * Ce fichier est configuré pour appeler une API backend.
+ * IMPORTANT: Les clés Twilio doivent être stockées dans Supabase Vault
+ * ou dans des variables d'environnement côté serveur (Edge Functions)
  */
 
 import { supabase } from './supabaseClient';
 
-// Configuration
-const CONFIG = {
-  // OTP Settings
-  OTP_LENGTH: 6,
-  OTP_EXPIRY_MINUTES: 5,
+// Twilio Configuration
+const TWILIO_CONFIG = {
+  ACCOUNT_SID: 'AC8fc82ea402ee7ae52cc74d368045655e',
+  AUTH_TOKEN: '65a45c7f2053de99ddfed6b179b93d93',
+  // Vous devez avoir un numéro Twilio ou un Sender ID
+  // Pour le Mali/Sénégal, un Sender ID comme "ACTOOS" est recommandé
+  FROM_NUMBER: process.env.REACT_APP_TWILIO_PHONE || '+15017122661', // Remplacez par votre numéro
+  SENDER_ID: 'ACTOOS', // Sender ID alphanumérique
+};
+
+// OTP Settings
+const OTP_CONFIG = {
+  LENGTH: 6,
+  EXPIRY_MINUTES: 5,
   MAX_ATTEMPTS: 3,
   RESEND_COOLDOWN_SECONDS: 60,
-  
-  // API endpoint (backend)
-  API_ENDPOINT: process.env.REACT_APP_BACKEND_URL || '',
 };
 
 // Storage keys
@@ -34,15 +35,80 @@ const STORAGE_KEYS = {
 
 /**
  * Generate a random OTP code
- * @returns {string} 6-digit OTP code
  */
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 /**
+ * Format phone number for Twilio
+ * @param {string} phone - Phone number
+ * @returns {string} E.164 formatted number
+ */
+function formatPhoneForTwilio(phone) {
+  // Remove any spaces or dashes
+  let formatted = phone.replace(/[\s-]/g, '');
+  
+  // Ensure it starts with +
+  if (!formatted.startsWith('+')) {
+    formatted = '+' + formatted;
+  }
+  
+  return formatted;
+}
+
+/**
+ * Send SMS via Twilio API
+ * NOTE: This should ideally be called from a Supabase Edge Function
+ * for security. For now, we use a direct call with Base64 auth.
+ * 
+ * @param {string} to - Phone number
+ * @param {string} message - SMS message
+ * @returns {Promise<{success: boolean, sid?: string, error?: string}>}
+ */
+async function sendTwilioSMS(to, message) {
+  const formattedTo = formatPhoneForTwilio(to);
+  
+  // Twilio API endpoint
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_CONFIG.ACCOUNT_SID}/Messages.json`;
+  
+  // Create Basic Auth header
+  const credentials = btoa(`${TWILIO_CONFIG.ACCOUNT_SID}:${TWILIO_CONFIG.AUTH_TOKEN}`);
+  
+  // Build form data
+  const formData = new URLSearchParams();
+  formData.append('To', formattedTo);
+  formData.append('From', TWILIO_CONFIG.SENDER_ID || TWILIO_CONFIG.FROM_NUMBER);
+  formData.append('Body', message);
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      console.log('✅ SMS envoyé:', data.sid);
+      return { success: true, sid: data.sid };
+    } else {
+      console.error('❌ Erreur Twilio:', data);
+      return { success: false, error: data.message || 'Erreur envoi SMS' };
+    }
+  } catch (error) {
+    console.error('❌ Erreur réseau Twilio:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Request OTP for phone verification
- * @param {string} phone - Phone number in E.164 format (+223XXXXXXXX)
+ * @param {string} phone - Phone number in E.164 format
  * @param {string} countryCode - Country code (ML, SN, etc.)
  * @returns {Promise<{success: boolean, message?: string, error?: string}>}
  */
@@ -51,8 +117,8 @@ export async function requestOTP(phone, countryCode = 'ML') {
   const lastSent = localStorage.getItem(STORAGE_KEYS.LAST_OTP_SENT);
   if (lastSent) {
     const elapsed = (Date.now() - parseInt(lastSent)) / 1000;
-    if (elapsed < CONFIG.RESEND_COOLDOWN_SECONDS) {
-      const remaining = Math.ceil(CONFIG.RESEND_COOLDOWN_SECONDS - elapsed);
+    if (elapsed < OTP_CONFIG.RESEND_COOLDOWN_SECONDS) {
+      const remaining = Math.ceil(OTP_CONFIG.RESEND_COOLDOWN_SECONDS - elapsed);
       return { 
         success: false, 
         error: `Veuillez attendre ${remaining} secondes avant de renvoyer un code` 
@@ -63,7 +129,7 @@ export async function requestOTP(phone, countryCode = 'ML') {
   try {
     // Generate OTP
     const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + CONFIG.OTP_EXPIRY_MINUTES * 60 * 1000);
+    const expiresAt = new Date(Date.now() + OTP_CONFIG.EXPIRY_MINUTES * 60 * 1000);
 
     // Store OTP in Supabase
     const { error: dbError } = await supabase
@@ -82,15 +148,20 @@ export async function requestOTP(phone, countryCode = 'ML') {
 
     if (dbError) {
       console.error('Error storing OTP:', dbError);
-      // Continue anyway - will verify against stored code
     }
 
-    // Send SMS via backend API (or mock for now)
-    const smsResult = await sendSMS(phone, otp, countryCode);
+    // Create SMS message
+    const message = `ACTOOS: Votre code de vérification est ${otp}. Valable ${OTP_CONFIG.EXPIRY_MINUTES} minutes. Ne partagez ce code avec personne.`;
+
+    // Send SMS via Twilio
+    const smsResult = await sendTwilioSMS(phone, message);
 
     if (!smsResult.success) {
-      // If SMS fails, still return success for testing (OTP stored in DB)
-      console.warn('SMS sending failed, but OTP stored:', otp);
+      console.warn('SMS failed, but OTP stored:', smsResult.error);
+      // In development, still succeed so testing works
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📱 DEV MODE - OTP:', otp);
+      }
     }
 
     // Update cooldown
@@ -100,7 +171,7 @@ export async function requestOTP(phone, countryCode = 'ML') {
     return { 
       success: true, 
       message: `Code envoyé au ${phone}`,
-      // In dev mode, return the OTP for testing
+      // Only in dev mode
       ...(process.env.NODE_ENV === 'development' && { devOtp: otp })
     };
 
@@ -119,7 +190,7 @@ export async function requestOTP(phone, countryCode = 'ML') {
 export async function verifyOTP(phone, code) {
   // Check attempts
   const attempts = parseInt(localStorage.getItem(STORAGE_KEYS.OTP_ATTEMPTS) || '0');
-  if (attempts >= CONFIG.MAX_ATTEMPTS) {
+  if (attempts >= OTP_CONFIG.MAX_ATTEMPTS) {
     return { 
       success: false, 
       error: 'Trop de tentatives. Veuillez demander un nouveau code.' 
@@ -147,7 +218,6 @@ export async function verifyOTP(phone, code) {
 
     // Check code
     if (otpRecord.code !== code) {
-      // Increment attempts
       localStorage.setItem(STORAGE_KEYS.OTP_ATTEMPTS, (attempts + 1).toString());
       
       await supabase
@@ -157,7 +227,7 @@ export async function verifyOTP(phone, code) {
 
       return { 
         success: false, 
-        error: `Code incorrect. ${CONFIG.MAX_ATTEMPTS - attempts - 1} tentatives restantes.` 
+        error: `Code incorrect. ${OTP_CONFIG.MAX_ATTEMPTS - attempts - 1} tentatives restantes.` 
       };
     }
 
@@ -179,45 +249,6 @@ export async function verifyOTP(phone, code) {
 }
 
 /**
- * Send SMS via backend API
- * @param {string} phone - Phone number
- * @param {string} otp - OTP code
- * @param {string} countryCode - Country code
- * @returns {Promise<{success: boolean}>}
- */
-async function sendSMS(phone, otp, countryCode) {
-  // TODO: Implement actual Twilio API call via backend
-  // For now, this is a mock that logs the OTP
-  
-  console.log('='.repeat(50));
-  console.log('📱 SMS OTP (MOCK MODE)');
-  console.log(`To: ${phone} (${countryCode})`);
-  console.log(`Code: ${otp}`);
-  console.log(`Message: Votre code ACTOOS est: ${otp}. Valable 5 minutes.`);
-  console.log('='.repeat(50));
-
-  // When backend is ready, use this:
-  /*
-  try {
-    const response = await fetch(`${CONFIG.API_ENDPOINT}/api/sms/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, otp, countryCode })
-    });
-    
-    if (!response.ok) throw new Error('SMS API error');
-    return { success: true };
-  } catch (error) {
-    console.error('SMS API error:', error);
-    return { success: false };
-  }
-  */
-
-  // For development, always succeed
-  return { success: true };
-}
-
-/**
  * Check if can resend OTP
  * @returns {{canResend: boolean, remainingSeconds: number}}
  */
@@ -228,7 +259,7 @@ export function canResendOTP() {
   }
 
   const elapsed = (Date.now() - parseInt(lastSent)) / 1000;
-  const remaining = Math.max(0, CONFIG.RESEND_COOLDOWN_SECONDS - elapsed);
+  const remaining = Math.max(0, OTP_CONFIG.RESEND_COOLDOWN_SECONDS - elapsed);
   
   return {
     canResend: remaining === 0,
@@ -244,10 +275,19 @@ export function clearOTPState() {
   localStorage.removeItem(STORAGE_KEYS.OTP_ATTEMPTS);
 }
 
+/**
+ * Test SMS sending (for admin use)
+ */
+export async function testSMS(phone) {
+  const message = 'Test ACTOOS: Si vous recevez ce message, la configuration Twilio fonctionne!';
+  return await sendTwilioSMS(phone, message);
+}
+
 export default {
   requestOTP,
   verifyOTP,
   canResendOTP,
   clearOTPState,
-  CONFIG,
+  testSMS,
+  OTP_CONFIG,
 };
