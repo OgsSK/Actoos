@@ -3,6 +3,7 @@
  * 
  * Historique des commandes avec données RÉELLES de Supabase
  * Avec possibilité d'annuler les commandes en attente
+ * et supprimer de l'historique
  */
 
 import { useState, useEffect } from 'react';
@@ -20,7 +21,8 @@ import {
   ShoppingBag,
   Loader2,
   AlertCircle,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -69,6 +71,8 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [cancellingId, setCancellingId] = useState(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   // Charger les commandes depuis Supabase
   useEffect(() => {
@@ -89,7 +93,11 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
           throw fetchError;
         }
         
-        setOrders(data || []);
+        // Filtrer les commandes supprimées localement
+        const deletedOrders = JSON.parse(localStorage.getItem('actoos_deleted_orders') || '[]');
+        const filteredData = (data || []).filter(order => !deletedOrders.includes(order.id));
+        
+        setOrders(filteredData);
       } catch (err) {
         console.error('Erreur chargement commandes:', err);
         setError('Impossible de charger vos commandes');
@@ -126,7 +134,32 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
     }
   };
 
-  // Recommander une commande
+  // Supprimer de l'historique (localement - masque sans supprimer en DB)
+  const handleDeleteFromHistory = (orderId) => {
+    setDeletingId(orderId);
+    
+    // Supprimer de l'état local (on pourrait aussi marquer comme supprimé en DB)
+    setTimeout(() => {
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+      
+      // Sauvegarder les IDs supprimés en localStorage
+      const deletedOrders = JSON.parse(localStorage.getItem('actoos_deleted_orders') || '[]');
+      if (!deletedOrders.includes(orderId)) {
+        deletedOrders.push(orderId);
+        localStorage.setItem('actoos_deleted_orders', JSON.stringify(deletedOrders));
+      }
+      
+      setShowDeleteConfirm(null);
+      setDeletingId(null);
+      
+      // Si on était sur le détail, revenir à la liste
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(null);
+      }
+    }, 300);
+  };
+
+  // Recommander une commande (disponible pour tous les statuts terminés)
   const handleReorder = (order) => {
     if (!order.order_items || order.order_items.length === 0) {
       alert('Impossible de recommander cette commande');
@@ -150,6 +183,12 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
     if (onReorder) {
       onReorder(order);
     }
+  };
+
+  // Peut-on recommander cette commande ?
+  const canReorder = (status) => {
+    // Disponible pour les commandes terminées ou annulées
+    return ['delivered', 'cancelled', 'picked_up'].includes(status);
   };
 
   const getStatusConfig = (status) => {
@@ -296,8 +335,8 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
               </button>
             )}
 
-            {/* Reorder Button - Only for delivered */}
-            {selectedOrder.status === 'delivered' && (
+            {/* Reorder Button - For completed orders */}
+            {canReorder(selectedOrder.status) && (
               <button
                 onClick={() => handleReorder(selectedOrder)}
                 className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-2xl flex items-center justify-center gap-2 active:bg-[#E55100]"
@@ -306,6 +345,15 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
                 Commander à nouveau
               </button>
             )}
+
+            {/* Delete from History Button */}
+            <button
+              onClick={() => setShowDeleteConfirm(selectedOrder.id)}
+              className="w-full py-4 bg-gray-100 text-gray-600 font-semibold rounded-2xl flex items-center justify-center gap-2 active:bg-gray-200"
+            >
+              <Trash2 className="w-5 h-5" />
+              Supprimer de l'historique
+            </button>
           </div>
         </div>
 
@@ -337,6 +385,41 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     'Oui, annuler'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 max-w-sm w-full">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 className="w-8 h-8 text-gray-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Supprimer de l'historique ?</h3>
+                <p className="text-gray-500 mt-2">Cette commande disparaîtra de votre historique.</p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => handleDeleteFromHistory(showDeleteConfirm)}
+                  disabled={deletingId === showDeleteConfirm}
+                  className="flex-1 py-3 bg-gray-800 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
+                >
+                  {deletingId === showDeleteConfirm ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'Supprimer'
                   )}
                 </button>
               </div>
@@ -450,8 +533,8 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
                     </button>
                   )}
                   
-                  {/* Reorder Button */}
-                  {order.status === 'delivered' && (
+                  {/* Reorder Button - for completed orders */}
+                  {canReorder(order.status) && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -460,9 +543,20 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
                       className="flex-1 py-3 bg-[#FF5A00]/10 text-[#FF5A00] font-semibold rounded-xl flex items-center justify-center gap-2 active:bg-[#FF5A00]/20"
                     >
                       <RefreshCw className="w-4 h-4" />
-                      Commander à nouveau
+                      Recommander
                     </button>
                   )}
+
+                  {/* Delete Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteConfirm(order.id);
+                    }}
+                    className="py-3 px-4 bg-gray-100 text-gray-500 font-semibold rounded-xl flex items-center justify-center active:bg-gray-200"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             );
@@ -498,6 +592,41 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   'Oui, annuler'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal (List View) */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-gray-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Supprimer de l'historique ?</h3>
+              <p className="text-gray-500 mt-2">Cette commande disparaîtra de votre historique.</p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => handleDeleteFromHistory(showDeleteConfirm)}
+                disabled={deletingId === showDeleteConfirm}
+                className="flex-1 py-3 bg-gray-800 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
+              >
+                {deletingId === showDeleteConfirm ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  'Supprimer'
                 )}
               </button>
             </div>

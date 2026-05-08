@@ -105,6 +105,7 @@ function AppContent() {
   
   // Navigation state
   const [currentScreen, setCurrentScreen] = useState(SCREENS.HOME);
+  const [previousScreen, setPreviousScreen] = useState(null); // Pour le retour intelligent
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [selectedPharmacy, setSelectedPharmacy] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null); // For order tracking
@@ -157,6 +158,7 @@ function AppContent() {
       setCurrentScreen(SCREENS.PROFIL);
     } else if (path === '/favorites') {
       setActiveTab('profil');
+      setPreviousScreen(currentScreen);
       setCurrentScreen(SCREENS.FAVORITES);
     } else if (path === '/' || path === '/eats') {
       setActiveTab('eats');
@@ -210,10 +212,34 @@ function AppContent() {
   };
   
   // Fonction pour retourner au menu du restaurant depuis le panier
-  const handleAddMoreItemsFromCart = (restaurant) => {
+  const handleAddMoreItemsFromCart = async (restaurant) => {
     if (restaurant) {
-      setSelectedRestaurant(restaurant);
-      setCurrentScreen(SCREENS.RESTAURANT);
+      // Recharger le restaurant complet depuis Supabase (avec menu)
+      try {
+        const { data: restaurantData, error } = await getRestaurantById(restaurant.id);
+        
+        if (error || !restaurantData) {
+          console.error('Erreur chargement restaurant pour ajouter plus:', error);
+          // Fallback: utiliser les données du panier si disponible
+          setSelectedRestaurant({
+            ...restaurant,
+            categories: restaurant.categories || [],
+          });
+        } else {
+          setSelectedRestaurant({
+            ...restaurantData,
+            openingHours: restaurant.openingHours,
+            isOpen: restaurant.isOpen,
+          });
+        }
+        
+        setCurrentScreen(SCREENS.RESTAURANT);
+      } catch (err) {
+        console.error('Erreur:', err);
+        // Fallback minimal
+        setSelectedRestaurant(restaurant);
+        setCurrentScreen(SCREENS.RESTAURANT);
+      }
     }
   };
   
@@ -783,7 +809,7 @@ function AppContent() {
   if (currentScreen === SCREENS.FAVORITES) {
     return (
       <FavoritesScreen
-        onBack={() => setCurrentScreen(SCREENS.PROFIL)}
+        onBack={() => setCurrentScreen(previousScreen || SCREENS.HOME)}
         onSelectPartner={(partner) => {
           const restaurant = restaurants.find(r => r.id === partner.id);
           if (restaurant) {
@@ -807,7 +833,10 @@ function AppContent() {
           onPrivacyClick={() => setPrivacySheet(true)}
           onTermsClick={() => setCurrentScreen(SCREENS.TERMS)}
           onOrderHistory={() => setCurrentScreen(SCREENS.ORDER_HISTORY)}
-          onFavorites={() => setCurrentScreen(SCREENS.FAVORITES)}
+          onFavorites={() => {
+            setPreviousScreen(SCREENS.PROFIL);
+            setCurrentScreen(SCREENS.FAVORITES);
+          }}
           isLoggedIn={isAuthenticated}
           currentUser={authProfile}
           onLoginClick={() => setShowLoginSheet(true)}
@@ -964,7 +993,10 @@ function AppContent() {
         onAddressClick={() => setAddressSheet(true)}
         onSearchClick={() => setSearchSheet(true)}
         onProfileClick={() => setShowLoginSheet(true)}
-        onFavoritesClick={() => setCurrentScreen(SCREENS.FAVORITES)}
+        onFavoritesClick={() => {
+          setPreviousScreen(SCREENS.HOME);
+          setCurrentScreen(SCREENS.FAVORITES);
+        }}
         onCartClick={() => setCartSheet(true)}
       />
 

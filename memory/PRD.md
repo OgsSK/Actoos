@@ -68,12 +68,23 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 
 ### Session Actuelle (8 Mai 2026)
 
-#### Bug Fix: Cart Auth Flow (P0 - RÉSOLU)
+#### Bug Fixes (P0 - RÉSOLUS)
 - [x] **LoginSheet ne s'ouvrait pas depuis CartSheet**
   - Cause: Le `LoginSheet` n'était pas rendu dans le bloc `SCREENS.RESTAURANT`
-  - Fix: Ajout du `LoginSheet` dans le JSX fragment du restaurant screen
-  - Fix: `handleLoginFromCart` ferme maintenant le `CartSheet` avant d'ouvrir le `LoginSheet`
-  - Résultat: Flux guest → login → checkout fonctionne parfaitement (style Uber Eats)
+  - Fix: Ajout du `LoginSheet` + fermer `CartSheet` avant d'ouvrir login
+
+- [x] **"Ajouter d'autres articles" causait une erreur**
+  - Cause: Le `cartRestaurant` ne contenait pas les `categories` avec le menu
+  - Fix: `handleAddMoreItemsFromCart` recharge maintenant le restaurant complet depuis Supabase
+
+- [x] **Favoris → Retour ramenait toujours au Profil**
+  - Cause: Le `onBack` était hardcodé vers `SCREENS.PROFIL`
+  - Fix: Ajout d'un state `previousScreen` pour tracker l'écran précédent
+
+- [x] **Historique commandes - Fonctionnalités manquantes**
+  - Ajout: Bouton "Recommander" pour tous les statuts terminés (delivered, cancelled, picked_up)
+  - Ajout: Bouton "Supprimer de l'historique" avec modal de confirmation
+  - Stockage local des commandes supprimées (localStorage)
 
 #### UI Cart (Complété)
 - [x] **CartSheet style Uber Eats**
