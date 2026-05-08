@@ -82,30 +82,76 @@ export function WalletProvider({ children }) {
         // Si la fonction n'existe pas, fallback sur query directe
         console.log('RPC non disponible, fallback sur query directe');
         
-        // Chercher le wallet existant
+        // Chercher le wallet existant (sans wallet_type si colonne n'existe pas)
         let { data: existingWallet, error: fetchError } = await supabase
           .from('wallets')
           .select('*')
           .eq('owner_id', user.id)
-          .eq('wallet_type', 'client')
-          .single();
+          .maybeSingle();
 
-        if (fetchError && fetchError.code === 'PGRST116') {
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          // Erreur de colonne manquante - essayer sans wallet_type
+          if (fetchError.code === '42703') {
+            console.log('Colonne wallet_type manquante, tentative sans filtre type');
+            const { data: simpleWallet, error: simpleError } = await supabase
+              .from('wallets')
+              .select('id, owner_id, balance, is_frozen, created_at, updated_at')
+              .eq('owner_id', user.id)
+              .maybeSingle();
+            
+            if (!simpleError && simpleWallet) {
+              existingWallet = { ...simpleWallet, wallet_type: 'client' };
+            } else if (!simpleError && !simpleWallet) {
+              // Créer le wallet sans wallet_type
+              const { data: newWallet, error: createError } = await supabase
+                .from('wallets')
+                .insert({ owner_id: user.id, balance: 0 })
+                .select('id, owner_id, balance, is_frozen, created_at, updated_at')
+                .single();
+              
+              if (!createError) {
+                existingWallet = { ...newWallet, wallet_type: 'client' };
+              }
+            }
+          } else {
+            throw fetchError;
+          }
+        } else if (!existingWallet) {
           // Wallet n'existe pas, le créer
-          const { data: newWallet, error: createError } = await supabase
-            .from('wallets')
-            .insert({
-              owner_id: user.id,
-              wallet_type: 'client',
-              balance: 0,
-            })
-            .select()
-            .single();
+          try {
+            const { data: newWallet, error: createError } = await supabase
+              .from('wallets')
+              .insert({
+                owner_id: user.id,
+                wallet_type: 'client',
+                balance: 0,
+              })
+              .select()
+              .single();
 
-          if (createError) throw createError;
-          existingWallet = newWallet;
-        } else if (fetchError) {
-          throw fetchError;
+            if (createError) {
+              // Peut-être que wallet_type n'existe pas, essayer sans
+              if (createError.code === '42703') {
+                const { data: simpleWallet, error: simpleError } = await supabase
+                  .from('wallets')
+                  .insert({ owner_id: user.id, balance: 0 })
+                  .select()
+                  .single();
+                
+                if (!simpleError) {
+                  existingWallet = { ...simpleWallet, wallet_type: 'client' };
+                } else {
+                  throw simpleError;
+                }
+              } else {
+                throw createError;
+              }
+            } else {
+              existingWallet = newWallet;
+            }
+          } catch (err) {
+            throw err;
+          }
         }
 
         setWallet(existingWallet);

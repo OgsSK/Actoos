@@ -232,9 +232,19 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
   - OrderTrackingMap avec Leaflet intégré dans OrderTrackingScreen
   - Simulation mouvement livreur quand en route
   - Bouton "Suivre en temps réel" visible pour statuts picked_up/on_the_way/delivering
+- ✅ **Wallet connecté à Supabase** (8 Mai 2026)
+  - WalletContext.jsx refactoré pour charger depuis table `wallets`
+  - Transactions stockées dans `wallet_transactions`
+  - Fallback intelligent si colonnes manquantes
+  - TopUp et Pay fonctionnels avec persistence Supabase
+- ✅ **Promos dynamiques depuis Supabase** (8 Mai 2026)
+  - PromoBanner charge depuis table `promo_codes`
+  - 5 promos actives chargées depuis Supabase
+  - PromoCodeInput avec suggestions dynamiques
+  - Fallback sur données mock si table vide
 
 ### P1 (Important - À FAIRE)
-- [ ] **Exécuter migration Supabase** (`/supabase/migrations/20260508_financial_system.sql`)
+- [ ] **Exécuter migration Supabase complète** (`/supabase/migrations/20260508_financial_system.sql`) pour ajouter colonnes `wallet_type`, RPC functions
 - [ ] Push Notifications réelles (clés Firebase à configurer)
 - [ ] Intégration API TouchPay/Orange Money/Wave réelle (clés API à obtenir)
 - [ ] Twilio SMS pour OTP réels
