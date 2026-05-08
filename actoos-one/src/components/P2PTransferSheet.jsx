@@ -13,21 +13,37 @@ import {
   UserPlus
 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
+import { useAuth } from '../context/AuthContext';
 import { PINValidationModal } from './PINValidationModal';
 import { systemConfig } from '../data/mockData';
+import { verifyPin, hasPin } from '../services/pinService';
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000];
 
-// Mock contacts récents
-const RECENT_CONTACTS = [
-  { id: 'contact-1', name: 'Mamadou D.', phone: '+223 70 12 34 56', initial: 'M' },
-  { id: 'contact-2', name: 'Fatoumata K.', phone: '+223 66 98 76 54', initial: 'F' },
-  { id: 'contact-3', name: 'Ibrahim S.', phone: '+223 76 55 44 33', initial: 'I' },
-];
+// Contacts récents stockés localement
+const getRecentContacts = () => {
+  try {
+    return JSON.parse(localStorage.getItem('actoos_recent_contacts') || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const saveRecentContact = (contact) => {
+  const contacts = getRecentContacts();
+  const exists = contacts.findIndex(c => c.phone === contact.phone);
+  if (exists >= 0) {
+    contacts.splice(exists, 1);
+  }
+  contacts.unshift(contact);
+  localStorage.setItem('actoos_recent_contacts', JSON.stringify(contacts.slice(0, 10)));
+};
 
 export function P2PTransferSheet({ isOpen, onClose }) {
   const { balance, transfer, checkRecipient, isLoading } = useWallet();
+  const { user } = useAuth();
   const [step, setStep] = useState('recipient'); // recipient, amount, pin, processing, success
+  const [recentContacts, setRecentContacts] = useState([]);
   const [recipient, setRecipient] = useState({ phone: '+223 ', name: '', isRegistered: null });
   const [amount, setAmount] = useState('');
   const [customAmount, setCustomAmount] = useState('');
@@ -46,6 +62,9 @@ export function P2PTransferSheet({ isOpen, onClose }) {
         setError('');
         setTransferResult(null);
       }, 300);
+    } else {
+      // Charger les contacts récents
+      setRecentContacts(getRecentContacts());
     }
   }, [isOpen]);
 
@@ -112,9 +131,19 @@ export function P2PTransferSheet({ isOpen, onClose }) {
   };
 
   const handlePINValidate = async (pin) => {
-    // Mock PIN validation (1234)
-    if (pin !== '1234') {
-      return false;
+    // Vérification du PIN via Supabase
+    if (user?.id) {
+      const result = await verifyPin(user.id, pin);
+      if (!result.valid) {
+        setError(result.error || 'PIN incorrect');
+        return false;
+      }
+    } else {
+      // Fallback pour utilisateurs non connectés (ne devrait pas arriver)
+      if (pin !== '1234') {
+        setError('PIN incorrect');
+        return false;
+      }
     }
 
     setShowPIN(false);
@@ -126,6 +155,14 @@ export function P2PTransferSheet({ isOpen, onClose }) {
         getAmount(),
         `Envoi à ${recipient.name || recipient.phone}`
       );
+      
+      // Sauvegarder le contact
+      saveRecentContact({
+        id: `contact-${Date.now()}`,
+        name: recipient.name || 'Inconnu',
+        phone: recipient.phone,
+        initial: (recipient.name || recipient.phone)[0].toUpperCase()
+      });
       
       setTransferResult(result);
       setStep('success');
@@ -219,23 +256,29 @@ export function P2PTransferSheet({ isOpen, onClose }) {
                     Contacts récents
                   </p>
                   <div className="space-y-2">
-                    {RECENT_CONTACTS.map((contact) => (
-                      <button
-                        key={contact.id}
-                        onClick={() => handleSelectContact(contact)}
-                        className="w-full bg-gray-50 rounded-2xl p-4 flex items-center gap-4 active:bg-gray-100 transition-colors"
-                        data-testid={`contact-${contact.id}`}
-                      >
-                        <div className="w-12 h-12 bg-[#FF5A00]/10 rounded-full flex items-center justify-center">
-                          <span className="text-[#FF5A00] font-bold text-lg">{contact.initial}</span>
-                        </div>
-                        <div className="flex-1 text-left">
-                          <p className="font-semibold text-gray-900">{contact.name}</p>
-                          <p className="text-sm text-gray-500">{contact.phone}</p>
-                        </div>
-                        <ArrowRight className="w-5 h-5 text-gray-400" />
-                      </button>
-                    ))}
+                    {recentContacts.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4">
+                        Aucun contact récent
+                      </p>
+                    ) : (
+                      recentContacts.map((contact) => (
+                        <button
+                          key={contact.id}
+                          onClick={() => handleSelectContact(contact)}
+                          className="w-full bg-gray-50 rounded-2xl p-4 flex items-center gap-4 active:bg-gray-100 transition-colors"
+                          data-testid={`contact-${contact.id}`}
+                        >
+                          <div className="w-12 h-12 bg-[#FF5A00]/10 rounded-full flex items-center justify-center">
+                            <span className="text-[#FF5A00] font-bold text-lg">{contact.initial}</span>
+                          </div>
+                          <div className="flex-1 text-left">
+                            <p className="font-semibold text-gray-900">{contact.name}</p>
+                            <p className="text-sm text-gray-500">{contact.phone}</p>
+                          </div>
+                          <ArrowRight className="w-5 h-5 text-gray-400" />
+                        </button>
+                      ))
+                    )}
                   </div>
                 </div>
               </>

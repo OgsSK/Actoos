@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Tag, X, Check, AlertCircle, Loader2 } from 'lucide-react';
-import { validatePromoCode, markPromoCodeUsed } from '../data/promotionsData';
+import { validatePromoCode, recordPromoUsage } from '../services/promoService';
+import { useAuth } from '../context/AuthContext';
 
 export function PromoCodeInput({ 
   orderTotal, 
@@ -9,6 +10,7 @@ export function PromoCodeInput({
   onApplyPromo,
   onRemovePromo 
 }) {
+  const { user } = useAuth();
   const [code, setCode] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState('');
@@ -20,18 +22,26 @@ export function PromoCodeInput({
     setIsValidating(true);
     setError('');
     
-    // Simulate API call
-    await new Promise(r => setTimeout(r, 800));
-    
-    const result = validatePromoCode(code, orderTotal, isFirstOrder);
-    
-    if (result.valid) {
-      markPromoCodeUsed(code.toUpperCase());
-      onApplyPromo?.(result);
-      setCode('');
-      setIsExpanded(false);
-    } else {
-      setError(result.error);
+    try {
+      // Appel API Supabase réel
+      const result = await validatePromoCode(code.trim(), orderTotal, user?.id);
+      
+      if (result.valid) {
+        onApplyPromo?.({
+          promo: result.promo,
+          discount: result.discount,
+          discountLabel: result.discountLabel,
+          freeDelivery: result.freeDelivery,
+          message: result.discountLabel + ' appliqué'
+        });
+        setCode('');
+        setIsExpanded(false);
+      } else {
+        setError(result.error || 'Code invalide');
+      }
+    } catch (err) {
+      setError('Erreur de validation');
+      console.error(err);
     }
     
     setIsValidating(false);
@@ -122,7 +132,7 @@ export function PromoCodeInput({
           <div className="mt-4">
             <p className="text-xs text-gray-500 mb-2">Codes suggérés :</p>
             <div className="flex flex-wrap gap-2">
-              {['BIENVENUE', 'ACTOOS20'].map((suggestedCode) => (
+              {['BIENVENUE', 'ACTOOS10', 'LIVGRATUITE'].map((suggestedCode) => (
                 <button
                   key={suggestedCode}
                   onClick={() => setCode(suggestedCode)}

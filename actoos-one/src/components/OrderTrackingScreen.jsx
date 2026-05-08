@@ -111,14 +111,16 @@ const STATUS_CONFIG = {
 };
 
 // Mock driver data (until driver table is populated)
-const MOCK_DRIVER = {
-  id: 'drv-001',
-  name: 'Moussa Traoré',
-  phone: '+223 76 12 34 56',
-  photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-  rating: 4.8,
-  vehicle: 'Moto - KK 2345 ML',
-  totalDeliveries: 542,
+// Default driver placeholder (shown until real driver is assigned)
+const DEFAULT_DRIVER_PLACEHOLDER = {
+  id: null,
+  name: 'Livreur en cours d\'attribution...',
+  phone: null,
+  photo: null,
+  rating: null,
+  vehicle: null,
+  totalDeliveries: null,
+  isPlaceholder: true,
 };
 
 /**
@@ -186,9 +188,52 @@ export function OrderTrackingScreen({ orderId, order: initialOrder, onBack, onCo
       if (fetchError) throw fetchError;
       
       if (data) {
+        // Charger le livreur assigné si disponible
+        let driver = DEFAULT_DRIVER_PLACEHOLDER;
+        
+        if (data.driver_id) {
+          // Si le livreur est dans les données jointes
+          if (data.drivers) {
+            driver = {
+              id: data.drivers.id,
+              name: data.drivers.full_name || data.drivers.name,
+              phone: data.drivers.phone,
+              photo: data.drivers.avatar_url || data.drivers.photo,
+              rating: data.drivers.rating || 4.5,
+              vehicle: data.drivers.vehicle_info || 'Moto',
+              totalDeliveries: data.drivers.total_deliveries,
+              isPlaceholder: false,
+            };
+          } else {
+            // Charger depuis Supabase
+            try {
+              const { data: driverData } = await supabase
+                .from('drivers')
+                .select('*')
+                .eq('id', data.driver_id)
+                .single();
+              
+              if (driverData) {
+                driver = {
+                  id: driverData.id,
+                  name: driverData.full_name || driverData.name,
+                  phone: driverData.phone,
+                  photo: driverData.avatar_url || driverData.photo,
+                  rating: driverData.rating || 4.5,
+                  vehicle: driverData.vehicle_info || 'Moto',
+                  totalDeliveries: driverData.total_deliveries,
+                  isPlaceholder: false,
+                };
+              }
+            } catch (err) {
+              console.log('Impossible de charger le livreur:', err);
+            }
+          }
+        }
+        
         setCurrentOrder({
           ...data,
-          driver: data.driver || MOCK_DRIVER, // Use mock driver until real drivers exist
+          driver,
           timeline: buildTimeline(data),
           handshake_code: data.delivery_code ? `#${data.delivery_code}` : '#0000',
         });
@@ -221,7 +266,15 @@ export function OrderTrackingScreen({ orderId, order: initialOrder, onBack, onCo
       setCurrentOrder(prev => ({
         ...prev,
         ...updatedOrder,
-        driver: prev?.driver || MOCK_DRIVER,
+        driver: updatedOrder.drivers ? {
+          id: updatedOrder.drivers.id,
+          name: updatedOrder.drivers.full_name || updatedOrder.drivers.name,
+          phone: updatedOrder.drivers.phone,
+          photo: updatedOrder.drivers.avatar_url,
+          rating: updatedOrder.drivers.rating || 4.5,
+          vehicle: updatedOrder.drivers.vehicle_info || 'Moto',
+          isPlaceholder: false,
+        } : (prev?.driver || DEFAULT_DRIVER_PLACEHOLDER),
         timeline: buildTimeline(updatedOrder),
         handshake_code: updatedOrder.delivery_code ? `#${updatedOrder.delivery_code}` : prev?.handshake_code,
       }));

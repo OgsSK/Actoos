@@ -68,6 +68,39 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 
 ### Session Actuelle (8 Mai 2026)
 
+#### Éléments Mockés → Connectés à Supabase ✅
+
+**1. Codes Promo** ✅
+- Migration SQL créée avec table `promo_codes`
+- `PromoCodeInput.jsx` utilise maintenant `promoService.js` (Supabase)
+- Codes de démo: BIENVENUE, ACTOOS10, LIVGRATUITE
+
+**2. Analytics Partenaire** ✅
+- Nouveau service `analyticsService.js` avec données réelles
+- Fonction RPC `get_partner_analytics_live` pour stats en temps réel
+- Top produits, heures de pointe calculés depuis les commandes
+
+**3. Assignation Livreur** ✅
+- `OrderTrackingScreen.jsx` charge le livreur réel depuis `drivers` table
+- Placeholder affiché avant assignation: "Livreur en cours d'attribution..."
+- Mise à jour temps réel via subscription Supabase
+
+**4. PIN P2P Transfers** ✅
+- Nouveau service `pinService.js` avec hash SHA-256
+- Table `user_pins` avec blocage après 5 tentatives
+- Contacts récents stockés en localStorage
+
+**5. Notifications** ✅
+- Nouveau service `notificationService.js`
+- Tables `notifications` et `scheduled_notifications`
+- Fonctions: création, lecture, marquage lu, suppression
+
+#### Migration SQL Créée
+- `/supabase/migrations/20260508_complete_system.sql`
+  - Tables: promo_codes, promo_usage, ratings, partner_analytics, scheduled_notifications, user_pins
+  - Fonctions RPC: get_partner_analytics_live, verify_user_pin, set_user_pin
+  - RLS Policies
+
 #### Nouvelles Fonctionnalités UX (Style Deliveroo)
 
 **1. Système Multi-Paniers Deliveroo** ✅
