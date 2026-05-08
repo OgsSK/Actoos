@@ -22,46 +22,56 @@ const CookieConsent = () => {
   });
 
   useEffect(() => {
-    // Don't show banner in standalone mode (PWA installed)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                         window.navigator.standalone === true;
-    
-    if (isStandalone) {
-      // PWA mode - auto accept essential cookies only, don't show banner
-      const savedConsent = localStorage.getItem(CONSENT_KEY);
-      if (!savedConsent) {
-        const consent = {
-          version: CONSENT_VERSION,
-          preferences: { essential: true, analytics: false, marketing: false, preferences: false },
-          timestamp: new Date().toISOString(),
-          pwa_auto_accepted: true
-        };
-        localStorage.setItem(CONSENT_KEY, JSON.stringify(consent));
-      }
-      return; // Don't show banner
-    }
-    
-    // Check if user has already given consent
-    const savedConsent = localStorage.getItem(CONSENT_KEY);
-    if (savedConsent) {
-      try {
-        const parsed = JSON.parse(savedConsent);
-        if (parsed.version === CONSENT_VERSION) {
-          setPreferences(parsed.preferences);
-          return; // Don't show banner
+    // Check consent on mount only, not on every render
+    const checkConsent = () => {
+      // Don't show banner in standalone mode (PWA installed)
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                           window.navigator.standalone === true;
+      
+      if (isStandalone) {
+        // PWA mode - auto accept essential cookies only, don't show banner
+        const savedConsent = localStorage.getItem(CONSENT_KEY);
+        if (!savedConsent) {
+          const consent = {
+            version: CONSENT_VERSION,
+            preferences: { essential: true, analytics: false, marketing: false, preferences: false },
+            timestamp: new Date().toISOString(),
+            pwa_auto_accepted: true
+          };
+          localStorage.setItem(CONSENT_KEY, JSON.stringify(consent));
         }
-      } catch (e) {
-        // Invalid consent, show banner
+        return false; // Don't show banner
       }
+      
+      // Check if user has already given consent
+      const savedConsent = localStorage.getItem(CONSENT_KEY);
+      if (savedConsent) {
+        try {
+          const parsed = JSON.parse(savedConsent);
+          if (parsed.version === CONSENT_VERSION && parsed.preferences) {
+            setPreferences(parsed.preferences);
+            return false; // Don't show banner - consent already given
+          }
+        } catch (e) {
+          // Invalid consent, show banner
+          console.warn('Invalid cookie consent data, showing banner');
+        }
+      }
+      
+      return true; // Show banner
+    };
+
+    const shouldShowBanner = checkConsent();
+    
+    if (shouldShowBanner) {
+      // Show banner after a short delay for better UX
+      const timer = setTimeout(() => {
+        setShowBanner(true);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
     }
-    
-    // Show banner after a short delay for better UX
-    const timer = setTimeout(() => {
-      setShowBanner(true);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
+  }, []); // Empty dependency array - only run once on mount
 
   const saveConsent = (prefs) => {
     const consent = {
