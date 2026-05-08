@@ -299,20 +299,32 @@ export function AuthProvider({ children }) {
 
   /**
    * Inscription avec numéro de téléphone + mot de passe
+   * Supporte multi-pays avec country_code optionnel
+   * 
+   * @param {string} phone - Numéro normalisé (ex: +22370000000) ou local (70000000)
+   * @param {string} password - Mot de passe (min 6 caractères)
+   * @param {string} name - Nom complet
+   * @param {object} options - Options supplémentaires { country_code, email }
    */
-  const signUp = useCallback(async (phone, password, name = null) => {
+  const signUp = useCallback(async (phone, password, name = null, options = {}) => {
     setIsLoading(true);
     setError(null);
 
-    // Valider le numéro
-    const validation = validateMalianPhone(phone);
-    if (!validation.valid) {
-      setError(validation.error);
-      setIsLoading(false);
-      return { success: false, error: validation.error };
-    }
+    const { country_code = 'ML', email = null } = options;
 
-    const normalizedPhone = validation.normalized;
+    // Le numéro doit déjà être normalisé (avec +XXX) depuis le formulaire
+    // Si ce n'est pas le cas, on suppose que c'est un numéro malien
+    let normalizedPhone = phone;
+    if (!phone.startsWith('+')) {
+      // Fallback: valider comme numéro malien
+      const validation = validateMalianPhone(phone);
+      if (!validation.valid) {
+        setError(validation.error);
+        setIsLoading(false);
+        return { success: false, error: validation.error };
+      }
+      normalizedPhone = validation.normalized;
+    }
 
     try {
       // 1. Vérifier si le numéro existe déjà
@@ -341,6 +353,8 @@ export function AuthProvider({ children }) {
             phone: normalizedPhone,
             name: name,
             device_id: deviceId,
+            country_code: country_code,
+            real_email: email, // Email réel si fourni
           }
         }
       });
@@ -356,7 +370,9 @@ export function AuthProvider({ children }) {
           id: authData.user.id,
           phone: normalizedPhone,
           name: name,
+          email: email, // Email réel (optionnel)
           role: 'client',
+          country_code: country_code, // Pays de l'utilisateur
           device_id: deviceId,
           device_ids: [deviceId], // Historique des devices
           created_at: new Date().toISOString(),
@@ -374,12 +390,13 @@ export function AuthProvider({ children }) {
         id: authData.user.id, 
         phone: normalizedPhone, 
         name, 
-        role: 'client' 
+        role: 'client',
+        country_code: country_code,
       });
       setStatus(AUTH_STATUS.AUTHENTICATED);
       setIsLoading(false);
 
-      console.log('✅ Inscription réussie:', normalizedPhone);
+      console.log('✅ Inscription réussie:', normalizedPhone, '| Pays:', country_code);
       return { success: true, user: authData.user, profile: userProfile };
     } catch (err) {
       console.error('Erreur signUp:', err);
@@ -397,20 +414,25 @@ export function AuthProvider({ children }) {
 
   /**
    * Connexion avec numéro de téléphone + mot de passe
+   * Le numéro doit être normalisé (ex: +22370000000)
    */
   const signIn = useCallback(async (phone, password) => {
     setIsLoading(true);
     setError(null);
 
-    // Valider le numéro
-    const validation = validateMalianPhone(phone);
-    if (!validation.valid) {
-      setError(validation.error);
-      setIsLoading(false);
-      return { success: false, error: validation.error };
+    // Le numéro doit déjà être normalisé depuis le formulaire
+    let normalizedPhone = phone;
+    
+    // Si pas de +, on suppose que c'est un numéro malien (fallback)
+    if (!phone.startsWith('+')) {
+      const validation = validateMalianPhone(phone);
+      if (!validation.valid) {
+        setError(validation.error);
+        setIsLoading(false);
+        return { success: false, error: validation.error };
+      }
+      normalizedPhone = validation.normalized;
     }
-
-    const normalizedPhone = validation.normalized;
 
     try {
       // Convertir le téléphone en "email" pour Supabase

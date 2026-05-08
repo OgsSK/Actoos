@@ -1,24 +1,38 @@
 /**
  * ACTOOS ONE - Login Sheet
  * 
- * Bottom sheet pour l'authentification Téléphone (+223) prioritaire.
- * L'email est disponible en option secondaire (pour admin/backup).
+ * Bottom sheet pour l'authentification Multi-Pays.
  * 
- * PRODUCTION MODE - Connexion réelle à Supabase Auth.
- * Design style WhatsApp/Glovo avec numéro malien formaté.
+ * FLUX:
+ * - Connexion: Onglets [Téléphone] | [Email] avec sélecteur pays
+ * - Inscription: Téléphone OBLIGATOIRE, Email optionnel
+ * - Mot de passe oublié: Par téléphone avec OTP
+ * 
+ * Design style WhatsApp/Glovo avec drapeaux pays.
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Mail, Lock, User, Phone, ArrowRight, Loader2, AlertCircle, Eye, EyeOff, KeyRound } from 'lucide-react';
-import { useAuth, AUTH_STATUS, validateMalianPhone } from '../context/AuthContext';
+import { 
+  X, Mail, Lock, User, Phone, ArrowRight, Loader2, 
+  AlertCircle, Eye, EyeOff, KeyRound, Smartphone 
+} from 'lucide-react';
+import { useAuth, AUTH_STATUS } from '../context/AuthContext';
 import { BottomSheet } from './BottomSheet';
+import { CountrySelectorInline } from './CountrySelector';
+import { 
+  getDefaultCountry, 
+  validatePhoneForCountry, 
+  formatPhoneInput,
+  isCountryLaunched,
+  LAUNCH_STATUS,
+} from '../config/countriesConfig';
 
 export function LoginSheet({ isOpen, onClose, onSuccess }) {
   const { 
     status, 
-    signIn,           // Phone login
-    signInWithEmail,  // Email login (secondary)
-    signUp,           // Phone signup
+    signIn,
+    signInWithEmail,
+    signUp,
     checkPhoneExists,
     requestPasswordReset,
     resetPassword,
@@ -27,8 +41,14 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
     clearError,
   } = useAuth();
 
-  // Modes: 'login' | 'login_email' | 'signup' | 'forgot' | 'reset_code'
+  // Modes: 'login' | 'signup' | 'forgot' | 'reset_code'
   const [mode, setMode] = useState('login');
+  
+  // Login method: 'phone' | 'email'
+  const [loginMethod, setLoginMethod] = useState('phone');
+  
+  // Country selection
+  const [selectedCountry, setSelectedCountry] = useState(getDefaultCountry());
   
   // Form fields
   const [phone, setPhone] = useState('');
@@ -42,25 +62,20 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState(null);
   const [phoneExistsWarning, setPhoneExistsWarning] = useState(false);
-  const [devOtpCode, setDevOtpCode] = useState(null); // DEV: affiche le code OTP
+  const [devOtpCode, setDevOtpCode] = useState(null);
 
-  // Format phone number as user types (XX XX XX XX)
-  const formatPhoneInput = (value) => {
-    // Remove all non-digits
-    const digits = value.replace(/\D/g, '').slice(0, 8);
-    
-    // Format as XX XX XX XX
-    const parts = [];
-    for (let i = 0; i < digits.length; i += 2) {
-      parts.push(digits.slice(i, i + 2));
-    }
-    return parts.join(' ');
-  };
-
+  // Format phone as user types
   const handlePhoneChange = (e) => {
-    const formatted = formatPhoneInput(e.target.value);
+    const formatted = formatPhoneInput(e.target.value, selectedCountry);
     setPhone(formatted);
     setPhoneExistsWarning(false);
+    setLocalError(null);
+  };
+
+  // Handle country change
+  const handleCountryChange = (country) => {
+    setSelectedCountry(country);
+    setPhone(''); // Reset phone when country changes
     setLocalError(null);
   };
 
@@ -75,9 +90,11 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
       setNewPassword('');
       setLocalError(null);
       setMode('login');
+      setLoginMethod('phone');
       setShowPassword(false);
       setPhoneExistsWarning(false);
       setDevOtpCode(null);
+      setSelectedCountry(getDefaultCountry());
       clearError?.();
     }
   }, [isOpen, clearError]);
@@ -90,18 +107,22 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
     }
   }, [status, isOpen, onSuccess, onClose]);
 
-  // Get clean phone for API
+  // Get clean phone number (no spaces)
   const getCleanPhone = useCallback(() => {
     return phone.replace(/\s/g, '');
   }, [phone]);
 
   // Validate phone format
   const isPhoneValid = useCallback(() => {
-    const clean = getCleanPhone();
-    if (clean.length < 8) return false;
-    const validation = validateMalianPhone(clean);
+    const validation = validatePhoneForCountry(getCleanPhone(), selectedCountry.code);
     return validation.valid;
-  }, [getCleanPhone]);
+  }, [getCleanPhone, selectedCountry]);
+
+  // Get full phone with country code
+  const getFullPhone = useCallback(() => {
+    const validation = validatePhoneForCountry(getCleanPhone(), selectedCountry.code);
+    return validation.valid ? validation.normalized : null;
+  }, [getCleanPhone, selectedCountry]);
 
   // ====== HANDLERS ======
 
@@ -110,9 +131,7 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
     e.preventDefault();
     setLocalError(null);
 
-    const cleanPhone = getCleanPhone();
-    const validation = validateMalianPhone(cleanPhone);
-    
+    const validation = validatePhoneForCountry(getCleanPhone(), selectedCountry.code);
     if (!validation.valid) {
       setLocalError(validation.error);
       return;
@@ -123,13 +142,13 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
       return;
     }
 
-    const result = await signIn(cleanPhone, password);
+    const result = await signIn(validation.normalized, password);
     if (!result.success) {
       setLocalError(result.error);
     }
   };
 
-  // Email Login (secondary)
+  // Email Login
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setLocalError(null);
@@ -160,9 +179,7 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
       return;
     }
 
-    const cleanPhone = getCleanPhone();
-    const validation = validateMalianPhone(cleanPhone);
-    
+    const validation = validatePhoneForCountry(getCleanPhone(), selectedCountry.code);
     if (!validation.valid) {
       setLocalError(validation.error);
       return;
@@ -174,14 +191,19 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
     }
 
     // Check if phone already exists
-    const { exists } = await checkPhoneExists(cleanPhone);
+    const { exists } = await checkPhoneExists(validation.normalized);
     if (exists) {
       setPhoneExistsWarning(true);
       setLocalError('Ce numéro est déjà utilisé. Veuillez vous connecter.');
       return;
     }
 
-    const result = await signUp(cleanPhone, password, name.trim());
+    // Include country code and optional email
+    const result = await signUp(validation.normalized, password, name.trim(), {
+      country_code: selectedCountry.code,
+      email: email || null,
+    });
+    
     if (!result.success) {
       if (result.phoneExists) {
         setPhoneExistsWarning(true);
@@ -190,23 +212,20 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  // Forgot Password - Request OTP
+  // Forgot Password
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setLocalError(null);
 
-    const cleanPhone = getCleanPhone();
-    const validation = validateMalianPhone(cleanPhone);
-    
+    const validation = validatePhoneForCountry(getCleanPhone(), selectedCountry.code);
     if (!validation.valid) {
       setLocalError(validation.error);
       return;
     }
 
-    const result = await requestPasswordReset(cleanPhone);
+    const result = await requestPasswordReset(validation.normalized);
     if (result.success) {
       setMode('reset_code');
-      // DEV: afficher le code pour test
       if (result.devCode) {
         setDevOtpCode(result.devCode);
       }
@@ -230,13 +249,12 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
       return;
     }
 
-    const cleanPhone = getCleanPhone();
-    const result = await resetPassword(cleanPhone, otpCode, newPassword);
+    const fullPhone = getFullPhone();
+    const result = await resetPassword(fullPhone, otpCode, newPassword);
     
     if (result.success) {
       setLocalError(null);
       setMode('login');
-      // Show success message briefly
       setLocalError('✅ Mot de passe réinitialisé ! Connectez-vous.');
     } else {
       setLocalError(result.error);
@@ -250,16 +268,18 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
 
   const displayError = localError || error;
 
+  // Check if selected country is launched
+  const countryLaunched = isCountryLaunched(selectedCountry.code);
+
   // ====== RENDER ======
 
   return (
     <BottomSheet isOpen={isOpen} onClose={handleClose}>
       <div className="px-4 pb-8 pt-2">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
             {mode === 'login' && 'Connexion'}
-            {mode === 'login_email' && 'Connexion par email'}
             {mode === 'signup' && 'Créer un compte'}
             {mode === 'forgot' && 'Mot de passe oublié'}
             {mode === 'reset_code' && 'Réinitialisation'}
@@ -273,85 +293,182 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
           </button>
         </div>
 
-        {/* ===== PHONE LOGIN (PRIMARY) ===== */}
+        {/* ===== LOGIN MODE ===== */}
         {mode === 'login' && (
-          <form onSubmit={handlePhoneLogin} className="space-y-4">
-            <p className="text-gray-600 text-sm">
-              Entrez votre numéro de téléphone malien.
-            </p>
-
-            {/* Phone Input */}
-            <div className="relative">
-              <Phone size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <div className="absolute left-11 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-base border-r border-gray-200 pr-2">
-                +223
-              </div>
-              <input
-                type="tel"
-                value={phone}
-                onChange={handlePhoneChange}
-                placeholder="70 00 00 00"
-                className="w-full pl-[5.5rem] pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent font-medium tracking-wider"
-                autoFocus
-                data-testid="login-phone-input"
-              />
-            </div>
-
-            {/* Password */}
-            <div className="relative">
-              <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mot de passe"
-                className="w-full pl-11 pr-12 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
-                data-testid="login-password-input"
-              />
+          <>
+            {/* Tabs: Téléphone | Email */}
+            <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                onClick={() => { setLoginMethod('phone'); setLocalError(null); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  loginMethod === 'phone' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                data-testid="login-tab-phone"
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                <Smartphone size={18} />
+                Téléphone
+              </button>
+              <button
+                type="button"
+                onClick={() => { setLoginMethod('email'); setLocalError(null); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  loginMethod === 'email' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                data-testid="login-tab-email"
+              >
+                <Mail size={18} />
+                Email
               </button>
             </div>
 
-            {/* Forgot password link */}
-            <div className="text-right">
-              <button
-                type="button"
-                onClick={() => setMode('forgot')}
-                className="text-sm text-[#FF5A00] hover:underline"
-              >
-                Mot de passe oublié ?
-              </button>
-            </div>
+            {/* Phone Login Form */}
+            {loginMethod === 'phone' && (
+              <form onSubmit={handlePhoneLogin} className="space-y-4">
+                {/* Phone Input with Country Selector */}
+                <div className="relative">
+                  <Phone size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <div className="absolute left-11 top-1/2 -translate-y-1/2 z-10">
+                    <CountrySelectorInline
+                      selectedCountry={selectedCountry}
+                      onSelect={handleCountryChange}
+                    />
+                  </div>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    placeholder={selectedCountry.phonePlaceholder}
+                    className="w-full pl-[8.5rem] pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent font-medium tracking-wider"
+                    autoFocus
+                    data-testid="login-phone-input"
+                  />
+                </div>
 
-            {displayError && (
-              <div className={`flex items-center gap-2 text-sm ${displayError.startsWith('✅') ? 'text-green-600' : 'text-red-600'}`}>
-                {!displayError.startsWith('✅') && <AlertCircle size={16} />}
-                <span>{displayError}</span>
-              </div>
+                {/* Password */}
+                <div className="relative">
+                  <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mot de passe"
+                    className="w-full pl-11 pr-12 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                    data-testid="login-password-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+
+                {/* Forgot password link */}
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => setMode('forgot')}
+                    className="text-sm text-[#FF5A00] hover:underline"
+                  >
+                    Mot de passe oublié ?
+                  </button>
+                </div>
+
+                {displayError && (
+                  <div className={`flex items-center gap-2 text-sm ${displayError.startsWith('✅') ? 'text-green-600' : 'text-red-600'}`}>
+                    {!displayError.startsWith('✅') && <AlertCircle size={16} />}
+                    <span>{displayError}</span>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading || !isPhoneValid() || password.length < 6}
+                  className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
+                  data-testid="login-submit-btn"
+                >
+                  {isLoading ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <>
+                      Se connecter
+                      <ArrowRight size={20} />
+                    </>
+                  )}
+                </button>
+              </form>
             )}
 
-            <button
-              type="submit"
-              disabled={isLoading || !isPhoneValid() || password.length < 6}
-              className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
-              data-testid="login-submit-btn"
-            >
-              {isLoading ? (
-                <Loader2 size={20} className="animate-spin" />
-              ) : (
-                <>
-                  Se connecter
-                  <ArrowRight size={20} />
-                </>
-              )}
-            </button>
+            {/* Email Login Form */}
+            {loginMethod === 'email' && (
+              <form onSubmit={handleEmailLogin} className="space-y-4">
+                {/* Email */}
+                <div className="relative">
+                  <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                    className="w-full pl-11 pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                    autoFocus
+                    data-testid="login-email-input"
+                  />
+                </div>
 
-            <div className="text-center pt-2 space-y-2">
+                {/* Password */}
+                <div className="relative">
+                  <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mot de passe"
+                    className="w-full pl-11 pr-12 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                    data-testid="login-password-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+
+                {displayError && (
+                  <div className="flex items-center gap-2 text-red-600 text-sm">
+                    <AlertCircle size={16} />
+                    <span>{displayError}</span>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading || !email || password.length < 6}
+                  className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
+                  data-testid="login-email-submit-btn"
+                >
+                  {isLoading ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <>
+                      Se connecter
+                      <ArrowRight size={20} />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* Create account link */}
+            <div className="text-center pt-4">
               <p className="text-gray-600 text-sm">
                 Pas encore de compte ?{' '}
                 <button 
@@ -362,101 +479,15 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
                   Créer un compte
                 </button>
               </p>
-              <p className="text-gray-400 text-xs">
-                <button 
-                  type="button"
-                  onClick={() => { setMode('login_email'); setLocalError(null); clearError?.(); }}
-                  className="hover:text-gray-600"
-                >
-                  <Mail size={14} className="inline mr-1" />
-                  Se connecter avec email
-                </button>
-              </p>
             </div>
-          </form>
+          </>
         )}
 
-        {/* ===== EMAIL LOGIN (SECONDARY) ===== */}
-        {mode === 'login_email' && (
-          <form onSubmit={handleEmailLogin} className="space-y-4">
-            <p className="text-gray-600 text-sm">
-              Connexion avec email (pour comptes existants).
-            </p>
-
-            {/* Email */}
-            <div className="relative">
-              <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                className="w-full pl-11 pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
-                autoFocus
-                data-testid="login-email-input"
-              />
-            </div>
-
-            {/* Password */}
-            <div className="relative">
-              <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mot de passe"
-                className="w-full pl-11 pr-12 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
-                data-testid="login-password-input"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-
-            {displayError && (
-              <div className="flex items-center gap-2 text-red-600 text-sm">
-                <AlertCircle size={16} />
-                <span>{displayError}</span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading || !email || password.length < 6}
-              className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
-              data-testid="login-email-submit-btn"
-            >
-              {isLoading ? (
-                <Loader2 size={20} className="animate-spin" />
-              ) : (
-                <>
-                  Se connecter
-                  <ArrowRight size={20} />
-                </>
-              )}
-            </button>
-
-            <div className="text-center pt-2">
-              <button 
-                type="button"
-                onClick={() => { setMode('login'); setLocalError(null); clearError?.(); }}
-                className="text-[#FF5A00] text-sm hover:underline"
-              >
-                ← Retour à la connexion par téléphone
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* ===== SIGNUP (Phone Primary) ===== */}
+        {/* ===== SIGNUP MODE ===== */}
         {mode === 'signup' && (
           <form onSubmit={handleSignUp} className="space-y-4">
-            <p className="text-gray-600 text-sm">
-              Créez votre compte ACTOOS ONE avec votre numéro malien.
+            <p className="text-gray-600 text-sm mb-4">
+              Créez votre compte ACTOOS ONE avec votre numéro de téléphone.
             </p>
 
             {/* Name */}
@@ -466,29 +497,45 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Nom complet"
+                placeholder="Nom complet *"
                 className="w-full pl-11 pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
                 autoFocus
                 data-testid="signup-name-input"
               />
             </div>
 
-            {/* Phone Input (Primary) */}
+            {/* Phone (Required) with Country Selector */}
             <div className="relative">
               <Phone size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <div className="absolute left-11 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-base border-r border-gray-200 pr-2">
-                +223
+              <div className="absolute left-11 top-1/2 -translate-y-1/2 z-10">
+                <CountrySelectorInline
+                  selectedCountry={selectedCountry}
+                  onSelect={handleCountryChange}
+                />
               </div>
               <input
                 type="tel"
                 value={phone}
                 onChange={handlePhoneChange}
-                placeholder="70 00 00 00"
-                className={`w-full pl-[5.5rem] pr-4 py-4 text-base border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent font-medium tracking-wider ${phoneExistsWarning ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                placeholder={`${selectedCountry.phonePlaceholder} *`}
+                className={`w-full pl-[8.5rem] pr-4 py-4 text-base border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent font-medium tracking-wider ${
+                  phoneExistsWarning ? 'border-red-400 bg-red-50' : 'border-gray-200'
+                }`}
                 data-testid="signup-phone-input"
               />
             </div>
-            
+
+            {/* Country not launched warning */}
+            {!countryLaunched && (
+              <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <span className="text-lg">{selectedCountry.flag}</span>
+                <div className="text-sm">
+                  <span className="text-amber-800 font-medium">ACTOOS arrive bientôt au {selectedCountry.name} !</span>
+                  <p className="text-amber-600 text-xs mt-0.5">Inscrivez-vous pour être notifié du lancement.</p>
+                </div>
+              </div>
+            )}
+
             {phoneExistsWarning && (
               <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <AlertCircle size={18} className="text-amber-600 flex-shrink-0" />
@@ -496,7 +543,7 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
                   <span className="text-amber-800">Ce numéro existe déjà.</span>{' '}
                   <button
                     type="button"
-                    onClick={() => { setMode('login'); setLocalError(null); setPhoneExistsWarning(false); }}
+                    onClick={() => { setMode('login'); setLoginMethod('phone'); setLocalError(null); setPhoneExistsWarning(false); }}
                     className="text-[#FF5A00] font-medium hover:underline"
                   >
                     Se connecter →
@@ -505,6 +552,19 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
               </div>
             )}
 
+            {/* Email (Optional) */}
+            <div className="relative">
+              <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email (optionnel)"
+                className="w-full pl-11 pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                data-testid="signup-email-input"
+              />
+            </div>
+
             {/* Password */}
             <div className="relative">
               <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -512,7 +572,7 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mot de passe (min. 6 caractères)"
+                placeholder="Mot de passe (min. 6 caractères) *"
                 className="w-full pl-11 pr-12 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
                 data-testid="signup-password-input"
               />
@@ -570,18 +630,21 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
               Entrez votre numéro pour recevoir un code de réinitialisation.
             </p>
 
-            {/* Phone Input */}
+            {/* Phone with Country Selector */}
             <div className="relative">
               <Phone size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <div className="absolute left-11 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-base border-r border-gray-200 pr-2">
-                +223
+              <div className="absolute left-11 top-1/2 -translate-y-1/2 z-10">
+                <CountrySelectorInline
+                  selectedCountry={selectedCountry}
+                  onSelect={handleCountryChange}
+                />
               </div>
               <input
                 type="tel"
                 value={phone}
                 onChange={handlePhoneChange}
-                placeholder="70 00 00 00"
-                className="w-full pl-[5.5rem] pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent font-medium tracking-wider"
+                placeholder={selectedCountry.phonePlaceholder}
+                className="w-full pl-[8.5rem] pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent font-medium tracking-wider"
                 autoFocus
                 data-testid="forgot-phone-input"
               />
