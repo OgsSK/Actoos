@@ -25,6 +25,7 @@ import { useAuth } from '../context/AuthContext';
 import { calculateOrderTotal, createOrder } from '../services/orderService';
 import { getNeighborhoodsByCommune } from '../data/locationData';
 import { calculateDeliveryFee } from '../config/businessConfig';
+import { calculateDeliveryDistance } from '../services/distanceService';
 
 const STEPS = {
   DELIVERY_MODE: 'delivery_mode',
@@ -74,6 +75,10 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
   // Scheduled ordering
   const [isAsap, setIsAsap] = useState(true);
   const [scheduledSlot, setScheduledSlot] = useState(null);
+  
+  // Distance calculée via PostGIS/Haversine
+  const [calculatedDistanceKm, setCalculatedDistanceKm] = useState(null);
+  const [clientLocation, setClientLocation] = useState(null);
   
   // Track si on attendait une connexion pour continuer
   const [pendingAuthAction, setPendingAuthAction] = useState(false);
@@ -128,6 +133,9 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
       async (position) => {
         const { latitude, longitude } = position.coords;
         
+        // Stocker la position pour le calcul de distance
+        setClientLocation({ lat: latitude, lng: longitude });
+        
         // Reverse geocoding avec Nominatim (gratuit)
         try {
           const response = await fetch(
@@ -172,9 +180,24 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
     );
   };
 
-  // Distance estimée (en attendant le calcul GPS réel)
-  // TODO: Calculer la vraie distance entre restaurant et client avec PostGIS
-  const estimatedDistanceKm = restaurant?.distanceKm || 3;
+  // Distance estimée - utilise le calcul GPS réel si disponible
+  const estimatedDistanceKm = calculatedDistanceKm || restaurant?.distanceKm || 3;
+  
+  // Calculer la distance quand la localisation est disponible
+  useEffect(() => {
+    const updateDistance = async () => {
+      if (clientLocation && restaurant) {
+        try {
+          const distance = await calculateDeliveryDistance(clientLocation, restaurant);
+          setCalculatedDistanceKm(distance);
+          console.log(`✅ Distance calculée: ${distance.toFixed(2)} km`);
+        } catch (err) {
+          console.warn('Erreur calcul distance:', err);
+        }
+      }
+    };
+    updateDistance();
+  }, [clientLocation, restaurant]);
   
   // Déterminer le type de livraison du partenaire
   const partnerDeliveryType = restaurant?.delivery_type || 'actoos'; // 'actoos' | 'self'

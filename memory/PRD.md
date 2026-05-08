@@ -242,9 +242,18 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
   - 5 promos actives chargées depuis Supabase
   - PromoCodeInput avec suggestions dynamiques
   - Fallback sur données mock si table vide
+- ✅ **Flux Payer/Encaisser corrigé** (8 Mai 2026)
+  - "Payer" ouvre maintenant le SCANNER (pour payer quelqu'un)
+  - "Encaisser" affiche MON QR (pour recevoir un paiement)
+  - Composants PartnerWalletSection, DriverWalletSection, AdminWalletSection créés
+- ✅ **Calcul de distance PostGIS/Haversine** (8 Mai 2026)
+  - Service distanceService.js créé
+  - Utilise PostGIS si disponible, sinon formule Haversine
+  - Intégré dans CheckoutScreen.jsx pour les frais de livraison
 
 ### P1 (Important - À FAIRE)
 - [ ] **Exécuter migration Supabase complète** (`/supabase/migrations/20260508_financial_system.sql`) pour ajouter colonnes `wallet_type`, RPC functions
+- [ ] **Exécuter migration PostGIS** (`POSTGIS_MIGRATION_SQL` dans distanceService.js) pour le calcul précis des distances
 - [ ] Push Notifications réelles (clés Firebase à configurer)
 - [ ] Intégration API TouchPay/Orange Money/Wave réelle (clés API à obtenir)
 - [ ] Twilio SMS pour OTP réels
