@@ -68,6 +68,29 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 
 ### Session Actuelle (8 Mai 2026)
 
+#### Bug Fix: Cart Auth Flow (P0 - RÉSOLU)
+- [x] **LoginSheet ne s'ouvrait pas depuis CartSheet**
+  - Cause: Le `LoginSheet` n'était pas rendu dans le bloc `SCREENS.RESTAURANT`
+  - Fix: Ajout du `LoginSheet` dans le JSX fragment du restaurant screen
+  - Fix: `handleLoginFromCart` ferme maintenant le `CartSheet` avant d'ouvrir le `LoginSheet`
+  - Résultat: Flux guest → login → checkout fonctionne parfaitement (style Uber Eats)
+
+#### UI Cart (Complété)
+- [x] **CartSheet style Uber Eats**
+  - +/- quantités avec animations
+  - Suppression par swipe ou bouton
+  - "Ajouter d'autres articles" retourne au même restaurant
+  - Message "Connectez-vous pour finaliser" pour guests
+  - Bouton dynamique (Login vs Commander)
+  - Panier strictement par restaurant (purge si changement)
+
+#### UI Mobile Header (Complété)
+- [x] Synchronisation header mobile/desktop
+  - Logo ACTOOS
+  - Icône favoris (cœur)
+  - Badge panier avec compteur
+  - FloatingCartButton pour mobile
+
 #### Services Backend
 - [x] **Financial Service** (`/services/financialService.js`)
   - Settlement automatique au Handshake (#A42)
@@ -131,6 +154,7 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 
 ### P0 (Critique - DONE)
 - ✅ Système financier complet implémenté
+- ✅ Cart Auth Flow (LoginSheet depuis CartSheet) corrigé
 
 ### P1 (Important - À FAIRE)
 - [ ] **Exécuter migration Supabase** (`/supabase/migrations/20260508_financial_system.sql`)

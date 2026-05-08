@@ -204,6 +204,8 @@ function AppContent() {
     if (options.returnToCheckout) {
       setPendingCheckout(true);
     }
+    // Fermer le panier AVANT d'ouvrir le login pour éviter les conflits de z-index
+    setCartSheet(false);
     setShowLoginSheet(true);
   };
   
@@ -930,6 +932,14 @@ function AppContent() {
           }}
           onLogin={handleLoginFromCart}
           onAddMoreItems={handleAddMoreItemsFromCart}
+        />
+        {/* Login Sheet - disponible sur l'écran restaurant pour le checkout guest */}
+        <LoginSheet
+          isOpen={showLoginSheet}
+          onClose={() => setShowLoginSheet(false)}
+          onSuccess={() => {
+            setShowLoginSheet(false);
+          }}
         />
       </>
     );
