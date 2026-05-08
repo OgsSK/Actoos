@@ -145,14 +145,14 @@ export function BasketsScreen({ onBack, onViewRestaurant, onViewBasket }) {
                 <div className="flex border-t border-gray-100">
                   <button
                     onClick={() => onViewRestaurant && onViewRestaurant(basket.restaurant)}
-                    className="flex-1 py-4 text-[#00CCBB] font-semibold border-r border-gray-100 hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-4 text-[#FF5A00] font-semibold border-r border-gray-100 hover:bg-gray-50 transition-colors"
                     data-testid={`view-restaurant-${basket.restaurantId}`}
                   >
                     Voir le restaurant
                   </button>
                   <button
-                    onClick={() => onViewBasket && onViewBasket(basket.restaurantId)}
-                    className="flex-1 py-4 bg-[#00CCBB] text-white font-semibold hover:bg-[#00B8A9] transition-colors flex items-center justify-center gap-2"
+                    onClick={() => onViewBasket && onViewBasket(basket.restaurantId, basket.restaurant)}
+                    className="flex-1 py-4 bg-[#FF5A00] text-white font-semibold hover:bg-[#E55100] transition-colors flex items-center justify-center gap-2"
                     data-testid={`view-basket-${basket.restaurantId}`}
                   >
                     Voir le panier

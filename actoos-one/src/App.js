@@ -835,14 +835,39 @@ function AppContent() {
             }
           }
         }}
-        onViewBasket={(restaurantId) => {
-          // Changer le panier actif et ouvrir le CartSheet
-          const restaurant = restaurants.find(r => r.id === restaurantId);
-          if (restaurant) {
-            setActiveRestaurant(restaurant);
-            setSelectedRestaurant(restaurant);
+        onViewBasket={async (restaurantId, basketRestaurant) => {
+          // Activer ce panier
+          if (basketRestaurant) {
+            setActiveRestaurant(basketRestaurant);
+          }
+          
+          // Charger le restaurant complet avec le menu depuis Supabase
+          try {
+            const { data: restaurantData, error } = await getRestaurantById(restaurantId);
+            
+            if (error || !restaurantData) {
+              console.error('Erreur chargement restaurant:', error);
+              // Fallback: utiliser les données du panier
+              if (basketRestaurant) {
+                setSelectedRestaurant({
+                  ...basketRestaurant,
+                  categories: basketRestaurant.categories || [],
+                });
+                setCurrentScreen(SCREENS.RESTAURANT);
+                setTimeout(() => setCartSheet(true), 100);
+              }
+              return;
+            }
+            
+            // Mettre à jour avec le restaurant complet
+            setSelectedRestaurant({
+              ...restaurantData,
+              isOpen: basketRestaurant?.isOpen ?? true,
+            });
             setCurrentScreen(SCREENS.RESTAURANT);
-            setTimeout(() => setCartSheet(true), 300);
+            setTimeout(() => setCartSheet(true), 100);
+          } catch (err) {
+            console.error('Erreur:', err);
           }
         }}
       />

@@ -86,7 +86,7 @@ export function Header({
                 )}
                 {/* Indicateur multi-paniers */}
                 {basketCount > 1 && (
-                  <span className="absolute -bottom-1 -right-1 bg-[#00CCBB] text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
+                  <span className="absolute -bottom-1 -right-1 bg-gray-800 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
                     {basketCount}
                   </span>
                 )}
@@ -134,7 +134,7 @@ export function Header({
               )}
               {/* Indicateur multi-paniers */}
               {basketCount > 1 && (
-                <span className="absolute -bottom-0.5 -right-0.5 bg-[#00CCBB] text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border-2 border-white">
+                <span className="absolute -bottom-0.5 -right-0.5 bg-gray-800 text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border-2 border-white">
                   {basketCount}
                 </span>
               )}
