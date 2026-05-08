@@ -90,9 +90,11 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user: authUser, profile: authProfile } = useAuth();
+  const { setActiveRestaurant, cartRestaurant } = useCart();
   
   const [showSplash, setShowSplash] = useState(true);
   const [showLoginSheet, setShowLoginSheet] = useState(false);
+  const [pendingCheckout, setPendingCheckout] = useState(false); // Pour retour au checkout après login
   const [showLocationPermission, setShowLocationPermission] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('cat-all');
@@ -187,6 +189,31 @@ function AppContent() {
   };
 
   const [privacySheet, setPrivacySheet] = useState(false);
+  
+  // Gérer le retour au checkout après login
+  useEffect(() => {
+    if (isAuthenticated && pendingCheckout) {
+      setPendingCheckout(false);
+      setCartSheet(false);
+      setCurrentScreen(SCREENS.CHECKOUT);
+    }
+  }, [isAuthenticated, pendingCheckout]);
+  
+  // Fonction pour gérer le login depuis le panier
+  const handleLoginFromCart = (options = {}) => {
+    if (options.returnToCheckout) {
+      setPendingCheckout(true);
+    }
+    setShowLoginSheet(true);
+  };
+  
+  // Fonction pour retourner au menu du restaurant depuis le panier
+  const handleAddMoreItemsFromCart = (restaurant) => {
+    if (restaurant) {
+      setSelectedRestaurant(restaurant);
+      setCurrentScreen(SCREENS.RESTAURANT);
+    }
+  };
   
   // PRODUCTION: Restaurants loaded from Supabase
   const [restaurants, setRestaurants] = useState([]);
@@ -566,16 +593,17 @@ function AppContent() {
     // Charger le restaurant avec son menu depuis Supabase
     const { data: restaurantData, error } = await getRestaurantById(restaurant.id);
     
+    let fullRestaurant;
     if (error || !restaurantData) {
       console.error('Erreur chargement restaurant:', error);
       // Fallback: utiliser les données basiques du restaurant
-      setSelectedRestaurant({
+      fullRestaurant = {
         ...restaurant,
         accepts_cash: false,
         categories: [],
-      });
+      };
     } else {
-      setSelectedRestaurant({
+      fullRestaurant = {
         ...restaurantData,
         // Carry over scheduling-related properties
         openingHours: restaurant.openingHours,
@@ -584,8 +612,13 @@ function AppContent() {
         maxScheduleDays: restaurant.maxScheduleDays,
         selfDelivery: restaurant.selfDelivery || restaurantData.selfDelivery,
         isOpen: restaurant.isOpen,
-      });
+      };
     }
+    
+    setSelectedRestaurant(fullRestaurant);
+    
+    // Définir ce restaurant comme actif pour le panier
+    setActiveRestaurant(fullRestaurant);
     
     setCurrentScreen(SCREENS.RESTAURANT);
     navigateToRestaurant(restaurant);
@@ -895,6 +928,8 @@ function AppContent() {
             setCartSheet(false);
             setCurrentScreen(SCREENS.CHECKOUT);
           }}
+          onLogin={handleLoginFromCart}
+          onAddMoreItems={handleAddMoreItemsFromCart}
         />
       </>
     );
@@ -1013,11 +1048,13 @@ function AppContent() {
       <CartSheet
         isOpen={cartSheet}
         onClose={() => setCartSheet(false)}
-        restaurant={selectedRestaurant}
+        restaurant={selectedRestaurant || cartRestaurant}
         onCheckout={() => {
           setCartSheet(false);
           setCurrentScreen(SCREENS.CHECKOUT);
         }}
+        onLogin={handleLoginFromCart}
+        onAddMoreItems={handleAddMoreItemsFromCart}
       />
 
       {/* Privacy Settings Sheet */}

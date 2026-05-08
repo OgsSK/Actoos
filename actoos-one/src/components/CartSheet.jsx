@@ -3,9 +3,9 @@
  * 
  * Panier style Uber Eats / Deliveroo
  * - Affiche les articles du panier
- * - Permet de modifier les quantités
- * - Permet de supprimer des articles
- * - Bouton pour passer au checkout
+ * - Modifier les quantités / supprimer
+ * - Auth flow automatique si non connecté
+ * - "Ajouter d'autres articles" retourne au même restaurant
  */
 
 import { useState } from 'react';
@@ -16,23 +16,36 @@ import {
   Trash2, 
   ShoppingBag,
   ChevronRight,
-  MapPin,
   Clock,
-  AlertCircle
+  AlertCircle,
+  LogIn
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
-export function CartSheet({ isOpen, onClose, onCheckout, restaurant }) {
+export function CartSheet({ 
+  isOpen, 
+  onClose, 
+  onCheckout, 
+  onAddMoreItems,
+  onLogin,
+  restaurant: propRestaurant 
+}) {
   const { 
     cartItems, 
+    cartRestaurant,
     updateQuantity, 
     removeFromCart, 
     getTotal, 
     getItemCount,
-    clearCart 
   } = useCart();
   
+  const { isAuthenticated } = useAuth();
+  
   const [removingId, setRemovingId] = useState(null);
+  
+  // Utiliser le restaurant du panier ou celui passé en prop
+  const restaurant = cartRestaurant || propRestaurant;
   
   const itemCount = getItemCount();
   const subtotal = getTotal();
@@ -44,6 +57,31 @@ export function CartSheet({ isOpen, onClose, onCheckout, restaurant }) {
       removeFromCart(itemId);
       setRemovingId(null);
     }, 300);
+  };
+
+  // Gérer le clic sur Commander
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      // Demander de se connecter d'abord
+      // Le callback onLogin doit gérer le retour au checkout après connexion
+      if (onLogin) {
+        onLogin({ returnToCheckout: true });
+      }
+      return;
+    }
+    
+    // Utilisateur connecté, aller au checkout
+    if (onCheckout) {
+      onCheckout();
+    }
+  };
+
+  // Gérer "Ajouter d'autres articles"
+  const handleAddMoreItems = () => {
+    onClose(); // Fermer le sheet
+    if (onAddMoreItems && restaurant) {
+      onAddMoreItems(restaurant);
+    }
   };
 
   if (!isOpen) return null;
@@ -108,14 +146,14 @@ export function CartSheet({ isOpen, onClose, onCheckout, restaurant }) {
                 onClick={onClose}
                 className="mt-6 px-6 py-3 bg-[#FF5A00] text-white font-semibold rounded-xl"
               >
-                Parcourir les restaurants
+                Parcourir le menu
               </button>
             </div>
           ) : (
             <div className="space-y-4">
-              {cartItems.map((item) => (
+              {cartItems.map((item, index) => (
                 <div
-                  key={item.id}
+                  key={`${item.id}-${index}`}
                   className={`bg-white border border-gray-100 rounded-2xl p-4 transition-all duration-300 ${
                     removingId === item.id ? 'opacity-0 scale-95 -translate-x-full' : ''
                   }`}
@@ -136,13 +174,8 @@ export function CartSheet({ isOpen, onClose, onCheckout, restaurant }) {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                          {item.options && item.options.length > 0 && (
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              {item.options.map(o => o.name).join(', ')}
-                            </p>
-                          )}
-                          {item.notes && (
-                            <p className="text-xs text-gray-400 mt-0.5 italic">"{item.notes}"</p>
+                          {item.instructions && (
+                            <p className="text-xs text-gray-400 mt-0.5 italic">"{item.instructions}"</p>
                           )}
                         </div>
                         <button
@@ -157,7 +190,7 @@ export function CartSheet({ isOpen, onClose, onCheckout, restaurant }) {
                       {/* Price & Quantity */}
                       <div className="flex items-center justify-between mt-3">
                         <p className="font-bold text-[#FF5A00]">
-                          {((item.price_at_time || item.price || 0) * (item.quantity || 1)).toLocaleString()} FCFA
+                          {((item.price_at_time || 0) * (item.quantity || 1)).toLocaleString()} FCFA
                         </p>
                         
                         {/* Quantity Controls */}
@@ -196,10 +229,11 @@ export function CartSheet({ isOpen, onClose, onCheckout, restaurant }) {
                 </div>
               ))}
               
-              {/* Add More Items */}
+              {/* Add More Items - Goes back to same restaurant */}
               <button
-                onClick={onClose}
+                onClick={handleAddMoreItems}
                 className="w-full py-3 border-2 border-dashed border-gray-200 rounded-2xl text-gray-500 font-medium flex items-center justify-center gap-2 hover:border-[#FF5A00] hover:text-[#FF5A00] transition-colors"
+                data-testid="add-more-items-btn"
               >
                 <Plus className="w-5 h-5" />
                 Ajouter d'autres articles
@@ -223,17 +257,36 @@ export function CartSheet({ isOpen, onClose, onCheckout, restaurant }) {
               </div>
             </div>
             
+            {/* Auth warning if not logged in */}
+            {!isAuthenticated && (
+              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3">
+                <LogIn className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                <p className="text-sm text-amber-700">
+                  Connectez-vous pour finaliser votre commande
+                </p>
+              </div>
+            )}
+            
             {/* Checkout Button */}
             <button
-              onClick={onCheckout}
+              onClick={handleCheckout}
               className="w-full bg-[#FF5A00] text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-lg shadow-orange-500/30"
               data-testid="checkout-btn"
             >
-              <span>Commander</span>
-              <span className="bg-white/20 px-3 py-1 rounded-lg">
-                {subtotal.toLocaleString()} FCFA
-              </span>
-              <ChevronRight className="w-5 h-5" />
+              {!isAuthenticated ? (
+                <>
+                  <LogIn className="w-5 h-5" />
+                  <span>Se connecter pour commander</span>
+                </>
+              ) : (
+                <>
+                  <span>Commander</span>
+                  <span className="bg-white/20 px-3 py-1 rounded-lg">
+                    {subtotal.toLocaleString()} FCFA
+                  </span>
+                  <ChevronRight className="w-5 h-5" />
+                </>
+              )}
             </button>
             
             {/* Minimum Order Warning */}
