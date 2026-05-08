@@ -1,0 +1,108 @@
+{
+  "short_name": "Actoos Admin",
+  "name": "Actoos - Dashboard Administrateur",
+  "description": "Tableau de bord administrateur - Gestion des interventions, clients, devis et factures",
+  "icons": [
+    {
+      "src": "/icons-admin/icon-48x48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons-admin/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons-admin/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons-admin/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons-admin/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons-admin/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons-admin/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons-admin/icon-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons-admin/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons-admin/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons-admin/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": "/dashboard",
+  "id": "/dashboard",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "theme_color": "#2563EB",
+  "background_color": "#F8FAFC",
+  "orientation": "any",
+  "scope": "/",
+  "categories": ["business", "productivity"],
+  "lang": "fr-FR",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Interventions",
+      "short_name": "Interventions",
+      "description": "Gérer les interventions",
+      "url": "/dashboard/interventions",
+      "icons": [{"src": "/icons-admin/icon-192x192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Clients",
+      "short_name": "Clients",
+      "description": "Gérer les clients",
+      "url": "/dashboard/clients",
+      "icons": [{"src": "/icons-admin/icon-192x192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Devis & Factures",
+      "short_name": "Facturation",
+      "description": "Gérer devis et factures",
+      "url": "/dashboard/billing",
+      "icons": [{"src": "/icons-admin/icon-192x192.png", "sizes": "192x192"}]
+    }
+  ]
+}

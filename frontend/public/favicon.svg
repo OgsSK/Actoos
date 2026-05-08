@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="leftGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#5BADE8"/>
+      <stop offset="100%" style="stop-color:#3B9AD9"/>
+    </linearGradient>
+    <linearGradient id="rightGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#2980B9"/>
+      <stop offset="100%" style="stop-color:#1A5276"/>
+    </linearGradient>
+  </defs>
+  <!-- Left shape (light blue parallelogram) - maximized -->
+  <polygon points="4,46 18,2 30,2 20,46" fill="url(#leftGrad)"/>
+  <!-- Right shape (dark blue triangle) -->
+  <polygon points="14,46 30,2 44,46" fill="url(#rightGrad)"/>
+  <!-- White inner triangle (the hole) -->
+  <polygon points="24,38 29,22 34,38" fill="white"/>
+</svg>
