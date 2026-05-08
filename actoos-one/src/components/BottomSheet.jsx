@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 
-export function BottomSheet({ isOpen, onClose, title, children }) {
+export function BottomSheet({ isOpen, onClose, title, children, showHeader = true }) {
   if (!isOpen) return null;
 
   return (
@@ -19,22 +19,24 @@ export function BottomSheet({ isOpen, onClose, title, children }) {
           <div className="w-10 h-1 bg-gray-300 rounded-full" />
         </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pb-3">
-          <h2 className="text-lg font-semibold text-gray-900" data-testid="bottom-sheet-title">
-            {title}
-          </h2>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-colors"
-            data-testid="bottom-sheet-close"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
+        {/* Header - Only show if title is provided AND showHeader is true */}
+        {showHeader && title && (
+          <div className="flex items-center justify-between px-4 pb-3">
+            <h2 className="text-lg font-semibold text-gray-900" data-testid="bottom-sheet-title">
+              {title}
+            </h2>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-colors"
+              data-testid="bottom-sheet-close"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+        )}
 
         {/* Content */}
-        <div className="px-4 pb-6 max-h-[60vh] overflow-y-auto">
+        <div className="px-4 pb-6 max-h-[70vh] overflow-y-auto">
           {children}
         </div>
       </div>
