@@ -8,10 +8,16 @@ export function CookieConsentSheet({ onAccept, onCustomize, onDecline }) {
   useEffect(() => {
     // Vérifier si le consentement a déjà été donné
     const consent = localStorage.getItem(CONSENT_STORAGE_KEY);
+    console.log('[Cookie] Checking consent:', consent);
     if (!consent) {
       // Afficher après un petit délai pour ne pas bloquer le premier rendu
-      const timer = setTimeout(() => setIsVisible(true), 1000);
+      const timer = setTimeout(() => {
+        console.log('[Cookie] Showing consent popup');
+        setIsVisible(true);
+      }, 1000);
       return () => clearTimeout(timer);
+    } else {
+      console.log('[Cookie] Consent already given, not showing popup');
     }
   }, []);
 
