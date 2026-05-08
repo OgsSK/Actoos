@@ -381,9 +381,6 @@ export function WalletScreen({ onBack }) {
               </div>
             ) : (
               <>
-                <p className="text-xs text-gray-400 mb-2 text-center">
-                  ← Glissez vers la gauche pour supprimer
-                </p>
                 <div className="space-y-3">
                   {filteredTransactions.map((txn) => (
                     <SwipeToDelete
