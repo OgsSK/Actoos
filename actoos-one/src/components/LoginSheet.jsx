@@ -1,49 +1,88 @@
 /**
  * ACTOOS ONE - Login Sheet
  * 
- * Bottom sheet pour l'authentification Email/Password.
+ * Bottom sheet pour l'authentification Téléphone (+223) prioritaire.
+ * L'email est disponible en option secondaire (pour admin/backup).
+ * 
  * PRODUCTION MODE - Connexion réelle à Supabase Auth.
- * Design minimaliste style Uber/Deliveroo.
+ * Design style WhatsApp/Glovo avec numéro malien formaté.
  */
 
-import { useState, useEffect } from 'react';
-import { X, Mail, Lock, User, Phone, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { useAuth, AUTH_STATUS } from '../context/AuthContext';
+import { useState, useEffect, useCallback } from 'react';
+import { X, Mail, Lock, User, Phone, ArrowRight, Loader2, AlertCircle, Eye, EyeOff, KeyRound } from 'lucide-react';
+import { useAuth, AUTH_STATUS, validateMalianPhone } from '../context/AuthContext';
 import { BottomSheet } from './BottomSheet';
 
 export function LoginSheet({ isOpen, onClose, onSuccess }) {
   const { 
     status, 
-    signIn, 
-    signUp,
+    signIn,           // Phone login
+    signInWithEmail,  // Email login (secondary)
+    signUp,           // Phone signup
+    checkPhoneExists,
+    requestPasswordReset,
+    resetPassword,
     error, 
     isLoading,
     clearError,
   } = useAuth();
 
-  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  // Modes: 'login' | 'login_email' | 'signup' | 'forgot' | 'reset_code'
+  const [mode, setMode] = useState('login');
+  
+  // Form fields
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  
+  // UI states
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState(null);
+  const [phoneExistsWarning, setPhoneExistsWarning] = useState(false);
+  const [devOtpCode, setDevOtpCode] = useState(null); // DEV: affiche le code OTP
 
-  // Reset quand on ouvre/ferme
+  // Format phone number as user types (XX XX XX XX)
+  const formatPhoneInput = (value) => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    
+    // Format as XX XX XX XX
+    const parts = [];
+    for (let i = 0; i < digits.length; i += 2) {
+      parts.push(digits.slice(i, i + 2));
+    }
+    return parts.join(' ');
+  };
+
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneInput(e.target.value);
+    setPhone(formatted);
+    setPhoneExistsWarning(false);
+    setLocalError(null);
+  };
+
+  // Reset when sheet opens/closes
   useEffect(() => {
     if (!isOpen) {
+      setPhone('');
       setEmail('');
       setPassword('');
       setName('');
-      setPhone('');
+      setOtpCode('');
+      setNewPassword('');
       setLocalError(null);
       setMode('login');
       setShowPassword(false);
+      setPhoneExistsWarning(false);
+      setDevOtpCode(null);
       clearError?.();
     }
   }, [isOpen, clearError]);
 
-  // Succès d'auth
+  // Success callback
   useEffect(() => {
     if (status === AUTH_STATUS.AUTHENTICATED && isOpen) {
       onSuccess?.();
@@ -51,15 +90,51 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
     }
   }, [status, isOpen, onSuccess, onClose]);
 
-  const validateEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  // Get clean phone for API
+  const getCleanPhone = useCallback(() => {
+    return phone.replace(/\s/g, '');
+  }, [phone]);
 
-  const handleLogin = async (e) => {
+  // Validate phone format
+  const isPhoneValid = useCallback(() => {
+    const clean = getCleanPhone();
+    if (clean.length < 8) return false;
+    const validation = validateMalianPhone(clean);
+    return validation.valid;
+  }, [getCleanPhone]);
+
+  // ====== HANDLERS ======
+
+  // Phone Login
+  const handlePhoneLogin = async (e) => {
     e.preventDefault();
     setLocalError(null);
 
-    if (!validateEmail(email)) {
+    const cleanPhone = getCleanPhone();
+    const validation = validateMalianPhone(cleanPhone);
+    
+    if (!validation.valid) {
+      setLocalError(validation.error);
+      return;
+    }
+
+    if (password.length < 6) {
+      setLocalError('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    const result = await signIn(cleanPhone, password);
+    if (!result.success) {
+      setLocalError(result.error);
+    }
+  };
+
+  // Email Login (secondary)
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    setLocalError(null);
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setLocalError('Email invalide');
       return;
     }
@@ -69,12 +144,13 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
       return;
     }
 
-    const result = await signIn(email, password);
+    const result = await signInWithEmail(email, password);
     if (!result.success) {
       setLocalError(result.error);
     }
   };
 
+  // Phone Signup
   const handleSignUp = async (e) => {
     e.preventDefault();
     setLocalError(null);
@@ -84,8 +160,11 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
       return;
     }
 
-    if (!validateEmail(email)) {
-      setLocalError('Email invalide');
+    const cleanPhone = getCleanPhone();
+    const validation = validateMalianPhone(cleanPhone);
+    
+    if (!validation.valid) {
+      setLocalError(validation.error);
       return;
     }
 
@@ -94,12 +173,72 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
       return;
     }
 
-    const result = await signUp(email, password, { 
-      name: name.trim(),
-      phone: phone ? `+223${phone.replace(/\s/g, '')}` : null,
-    });
-    
+    // Check if phone already exists
+    const { exists } = await checkPhoneExists(cleanPhone);
+    if (exists) {
+      setPhoneExistsWarning(true);
+      setLocalError('Ce numéro est déjà utilisé. Veuillez vous connecter.');
+      return;
+    }
+
+    const result = await signUp(cleanPhone, password, name.trim());
     if (!result.success) {
+      if (result.phoneExists) {
+        setPhoneExistsWarning(true);
+      }
+      setLocalError(result.error);
+    }
+  };
+
+  // Forgot Password - Request OTP
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setLocalError(null);
+
+    const cleanPhone = getCleanPhone();
+    const validation = validateMalianPhone(cleanPhone);
+    
+    if (!validation.valid) {
+      setLocalError(validation.error);
+      return;
+    }
+
+    const result = await requestPasswordReset(cleanPhone);
+    if (result.success) {
+      setMode('reset_code');
+      // DEV: afficher le code pour test
+      if (result.devCode) {
+        setDevOtpCode(result.devCode);
+      }
+    } else {
+      setLocalError(result.error);
+    }
+  };
+
+  // Reset Password with OTP
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setLocalError(null);
+
+    if (otpCode.length !== 6) {
+      setLocalError('Le code doit contenir 6 chiffres');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setLocalError('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    const cleanPhone = getCleanPhone();
+    const result = await resetPassword(cleanPhone, otpCode, newPassword);
+    
+    if (result.success) {
+      setLocalError(null);
+      setMode('login');
+      // Show success message briefly
+      setLocalError('✅ Mot de passe réinitialisé ! Connectez-vous.');
+    } else {
       setLocalError(result.error);
     }
   };
@@ -109,13 +248,9 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
     onClose();
   };
 
-  const toggleMode = () => {
-    setMode(mode === 'login' ? 'signup' : 'login');
-    setLocalError(null);
-    clearError?.();
-  };
-
   const displayError = localError || error;
+
+  // ====== RENDER ======
 
   return (
     <BottomSheet isOpen={isOpen} onClose={handleClose}>
@@ -123,7 +258,11 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900">
-            {mode === 'login' ? 'Connexion' : 'Créer un compte'}
+            {mode === 'login' && 'Connexion'}
+            {mode === 'login_email' && 'Connexion par email'}
+            {mode === 'signup' && 'Créer un compte'}
+            {mode === 'forgot' && 'Mot de passe oublié'}
+            {mode === 'reset_code' && 'Réinitialisation'}
           </h2>
           <button 
             onClick={handleClose}
@@ -134,11 +273,114 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
           </button>
         </div>
 
-        {/* Login Form */}
+        {/* ===== PHONE LOGIN (PRIMARY) ===== */}
         {mode === 'login' && (
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handlePhoneLogin} className="space-y-4">
             <p className="text-gray-600 text-sm">
-              Connectez-vous avec votre email et mot de passe.
+              Entrez votre numéro de téléphone malien.
+            </p>
+
+            {/* Phone Input */}
+            <div className="relative">
+              <Phone size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className="absolute left-11 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-base border-r border-gray-200 pr-2">
+                +223
+              </div>
+              <input
+                type="tel"
+                value={phone}
+                onChange={handlePhoneChange}
+                placeholder="70 00 00 00"
+                className="w-full pl-[5.5rem] pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent font-medium tracking-wider"
+                autoFocus
+                data-testid="login-phone-input"
+              />
+            </div>
+
+            {/* Password */}
+            <div className="relative">
+              <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mot de passe"
+                className="w-full pl-11 pr-12 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                data-testid="login-password-input"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+
+            {/* Forgot password link */}
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => setMode('forgot')}
+                className="text-sm text-[#FF5A00] hover:underline"
+              >
+                Mot de passe oublié ?
+              </button>
+            </div>
+
+            {displayError && (
+              <div className={`flex items-center gap-2 text-sm ${displayError.startsWith('✅') ? 'text-green-600' : 'text-red-600'}`}>
+                {!displayError.startsWith('✅') && <AlertCircle size={16} />}
+                <span>{displayError}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading || !isPhoneValid() || password.length < 6}
+              className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
+              data-testid="login-submit-btn"
+            >
+              {isLoading ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <>
+                  Se connecter
+                  <ArrowRight size={20} />
+                </>
+              )}
+            </button>
+
+            <div className="text-center pt-2 space-y-2">
+              <p className="text-gray-600 text-sm">
+                Pas encore de compte ?{' '}
+                <button 
+                  type="button"
+                  onClick={() => { setMode('signup'); setLocalError(null); clearError?.(); }}
+                  className="text-[#FF5A00] font-medium hover:underline"
+                >
+                  Créer un compte
+                </button>
+              </p>
+              <p className="text-gray-400 text-xs">
+                <button 
+                  type="button"
+                  onClick={() => { setMode('login_email'); setLocalError(null); clearError?.(); }}
+                  className="hover:text-gray-600"
+                >
+                  <Mail size={14} className="inline mr-1" />
+                  Se connecter avec email
+                </button>
+              </p>
+            </div>
+          </form>
+        )}
+
+        {/* ===== EMAIL LOGIN (SECONDARY) ===== */}
+        {mode === 'login_email' && (
+          <form onSubmit={handleEmailLogin} className="space-y-4">
+            <p className="text-gray-600 text-sm">
+              Connexion avec email (pour comptes existants).
             </p>
 
             {/* Email */}
@@ -184,9 +426,9 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
 
             <button
               type="submit"
-              disabled={isLoading || !email || !password}
+              disabled={isLoading || !email || password.length < 6}
               className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
-              data-testid="login-submit-btn"
+              data-testid="login-email-submit-btn"
             >
               {isLoading ? (
                 <Loader2 size={20} className="animate-spin" />
@@ -199,25 +441,22 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
             </button>
 
             <div className="text-center pt-2">
-              <p className="text-gray-600 text-sm">
-                Pas encore de compte ?{' '}
-                <button 
-                  type="button"
-                  onClick={toggleMode}
-                  className="text-[#FF5A00] font-medium hover:underline"
-                >
-                  Créer un compte
-                </button>
-              </p>
+              <button 
+                type="button"
+                onClick={() => { setMode('login'); setLocalError(null); clearError?.(); }}
+                className="text-[#FF5A00] text-sm hover:underline"
+              >
+                ← Retour à la connexion par téléphone
+              </button>
             </div>
           </form>
         )}
 
-        {/* Signup Form */}
+        {/* ===== SIGNUP (Phone Primary) ===== */}
         {mode === 'signup' && (
           <form onSubmit={handleSignUp} className="space-y-4">
             <p className="text-gray-600 text-sm">
-              Créez votre compte ACTOOS ONE pour commander.
+              Créez votre compte ACTOOS ONE avec votre numéro malien.
             </p>
 
             {/* Name */}
@@ -234,32 +473,37 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
               />
             </div>
 
-            {/* Email */}
-            <div className="relative">
-              <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                className="w-full pl-11 pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
-                data-testid="signup-email-input"
-              />
-            </div>
-
-            {/* Phone (optional) */}
+            {/* Phone Input (Primary) */}
             <div className="relative">
               <Phone size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <span className="absolute left-11 top-1/2 -translate-y-1/2 text-gray-500 text-sm">+223</span>
+              <div className="absolute left-11 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-base border-r border-gray-200 pr-2">
+                +223
+              </div>
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="70 00 00 00 (optionnel)"
-                className="w-full pl-24 pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                onChange={handlePhoneChange}
+                placeholder="70 00 00 00"
+                className={`w-full pl-[5.5rem] pr-4 py-4 text-base border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent font-medium tracking-wider ${phoneExistsWarning ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                 data-testid="signup-phone-input"
               />
             </div>
+            
+            {phoneExistsWarning && (
+              <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <AlertCircle size={18} className="text-amber-600 flex-shrink-0" />
+                <div className="text-sm">
+                  <span className="text-amber-800">Ce numéro existe déjà.</span>{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setMode('login'); setLocalError(null); setPhoneExistsWarning(false); }}
+                    className="text-[#FF5A00] font-medium hover:underline"
+                  >
+                    Se connecter →
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Password */}
             <div className="relative">
@@ -281,7 +525,7 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
               </button>
             </div>
 
-            {displayError && (
+            {displayError && !phoneExistsWarning && (
               <div className="flex items-center gap-2 text-red-600 text-sm">
                 <AlertCircle size={16} />
                 <span>{displayError}</span>
@@ -290,7 +534,7 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
 
             <button
               type="submit"
-              disabled={isLoading || !email || !password || !name}
+              disabled={isLoading || !name.trim() || !isPhoneValid() || password.length < 6}
               className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
               data-testid="signup-submit-btn"
             >
@@ -309,12 +553,155 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
                 Déjà un compte ?{' '}
                 <button 
                   type="button"
-                  onClick={toggleMode}
+                  onClick={() => { setMode('login'); setLocalError(null); clearError?.(); setPhoneExistsWarning(false); }}
                   className="text-[#FF5A00] font-medium hover:underline"
                 >
                   Se connecter
                 </button>
               </p>
+            </div>
+          </form>
+        )}
+
+        {/* ===== FORGOT PASSWORD ===== */}
+        {mode === 'forgot' && (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <p className="text-gray-600 text-sm">
+              Entrez votre numéro pour recevoir un code de réinitialisation.
+            </p>
+
+            {/* Phone Input */}
+            <div className="relative">
+              <Phone size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className="absolute left-11 top-1/2 -translate-y-1/2 text-gray-700 font-medium text-base border-r border-gray-200 pr-2">
+                +223
+              </div>
+              <input
+                type="tel"
+                value={phone}
+                onChange={handlePhoneChange}
+                placeholder="70 00 00 00"
+                className="w-full pl-[5.5rem] pr-4 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent font-medium tracking-wider"
+                autoFocus
+                data-testid="forgot-phone-input"
+              />
+            </div>
+
+            {displayError && (
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <AlertCircle size={16} />
+                <span>{displayError}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading || !isPhoneValid()}
+              className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
+              data-testid="forgot-submit-btn"
+            >
+              {isLoading ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <>
+                  Envoyer le code
+                  <ArrowRight size={20} />
+                </>
+              )}
+            </button>
+
+            <div className="text-center pt-2">
+              <button 
+                type="button"
+                onClick={() => { setMode('login'); setLocalError(null); clearError?.(); }}
+                className="text-[#FF5A00] text-sm hover:underline"
+              >
+                ← Retour à la connexion
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ===== RESET CODE (OTP) ===== */}
+        {mode === 'reset_code' && (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <p className="text-gray-600 text-sm">
+              Entrez le code reçu par SMS et votre nouveau mot de passe.
+            </p>
+
+            {/* DEV: Show OTP Code */}
+            {devOtpCode && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                <p className="text-xs text-blue-600 mb-1">Code DEV (SMS non configuré)</p>
+                <p className="text-2xl font-bold text-blue-800 tracking-widest">{devOtpCode}</p>
+              </div>
+            )}
+
+            {/* OTP Code */}
+            <div className="relative">
+              <KeyRound size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="Code à 6 chiffres"
+                className="w-full pl-11 pr-4 py-4 text-base text-center tracking-[0.5em] font-bold border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                autoFocus
+                data-testid="reset-otp-input"
+              />
+            </div>
+
+            {/* New Password */}
+            <div className="relative">
+              <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Nouveau mot de passe (min. 6)"
+                className="w-full pl-11 pr-12 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF5A00] focus:border-transparent"
+                data-testid="reset-password-input"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+
+            {displayError && (
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <AlertCircle size={16} />
+                <span>{displayError}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading || otpCode.length !== 6 || newPassword.length < 6}
+              className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E55100] transition-colors"
+              data-testid="reset-submit-btn"
+            >
+              {isLoading ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <>
+                  Réinitialiser
+                  <ArrowRight size={20} />
+                </>
+              )}
+            </button>
+
+            <div className="text-center pt-2">
+              <button 
+                type="button"
+                onClick={() => { setMode('forgot'); setLocalError(null); setOtpCode(''); setNewPassword(''); setDevOtpCode(null); }}
+                className="text-gray-500 text-sm hover:underline"
+              >
+                Renvoyer le code
+              </button>
             </div>
           </form>
         )}
