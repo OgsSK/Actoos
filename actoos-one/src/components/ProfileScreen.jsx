@@ -374,7 +374,15 @@ export function ProfileScreen({
           </div>
           
           <div className="p-4">
-            <OrderHistorySection onOrderClick={onOrderHistory} />
+            <OrderHistorySection 
+              onOrderClick={onOrderHistory} 
+              onTrackOrder={(order) => {
+                // Naviguer vers le tracking de la commande
+                if (onOrderHistory) {
+                  onOrderHistory(order);
+                }
+              }}
+            />
           </div>
         </div>
           

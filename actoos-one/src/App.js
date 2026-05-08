@@ -267,16 +267,18 @@ function AppContent() {
                     const addr = data.address;
                     let detectedAddress = '';
                     
-                    if (addr.neighbourhood) {
-                      detectedAddress = `Bamako, ${addr.neighbourhood}`;
-                    } else if (addr.suburb) {
-                      detectedAddress = `Bamako, ${addr.suburb}`;
-                    } else if (addr.district || addr.city_district) {
-                      detectedAddress = `Bamako, ${addr.district || addr.city_district}`;
-                    } else if (addr.city || addr.town || addr.village) {
-                      detectedAddress = addr.city || addr.town || addr.village;
+                    // Obtenir la ville/commune - SANS préfixer avec Bamako
+                    const city = addr.city || addr.town || addr.village || addr.municipality || '';
+                    const area = addr.neighbourhood || addr.suburb || addr.district || addr.city_district || '';
+                    
+                    if (city && area) {
+                      detectedAddress = `${city}, ${area}`;
+                    } else if (city) {
+                      detectedAddress = city;
+                    } else if (area) {
+                      detectedAddress = area;
                     } else {
-                      detectedAddress = data.display_name?.split(',').slice(0, 2).join(',') || 'Position actuelle';
+                      detectedAddress = data.display_name?.split(',').slice(0, 2).join(', ') || 'Position actuelle';
                     }
                     
                     handleAddressSelect(detectedAddress);
@@ -353,16 +355,18 @@ function AppContent() {
           const addr = data.address;
           let detectedAddress = '';
           
-          if (addr.neighbourhood) {
-            detectedAddress = `Bamako, ${addr.neighbourhood}`;
-          } else if (addr.suburb) {
-            detectedAddress = `Bamako, ${addr.suburb}`;
-          } else if (addr.district || addr.city_district) {
-            detectedAddress = `Bamako, ${addr.district || addr.city_district}`;
-          } else if (addr.city || addr.town || addr.village) {
-            detectedAddress = addr.city || addr.town || addr.village;
+          // Obtenir la ville/commune - SANS préfixer avec Bamako
+          const city = addr.city || addr.town || addr.village || addr.municipality || '';
+          const area = addr.neighbourhood || addr.suburb || addr.district || addr.city_district || '';
+          
+          if (city && area) {
+            detectedAddress = `${city}, ${area}`;
+          } else if (city) {
+            detectedAddress = city;
+          } else if (area) {
+            detectedAddress = area;
           } else {
-            detectedAddress = data.display_name?.split(',').slice(0, 2).join(',') || 'Position actuelle';
+            detectedAddress = data.display_name?.split(',').slice(0, 2).join(', ') || 'Position actuelle';
           }
           
           handleAddressSelect(detectedAddress);
@@ -416,16 +420,18 @@ function AppContent() {
                 const addr = data.address;
                 let detectedAddress = '';
                 
-                if (addr.neighbourhood) {
-                  detectedAddress = `Bamako, ${addr.neighbourhood}`;
-                } else if (addr.suburb) {
-                  detectedAddress = `Bamako, ${addr.suburb}`;
-                } else if (addr.district || addr.city_district) {
-                  detectedAddress = `Bamako, ${addr.district || addr.city_district}`;
-                } else if (addr.city || addr.town || addr.village) {
-                  detectedAddress = addr.city || addr.town || addr.village;
+                // Obtenir la ville/commune - SANS préfixer avec Bamako
+                const city = addr.city || addr.town || addr.village || addr.municipality || '';
+                const area = addr.neighbourhood || addr.suburb || addr.district || addr.city_district || '';
+                
+                if (city && area) {
+                  detectedAddress = `${city}, ${area}`;
+                } else if (city) {
+                  detectedAddress = city;
+                } else if (area) {
+                  detectedAddress = area;
                 } else {
-                  detectedAddress = data.display_name?.split(',').slice(0, 2).join(',') || 'Position actuelle';
+                  detectedAddress = data.display_name?.split(',').slice(0, 2).join(', ') || 'Position actuelle';
                 }
                 
                 handleAddressSelect(detectedAddress);
@@ -728,6 +734,14 @@ function AppContent() {
           isLoggedIn={isAuthenticated}
           currentUser={authProfile}
           onLoginClick={() => setShowLoginSheet(true)}
+        />
+        {/* Login Sheet - disponible sur le profil */}
+        <LoginSheet
+          isOpen={showLoginSheet}
+          onClose={() => setShowLoginSheet(false)}
+          onSuccess={() => {
+            setShowLoginSheet(false);
+          }}
         />
         <LocationPermissionSheet
           isOpen={showLocationPermission}

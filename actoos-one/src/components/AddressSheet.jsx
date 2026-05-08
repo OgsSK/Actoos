@@ -125,20 +125,25 @@ export function AddressSheet({
       
       const data = await response.json();
       
-      // Construire une adresse lisible
+      // Construire une adresse lisible - SANS préfixer avec Bamako
       const addr = data.address;
       let formattedAddress = '';
       
-      if (addr.neighbourhood) {
-        formattedAddress = `Bamako, ${addr.neighbourhood}`;
-      } else if (addr.suburb) {
-        formattedAddress = `Bamako, ${addr.suburb}`;
-      } else if (addr.district || addr.city_district) {
-        formattedAddress = `Bamako, ${addr.district || addr.city_district}`;
-      } else if (addr.city || addr.town || addr.village) {
-        formattedAddress = addr.city || addr.town || addr.village;
+      // Obtenir la ville/commune
+      const city = addr.city || addr.town || addr.village || addr.municipality || '';
+      
+      // Obtenir le quartier/zone
+      const area = addr.neighbourhood || addr.suburb || addr.district || addr.city_district || '';
+      
+      if (city && area) {
+        formattedAddress = `${city}, ${area}`;
+      } else if (city) {
+        formattedAddress = city;
+      } else if (area) {
+        formattedAddress = area;
       } else {
-        formattedAddress = data.display_name?.split(',').slice(0, 2).join(',') || 'Position actuelle';
+        // Fallback sur le display_name
+        formattedAddress = data.display_name?.split(',').slice(0, 2).join(', ') || 'Position actuelle';
       }
       
       return formattedAddress;

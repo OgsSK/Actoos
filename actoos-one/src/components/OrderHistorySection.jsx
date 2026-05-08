@@ -51,7 +51,7 @@ function formatDate(dateString) {
 }
 
 // Composant pour une commande
-function OrderCard({ order, onReorder, isReordering }) {
+function OrderCard({ order, onReorder, isReordering, onTrackOrder }) {
   const status = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   const StatusIcon = status.icon;
   
@@ -139,6 +139,7 @@ function OrderCard({ order, onReorder, isReordering }) {
         {/* Bouton Suivre pour les commandes en cours */}
         {['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'delivering'].includes(order.status) && (
           <button
+            onClick={() => onTrackOrder && onTrackOrder(order)}
             className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-xl font-medium text-sm active:bg-gray-800 transition-colors"
             data-testid={`track-btn-${order.id}`}
           >
@@ -152,7 +153,7 @@ function OrderCard({ order, onReorder, isReordering }) {
 }
 
 // Composant principal
-export function OrderHistorySection({ onOrderClick }) {
+export function OrderHistorySection({ onOrderClick, onTrackOrder }) {
   const { user } = useAuth();
   const { addItem, setRestaurantId, restaurantId: currentRestaurantId, clearCart } = useCart();
   
@@ -294,6 +295,7 @@ export function OrderHistorySection({ onOrderClick }) {
           order={order}
           onReorder={handleReorder}
           isReordering={reorderingId === order.id}
+          onTrackOrder={onTrackOrder}
         />
       ))}
       
