@@ -1,20 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Minus, Plus, X, AlertTriangle } from 'lucide-react';
+import { Minus, Plus, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { systemConfig } from '../data/mockData';
 
 export function AddToCartSheet({ isOpen, item, restaurant, onClose, canOrder = true }) {
   const [quantity, setQuantity] = useState(1);
   const [instructions, setInstructions] = useState('');
-  const [showConflictAlert, setShowConflictAlert] = useState(false);
-  const { addToCart, cartItems, cartRestaurant, clearCart, setActiveRestaurant } = useCart();
+  const { addToCart } = useCart();
 
   // Reset quand on ouvre avec un nouvel item
   useEffect(() => {
     if (isOpen) {
       setQuantity(1);
       setInstructions('');
-      setShowConflictAlert(false);
     }
   }, [isOpen, item?.id]);
 
@@ -29,43 +27,15 @@ export function AddToCartSheet({ isOpen, item, restaurant, onClose, canOrder = t
   const acceptsWhenClosed = restaurant?.acceptOrdersWhenClosed || restaurant?.accepts_orders_when_closed;
   const orderAllowed = canOrder && (isRestaurantOpen || acceptsWhenClosed);
 
-  // Vérifier si le panier a des articles d'un autre restaurant
-  const hasConflict = cartItems.length > 0 && 
-                      cartRestaurant && 
-                      cartRestaurant.id !== restaurant?.id;
-
+  // Ajouter au panier du restaurant (multi-panier comme Deliveroo)
   const handleAdd = () => {
     if (!orderAllowed) return;
     
-    // Si conflit avec un autre restaurant, montrer l'alerte
-    if (hasConflict) {
-      setShowConflictAlert(true);
-      return;
-    }
-    
+    // Ajouter directement - le système supporte les paniers multiples
     const success = addToCart(item, quantity, instructions, restaurant);
     if (success) {
       onClose();
     }
-  };
-
-  // Confirmer le remplacement du panier
-  const handleConfirmReplace = () => {
-    // Vider l'ancien panier
-    clearCart();
-    // Définir le nouveau restaurant comme actif
-    setActiveRestaurant(restaurant);
-    // Ajouter l'article
-    const success = addToCart(item, quantity, instructions, restaurant);
-    if (success) {
-      setShowConflictAlert(false);
-      onClose();
-    }
-  };
-
-  // Annuler et garder l'ancien panier
-  const handleCancelReplace = () => {
-    setShowConflictAlert(false);
   };
 
   return (
@@ -194,82 +164,6 @@ export function AddToCartSheet({ isOpen, item, restaurant, onClose, canOrder = t
           )}
         </div>
       </div>
-
-      {/* Modal de conflit - Style Uber Eats */}
-      {showConflictAlert && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-          {/* Backdrop sombre */}
-          <div 
-            className="absolute inset-0 bg-black/60"
-            onClick={handleCancelReplace}
-          />
-          
-          {/* Modal */}
-          <div className="relative bg-white rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-bounce-in">
-            {/* Icon */}
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-amber-600" />
-              </div>
-            </div>
-            
-            {/* Titre */}
-            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
-              Créer une nouvelle commande ?
-            </h3>
-            
-            {/* Message */}
-            <p className="text-gray-500 text-center mb-6">
-              Votre panier contient des articles de{' '}
-              <span className="font-semibold text-gray-900">
-                {cartRestaurant?.name}
-              </span>
-              . Souhaitez-vous les supprimer et ajouter cet article de{' '}
-              <span className="font-semibold text-[#FF5A00]">
-                {restaurant?.name}
-              </span>
-              {' '}?
-            </p>
-            
-            {/* Boutons */}
-            <div className="space-y-3">
-              <button
-                onClick={handleConfirmReplace}
-                className="w-full py-4 bg-[#FF5A00] text-white font-semibold rounded-2xl active:bg-[#E55100] transition-colors"
-                data-testid="confirm-replace-cart"
-              >
-                Oui, nouvelle commande
-              </button>
-              <button
-                onClick={handleCancelReplace}
-                className="w-full py-4 bg-gray-100 text-gray-700 font-semibold rounded-2xl active:bg-gray-200 transition-colors"
-                data-testid="cancel-replace-cart"
-              >
-                Non, garder mon panier
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style jsx>{`
-        @keyframes bounce-in {
-          0% {
-            transform: scale(0.9);
-            opacity: 0;
-          }
-          50% {
-            transform: scale(1.02);
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        .animate-bounce-in {
-          animation: bounce-in 0.3s ease-out;
-        }
-      `}</style>
     </div>
   );
 }

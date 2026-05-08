@@ -7,14 +7,28 @@ export function Header({
   onSearchClick, 
   onProfileClick, 
   onFavoritesClick,
-  onCartClick 
+  onCartClick,
+  onBasketsClick
 }) {
-  const { getItemCount } = useCart();
-  const cartCount = getItemCount();
+  const { getTotalItemCount, getAllCarts } = useCart();
+  const totalCount = getTotalItemCount();
+  const allCarts = getAllCarts();
+  const basketCount = allCarts.length;
   
   // Ne jamais afficher "null" - utiliser une chaîne vide par défaut
   const displayAddress = address && address !== 'null' ? address : '';
   const showAddPrompt = !displayAddress;
+
+  // Décider quelle action prendre au clic sur panier
+  const handleCartClick = () => {
+    if (basketCount > 1 && onBasketsClick) {
+      // Plusieurs paniers → écran Baskets (style Deliveroo)
+      onBasketsClick();
+    } else {
+      // Un seul panier ou aucun → CartSheet classique
+      onCartClick();
+    }
+  };
 
   return (
     <>
@@ -60,14 +74,20 @@ export function Header({
                 <Heart className="w-5 h-5 text-gray-600" />
               </button>
               <button
-                onClick={onCartClick}
+                onClick={handleCartClick}
                 className="p-3 hover:bg-gray-100 rounded-full transition-colors relative"
-                title="Panier"
+                title={basketCount > 1 ? `${basketCount} paniers` : 'Panier'}
               >
                 <ShoppingBag className="w-5 h-5 text-gray-600" />
-                {cartCount > 0 && (
+                {totalCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-[#FF5A00] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                    {cartCount}
+                    {totalCount > 9 ? '9+' : totalCount}
+                  </span>
+                )}
+                {/* Indicateur multi-paniers */}
+                {basketCount > 1 && (
+                  <span className="absolute -bottom-1 -right-1 bg-[#00CCBB] text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
+                    {basketCount}
                   </span>
                 )}
               </button>
@@ -102,14 +122,20 @@ export function Header({
               <Heart className="w-5 h-5 text-gray-600" />
             </button>
             <button
-              onClick={onCartClick}
+              onClick={handleCartClick}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
               data-testid="mobile-cart-btn"
             >
               <ShoppingBag className="w-5 h-5 text-gray-600" />
-              {cartCount > 0 && (
+              {totalCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-[#FF5A00] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {cartCount}
+                  {totalCount > 9 ? '9+' : totalCount}
+                </span>
+              )}
+              {/* Indicateur multi-paniers */}
+              {basketCount > 1 && (
+                <span className="absolute -bottom-0.5 -right-0.5 bg-[#00CCBB] text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border-2 border-white">
+                  {basketCount}
                 </span>
               )}
             </button>

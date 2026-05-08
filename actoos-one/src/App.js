@@ -37,6 +37,7 @@ import { FavoritesScreen } from './components/FavoritesScreen';
 import { RatingSheet } from './components/RatingSystem';
 import { FloatingCartButton } from './components/FloatingCartButton';
 import { CartSheet } from './components/CartSheet';
+import { BasketsScreen } from './components/BasketsScreen';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider, useCart } from './context/CartContext';
 import { WalletProvider } from './context/WalletContext';
@@ -83,6 +84,7 @@ const SCREENS = {
   PROFIL: 'profil',
   ORDER_HISTORY: 'order_history',
   FAVORITES: 'favorites',
+  BASKETS: 'baskets',
 };
 
 function AppContent() {
@@ -821,6 +823,32 @@ function AppContent() {
     );
   }
 
+  if (currentScreen === SCREENS.BASKETS) {
+    return (
+      <BasketsScreen
+        onBack={() => setCurrentScreen(previousScreen || SCREENS.HOME)}
+        onViewRestaurant={(restaurant) => {
+          if (restaurant) {
+            const fullRestaurant = restaurants.find(r => r.id === restaurant.id);
+            if (fullRestaurant) {
+              handleRestaurantClick(fullRestaurant);
+            }
+          }
+        }}
+        onViewBasket={(restaurantId) => {
+          // Changer le panier actif et ouvrir le CartSheet
+          const restaurant = restaurants.find(r => r.id === restaurantId);
+          if (restaurant) {
+            setActiveRestaurant(restaurant);
+            setSelectedRestaurant(restaurant);
+            setCurrentScreen(SCREENS.RESTAURANT);
+            setTimeout(() => setCartSheet(true), 300);
+          }
+        }}
+      />
+    );
+  }
+
   if (currentScreen === SCREENS.PROFIL) {
     return (
       <>
@@ -999,6 +1027,10 @@ function AppContent() {
           setCurrentScreen(SCREENS.FAVORITES);
         }}
         onCartClick={() => setCartSheet(true)}
+        onBasketsClick={() => {
+          setPreviousScreen(SCREENS.HOME);
+          setCurrentScreen(SCREENS.BASKETS);
+        }}
       />
 
       {/* Categories */}
