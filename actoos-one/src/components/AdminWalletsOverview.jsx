@@ -21,9 +21,12 @@ import {
   ArrowDownCircle,
   Eye,
   ChevronRight,
+  QrCode,
+  Scan,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { WALLET_TYPES } from '../services/financialService';
+import { PayQRCodeSheet, ScanQRCodeSheet } from './WalletQRPayment';
 
 const WALLET_TYPE_CONFIG = {
   client: { 
@@ -62,6 +65,10 @@ export function AdminWalletsOverview() {
   const [selectedWallet, setSelectedWallet] = useState(null);
   const [walletTransactions, setWalletTransactions] = useState([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
+
+  // QR Payment sheets
+  const [showEncaisserSheet, setShowEncaisserSheet] = useState(false);
+  const [showPayerSheet, setShowPayerSheet] = useState(false);
 
   // Charger les wallets
   const loadWallets = useCallback(async () => {
@@ -216,6 +223,35 @@ export function AdminWalletsOverview() {
           </p>
           <p className="text-sm opacity-80">{stats.driverBalance.toLocaleString()} FCFA</p>
         </div>
+      </div>
+
+      {/* Admin Quick Actions - QR Encaisser/Payer */}
+      <div className="bg-gray-900 text-white rounded-2xl p-4 mb-6">
+        <h3 className="font-semibold mb-3 flex items-center gap-2">
+          <Wallet className="w-5 h-5 text-[#FF5A00]" />
+          Actions rapides Admin
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setShowEncaisserSheet(true)}
+            className="bg-[#FF5A00] hover:bg-[#FF5A00]/90 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+            data-testid="admin-encaisser-btn"
+          >
+            <QrCode className="w-5 h-5" />
+            Encaisser
+          </button>
+          <button
+            onClick={() => setShowPayerSheet(true)}
+            className="bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+            data-testid="admin-payer-btn"
+          >
+            <Scan className="w-5 h-5" />
+            Payer un compte
+          </button>
+        </div>
+        <p className="text-xs text-gray-400 mt-2">
+          Utilisez ces boutons pour encaisser les livreurs ou créditer des comptes.
+        </p>
       </div>
 
       {/* Filters */}
@@ -406,6 +442,29 @@ export function AdminWalletsOverview() {
           </div>
         </div>
       )}
+
+      {/* QR Encaisser Sheet - Pour encaisser livreurs/partenaires */}
+      <PayQRCodeSheet
+        isOpen={showEncaisserSheet}
+        onClose={() => {
+          setShowEncaisserSheet(false);
+          loadWallets(); // Recharger après transaction
+        }}
+        userId="actoos-admin"
+      />
+
+      {/* QR Payer Sheet - Pour créditer des comptes */}
+      <ScanQRCodeSheet
+        isOpen={showPayerSheet}
+        onClose={() => {
+          setShowPayerSheet(false);
+          loadWallets();
+        }}
+        onPaymentConfirmed={(data) => {
+          console.log('Paiement admin effectué:', data);
+          loadWallets();
+        }}
+      />
     </div>
   );
 }

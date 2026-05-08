@@ -21,6 +21,8 @@ import {
   Calendar,
   ChevronRight,
   X,
+  QrCode,
+  Scan,
 } from 'lucide-react';
 import { 
   getPartnerEarnings, 
@@ -32,6 +34,7 @@ import {
 } from '../services/financialService';
 import { calculateWithdrawal, WALLET_CONFIG } from '../config/businessConfig';
 import { BottomSheet } from './BottomSheet';
+import { PayQRCodeSheet, ScanQRCodeSheet } from './WalletQRPayment';
 
 const WITHDRAWAL_METHODS = [
   { id: 'orange_money', name: 'Orange Money', icon: '🟠', feeLabel: '1%' },
@@ -55,6 +58,10 @@ export function PartnerEarningsScreen({ partnerId, onBack }) {
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [phoneNumber, setPhoneNumber] = useState('+223 ');
   const [withdrawError, setWithdrawError] = useState(null);
+
+  // QR Payment flow
+  const [showEncaisserSheet, setShowEncaisserSheet] = useState(false);
+  const [showPayerSheet, setShowPayerSheet] = useState(false);
 
   // Charger les données
   const loadData = useCallback(async () => {
@@ -257,6 +264,26 @@ export function PartnerEarningsScreen({ partnerId, onBack }) {
               <ArrowDownCircle className="w-5 h-5" />
               Retirer
             </button>
+
+            {/* QR Buttons */}
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <button
+                onClick={() => setShowEncaisserSheet(true)}
+                className="py-3 bg-white/20 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
+                data-testid="partner-encaisser-btn"
+              >
+                <QrCode className="w-4 h-4" />
+                Encaisser
+              </button>
+              <button
+                onClick={() => setShowPayerSheet(true)}
+                className="py-3 bg-white/20 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
+                data-testid="partner-payer-btn"
+              >
+                <Scan className="w-4 h-4" />
+                Payer
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -536,6 +563,29 @@ export function PartnerEarningsScreen({ partnerId, onBack }) {
           </div>
         </div>
       )}
+
+      {/* QR Encaisser Sheet - Génère QR pour recevoir paiement client */}
+      <PayQRCodeSheet
+        isOpen={showEncaisserSheet}
+        onClose={() => {
+          setShowEncaisserSheet(false);
+          loadData(); // Recharger après paiement reçu
+        }}
+        userId={partnerId}
+      />
+
+      {/* QR Payer Sheet - Scanner pour payer */}
+      <ScanQRCodeSheet
+        isOpen={showPayerSheet}
+        onClose={() => {
+          setShowPayerSheet(false);
+          loadData();
+        }}
+        onPaymentConfirmed={(data) => {
+          console.log('Paiement partenaire effectué:', data);
+          loadData();
+        }}
+      />
     </div>
   );
 }

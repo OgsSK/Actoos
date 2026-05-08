@@ -31,7 +31,9 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   Smartphone,
-  CheckCircle
+  CheckCircle,
+  QrCode,
+  Scan
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { updateOrderStatus } from '../services/orderService';
@@ -50,6 +52,7 @@ import {
   WALLET_TYPES 
 } from '../services/financialService';
 import { calculateWithdrawal, WALLET_CONFIG } from '../config/businessConfig';
+import { PayQRCodeSheet, ScanQRCodeSheet } from './WalletQRPayment';
 
 export function DriverAppScreen({ driverId, onBack }) {
   const [isOnline, setIsOnline] = useState(false);
@@ -73,6 +76,10 @@ export function DriverAppScreen({ driverId, onBack }) {
   const [walletMethod, setWalletMethod] = useState('orange_money');
   const [walletStep, setWalletStep] = useState('amount'); // amount, confirm, processing, success
   const [walletError, setWalletError] = useState(null);
+  
+  // QR Payment sheets
+  const [showEncaisserSheet, setShowEncaisserSheet] = useState(false);
+  const [showPayerSheet, setShowPayerSheet] = useState(false);
   
   // Wallet livreur - Connecté à Supabase
   const [driverWallet, setDriverWallet] = useState({
@@ -547,6 +554,31 @@ export function DriverAppScreen({ driverId, onBack }) {
           >
             <History className="w-4 h-4" />
             Historique
+          </button>
+        </div>
+
+        {/* QR Payment buttons for cash collection */}
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          <button
+            onClick={() => setShowEncaisserSheet(true)}
+            disabled={driverWallet.balance < WALLET_CONFIG.min_driver_caution}
+            className={`rounded-xl p-2 flex items-center justify-center gap-1 text-sm font-medium ${
+              driverWallet.balance >= WALLET_CONFIG.min_driver_caution
+                ? 'bg-[#FF5A00] hover:bg-[#FF5A00]/90 text-white'
+                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+            }`}
+            data-testid="driver-encaisser-btn"
+          >
+            <QrCode className="w-4 h-4" />
+            Encaisser Client
+          </button>
+          <button
+            onClick={() => setShowPayerSheet(true)}
+            className="bg-gray-700 hover:bg-gray-600 rounded-xl p-2 flex items-center justify-center gap-1 text-white text-sm font-medium"
+            data-testid="driver-payer-btn"
+          >
+            <Scan className="w-4 h-4" />
+            Scanner QR
           </button>
         </div>
 
@@ -1040,6 +1072,29 @@ export function DriverAppScreen({ driverId, onBack }) {
           animation: slide-up 0.3s ease-out;
         }
       `}</style>
+
+      {/* QR Encaisser Sheet - Pour encaisser les clients en cash */}
+      <PayQRCodeSheet
+        isOpen={showEncaisserSheet}
+        onClose={() => {
+          setShowEncaisserSheet(false);
+          fetchDriverWallet(); // Recharger après transaction
+        }}
+        userId={driverId}
+      />
+
+      {/* QR Payer Sheet - Scanner pour payer */}
+      <ScanQRCodeSheet
+        isOpen={showPayerSheet}
+        onClose={() => {
+          setShowPayerSheet(false);
+          fetchDriverWallet();
+        }}
+        onPaymentConfirmed={(data) => {
+          console.log('Paiement livreur effectué:', data);
+          fetchDriverWallet();
+        }}
+      />
     </div>
   );
 }
