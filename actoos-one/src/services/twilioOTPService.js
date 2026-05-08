@@ -9,16 +9,16 @@
 
 import { supabase } from './supabaseClient';
 
-// Twilio Configuration
+// Twilio Configuration - Use environment variables
 const TWILIO_CONFIG = {
-  ACCOUNT_SID: 'AC8fc82ea402ee7ae52cc74d368045655e',
-  AUTH_TOKEN: '65a45c7f2053de99ddfed6b179b93d93',
+  ACCOUNT_SID: process.env.REACT_APP_TWILIO_ACCOUNT_SID || '',
+  AUTH_TOKEN: process.env.REACT_APP_TWILIO_AUTH_TOKEN || '',
   // Option 1: Sender ID alphanumérique (recommandé pour production)
-  SENDER_ID: 'ACTOOS',
+  SENDER_ID: process.env.REACT_APP_TWILIO_SENDER_ID || 'ACTOOS',
   // Option 2: Numéro Twilio (pour compte Trial)
-  TWILIO_NUMBER: '+18777804236',
+  TWILIO_NUMBER: process.env.REACT_APP_TWILIO_PHONE || '',
   // Mode: 'sender_id' ou 'phone_number'
-  MODE: 'phone_number', // Changez à 'sender_id' après configuration dans Twilio Console
+  MODE: process.env.REACT_APP_TWILIO_MODE || 'sender_id',
 };
 
 // OTP Settings
