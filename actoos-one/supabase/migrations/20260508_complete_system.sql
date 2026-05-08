@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS promo_codes (
     usage_limit INTEGER,
     usage_count INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT true,
-    partner_id UUID REFERENCES partners(id), -- NULL = global promo
+    partner_id UUID REFERENCES partners(id),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS ratings (
     driver_rating INTEGER CHECK (driver_rating BETWEEN 1 AND 5),
     restaurant_comment TEXT,
     driver_comment TEXT,
-    restaurant_tags TEXT[], -- ex: ['quality', 'fast', 'packaging']
-    driver_tags TEXT[], -- ex: ['polite', 'fast_delivery']
+    restaurant_tags TEXT[],
+    driver_tags TEXT[],
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -55,30 +55,30 @@ CREATE TABLE IF NOT EXISTS ratings (
 CREATE INDEX IF NOT EXISTS idx_ratings_order ON ratings(order_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_user ON ratings(user_id);
 
--- 4. TABLE PARTNER_ANALYTICS (statistiques partenaires - agrégées quotidiennement)
+-- 4. TABLE PARTNER_ANALYTICS (statistiques partenaires)
 CREATE TABLE IF NOT EXISTS partner_analytics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     partner_id UUID REFERENCES partners(id) ON DELETE CASCADE,
     date DATE NOT NULL,
     orders_count INTEGER DEFAULT 0,
     orders_value DECIMAL(12, 2) DEFAULT 0,
-    avg_preparation_time INTEGER, -- en minutes
+    avg_preparation_time INTEGER,
     cancellation_count INTEGER DEFAULT 0,
     avg_rating DECIMAL(3, 2),
     ratings_count INTEGER DEFAULT 0,
-    top_items JSONB, -- [{item_id, name, quantity}]
-    peak_hours JSONB, -- [{hour, orders_count}]
+    top_items JSONB,
+    peak_hours JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(partner_id, date)
 );
 
 CREATE INDEX IF NOT EXISTS idx_partner_analytics_date ON partner_analytics(partner_id, date);
 
--- 5. TABLE SCHEDULED_NOTIFICATIONS (notifications programmées)
+-- 5. TABLE SCHEDULED_NOTIFICATIONS
 CREATE TABLE IF NOT EXISTS scheduled_notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    type VARCHAR(50) NOT NULL, -- 'order_reminder', 'promo', 'review_request'
+    type VARCHAR(50) NOT NULL,
     title TEXT NOT NULL,
     body TEXT NOT NULL,
     data JSONB,
@@ -94,7 +94,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_scheduled ON scheduled_notification
 CREATE TABLE IF NOT EXISTS user_pins (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
-    pin_hash TEXT NOT NULL, -- PIN hashé avec bcrypt
+    pin_hash TEXT NOT NULL,
     failed_attempts INTEGER DEFAULT 0,
     locked_until TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -201,19 +201,15 @@ BEGIN
         RETURN FALSE;
     END IF;
     
-    -- Vérifier si compte bloqué
     IF v_pin_record.locked_until IS NOT NULL AND v_pin_record.locked_until > NOW() THEN
         RETURN FALSE;
     END IF;
     
-    -- Vérifier le PIN (utilise pgcrypto)
     v_is_valid := v_pin_record.pin_hash = crypt(p_pin, v_pin_record.pin_hash);
     
     IF v_is_valid THEN
-        -- Reset failed attempts
         UPDATE user_pins SET failed_attempts = 0, locked_until = NULL WHERE user_id = p_user_id;
     ELSE
-        -- Increment failed attempts
         UPDATE user_pins 
         SET failed_attempts = failed_attempts + 1,
             locked_until = CASE 
@@ -256,24 +252,32 @@ ALTER TABLE partner_analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scheduled_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_pins ENABLE ROW LEVEL SECURITY;
 
--- Promo codes: lecture pour tous, écriture pour admin
-CREATE POLICY "promo_codes_read" ON promo_codes FOR SELECT USING (is_active = true);
-CREATE POLICY "promo_codes_admin" ON promo_codes FOR ALL USING (true); -- Admin via service role
+-- Promo codes policies
+DROP POLICY IF EXISTS promo_codes_read ON promo_codes;
+CREATE POLICY promo_codes_read ON promo_codes FOR SELECT USING (is_active = true);
 
--- Promo usage: utilisateurs peuvent voir leurs propres usages
-CREATE POLICY "promo_usage_user" ON promo_usage FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS promo_codes_admin ON promo_codes;
+CREATE POLICY promo_codes_admin ON promo_codes FOR ALL USING (true);
 
--- Ratings: utilisateurs peuvent créer pour leurs commandes
-CREATE POLICY "ratings_read" ON ratings FOR SELECT USING (true);
-CREATE POLICY "ratings_insert" ON ratings FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Promo usage policies
+DROP POLICY IF EXISTS promo_usage_user ON promo_usage;
+CREATE POLICY promo_usage_user ON promo_usage FOR ALL USING (auth.uid() = user_id);
 
--- Partner analytics: partenaires voient leurs stats
-CREATE POLICY "analytics_partner" ON partner_analytics FOR SELECT USING (true);
+-- Ratings policies
+DROP POLICY IF EXISTS ratings_read ON ratings;
+CREATE POLICY ratings_read ON ratings FOR SELECT USING (true);
 
--- Notifications: utilisateurs voient leurs notifs
-CREATE POLICY "notifications_user" ON scheduled_notifications FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS ratings_insert ON ratings;
+CREATE POLICY ratings_insert ON ratings FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- User PINs: privé
-CREATE POLICY "pins_user" ON user_pins FOR ALL USING (auth.uid() = user_id);
+-- Partner analytics policies
+DROP POLICY IF EXISTS analytics_partner ON partner_analytics;
+CREATE POLICY analytics_partner ON partner_analytics FOR SELECT USING (true);
 
-COMMIT;
+-- Notifications policies
+DROP POLICY IF EXISTS notifications_user ON scheduled_notifications;
+CREATE POLICY notifications_user ON scheduled_notifications FOR ALL USING (auth.uid() = user_id);
+
+-- User PINs policies
+DROP POLICY IF EXISTS pins_user ON user_pins;
+CREATE POLICY pins_user ON user_pins FOR ALL USING (auth.uid() = user_id);
