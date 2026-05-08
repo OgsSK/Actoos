@@ -40,8 +40,8 @@ const getTokenExpiryTime = (token) => {
 };
 
 // Constants for token refresh
-const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // Refresh 5 minutes before expiry
-const TOKEN_CHECK_INTERVAL = 60 * 1000; // Check every minute
+const TOKEN_REFRESH_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // Refresh 7 days before expiry
+const TOKEN_CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour (not every minute)
 
 // Helper: Safe localStorage operations (handles Safari private mode, quota exceeded, etc.)
 const safeStorage = {

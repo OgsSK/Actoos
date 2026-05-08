@@ -55,11 +55,11 @@ async function verifyJWTSignature(token: string): Promise<boolean> {
   }
 }
 
-// Create new JWT
-async function createJWT(payload: Record<string, unknown>, expiresInHours = 24): Promise<string> {
+// Create new JWT - 30 days expiration for work apps
+async function createJWT(payload: Record<string, unknown>, expiresInDays = 30): Promise<string> {
   const header = { alg: "HS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
-  const exp = now + (expiresInHours * 60 * 60);
+  const exp = now + (expiresInDays * 24 * 60 * 60);
   const fullPayload = { ...payload, iat: now, exp };
   
   const encoder = new TextEncoder();

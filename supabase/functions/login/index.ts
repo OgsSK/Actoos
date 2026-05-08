@@ -21,10 +21,10 @@ async function verifyPassword(password: string, hash: string): Promise<{valid: b
 }
 
 // Create JWT
-async function createJWT(payload: Record<string, unknown>, expiresInHours = 24): Promise<string> {
+async function createJWT(payload: Record<string, unknown>, expiresInDays = 30): Promise<string> {
   const header = { alg: "HS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
-  const exp = now + (expiresInHours * 60 * 60);
+  const exp = now + (expiresInDays * 24 * 60 * 60); // 30 days by default for work apps
   const fullPayload = { ...payload, iat: now, exp };
   
   const encoder = new TextEncoder();
