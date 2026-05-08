@@ -480,6 +480,8 @@ function AppContent() {
   // Handle location permission denied
   const handleLocationDenied = () => {
     setShowLocationPermission(false);
+    // Marquer que l'utilisateur a fait son choix pour ne plus redemander
+    localStorage.setItem('actoos_location_permission', 'denied');
   };
 
   // Handle address selection

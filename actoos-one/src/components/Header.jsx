@@ -1,5 +1,6 @@
-import { Search, MapPin, ChevronDown, Navigation, Heart, User, ShoppingBag } from 'lucide-react';
+import { Search, MapPin, ChevronDown, Navigation, Heart, User, ShoppingBag, LogOut } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 export function Header({ 
   address, 
@@ -11,6 +12,7 @@ export function Header({
   onBasketsClick
 }) {
   const { getTotalItemCount, getAllCarts } = useCart();
+  const { isAuthenticated, user, profile } = useAuth();
   const totalCount = getTotalItemCount();
   const allCarts = getAllCarts();
   const basketCount = allCarts.length;
@@ -93,10 +95,28 @@ export function Header({
               </button>
               <button
                 onClick={onProfileClick}
-                className="flex items-center gap-2 px-4 py-2 bg-[#FF5A00] hover:bg-[#E55100] text-white rounded-full transition-colors"
+                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${
+                  isAuthenticated 
+                    ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' 
+                    : 'bg-[#FF5A00] hover:bg-[#E55100] text-white'
+                }`}
+                data-testid="desktop-profile-btn"
               >
-                <User className="w-4 h-4" />
-                <span className="text-sm font-medium">Connexion</span>
+                {isAuthenticated ? (
+                  <>
+                    <div className="w-7 h-7 bg-[#FF5A00] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                      {(profile?.name || user?.email || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm font-medium max-w-[100px] truncate">
+                      {profile?.name || user?.email?.split('@')[0] || 'Profil'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <User className="w-4 h-4" />
+                    <span className="text-sm font-medium">Connexion</span>
+                  </>
+                )}
               </button>
             </nav>
           </div>
