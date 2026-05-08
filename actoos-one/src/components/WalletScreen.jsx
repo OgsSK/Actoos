@@ -267,19 +267,19 @@ export function WalletScreen({ onBack }) {
           {/* QR Payment Buttons */}
           <div className="flex gap-3 mt-3">
             <button
-              onClick={() => setShowPayQR(true)}
+              onClick={() => setShowScanQR(true)}
               className="flex-1 bg-white/10 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-white/20 transition-colors border border-white/30"
               data-testid="pay-qr-btn"
             >
-              <QrCode className="w-4 h-4" />
+              <Scan className="w-4 h-4" />
               Payer
             </button>
             <button
-              onClick={() => setShowScanQR(true)}
+              onClick={() => setShowPayQR(true)}
               className="flex-1 bg-white/10 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-white/20 transition-colors border border-white/30"
               data-testid="scan-qr-btn"
             >
-              <Scan className="w-4 h-4" />
+              <QrCode className="w-4 h-4" />
               Encaisser
             </button>
           </div>

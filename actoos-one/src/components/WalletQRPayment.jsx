@@ -91,7 +91,7 @@ export function PayQRCodeSheet({ isOpen, onClose, userId = 'user-001' }) {
   const presets = [500, 1000, 2000, 5000];
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="Payer">
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="Encaisser un paiement">
       <div className="py-4">
         {step === 'amount' && (
           <>
@@ -295,7 +295,7 @@ export function ScanQRCodeSheet({ isOpen, onClose, onPaymentConfirmed }) {
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="Scanner pour payer">
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="Payer avec QR">
       <div className="py-4">
         {step === 'scan' && (
           <>
@@ -303,7 +303,7 @@ export function ScanQRCodeSheet({ isOpen, onClose, onPaymentConfirmed }) {
             <div className="bg-gray-900 rounded-2xl h-64 flex items-center justify-center mb-6 relative overflow-hidden">
               <div className="absolute inset-4 border-2 border-white/30 rounded-xl" />
               <div className="absolute w-48 h-48 border-2 border-[#FF5A00] rounded-xl animate-pulse" />
-              <p className="text-white/60 text-sm">Caméra en cours d'activation...</p>
+              <p className="text-white/60 text-sm">Scannez le QR du bénéficiaire</p>
             </div>
 
             {/* Manual entry */}
