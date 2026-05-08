@@ -7,6 +7,9 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 - **Frontend**: React PWA, TailwindCSS
 - **Backend**: Supabase (PostgreSQL, Auth, Realtime, Storage)
 - **APIs**: Nominatim OpenStreetMap (Géocodage inverse), localStorage (persistance panier)
+- **Maps**: Leaflet / react-leaflet (suivi temps réel)
+- **Push Notifications**: Firebase (structure en place, clés à configurer)
+- **Paiements Mobile Money**: TouchPay API (structure en place, mode démo actif)
 
 ## Schéma Base de Données
 
@@ -220,18 +223,26 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 ### P0 (Critique - DONE)
 - ✅ Système financier complet implémenté
 - ✅ Cart Auth Flow (LoginSheet depuis CartSheet) corrigé
+- ✅ **Paiement Mobile Money câblé** (8 Mai 2026)
+  - MobileMoneyPaymentSheet intégré dans CheckoutScreen
+  - Détection automatique opérateur (Orange Money, Moov Money, Sama Money)
+  - Flow complet: numéro → confirmation → traitement → succès
+  - Mode démo fonctionnel (en attente clés API TouchPay)
+- ✅ **Carte de suivi temps réel** (8 Mai 2026)
+  - OrderTrackingMap avec Leaflet intégré dans OrderTrackingScreen
+  - Simulation mouvement livreur quand en route
+  - Bouton "Suivre en temps réel" visible pour statuts picked_up/on_the_way/delivering
 
 ### P1 (Important - À FAIRE)
 - [ ] **Exécuter migration Supabase** (`/supabase/migrations/20260508_financial_system.sql`)
-- [ ] Push Notifications réelles
-- [ ] Page tracking commande temps réel (carte)
-- [ ] Intégration API TouchPay/Orange Money/Wave réelle
+- [ ] Push Notifications réelles (clés Firebase à configurer)
+- [ ] Intégration API TouchPay/Orange Money/Wave réelle (clés API à obtenir)
+- [ ] Twilio SMS pour OTP réels
 
 ### P2 (Normal)
 - [ ] Validation codes promo via Supabase
 - [ ] Coordonnées GPS réelles restaurants
 - [ ] Calcul distance réel PostGIS
-- [ ] SMS OTP via Twilio
 
 ### P3 (Backlog)
 - [ ] Module Pharmacie
@@ -246,10 +257,13 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 ### Services Financiers
 ```
 /services/
-├── financialService.js    # Opérations financières complètes (NOUVEAU)
+├── financialService.js    # Opérations financières complètes
 ├── walletService.js       # Opérations wallet basiques
 ├── driverService.js       # Gestion livreurs
 ├── orderService.js        # Gestion commandes
+├── touchPayService.js     # Intégration Mobile Money (NOUVEAU)
+├── pushNotificationService.js # Service Push Notifications (NOUVEAU)
+├── firebaseConfig.js      # Configuration Firebase (NOUVEAU)
 └── supabaseClient.js      # Client Supabase
 ```
 
@@ -257,6 +271,23 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 ```
 /config/
 └── businessConfig.js      # Commissions, frais livraison, limites
+```
+
+### Composants Checkout & Paiement
+```
+/components/
+├── CheckoutScreen.jsx          # Flux checkout complet (MAJ: Mobile Money)
+├── PaymentMethodSelector.jsx   # Sélecteur méthode paiement
+├── MobileMoneyPaymentSheet.jsx # Modal paiement Mobile Money (NOUVEAU)
+└── TouchPaySheet.jsx           # Recharge wallet via TouchPay
+```
+
+### Composants Tracking
+```
+/components/
+├── OrderTrackingScreen.jsx    # Écran suivi commande (MAJ: bouton carte)
+├── OrderTrackingMap.jsx       # Carte Leaflet temps réel (NOUVEAU)
+└── NotificationPrompt.jsx     # Demande permission notifications (NOUVEAU)
 ```
 
 ### Composants Admin
