@@ -17,10 +17,19 @@ export const DemoBanner = ({ variant = 'full' }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
   if (!isDemo || dismissed) return null;
 
+  // Navigate to pricing page to upgrade
   const handleUpgrade = () => {
+    navigate('/pricing');
+  };
+
+  // Exit demo completely and go to home
+  const handleExitDemo = () => {
+    if (isExiting) return; // Prevent double-click
+    setIsExiting(true);
     exitDemo();
   };
 
@@ -43,8 +52,9 @@ export const DemoBanner = ({ variant = 'full' }) => {
               S'abonner
             </Button>
             <button
-              onClick={exitDemo}
-              className="text-white/80 hover:text-white p-1"
+              onClick={handleExitDemo}
+              disabled={isExiting}
+              className="text-white/80 hover:text-white p-1 disabled:opacity-50"
               aria-label="Quitter la démo"
             >
               <X className="w-4 h-4" />
@@ -100,8 +110,9 @@ export const DemoBanner = ({ variant = 'full' }) => {
               <ArrowRight className="w-4 h-4" />
             </Button>
             <button
-              onClick={exitDemo}
-              className="text-slate-400 hover:text-white p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              onClick={handleExitDemo}
+              disabled={isExiting}
+              className="text-slate-400 hover:text-white p-2 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
               aria-label="Quitter la démo"
               data-testid="demo-exit-btn"
             >
@@ -159,7 +170,7 @@ export const DemoRestrictionMessage = ({
   showUpgrade = true,
   className = ''
 }) => {
-  const { isDemo, getUpgradeMessage, exitDemo } = useDemo();
+  const { isDemo, getUpgradeMessage } = useDemo();
   const navigate = useNavigate();
 
   if (!isDemo) return null;
@@ -181,7 +192,7 @@ export const DemoRestrictionMessage = ({
           </p>
           {showUpgrade && (
             <Button
-              onClick={() => exitDemo()}
+              onClick={() => navigate('/pricing')}
               variant="outline"
               size="sm"
               className="mt-3 border-amber-300 text-amber-700 hover:bg-amber-100"

@@ -67,10 +67,12 @@ export const DemoProvider = ({ children }) => {
     return { available: true, is_demo: true };
   }, [isDemo]);
 
-  // Exit demo mode
-  const exitDemo = useCallback(async () => {
-    await logout();
-    window.location.href = '/';  // Retour à l'accueil
+  // Exit demo mode - synchronous redirect to prevent flash
+  const exitDemo = useCallback(() => {
+    // Clear auth immediately to prevent flash
+    logout();
+    // Redirect immediately - don't wait for React re-render
+    window.location.replace('/');
   }, [logout]);
 
   // Get upgrade message based on feature
