@@ -1,189 +1,120 @@
 /**
  * ACTOOS ONE - Firebase Configuration
  * 
- * Configuration Firebase pour Push Notifications.
- * Remplacez les valeurs par vos propres clés Firebase.
+ * Configuration pour Firebase Cloud Messaging (Push Notifications)
  */
 
 import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
-// Configuration Firebase - À REMPLACER avec vos propres clés
-// Obtenez ces valeurs depuis: Firebase Console > Project Settings > General > Your apps
+// Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "YOUR_API_KEY",
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "your-project.firebaseapp.com",
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "your-project-id",
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "your-project.appspot.com",
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:123456789:web:abc123"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "AIzaSyAaxTqYi944lkf00_XZEkX0tXOcMm_s208",
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "actoos-one.firebaseapp.com",
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "actoos-one",
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "actoos-one.firebasestorage.app",
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "539602054798",
+  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:539602054798:web:b81dc1315bfa15d11623df"
 };
 
-// Vérifier si Firebase est configuré
-export const isFirebaseConfigured = () => {
-  return firebaseConfig.apiKey !== "YOUR_API_KEY" && 
-         firebaseConfig.projectId !== "your-project-id";
-};
+// VAPID Key for Web Push
+const VAPID_KEY = process.env.REACT_APP_FIREBASE_VAPID_KEY || "BIsaWSER5PoWYo2OERM4qWpTiei9-nMDT1UfGebzuZZAkD1MWq_6aPr4G8cntk5c2RgEYpaFX5btAB7cQChu7eY";
 
 // Initialize Firebase
 let app = null;
 let messaging = null;
 
-export const initializeFirebase = async () => {
-  if (!isFirebaseConfigured()) {
-    console.warn('Firebase non configuré. Les notifications push seront désactivées.');
-    return null;
-  }
-
-  try {
-    // Vérifier si le navigateur supporte les notifications
-    const supported = await isSupported();
-    if (!supported) {
-      console.warn('Ce navigateur ne supporte pas les notifications push.');
-      return null;
-    }
-
-    app = initializeApp(firebaseConfig);
+try {
+  app = initializeApp(firebaseConfig);
+  
+  // Only initialize messaging in browser environment with service worker support
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     messaging = getMessaging(app);
-    
-    console.log('Firebase initialisé avec succès');
-    return messaging;
-  } catch (error) {
-    console.error('Erreur initialisation Firebase:', error);
-    return null;
   }
-};
+} catch (error) {
+  console.warn('Firebase initialization error:', error);
+}
 
 /**
- * Demander la permission et obtenir le token FCM
+ * Request permission and get FCM token
+ * @returns {Promise<string|null>} FCM token or null if permission denied
  */
-export const requestNotificationPermission = async () => {
+export async function requestNotificationPermission() {
   if (!messaging) {
-    await initializeFirebase();
-  }
-
-  if (!messaging) {
-    return { success: false, error: 'Firebase non disponible' };
+    console.warn('Firebase Messaging not available');
+    return null;
   }
 
   try {
-    // Demander la permission
+    // Check if permission already granted
     const permission = await Notification.requestPermission();
     
     if (permission !== 'granted') {
-      return { 
-        success: false, 
-        error: 'Permission refusée',
-        permission 
-      };
+      console.log('Notification permission denied');
+      return null;
     }
 
-    // Obtenir le token FCM
-    // Note: Vous devez avoir un fichier firebase-messaging-sw.js dans public/
-    const token = await getToken(messaging, {
-      vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY
-    });
-
+    // Get FCM token
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+    
     if (token) {
-      console.log('FCM Token obtenu:', token.substring(0, 20) + '...');
-      return { success: true, token };
+      console.log('FCM Token:', token);
+      // Save token to localStorage for later use
+      localStorage.setItem('actoos_fcm_token', token);
+      return token;
     } else {
-      return { success: false, error: 'Impossible d\'obtenir le token' };
+      console.log('No FCM token available');
+      return null;
     }
   } catch (error) {
-    console.error('Erreur permission notification:', error);
-    return { success: false, error: error.message };
+    console.error('Error getting FCM token:', error);
+    return null;
   }
-};
+}
 
 /**
- * Écouter les messages entrants (quand l'app est au premier plan)
+ * Listen for foreground messages
+ * @param {Function} callback - Function to call when message received
+ * @returns {Function} Unsubscribe function
  */
-export const onMessageListener = () => {
-  return new Promise((resolve, reject) => {
-    if (!messaging) {
-      reject(new Error('Firebase non initialisé'));
-      return;
-    }
+export function onForegroundMessage(callback) {
+  if (!messaging) {
+    console.warn('Firebase Messaging not available');
+    return () => {};
+  }
 
-    onMessage(messaging, (payload) => {
-      console.log('Message reçu:', payload);
-      resolve(payload);
-    });
+  return onMessage(messaging, (payload) => {
+    console.log('Foreground message received:', payload);
+    callback(payload);
   });
-};
+}
 
 /**
- * Sauvegarder le token FCM dans Supabase
+ * Get stored FCM token
+ * @returns {string|null} Stored FCM token
  */
-export const saveFCMToken = async (supabase, userId, token) => {
-  if (!userId || !token) return { success: false };
-
-  try {
-    const { error } = await supabase
-      .from('user_fcm_tokens')
-      .upsert({
-        user_id: userId,
-        fcm_token: token,
-        device_type: getDeviceType(),
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,fcm_token'
-      });
-
-    if (error) throw error;
-    return { success: true };
-  } catch (error) {
-    console.error('Erreur sauvegarde FCM token:', error);
-    return { success: false, error };
-  }
-};
+export function getStoredFCMToken() {
+  return localStorage.getItem('actoos_fcm_token');
+}
 
 /**
- * Supprimer le token FCM (lors de la déconnexion)
+ * Check if push notifications are supported
+ * @returns {boolean}
  */
-export const removeFCMToken = async (supabase, userId, token) => {
-  if (!userId || !token) return;
-
-  try {
-    await supabase
-      .from('user_fcm_tokens')
-      .delete()
-      .eq('user_id', userId)
-      .eq('fcm_token', token);
-  } catch (error) {
-    console.error('Erreur suppression FCM token:', error);
-  }
-};
+export function isPushSupported() {
+  return 'serviceWorker' in navigator && 'PushManager' in window;
+}
 
 /**
- * Détecter le type d'appareil
+ * Check current notification permission status
+ * @returns {string} 'granted', 'denied', or 'default'
  */
-const getDeviceType = () => {
-  const ua = navigator.userAgent;
-  if (/android/i.test(ua)) return 'android';
-  if (/iPad|iPhone|iPod/.test(ua)) return 'ios';
-  return 'web';
-};
-
-/**
- * Afficher une notification locale (pour les tests ou fallback)
- */
-export const showLocalNotification = (title, body, options = {}) => {
+export function getNotificationPermission() {
   if (!('Notification' in window)) {
-    console.warn('Ce navigateur ne supporte pas les notifications');
-    return;
+    return 'unsupported';
   }
+  return Notification.permission;
+}
 
-  if (Notification.permission === 'granted') {
-    new Notification(title, {
-      body,
-      icon: '/logo192.png',
-      badge: '/logo192.png',
-      tag: options.tag || 'actoos-notification',
-      ...options
-    });
-  }
-};
-
-export { app, messaging };
+export { app, messaging, VAPID_KEY };
+export default { requestNotificationPermission, onForegroundMessage, isPushSupported };

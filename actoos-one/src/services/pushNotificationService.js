@@ -1,262 +1,225 @@
 /**
  * ACTOOS ONE - Push Notification Service
  * 
- * Gestion complète des notifications push.
+ * Service pour gérer les notifications push (Firebase Cloud Messaging)
  */
 
 import { 
-  initializeFirebase, 
   requestNotificationPermission, 
-  onMessageListener,
-  saveFCMToken,
-  showLocalNotification,
-  isFirebaseConfigured
+  onForegroundMessage, 
+  isPushSupported,
+  getNotificationPermission,
+  getStoredFCMToken
 } from './firebaseConfig';
-import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { createOrderNotification } from './notificationService';
+import { supabase } from './supabaseClient';
 
-let fcmToken = null;
-let messageListenerActive = false;
+// Storage keys
+const STORAGE_KEYS = {
+  FCM_TOKEN: 'actoos_fcm_token',
+  PUSH_ENABLED: 'actoos_push_enabled',
+  LAST_TOKEN_SYNC: 'actoos_last_token_sync',
+};
 
 /**
- * Initialiser les notifications push
+ * Notification types for ACTOOS
  */
-export async function initializePushNotifications(userId) {
-  // Vérifier si les notifications sont supportées
-  if (!('Notification' in window)) {
-    console.warn('Notifications non supportées');
-    return { success: false, reason: 'not_supported' };
-  }
+export const NOTIFICATION_TYPES = {
+  // Client notifications
+  ORDER_ACCEPTED: 'order_accepted',
+  ORDER_PREPARING: 'order_preparing',
+  DRIVER_ASSIGNED: 'driver_assigned',
+  DRIVER_NEARBY: 'driver_nearby',
+  ORDER_DELIVERED: 'order_delivered',
+  ORDER_CANCELLED: 'order_cancelled',
+  REFUND_PROCESSED: 'refund_processed',
+  PROMO_OFFER: 'promo_offer',
+  
+  // Partner notifications
+  NEW_ORDER: 'new_order',
+  ORDER_URGENT: 'order_urgent',
+  PAYMENT_RECEIVED: 'payment_received',
+  REVIEW_RECEIVED: 'review_received',
+  
+  // Driver notifications
+  NEW_DELIVERY: 'new_delivery',
+  DELIVERY_CANCELLED: 'delivery_cancelled',
+  ARRIVED_RESTAURANT: 'arrived_restaurant',
+  PAYMENT_CREDITED: 'payment_credited',
+};
 
-  // Vérifier si Firebase est configuré
-  if (!isFirebaseConfigured()) {
-    console.warn('Firebase non configuré - utilisation des notifications locales');
-    return { success: false, reason: 'firebase_not_configured' };
+/**
+ * Register for push notifications
+ * @param {string} userId - User ID to associate with the token
+ * @returns {Promise<{success: boolean, token?: string, error?: string}>}
+ */
+export async function registerForPushNotifications(userId) {
+  if (!isPushSupported()) {
+    return { success: false, error: 'Push notifications not supported' };
   }
 
   try {
-    // Initialiser Firebase
-    await initializeFirebase();
-
-    // Demander la permission et obtenir le token
-    const result = await requestNotificationPermission();
-
-    if (result.success && result.token) {
-      fcmToken = result.token;
-
-      // Sauvegarder le token dans Supabase
-      if (userId && isSupabaseConfigured()) {
-        await saveFCMToken(supabase, userId, fcmToken);
-      }
-
-      // Démarrer l'écoute des messages
-      startMessageListener();
-
-      return { success: true, token: fcmToken };
+    // Register service worker first
+    await registerServiceWorker();
+    
+    // Request permission and get token
+    const token = await requestNotificationPermission();
+    
+    if (!token) {
+      return { success: false, error: 'Permission denied or token unavailable' };
     }
 
-    return result;
+    // Save token to database
+    if (userId) {
+      await saveTokenToDatabase(userId, token);
+    }
+
+    localStorage.setItem(STORAGE_KEYS.PUSH_ENABLED, 'true');
+    
+    return { success: true, token };
   } catch (error) {
-    console.error('Erreur initialisation push:', error);
+    console.error('Error registering for push:', error);
     return { success: false, error: error.message };
   }
 }
 
 /**
- * Démarrer l'écoute des messages entrants
+ * Register Firebase service worker
  */
-function startMessageListener() {
-  if (messageListenerActive) return;
-
-  onMessageListener()
-    .then((payload) => {
-      handleIncomingNotification(payload);
-      // Relancer l'écoute
-      startMessageListener();
-    })
-    .catch((err) => {
-      console.error('Erreur écoute message:', err);
-    });
-
-  messageListenerActive = true;
+async function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      console.log('Firebase SW registered:', registration);
+      return registration;
+    } catch (error) {
+      console.error('Firebase SW registration failed:', error);
+      throw error;
+    }
+  }
 }
 
 /**
- * Gérer une notification entrante
+ * Save FCM token to Supabase
+ * @param {string} userId - User ID
+ * @param {string} token - FCM token
  */
-function handleIncomingNotification(payload) {
-  console.log('Notification reçue:', payload);
-
-  const { notification, data } = payload;
-
-  // Afficher la notification si l'app est au premier plan
-  if (notification) {
-    showLocalNotification(notification.title, notification.body, {
-      tag: data?.orderId || 'actoos',
-      data: data
-    });
-  }
-
-  // Émettre un événement custom pour que l'app puisse réagir
-  window.dispatchEvent(new CustomEvent('actoos-notification', {
-    detail: payload
-  }));
-}
-
-/**
- * Envoyer une notification à un utilisateur (via Supabase Edge Function ou API)
- * Note: Ceci nécessite une fonction serveur pour envoyer via FCM
- */
-export async function sendPushNotification(userId, notification) {
-  if (!isSupabaseConfigured()) {
-    // Fallback: créer une notification en base
-    return createOrderNotification(
-      userId, 
-      notification.data?.orderId, 
-      notification.data?.status,
-      notification.data
-    );
-  }
-
+async function saveTokenToDatabase(userId, token) {
   try {
-    // Appeler une Edge Function Supabase pour envoyer la notification
-    const { data, error } = await supabase.functions.invoke('send-push-notification', {
-      body: {
-        userId,
-        title: notification.title,
-        body: notification.body,
-        data: notification.data
-      }
-    });
+    const { error } = await supabase
+      .from('user_push_tokens')
+      .upsert({
+        user_id: userId,
+        fcm_token: token,
+        platform: 'web',
+        device_info: navigator.userAgent,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id,platform'
+      });
 
-    if (error) throw error;
-    return { success: true, data };
+    if (error) {
+      console.warn('Error saving FCM token:', error);
+      // Table might not exist yet - that's OK
+    }
+
+    localStorage.setItem(STORAGE_KEYS.LAST_TOKEN_SYNC, Date.now().toString());
   } catch (error) {
-    console.error('Erreur envoi notification:', error);
+    console.warn('Error saving token to database:', error);
+  }
+}
+
+/**
+ * Subscribe to foreground notifications
+ * @param {Function} onNotification - Callback when notification received
+ * @returns {Function} Unsubscribe function
+ */
+export function subscribeToNotifications(onNotification) {
+  return onForegroundMessage((payload) => {
+    console.log('Notification received:', payload);
     
-    // Fallback: notification locale si l'utilisateur est le destinataire actuel
-    showLocalNotification(notification.title, notification.body);
-    
-    return { success: false, error };
-  }
-}
+    // Show in-app notification
+    const notification = {
+      id: Date.now().toString(),
+      title: payload.notification?.title || 'ACTOOS',
+      body: payload.notification?.body || '',
+      type: payload.data?.type || 'general',
+      data: payload.data,
+      timestamp: new Date(),
+      read: false,
+    };
 
-/**
- * Demander la permission de notification (UI helper)
- */
-export async function requestPermission() {
-  if (!('Notification' in window)) {
-    return { granted: false, reason: 'not_supported' };
-  }
+    onNotification(notification);
 
-  if (Notification.permission === 'granted') {
-    return { granted: true };
-  }
-
-  if (Notification.permission === 'denied') {
-    return { granted: false, reason: 'denied' };
-  }
-
-  const permission = await Notification.requestPermission();
-  return { 
-    granted: permission === 'granted',
-    permission 
-  };
-}
-
-/**
- * Vérifier le statut des notifications
- */
-export function getNotificationStatus() {
-  if (!('Notification' in window)) {
-    return { supported: false };
-  }
-
-  return {
-    supported: true,
-    permission: Notification.permission,
-    fcmToken: fcmToken,
-    firebaseConfigured: isFirebaseConfigured()
-  };
-}
-
-/**
- * Notifications prédéfinies pour les statuts de commande
- */
-export const ORDER_NOTIFICATIONS = {
-  confirmed: {
-    title: '✅ Commande confirmée !',
-    body: (orderNumber, restaurantName) => 
-      `${restaurantName} a confirmé votre commande #${orderNumber}`
-  },
-  preparing: {
-    title: '👨‍🍳 En préparation',
-    body: (orderNumber, restaurantName) => 
-      `${restaurantName} prépare votre commande`
-  },
-  ready: {
-    title: '📦 Commande prête !',
-    body: (orderNumber) => 
-      `Votre commande #${orderNumber} est prête, un livreur arrive`
-  },
-  picked_up: {
-    title: '🏍️ Livreur en route !',
-    body: (orderNumber, driverName) => 
-      `${driverName || 'Votre livreur'} a récupéré votre commande`
-  },
-  arriving: {
-    title: '📍 Arrivée imminente',
-    body: (orderNumber) => 
-      `Votre livreur arrive dans moins de 2 minutes`
-  },
-  delivered: {
-    title: '🎉 Commande livrée !',
-    body: (orderNumber) => 
-      `Votre commande #${orderNumber} a été livrée. Bon appétit !`
-  },
-  cancelled: {
-    title: '❌ Commande annulée',
-    body: (orderNumber, reason) => 
-      reason ? `Commande #${orderNumber} annulée: ${reason}` : `Commande #${orderNumber} annulée`
-  }
-};
-
-/**
- * Envoyer une notification de statut de commande
- */
-export function notifyOrderStatus(status, details = {}) {
-  const template = ORDER_NOTIFICATIONS[status];
-  if (!template) return;
-
-  const { orderNumber = '0000', restaurantName = 'Restaurant', driverName, reason } = details;
-
-  let body;
-  switch (status) {
-    case 'confirmed':
-    case 'preparing':
-      body = template.body(orderNumber, restaurantName);
-      break;
-    case 'picked_up':
-      body = template.body(orderNumber, driverName);
-      break;
-    case 'cancelled':
-      body = template.body(orderNumber, reason);
-      break;
-    default:
-      body = template.body(orderNumber);
-  }
-
-  showLocalNotification(template.title, body, {
-    tag: `order-${orderNumber}`,
-    data: { status, orderNumber, ...details }
+    // Also show browser notification if app is in foreground but user not focused
+    if (document.visibilityState !== 'visible' && Notification.permission === 'granted') {
+      showBrowserNotification(notification);
+    }
   });
 }
 
+/**
+ * Show a browser notification
+ * @param {Object} notification - Notification data
+ */
+function showBrowserNotification(notification) {
+  if (Notification.permission !== 'granted') return;
+
+  const browserNotification = new Notification(notification.title, {
+    body: notification.body,
+    icon: '/logo192.png',
+    badge: '/logo192.png',
+    tag: notification.type,
+    data: notification.data,
+  });
+
+  browserNotification.onclick = () => {
+    window.focus();
+    browserNotification.close();
+  };
+
+  // Auto close after 5 seconds
+  setTimeout(() => browserNotification.close(), 5000);
+}
+
+/**
+ * Check if push notifications are enabled
+ * @returns {boolean}
+ */
+export function isPushEnabled() {
+  return localStorage.getItem(STORAGE_KEYS.PUSH_ENABLED) === 'true' 
+    && getNotificationPermission() === 'granted';
+}
+
+/**
+ * Disable push notifications
+ * @param {string} userId - User ID
+ */
+export async function disablePushNotifications(userId) {
+  localStorage.setItem(STORAGE_KEYS.PUSH_ENABLED, 'false');
+  
+  if (userId) {
+    try {
+      await supabase
+        .from('user_push_tokens')
+        .update({ is_active: false })
+        .eq('user_id', userId)
+        .eq('platform', 'web');
+    } catch (error) {
+      console.warn('Error disabling push in database:', error);
+    }
+  }
+}
+
+/**
+ * Get notification permission status
+ */
+export { getNotificationPermission, isPushSupported, getStoredFCMToken };
+
 export default {
-  initializePushNotifications,
-  sendPushNotification,
-  requestPermission,
-  getNotificationStatus,
-  notifyOrderStatus,
-  ORDER_NOTIFICATIONS
+  registerForPushNotifications,
+  subscribeToNotifications,
+  isPushEnabled,
+  disablePushNotifications,
+  NOTIFICATION_TYPES,
 };
