@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useFactures } from '../lib/supabaseHooks';
-import { facturesApi, edgeFunctionsApi } from '../lib/supabaseApi';
+import { facturesApi, edgeFunctionsApi, devisApi, clientsApi, interventionsApi } from '../lib/supabaseApi';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -21,9 +21,13 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger
+} from '../components/ui/dropdown-menu';
 import { formatDate, getStatusLabel } from '../lib/utils';
 import {
-  Plus, ChevronLeft, Edit, Receipt, Download, CreditCard, Loader2, Mail, Bell, Trash2, FileText
+  Plus, ChevronLeft, Edit, Receipt, Download, CreditCard, Loader2, Mail, Bell, Trash2, FileText, Users, Wrench, File, ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -32,10 +36,111 @@ export const FacturesList = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [deleting, setDeleting] = useState(false);
+  const [showDevisModal, setShowDevisModal] = useState(false);
+  const [showInterventionModal, setShowInterventionModal] = useState(false);
+  const [availableDevis, setAvailableDevis] = useState([]);
+  const [availableInterventions, setAvailableInterventions] = useState([]);
+  const [loadingDevis, setLoadingDevis] = useState(false);
+  const [loadingInterventions, setLoadingInterventions] = useState(false);
   const { user, api, isAdmin, formatAmount } = useAuth();
   const navigate = useNavigate();
 
   const { data: factures, loading, refetch: fetchFactures } = useFactures(user?.entreprise_id, { statut: statusFilter });
+
+  // Fetch devis available for conversion (accepted devis not yet converted)
+  const fetchAvailableDevis = async () => {
+    setLoadingDevis(true);
+    try {
+      const allDevis = await devisApi.list(user?.entreprise_id);
+      // Filter devis that are accepted but not yet converted to facture
+      const convertible = allDevis.filter(d => 
+        d.statut === 'accepte' || d.statut === 'signe' || d.statut === 'brouillon'
+      );
+      setAvailableDevis(convertible);
+    } catch (error) {
+      console.error('Error fetching devis:', error);
+    } finally {
+      setLoadingDevis(false);
+    }
+  };
+
+  // Fetch interventions available for invoicing (completed interventions)
+  const fetchAvailableInterventions = async () => {
+    setLoadingInterventions(true);
+    try {
+      const allInterventions = await interventionsApi.list(user?.entreprise_id);
+      // Filter completed interventions
+      const billable = allInterventions.filter(i => 
+        i.statut === 'terminee' || i.statut === 'planifiee'
+      );
+      setAvailableInterventions(billable);
+    } catch (error) {
+      console.error('Error fetching interventions:', error);
+    } finally {
+      setLoadingInterventions(false);
+    }
+  };
+
+  const handleOpenDevisModal = () => {
+    fetchAvailableDevis();
+    setShowDevisModal(true);
+  };
+
+  const handleOpenInterventionModal = () => {
+    fetchAvailableInterventions();
+    setShowInterventionModal(true);
+  };
+
+  const handleConvertDevis = async (devisId) => {
+    try {
+      // Get the devis data
+      const devis = await devisApi.get(devisId);
+      // Create facture from devis
+      const factureData = {
+        entreprise_id: user?.entreprise_id,
+        client_id: devis.client_id,
+        devis_id: devisId,
+        lignes: devis.lignes || [],
+        total_ht: devis.total_ht || 0,
+        total_tva: devis.total_tva || 0,
+        total_ttc: devis.total_ttc || 0,
+        statut: 'brouillon',
+      };
+      const newFacture = await facturesApi.create(factureData);
+      toast.success('Facture créée depuis le devis');
+      setShowDevisModal(false);
+      navigate(`/dashboard/factures/${newFacture.id}`);
+    } catch (error) {
+      toast.error('Erreur lors de la conversion du devis');
+      console.error(error);
+    }
+  };
+
+  const handleCreateFromIntervention = async (interventionId) => {
+    try {
+      const intervention = await interventionsApi.get(interventionId);
+      // Create facture from intervention
+      const factureData = {
+        entreprise_id: user?.entreprise_id,
+        client_id: intervention.client_id,
+        intervention_id: interventionId,
+        lignes: [{
+          description: intervention.titre || 'Intervention',
+          quantite: 1,
+          prix_unitaire: intervention.prix || 0,
+          tva: 20,
+        }],
+        statut: 'brouillon',
+      };
+      const newFacture = await facturesApi.create(factureData);
+      toast.success('Facture créée depuis l\'intervention');
+      setShowInterventionModal(false);
+      navigate(`/dashboard/factures/${newFacture.id}`);
+    } catch (error) {
+      toast.error('Erreur lors de la création de la facture');
+      console.error(error);
+    }
+  };
 
   const toggleSelection = (id, e) => {
     e.stopPropagation();
@@ -93,6 +198,35 @@ export const FacturesList = () => {
           <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">Factures</h1>
           <p className="text-slate-500">Suivez vos factures et paiements</p>
         </div>
+        <div className="flex items-center gap-2">
+          {/* Bouton Nouvelle facture avec dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="bg-slate-900 hover:bg-slate-800" data-testid="new-facture-btn">
+                <Plus className="w-4 h-4 mr-2" />
+                Nouvelle facture
+                <ChevronDown className="w-4 h-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Créer une facture depuis</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/dashboard/factures/new')} data-testid="facture-from-scratch">
+                <File className="w-4 h-4 mr-2" />
+                Nouvelle facture vierge
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleOpenDevisModal} data-testid="facture-from-devis">
+                <FileText className="w-4 h-4 mr-2" />
+                Depuis un devis
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleOpenInterventionModal} data-testid="facture-from-intervention">
+                <Wrench className="w-4 h-4 mr-2" />
+                Depuis une intervention
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+          
         {selectedIds.length > 0 && isAdmin && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -228,6 +362,104 @@ export const FacturesList = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de sélection de devis */}
+      <Dialog open={showDevisModal} onOpenChange={setShowDevisModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Créer une facture depuis un devis</DialogTitle>
+            <DialogDescription>
+              Sélectionnez un devis à convertir en facture
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[400px] overflow-y-auto">
+            {loadingDevis ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+              </div>
+            ) : availableDevis.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                <FileText className="w-10 h-10 mx-auto mb-3 text-slate-300" />
+                <p>Aucun devis disponible</p>
+                <p className="text-sm mt-1">Créez d'abord un devis accepté</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {availableDevis.map((devis) => (
+                  <button
+                    key={devis.id}
+                    onClick={() => handleConvertDevis(devis.id)}
+                    className="w-full p-3 text-left border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                    data-testid={`select-devis-${devis.id}`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium text-slate-900">{devis.numero_devis}</p>
+                        <p className="text-sm text-slate-500">{devis.client_nom || 'Client'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">{formatAmount(devis.total_ttc || 0)}</p>
+                        <Badge variant="secondary" className={`status-${devis.statut}`}>
+                          {getStatusLabel(devis.statut)}
+                        </Badge>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de sélection d'intervention */}
+      <Dialog open={showInterventionModal} onOpenChange={setShowInterventionModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Créer une facture depuis une intervention</DialogTitle>
+            <DialogDescription>
+              Sélectionnez une intervention à facturer
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[400px] overflow-y-auto">
+            {loadingInterventions ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+              </div>
+            ) : availableInterventions.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                <Wrench className="w-10 h-10 mx-auto mb-3 text-slate-300" />
+                <p>Aucune intervention disponible</p>
+                <p className="text-sm mt-1">Complétez d'abord une intervention</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {availableInterventions.map((intervention) => (
+                  <button
+                    key={intervention.id}
+                    onClick={() => handleCreateFromIntervention(intervention.id)}
+                    className="w-full p-3 text-left border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                    data-testid={`select-intervention-${intervention.id}`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium text-slate-900">{intervention.titre}</p>
+                        <p className="text-sm text-slate-500">{intervention.client_nom || 'Client'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-slate-500">{formatDate(intervention.date_intervention)}</p>
+                        <Badge variant="secondary" className={`status-${intervention.statut}`}>
+                          {getStatusLabel(intervention.statut)}
+                        </Badge>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

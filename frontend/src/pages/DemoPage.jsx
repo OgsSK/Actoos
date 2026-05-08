@@ -23,7 +23,7 @@ const DemoPage = () => {
       try {
         // Demo account credentials
         const demoEmail = 'demo@actoos.com';
-        const demoPassword = 'demo2024';
+        const demoPassword = 'Salifkane&&7';
 
         // Step 1: Initialize demo session (reset data)
         setStep(1);
