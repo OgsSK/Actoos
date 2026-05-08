@@ -53,6 +53,18 @@ export function LocationProvider({ children }) {
           const defaultCountry = getDefaultCountry();
           setCountryState(defaultCountry);
           setCity(defaultCountry.capital);
+          // Sauvegarder aussi dans localStorage
+          localStorage.setItem(STORAGE_KEYS.COUNTRY, defaultCountry.code);
+          localStorage.setItem(STORAGE_KEYS.CITY, defaultCountry.capital);
+        }
+        
+        // Si pas de ville mais un pays, utiliser la capitale
+        if (!savedCity && savedCountryCode) {
+          const countryObj = getCountryByCode(savedCountryCode);
+          if (countryObj) {
+            setCity(countryObj.capital);
+            localStorage.setItem(STORAGE_KEYS.CITY, countryObj.capital);
+          }
         }
       } catch (err) {
         console.error('Erreur chargement localisation:', err);

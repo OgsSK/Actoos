@@ -323,21 +323,25 @@ Si aucun restaurant n'est disponible dans le pays/ville de l'utilisateur:
   - Intégré dans CheckoutScreen.jsx pour les frais de livraison
 
 ### P0 (Complété - 8 Mai 2026)
-- ✅ **Authentification Téléphone (+223) Production-Ready**
-  - Login par téléphone malien (+223 XX XX XX XX) comme méthode PRINCIPALE
-  - Email comme méthode SECONDAIRE (pour comptes admin existants)
-  - Validation format numéro malien (préfixes opérateurs)
-  - Device fingerprinting anti-fraude (prevent promo abuse)
-  - Flow "Mot de passe oublié" avec OTP SMS (mocké en DEV)
-  - UI style WhatsApp/Glovo avec formatage automatique
+- ✅ **Architecture Multi-Pays COMPLÈTE**
+  - 10 pays Afrique de l'Ouest avec drapeaux, codes téléphoniques, devises
+  - Filtrage restaurants par ville (Bamako: 16, Dakar: 4)
+  - Sélecteur de ville/pays intégré dans AddressSheet
+  - Coming Soon screen si aucun restaurant
+  
+- ✅ **Authentification Téléphone (+223, +221, etc.)**
+  - Onglets Téléphone/Email
+  - Téléphone obligatoire, email optionnel à l'inscription
+  - Validation multi-pays, device fingerprinting
 
-### P1 (Important - À FAIRE)
-- [ ] **Créer compte Admin dans Supabase** (contact@actoos.com / Salifkane&&7) - le login email échoue car compte inexistant
-- [ ] **Exécuter migration Supabase complète** (`/supabase/migrations/20260508_financial_system.sql`) pour ajouter colonnes `wallet_type`, RPC functions
-- [ ] **Exécuter migration PostGIS** (`POSTGIS_MIGRATION_SQL` dans distanceService.js) pour le calcul précis des distances
-- [ ] Push Notifications réelles (clés Firebase à configurer)
-- [ ] Intégration API TouchPay/Orange Money/Wave réelle (clés API à obtenir)
-- [ ] Twilio SMS pour OTP réels (actuellement mocké - code affiché dans UI)
+- ✅ **Compte Admin Créé**
+  - Email: contact@actoos.com
+  - Password: Salifkane&&7
+
+### P1 (Important - EN ATTENTE)
+- ⏳ **Twilio SMS** : Utilisateur doit créer compte (voir `/docs/TWILIO_SETUP_GUIDE.md`)
+- ⏳ **TouchPay/Orange Money** : Clés API à obtenir
+- ⏳ **Migration SQL** : Exécuter `/supabase/migrations/20260508_multi_country.sql` dans Supabase
 
 ### P2 (Normal)
 - [ ] Validation codes promo via Supabase

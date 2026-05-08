@@ -266,18 +266,15 @@ function AppContent() {
     async function loadRestaurants() {
       setRestaurantsLoading(true);
       try {
-        // Pour l'instant, on charge tous les restaurants sans filtre strict
-        // Le filtre par pays sera activé quand la colonne country_code sera ajoutée
+        // Filtrer par ville de l'utilisateur
         const { data, error } = await getRestaurants({ 
-          // Ne pas filtrer par pays/ville pour l'instant pour voir tous les restaurants
-          // countryCode: userCountryCode,
-          // city: userCity,
+          city: userCity, // Filtrer par ville (Bamako, Dakar, etc.)
         });
         if (error) {
           console.error('Erreur chargement restaurants:', error);
         }
         setRestaurants(data || []);
-        console.log(`📍 Restaurants chargés:`, data?.length || 0);
+        console.log(`📍 Restaurants chargés pour ${userCity}:`, data?.length || 0);
       } catch (err) {
         console.error('Erreur:', err);
         setRestaurants([]);
@@ -286,7 +283,7 @@ function AppContent() {
       }
     }
     loadRestaurants();
-  }, []); // Charger une seule fois au démarrage
+  }, [userCity]); // Recharger quand la ville change
 
   // Vérifier si aucun restaurant n'est disponible (pour afficher "Bientôt")
   const noRestaurantsAvailable = !restaurantsLoading && restaurants.length === 0;
@@ -1200,6 +1197,13 @@ function AppContent() {
         onSelectAddress={handleAddressSelect}
         userLocation={userLocation}
         onRequestLocation={handleRequestLocation}
+        currentCountry={userCountry}
+        currentCity={userCity}
+        onChangeLocation={(country, city) => {
+          setUserCountry(country);
+          setUserCity(city);
+          setAddressSheet(false);
+        }}
       />
 
       {/* Cart Sheet */}

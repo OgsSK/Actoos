@@ -15,10 +15,13 @@ import {
   Trash2,
   Star,
   MoreHorizontal,
-  Tag
+  Tag,
+  Globe
 } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 import { BAMAKO_NEIGHBORHOODS } from '../data/locationData';
+import { CitySelector } from './CitySelector';
+import { COUNTRIES, getCountryByCode } from '../config/countriesConfig';
 
 // Clé localStorage pour les adresses sauvegardées
 const SAVED_ADDRESSES_KEY = 'actoos_saved_addresses';
@@ -37,7 +40,10 @@ export function AddressSheet({
   currentAddress,
   onSelectAddress,
   userLocation,
-  onRequestLocation 
+  onRequestLocation,
+  currentCountry,
+  currentCity,
+  onChangeLocation,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [recentAddresses, setRecentAddresses] = useState([]);
@@ -45,6 +51,7 @@ export function AddressSheet({
   const [locatingError, setLocatingError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
+  const [showCitySelector, setShowCitySelector] = useState(false);
   
   // Formulaire d'ajout/édition d'adresse
   const [formLabel, setFormLabel] = useState('');
@@ -497,6 +504,38 @@ export function AddressSheet({
                       </p>
                     </div>
                   </button>
+
+                  {/* Change City/Country Button */}
+                  <button
+                    onClick={() => setShowCitySelector(!showCitySelector)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 mb-4 hover:bg-gray-50 transition-colors"
+                    data-testid="change-city-btn"
+                  >
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Globe className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-gray-900">Changer de ville/pays</p>
+                      <p className="text-sm text-gray-500">
+                        {currentCity || 'Bamako'}, {currentCountry?.name || 'Mali'} {currentCountry?.flag || '🇲🇱'}
+                      </p>
+                    </div>
+                    <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${showCitySelector ? 'rotate-90' : ''}`} />
+                  </button>
+
+                  {/* City Selector Expanded */}
+                  {showCitySelector && (
+                    <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+                      <CitySelector
+                        currentCountry={currentCountry}
+                        currentCity={currentCity}
+                        onSelectLocation={(country, city) => {
+                          onChangeLocation?.(country, city);
+                          setShowCitySelector(false);
+                        }}
+                      />
+                    </div>
+                  )}
 
                   {/* Error message */}
                   {locatingError && (
