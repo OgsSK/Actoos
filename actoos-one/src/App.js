@@ -35,8 +35,9 @@ import { SearchSheet } from './components/SearchSheet';
 import { PromoBanner } from './components/PromoBanner';
 import { FavoritesScreen } from './components/FavoritesScreen';
 import { RatingSheet } from './components/RatingSystem';
+import { FloatingCartButton } from './components/FloatingCartButton';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { CartProvider } from './context/CartContext';
+import { CartProvider, useCart } from './context/CartContext';
 import { WalletProvider } from './context/WalletContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -935,6 +936,9 @@ function AppContent() {
         onTermsClick={() => setCurrentScreen(SCREENS.TERMS)}
         onLegalClick={() => setCurrentScreen(SCREENS.LEGAL)}
       />
+
+      {/* Floating Cart Button (Mobile) */}
+      <FloatingCartButton onClick={() => setCurrentScreen(SCREENS.CHECKOUT)} />
 
       {/* Bottom Navigation */}
       <BottomNav
