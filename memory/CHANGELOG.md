@@ -1,5 +1,24 @@
 # ACTOOS ONE - Changelog
 
+## [2026-05-08] - Firebase Push + Twilio SMS Configuration
+
+### Firebase Cloud Messaging ✅ CONFIGURÉ
+- `firebaseConfig.js` - Configuration Firebase avec vos clés
+- `firebase-messaging-sw.js` - Service Worker pour notifications arrière-plan
+- `pushNotificationService.js` - Service de gestion des notifications
+- Variables d'environnement ajoutées dans `.env`
+
+### Twilio SMS OTP ⏳ PRÉPARÉ (Mode Mock)
+- `twilioOTPService.js` - Service OTP complet avec mock
+- Table `otp_codes` créée en base
+- En attente des clés Twilio pour activer les vrais SMS
+
+### Tables créées
+- `otp_codes` - Stockage des codes OTP
+- `user_push_tokens` - Tokens FCM des utilisateurs
+
+---
+
 ## [2026-05-08] - Migration Système Financier EXÉCUTÉE
 
 ### Tables créées/mises à jour
