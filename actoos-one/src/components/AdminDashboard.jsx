@@ -30,7 +30,9 @@ import {
   Bell,
   BellRing,
   RefreshCw,
-  Loader2
+  Loader2,
+  Wallet,
+  ArrowDownCircle
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { getOnboardingRequests, approveOnboardingRequest, rejectOnboardingRequest } from '../services/onboardingService';
@@ -38,11 +40,15 @@ import { getAllOrders } from '../services/orderService';
 import { getAllDrivers, updateDriverOnlineStatus } from '../services/driverService';
 import { AdminPromotionsManager } from './AdminPromotionsManager';
 import { AdminGodMode } from './AdminGodMode';
+import { AdminWithdrawalsManager } from './AdminWithdrawalsManager';
+import { AdminWalletsOverview } from './AdminWalletsOverview';
 
 const TABS = {
   ORDERS: 'orders',
   DRIVERS: 'drivers',
   ONBOARDING: 'onboarding',
+  WALLETS: 'wallets',
+  WITHDRAWALS: 'withdrawals',
   SETTINGS: 'settings',
 };
 
@@ -386,6 +392,30 @@ export function AdminDashboard({ onBack }) {
             )}
           </button>
           <button
+            onClick={() => setActiveTab(TABS.WALLETS)}
+            className={`flex-1 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
+              activeTab === TABS.WALLETS
+                ? 'bg-green-500 text-white'
+                : 'bg-gray-800 text-gray-400'
+            }`}
+            data-testid="tab-wallets"
+          >
+            <Wallet className="w-4 h-4" />
+            Wallets
+          </button>
+          <button
+            onClick={() => setActiveTab(TABS.WITHDRAWALS)}
+            className={`flex-1 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
+              activeTab === TABS.WITHDRAWALS
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-800 text-gray-400'
+            }`}
+            data-testid="tab-withdrawals"
+          >
+            <ArrowDownCircle className="w-4 h-4" />
+            Retraits
+          </button>
+          <button
             onClick={() => setActiveTab(TABS.SETTINGS)}
             className={`flex-1 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
               activeTab === TABS.SETTINGS
@@ -709,6 +739,16 @@ export function AdminDashboard({ onBack }) {
               })
             )}
           </div>
+        )}
+
+        {/* Wallets Tab */}
+        {!isLoading && activeTab === TABS.WALLETS && (
+          <AdminWalletsOverview />
+        )}
+
+        {/* Withdrawals Tab */}
+        {!isLoading && activeTab === TABS.WITHDRAWALS && (
+          <AdminWithdrawalsManager adminId="admin" />
         )}
 
         {/* Settings Tab */}

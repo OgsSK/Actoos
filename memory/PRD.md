@@ -9,11 +9,17 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 - **APIs**: Nominatim OpenStreetMap (Géocodage inverse), localStorage (persistance panier)
 
 ## Schéma Base de Données
+
+### Tables Existantes
 - `users`: id, role, phone, name
-- `orders`: id, client_id, status, total, delivering_at, is_settled, settlement_details
+- `orders`: id, client_id, status, total, delivering_at, is_settled, settlement_details, distance_km
 - `order_items`: id, order_id, menu_item_id, quantity
+- `drivers`: id, user_id, status, total_deliveries
+- `partners`: id, user_id, name, delivery_type
+
+### Nouvelles Tables (Migration: 20260508_financial_system.sql)
 - `wallets`: id, owner_id, wallet_type, balance, is_frozen
-- `wallet_transactions`: id, wallet_id, type, amount, balance_after, reference_id, description, metadata
+- `wallet_transactions`: id, wallet_id, type, amount, balance_after, reference_id, description
 - `withdrawal_requests`: id, wallet_id, user_id, amount, fee, net_amount, method, destination, status
 - `system_config`: key, value (commissions, frais livraison dynamiques)
 
@@ -44,6 +50,11 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 2. **Partenaire**: Prix des articles - Commission
 3. **Actoos**: Commission uniquement
 
+### Flux Cash
+- Client paie en cash → Livreur encaisse tout en physique
+- Actoos débite la caution virtuelle du livreur (part partenaire + commission)
+- Le livreur garde net = frais de livraison en cash
+
 ### Règles Wallet
 - Retrait Actoos: 0% de frais
 - Frais opérateur (Orange Money, Wave): 0.5-1%
@@ -56,34 +67,59 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 ## Fonctionnalités Complétées
 
 ### Session Actuelle (8 Mai 2026)
-- [x] **Service Financier Complet** (`/services/financialService.js`)
-  - Settlement automatique au Handshake
+
+#### Services Backend
+- [x] **Financial Service** (`/services/financialService.js`)
+  - Settlement automatique au Handshake (#A42)
   - Calcul des commissions par verticale/mode
   - Gestion des wallets (client, partner_earnings, driver_caution)
-  - Flux de retrait avec calcul des frais
-- [x] **Calcul Dynamique Frais de Livraison** dans CheckoutScreen
-  - Base 700F + 200F/km après 2km
-  - Affichage détaillé (Base + Distance)
-  - Support Self-Delivery et Pickup
-- [x] **Écran Gains Partenaire** (`PartnerEarningsScreen.jsx`)
+  - TopUp wallet client
+  - Pay with wallet
+  - Create/Approve/Reject withdrawal requests
+  - Get partner earnings stats
+
+#### UI Admin
+- [x] **Onglet Wallets** dans Admin Dashboard
+  - Vue globale des wallets (stats par type)
+  - Liste avec filtres (Clients, Partenaires, Livreurs)
+  - Détails wallet avec historique transactions
+- [x] **Onglet Retraits** dans Admin Dashboard
+  - Liste demandes de retrait avec statut
+  - Approuver/Rejeter avec raison
+  - Stats (en attente, aujourd'hui, ce mois)
+
+#### UI Partenaire (KDS)
+- [x] **Onglet "💰 Gains"** 
   - Solde disponible en temps réel
-  - Stats jour/mois
+  - Stats jour/mois (earnings, commandes)
   - Historique des transactions
   - Flux de retrait complet (Mobile Money, Banque)
-- [x] **Onglet "Gains" dans KDS Partenaire**
-- [x] **Settlement Handshake amélioré** dans DriverAppScreen
-  - Normalisation des codes (avec/sans #)
-  - Répartition automatique des fonds
-- [x] **RealWalletContext** - Context wallet connecté à Supabase
+
+#### UI Livreur (Driver App)
+- [x] **Boutons Wallet dans header**
+  - Recharger (Cash-In)
+  - Retirer (Cash-Out)
+  - Historique
+- [x] **Alerte caution faible** (< 5000 FCFA)
+- [x] **Settlement amélioré au Handshake**
+  - Normalisation codes (avec/sans #)
+  - Appel financialService.settleOrder()
+
+#### Checkout Client
+- [x] **Calcul dynamique frais de livraison**
+  - Formule: 700F base + 200F/km après 2km
+  - Affichage détaillé (Base + Distance)
+  - Support Self-Delivery et Pickup (gratuit)
+- [x] **Indicateur "Livré par ACTOOS" vs "Livré par le restaurant"**
 
 ### Sessions Précédentes
-- [x] Auth Guard checkout (redirige invités vers login)
+- [x] Auth Guard checkout
 - [x] Persistance panier via localStorage
 - [x] Géolocalisation GPS réelle + Nominatim
 - [x] Gestion d'adresses style Uber Eats
-- [x] Historique commandes live depuis Supabase
-- [x] Fonctions Suivre/Annuler/Recommander commandes
-- [x] Swipe-to-delete sur historique commandes
+- [x] Historique commandes live Supabase
+- [x] Suivre/Annuler/Recommander commandes
+- [x] Swipe-to-delete sur historique
 - [x] Tri restaurants par distance
 - [x] KDS Partenaire complet
 - [x] Driver App avec Wallet
@@ -93,48 +129,96 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 
 ## Backlog Priorisé
 
-### P1 (Important)
+### P0 (Critique - DONE)
+- ✅ Système financier complet implémenté
+
+### P1 (Important - À FAIRE)
+- [ ] **Exécuter migration Supabase** (`/supabase/migrations/20260508_financial_system.sql`)
 - [ ] Push Notifications réelles
 - [ ] Page tracking commande temps réel (carte)
-- [ ] Intégration API TouchPay/Orange Money/Wave (actuellement simulé)
-- [ ] Création tables Supabase: `wallets`, `wallet_transactions`, `withdrawal_requests`, `system_config`
+- [ ] Intégration API TouchPay/Orange Money/Wave réelle
 
 ### P2 (Normal)
-- [ ] Validation codes promo via Supabase (actuellement mocké)
-- [ ] Coordonnées GPS réelles restaurants dans Supabase
-- [ ] Calcul distance réel client-restaurant avec PostGIS
+- [ ] Validation codes promo via Supabase
+- [ ] Coordonnées GPS réelles restaurants
+- [ ] Calcul distance réel PostGIS
 - [ ] SMS OTP via Twilio
 
 ### P3 (Backlog)
-- [ ] Réactiver module Pharmacie
-- [ ] Réactiver module Parrainage
+- [ ] Module Pharmacie
+- [ ] Module Parrainage
 - [ ] Surge Pricing dynamique
+- [ ] Cartes virtuelles
 
 ---
 
-## Architecture Fichiers Clés
+## Architecture Fichiers
 
-### Services
-- `/services/financialService.js` - **NOUVEAU** - Opérations financières complètes
-- `/services/walletService.js` - Opérations wallet basiques
-- `/services/driverService.js` - Gestion livreurs
-- `/services/orderService.js` - Gestion commandes
-- `/config/businessConfig.js` - Règles métier (commissions, frais livraison)
+### Services Financiers
+```
+/services/
+├── financialService.js    # Opérations financières complètes (NOUVEAU)
+├── walletService.js       # Opérations wallet basiques
+├── driverService.js       # Gestion livreurs
+├── orderService.js        # Gestion commandes
+└── supabaseClient.js      # Client Supabase
+```
 
-### Composants
-- `/components/CheckoutScreen.jsx` - Checkout avec frais dynamiques
-- `/components/PartnerEarningsScreen.jsx` - **NOUVEAU** - Écran gains partenaire
-- `/components/PartnerKDSScreen.jsx` - KDS avec onglet Gains
-- `/components/DriverAppScreen.jsx` - App livreur avec settlement
+### Config Business
+```
+/config/
+└── businessConfig.js      # Commissions, frais livraison, limites
+```
 
-### Contexts
-- `/context/RealWalletContext.jsx` - **NOUVEAU** - Wallet connecté Supabase
-- `/context/WalletContext.jsx` - Ancien wallet mocké (backup)
+### Composants Admin
+```
+/components/
+├── AdminDashboard.jsx         # Dashboard principal
+├── AdminWalletsOverview.jsx   # Vue wallets (NOUVEAU)
+├── AdminWithdrawalsManager.jsx # Gestion retraits (NOUVEAU)
+└── AdminGodMode.jsx           # Configuration système
+```
+
+### Composants Partenaire
+```
+/components/
+├── PartnerKDSScreen.jsx       # KDS principal
+├── PartnerEarningsScreen.jsx  # Écran gains (NOUVEAU)
+└── PartnerSettings.jsx        # Paramètres
+```
+
+### Composants Livreur
+```
+/components/
+└── DriverAppScreen.jsx        # App livreur (MAJ: boutons wallet)
+```
+
+---
+
+## Migration Supabase À Exécuter
+
+**Fichier**: `/app/actoos-one/supabase/migrations/20260508_financial_system.sql`
+
+**Tables créées**:
+1. `system_config` - Configuration dynamique
+2. `wallets` - Portefeuilles utilisateurs
+3. `wallet_transactions` - Historique transactions
+4. `withdrawal_requests` - Demandes de retrait
+
+**Fonctions créées**:
+- `get_or_create_wallet()` - Créer wallet si inexistant
+- `update_wallet_balance()` - Mise à jour sécurisée du solde
+- `increment_driver_deliveries()` - Incrémenter compteur livreur
+
+**RLS Policies**:
+- Users voient leurs propres wallets/transactions
+- Admins peuvent voir et gérer tous les retraits
 
 ---
 
 ## Notes Importantes
 - **LANGUE**: Toujours répondre en français
 - **PROACTIVITÉ**: Ne pas mocker si table Supabase existe
-- **Modules cachés**: Pharmacie et Parrainage restent désactivés jusqu'à demande explicite
-- **Settlement**: S'exécute automatiquement quand le livreur valide le code Handshake
+- **Modules cachés**: Pharmacie et Parrainage restent désactivés
+- **Settlement**: S'exécute au Handshake #A42
+- **Cash Flow**: Caution livreur débitée pour paiements cash

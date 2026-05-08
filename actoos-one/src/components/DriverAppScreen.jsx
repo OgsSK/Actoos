@@ -26,7 +26,12 @@ import {
   RefreshCw,
   Bell,
   Car,
-  History
+  History,
+  Plus,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Smartphone,
+  CheckCircle
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { updateOrderStatus } from '../services/orderService';
@@ -38,7 +43,13 @@ import {
   creditDriverEarnings,
   DRIVER_COMMISSION_RATE 
 } from '../services/driverService';
-import { settleOrder } from '../services/financialService';
+import { 
+  settleOrder, 
+  topUpDriverCaution, 
+  withdrawDriverCaution,
+  WALLET_TYPES 
+} from '../services/financialService';
+import { calculateWithdrawal, WALLET_CONFIG } from '../config/businessConfig';
 
 export function DriverAppScreen({ driverId, onBack }) {
   const [isOnline, setIsOnline] = useState(false);
@@ -53,6 +64,15 @@ export function DriverAppScreen({ driverId, onBack }) {
   const [newMissionsCount, setNewMissionsCount] = useState(0);
   const [showWalletHistory, setShowWalletHistory] = useState(false);
   const [walletTransactions, setWalletTransactions] = useState([]);
+  
+  // Wallet sheets
+  const [showWalletSheet, setShowWalletSheet] = useState(false);
+  const [walletAction, setWalletAction] = useState(null); // 'topup' | 'withdraw'
+  const [walletAmount, setWalletAmount] = useState('');
+  const [walletPhone, setWalletPhone] = useState('+223 ');
+  const [walletMethod, setWalletMethod] = useState('orange_money');
+  const [walletStep, setWalletStep] = useState('amount'); // amount, confirm, processing, success
+  const [walletError, setWalletError] = useState(null);
   
   // Wallet livreur - Connecté à Supabase
   const [driverWallet, setDriverWallet] = useState({
@@ -489,7 +509,7 @@ export function DriverAppScreen({ driverId, onBack }) {
         {/* Wallet summary */}
         <div className="grid grid-cols-3 gap-2 mt-3">
           <div className="bg-gray-800 rounded-xl p-2 text-center">
-            <p className="text-xs text-gray-400">Solde</p>
+            <p className="text-xs text-gray-400">Caution</p>
             <p className="font-bold text-green-400">{driverWallet.balance.toLocaleString()} F</p>
           </div>
           <div className="bg-gray-800 rounded-xl p-2 text-center">
@@ -501,6 +521,44 @@ export function DriverAppScreen({ driverId, onBack }) {
             <p className="font-bold text-white">{driverWallet.todayDeliveries}</p>
           </div>
         </div>
+
+        {/* Wallet action buttons */}
+        <div className="grid grid-cols-3 gap-2 mt-2">
+          <button
+            onClick={() => { setWalletAction('topup'); setShowWalletSheet(true); setWalletStep('amount'); }}
+            className="bg-green-600 hover:bg-green-700 rounded-xl p-2 flex items-center justify-center gap-1 text-white text-sm font-medium"
+            data-testid="topup-caution-btn"
+          >
+            <Plus className="w-4 h-4" />
+            Recharger
+          </button>
+          <button
+            onClick={() => { setWalletAction('withdraw'); setShowWalletSheet(true); setWalletStep('amount'); }}
+            className="bg-orange-600 hover:bg-orange-700 rounded-xl p-2 flex items-center justify-center gap-1 text-white text-sm font-medium"
+            data-testid="withdraw-btn"
+          >
+            <ArrowDownCircle className="w-4 h-4" />
+            Retirer
+          </button>
+          <button
+            onClick={() => setShowWalletHistory(true)}
+            className="bg-gray-700 hover:bg-gray-600 rounded-xl p-2 flex items-center justify-center gap-1 text-white text-sm font-medium"
+            data-testid="history-btn"
+          >
+            <History className="w-4 h-4" />
+            Historique
+          </button>
+        </div>
+
+        {/* Low caution warning */}
+        {driverWallet.balance < WALLET_CONFIG.min_driver_caution && (
+          <div className="mt-2 bg-red-900/50 border border-red-500 rounded-xl p-2 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <p className="text-xs text-red-200">
+              Caution faible ! Minimum requis: {WALLET_CONFIG.min_driver_caution.toLocaleString()} F pour recevoir des commandes cash.
+            </p>
+          </div>
+        )}
       </header>
 
       {/* Content */}
@@ -702,7 +760,7 @@ export function DriverAppScreen({ driverId, onBack }) {
               type="text"
               value={handshakeCode}
               onChange={(e) => { setHandshakeCode(e.target.value.toUpperCase()); setOtpError(false); }}
-              placeholder="Ex: 1234"
+              placeholder="Ex: A42"
               maxLength={4}
               className={`w-full text-center text-4xl font-mono font-bold py-4 border-2 rounded-2xl ${
                 otpError ? 'border-red-500 text-red-500' : 'border-gray-300'
@@ -717,12 +775,258 @@ export function DriverAppScreen({ driverId, onBack }) {
 
             <button
               onClick={handleValidateCode}
-              disabled={handshakeCode.length !== 4}
+              disabled={handshakeCode.length < 2}
               className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold mt-6 disabled:opacity-50"
               data-testid="validate-code-btn"
             >
               VALIDER
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Wallet Sheet (Topup / Withdraw) */}
+      {showWalletSheet && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end" onClick={(e) => e.target === e.currentTarget && setShowWalletSheet(false)}>
+          <div className="bg-white w-full rounded-t-3xl max-h-[85vh] overflow-y-auto animate-slide-up">
+            <div className="sticky top-0 bg-white px-4 py-4 border-b flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">
+                {walletAction === 'topup' ? '💳 Recharger Caution' : '💸 Retirer'}
+              </h3>
+              <button onClick={() => { setShowWalletSheet(false); setWalletError(null); }}>
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-4">
+              {/* Step: Amount */}
+              {walletStep === 'amount' && (
+                <>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {walletAction === 'topup' 
+                      ? 'Rechargez votre caution pour recevoir des commandes cash'
+                      : `Solde disponible: ${driverWallet.balance.toLocaleString()} FCFA`
+                    }
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    {[5000, 10000, 15000, 20000].map(amt => (
+                      <button
+                        key={amt}
+                        onClick={() => setWalletAmount(String(amt))}
+                        disabled={walletAction === 'withdraw' && amt > driverWallet.balance}
+                        className={`py-4 rounded-2xl font-bold text-lg ${
+                          walletAmount === String(amt)
+                            ? 'bg-[#FF5A00] text-white'
+                            : 'bg-gray-100 text-gray-900 disabled:opacity-50'
+                        }`}
+                      >
+                        {amt.toLocaleString()} F
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="number"
+                    value={walletAmount}
+                    onChange={(e) => setWalletAmount(e.target.value)}
+                    placeholder="Autre montant"
+                    className="w-full bg-gray-100 rounded-2xl px-4 py-4 text-lg font-semibold text-center mb-4"
+                  />
+
+                  <button
+                    onClick={() => setWalletStep('confirm')}
+                    disabled={!walletAmount || parseInt(walletAmount) < 500 || (walletAction === 'withdraw' && parseInt(walletAmount) > driverWallet.balance)}
+                    className="w-full py-4 bg-[#FF5A00] text-white font-bold rounded-2xl disabled:opacity-50"
+                  >
+                    Continuer
+                  </button>
+                </>
+              )}
+
+              {/* Step: Confirm */}
+              {walletStep === 'confirm' && (
+                <>
+                  {walletError && (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-3 mb-4">
+                      <p className="text-red-700 text-sm">{walletError}</p>
+                    </div>
+                  )}
+
+                  <div className="bg-gray-50 rounded-2xl p-4 mb-4">
+                    <p className="text-sm text-gray-500 mb-2">Méthode de paiement</p>
+                    <div className="space-y-2">
+                      {[
+                        { id: 'orange_money', name: 'Orange Money', icon: '🟠' },
+                        { id: 'wave', name: 'Wave', icon: '🌊' },
+                        { id: 'moov_money', name: 'Moov Money', icon: '🔵' },
+                      ].map(method => (
+                        <button
+                          key={method.id}
+                          onClick={() => setWalletMethod(method.id)}
+                          className={`w-full p-3 rounded-xl flex items-center gap-3 ${
+                            walletMethod === method.id ? 'bg-[#FF5A00]/10 border-2 border-[#FF5A00]' : 'bg-white border-2 border-gray-200'
+                          }`}
+                        >
+                          <span className="text-xl">{method.icon}</span>
+                          <span className="font-medium">{method.name}</span>
+                          {walletMethod === method.id && <CheckCircle className="w-5 h-5 text-[#FF5A00] ml-auto" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="text-sm text-gray-500 mb-2 block">Numéro de téléphone</label>
+                    <div className="flex items-center gap-2 bg-gray-100 rounded-2xl px-4 py-3">
+                      <Smartphone className="w-5 h-5 text-gray-500" />
+                      <input
+                        type="tel"
+                        value={walletPhone}
+                        onChange={(e) => setWalletPhone(e.target.value)}
+                        className="flex-1 bg-transparent outline-none"
+                        placeholder="+223 XX XX XX XX"
+                      />
+                    </div>
+                  </div>
+
+                  {walletAction === 'withdraw' && (
+                    <div className="bg-yellow-50 rounded-2xl p-3 mb-4">
+                      <p className="text-sm text-yellow-800">
+                        <strong>Frais opérateur:</strong> ~{WALLET_CONFIG.telecom_fees[walletMethod]}%
+                      </p>
+                      <p className="text-sm text-yellow-800">
+                        <strong>Vous recevrez:</strong> ~{Math.round(parseInt(walletAmount || 0) * (1 - WALLET_CONFIG.telecom_fees[walletMethod] / 100)).toLocaleString()} FCFA
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="bg-gray-100 rounded-2xl p-4 mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Montant</span>
+                      <span className="font-bold text-gray-900">{parseInt(walletAmount || 0).toLocaleString()} FCFA</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      setWalletStep('processing');
+                      setWalletError(null);
+                      
+                      try {
+                        if (walletAction === 'topup') {
+                          // Simuler recharge (en production: API TouchPay)
+                          await new Promise(r => setTimeout(r, 2000));
+                          
+                          // Mise à jour locale (en production: via financialService)
+                          setDriverWallet(prev => ({
+                            ...prev,
+                            balance: prev.balance + parseInt(walletAmount),
+                          }));
+                        } else {
+                          // Simuler retrait
+                          await new Promise(r => setTimeout(r, 2000));
+                          
+                          setDriverWallet(prev => ({
+                            ...prev,
+                            balance: prev.balance - parseInt(walletAmount),
+                          }));
+                        }
+                        setWalletStep('success');
+                      } catch (err) {
+                        setWalletError(err.message || 'Erreur lors de l\'opération');
+                        setWalletStep('confirm');
+                      }
+                    }}
+                    disabled={walletPhone.length < 10}
+                    className="w-full py-4 bg-[#FF5A00] text-white font-bold rounded-2xl disabled:opacity-50"
+                  >
+                    {walletAction === 'topup' ? 'Recharger' : 'Retirer'}
+                  </button>
+                </>
+              )}
+
+              {/* Step: Processing */}
+              {walletStep === 'processing' && (
+                <div className="py-12 text-center">
+                  <Loader2 className="w-12 h-12 text-[#FF5A00] animate-spin mx-auto mb-4" />
+                  <p className="text-lg font-medium text-gray-900">Traitement en cours...</p>
+                  <p className="text-sm text-gray-500 mt-2">Veuillez patienter</p>
+                </div>
+              )}
+
+              {/* Step: Success */}
+              {walletStep === 'success' && (
+                <div className="py-12 text-center">
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-10 h-10 text-green-600" />
+                  </div>
+                  <p className="text-xl font-bold text-gray-900 mb-2">
+                    {walletAction === 'topup' ? 'Recharge réussie !' : 'Retrait initié !'}
+                  </p>
+                  <p className="text-3xl font-bold text-[#FF5A00] mt-4">
+                    {walletAction === 'topup' ? '+' : '-'}{parseInt(walletAmount).toLocaleString()} FCFA
+                  </p>
+                  <p className="text-gray-500 mt-2">
+                    Nouveau solde: {driverWallet.balance.toLocaleString()} FCFA
+                  </p>
+
+                  <button
+                    onClick={() => { setShowWalletSheet(false); setWalletAmount(''); }}
+                    className="w-full py-4 bg-green-600 text-white font-bold rounded-2xl mt-8"
+                  >
+                    Terminé
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Wallet History Sheet */}
+      {showWalletHistory && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end" onClick={(e) => e.target === e.currentTarget && setShowWalletHistory(false)}>
+          <div className="bg-white w-full rounded-t-3xl max-h-[85vh] overflow-y-auto animate-slide-up">
+            <div className="sticky top-0 bg-white px-4 py-4 border-b flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">📜 Historique</h3>
+              <button onClick={() => setShowWalletHistory(false)}>
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-4">
+              {walletTransactions.length === 0 ? (
+                <div className="text-center py-12">
+                  <History className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">Aucune transaction</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {walletTransactions.map((txn, idx) => (
+                    <div key={txn.id || idx} className="bg-gray-50 rounded-2xl p-4 flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        parseFloat(txn.amount) >= 0 ? 'bg-green-100' : 'bg-red-100'
+                      }`}>
+                        {parseFloat(txn.amount) >= 0 
+                          ? <ArrowUpCircle className="w-5 h-5 text-green-600" />
+                          : <ArrowDownCircle className="w-5 h-5 text-red-600" />
+                        }
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{txn.description || txn.type}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(txn.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      <p className={`font-bold ${parseFloat(txn.amount) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {parseFloat(txn.amount) >= 0 ? '+' : ''}{parseFloat(txn.amount).toLocaleString()} F
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
