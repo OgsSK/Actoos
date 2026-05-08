@@ -3,10 +3,10 @@
  * 
  * Historique des commandes avec données RÉELLES de Supabase
  * Avec possibilité d'annuler les commandes en attente
- * et supprimer de l'historique
+ * et supprimer de l'historique (swipe to delete)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   Package, 
@@ -194,6 +194,162 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
   const getStatusConfig = (status) => {
     return STATUS_CONFIG[status] || STATUS_CONFIG.pending;
   };
+
+  // Composant SwipeableOrderCard
+  function SwipeableOrderCard({ order, onDelete, onSelect, onReorder, onCancel, canCancel, canReorderOrder }) {
+    const [translateX, setTranslateX] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const startXRef = useRef(0);
+    const currentXRef = useRef(0);
+    const cardRef = useRef(null);
+    
+    const DELETE_THRESHOLD = -80; // Seuil pour déclencher la suppression
+    const MAX_SWIPE = -100;
+    
+    const statusConfig = getStatusConfig(order.status);
+    const StatusIcon = statusConfig.icon;
+    const itemNames = order.order_items?.slice(0, 2).map(i => i.name).join(', ') || '';
+
+    const handleTouchStart = (e) => {
+      startXRef.current = e.touches[0].clientX;
+      currentXRef.current = translateX;
+      setIsDragging(true);
+    };
+
+    const handleTouchMove = (e) => {
+      if (!isDragging) return;
+      const diff = e.touches[0].clientX - startXRef.current;
+      const newX = Math.max(MAX_SWIPE, Math.min(0, currentXRef.current + diff));
+      setTranslateX(newX);
+    };
+
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+      if (translateX < DELETE_THRESHOLD) {
+        // Garder ouvert pour montrer le bouton delete
+        setTranslateX(MAX_SWIPE);
+      } else {
+        // Retour à la position initiale
+        setTranslateX(0);
+      }
+    };
+
+    const handleDeleteClick = (e) => {
+      e.stopPropagation();
+      onDelete(order.id);
+      setTranslateX(0);
+    };
+
+    return (
+      <div className="relative overflow-hidden rounded-2xl">
+        {/* Fond rouge avec icône delete */}
+        <div 
+          className="absolute inset-y-0 right-0 w-24 bg-red-500 flex items-center justify-center"
+          onClick={handleDeleteClick}
+        >
+          <Trash2 className="w-6 h-6 text-white" />
+        </div>
+        
+        {/* Card swipeable */}
+        <div
+          ref={cardRef}
+          className="bg-white border border-gray-100 relative transition-transform duration-200 ease-out"
+          style={{ 
+            transform: `translateX(${translateX}px)`,
+            transition: isDragging ? 'none' : 'transform 0.2s ease-out'
+          }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Order Header - Clickable */}
+          <div 
+            className="p-4 cursor-pointer"
+            onClick={() => translateX === 0 && onSelect(order)}
+            data-testid={`order-card-${order.id}`}
+          >
+            <div className="flex items-start gap-3">
+              {/* Restaurant Image */}
+              <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
+                {order.partners?.image_url ? (
+                  <img 
+                    src={order.partners.image_url} 
+                    alt={order.partners?.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="w-6 h-6 text-gray-400" />
+                  </div>
+                )}
+              </div>
+
+              {/* Order Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 truncate">{order.partners?.name || 'Restaurant'}</h3>
+                    <p className="text-sm text-gray-500">
+                      {formatDate(order.created_at)} à {formatTime(order.created_at)}
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                </div>
+
+                {/* Items Preview */}
+                <p className="text-sm text-gray-600 mt-1 truncate">{itemNames}</p>
+
+                {/* Status & Total */}
+                <div className="flex items-center justify-between mt-2">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${statusConfig.color}`}>
+                    <StatusIcon className="w-3 h-3" />
+                    {statusConfig.label}
+                  </span>
+                  <span className="font-semibold text-gray-900">{order.total_amount?.toLocaleString()} F</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="px-4 pb-4 flex gap-2">
+            {/* Cancel Button */}
+            {canCancel && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCancel(order.id);
+                }}
+                className="flex-1 py-3 bg-red-50 text-red-600 font-semibold rounded-xl flex items-center justify-center gap-2 active:bg-red-100"
+              >
+                <XCircle className="w-4 h-4" />
+                Annuler
+              </button>
+            )}
+            
+            {/* Reorder Button - for completed orders */}
+            {canReorderOrder && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReorder(order);
+                }}
+                className="flex-1 py-3 bg-[#FF5A00]/10 text-[#FF5A00] font-semibold rounded-xl flex items-center justify-center gap-2 active:bg-[#FF5A00]/20"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Recommander
+              </button>
+            )}
+          </div>
+          
+          {/* Indicateur swipe (hint) */}
+          <div className="absolute top-1/2 right-2 -translate-y-1/2 text-gray-300 text-xs opacity-50">
+            ← Glisser
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state
   if (loading) {
@@ -450,6 +606,13 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
 
       {/* Orders List */}
       <div className="p-4 space-y-3">
+        {/* Hint pour swipe */}
+        {orders.length > 0 && (
+          <p className="text-xs text-gray-400 text-center mb-2">
+            ← Glissez vers la gauche pour supprimer
+          </p>
+        )}
+        
         {orders.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -458,107 +621,20 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
           </div>
         ) : (
           orders.map((order) => {
-            const statusConfig = getStatusConfig(order.status);
-            const StatusIcon = statusConfig.icon;
-            const itemNames = order.order_items?.slice(0, 2).map(i => i.name).join(', ') || '';
-            const canCancel = ['pending', 'confirmed'].includes(order.status);
+            const orderCanCancel = ['pending', 'confirmed'].includes(order.status);
+            const orderCanReorder = canReorder(order.status);
             
             return (
-              <div
+              <SwipeableOrderCard
                 key={order.id}
-                className="bg-white rounded-2xl overflow-hidden border border-gray-100"
-              >
-                {/* Order Header - Clickable */}
-                <div 
-                  className="p-4 cursor-pointer"
-                  onClick={() => setSelectedOrder(order)}
-                  data-testid={`order-card-${order.id}`}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Restaurant Image */}
-                    <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-                      {order.partners?.image_url ? (
-                        <img 
-                          src={order.partners.image_url} 
-                          alt={order.partners?.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-6 h-6 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Order Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-gray-900 truncate">{order.partners?.name || 'Restaurant'}</h3>
-                          <p className="text-sm text-gray-500">
-                            {formatDate(order.created_at)} à {formatTime(order.created_at)}
-                          </p>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                      </div>
-
-                      {/* Items Preview */}
-                      <p className="text-sm text-gray-600 mt-1 truncate">{itemNames}</p>
-
-                      {/* Status & Total */}
-                      <div className="flex items-center justify-between mt-2">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${statusConfig.color}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {statusConfig.label}
-                        </span>
-                        <span className="font-semibold text-gray-900">{order.total_amount?.toLocaleString()} F</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="px-4 pb-4 flex gap-2">
-                  {/* Cancel Button */}
-                  {canCancel && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowCancelConfirm(order.id);
-                      }}
-                      className="flex-1 py-3 bg-red-50 text-red-600 font-semibold rounded-xl flex items-center justify-center gap-2 active:bg-red-100"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      Annuler
-                    </button>
-                  )}
-                  
-                  {/* Reorder Button - for completed orders */}
-                  {canReorder(order.status) && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleReorder(order);
-                      }}
-                      className="flex-1 py-3 bg-[#FF5A00]/10 text-[#FF5A00] font-semibold rounded-xl flex items-center justify-center gap-2 active:bg-[#FF5A00]/20"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      Recommander
-                    </button>
-                  )}
-
-                  {/* Delete Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDeleteConfirm(order.id);
-                    }}
-                    className="py-3 px-4 bg-gray-100 text-gray-500 font-semibold rounded-xl flex items-center justify-center active:bg-gray-200"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+                order={order}
+                onDelete={(id) => setShowDeleteConfirm(id)}
+                onSelect={setSelectedOrder}
+                onReorder={handleReorder}
+                onCancel={(id) => setShowCancelConfirm(id)}
+                canCancel={orderCanCancel}
+                canReorderOrder={orderCanReorder}
+              />
             );
           })
         )}

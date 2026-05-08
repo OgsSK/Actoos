@@ -68,6 +68,21 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 
 ### Session Actuelle (8 Mai 2026)
 
+#### Nouvelles Fonctionnalités UX (Style Uber Eats / Deliveroo)
+
+**1. Flux Multi-Restaurant avec Alerte de Conflit** ✅
+- Parcourir librement tous les restaurants
+- Si le panier contient des articles d'un autre restaurant → Modal d'alerte :
+  - "Créer une nouvelle commande ?"
+  - "Votre panier contient des articles de [Restaurant A]. Souhaitez-vous les supprimer et ajouter cet article de [Restaurant B] ?"
+  - Boutons: "Oui, nouvelle commande" / "Non, garder mon panier"
+- Commander uniquement d'un seul restaurant à la fois
+
+**2. Swipe to Delete sur l'Historique des Commandes** ✅
+- Glisser vers la gauche pour révéler le bouton supprimer
+- Indicateur visuel "← Glissez vers la gauche pour supprimer"
+- Modal de confirmation avant suppression
+
 #### Bug Fixes (P0 - RÉSOLUS)
 - [x] **LoginSheet ne s'ouvrait pas depuis CartSheet**
   - Cause: Le `LoginSheet` n'était pas rendu dans le bloc `SCREENS.RESTAURANT`

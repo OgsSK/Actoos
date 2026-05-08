@@ -645,8 +645,9 @@ function AppContent() {
     
     setSelectedRestaurant(fullRestaurant);
     
-    // Définir ce restaurant comme actif pour le panier
-    setActiveRestaurant(fullRestaurant);
+    // NE PAS appeler setActiveRestaurant ici !
+    // Le panier actif ne change que quand on ajoute un article
+    // Cela permet de détecter les conflits multi-restaurants
     
     setCurrentScreen(SCREENS.RESTAURANT);
     navigateToRestaurant(restaurant);
