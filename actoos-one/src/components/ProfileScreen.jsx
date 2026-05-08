@@ -28,6 +28,7 @@ import { BottomSheet } from './BottomSheet';
 import { ReferralSection } from './ReferralSection';
 import { OrderHistorySection } from './OrderHistorySection';
 import { useFavorites } from '../context/FavoritesContext';
+import { useAuth } from '../context/AuthContext';
 
 // Mock user data - CLIENT APP (no admin roles visible)
 const MOCK_USER = {
@@ -87,6 +88,7 @@ export function ProfileScreen({
 }) {
   const { getFavoritesCount } = useFavorites();
   const favoritesCount = getFavoritesCount();
+  const { signOut } = useAuth();
   
   // Utiliser currentUser si connecté, sinon un user vide
   // Assurer que notifications existe toujours avec des valeurs par défaut
@@ -378,6 +380,12 @@ export function ProfileScreen({
               onOrderClick={onOrderHistory} 
               onTrackOrder={(order) => {
                 // Naviguer vers le tracking de la commande
+                if (onOrderHistory) {
+                  onOrderHistory(order);
+                }
+              }}
+              onViewOrderDetails={(order) => {
+                // Naviguer vers les détails de la commande
                 if (onOrderHistory) {
                   onOrderHistory(order);
                 }
@@ -711,9 +719,14 @@ export function ProfileScreen({
               Annuler
             </button>
             <button
-              onClick={() => {
-                setShowLogoutConfirm(false);
-                onBack();
+              onClick={async () => {
+                try {
+                  await signOut();
+                  setShowLogoutConfirm(false);
+                  onBack();
+                } catch (error) {
+                  console.error('Erreur déconnexion:', error);
+                }
               }}
               className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-semibold"
             >
