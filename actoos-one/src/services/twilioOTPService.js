@@ -13,9 +13,12 @@ import { supabase } from './supabaseClient';
 const TWILIO_CONFIG = {
   ACCOUNT_SID: 'AC8fc82ea402ee7ae52cc74d368045655e',
   AUTH_TOKEN: '65a45c7f2053de99ddfed6b179b93d93',
-  // Sender ID alphanumérique - Supporté au Mali et Sénégal
-  // Au Sénégal: OBLIGATOIRE (les numéros sont bloqués sur Orange/Expresso)
+  // Option 1: Sender ID alphanumérique (recommandé pour production)
   SENDER_ID: 'ACTOOS',
+  // Option 2: Numéro Twilio (pour compte Trial)
+  TWILIO_NUMBER: '+18777804236',
+  // Mode: 'sender_id' ou 'phone_number'
+  MODE: 'phone_number', // Changez à 'sender_id' après configuration dans Twilio Console
 };
 
 // OTP Settings
@@ -77,8 +80,14 @@ async function sendTwilioSMS(to, message) {
   // Build form data
   const formData = new URLSearchParams();
   formData.append('To', formattedTo);
-  formData.append('From', TWILIO_CONFIG.SENDER_ID); // Utilise "ACTOOS" comme expéditeur
+  // Utilise Sender ID ou numéro Twilio selon la configuration
+  const from = TWILIO_CONFIG.MODE === 'sender_id' 
+    ? TWILIO_CONFIG.SENDER_ID 
+    : TWILIO_CONFIG.TWILIO_NUMBER;
+  formData.append('From', from);
   formData.append('Body', message);
+  
+  console.log(`📤 Envoi SMS via Twilio [${TWILIO_CONFIG.MODE}]: ${from} → ${formattedTo}`);
   
   try {
     const response = await fetch(url, {
