@@ -81,6 +81,7 @@ export function ProfileScreen({
   onPrivacyClick,
   onTermsClick,
   onOrderHistory,
+  onTrackOrder,
   onFavorites,
   currentUser,
   isLoggedIn,
@@ -380,8 +381,8 @@ export function ProfileScreen({
               onOrderClick={onOrderHistory} 
               onTrackOrder={(order) => {
                 // Naviguer vers le tracking de la commande
-                if (onOrderHistory) {
-                  onOrderHistory(order);
+                if (onTrackOrder) {
+                  onTrackOrder(order);
                 }
               }}
               onViewOrderDetails={(order) => {

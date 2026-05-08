@@ -63,7 +63,7 @@ function formatTime(dateString) {
 
 export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
   const { user } = useAuth();
-  const { addItem, setRestaurantId, clearCart } = useCart();
+  const { addToCart, setActiveRestaurant, clearCart } = useCart();
   
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -166,18 +166,29 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
       return;
     }
     
-    // Vider le panier et ajouter les articles
+    // Vider le panier et définir le restaurant actif
     clearCart();
-    setRestaurantId(order.partner_id);
     
+    // Créer un objet restaurant minimal pour setActiveRestaurant
+    const restaurantInfo = {
+      id: order.partner_id || order.restaurant_id,
+      name: order.partners?.name || 'Restaurant',
+      image: order.partners?.image_url || null,
+      deliveryTime: '30-45 min',
+      deliveryFee: order.delivery_fee || 500,
+      rating: order.partners?.rating || 4.5,
+    };
+    setActiveRestaurant(restaurantInfo);
+    
+    // Ajouter les articles au panier
     order.order_items.forEach(item => {
-      addItem({
-        id: item.menu_item_id || `item_${Date.now()}`,
+      addToCart({
+        id: item.menu_item_id || `item_${Date.now()}_${Math.random()}`,
         name: item.name,
         price: item.unit_price,
-        quantity: item.quantity,
+        max_per_order: 10,
         image: item.menu_items?.image_url || null,
-      });
+      }, item.quantity, '', restaurantInfo);
     });
     
     if (onReorder) {

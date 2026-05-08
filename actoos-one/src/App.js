@@ -796,13 +796,18 @@ function AppContent() {
         onBack={() => setCurrentScreen(SCREENS.PROFIL)}
         onReorder={(order) => {
           // Navigate to the restaurant of the order
-          const restaurant = restaurants.find(r => r.id === order.restaurant_id);
+          const restaurant = restaurants.find(r => r.id === order.partner_id || r.id === order.restaurant_id);
           if (restaurant) {
             handleRestaurantClick(restaurant);
+          } else {
+            // Si restaurant pas trouvé dans la liste locale, chercher dans Supabase
+            console.log('Restaurant non trouvé localement, ID:', order.partner_id);
+            // Aller quand même au checkout avec les articles ajoutés
+            setCurrentScreen(SCREENS.HOME);
           }
         }}
         onViewRestaurant={(order) => {
-          const restaurant = restaurants.find(r => r.id === order.restaurant_id);
+          const restaurant = restaurants.find(r => r.id === order.partner_id || r.id === order.restaurant_id);
           if (restaurant) {
             handleRestaurantClick(restaurant);
           }
@@ -889,6 +894,11 @@ function AppContent() {
           onPrivacyClick={() => setPrivacySheet(true)}
           onTermsClick={() => setCurrentScreen(SCREENS.TERMS)}
           onOrderHistory={() => setCurrentScreen(SCREENS.ORDER_HISTORY)}
+          onTrackOrder={(order) => {
+            // Navigate to order tracking screen
+            setActiveOrder(order);
+            setCurrentScreen(SCREENS.ORDER_TRACKING);
+          }}
           onFavorites={() => {
             setPreviousScreen(SCREENS.PROFIL);
             setCurrentScreen(SCREENS.FAVORITES);

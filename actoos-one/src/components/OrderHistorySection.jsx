@@ -194,8 +194,8 @@ function OrderCard({ order, onReorder, isReordering, onTrackOrder, onClick, onDe
             </p>
           </div>
           
-          {/* Bouton Recommander - seulement pour les commandes livrées */}
-          {order.status === 'delivered' && (
+          {/* Bouton Recommander - pour les commandes livrées ou annulées */}
+          {['delivered', 'cancelled'].includes(order.status) && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -237,7 +237,7 @@ function OrderCard({ order, onReorder, isReordering, onTrackOrder, onClick, onDe
 // Composant principal
 export function OrderHistorySection({ onOrderClick, onTrackOrder, onViewOrderDetails }) {
   const { user } = useAuth();
-  const { addItem, setRestaurantId, restaurantId: currentRestaurantId, clearCart } = useCart();
+  const { addToCart, setActiveRestaurant, activeRestaurantId, clearCart } = useCart();
   
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -286,23 +286,30 @@ export function OrderHistorySection({ onOrderClick, onTrackOrder, onViewOrderDet
     
     try {
       // Vérifier si le panier a des articles d'un autre restaurant
-      if (currentRestaurantId && currentRestaurantId !== order.partner_id) {
+      if (activeRestaurantId && activeRestaurantId !== order.partner_id) {
         clearCart();
       }
       
-      setRestaurantId(order.partner_id);
+      // Créer un objet restaurant minimal pour setActiveRestaurant
+      const restaurantInfo = {
+        id: order.partner_id || order.restaurant_id,
+        name: order.partners?.name || 'Restaurant',
+        image: order.partners?.image_url || null,
+        deliveryTime: '30-45 min',
+        deliveryFee: order.delivery_fee || 500,
+        rating: order.partners?.rating || 4.5,
+      };
+      setActiveRestaurant(restaurantInfo);
       
       // Ajouter chaque article au panier
       for (const item of order.order_items) {
-        const cartItem = {
+        addToCart({
           id: item.menu_item_id || `item_${Date.now()}_${Math.random()}`,
           name: item.name,
           price: item.unit_price,
-          quantity: item.quantity,
+          max_per_order: 10,
           image: item.menu_items?.image_url || null,
-        };
-        
-        addItem(cartItem);
+        }, item.quantity, '', restaurantInfo);
       }
       
       setShowSuccess(true);
