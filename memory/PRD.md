@@ -1,6 +1,43 @@
-# ACTOOS ONE - Product Requirements Document
+# ACTOOS - Product Requirements Document
 
 ## Aperçu
+**ACTOOS ONE** : Super-app PWA monolithique de logistique et fintech pour l'Afrique de l'Ouest.
+**ACTOOS PRO** : SaaS B2B de gestion d'interventions terrain pour l'Europe.
+
+---
+
+## ACTOOS PRO - Session Persistence Fix (8 Mai 2026)
+
+### Problème Résolu
+Les utilisateurs mobile étaient déconnectés quand ils fermaient l'app, rendant impossible le travail terrain.
+
+### Solution Implémentée
+Fichier modifié: `/app/frontend/src/contexts/AuthContext.jsx`
+
+**Améliorations clés :**
+1. **`isTokenExpired(token)`** - Vérifie l'expiration du JWT avant utilisation
+2. **`safeStorage`** - Wrapper sécurisé pour localStorage (compatible Safari mode privé)
+3. **Persistance complète** - Token, User et Entreprise stockés dans localStorage
+4. **Gestion d'erreur intelligente** - Ne supprime pas la session sur erreurs réseau, seulement sur erreurs d'auth (401)
+5. **Réhydratation optimisée** - Utilise les données cachées immédiatement pendant le refresh en arrière-plan
+
+### Comptes de Test ACTOOS PRO
+| Email | Rôle | Plan | Mot de passe |
+|-------|------|------|--------------|
+| contact@actoos.com | Admin | Enterprise | Salifkane&&7 |
+| startup@actoos.com | Admin | Startup | Salifkane&&7 |
+| pro@actoos.com | Admin | Pro | Salifkane&&7 |
+| demo@actoos.com | Admin | Demo | Salifkane&&7 |
+| tech.enterprise@actoos.com | Technicien | Enterprise | Salifkane&&7 |
+| tech.startup@actoos.com | Technicien | Startup | Salifkane&&7 |
+| tech.pro@actoos.com | Technicien | Pro | Salifkane&&7 |
+| tech.demo@actoos.com | Technicien | Demo | Salifkane&&7 |
+
+---
+
+## ACTOOS ONE - Détails
+
+### Aperçu
 ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Afrique de l'Ouest. L'objectif est de remplacer toutes les données/UI mockées par un backend Supabase live et d'implémenter une UX proactive de livraison alimentaire aux standards de l'industrie (Uber Eats, Glovo).
 
 ## Stack Technique

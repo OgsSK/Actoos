@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { formatCurrency, formatCurrencyCompact, getCurrencySymbol } from '../lib/currency';
 import { supabase } from '../lib/supabase';
@@ -12,6 +12,46 @@ const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://zmngftlkdimw
 const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptbmdmdGxrZGltd3ZreG1kdXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTQwNDksImV4cCI6MjA5MzU5MDA0OX0.uxXVKg1oIcakCPtnRxri9PPj1ZvAsgi-JVe6VhQNE2c';
 
 const AuthContext = createContext(null);
+
+// Helper: Check if JWT token is expired
+const isTokenExpired = (token) => {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const exp = payload.exp;
+    if (!exp) return false; // No expiration = valid
+    return Date.now() >= exp * 1000;
+  } catch {
+    return true; // Invalid token format
+  }
+};
+
+// Helper: Safe localStorage operations (handles Safari private mode, quota exceeded, etc.)
+const safeStorage = {
+  getItem: (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch {
+      console.warn('localStorage unavailable, session will not persist');
+      return false;
+    }
+  },
+  removeItem: (key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore errors
+    }
+  }
+};
 
 // Function to update PWA manifest, favicon, and theme based on user role
 const updatePWAForRole = (role) => {
@@ -56,21 +96,48 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  // Initialize state from localStorage with safe fallbacks
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = safeStorage.getItem('user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
   });
   const [entreprise, setEntreprise] = useState(() => {
-    const savedEntreprise = localStorage.getItem('entreprise');
-    return savedEntreprise ? JSON.parse(savedEntreprise) : null;
+    try {
+      const savedEntreprise = safeStorage.getItem('entreprise');
+      return savedEntreprise ? JSON.parse(savedEntreprise) : null;
+    } catch {
+      return null;
+    }
   });
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(() => {
+    const savedToken = safeStorage.getItem('token');
+    // Only use saved token if it's not expired
+    if (savedToken && !isTokenExpired(savedToken)) {
+      return savedToken;
+    }
+    // Clear expired token
+    if (savedToken) {
+      safeStorage.removeItem('token');
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
+  
+  // Track if we've attempted to fetch user data this session
+  const fetchAttempted = useRef(false);
 
-  const api = axios.create({
-    baseURL: API,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  // Create axios instance with memoization to prevent recreating on each render
+  const api = useMemo(() => {
+    const instance = axios.create({
+      baseURL: API,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return instance;
+  }, [token]);
 
   // Update axios headers when token changes
   useEffect(() => {
@@ -79,12 +146,44 @@ export const AuthProvider = ({ children }) => {
     } else {
       delete api.defaults.headers.Authorization;
     }
-  }, [token]);
+  }, [token, api]);
+
+  // Persist user and entreprise to localStorage whenever they change
+  useEffect(() => {
+    if (user) {
+      safeStorage.setItem('user', JSON.stringify(user));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (entreprise) {
+      safeStorage.setItem('entreprise', JSON.stringify(entreprise));
+    }
+  }, [entreprise]);
 
   const fetchUser = useCallback(async () => {
-    if (!token) {
+    // Skip if no token or token is expired
+    if (!token || isTokenExpired(token)) {
+      if (token && isTokenExpired(token)) {
+        // Token expired - clear auth state
+        console.log('Token expired, clearing session');
+        safeStorage.removeItem('token');
+        safeStorage.removeItem('user');
+        safeStorage.removeItem('entreprise');
+        setToken(null);
+        setUser(null);
+        setEntreprise(null);
+      }
       setLoading(false);
       return;
+    }
+
+    // If we already have user and entreprise from localStorage, 
+    // use them immediately and refresh in background
+    if (user && entreprise && !fetchAttempted.current) {
+      setLoading(false);
+      fetchAttempted.current = true;
+      // Continue to refresh data in background below
     }
 
     try {
@@ -100,25 +199,37 @@ export const AuthProvider = ({ children }) => {
       ]);
       
       if (userResult.data) {
-        setUser({
+        const userData = {
           ...userResult.data,
           id: String(userResult.data.id),
           entreprise_id: String(userResult.data.entreprise_id)
-        });
+        };
+        setUser(userData);
+        safeStorage.setItem('user', JSON.stringify(userData));
       }
       if (entrepriseResult.data) {
         setEntreprise(entrepriseResult.data);
+        safeStorage.setItem('entreprise', JSON.stringify(entrepriseResult.data));
       }
     } catch (error) {
-      console.error('Auth error:', error);
-      localStorage.removeItem('token');
-      setToken(null);
-      setUser(null);
-      setEntreprise(null);
+      console.error('Auth refresh error:', error);
+      // IMPORTANT: Don't clear session on network errors!
+      // Only clear if it's an actual auth error (401, invalid token, etc.)
+      if (error?.response?.status === 401 || error?.message?.includes('invalid') || error?.message?.includes('expired')) {
+        console.log('Auth error - clearing session');
+        safeStorage.removeItem('token');
+        safeStorage.removeItem('user');
+        safeStorage.removeItem('entreprise');
+        setToken(null);
+        setUser(null);
+        setEntreprise(null);
+      }
+      // For network errors, keep the cached user/entreprise - user stays logged in
     } finally {
       setLoading(false);
+      fetchAttempted.current = true;
     }
-  }, [token]);
+  }, [token, user, entreprise]);
 
   useEffect(() => {
     fetchUser();
@@ -225,9 +336,11 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Réponse invalide du serveur');
       }
       
-      localStorage.setItem('token', authToken);
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('entreprise', JSON.stringify(entData));
+      // Persist all auth data to localStorage
+      safeStorage.setItem('token', authToken);
+      safeStorage.setItem('user', JSON.stringify(userData));
+      safeStorage.setItem('entreprise', JSON.stringify(entData));
+      
       setToken(authToken);
       setUser(userData);
       setEntreprise(entData);
@@ -246,7 +359,11 @@ export const AuthProvider = ({ children }) => {
   const complete2FALogin = (authData) => {
     const { access_token, user: userData, entreprise: entData } = authData;
     
-    localStorage.setItem('token', access_token);
+    // Persist all data to localStorage
+    safeStorage.setItem('token', access_token);
+    safeStorage.setItem('user', JSON.stringify(userData));
+    safeStorage.setItem('entreprise', JSON.stringify(entData));
+    
     setToken(access_token);
     setUser(userData);
     setEntreprise(entData);
@@ -261,7 +378,11 @@ export const AuthProvider = ({ children }) => {
     const response = await api.post('/auth/register', data);
     const { access_token, user: userData, entreprise: entData } = response.data;
     
-    localStorage.setItem('token', access_token);
+    // Persist all auth data
+    safeStorage.setItem('token', access_token);
+    safeStorage.setItem('user', JSON.stringify(userData));
+    safeStorage.setItem('entreprise', JSON.stringify(entData));
+    
     setToken(access_token);
     setUser(userData);
     setEntreprise(entData);
@@ -270,8 +391,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('pwa_role'); // Clear PWA role preference on logout
+    // Clear all auth data from localStorage
+    safeStorage.removeItem('token');
+    safeStorage.removeItem('user');
+    safeStorage.removeItem('entreprise');
+    safeStorage.removeItem('pwa_role');
+    
+    // Reset fetchAttempted ref for next session
+    fetchAttempted.current = false;
+    
     setToken(null);
     setUser(null);
     setEntreprise(null);
