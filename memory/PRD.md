@@ -31,6 +31,41 @@
 
 ## CHANGELOG
 
+### 2025-05-08 - Historique des Commandes avec bouton Recommander ✅
+
+**Fonctionnalités implémentées :**
+
+#### 1. Section "Mes commandes" dans le Profil
+- Affichage de l'historique des 10 dernières commandes
+- Cartes de commande avec :
+  - Image et nom du restaurant
+  - Date formatée (Aujourd'hui, Hier, ou date complète)
+  - Badge de statut coloré (En attente, Confirmée, En préparation, Livrée, etc.)
+  - Liste des articles commandés
+  - Total de la commande en FCFA
+
+#### 2. Bouton "Recommander"
+- Visible uniquement pour les commandes livrées (status = 'delivered')
+- Ajoute automatiquement tous les articles de la commande au panier
+- Si le panier contient des articles d'un autre restaurant, il est vidé d'abord
+- Message de confirmation "Articles ajoutés au panier !"
+- Animation de chargement pendant l'ajout
+
+#### 3. Bouton "Suivre"
+- Visible pour les commandes en cours (pending, confirmed, preparing, ready, delivering)
+- Permet de suivre la commande en temps réel
+
+#### Fichiers créés/modifiés :
+- `/app/actoos-one/src/components/OrderHistorySection.jsx` (CRÉÉ)
+- `/app/actoos-one/src/components/ProfileScreen.jsx` - Intégration du composant
+
+#### Tests validés :
+- ✅ Section "Mes commandes" affichée dans le profil
+- ✅ État vide quand pas de commandes
+- ✅ Fix erreur "Cannot read properties of undefined (reading 'orders')"
+
+---
+
 ### 2025-05-08 - Adresses Sauvegardées + Panier Persistant ✅
 
 **Fonctionnalités style Uber Eats/Glovo implémentées :**

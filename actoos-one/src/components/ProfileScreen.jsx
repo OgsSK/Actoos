@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 import { ReferralSection } from './ReferralSection';
+import { OrderHistorySection } from './OrderHistorySection';
 import { useFavorites } from '../context/FavoritesContext';
 
 // Mock user data - CLIENT APP (no admin roles visible)
@@ -88,7 +89,19 @@ export function ProfileScreen({
   const favoritesCount = getFavoritesCount();
   
   // Utiliser currentUser si connecté, sinon un user vide
-  const [user, setUser] = useState(currentUser || MOCK_USER);
+  // Assurer que notifications existe toujours avec des valeurs par défaut
+  const [user, setUser] = useState(() => {
+    const baseUser = currentUser || MOCK_USER;
+    return {
+      ...baseUser,
+      notifications: {
+        orders: true,
+        promotions: true,
+        sms: false,
+        ...baseUser.notifications
+      }
+    };
+  });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -348,24 +361,25 @@ export function ProfileScreen({
           </div>
         )}
 
-        {/* Mes commandes - Quick Access */}
+        {/* Mes commandes - Section complète avec historique */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
-          <button
-            onClick={onOrderHistory}
-            className="w-full px-4 py-4 flex items-center gap-4 active:bg-gray-50 border-b border-gray-100"
-            data-testid="order-history-btn"
-          >
-            <div className="w-12 h-12 bg-[#FF5A00]/10 rounded-2xl flex items-center justify-center">
-              <History className="w-6 h-6 text-[#FF5A00]" />
+          <div className="px-4 py-3 bg-[#FF5A00]/5 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <History className="w-5 h-5 text-[#FF5A00]" />
+                Mes commandes
+              </h3>
+              <p className="text-xs text-gray-500">Historique et recommander</p>
             </div>
-            <div className="flex-1 text-left">
-              <p className="font-semibold text-gray-900">Mes commandes</p>
-              <p className="text-xs text-gray-500">Historique et commander à nouveau</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
+          </div>
           
-          {/* Mes favoris */}
+          <div className="p-4">
+            <OrderHistorySection onOrderClick={onOrderHistory} />
+          </div>
+        </div>
+          
+        {/* Mes favoris */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
           <button
             onClick={onFavorites}
             className="w-full px-4 py-4 flex items-center gap-4 active:bg-gray-50"
