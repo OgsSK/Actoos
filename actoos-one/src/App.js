@@ -1048,7 +1048,16 @@ function AppContent() {
         address={address}
         onAddressClick={() => setAddressSheet(true)}
         onSearchClick={() => setSearchSheet(true)}
-        onProfileClick={() => setShowLoginSheet(true)}
+        onProfileClick={() => {
+          if (isAuthenticated) {
+            // Si connecté, aller au profil
+            setPreviousScreen(SCREENS.HOME);
+            setCurrentScreen(SCREENS.PROFIL);
+          } else {
+            // Sinon, ouvrir le formulaire de connexion
+            setShowLoginSheet(true);
+          }
+        }}
         onFavoritesClick={() => {
           setPreviousScreen(SCREENS.HOME);
           setCurrentScreen(SCREENS.FAVORITES);
