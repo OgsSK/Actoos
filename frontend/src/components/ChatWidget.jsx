@@ -114,8 +114,8 @@ const ConversationList = ({ conversations, onSelect, loading }) => {
     return (
       <div className="text-center py-8 text-slate-500">
         <MessageCircle className="w-10 h-10 mx-auto mb-3 text-slate-300" />
-        <p>Aucune conversation</p>
-        <p className="text-sm mt-1">Les techniciens apparaîtront ici</p>
+        <p>Aucun technicien</p>
+        <p className="text-sm mt-1">Ajoutez des techniciens à votre entreprise</p>
       </div>
     );
   }
@@ -141,8 +141,10 @@ const ConversationList = ({ conversations, onSelect, loading }) => {
                 </span>
               )}
             </div>
-            {conv.last_message && (
+            {conv.last_message ? (
               <p className="text-sm text-slate-500 truncate">{conv.last_message}</p>
+            ) : (
+              <p className="text-sm text-slate-400 italic">Aucun message</p>
             )}
           </div>
           {conv.unread_count > 0 && (
@@ -290,44 +292,72 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
     
     try {
       setLoading(true);
-      // Get all users in the entreprise to show as potential conversations
-      const { data: users, error } = await supabase
+      
+      // For admin: show all technicians
+      // For tech: show admin only
+      let query = supabase
         .from('users')
         .select('id, nom, prenom, email, role')
         .eq('entreprise_id', user.entreprise_id)
-        .neq('id', user.id)
-        .order('nom');
+        .neq('id', user.id);
+      
+      // Admin sees technicians, tech sees admins
+      if (user.role === 'admin') {
+        query = query.eq('role', 'technicien');
+      } else {
+        query = query.eq('role', 'admin');
+      }
+      
+      const { data: users, error } = await query.order('nom');
       
       if (error) throw error;
       
-      // Get last message for each user
+      // Get last message for each user (optional - for display)
       const conversationsWithLastMessage = await Promise.all(
         (users || []).map(async (u) => {
           const { data: lastMsg } = await supabase
             .from('chat_messages')
             .select('content, created_at, sender_id')
-            .or(`sender_id.eq.${u.id},recipient_id.eq.${u.id}`)
+            .or(`and(sender_id.eq.${u.id},recipient_id.eq.${user.id}),and(sender_id.eq.${user.id},recipient_id.eq.${u.id})`)
             .order('created_at', { ascending: false })
             .limit(1)
             .single();
+          
+          // Count unread messages from this user
+          const { count: unreadCount } = await supabase
+            .from('chat_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('sender_id', u.id)
+            .eq('recipient_id', user.id)
+            .eq('is_read', false);
           
           return {
             user_id: u.id,
             user_name: `${u.prenom || ''} ${u.nom || ''}`.trim() || u.email,
             user_role: u.role,
-            last_message: lastMsg?.content || '',
-            last_message_time: lastMsg?.created_at || null
+            last_message: lastMsg?.content || null,
+            last_message_at: lastMsg?.created_at || null,
+            unread_count: unreadCount || 0
           };
         })
       );
       
-      setConversations(conversationsWithLastMessage.filter(c => c.last_message));
+      // Show ALL users (technicians for admin), not just those with messages
+      // Sort by last message time (those with messages first)
+      const sorted = conversationsWithLastMessage.sort((a, b) => {
+        if (!a.last_message_at && !b.last_message_at) return 0;
+        if (!a.last_message_at) return 1;
+        if (!b.last_message_at) return -1;
+        return new Date(b.last_message_at) - new Date(a.last_message_at);
+      });
+      
+      setConversations(sorted);
     } catch (error) {
       console.error('Error loading conversations:', error);
     } finally {
       setLoading(false);
     }
-  }, [user?.entreprise_id, user?.id]);
+  }, [user?.entreprise_id, user?.id, user?.role]);
 
   // Load messages for a conversation from Supabase
   const loadMessages = useCallback(async (userId) => {
