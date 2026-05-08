@@ -11,6 +11,43 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 - **Push Notifications**: Firebase (structure en place, clés à configurer)
 - **Paiements Mobile Money**: TouchPay API (structure en place, mode démo actif)
 
+## 🌍 Architecture Multi-Pays (NOUVEAU - 8 Mai 2026)
+
+### Pays Supportés (Afrique de l'Ouest)
+| Pays | Code | Drapeau | Préfixe | Statut |
+|------|------|---------|---------|--------|
+| Mali | ML | 🇲🇱 | +223 | ✅ LANCÉ |
+| Sénégal | SN | 🇸🇳 | +221 | 🔜 BIENTÔT |
+| Côte d'Ivoire | CI | 🇨🇮 | +225 | 🔜 BIENTÔT |
+| Burkina Faso | BF | 🇧🇫 | +226 | 🔜 BIENTÔT |
+| Guinée | GN | 🇬🇳 | +224 | 🔜 BIENTÔT |
+| Niger | NE | 🇳🇪 | +227 | 🔜 BIENTÔT |
+| Togo | TG | 🇹🇬 | +228 | 🔜 BIENTÔT |
+| Bénin | BJ | 🇧🇯 | +229 | 🔜 BIENTÔT |
+| Guinée-Bissau | GW | 🇬🇼 | +245 | 🔜 BIENTÔT |
+| Mauritanie | MR | 🇲🇷 | +222 | 🔜 BIENTÔT |
+
+### Fichiers Clés Multi-Pays
+- `/src/config/countriesConfig.js` - Configuration 10 pays avec validation téléphone
+- `/src/components/CountrySelector.jsx` - Dropdown avec drapeaux
+- `/src/components/LoginSheet.jsx` - Auth avec onglets Téléphone/Email
+
+### Flux Authentification
+```
+CONNEXION:
+[📱 Téléphone] | [📧 Email]  ← Onglets
+🇲🇱 +223 ▼ | 70 00 00 00   ← Sélecteur pays + téléphone
+[ Mot de passe ]
+[Mot de passe oublié ?]
+
+INSCRIPTION:
+[ Nom complet * ]
+🇲🇱 +223 ▼ | 70 00 00 00 * ← Téléphone OBLIGATOIRE
+[ Email (optionnel) ]        ← Email OPTIONNEL  
+[ Mot de passe * ]
+⚠️ "ACTOOS arrive bientôt au [pays]!" si pays non lancé
+```
+
 ## Schéma Base de Données
 
 ### Tables Existantes
