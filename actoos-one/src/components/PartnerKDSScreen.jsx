@@ -22,7 +22,8 @@ import {
   Settings,
   Loader2,
   AlertCircle,
-  Bell
+  Bell,
+  Wallet
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { getPartnerOrders, updateOrderStatus } from '../services/orderService';
@@ -31,11 +32,13 @@ import { KDSMenuManager } from './KDSMenuManager';
 import { PartnerPromotionsManager } from './PartnerPromotionsManager';
 import { PartnerAnalytics } from './PartnerAnalytics';
 import { PartnerSettings } from './PartnerSettings';
+import { PartnerEarningsScreen } from './PartnerEarningsScreen';
 
 const TABS = {
   ORDERS: 'orders',
   MENU: 'menu',
   PROMOS: 'promos',
+  EARNINGS: 'earnings',
   ANALYTICS: 'analytics',
   SETTINGS: 'settings',
 };
@@ -364,6 +367,18 @@ export function PartnerKDSScreen({ partnerId, onBack }) {
             Promos
           </button>
           <button
+            onClick={() => setActiveTab(TABS.EARNINGS)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap ${
+              activeTab === TABS.EARNINGS
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-700 text-gray-300'
+            }`}
+            data-testid="earnings-tab"
+          >
+            <Wallet className="w-4 h-4" />
+            💰 Gains
+          </button>
+          <button
             onClick={() => setActiveTab(TABS.ANALYTICS)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap ${
               activeTab === TABS.ANALYTICS
@@ -566,6 +581,11 @@ export function PartnerKDSScreen({ partnerId, onBack }) {
         {/* Promos Tab */}
         {activeTab === TABS.PROMOS && (
           <PartnerPromotionsManager partnerId={partnerId} />
+        )}
+
+        {/* Earnings Tab */}
+        {activeTab === TABS.EARNINGS && (
+          <PartnerEarningsScreen partnerId={partnerId} onBack={() => setActiveTab(TABS.ORDERS)} />
         )}
 
         {/* Analytics Tab */}

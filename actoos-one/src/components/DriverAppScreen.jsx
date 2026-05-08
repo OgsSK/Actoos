@@ -38,6 +38,7 @@ import {
   creditDriverEarnings,
   DRIVER_COMMISSION_RATE 
 } from '../services/driverService';
+import { settleOrder } from '../services/financialService';
 
 export function DriverAppScreen({ driverId, onBack }) {
   const [isOnline, setIsOnline] = useState(false);
@@ -369,7 +370,11 @@ export function DriverAppScreen({ driverId, onBack }) {
   const handleValidateCode = async () => {
     const expectedCode = currentMission?.dropoff?.delivery_code || currentMission?.delivery_code;
     
-    if (handshakeCode === expectedCode) {
+    // Normaliser les codes pour comparaison (retirer # et mettre en majuscule)
+    const normalizedInput = handshakeCode.replace('#', '').toUpperCase();
+    const normalizedExpected = (expectedCode || '').replace('#', '').toUpperCase();
+    
+    if (normalizedInput === normalizedExpected) {
       // Marquer comme livré
       const { error } = await updateOrderStatus(currentMission.id, 'delivered');
       
@@ -378,31 +383,37 @@ export function DriverAppScreen({ driverId, onBack }) {
         return;
       }
 
-      // Calculer gains (100% des frais de livraison)
-      const deliveryFee = currentMission.delivery_fee || 500;
-      const earnings = deliveryFee; // Driver reçoit 100% des frais de livraison
-
-      // Créditer le wallet via Supabase
+      // ===== SETTLEMENT COMPLET (Handshake #A42) =====
+      // Répartir les fonds: Partenaire, Livreur, Actoos
       if (driverId && driverId !== 'test-driver') {
-        const { error: creditError } = await creditDriverEarnings(
-          driverId, 
+        const { data: settlementData, error: settlementError } = await settleOrder(
           currentMission.id, 
-          earnings,
-          `Livraison ${currentMission.order_number || currentMission.id.slice(0, 8)}`
+          driverId
         );
         
-        if (creditError) {
-          console.error('Erreur crédit wallet:', creditError);
+        if (settlementError) {
+          console.error('Erreur settlement:', settlementError);
+          // Fallback: ancien système de crédit
+          const deliveryFee = currentMission.delivery_fee || 500;
+          await creditDriverEarnings(
+            driverId, 
+            currentMission.id, 
+            deliveryFee,
+            `Livraison ${currentMission.order_number || currentMission.id.slice(0, 8)}`
+          );
         } else {
-          // Rafraîchir le wallet
-          await fetchDriverWallet();
+          console.log('✅ Settlement complet:', settlementData);
         }
+        
+        // Rafraîchir le wallet
+        await fetchDriverWallet();
       } else {
         // Mode test: mise à jour locale
+        const deliveryFee = currentMission.delivery_fee || 500;
         setDriverWallet(prev => ({
           ...prev,
-          balance: prev.balance + earnings,
-          todayEarnings: prev.todayEarnings + earnings,
+          balance: prev.balance + deliveryFee,
+          todayEarnings: prev.todayEarnings + deliveryFee,
           todayDeliveries: prev.todayDeliveries + 1,
         }));
       }

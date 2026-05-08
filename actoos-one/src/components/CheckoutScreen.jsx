@@ -23,6 +23,7 @@ import { useWallet } from '../context/WalletContext';
 import { useAuth } from '../context/AuthContext';
 import { calculateOrderTotal, createOrder } from '../services/orderService';
 import { getNeighborhoodsByCommune } from '../data/locationData';
+import { calculateDeliveryFee } from '../config/businessConfig';
 
 const STEPS = {
   DELIVERY_MODE: 'delivery_mode',
@@ -167,8 +168,26 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
     );
   };
 
-  // Calculer le total - frais de livraison = 0 si pickup
-  const deliveryFee = deliveryMode === 'pickup' ? 0 : (restaurant?.deliveryFee || 500);
+  // Distance estimée (en attendant le calcul GPS réel)
+  // TODO: Calculer la vraie distance entre restaurant et client avec PostGIS
+  const estimatedDistanceKm = restaurant?.distanceKm || 3;
+  
+  // Déterminer le type de livraison du partenaire
+  const partnerDeliveryType = restaurant?.delivery_type || 'actoos'; // 'actoos' | 'self'
+  const isSelfDelivery = partnerDeliveryType === 'self';
+  
+  // Calculer les frais de livraison dynamiquement selon la règle ACTOOS
+  const deliveryFeeResult = deliveryMode === 'pickup' 
+    ? { fee: 0, breakdown: { base: 0, distance: 0, surge: 0, sos: 0 } }
+    : calculateDeliveryFee({
+        distanceKm: estimatedDistanceKm,
+        deliveryType: isSelfDelivery ? 'self' : 'actoos',
+        isUrgent: false, // TODO: Ajouter support SOS pour Pharmacy
+        surgeMultiplier: 1.0, // TODO: Calculer dynamiquement selon la demande
+        selfDeliveryFee: isSelfDelivery ? restaurant?.selfDeliveryFee : null,
+      });
+  
+  const deliveryFee = deliveryFeeResult.fee;
   
   // Apply promo discount
   const promoDiscount = appliedPromo?.discount || 0;
@@ -269,6 +288,8 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
         paymentMethod: paymentMethod,
         deliveryAddress: deliveryMode === 'delivery' ? `${address} - ${addressDetails}` : null,
         deliveryInstructions: addressDetails || null,
+        distanceKm: estimatedDistanceKm, // Pour le calcul des frais de livraison
+        partnerDeliveryType: isSelfDelivery ? 'self' : 'actoos',
       };
       
       const { data: createdOrder, error: orderError } = await createOrder(orderData);
@@ -328,10 +349,17 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
               </div>
               <div className="flex-1 text-left">
                 <p className="font-bold text-gray-900 text-lg">Livraison</p>
-                <p className="text-sm text-gray-500">Livré à votre adresse</p>
-                <p className="text-[#FF5A00] font-semibold mt-1">
-                  +{(restaurant?.deliveryFee || 500).toLocaleString()} FCFA
+                <p className="text-sm text-gray-500">
+                  {isSelfDelivery ? 'Livré par le restaurant' : 'Livré par ACTOOS'}
                 </p>
+                <p className="text-[#FF5A00] font-semibold mt-1">
+                  {deliveryFee === 0 ? 'Gratuit' : `+${deliveryFee.toLocaleString()} FCFA`}
+                </p>
+                {!isSelfDelivery && deliveryFeeResult.breakdown && deliveryFee > 0 && (
+                  <p className="text-xs text-gray-400">
+                    Base: {deliveryFeeResult.breakdown.base}F + Distance: {deliveryFeeResult.breakdown.distance}F
+                  </p>
+                )}
               </div>
             </button>
 
