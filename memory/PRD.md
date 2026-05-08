@@ -246,6 +246,10 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
   - "Payer" ouvre maintenant le SCANNER (pour payer quelqu'un)
   - "Encaisser" affiche MON QR (pour recevoir un paiement)
   - Composants PartnerWalletSection, DriverWalletSection, AdminWalletSection créés
+- ✅ **QR Code PRODUCTION-READY** (8 Mai 2026)
+  - qrcode.react (QRCodeSVG) pour génération de vrais QR codes
+  - html5-qrcode (Html5QrcodeScanner) pour scanner caméra réel
+  - Format JSON standardisé: type ACTOOS_PAY avec expiration 15min
 - ✅ **Calcul de distance PostGIS/Haversine** (8 Mai 2026)
   - Service distanceService.js créé
   - Utilise PostGIS si disponible, sinon formule Haversine
