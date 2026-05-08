@@ -16,8 +16,8 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 ### Pays Supportés (Afrique de l'Ouest)
 | Pays | Code | Drapeau | Préfixe | Statut |
 |------|------|---------|---------|--------|
-| Mali | ML | 🇲🇱 | +223 | ✅ LANCÉ |
-| Sénégal | SN | 🇸🇳 | +221 | 🔜 BIENTÔT |
+| Mali | ML | 🇲🇱 | +223 | ✅ LANCÉ (16 restaurants Bamako) |
+| Sénégal | SN | 🇸🇳 | +221 | ✅ LANCÉ (4 restaurants Dakar) |
 | Côte d'Ivoire | CI | 🇨🇮 | +225 | 🔜 BIENTÔT |
 | Burkina Faso | BF | 🇧🇫 | +226 | 🔜 BIENTÔT |
 | Guinée | GN | 🇬🇳 | +224 | 🔜 BIENTÔT |
@@ -91,6 +91,13 @@ Si aucun restaurant n'est disponible dans le pays/ville de l'utilisateur:
 ### Restaurants Actifs
 - 16 restaurants à Bamako (Mali)
 - Maquis Chez Tanti, Fast Food Bamako, Pizza Mama Africa, etc.
+
+### Restaurants Dakar (NOUVEAU - 8 Mai 2026)
+- **Pizza Teranga** - 6 items (Pizzas classiques, spéciales, desserts, boissons)
+- **Dakar Burger House** - 6 items (Burgers, accompagnements, boissons)
+- **Chez Fatou - Thieboudienne** - 6 items (Plats nationaux, boissons)
+- **Dibiterie Ndoye** - 6 items (Grillades, accompagnements, boissons)
+- **Total**: 24 menu items pour les 4 restaurants de Dakar
 
 ---
 
