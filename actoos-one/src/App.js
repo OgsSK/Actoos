@@ -230,6 +230,82 @@ function AppContent() {
     }
   }, []);
 
+  // AUTO-DETECT LOCATION au démarrage (comme Uber Eats)
+  // Si permission déjà accordée, rafraîchir la position automatiquement
+  useEffect(() => {
+    const autoDetectLocation = async () => {
+      const locationPermission = localStorage.getItem('actoos_location_permission');
+      const savedAddress = localStorage.getItem('actoos_delivery_address');
+      
+      // Si permission accordée mais pas d'adresse, ou si on veut rafraîchir
+      if (locationPermission === 'granted' && !savedAddress) {
+        try {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              async (position) => {
+                const location = {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude,
+                };
+                setUserLocation(location);
+                localStorage.setItem('actoos_user_location', JSON.stringify(location));
+                
+                // Reverse geocoding pour obtenir l'adresse
+                try {
+                  const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&zoom=18&addressdetails=1`,
+                    {
+                      headers: {
+                        'Accept-Language': 'fr',
+                        'User-Agent': 'ACTOOS-App/1.0'
+                      }
+                    }
+                  );
+                  
+                  if (response.ok) {
+                    const data = await response.json();
+                    const addr = data.address;
+                    let detectedAddress = '';
+                    
+                    if (addr.neighbourhood) {
+                      detectedAddress = `Bamako, ${addr.neighbourhood}`;
+                    } else if (addr.suburb) {
+                      detectedAddress = `Bamako, ${addr.suburb}`;
+                    } else if (addr.district || addr.city_district) {
+                      detectedAddress = `Bamako, ${addr.district || addr.city_district}`;
+                    } else if (addr.city || addr.town || addr.village) {
+                      detectedAddress = addr.city || addr.town || addr.village;
+                    } else {
+                      detectedAddress = data.display_name?.split(',').slice(0, 2).join(',') || 'Position actuelle';
+                    }
+                    
+                    handleAddressSelect(detectedAddress);
+                  }
+                } catch (error) {
+                  console.error('Auto-detect reverse geocoding error:', error);
+                }
+              },
+              (error) => {
+                console.error('Auto-detect geolocation error:', error);
+              },
+              {
+                enableHighAccuracy: false, // Moins précis mais plus rapide pour l'auto-detect
+                timeout: 10000,
+                maximumAge: 60000 // Accepter une position cachée de 1 minute
+              }
+            );
+          }
+        } catch (error) {
+          console.error('Auto-detect location error:', error);
+        }
+      }
+    };
+    
+    // Lancer l'auto-détection après un court délai (après le splash)
+    const timeout = setTimeout(autoDetectLocation, 2000);
+    return () => clearTimeout(timeout);
+  }, []);
+
   // Handle splash screen completion
   const handleSplashComplete = () => {
     setShowSplash(false);
@@ -254,15 +330,47 @@ function AppContent() {
     }
   };
 
-  // Handle location permission granted
-  const handleLocationAllowed = (location) => {
+  // Handle location permission granted - avec REVERSE GEOCODING RÉEL
+  const handleLocationAllowed = async (location) => {
     setUserLocation(location);
     setShowLocationPermission(false);
-    // Auto-détecter le quartier basé sur GPS (mock pour l'instant)
-    // En production, on utiliserait reverse geocoding
+    
+    // Reverse geocoding réel avec Nominatim
     if (location) {
-      const detectedAddress = 'Bamako, Hamdallaye'; // Mock - serait déterminé par GPS
-      handleAddressSelect(detectedAddress);
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&zoom=18&addressdetails=1`,
+          {
+            headers: {
+              'Accept-Language': 'fr',
+              'User-Agent': 'ACTOOS-App/1.0'
+            }
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          const addr = data.address;
+          let detectedAddress = '';
+          
+          if (addr.neighbourhood) {
+            detectedAddress = `Bamako, ${addr.neighbourhood}`;
+          } else if (addr.suburb) {
+            detectedAddress = `Bamako, ${addr.suburb}`;
+          } else if (addr.district || addr.city_district) {
+            detectedAddress = `Bamako, ${addr.district || addr.city_district}`;
+          } else if (addr.city || addr.town || addr.village) {
+            detectedAddress = addr.city || addr.town || addr.village;
+          } else {
+            detectedAddress = data.display_name?.split(',').slice(0, 2).join(',') || 'Position actuelle';
+          }
+          
+          handleAddressSelect(detectedAddress);
+        }
+      } catch (error) {
+        console.error('Reverse geocoding error:', error);
+        handleAddressSelect('Position actuelle');
+      }
     }
   };
 
@@ -277,12 +385,12 @@ function AppContent() {
     localStorage.setItem('actoos_delivery_address', newAddress);
   };
 
-  // Request location from AddressSheet
-  const handleRequestLocation = () => {
+  // Request location from AddressSheet - avec REVERSE GEOCODING RÉEL
+  const handleRequestLocation = async () => {
     return new Promise((resolve, reject) => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (position) => {
+          async (position) => {
             const location = {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
@@ -290,14 +398,53 @@ function AppContent() {
             setUserLocation(location);
             localStorage.setItem('actoos_location_permission', 'granted');
             localStorage.setItem('actoos_user_location', JSON.stringify(location));
-            // Mock: detect neighborhood from GPS
-            const detectedAddress = 'Bamako, Hamdallaye';
-            handleAddressSelect(detectedAddress);
+            
+            // Reverse geocoding réel avec Nominatim
+            try {
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&zoom=18&addressdetails=1`,
+                {
+                  headers: {
+                    'Accept-Language': 'fr',
+                    'User-Agent': 'ACTOOS-App/1.0'
+                  }
+                }
+              );
+              
+              if (response.ok) {
+                const data = await response.json();
+                const addr = data.address;
+                let detectedAddress = '';
+                
+                if (addr.neighbourhood) {
+                  detectedAddress = `Bamako, ${addr.neighbourhood}`;
+                } else if (addr.suburb) {
+                  detectedAddress = `Bamako, ${addr.suburb}`;
+                } else if (addr.district || addr.city_district) {
+                  detectedAddress = `Bamako, ${addr.district || addr.city_district}`;
+                } else if (addr.city || addr.town || addr.village) {
+                  detectedAddress = addr.city || addr.town || addr.village;
+                } else {
+                  detectedAddress = data.display_name?.split(',').slice(0, 2).join(',') || 'Position actuelle';
+                }
+                
+                handleAddressSelect(detectedAddress);
+              }
+            } catch (error) {
+              console.error('Reverse geocoding error:', error);
+              handleAddressSelect('Position actuelle');
+            }
+            
             resolve(location);
           },
           (error) => {
             console.error('Geolocation error:', error);
             reject(error);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
           }
         );
       } else {
