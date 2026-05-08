@@ -809,6 +809,7 @@ function AppContent() {
           onBack={handleBackFromCheckout}
           onOrderComplete={handleOrderComplete}
           onLoginRequired={() => setShowLoginSheet(true)}
+          savedAddress={address}
         />
         {/* Login Sheet - disponible pendant le checkout */}
         <LoginSheet
@@ -904,8 +905,21 @@ function AppContent() {
         onClose={() => setSearchSheet(false)}
         restaurants={restaurantsWithMenus}
         pharmacies={pharmaciesWithProducts}
-        onSelectRestaurant={(restaurant) => {
-          setSelectedRestaurant(restaurant);
+        onSelectRestaurant={async (restaurant) => {
+          // Charger le menu complet du restaurant depuis Supabase
+          try {
+            const { getRestaurantById } = await import('./services/restaurantService');
+            const result = await getRestaurantById(restaurant.id);
+            if (result.data) {
+              setSelectedRestaurant(result.data);
+            } else {
+              console.error('Erreur chargement menu:', result.error);
+              setSelectedRestaurant(restaurant);
+            }
+          } catch (error) {
+            console.error('Erreur chargement menu:', error);
+            setSelectedRestaurant(restaurant);
+          }
           setCurrentScreen(SCREENS.RESTAURANT);
         }}
         onSelectPharmacy={(pharmacy) => {

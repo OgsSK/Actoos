@@ -1,7 +1,8 @@
 import { Search, MapPin, ChevronDown, Navigation, Heart, User, ShoppingBag } from 'lucide-react';
 
 export function Header({ address, onAddressClick, onSearchClick, onProfileClick, onFavoritesClick }) {
-  const displayAddress = address || null;
+  // Ne jamais afficher "null" - utiliser une chaîne vide par défaut
+  const displayAddress = address && address !== 'null' ? address : '';
   const showAddPrompt = !displayAddress;
 
   return (

@@ -22,13 +22,13 @@ const RESULT_TYPES = {
   CATEGORY: 'category',
 };
 
-// Tendances populaires (serait dynamique en production)
+// Tendances populaires (sans pharmacie)
 const TRENDING_SEARCHES = [
   'Poulet braisé',
   'Pizza',
   'Burgers',
-  'Paracétamol',
-  'Vitamines',
+  'Thieboudienne',
+  'Shawarma',
 ];
 
 export function SearchSheet({ 

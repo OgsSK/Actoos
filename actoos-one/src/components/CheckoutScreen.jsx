@@ -34,7 +34,7 @@ const STEPS = {
   SUCCESS: 'success',
 };
 
-export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginRequired }) {
+export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginRequired, savedAddress }) {
   const { cartItems, getTotal, clearCart } = useCart();
   const { balance, pay, hasEnoughBalance, checkCorporateLimit, walletType, dailySpendLimit, getTodaySpending } = useWallet();
   const { user, profile, isAuthenticated } = useAuth();
@@ -46,8 +46,13 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
   // Delivery mode: 'delivery' ou 'pickup'
   const [deliveryMode, setDeliveryMode] = useState('delivery');
   
-  // Form data - pré-rempli avec les données du profil si connecté
-  const [address, setAddress] = useState(profile?.address || '');
+  // Form data - pré-rempli avec l'adresse sauvegardée OU les données du profil
+  const [address, setAddress] = useState(() => {
+    // Priorité: adresse sauvegardée (header) > profil > vide
+    if (savedAddress && savedAddress !== 'null') return savedAddress;
+    if (profile?.address) return profile.address;
+    return '';
+  });
   const [addressDetails, setAddressDetails] = useState(profile?.address_details || '');
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone || '+223 ');
   const [paymentMethod, setPaymentMethod] = useState('cash');
