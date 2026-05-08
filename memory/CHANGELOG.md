@@ -1,5 +1,32 @@
 # ACTOOS ONE - Changelog
 
+## [2026-05-08] - Migration Système Financier EXÉCUTÉE
+
+### Tables créées/mises à jour
+- ✅ `system_config` - 8 paramètres de configuration (commissions, frais, limites)
+- ✅ `wallets` - Colonnes ajoutées: `wallet_type`, `is_frozen`, `frozen_reason`
+- ✅ `wallet_transactions` - Historique des mouvements wallet
+- ✅ `withdrawal_requests` - Demandes de retrait
+- ✅ `orders` - Colonnes ajoutées: `is_settled`, `settlement_details`, `distance_km`
+
+### Configuration système
+| Paramètre | Valeur | Description |
+|-----------|--------|-------------|
+| commission_base_eats | 15% | Commission livraison |
+| commission_self_eats | 10% | Commission self-delivery |
+| delivery_base_fee | 700 FCFA | Frais base (0-2km) |
+| delivery_per_km | 200 FCFA | Frais par km |
+| min_withdrawal | 500 FCFA | Retrait minimum |
+| min_driver_caution | 5000 FCFA | Caution livreur |
+| fee_orange_money | 1% | Frais Orange Money |
+| fee_wave | 0.5% | Frais Wave |
+
+### Fonctions PostgreSQL
+- `get_or_create_wallet(owner_id, wallet_type)` - Créer ou récupérer un wallet
+- `update_wallet_balance(wallet_id, amount, type)` - Mettre à jour solde avec transaction
+
+---
+
 ## [2026-05-08] - Flux Multi-Pays COMPLET
 
 ### Améliorations

@@ -434,6 +434,15 @@ Si aucun restaurant n'est disponible dans le pays/ville de l'utilisateur:
 
 ## Migrations Supabase
 
+### ✅ EXÉCUTÉE: Migration Système Financier (8 Mai 2026)
+**Fichier**: `/app/actoos-one/supabase/migrations/20260508_financial_system.sql`
+
+Tables:
+- `system_config` - Configuration dynamique (commissions, frais, limites)
+- `wallets` - Portefeuilles utilisateurs (client, partner_earnings, driver_caution)
+- `wallet_transactions` - Historique des transactions
+- `withdrawal_requests` - Demandes de retrait
+
 ### ✅ EXÉCUTÉE: Migration Multi-Pays (8 Mai 2026)
 **Fichier**: `/app/actoos-one/supabase/migrations/20260508_multi_country.sql`
 
