@@ -26,7 +26,8 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { getUserOrders, cancelOrder } from '../services/orderService';
+import { getUserOrders } from '../services/orderService';
+import { cancelOrderWithRefund, calculateRefundAmount } from '../services/refundService';
 
 // Status labels et couleurs
 const STATUS_CONFIG = {
@@ -109,26 +110,48 @@ export function OrderHistoryScreen({ onBack, onReorder, onViewRestaurant }) {
     loadOrders();
   }, [user?.id]);
 
-  // Annuler une commande
-  const handleCancelOrder = async (orderId) => {
+  // Annuler une commande avec remboursement
+  const handleCancelOrder = async (orderId, reason = 'Annulée par le client') => {
     setCancellingId(orderId);
     
     try {
-      const { error: cancelError } = await cancelOrder(orderId);
+      // Trouver la commande pour afficher les infos de remboursement
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        const refundCalc = calculateRefundAmount(order);
+        console.log('Remboursement calculé:', refundCalc);
+      }
+      
+      const { data, error: cancelError } = await cancelOrderWithRefund(
+        orderId, 
+        reason, 
+        user?.id, 
+        true // autoRefund
+      );
       
       if (cancelError) {
         throw cancelError;
       }
       
-      // Mettre à jour l'état local
+      // Mettre à jour l'état local avec les infos de remboursement
       setOrders(prev => 
-        prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o)
+        prev.map(o => o.id === orderId ? { 
+          ...o, 
+          status: 'cancelled',
+          refund_amount: data?.refund?.refundAmount || 0,
+          refund_status: data?.refund?.refundAmount > 0 ? 'pending' : 'not_eligible'
+        } : o)
       );
+      
+      // Afficher un message de confirmation avec remboursement
+      if (data?.refund?.refundAmount > 0) {
+        alert(`Commande annulée ! Remboursement de ${data.refund.refundAmount.toLocaleString()} FCFA (${data.refund.refundPercentage}%) en cours de traitement.`);
+      }
       
       setShowCancelConfirm(null);
     } catch (err) {
       console.error('Erreur annulation:', err);
-      alert('Impossible d\'annuler la commande. Veuillez réessayer.');
+      alert(err.message || 'Impossible d\'annuler la commande. Veuillez réessayer.');
     } finally {
       setCancellingId(null);
     }

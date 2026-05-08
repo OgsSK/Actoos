@@ -42,6 +42,7 @@ import { AdminPromotionsManager } from './AdminPromotionsManager';
 import { AdminGodMode } from './AdminGodMode';
 import { AdminWithdrawalsManager } from './AdminWithdrawalsManager';
 import { AdminWalletsOverview } from './AdminWalletsOverview';
+import { AdminRefundsManager } from './AdminRefundsManager';
 
 const TABS = {
   ORDERS: 'orders',
@@ -49,6 +50,7 @@ const TABS = {
   ONBOARDING: 'onboarding',
   WALLETS: 'wallets',
   WITHDRAWALS: 'withdrawals',
+  REFUNDS: 'refunds',
   SETTINGS: 'settings',
 };
 
@@ -216,7 +218,8 @@ export function AdminDashboard({ onBack }) {
   // Approve onboarding request
   const handleApprove = async (requestId) => {
     try {
-      const { error: approveError } = await approveOnboardingRequest(requestId, 'admin');
+      // Pass null for reviewed_by since admin auth doesn't provide a UUID
+      const { error: approveError } = await approveOnboardingRequest(requestId, null);
       if (approveError) throw approveError;
       
       setOnboardingRequests(prev => 
@@ -234,7 +237,8 @@ export function AdminDashboard({ onBack }) {
     if (!reason) return;
     
     try {
-      const { error: rejectError } = await rejectOnboardingRequest(requestId, 'admin', reason);
+      // Pass null for reviewed_by since admin auth doesn't provide a UUID
+      const { error: rejectError } = await rejectOnboardingRequest(requestId, null, reason);
       if (rejectError) throw rejectError;
       
       setOnboardingRequests(prev => 
@@ -414,6 +418,18 @@ export function AdminDashboard({ onBack }) {
           >
             <ArrowDownCircle className="w-4 h-4" />
             Retraits
+          </button>
+          <button
+            onClick={() => setActiveTab(TABS.REFUNDS)}
+            className={`flex-1 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
+              activeTab === TABS.REFUNDS
+                ? 'bg-pink-500 text-white'
+                : 'bg-gray-800 text-gray-400'
+            }`}
+            data-testid="tab-refunds"
+          >
+            <ArrowDownCircle className="w-4 h-4" />
+            Rembours.
           </button>
           <button
             onClick={() => setActiveTab(TABS.SETTINGS)}
@@ -749,6 +765,11 @@ export function AdminDashboard({ onBack }) {
         {/* Withdrawals Tab */}
         {!isLoading && activeTab === TABS.WITHDRAWALS && (
           <AdminWithdrawalsManager adminId="admin" />
+        )}
+
+        {/* Refunds Tab */}
+        {!isLoading && activeTab === TABS.REFUNDS && (
+          <AdminRefundsManager onBack={() => setActiveTab(TABS.ORDERS)} />
         )}
 
         {/* Settings Tab */}
