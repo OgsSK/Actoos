@@ -302,16 +302,22 @@ const PlanUsageWidget = ({ compact = false }) => {
         return;
       }
 
-      // Get entreprise data for plan info - with fallback for missing columns
+      // Get entreprise data for plan info
       let entreprise = null;
       try {
         const { data, error } = await supabase
           .from('entreprises')
-          .select('id, nom')
+          .select('id, nom, plan, subscription_status')
           .eq('id', entrepriseId)
           .single();
-        if (!error) {
-          // Use default values since plan columns may not exist
+        if (!error && data) {
+          entreprise = {
+            plan: data.plan || 'startup',
+            subscription_status: data.subscription_status || 'active',
+            subscription_end_date: null
+          };
+        } else {
+          // Fallback if query fails
           entreprise = {
             plan: 'startup',
             subscription_status: 'active',
@@ -319,7 +325,12 @@ const PlanUsageWidget = ({ compact = false }) => {
           };
         }
       } catch (e) {
-        console.warn('Could not fetch entreprise plan data');
+        console.warn('Could not fetch entreprise plan data:', e);
+        entreprise = {
+          plan: 'startup',
+          subscription_status: 'active',
+          subscription_end_date: null
+        };
       }
 
       // Count current usage
