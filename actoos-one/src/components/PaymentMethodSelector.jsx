@@ -1,4 +1,4 @@
-import { Wallet, Banknote, Check, CreditCard } from 'lucide-react';
+import { Wallet, Banknote, Check, CreditCard, Smartphone } from 'lucide-react';
 
 const paymentMethods = [
   {
@@ -8,6 +8,15 @@ const paymentMethods = [
     icon: Wallet,
     requiresCash: false,
     isWallet: true,
+  },
+  {
+    id: 'mobile_money',
+    name: 'Mobile Money',
+    description: 'Orange Money, Moov Money',
+    icon: Smartphone,
+    requiresCash: false,
+    isWallet: false,
+    isMobileMoney: true,
   },
   {
     id: 'cash',

@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Leaflet Map Styles */
+@import 'leaflet/dist/leaflet.css';
+
+/* Fix Leaflet markers */
+.leaflet-default-icon-path {
+  background-image: url('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png');
+}
+
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
 * {
   margin: 0;
   padding: 0;

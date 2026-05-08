@@ -17,11 +17,13 @@ import {
   X,
   AlertCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Map
 } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { getOrderById, subscribeToOrder } from '../services/orderService';
+import { OrderTrackingMap } from './OrderTrackingMap';
 
 // Order status flow
 const ORDER_STATUSES = {
@@ -142,6 +144,7 @@ export function OrderTrackingScreen({ orderId, order: initialOrder, onBack, onCo
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(0);
   const [statusUpdated, setStatusUpdated] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   // Build timeline from order
   const buildTimeline = useCallback((order) => {
@@ -436,6 +439,27 @@ export function OrderTrackingScreen({ orderId, order: initialOrder, onBack, onCo
               />
             </div>
           </div>
+          
+          {/* Map Button - Show when driver is on the way */}
+          {(currentOrder.status === 'picked_up' || currentOrder.status === 'on_the_way' || 
+            currentOrder.status === 'delivering') && (
+            <button
+              onClick={() => setShowMap(true)}
+              className="w-full mb-6 bg-gradient-to-r from-[#FF5A00] to-[#FF8C00] text-white rounded-2xl p-4 flex items-center justify-between active:opacity-90 transition-opacity"
+              data-testid="view-map-btn"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Map className="w-6 h-6" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold">Suivre en temps réel</p>
+                  <p className="text-sm text-white/80">Voir la position du livreur</p>
+                </div>
+              </div>
+              <Navigation className="w-6 h-6" />
+            </button>
+          )}
           
           {/* Timeline */}
           <div className="bg-gray-50 rounded-2xl p-4 mb-6">
@@ -749,6 +773,49 @@ export function OrderTrackingScreen({ orderId, order: initialOrder, onBack, onCo
           </button>
         </div>
       </BottomSheet>
+
+      {/* Full Screen Map Modal */}
+      {showMap && (
+        <div className="fixed inset-0 z-50 bg-white" data-testid="map-modal">
+          {/* Header */}
+          <div className="absolute top-0 left-0 right-0 bg-white/90 backdrop-blur-sm z-10 px-4 py-3 flex items-center gap-4 border-b border-gray-100">
+            <button
+              onClick={() => setShowMap(false)}
+              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"
+              data-testid="close-map-btn"
+            >
+              <X className="w-5 h-5 text-gray-700" />
+            </button>
+            <div className="flex-1">
+              <p className="font-bold text-gray-900">Suivi en direct</p>
+              <p className="text-sm text-gray-500">
+                {currentOrder.partners?.name || 'Restaurant'} → Vous
+              </p>
+            </div>
+          </div>
+          
+          {/* Map */}
+          <div className="w-full h-full pt-16">
+            <OrderTrackingMap
+              order={currentOrder}
+              status={currentOrder.status}
+              driver={currentOrder.driver}
+              restaurantLocation={
+                currentOrder.partners?.latitude && currentOrder.partners?.longitude
+                  ? [currentOrder.partners.latitude, currentOrder.partners.longitude]
+                  : null
+              }
+              customerLocation={
+                currentOrder.delivery_latitude && currentOrder.delivery_longitude
+                  ? [currentOrder.delivery_latitude, currentOrder.delivery_longitude]
+                  : null
+              }
+              estimatedTime={currentOrder.estimated_delivery_time || 20}
+              onCallDriver={handleCallDriver}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
