@@ -153,7 +153,7 @@ const DashboardRoutes = () => {
   );
 };
 
-// Home Redirect - Show landing for non-authenticated users
+// Home Redirect - Smart routing based on context
 const HomeRedirect = () => {
   const { isAuthenticated, loading, user } = useAuth();
 
@@ -173,13 +173,17 @@ const HomeRedirect = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // On pro.actoos.com subdomain, redirect to login instead of landing page
-  const hostname = window.location.hostname;
-  if (hostname.startsWith('pro.') || hostname.includes('pro-actoos')) {
+  // Check if app is running as installed PWA (standalone mode)
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches 
+    || window.navigator.standalone // iOS Safari
+    || document.referrer.includes('android-app://'); // Android TWA
+  
+  // If running as PWA, go directly to login
+  if (isPWA) {
     return <Navigate to="/login" replace />;
   }
 
-  // Show landing page for non-authenticated users on main domain
+  // For web browsers, show the landing page (marketing site)
   return <LandingPage />;
 };
 
