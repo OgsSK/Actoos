@@ -31,6 +31,39 @@
 
 ## CHANGELOG
 
+### 2025-05-08 - Adresses Sauvegardées + Panier Persistant ✅
+
+**Fonctionnalités style Uber Eats/Glovo implémentées :**
+
+#### 1. Panier Persistant (localStorage)
+- Le panier est sauvegardé dans `localStorage` (`actoos_cart`, `actoos_cart_restaurant`)
+- L'utilisateur peut fermer l'app, revenir plus tard, et retrouver son panier
+- Le panier reste intact quand l'utilisateur se connecte ou crée un compte
+
+#### 2. Adresses Sauvegardées (Maison/Bureau)
+- L'utilisateur peut sauvegarder ses adresses fréquentes (Maison, Bureau)
+- Boutons d'édition et de suppression pour chaque adresse
+- Sélection rapide depuis le sélecteur d'adresse
+- Persistance dans `localStorage` (`actoos_saved_addresses`)
+
+#### 3. Flux Checkout Guest → Login → Continue
+- Un invité peut ajouter au panier
+- Quand il clique "Livraison" ou "À emporter", la popup de connexion s'ouvre
+- Après connexion/inscription, le checkout continue automatiquement à l'étape adresse
+- Le panier est préservé tout au long du processus
+
+#### Fichiers modifiés :
+- `/app/actoos-one/src/context/CartContext.jsx` - Persistance localStorage
+- `/app/actoos-one/src/components/AddressSheet.jsx` - Adresses sauvegardées avec édition/suppression
+
+#### Tests validés :
+- ✅ Panier persiste après page reload
+- ✅ Panier conservé après login/signup
+- ✅ Adresse "Maison" enregistrée et utilisable
+- ✅ Checkout continue après connexion
+
+---
+
 ### 2025-05-08 - Standard UX Delivery App (Auth Guard, Geolocation, Restaurants Open) ✅
 
 **Implémentations des standards UX apps de livraison (Uber Eats, Glovo)**

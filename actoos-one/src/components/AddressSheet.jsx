@@ -9,13 +9,19 @@ import {
   ChevronRight,
   X,
   Loader2,
-  Plus
+  Plus,
+  Check,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 import { BAMAKO_NEIGHBORHOODS } from '../data/locationData';
 
-// Mock saved addresses (would come from user profile/backend)
-const SAVED_ADDRESSES = [
+// Clé localStorage pour les adresses sauvegardées
+const SAVED_ADDRESSES_KEY = 'actoos_saved_addresses';
+
+// Adresses par défaut
+const DEFAULT_SAVED_ADDRESSES = [
   { id: 'home', type: 'home', label: 'Maison', address: null },
   { id: 'work', type: 'work', label: 'Bureau', address: null },
 ];
@@ -31,7 +37,27 @@ export function AddressSheet({
   const [searchQuery, setSearchQuery] = useState('');
   const [recentAddresses, setRecentAddresses] = useState([]);
   const [isLocating, setIsLocating] = useState(false);
-  const [savedAddresses, setSavedAddresses] = useState(SAVED_ADDRESSES);
+  const [editingAddress, setEditingAddress] = useState(null);
+  const [editAddressValue, setEditAddressValue] = useState('');
+  
+  // Charger les adresses sauvegardées depuis localStorage
+  const [savedAddresses, setSavedAddresses] = useState(() => {
+    try {
+      const stored = localStorage.getItem(SAVED_ADDRESSES_KEY);
+      return stored ? JSON.parse(stored) : DEFAULT_SAVED_ADDRESSES;
+    } catch {
+      return DEFAULT_SAVED_ADDRESSES;
+    }
+  });
+
+  // Sauvegarder les adresses dans localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(SAVED_ADDRESSES_KEY, JSON.stringify(savedAddresses));
+    } catch (e) {
+      console.warn('Erreur sauvegarde adresses:', e);
+    }
+  }, [savedAddresses]);
 
   // Load recent addresses from localStorage
   useEffect(() => {
@@ -84,6 +110,36 @@ export function AddressSheet({
     } finally {
       setIsLocating(false);
     }
+  };
+
+  // Sauvegarder une adresse (Maison ou Bureau)
+  const handleSaveAddress = (addressId, newAddress) => {
+    setSavedAddresses(prev => 
+      prev.map(addr => 
+        addr.id === addressId 
+          ? { ...addr, address: newAddress }
+          : addr
+      )
+    );
+    setEditingAddress(null);
+    setEditAddressValue('');
+  };
+
+  // Supprimer une adresse sauvegardée
+  const handleRemoveAddress = (addressId) => {
+    setSavedAddresses(prev => 
+      prev.map(addr => 
+        addr.id === addressId 
+          ? { ...addr, address: null }
+          : addr
+      )
+    );
+  };
+
+  // Commencer l'édition d'une adresse
+  const startEditAddress = (addressId, currentAddr) => {
+    setEditingAddress(addressId);
+    setEditAddressValue(currentAddr || '');
   };
 
   // Check if GPS is available
@@ -192,42 +248,112 @@ export function AddressSheet({
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                   Adresses enregistrées
                 </p>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {savedAddresses.map((saved) => (
-                    <button
-                      key={saved.id}
-                      onClick={() => saved.address ? handleSelectAddress(saved.address) : null}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                        saved.address 
-                          ? 'hover:bg-gray-50 active:bg-gray-100' 
-                          : 'opacity-50'
-                      }`}
-                      disabled={!saved.address}
-                    >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        saved.type === 'home' ? 'bg-blue-100' : 'bg-purple-100'
-                      }`}>
-                        {saved.type === 'home' ? (
-                          <Home className="w-5 h-5 text-blue-600" />
-                        ) : (
-                          <Briefcase className="w-5 h-5 text-purple-600" />
-                        )}
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="font-medium text-gray-900">{saved.label}</p>
-                        {saved.address ? (
-                          <p className="text-sm text-gray-500">{saved.address}</p>
-                        ) : (
-                          <p className="text-sm text-gray-400 flex items-center gap-1">
-                            <Plus className="w-3 h-3" />
-                            Ajouter une adresse
-                          </p>
-                        )}
-                      </div>
-                      {saved.address && (
-                        <ChevronRight className="w-5 h-5 text-gray-300" />
+                    <div key={saved.id}>
+                      {editingAddress === saved.id ? (
+                        /* Mode édition */
+                        <div className="bg-gray-50 rounded-xl p-3 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              saved.type === 'home' ? 'bg-blue-100' : 'bg-purple-100'
+                            }`}>
+                              {saved.type === 'home' ? (
+                                <Home className="w-4 h-4 text-blue-600" />
+                              ) : (
+                                <Briefcase className="w-4 h-4 text-purple-600" />
+                              )}
+                            </div>
+                            <span className="font-medium text-gray-900">{saved.label}</span>
+                          </div>
+                          <select
+                            value={editAddressValue}
+                            onChange={(e) => setEditAddressValue(e.target.value)}
+                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 outline-none focus:ring-2 focus:ring-[#FF5A00]"
+                            data-testid={`edit-address-select-${saved.id}`}
+                          >
+                            <option value="">Sélectionner un quartier</option>
+                            {BAMAKO_NEIGHBORHOODS.map((n) => (
+                              <option key={n.id} value={`Bamako, ${n.name}`}>
+                                {n.name} ({n.commune})
+                              </option>
+                            ))}
+                          </select>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleSaveAddress(saved.id, editAddressValue)}
+                              disabled={!editAddressValue}
+                              className={`flex-1 py-2 rounded-xl font-medium flex items-center justify-center gap-2 ${
+                                editAddressValue 
+                                  ? 'bg-[#FF5A00] text-white active:bg-[#E55100]' 
+                                  : 'bg-gray-200 text-gray-400'
+                              }`}
+                              data-testid={`save-address-btn-${saved.id}`}
+                            >
+                              <Check className="w-4 h-4" />
+                              Enregistrer
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingAddress(null);
+                                setEditAddressValue('');
+                              }}
+                              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl font-medium active:bg-gray-300"
+                            >
+                              Annuler
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Mode normal */
+                        <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                          <button
+                            onClick={() => saved.address ? handleSelectAddress(saved.address) : startEditAddress(saved.id, saved.address)}
+                            className="flex-1 flex items-center gap-3"
+                            data-testid={`saved-address-${saved.id}`}
+                          >
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              saved.type === 'home' ? 'bg-blue-100' : 'bg-purple-100'
+                            }`}>
+                              {saved.type === 'home' ? (
+                                <Home className="w-5 h-5 text-blue-600" />
+                              ) : (
+                                <Briefcase className="w-5 h-5 text-purple-600" />
+                              )}
+                            </div>
+                            <div className="flex-1 text-left">
+                              <p className="font-medium text-gray-900">{saved.label}</p>
+                              {saved.address ? (
+                                <p className="text-sm text-gray-500">{saved.address}</p>
+                              ) : (
+                                <p className="text-sm text-[#FF5A00] flex items-center gap-1">
+                                  <Plus className="w-3 h-3" />
+                                  Ajouter une adresse
+                                </p>
+                              )}
+                            </div>
+                          </button>
+                          {saved.address && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => startEditAddress(saved.id, saved.address)}
+                                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center active:bg-gray-200"
+                                data-testid={`edit-address-btn-${saved.id}`}
+                              >
+                                <Edit3 className="w-4 h-4 text-gray-500" />
+                              </button>
+                              <button
+                                onClick={() => handleRemoveAddress(saved.id)}
+                                className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center active:bg-red-100"
+                                data-testid={`remove-address-btn-${saved.id}`}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>

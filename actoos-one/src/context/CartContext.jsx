@@ -1,10 +1,55 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const CartContext = createContext(null);
 
+// Clé localStorage pour persister le panier
+const CART_STORAGE_KEY = 'actoos_cart';
+const CART_RESTAURANT_KEY = 'actoos_cart_restaurant';
+
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState([]);
-  const [restaurantId, setRestaurantId] = useState(null);
+  // Initialiser depuis localStorage pour persistance
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CART_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  
+  const [restaurantId, setRestaurantId] = useState(() => {
+    try {
+      return localStorage.getItem(CART_RESTAURANT_KEY) || null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Persister le panier dans localStorage à chaque changement
+  useEffect(() => {
+    try {
+      if (cartItems.length > 0) {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+      } else {
+        localStorage.removeItem(CART_STORAGE_KEY);
+      }
+    } catch (e) {
+      console.warn('Erreur sauvegarde panier:', e);
+    }
+  }, [cartItems]);
+
+  // Persister le restaurantId
+  useEffect(() => {
+    try {
+      if (restaurantId) {
+        localStorage.setItem(CART_RESTAURANT_KEY, restaurantId);
+      } else {
+        localStorage.removeItem(CART_RESTAURANT_KEY);
+      }
+    } catch (e) {
+      console.warn('Erreur sauvegarde restaurant:', e);
+    }
+  }, [restaurantId]);
 
   // Ajouter un article au panier
   const addToCart = useCallback((item, quantity, instructions, restaurant) => {
