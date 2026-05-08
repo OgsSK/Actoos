@@ -1,0 +1,91 @@
+{
+  "summary": "ACTOOS ONE - Wallet & Promo Supabase Integration Testing. Tested 5 features: (1) Login - PASS, (2) Wallet access - PASS with fallback, (3) TopUp flow - UI works but balance doesn't persist due to Supabase schema issue, (4) Promo Banner - PASS (5 promos loaded from Supabase), (5) Promo Code at Checkout - PASS (ACTOOS10 applied, -350 FCFA discount). Critical issue: Supabase wallets table missing 'wallet_type' column causing fallback to local wallet.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "Supabase wallets table",
+        "issue": "Column 'wallet_type' does not exist in wallets table. Error: {code: 42703, message: column wallets.wallet_type does not exist}. This causes WalletContext to use local fallback wallet with balance 0.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "Supabase RPC get_or_create_wallet",
+        "issue": "RPC function not available, code falls back to direct query which then fails due to missing column"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Wallet TopUp",
+        "issue": "TopUp UI flow works correctly but balance doesn't persist because wallet uses local fallback due to Supabase schema issue",
+        "affected_selectors": ["[data-testid='wallet-balance']", "[data-testid='topup-btn']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_81.json"
+  ],
+  "action_items": [
+    "CRITICAL: Add 'wallet_type' column to Supabase wallets table. Run migration: ALTER TABLE wallets ADD COLUMN wallet_type VARCHAR(50) DEFAULT 'client';",
+    "Verify Supabase RPC function 'get_or_create_wallet' exists and is accessible",
+    "Consider adding 'update_wallet_balance' RPC function for atomic balance updates"
+  ],
+  "critical_code_review_comments": [
+    "WalletContext.jsx correctly implements fallback to local wallet when Supabase fails (lines 117-127)",
+    "PromoBanner.jsx correctly loads promos from Supabase with fallback to mock data (lines 35-65)",
+    "PromoCodeInput.jsx loads suggested codes from Supabase via getAllPromoCodes() (lines 23-37)",
+    "promoService.js validatePromoCode() correctly validates against Supabase promo_codes table",
+    "Console shows '✅ Promos chargées depuis Supabase: 5' confirming promo integration works"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Frontend only testing",
+    "frontend": "80% (4/5 tests fully passed, 1 partial due to Supabase schema)"
+  },
+  "test_credentials": {
+    "test_email": "testclient@actoos.com",
+    "test_password": "TestClient123!"
+  },
+  "seed_data_creation": "None - used existing test credentials",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Supabase promo_codes table is working (5 promos loaded). Supabase wallets table needs 'wallet_type' column added. WalletContext uses fallback local wallet when Supabase query fails. All UI flows work correctly.",
+  "features_tested": {
+    "test_1_login": {
+      "status": "PASS",
+      "details": "Login with testclient@actoos.com / TestClient123! successful. Profile shows user 'Amadou Diallo' with phone +223 70 12 34 56 and address Bamako, Hamdallaye."
+    },
+    "test_2_wallet_access": {
+      "status": "PASS",
+      "details": "ACTOOS Pay wallet screen displays correctly. Shows balance 0 FCFA (using local fallback due to Supabase schema issue). Buttons: Recharger, Envoyer, Payer, Encaisser all visible. Tabs: Historique, Sous-comptes, Cartes."
+    },
+    "test_3_topup_flow": {
+      "status": "PARTIAL",
+      "details": "TouchPay sheet opens correctly. Amount selection (1000, 2000, 5000, 10000 FCFA) works. Phone input works. Confirm button triggers topUp(). However, balance doesn't update because wallet uses local fallback (Supabase wallets.wallet_type column missing)."
+    },
+    "test_4_promo_banner": {
+      "status": "PASS",
+      "details": "Promo banner displays on homepage. Shows '10 pourcent de réduction' with code 'ACTOOS10'. Console confirms: '✅ Promos chargées depuis Supabase: 5'. Carousel with 5 dots visible."
+    },
+    "test_5_promo_code_checkout": {
+      "status": "PASS",
+      "details": "PromoCodeInput component works at checkout. Toggle button (data-testid='promo-code-toggle') expands input. Suggested codes shown: ACTOOS10, LIVGRATUITE, BIENVENUE, LIVRAISON. Applied ACTOOS10: 10% discount = -350 FCFA. Total reduced from 4,400 to 4,050 FCFA."
+    }
+  },
+  "supabase_integration_status": {
+    "promo_codes_table": "WORKING - 5 promos loaded successfully",
+    "wallets_table": "BROKEN - Missing 'wallet_type' column",
+    "wallet_transactions_table": "NOT TESTED - Depends on wallets table fix",
+    "users_table": "WORKING - Profile loaded correctly"
+  },
+  "console_errors": [
+    "Erreur chargement wallet: {code: 42703, details: null, hint: null, message: column wallets.wallet_type does not exist}",
+    "RPC non disponible, fallback sur query directe",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 400 ()"
+  ]
+}

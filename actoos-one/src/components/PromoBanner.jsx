@@ -1,19 +1,107 @@
+/**
+ * ACTOOS ONE - Dynamic Promo Banner
+ * 
+ * Affiche les promotions depuis Supabase.
+ * Fallback sur données locales si Supabase non disponible.
+ */
+
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Zap, Gift, Clock } from 'lucide-react';
-import { getFeaturedPromotions, getActiveFlashDeals } from '../data/promotionsData';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { getFeaturedPromotions as getMockFeaturedPromotions, getActiveFlashDeals as getMockFlashDeals } from '../data/promotionsData';
 
 export function PromoBanner({ onPromoClick }) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [promos, setPromos] = useState([]);
   const [flashDeals, setFlashDeals] = useState([]);
-  const promos = getFeaturedPromotions();
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Check for flash deals
+  // Charger les promotions depuis Supabase
   useEffect(() => {
-    const checkFlashDeals = () => {
-      setFlashDeals(getActiveFlashDeals());
+    const loadPromotions = async () => {
+      setIsLoading(true);
+      
+      if (!isSupabaseConfigured()) {
+        // Fallback sur données mock
+        console.log('[PromoBanner] Supabase non configuré, utilisation des données mock');
+        setPromos(getMockFeaturedPromotions());
+        setFlashDeals(getMockFlashDeals());
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Charger les promos featured depuis Supabase
+        const { data: promoData, error: promoError } = await supabase
+          .from('promo_codes')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (promoError) {
+          console.log('[PromoBanner] Erreur Supabase, fallback mock:', promoError.message);
+          setPromos(getMockFeaturedPromotions());
+        } else if (promoData && promoData.length > 0) {
+          // Mapper les données Supabase vers le format attendu
+          const mappedPromos = promoData.map(p => ({
+            id: p.id,
+            title: p.description || `Code: ${p.code}`,
+            description: getPromoDescription(p),
+            code: p.code,
+            type: p.discount_type === 'percentage' ? 'percentage' : 
+                  p.discount_type === 'free_delivery' ? 'free_delivery' : 'fixed_amount',
+            discount_value: p.discount_value,
+            discount_type: p.discount_type,
+            min_order: p.min_order_amount,
+            image: getPromoImage(p.discount_type),
+            is_featured: true,
+          }));
+          setPromos(mappedPromos);
+          console.log('✅ Promos chargées depuis Supabase:', mappedPromos.length);
+        } else {
+          // Aucune promo en base, utiliser mock
+          setPromos(getMockFeaturedPromotions());
+        }
+
+        // Charger les flash deals (promos avec date limite proche)
+        const now = new Date().toISOString();
+        const twoHoursLater = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+        
+        const { data: flashData } = await supabase
+          .from('promo_codes')
+          .select('*')
+          .eq('is_active', true)
+          .gte('valid_until', now)
+          .lte('valid_until', twoHoursLater)
+          .limit(3);
+
+        if (flashData && flashData.length > 0) {
+          const mappedFlash = flashData.map(f => ({
+            id: f.id,
+            title: `Flash Deal - ${f.discount_type === 'percentage' ? f.discount_value + '%' : f.discount_value + ' FCFA'}`,
+            description: f.description || 'Offre limitée !',
+            remaining_uses: f.usage_limit ? f.usage_limit - (f.usage_count || 0) : 99,
+          }));
+          setFlashDeals(mappedFlash);
+        } else {
+          // Pas de flash deals actifs en base
+          setFlashDeals([]);
+        }
+
+      } catch (err) {
+        console.error('[PromoBanner] Erreur:', err);
+        setPromos(getMockFeaturedPromotions());
+        setFlashDeals(getMockFlashDeals());
+      } finally {
+        setIsLoading(false);
+      }
     };
-    checkFlashDeals();
-    const interval = setInterval(checkFlashDeals, 60000); // Check every minute
+
+    loadPromotions();
+    
+    // Rafraîchir périodiquement
+    const interval = setInterval(loadPromotions, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -27,10 +115,8 @@ export function PromoBanner({ onPromoClick }) {
   }, [promos.length]);
 
   const goToSlide = (index) => setCurrentSlide(index);
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + promos.length) % promos.length);
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % promos.length);
 
-  if (promos.length === 0) return null;
+  if (isLoading || promos.length === 0) return null;
 
   return (
     <div className="px-4 md:px-8 mb-4">
@@ -94,7 +180,7 @@ export function PromoBanner({ onPromoClick }) {
           ))}
         </div>
 
-        {/* Dots only - no arrows */}
+        {/* Dots */}
         {promos.length > 1 && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
             {promos.map((_, index) => (
@@ -111,4 +197,24 @@ export function PromoBanner({ onPromoClick }) {
       </div>
     </div>
   );
+}
+
+// Helpers
+function getPromoDescription(promo) {
+  if (promo.discount_type === 'percentage') {
+    return `-${promo.discount_value}% sur votre commande`;
+  } else if (promo.discount_type === 'free_delivery') {
+    return 'Livraison gratuite !';
+  } else {
+    return `-${promo.discount_value?.toLocaleString()} FCFA de réduction`;
+  }
+}
+
+function getPromoImage(discountType) {
+  const images = {
+    percentage: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+    free_delivery: 'https://images.unsplash.com/photo-1526367790999-0150786686a2?w=400',
+    fixed: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400',
+  };
+  return images[discountType] || images.percentage;
 }

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tag, X, Check, AlertCircle, Loader2 } from 'lucide-react';
-import { validatePromoCode, recordPromoUsage } from '../services/promoService';
+import { validatePromoCode, recordPromoUsage, getAllPromoCodes } from '../services/promoService';
 import { useAuth } from '../context/AuthContext';
 
 export function PromoCodeInput({ 
@@ -15,6 +15,28 @@ export function PromoCodeInput({
   const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [suggestedCodes, setSuggestedCodes] = useState(['BIENVENUE', 'ACTOOS10', 'LIVGRATUITE']);
+
+  // Charger les codes suggérés depuis Supabase
+  useEffect(() => {
+    const loadSuggestedCodes = async () => {
+      try {
+        const { data } = await getAllPromoCodes();
+        if (data && data.length > 0) {
+          const activeCodes = data
+            .filter(p => p.is_active && p.code)
+            .slice(0, 4)
+            .map(p => p.code);
+          if (activeCodes.length > 0) {
+            setSuggestedCodes(activeCodes);
+          }
+        }
+      } catch (err) {
+        console.log('Using default suggested codes');
+      }
+    };
+    loadSuggestedCodes();
+  }, []);
 
   const handleApply = async () => {
     if (!code.trim()) return;
@@ -132,7 +154,7 @@ export function PromoCodeInput({
           <div className="mt-4">
             <p className="text-xs text-gray-500 mb-2">Codes suggérés :</p>
             <div className="flex flex-wrap gap-2">
-              {['BIENVENUE', 'ACTOOS10', 'LIVGRATUITE'].map((suggestedCode) => (
+              {suggestedCodes.map((suggestedCode) => (
                 <button
                   key={suggestedCode}
                   onClick={() => setCode(suggestedCode)}
