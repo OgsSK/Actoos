@@ -35,7 +35,7 @@ ACTOOS ONE est une super-app PWA monolithique de logistique et fintech pour l'Af
 ### Flux Authentification
 ```
 CONNEXION:
-[📱 Téléphone] | [📧 Email]  ← Onglets
+[📱 Téléphone] | [📧 Email]  ← Onglets (sans badge BIENTÔT)
 🇲🇱 +223 ▼ | 70 00 00 00   ← Sélecteur pays + téléphone
 [ Mot de passe ]
 [Mot de passe oublié ?]
@@ -45,8 +45,21 @@ INSCRIPTION:
 🇲🇱 +223 ▼ | 70 00 00 00 * ← Téléphone OBLIGATOIRE
 [ Email (optionnel) ]        ← Email OPTIONNEL  
 [ Mot de passe * ]
-⚠️ "ACTOOS arrive bientôt au [pays]!" si pays non lancé
 ```
+
+### Coming Soon Screen
+Si aucun restaurant n'est disponible dans le pays/ville de l'utilisateur:
+- Affiche écran "ACTOOS arrive bientôt !"
+- Option "Me notifier du lancement"
+- Option "Changer de lieu"
+
+### Fichiers Implémentés (8 Mai 2026)
+- `/src/config/countriesConfig.js` - Configuration 10 pays (validation, devises, opérateurs)
+- `/src/components/CountrySelector.jsx` - Dropdown drapeaux sans badge "BIENTÔT"
+- `/src/components/LoginSheet.jsx` - Auth avec onglets Téléphone/Email
+- `/src/components/ComingSoonScreen.jsx` - Écran quand pas de restaurants
+- `/src/context/LocationContext.jsx` - Gestion localisation utilisateur multi-pays
+- `/src/services/restaurantService.js` - Filtrage restaurants par pays/ville
 
 ## Schéma Base de Données
 
@@ -63,9 +76,21 @@ INSCRIPTION:
 - `withdrawal_requests`: id, wallet_id, user_id, amount, fee, net_amount, method, destination, status
 - `system_config`: key, value (commissions, frais livraison dynamiques)
 
-## Comptes de Test
-- **Admin**: contact@actoos.com / Salifkane&&7
-- **Client Test**: testclient@actoos.com / TestClient123!
+## Comptes de Test (MIS À JOUR 8 Mai 2026)
+
+### ADMIN (Global)
+- **Email**: contact@actoos.com
+- **Mot de passe**: Salifkane&&7
+- **Rôle**: admin
+- **Accès**: Dashboard Admin complet (/admin)
+
+### Tests par Téléphone
+- Format Mali: `70 00 00 00` → `+22370000000`
+- Format Sénégal: `77 000 00 00` → `+221770000000`
+
+### Restaurants Actifs
+- 16 restaurants à Bamako (Mali)
+- Maquis Chez Tanti, Fast Food Bamako, Pizza Mama Africa, etc.
 
 ---
 
