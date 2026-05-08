@@ -1,6 +1,17 @@
 import { Search, MapPin, ChevronDown, Navigation, Heart, User, ShoppingBag } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
-export function Header({ address, onAddressClick, onSearchClick, onProfileClick, onFavoritesClick }) {
+export function Header({ 
+  address, 
+  onAddressClick, 
+  onSearchClick, 
+  onProfileClick, 
+  onFavoritesClick,
+  onCartClick 
+}) {
+  const { getItemCount } = useCart();
+  const cartCount = getItemCount();
+  
   // Ne jamais afficher "null" - utiliser une chaîne vide par défaut
   const displayAddress = address && address !== 'null' ? address : '';
   const showAddPrompt = !displayAddress;
@@ -49,10 +60,16 @@ export function Header({ address, onAddressClick, onSearchClick, onProfileClick,
                 <Heart className="w-5 h-5 text-gray-600" />
               </button>
               <button
-                className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                onClick={onCartClick}
+                className="p-3 hover:bg-gray-100 rounded-full transition-colors relative"
                 title="Panier"
               >
                 <ShoppingBag className="w-5 h-5 text-gray-600" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#FF5A00] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
               </button>
               <button
                 onClick={onProfileClick}
@@ -66,48 +83,64 @@ export function Header({ address, onAddressClick, onSearchClick, onProfileClick,
         </div>
       </header>
 
-      {/* Mobile Header */}
-      <header className="md:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100" data-testid="header">
-        {/* Address Selector */}
+      {/* Mobile Header - Redesigned to match desktop */}
+      <header className="md:hidden sticky top-0 z-40 bg-white border-b border-gray-100" data-testid="header">
+        {/* Top Row: Logo + Icons */}
+        <div className="px-4 py-3 flex items-center justify-between">
+          {/* Logo */}
+          <a href="/" className="flex-shrink-0">
+            <span className="text-xl font-black text-[#FF5A00]">ACTOOS</span>
+          </a>
+          
+          {/* Icons Row */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onFavoritesClick}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              data-testid="mobile-favorites-btn"
+            >
+              <Heart className="w-5 h-5 text-gray-600" />
+            </button>
+            <button
+              onClick={onCartClick}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
+              data-testid="mobile-cart-btn"
+            >
+              <ShoppingBag className="w-5 h-5 text-gray-600" />
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-[#FF5A00] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={onProfileClick}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              data-testid="mobile-profile-btn"
+            >
+              <User className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+        </div>
+
+        {/* Address Selector Row */}
         <button
           onClick={onAddressClick}
-          className="w-full px-4 py-3 flex items-center gap-3 active:bg-gray-50 transition-colors"
+          className="w-full px-4 py-2 flex items-center gap-2 active:bg-gray-50 transition-colors border-t border-gray-50"
           data-testid="address-selector"
         >
-          {showAddPrompt ? (
-            <>
-              <div className="w-10 h-10 bg-[#FF5A00]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <Navigation className="w-5 h-5 text-[#FF5A00]" />
-              </div>
-              <div className="flex-1 text-left">
-                <span className="text-base text-[#FF5A00] font-semibold block">
-                  Ajouter une adresse
-                </span>
-                <span className="text-xs text-gray-400">Pour voir les restaurants près de vous</span>
-              </div>
-              <ChevronDown className="w-5 h-5 text-[#FF5A00] flex-shrink-0" />
-            </>
-          ) : (
-            <>
-              <div className="w-10 h-10 bg-[#FF5A00]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <MapPin className="w-5 h-5 text-[#FF5A00]" />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <span className="text-xs text-gray-400 block">Livrer à</span>
-                <span className="text-sm text-gray-900 font-semibold truncate block">
-                  {displayAddress}
-                </span>
-              </div>
-              <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
-            </>
-          )}
+          <MapPin className="w-4 h-4 text-[#FF5A00] flex-shrink-0" />
+          <span className="text-sm text-gray-700 truncate flex-1 text-left">
+            {displayAddress || 'Ajouter une adresse'}
+          </span>
+          <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
         </button>
 
         {/* Search Bar */}
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-3 pt-2">
           <button
             onClick={onSearchClick}
-            className="w-full bg-gray-100 rounded-2xl px-4 py-3.5 flex items-center gap-3 active:bg-gray-200 transition-colors"
+            className="w-full bg-gray-100 rounded-xl px-4 py-3 flex items-center gap-3 active:bg-gray-200 transition-colors"
             data-testid="search-bar"
           >
             <Search className="w-5 h-5 text-gray-400" />

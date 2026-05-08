@@ -907,6 +907,7 @@ function AppContent() {
         onSearchClick={() => setSearchSheet(true)}
         onProfileClick={() => setShowLoginSheet(true)}
         onFavoritesClick={() => setCurrentScreen(SCREENS.FAVORITES)}
+        onCartClick={() => setCurrentScreen(SCREENS.CHECKOUT)}
       />
 
       {/* Categories */}
