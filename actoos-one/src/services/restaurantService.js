@@ -2,7 +2,7 @@
  * ACTOOS ONE - Restaurant Service
  * 
  * Service pour les opérations sur les restaurants/partenaires.
- * Supporte mode Supabase et mode mocké.
+ * Supporte filtrage multi-pays par country_code.
  */
 
 import { supabase, isSupabaseConfigured } from './supabaseClient';
@@ -13,9 +13,13 @@ const PRODUCTION_MODE = true;
 
 /**
  * Récupérer tous les restaurants/partenaires actifs
+ * Filtrés par city (et country_code si disponible)
+ * 
+ * NOTE: La colonne country_code doit être ajoutée à la table partners.
+ * En attendant, on utilise la ville comme indicateur principal.
  */
 export async function getRestaurants(options = {}) {
-  const { category, city = 'Bamako', limit = 50 } = options;
+  const { category, city, countryCode, limit = 50 } = options;
 
   if (!isSupabaseConfigured()) {
     console.warn('[PRODUCTION] Supabase non configuré');
@@ -29,6 +33,17 @@ export async function getRestaurants(options = {}) {
       .eq('is_active', true)
       .limit(limit);
 
+    // Filtrer par pays si la colonne existe et est fournie
+    // Note: Si la colonne n'existe pas, Supabase ignorera ce filtre silencieusement
+    if (countryCode) {
+      query = query.eq('country_code', countryCode);
+    }
+
+    // Filtrer par ville si fournie (filtre principal pour le moment)
+    if (city) {
+      query = query.ilike('city', `%${city}%`);
+    }
+
     if (category && category !== 'cat-all' && category !== 'restaurant') {
       const categoryName = category.replace('cat-', '');
       query = query.ilike('category', `%${categoryName}%`);
@@ -36,33 +51,58 @@ export async function getRestaurants(options = {}) {
 
     const { data, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      // Si l'erreur est liée à country_code inexistant, ignorer et réessayer sans
+      if (error.message?.includes('country_code')) {
+        console.warn('Colonne country_code non trouvée, chargement sans filtre pays');
+        let fallbackQuery = supabase
+          .from('partners')
+          .select('*')
+          .eq('is_active', true)
+          .limit(limit);
+        
+        if (city) {
+          fallbackQuery = fallbackQuery.ilike('city', `%${city}%`);
+        }
+        
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+        if (fallbackError) throw fallbackError;
+        return { 
+          data: transformPartners(fallbackData), 
+          error: null 
+        };
+      }
+      throw error;
+    }
 
-    // Transformer les données pour matcher le format frontend
-    const transformed = (data || []).map(partner => ({
-      id: partner.id,
-      name: partner.name,
-      image: partner.image_url || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
-      cuisine: partner.category,
-      rating: partner.rating || 4.5,
-      deliveryTime: `${partner.avg_prep_time_minutes || 30}-${(partner.avg_prep_time_minutes || 30) + 15} min`,
-      deliveryFee: 500,
-      distance: '-- km',
-      // STANDARD UX: Ouvert par défaut sauf si explicitement fermé ou en pause
-      isOpen: partner.is_paused ? false : (partner.is_open !== false),
-      isFeatured: partner.is_featured || false,
-      hasOffers: partner.has_offers || false,
-      acceptsPickup: partner.accepts_pickup || false,
-      selfDelivery: partner.delivery_mode === 'self',
-      preparationTime: partner.avg_prep_time_minutes || 30,
-      acceptsCash: partner.accepts_cash,
-    }));
-
-    return { data: transformed, error: null };
+    return { data: transformPartners(data), error: null };
   } catch (error) {
     console.error('Erreur getRestaurants:', error);
     return { data: [], error };
   }
+}
+
+// Helper pour transformer les données partenaires
+function transformPartners(data) {
+  return (data || []).map(partner => ({
+    id: partner.id,
+    name: partner.name,
+    image: partner.image_url || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
+    cuisine: partner.category,
+    rating: partner.rating || 4.5,
+    deliveryTime: `${partner.preparation_time || 30}-${(partner.preparation_time || 30) + 15} min`,
+    deliveryFee: partner.delivery_fee || 500,
+    distance: '-- km',
+    isOpen: partner.is_paused ? false : (partner.is_open !== false),
+    isFeatured: partner.is_featured || false,
+    hasOffers: partner.has_offers || false,
+    acceptsPickup: partner.accepts_pickup || false,
+    selfDelivery: partner.delivery_mode === 'self',
+    preparationTime: partner.preparation_time || 30,
+    acceptsCash: partner.accepts_cash,
+    countryCode: partner.country_code || 'ML',
+    city: partner.city || 'Bamako',
+  }));
 }
 
 /**

@@ -1,0 +1,96 @@
+{
+  "summary": "Tested all 9 features for ACTOOS ONE multi-country super-app. 8/9 features PASS. Admin email login fails due to Supabase auth issue (same as iteration 88).",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "Supabase Auth - signInWithPassword",
+        "issue": "Admin login (contact@actoos.com / Salifkane&&7) returns 'Invalid login credentials'. Admin account may not exist in Supabase Auth.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_89.json"
+  ],
+  "action_items": [
+    "Create/verify admin account (contact@actoos.com) in Supabase Auth with password 'Salifkane&&7'"
+  ],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Supabase auth issue",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "admin_email": "contact@actoos.com",
+    "admin_password": "Salifkane&&7",
+    "test_phone_mali": "70 00 00 00 (formatted) -> +22370000000 (normalized)"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 9 features tested and working except admin email login (Supabase auth issue). Multi-country auth UI fully functional. Wallet with QR Payer/Encaisser working. Order flow working.",
+  "features_tested": {
+    "test_1_restaurants_bamako": {
+      "status": "PASS",
+      "details": "Homepage displays 16 restaurants from Bamako (Mali) including: Maquis Chez Tanti, Fast Food Bamako, Pizza Mama Africa, Grillades de Bamako, Cafe de Paris Bamako, Poulet Braise Express, Shawarma King, Thieboudienne House"
+    },
+    "test_2_login_tabs": {
+      "status": "PASS",
+      "details": "LoginSheet has [Téléphone] | [Email] tabs with data-testid='login-tab-phone' and 'login-tab-email'"
+    },
+    "test_3_mali_default": {
+      "status": "PASS",
+      "details": "Mali flag 🇲🇱 and +223 code displayed by default in country selector"
+    },
+    "test_4_country_dropdown": {
+      "status": "PASS",
+      "details": "Dropdown shows all 10 West African countries: Mali, Sénégal, Côte d'Ivoire, Burkina Faso, Guinée, Niger, Togo, Bénin, Guinée-Bissau, Mauritanie. NO 'BIENTÔT' badge present (as required)."
+    },
+    "test_5_placeholder_change": {
+      "status": "PASS",
+      "details": "Phone placeholder changes when country selected. Sénégal shows '77 000 00 00', Mali shows '70 00 00 00'"
+    },
+    "test_6_signup_form": {
+      "status": "PASS",
+      "details": "Signup form has: Nom complet * (required), Phone * (required with country selector), Email (optionnel), Mot de passe * (required). Email correctly marked as optional."
+    },
+    "test_7_admin_email_login": {
+      "status": "FAIL",
+      "details": "Admin email login (contact@actoos.com / Salifkane&&7) fails with 'Invalid login credentials' - Supabase auth data issue, not frontend bug"
+    },
+    "test_8_order_flow": {
+      "status": "PASS",
+      "details": "Order flow working: Click restaurant > View menu (Accompagnements, Boissons, Plats) > Click item (Alloco 1,000 FCFA) > Item detail modal with quantity selector and 'AJOUTER AU PANIER' button > Cart badge updates"
+    },
+    "test_9_wallet_qr": {
+      "status": "PASS",
+      "details": "ACTOOS Pay wallet fully functional: Solde disponible, Recharger, Envoyer, Payer (QR), Encaisser (QR). Payer avec QR shows Scanner and Code manuel options with camera permission request."
+    }
+  },
+  "mocked_apis": {
+    "Twilio SMS OTP": "MOCKED - OTP code displayed in UI for testing (devCode field)",
+    "TouchPay Mobile Money": "MOCKED - Demo mode"
+  },
+  "rca_of_the_issue": {
+    "issue": "Admin email login fails with 'Invalid login credentials'",
+    "root_cause": "Admin account (contact@actoos.com) either doesn't exist in Supabase Auth or has different password",
+    "reproduction_steps": [
+      "1. Open https://date-1.preview.emergentagent.com",
+      "2. Close cookie and location modals",
+      "3. Click 'Connexion' button",
+      "4. Click 'Email' tab",
+      "5. Enter email: contact@actoos.com",
+      "6. Enter password: Salifkane&&7",
+      "7. Click 'Se connecter'",
+      "8. Error: 'Invalid login credentials'"
+    ],
+    "mitigation": "Verify/create admin account in Supabase Auth dashboard with email: contact@actoos.com and password: Salifkane&&7"
+  }
+}

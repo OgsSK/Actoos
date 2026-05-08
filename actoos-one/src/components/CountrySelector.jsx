@@ -152,11 +152,6 @@ export function CountrySelector({
                       <span className="font-medium text-gray-900 truncate">
                         {c.name}
                       </span>
-                      {c.status === LAUNCH_STATUS.COMING_SOON && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700 rounded">
-                          BIENTÔT
-                        </span>
-                      )}
                     </div>
                     <span className="text-sm text-gray-500">{c.phoneCode}</span>
                   </div>
@@ -272,11 +267,6 @@ export function CountrySelectorInline({
                 <span className="text-xl">{c.flag}</span>
                 <div className="flex-1">
                   <span className="font-medium text-gray-900">{c.name}</span>
-                  {c.status === LAUNCH_STATUS.COMING_SOON && (
-                    <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-amber-100 text-amber-700 rounded">
-                      BIENTÔT
-                    </span>
-                  )}
                 </div>
                 <span className="text-sm text-gray-500">{c.phoneCode}</span>
                 {country.code === c.code && (

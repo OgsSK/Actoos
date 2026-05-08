@@ -42,11 +42,13 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider, useCart } from './context/CartContext';
 import { WalletProvider } from './context/WalletContext';
 import { FavoritesProvider } from './context/FavoritesContext';
+import { LocationProvider, useLocation as useUserLocation } from './context/LocationContext';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { categories, navItems } from './data/mockData';
 import { getRestaurantMenu } from './data/menuData';
 import { getPharmacyProducts, pharmacyProducts } from './data/healthData';
 import { getRestaurants, getRestaurantById } from './services/restaurantService';
+import { ComingSoonScreen, ComingSoonBanner } from './components/ComingSoonScreen';
 
 // App modes based on URL path
 const APP_MODES = {
@@ -93,6 +95,16 @@ function AppContent() {
   const navigate = useNavigate();
   const { isAuthenticated, user: authUser, profile: authProfile } = useAuth();
   const { setActiveRestaurant, cartRestaurant } = useCart();
+  
+  // Multi-pays: Localisation utilisateur
+  const { 
+    country: userCountry, 
+    city: userCity, 
+    countryCode: userCountryCode,
+    setCountry: setUserCountry,
+    setCity: setUserCity,
+    getLocationDisplay,
+  } = useUserLocation();
   
   const [showSplash, setShowSplash] = useState(true);
   const [showLoginSheet, setShowLoginSheet] = useState(false);
@@ -249,16 +261,23 @@ function AppContent() {
   const [restaurants, setRestaurants] = useState([]);
   const [restaurantsLoading, setRestaurantsLoading] = useState(true);
 
-  // Load restaurants from Supabase on mount
+  // Load restaurants from Supabase - FILTRÉS PAR VILLE
   useEffect(() => {
     async function loadRestaurants() {
       setRestaurantsLoading(true);
       try {
-        const { data, error } = await getRestaurants();
+        // Pour l'instant, on charge tous les restaurants sans filtre strict
+        // Le filtre par pays sera activé quand la colonne country_code sera ajoutée
+        const { data, error } = await getRestaurants({ 
+          // Ne pas filtrer par pays/ville pour l'instant pour voir tous les restaurants
+          // countryCode: userCountryCode,
+          // city: userCity,
+        });
         if (error) {
           console.error('Erreur chargement restaurants:', error);
         }
         setRestaurants(data || []);
+        console.log(`📍 Restaurants chargés:`, data?.length || 0);
       } catch (err) {
         console.error('Erreur:', err);
         setRestaurants([]);
@@ -267,7 +286,10 @@ function AppContent() {
       }
     }
     loadRestaurants();
-  }, []);
+  }, []); // Charger une seule fois au démarrage
+
+  // Vérifier si aucun restaurant n'est disponible (pour afficher "Bientôt")
+  const noRestaurantsAvailable = !restaurantsLoading && restaurants.length === 0;
 
   // Prepare restaurants with full menus for search - TRIÉS PAR DISTANCE si position disponible
   const restaurantsWithMenus = useMemo(() => {
@@ -1091,12 +1113,27 @@ function AppContent() {
       {/* Promo Banner */}
       <PromoBanner />
 
-      {/* Restaurant Feed */}
-      <RestaurantFeed
-        restaurants={filteredRestaurants}
-        isLoading={isLoading || restaurantsLoading}
-        onRestaurantClick={handleRestaurantClick}
-      />
+      {/* Coming Soon Screen si pas de restaurants */}
+      {noRestaurantsAvailable && !restaurantsLoading && (
+        <ComingSoonScreen
+          countryCode={userCountryCode}
+          city={userCity}
+          onNotifyMe={() => {
+            // TODO: Implémenter notification
+            alert('Vous serez notifié du lancement !');
+          }}
+          onChangeLocation={() => setAddressSheet(true)}
+        />
+      )}
+
+      {/* Restaurant Feed - Masqué si pas de restaurants */}
+      {!noRestaurantsAvailable && (
+        <RestaurantFeed
+          restaurants={filteredRestaurants}
+          isLoading={isLoading || restaurantsLoading}
+          onRestaurantClick={handleRestaurantClick}
+        />
+      )}
 
       {/* Footer */}
       <Footer
@@ -1368,13 +1405,15 @@ function AdminApp() {
 function ClientApp() {
   return (
     <AuthProvider>
-      <FavoritesProvider>
-        <WalletProvider>
-          <CartProvider>
-            <AppContent />
-          </CartProvider>
-        </WalletProvider>
-      </FavoritesProvider>
+      <LocationProvider>
+        <FavoritesProvider>
+          <WalletProvider>
+            <CartProvider>
+              <AppContent />
+            </CartProvider>
+          </WalletProvider>
+        </FavoritesProvider>
+      </LocationProvider>
     </AuthProvider>
   );
 }

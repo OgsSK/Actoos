@@ -525,17 +525,6 @@ export function LoginSheet({ isOpen, onClose, onSuccess }) {
               />
             </div>
 
-            {/* Country not launched warning */}
-            {!countryLaunched && (
-              <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <span className="text-lg">{selectedCountry.flag}</span>
-                <div className="text-sm">
-                  <span className="text-amber-800 font-medium">ACTOOS arrive bientôt au {selectedCountry.name} !</span>
-                  <p className="text-amber-600 text-xs mt-0.5">Inscrivez-vous pour être notifié du lancement.</p>
-                </div>
-              </div>
-            )}
-
             {phoneExistsWarning && (
               <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <AlertCircle size={18} className="text-amber-600 flex-shrink-0" />
