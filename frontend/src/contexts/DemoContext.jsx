@@ -70,7 +70,7 @@ export const DemoProvider = ({ children }) => {
   // Exit demo mode
   const exitDemo = useCallback(async () => {
     await logout();
-    window.location.href = '/pricing';
+    window.location.href = '/';  // Retour à l'accueil
   }, [logout]);
 
   // Get upgrade message based on feature

@@ -2667,7 +2667,10 @@ export const TechnicianApp = () => {
             user={user} 
             skills={user?.skills || []} 
             categories={categories} 
-            onLogout={logout}
+            onLogout={() => {
+              logout();
+              window.location.href = '/';  // Retour à l'accueil
+            }}
             onShowInstallGuide={() => setShowInstallGuide(true)}
           />
         </div>

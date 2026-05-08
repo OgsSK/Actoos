@@ -34,7 +34,7 @@ const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    window.location.href = '/';  // Force page reload to show landing page
   };
 
   const navItems = [
