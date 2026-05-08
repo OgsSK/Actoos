@@ -26,6 +26,23 @@ const isTokenExpired = (token) => {
   }
 };
 
+// Helper: Get time until token expires (in milliseconds)
+const getTokenExpiryTime = (token) => {
+  if (!token) return 0;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const exp = payload.exp;
+    if (!exp) return Infinity; // No expiration
+    return (exp * 1000) - Date.now();
+  } catch {
+    return 0;
+  }
+};
+
+// Constants for token refresh
+const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // Refresh 5 minutes before expiry
+const TOKEN_CHECK_INTERVAL = 60 * 1000; // Check every minute
+
 // Helper: Safe localStorage operations (handles Safari private mode, quota exceeded, etc.)
 const safeStorage = {
   getItem: (key) => {
@@ -234,6 +251,72 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
+
+  // Automatic token refresh before expiration
+  useEffect(() => {
+    if (!token || !user) return;
+
+    const refreshToken = async () => {
+      const timeUntilExpiry = getTokenExpiryTime(token);
+      
+      // If token is about to expire (within threshold), refresh it
+      if (timeUntilExpiry > 0 && timeUntilExpiry <= TOKEN_REFRESH_THRESHOLD) {
+        console.log('[Auth] Token expiring soon, attempting silent refresh...');
+        
+        try {
+          // Re-authenticate using stored credentials from the current session
+          // Since we have the user info, we can request a new token via the refresh endpoint
+          const response = await fetch(`${SUPABASE_URL}/functions/v1/refresh-token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ 
+              current_token: token,
+              user_id: user.id,
+              entreprise_id: user.entreprise_id || entreprise?.id
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.token) {
+              console.log('[Auth] Token refreshed successfully');
+              safeStorage.setItem('token', data.token);
+              setToken(data.token);
+              return;
+            }
+          }
+          
+          // Fallback: If refresh endpoint doesn't exist or fails, 
+          // the user will need to re-login when token expires
+          console.log('[Auth] Token refresh not available, session will expire naturally');
+        } catch (error) {
+          console.log('[Auth] Token refresh failed:', error.message);
+        }
+      }
+      
+      // If token is already expired, clear session
+      if (timeUntilExpiry <= 0) {
+        console.log('[Auth] Token expired, clearing session');
+        safeStorage.removeItem('token');
+        safeStorage.removeItem('user');
+        safeStorage.removeItem('entreprise');
+        setToken(null);
+        setUser(null);
+        setEntreprise(null);
+      }
+    };
+
+    // Check immediately
+    refreshToken();
+
+    // Set up periodic check
+    const interval = setInterval(refreshToken, TOKEN_CHECK_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [token, user, entreprise]);
 
   // Update PWA manifest/icons when user role changes or on initial load
   useEffect(() => {
@@ -445,6 +528,20 @@ export const AuthProvider = ({ children }) => {
   const canUseApiAccess = useMemo(() => hasFeature('api_access'), [hasFeature]);
   const canUseAdvancedBranding = useMemo(() => hasFeature('advanced_branding'), [hasFeature]);
 
+  // Session time remaining helper (for UI indicators)
+  const getSessionTimeRemaining = useCallback(() => {
+    if (!token) return 0;
+    const remaining = getTokenExpiryTime(token);
+    return Math.max(0, remaining);
+  }, [token]);
+
+  // Check if session is about to expire (within 10 minutes)
+  const isSessionExpiringSoon = useMemo(() => {
+    if (!token) return false;
+    const remaining = getTokenExpiryTime(token);
+    return remaining > 0 && remaining <= 10 * 60 * 1000; // 10 minutes
+  }, [token]);
+
   const value = {
     user,
     entreprise,
@@ -482,6 +579,9 @@ export const AuthProvider = ({ children }) => {
     canUseWhiteLabel,
     canUseApiAccess,
     canUseAdvancedBranding,
+    // Session helpers
+    getSessionTimeRemaining,
+    isSessionExpiringSoon,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
