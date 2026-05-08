@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { TouchPaySheet } from './TouchPaySheet';
+import { MobileMoneyPaymentSheet } from './MobileMoneyPaymentSheet';
 import { PromoCodeInput } from './PromoCodeInput';
 import { TimeSlotPicker, SelectedTimeSlotBadge } from './TimeSlotPicker';
 import { useCart } from '../context/CartContext';
@@ -63,6 +64,9 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
   
   // TopUp sheet for insufficient balance
   const [showTopUp, setShowTopUp] = useState(false);
+  
+  // Mobile Money payment sheet
+  const [showMobileMoneySheet, setShowMobileMoneySheet] = useState(false);
   
   // Promo code
   const [appliedPromo, setAppliedPromo] = useState(null);
@@ -258,6 +262,28 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
       }
     }
     
+    // Si paiement Mobile Money, ouvrir la modal de paiement
+    if (paymentMethod === 'mobile_money') {
+      setShowMobileMoneySheet(true);
+      return;
+    }
+    
+    // Procéder avec la commande (cash ou wallet)
+    await processOrder();
+  };
+
+  // Callback après paiement Mobile Money réussi
+  const handleMobileMoneySuccess = async (paymentResult) => {
+    setShowMobileMoneySheet(false);
+    // Procéder avec la création de la commande
+    await processOrder({ 
+      mobileMoneyTransactionId: paymentResult.transactionId,
+      mobileMoneyMethod: paymentResult.method?.name 
+    });
+  };
+
+  // Fonction commune pour créer la commande
+  const processOrder = async (paymentDetails = {}) => {
     setIsLoading(true);
     setError('');
     
@@ -290,6 +316,11 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
         deliveryInstructions: addressDetails || null,
         distanceKm: estimatedDistanceKm, // Pour le calcul des frais de livraison
         partnerDeliveryType: isSelfDelivery ? 'self' : 'actoos',
+        // Ajouter les détails Mobile Money si présents
+        ...(paymentDetails.mobileMoneyTransactionId && {
+          mobile_money_tx_id: paymentDetails.mobileMoneyTransactionId,
+          mobile_money_provider: paymentDetails.mobileMoneyMethod,
+        }),
       };
       
       const { data: createdOrder, error: orderError } = await createOrder(orderData);
@@ -741,7 +772,9 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
             <div className="bg-white rounded-2xl p-4 border border-gray-200">
               <p className="text-sm text-gray-500">Paiement</p>
               <p className="font-semibold text-gray-900">
-                {paymentMethod === 'wallet' ? '💳 Wallet Actoos' : '💵 Cash à la livraison'}
+                {paymentMethod === 'wallet' && '💳 Wallet Actoos'}
+                {paymentMethod === 'mobile_money' && '📱 Mobile Money'}
+                {paymentMethod === 'cash' && '💵 Cash à la livraison'}
               </p>
             </div>
 
@@ -975,6 +1008,19 @@ export function CheckoutScreen({ restaurant, onBack, onOrderComplete, onLoginReq
         onClose={() => setShowTopUp(false)}
         onSuccess={handleTopUpSuccess}
         requiredAmount={orderTotals.total - balance}
+      />
+
+      {/* Mobile Money Payment Sheet */}
+      <MobileMoneyPaymentSheet
+        isOpen={showMobileMoneySheet}
+        onClose={() => setShowMobileMoneySheet(false)}
+        amount={finalTotal}
+        orderId={`ORD-${Date.now()}`}
+        onSuccess={handleMobileMoneySuccess}
+        onError={(error) => {
+          setShowMobileMoneySheet(false);
+          setError(error?.message || 'Erreur de paiement Mobile Money');
+        }}
       />
     </div>
   );
