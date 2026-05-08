@@ -261,20 +261,21 @@ function AppContent() {
   const [restaurants, setRestaurants] = useState([]);
   const [restaurantsLoading, setRestaurantsLoading] = useState(true);
 
-  // Load restaurants from Supabase - FILTRÉS PAR VILLE
+  // Load restaurants from Supabase - FILTRÉS PAR PAYS ET VILLE
   useEffect(() => {
     async function loadRestaurants() {
       setRestaurantsLoading(true);
       try {
-        // Filtrer par ville de l'utilisateur
+        // Filtrer par pays ET ville de l'utilisateur
         const { data, error } = await getRestaurants({ 
+          countryCode: userCountryCode, // Filtrer par pays (ML, SN, etc.)
           city: userCity, // Filtrer par ville (Bamako, Dakar, etc.)
         });
         if (error) {
           console.error('Erreur chargement restaurants:', error);
         }
         setRestaurants(data || []);
-        console.log(`📍 Restaurants chargés pour ${userCity}:`, data?.length || 0);
+        console.log(`📍 Restaurants chargés pour ${userCity}, ${userCountryCode}:`, data?.length || 0);
       } catch (err) {
         console.error('Erreur:', err);
         setRestaurants([]);
@@ -282,8 +283,12 @@ function AppContent() {
         setRestaurantsLoading(false);
       }
     }
-    loadRestaurants();
-  }, [userCity]); // Recharger quand la ville change
+    
+    // Ne charger que si on a une ville définie
+    if (userCity) {
+      loadRestaurants();
+    }
+  }, [userCity, userCountryCode]); // Recharger quand la ville OU le pays change
 
   // Vérifier si aucun restaurant n'est disponible (pour afficher "Bientôt")
   const noRestaurantsAvailable = !restaurantsLoading && restaurants.length === 0;

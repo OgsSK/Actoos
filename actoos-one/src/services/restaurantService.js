@@ -177,22 +177,34 @@ export async function getRestaurantById(id) {
 }
 
 /**
- * Recherche de restaurants
+ * Recherche de restaurants - Filtrée par pays
  */
 export async function searchRestaurants(query, options = {}) {
-  const { limit = 20 } = options;
+  const { limit = 20, countryCode, city } = options;
 
   if (!isSupabaseConfigured()) {
     return { data: [], error: { message: 'Supabase non configuré' } };
   }
 
   try {
-    const { data, error } = await supabase
+    let queryBuilder = supabase
       .from('partners')
       .select('*')
       .eq('is_active', true)
       .or(`name.ilike.%${query}%,category.ilike.%${query}%`)
       .limit(limit);
+
+    // Filtrer par pays si fourni
+    if (countryCode) {
+      queryBuilder = queryBuilder.eq('country_code', countryCode);
+    }
+
+    // Filtrer par ville si fournie
+    if (city) {
+      queryBuilder = queryBuilder.ilike('city', `%${city}%`);
+    }
+
+    const { data, error } = await queryBuilder;
 
     if (error) throw error;
 
@@ -202,6 +214,8 @@ export async function searchRestaurants(query, options = {}) {
       image: partner.image_url,
       cuisine: partner.category,
       rating: partner.rating || 4.5,
+      city: partner.city,
+      countryCode: partner.country_code,
       // STANDARD UX: Ouvert par défaut sauf si explicitement fermé ou en pause
       isOpen: partner.is_paused ? false : (partner.is_open !== false),
     }));

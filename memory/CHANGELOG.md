@@ -1,5 +1,24 @@
 # ACTOOS ONE - Changelog
 
+## [2026-05-08] - Flux Multi-Pays COMPLET
+
+### Améliorations
+- ✅ Filtrage restaurants par `country_code` ET `city` dans `App.js`
+- ✅ Recherche restaurants filtrée par pays dans `restaurantService.js`
+- ✅ Recharge automatique quand le pays OU la ville change
+
+### Résultat du flux
+1. Utilisateur sélectionne un pays (Mali/Sénégal)
+2. App charge uniquement les restaurants de ce pays
+3. Menus et commandes fonctionnent par pays
+
+### Tests validés
+- 🇲🇱 Mali → 16 restaurants Bamako
+- 🇸🇳 Sénégal → 4 restaurants Dakar (avec menus complets)
+- Changement de pays via AddressSheet → rechargement immédiat
+
+---
+
 ## [2026-05-08] - Migration Multi-Pays EXÉCUTÉE
 
 ### Base de données
