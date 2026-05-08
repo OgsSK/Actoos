@@ -36,6 +36,7 @@ import { PromoBanner } from './components/PromoBanner';
 import { FavoritesScreen } from './components/FavoritesScreen';
 import { RatingSheet } from './components/RatingSystem';
 import { FloatingCartButton } from './components/FloatingCartButton';
+import { CartSheet } from './components/CartSheet';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider, useCart } from './context/CartContext';
 import { WalletProvider } from './context/WalletContext';
@@ -110,6 +111,7 @@ function AppContent() {
   const [disabledModuleSheet, setDisabledModuleSheet] = useState({ open: false, moduleId: null });
   const [searchSheet, setSearchSheet] = useState(false);
   const [addressSheet, setAddressSheet] = useState(false);
+  const [cartSheet, setCartSheet] = useState(false);
 
   // Determine app mode from current route
   const appMode = getAppModeFromPath(location.pathname);
@@ -806,7 +808,7 @@ function AppContent() {
       <PharmacyScreen
         pharmacy={selectedPharmacy}
         onBack={handleBackToHealth}
-        onCheckout={handleGoToCheckout}
+        onCheckout={() => setCartSheet(true)}
       />
     );
   }
@@ -879,11 +881,22 @@ function AppContent() {
 
   if (currentScreen === SCREENS.RESTAURANT && selectedRestaurant) {
     return (
-      <RestaurantScreen
-        restaurant={selectedRestaurant}
-        onBack={handleBackToHome}
-        onCheckout={handleGoToCheckout}
-      />
+      <>
+        <RestaurantScreen
+          restaurant={selectedRestaurant}
+          onBack={handleBackToHome}
+          onCheckout={() => setCartSheet(true)}
+        />
+        <CartSheet
+          isOpen={cartSheet}
+          onClose={() => setCartSheet(false)}
+          restaurant={selectedRestaurant}
+          onCheckout={() => {
+            setCartSheet(false);
+            setCurrentScreen(SCREENS.CHECKOUT);
+          }}
+        />
+      </>
     );
   }
 
@@ -907,7 +920,7 @@ function AppContent() {
         onSearchClick={() => setSearchSheet(true)}
         onProfileClick={() => setShowLoginSheet(true)}
         onFavoritesClick={() => setCurrentScreen(SCREENS.FAVORITES)}
-        onCartClick={() => setCurrentScreen(SCREENS.CHECKOUT)}
+        onCartClick={() => setCartSheet(true)}
       />
 
       {/* Categories */}
@@ -939,7 +952,7 @@ function AppContent() {
       />
 
       {/* Floating Cart Button (Mobile) */}
-      <FloatingCartButton onClick={() => setCurrentScreen(SCREENS.CHECKOUT)} />
+      <FloatingCartButton onClick={() => setCartSheet(true)} />
 
       {/* Bottom Navigation */}
       <BottomNav
@@ -994,6 +1007,17 @@ function AppContent() {
         onSelectAddress={handleAddressSelect}
         userLocation={userLocation}
         onRequestLocation={handleRequestLocation}
+      />
+
+      {/* Cart Sheet */}
+      <CartSheet
+        isOpen={cartSheet}
+        onClose={() => setCartSheet(false)}
+        restaurant={selectedRestaurant}
+        onCheckout={() => {
+          setCartSheet(false);
+          setCurrentScreen(SCREENS.CHECKOUT);
+        }}
       />
 
       {/* Privacy Settings Sheet */}
