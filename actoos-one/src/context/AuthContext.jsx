@@ -14,6 +14,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { validatePhoneForCountry, detectCountryFromPhone } from '../config/countriesConfig';
 
 const AuthContext = createContext(null);
 
@@ -268,18 +269,26 @@ export function AuthProvider({ children }) {
 
   /**
    * Vérifier si un numéro de téléphone existe déjà
+   * Supporte multi-pays: accepte les numéros normalisés (+223xxx, +221xxx, etc.)
    */
   const checkPhoneExists = useCallback(async (phone) => {
-    const validation = validateMalianPhone(phone);
-    if (!validation.valid) {
-      return { exists: false, error: validation.error };
+    // Si le numéro est déjà normalisé (commence par +), l'utiliser directement
+    let normalizedPhone = phone;
+    
+    if (!phone.startsWith('+')) {
+      // Fallback: essayer de valider comme numéro malien
+      const validation = validateMalianPhone(phone);
+      if (!validation.valid) {
+        return { exists: false, error: validation.error };
+      }
+      normalizedPhone = validation.normalized;
     }
 
     try {
       const { data, error: checkError } = await supabase
         .from('users')
         .select('id, phone')
-        .eq('phone', validation.normalized)
+        .eq('phone', normalizedPhone)
         .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') {
@@ -289,7 +298,7 @@ export function AuthProvider({ children }) {
       return { 
         exists: !!data, 
         error: null,
-        normalizedPhone: validation.normalized 
+        normalizedPhone: normalizedPhone 
       };
     } catch (err) {
       console.error('Erreur checkPhoneExists:', err);
@@ -420,16 +429,17 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     setError(null);
 
-    // Le numéro doit déjà être normalisé depuis le formulaire
+    // Le numéro doit déjà être normalisé depuis le formulaire (ex: +221770001122)
+    // Si pas de +, on tente une validation malienne comme fallback
     let normalizedPhone = phone;
     
-    // Si pas de +, on suppose que c'est un numéro malien (fallback)
     if (!phone.startsWith('+')) {
+      // Fallback: essayer de valider comme numéro malien
       const validation = validateMalianPhone(phone);
       if (!validation.valid) {
-        setError(validation.error);
+        setError('Format de numéro invalide. Utilisez le format international (+223...)');
         setIsLoading(false);
-        return { success: false, error: validation.error };
+        return { success: false, error: 'Format invalide' };
       }
       normalizedPhone = validation.normalized;
     }

@@ -49,8 +49,8 @@ export const COUNTRIES = [
     phonePlaceholder: '77 000 00 00',
     phoneFormat: 'XX XXX XX XX',
     operators: ['Orange', 'Free', 'Expresso'],
-    status: LAUNCH_STATUS.COMING_SOON,
-    launchedAt: null,
+    status: LAUNCH_STATUS.LAUNCHED, // 🚀 LANCÉ
+    launchedAt: '2026-05-08',
     timezone: 'Africa/Dakar',
     languages: ['fr', 'wo'], // Français, Wolof
   },
