@@ -209,13 +209,52 @@ function AppContent() {
     loadRestaurants();
   }, []);
 
-  // Prepare restaurants with full menus for search
+  // Prepare restaurants with full menus for search - TRIÉS PAR DISTANCE si position disponible
   const restaurantsWithMenus = useMemo(() => {
-    return restaurants.map(r => ({
-      ...r,
-      categories: [], // Will be loaded on click
-    }));
-  }, [restaurants]);
+    let sortedRestaurants = [...restaurants];
+    
+    // Trier par distance si la position est disponible
+    if (userLocation?.lat && userLocation?.lng) {
+      // Coordonnées des restaurants de Bamako (mock - en production, utiliser les vraies coords)
+      const restaurantCoords = {
+        'Bamako': { lat: 12.6392, lng: -8.0029 },
+      };
+      
+      sortedRestaurants = sortedRestaurants.map(r => {
+        // Calculer une distance approximative (en km) pour le tri
+        // En production, utiliser les vraies coordonnées du restaurant
+        const restaurantLat = restaurantCoords['Bamako']?.lat || 12.6392;
+        const restaurantLng = restaurantCoords['Bamako']?.lng || -8.0029;
+        
+        // Formule de Haversine simplifiée
+        const R = 6371; // Rayon de la Terre en km
+        const dLat = (restaurantLat - userLocation.lat) * Math.PI / 180;
+        const dLng = (restaurantLng - userLocation.lng) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(userLocation.lat * Math.PI / 180) * Math.cos(restaurantLat * Math.PI / 180) *
+                  Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        
+        return {
+          ...r,
+          categories: [],
+          distance: distance,
+          distanceText: distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`,
+        };
+      });
+      
+      // Trier par distance croissante
+      sortedRestaurants.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+    } else {
+      sortedRestaurants = sortedRestaurants.map(r => ({
+        ...r,
+        categories: [],
+      }));
+    }
+    
+    return sortedRestaurants;
+  }, [restaurants, userLocation]);
 
   // Prepare pharmacies with products for search
   const pharmaciesWithProducts = useMemo(() => {

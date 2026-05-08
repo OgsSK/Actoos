@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 
-export function BottomSheet({ isOpen, onClose, title, children, showHeader = true }) {
+export function BottomSheet({ isOpen, onClose, title, children, showHeader = true, fullHeight = false }) {
   if (!isOpen) return null;
 
   return (
@@ -13,7 +13,9 @@ export function BottomSheet({ isOpen, onClose, title, children, showHeader = tru
       />
       
       {/* Sheet */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl bottom-sheet-enter safe-area-bottom">
+      <div className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl bottom-sheet-enter safe-area-bottom ${
+        fullHeight ? 'top-12' : ''
+      }`}>
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-2">
           <div className="w-10 h-1 bg-gray-300 rounded-full" />
@@ -36,7 +38,7 @@ export function BottomSheet({ isOpen, onClose, title, children, showHeader = tru
         )}
 
         {/* Content */}
-        <div className="px-4 pb-6 max-h-[70vh] overflow-y-auto">
+        <div className={`px-4 pb-6 overflow-y-auto ${fullHeight ? 'h-full' : 'max-h-[85vh]'}`}>
           {children}
         </div>
       </div>
