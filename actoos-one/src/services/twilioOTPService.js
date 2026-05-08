@@ -13,10 +13,9 @@ import { supabase } from './supabaseClient';
 const TWILIO_CONFIG = {
   ACCOUNT_SID: 'AC8fc82ea402ee7ae52cc74d368045655e',
   AUTH_TOKEN: '65a45c7f2053de99ddfed6b179b93d93',
-  // Vous devez avoir un numéro Twilio ou un Sender ID
-  // Pour le Mali/Sénégal, un Sender ID comme "ACTOOS" est recommandé
-  FROM_NUMBER: process.env.REACT_APP_TWILIO_PHONE || '+15017122661', // Remplacez par votre numéro
-  SENDER_ID: 'ACTOOS', // Sender ID alphanumérique
+  // Sender ID alphanumérique - Supporté au Mali et Sénégal
+  // Au Sénégal: OBLIGATOIRE (les numéros sont bloqués sur Orange/Expresso)
+  SENDER_ID: 'ACTOOS',
 };
 
 // OTP Settings
@@ -78,7 +77,7 @@ async function sendTwilioSMS(to, message) {
   // Build form data
   const formData = new URLSearchParams();
   formData.append('To', formattedTo);
-  formData.append('From', TWILIO_CONFIG.SENDER_ID || TWILIO_CONFIG.FROM_NUMBER);
+  formData.append('From', TWILIO_CONFIG.SENDER_ID); // Utilise "ACTOOS" comme expéditeur
   formData.append('Body', message);
   
   try {
