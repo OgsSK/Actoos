@@ -483,6 +483,7 @@ export function ProfileScreen({
           <button 
             onClick={() => setShowLogoutConfirm(true)}
             className="w-full px-4 py-4 flex items-center gap-4 active:bg-gray-50"
+            data-testid="logout-btn"
           >
             <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
               <LogOut className="w-5 h-5 text-red-600" />
