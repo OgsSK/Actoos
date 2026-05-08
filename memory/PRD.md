@@ -432,8 +432,21 @@ Si aucun restaurant n'est disponible dans le pays/ville de l'utilisateur:
 
 ---
 
-## Migration Supabase À Exécuter
+## Migrations Supabase
 
+### ✅ EXÉCUTÉE: Migration Multi-Pays (8 Mai 2026)
+**Fichier**: `/app/actoos-one/supabase/migrations/20260508_multi_country.sql`
+
+Colonnes `country_code` ajoutées à:
+- `users` (VARCHAR(2), default 'ML')
+- `partners` (VARCHAR(2), default 'ML')
+- `orders` (VARCHAR(2), default 'ML')
+- `drivers` (VARCHAR(2), default 'ML')
+- `otp_codes` (VARCHAR(2))
+
+Table `countries` créée avec 10 pays d'Afrique de l'Ouest.
+
+### À EXÉCUTER: Migration Système Financier
 **Fichier**: `/app/actoos-one/supabase/migrations/20260508_financial_system.sql`
 
 **Tables créées**:

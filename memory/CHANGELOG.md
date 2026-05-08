@@ -1,5 +1,20 @@
 # ACTOOS ONE - Changelog
 
+## [2026-05-08] - Migration Multi-Pays EXÉCUTÉE
+
+### Base de données
+- ✅ Colonne `country_code` ajoutée à `users`, `partners`, `orders`, `drivers`
+- ✅ Table `countries` créée (10 pays d'Afrique de l'Ouest)
+- ✅ Index créés pour performance des requêtes par pays
+- ✅ Partenaires Bamako → `country_code = 'ML'`
+- ✅ Partenaires Dakar → `country_code = 'SN'`
+
+### Résultat
+- 🇲🇱 Mali: 16 restaurants actifs
+- 🇸🇳 Sénégal: 4 restaurants actifs (24 menu items)
+
+---
+
 ## [2026-05-08] - Lancement Sénégal (Dakar)
 
 ### Ajouté
