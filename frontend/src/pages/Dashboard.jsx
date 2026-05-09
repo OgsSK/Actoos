@@ -353,11 +353,24 @@ const AlertCard = ({ alerts }) => {
   return (
     <Card className="border-slate-200">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Bell className="w-4 h-4" />
-          Alertes
-          <Badge variant="destructive" className="ml-auto">{alerts.length}</Badge>
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Bell className="w-4 h-4" />
+            Alertes
+            <Badge variant="destructive" className="ml-2">{alerts.length}</Badge>
+          </CardTitle>
+          {alerts.length > 3 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/dashboard/interventions?filter=late')}
+              data-testid="view-all-alerts"
+            >
+              Voir tout ({alerts.length})
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="pt-0">
         <div className="space-y-2">
@@ -373,6 +386,14 @@ const AlertCard = ({ alerts }) => {
               <ChevronRight className="w-4 h-4 text-slate-400" />
             </div>
           ))}
+          {alerts.length > 5 && (
+            <div 
+              className="text-center text-sm text-slate-500 py-2 hover:text-emerald-600 cursor-pointer"
+              onClick={() => navigate('/dashboard/interventions?filter=late')}
+            >
+              + {alerts.length - 5} autres alertes
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

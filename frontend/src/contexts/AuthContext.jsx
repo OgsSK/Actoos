@@ -160,6 +160,128 @@ export const AuthProvider = ({ children }) => {
   
   // Track if we've attempted to fetch user data this session
   const fetchAttempted = useRef(false);
+  
+  // PWA Session Recovery: Check Supabase session on app start
+  // This helps recover session when iOS Safari clears localStorage
+  useEffect(() => {
+    const recoverSession = async () => {
+      // If we already have a valid token and user, skip recovery
+      if (token && user && !isTokenExpired(token)) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        // Check if Supabase has a valid session (persisted in its own storage key)
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error || !session) {
+          console.log('[Auth] No Supabase session found');
+          setLoading(false);
+          return;
+        }
+        
+        console.log('[Auth] Found Supabase session, recovering...');
+        
+        // We have a Supabase session, recover user data
+        const authToken = session.access_token;
+        const authUserId = session.user.id;
+        const authEmail = session.user.email;
+        
+        // Fetch user data from users table
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authUserId)
+          .single();
+        
+        if (userError || !userData) {
+          // Try by email
+          const { data: userByEmail } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', authEmail?.toLowerCase())
+            .single();
+          
+          if (!userByEmail) {
+            console.log('[Auth] User not found in database');
+            setLoading(false);
+            return;
+          }
+          
+          // Fetch entreprise
+          const { data: entData } = await supabase
+            .from('entreprises')
+            .select('*')
+            .eq('id', userByEmail.entreprise_id)
+            .single();
+          
+          // Restore session
+          safeStorage.setItem('token', authToken);
+          safeStorage.setItem('user', JSON.stringify(userByEmail));
+          safeStorage.setItem('entreprise', JSON.stringify(entData));
+          
+          setToken(authToken);
+          setUser(userByEmail);
+          setEntreprise(entData);
+          
+          console.log('[Auth] Session recovered successfully from Supabase');
+          setLoading(false);
+          return;
+        }
+        
+        // Fetch entreprise
+        const { data: entData } = await supabase
+          .from('entreprises')
+          .select('*')
+          .eq('id', userData.entreprise_id)
+          .single();
+        
+        // Restore session
+        safeStorage.setItem('token', authToken);
+        safeStorage.setItem('user', JSON.stringify(userData));
+        safeStorage.setItem('entreprise', JSON.stringify(entData));
+        
+        setToken(authToken);
+        setUser(userData);
+        setEntreprise(entData);
+        
+        console.log('[Auth] Session recovered successfully from Supabase');
+        
+      } catch (err) {
+        console.error('[Auth] Session recovery error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    recoverSession();
+    
+    // Listen for Supabase auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[Auth] Supabase auth event:', event);
+      
+      if (event === 'SIGNED_OUT') {
+        // Clear our local state when Supabase signs out
+        safeStorage.removeItem('token');
+        safeStorage.removeItem('user');
+        safeStorage.removeItem('entreprise');
+        setToken(null);
+        setUser(null);
+        setEntreprise(null);
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Update our token when Supabase refreshes it
+        const newToken = session.access_token;
+        safeStorage.setItem('token', newToken);
+        setToken(newToken);
+        console.log('[Auth] Token refreshed by Supabase');
+      }
+    });
+    
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []); // Run once on mount
 
   // Create axios instance with memoization to prevent recreating on each render
   const api = useMemo(() => {
