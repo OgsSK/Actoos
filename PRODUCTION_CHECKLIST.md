@@ -25,9 +25,12 @@
 ### ✅ Fait
 - [x] Structure VAPID keys configurée
 - [x] Service Worker pour PWA
+- [x] Hook `usePushNotifications` fonctionnel
+- [x] Table `push_subscriptions` dans Supabase
+- [x] Bouton toggle dans TechnicianApp
 
-### 🔴 À Faire
-- [ ] **Firebase Cloud Messaging** - Installer et configurer
+### 🟡 À Tester Manuellement
+- [ ] **Test sur mobile réel** - Activer les notifications sur votre iPhone/Android
 - [ ] **Email Notifications** - Configurer Resend avec votre domaine
 - [ ] **SMS Notifications** - Compléter numéro Twilio (+32XXXXXXXXX → vrai numéro)
 
@@ -176,8 +179,8 @@
 ## PRIORITÉ POUR LANCEMENT
 
 ### Phase 1 - Critique (Avant lancement)
-1. 🔴 Firebase Push Notifications
-2. 🔴 RLS Policies Supabase
+1. ✅ Push Notifications (infrastructure prête)
+2. 🟡 RLS Policies Supabase (désactivé pour dev, à réactiver avec policies sécurisées)
 3. 🔴 CORS restrictif
 4. 🔴 Domaine custom
 5. 🔴 Pages légales (CGU, CGV, Confidentialité)
