@@ -263,19 +263,19 @@ export const devisApi = {
   },
 
   create: async (devis) => {
-    // Generate numero
+    // Generate numero_devis
     const { count } = await supabase
       .from('devis')
       .select('id', { count: 'exact', head: true })
       .eq('entreprise_id', devis.entreprise_id);
     
-    const numero = `D-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`;
+    const numero_devis = `D-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`;
     
     const { data, error } = await supabase
       .from('devis')
       .insert({
         ...devis,
-        numero,
+        numero_devis,
         statut: 'brouillon',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

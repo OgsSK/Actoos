@@ -2382,8 +2382,8 @@ export const TechnicianApp = () => {
     try {
       await devisApi.create({
         ...data,
-        entreprise_id: entreprise?.id,
-        created_by: user?.id
+        entreprise_id: entreprise?.id
+        // Note: created_by column does not exist in Supabase devis table
       });
       toast.success('Devis créé');
       setShowCreateDevis(false);
