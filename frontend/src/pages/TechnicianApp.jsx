@@ -2877,18 +2877,18 @@ export const TechnicianApp = () => {
                 {/* Unclaim Button - Only for assigned interventions in planifiee status */}
                 {selectedIntervention.statut === 'planifiee' && 
                  selectedIntervention.technicien_id === user?.id && (
-                  <div className="pt-2 border-t border-slate-200">
+                  <div className="pt-3 border-t border-slate-200 mt-2">
                     <Button
                       variant="outline"
-                      className="w-full text-amber-600 border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                      className="w-full text-amber-600 border-amber-300 hover:bg-amber-50 hover:text-amber-700 text-sm"
                       onClick={() => handleUnclaimIntervention(selectedIntervention.id)}
                       data-testid="unclaim-intervention-btn"
                     >
-                      <XCircle className="w-4 h-4 mr-2" />
-                      Annuler mon acceptation
+                      <XCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span>Annuler mon acceptation</span>
                     </Button>
                     <p className="text-xs text-slate-400 text-center mt-2">
-                      L'intervention redeviendra disponible pour tous les techniciens
+                      L'intervention redeviendra disponible
                     </p>
                   </div>
                 )}
