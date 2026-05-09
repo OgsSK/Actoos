@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Black background for Admin variant -->
+  <rect width="512" height="512" fill="#000000"/>
+  
+  <!-- Green "A" logo with gradient -->
+  <defs>
+    <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22C55E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#15803D;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main "A" shape -->
+  <path d="M256 80L380 432H320L296 360H216L192 432H132L256 80Z M256 180L228 300H284L256 180Z" fill="url(#greenGradient)"/>
+  
+  <!-- Diagonal swoosh/arrow through the A -->
+  <path d="M180 320L340 130L360 160L200 350L180 320Z" fill="url(#greenGradient)" opacity="0.9"/>
+</svg>
