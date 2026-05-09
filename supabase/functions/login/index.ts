@@ -1,8 +1,8 @@
 // Supabase Edge Function: Login avec DEBUG COMPLET
-// Version 2.1 - Fix bcryptjs import + better logging
+// Version 2.2 - Fix bcrypt avec esm.sh (compatible Edge Functions)
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+import { compare } from "https://esm.sh/bcryptjs@2.4.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,7 +42,7 @@ serve(async (req) => {
   const debugInfo: Record<string, unknown> = { 
     steps: [],
     timestamp: new Date().toISOString(),
-    version: "2.1"
+    version: "2.2"
   };
 
   try {
@@ -135,10 +135,11 @@ serve(async (req) => {
     debugInfo.passwordHashLength = user.password_hash?.length || 0;
     debugInfo.passwordHashPrefix = user.password_hash?.substring(0, 10) + "...";
 
-    // Step 6: Verify password using Deno bcrypt
+    // Step 6: Verify password using bcryptjs (esm.sh - compatible with Edge Functions)
     let passwordValid = false;
     try {
-      passwordValid = await bcrypt.compare(password, user.password_hash);
+      // bcryptjs.compare returns a Promise
+      passwordValid = await compare(password, user.password_hash);
       debugInfo.steps.push("6. Password comparison done");
       debugInfo.passwordValid = passwordValid;
     } catch (bcryptError) {
