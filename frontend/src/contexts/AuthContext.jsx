@@ -48,7 +48,7 @@ const TOKEN_CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour (not every minu
 let cachedAppVariant = null;
 
 const getAppVariant = () => {
-  // Return cached value if already determined
+  // Return cached value if already determined this session
   if (cachedAppVariant) {
     return cachedAppVariant;
   }
@@ -57,29 +57,33 @@ const getAppVariant = () => {
   const savedVariant = localStorage.getItem('app_variant');
   const pwaRole = localStorage.getItem('pwa_role');
   
-  // Priority 1: If we're on a /tech path, it's the Tech app
+  // Priority 1: Use saved variant from previous session (most reliable for PWA)
+  if (savedVariant === 'tech' || savedVariant === 'admin') {
+    cachedAppVariant = savedVariant;
+    console.log(`[Auth] Using saved app_variant: ${savedVariant}`);
+    return cachedAppVariant;
+  }
+  
+  // Priority 2: If we're on a /tech path, it's the Tech app
   if (path.startsWith('/tech')) {
     cachedAppVariant = 'tech';
     localStorage.setItem('app_variant', 'tech');
+    console.log('[Auth] Detected /tech path, setting variant to tech');
     return cachedAppVariant;
   }
   
-  // Priority 2: If PWA role is set to technician
+  // Priority 3: If PWA role is set to technician
   if (pwaRole === 'technicien' || pwaRole === 'tech') {
     cachedAppVariant = 'tech';
     localStorage.setItem('app_variant', 'tech');
-    return cachedAppVariant;
-  }
-  
-  // Priority 3: Use saved variant from previous session
-  if (savedVariant === 'tech' || savedVariant === 'admin') {
-    cachedAppVariant = savedVariant;
+    console.log('[Auth] Detected pwa_role technician, setting variant to tech');
     return cachedAppVariant;
   }
   
   // Default to admin
   cachedAppVariant = 'admin';
   localStorage.setItem('app_variant', 'admin');
+  console.log('[Auth] Defaulting to admin variant');
   return cachedAppVariant;
 };
 
