@@ -398,8 +398,9 @@ export const AuthProvider = ({ children }) => {
   }, [entreprise?.couleur_primaire]);
 
   const login = async (email, password) => {
-    // Use Supabase Edge Function for ultra-fast login
+    // Try Edge Function first, fallback to Supabase native auth
     try {
+      // First try Edge Function for existing users
       const response = await fetch(`${SUPABASE_URL}/functions/v1/login`, {
         method: 'POST',
         headers: {
@@ -411,27 +412,105 @@ export const AuthProvider = ({ children }) => {
       
       const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Erreur de connexion');
+      if (response.ok) {
+        // Check if 2FA is required
+        if (data.requires_2fa) {
+          return {
+            requires_2fa: true,
+            method: data.method,
+            temp_token: data.temp_token
+          };
+        }
+        
+        // The Edge Function returns 'token', not 'access_token'
+        const authToken = data.token || data.access_token;
+        const userData = data.user;
+        const entData = data.entreprise;
+        
+        if (authToken && userData) {
+          // Persist all auth data to localStorage
+          safeStorage.setItem('token', authToken);
+          safeStorage.setItem('user', JSON.stringify(userData));
+          safeStorage.setItem('entreprise', JSON.stringify(entData));
+          
+          setToken(authToken);
+          setUser(userData);
+          setEntreprise(entData);
+          
+          // Update PWA theme based on user role
+          updatePWAForRole(userData.role);
+          
+          return userData;
+        }
       }
       
-      // Check if 2FA is required
-      if (data.requires_2fa) {
-        return {
-          requires_2fa: true,
-          method: data.method,
-          temp_token: data.temp_token
-        };
+      // Fallback: Use Supabase native auth
+      console.log('Edge Function failed, trying Supabase native auth...');
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (authError) {
+        throw new Error(authError.message || 'Erreur de connexion');
       }
       
-      // The Edge Function returns 'token', not 'access_token'
-      const authToken = data.token || data.access_token;
-      const userData = data.user;
-      const entData = data.entreprise;
-      
-      if (!authToken || !userData) {
-        throw new Error('Réponse invalide du serveur');
+      if (!authData.session) {
+        throw new Error('Session invalide');
       }
+      
+      const authToken = authData.session.access_token;
+      const authUserId = authData.user.id;
+      
+      // Fetch user data from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUserId)
+        .single();
+      
+      if (userError || !userData) {
+        // Try by email if ID doesn't match
+        const { data: userByEmail, error: emailError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email.toLowerCase())
+          .single();
+        
+        if (emailError || !userByEmail) {
+          throw new Error('Utilisateur non trouvé dans la base');
+        }
+        
+        // Use user found by email
+        const entId = userByEmail.entreprise_id;
+        
+        // Fetch entreprise
+        const { data: entData } = await supabase
+          .from('entreprises')
+          .select('*')
+          .eq('id', entId)
+          .single();
+        
+        // Persist all auth data to localStorage
+        safeStorage.setItem('token', authToken);
+        safeStorage.setItem('user', JSON.stringify(userByEmail));
+        safeStorage.setItem('entreprise', JSON.stringify(entData));
+        
+        setToken(authToken);
+        setUser(userByEmail);
+        setEntreprise(entData);
+        
+        updatePWAForRole(userByEmail.role);
+        
+        return userByEmail;
+      }
+      
+      // Fetch entreprise
+      const { data: entData } = await supabase
+        .from('entreprises')
+        .select('*')
+        .eq('id', userData.entreprise_id)
+        .single();
       
       // Persist all auth data to localStorage
       safeStorage.setItem('token', authToken);
@@ -442,10 +521,10 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setEntreprise(entData);
       
-      // Update PWA theme based on user role
       updatePWAForRole(userData.role);
       
       return userData;
+      
     } catch (error) {
       console.error('Login error:', error);
       throw error;
