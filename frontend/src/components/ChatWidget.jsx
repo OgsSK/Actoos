@@ -16,7 +16,7 @@ import {
 } from './ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
 import { 
-  MessageCircle, Send, X, User, Clock, ChevronLeft, Loader2 
+  MessageCircle, Send, X, User, Clock, ChevronLeft, Loader2, Pencil, Check, XCircle 
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -75,12 +75,23 @@ const formatMessageTime = (dateStr) => {
   return format(new Date(dateStr), 'HH:mm');
 };
 
-// Single Message Component
-const ChatMessage = ({ message, isOwn, showSender }) => {
+// Check if message is within 15-minute edit window
+const isEditable = (createdAt) => {
+  const created = new Date(createdAt);
+  const now = new Date();
+  const diffMinutes = (now - created) / 1000 / 60;
+  return diffMinutes <= 15;
+};
+
+// Single Message Component with Edit capability
+const ChatMessage = ({ message, isOwn, showSender, onEdit, editingId, onSaveEdit, onCancelEdit, editValue, setEditValue }) => {
+  const canEdit = isOwn && isEditable(message.created_at);
+  const isEditing = editingId === message.id;
+  
   return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
+    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2 group`}>
       <div 
-        className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+        className={`max-w-[80%] rounded-2xl px-4 py-2 relative ${
           isOwn 
             ? 'bg-emerald-600 text-white rounded-br-md' 
             : 'bg-slate-100 text-slate-900 rounded-bl-md'
@@ -91,10 +102,59 @@ const ChatMessage = ({ message, isOwn, showSender }) => {
             {message.sender_name}
           </p>
         )}
-        <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-        <p className={`text-xs mt-1 ${isOwn ? 'text-emerald-100' : 'text-slate-400'}`}>
-          {formatMessageTime(message.created_at)}
-        </p>
+        
+        {isEditing ? (
+          <div className="space-y-2">
+            <textarea
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              className="w-full p-2 text-sm rounded border border-slate-300 text-slate-900 resize-none"
+              rows={2}
+              autoFocus
+            />
+            <div className="flex gap-1 justify-end">
+              <button
+                onClick={onCancelEdit}
+                className="p-1 rounded hover:bg-slate-200 text-slate-600"
+                title="Annuler"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => onSaveEdit(message.id, editValue)}
+                className="p-1 rounded hover:bg-emerald-100 text-emerald-600"
+                title="Enregistrer"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+            <div className={`flex items-center gap-2 mt-1 ${isOwn ? 'text-emerald-100' : 'text-slate-400'}`}>
+              <span className="text-xs">
+                {formatMessageTime(message.created_at)}
+              </span>
+              {message.is_edited && (
+                <span className="text-xs italic">(modifié)</span>
+              )}
+            </div>
+          </>
+        )}
+        
+        {/* Edit button - only visible on hover for own editable messages */}
+        {canEdit && !isEditing && (
+          <button
+            onClick={() => onEdit(message)}
+            className={`absolute -top-2 -right-2 p-1 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity ${
+              isOwn ? 'bg-emerald-700 hover:bg-emerald-800 text-white' : 'bg-white hover:bg-slate-100 text-slate-600'
+            }`}
+            title="Modifier (15 min max)"
+          >
+            <Pencil className="w-3 h-3" />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -162,10 +222,16 @@ const ConversationList = ({ conversations, onSelect, loading }) => {
 const MessageThread = ({ 
   conversation, 
   messages, 
-  onSend, 
+  onSend,
+  onEdit, 
   onBack, 
   loading,
-  sendingMessage 
+  sendingMessage,
+  editingId,
+  editValue,
+  setEditValue,
+  onSaveEdit,
+  onCancelEdit
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef(null);
@@ -235,8 +301,14 @@ const MessageThread = ({
                 <ChatMessage 
                   key={msg.id} 
                   message={msg} 
-                  isOwn={msg.sender_role === conversation.currentUserRole}
+                  isOwn={msg.sender_id === conversation.currentUserId}
                   showSender={idx === 0 || msgs[idx - 1]?.sender_id !== msg.sender_id}
+                  onEdit={onEdit}
+                  editingId={editingId}
+                  editValue={editValue}
+                  setEditValue={setEditValue}
+                  onSaveEdit={onSaveEdit}
+                  onCancelEdit={onCancelEdit}
                 />
               ))}
             </div>
@@ -285,6 +357,10 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Edit message state
+  const [editingId, setEditingId] = useState(null);
+  const [editValue, setEditValue] = useState('');
 
   // Load conversations from Supabase
   const loadConversations = useCallback(async () => {
@@ -441,6 +517,65 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
     }
   };
 
+  // Start editing a message
+  const handleStartEdit = (message) => {
+    setEditingId(message.id);
+    setEditValue(message.content);
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditValue('');
+  };
+
+  // Save edited message via Supabase
+  const handleSaveEdit = async (messageId, newContent) => {
+    if (!newContent.trim()) {
+      toast.error('Le message ne peut pas être vide');
+      return;
+    }
+    
+    try {
+      // Try to update with is_edited fields
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({
+          content: newContent.trim(),
+          is_edited: true,
+          edited_at: new Date().toISOString()
+        })
+        .eq('id', messageId)
+        .eq('sender_id', user.id);
+      
+      // If error, try without is_edited fields (columns may not exist)
+      if (error) {
+        console.warn('Edit with is_edited failed, trying content only:', error.message);
+        const { error: fallbackError } = await supabase
+          .from('chat_messages')
+          .update({ content: newContent.trim() })
+          .eq('id', messageId)
+          .eq('sender_id', user.id);
+        
+        if (fallbackError) throw fallbackError;
+      }
+      
+      // Update message in local state (always mark as edited locally for UI)
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, content: newContent.trim(), is_edited: true, edited_at: new Date().toISOString() }
+          : msg
+      ));
+      
+      setEditingId(null);
+      setEditValue('');
+      toast.success('Message modifié');
+    } catch (error) {
+      console.error('Error editing message:', error);
+      toast.error('Erreur lors de la modification');
+    }
+  };
+
   // Handle real-time chat messages
   const { isConnected } = useRealtimeEvents({
     enabled: isOpen,
@@ -481,21 +616,25 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
     if (isTech && conversations.length > 0 && !selectedConversation) {
       setSelectedConversation({
         ...conversations[0],
-        currentUserRole: 'tech'
+        currentUserRole: 'tech',
+        currentUserId: user?.id
       });
     }
-  }, [isTech, conversations, selectedConversation]);
+  }, [isTech, conversations, selectedConversation, user?.id]);
 
   const handleSelectConversation = (conv) => {
     setSelectedConversation({
       ...conv,
-      currentUserRole: user?.role || 'admin'
+      currentUserRole: user?.role || 'admin',
+      currentUserId: user?.id
     });
   };
 
   const handleBack = () => {
     setSelectedConversation(null);
     setMessages([]);
+    setEditingId(null);
+    setEditValue('');
   };
 
   return (
@@ -517,9 +656,15 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
               conversation={selectedConversation}
               messages={messages}
               onSend={handleSendMessage}
+              onEdit={handleStartEdit}
               onBack={isTech ? onClose : handleBack}
               loading={messagesLoading}
               sendingMessage={sendingMessage}
+              editingId={editingId}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onSaveEdit={handleSaveEdit}
+              onCancelEdit={handleCancelEdit}
             />
           ) : (
             <ConversationList

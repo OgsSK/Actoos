@@ -24,6 +24,11 @@ class MessageCreate(BaseModel):
     intervention_id: Optional[str] = None  # Link to intervention if relevant
 
 
+class MessageUpdate(BaseModel):
+    """Message update model - Only content can be modified"""
+    content: str
+
+
 class MessageResponse(BaseModel):
     """Message response model"""
     id: str
@@ -35,6 +40,8 @@ class MessageResponse(BaseModel):
     intervention_id: Optional[str]
     read: bool
     created_at: str
+    is_edited: Optional[bool] = False
+    edited_at: Optional[str] = None
 
 
 @router.get("/conversations")
@@ -253,6 +260,90 @@ async def send_message(
         )
     
     return serialize_doc(message)
+
+
+@router.put("/messages/{message_id}")
+async def update_message(
+    message_id: str,
+    data: MessageUpdate,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update a message content.
+    
+    Rules:
+    - Only the sender can edit their message
+    - Messages can only be edited within 15 minutes of creation
+    - Deletion is NOT allowed (use this endpoint to modify instead)
+    """
+    user_id = current_user["user_id"]
+    entreprise_id = current_user["entreprise_id"]
+    
+    # Find the message
+    message = await db.chat_messages.find_one({
+        "id": message_id,
+        "entreprise_id": entreprise_id
+    })
+    
+    if not message:
+        raise HTTPException(status_code=404, detail="Message non trouvé")
+    
+    # Check if user is the sender
+    if message["sender_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Vous ne pouvez modifier que vos propres messages")
+    
+    # Check if message is within 15-minute edit window
+    created_at = datetime.fromisoformat(message["created_at"].replace('Z', '+00:00'))
+    now = datetime.now(timezone.utc)
+    time_diff = (now - created_at).total_seconds()
+    
+    if time_diff > 900:  # 900 seconds = 15 minutes
+        raise HTTPException(
+            status_code=400, 
+            detail="La modification n'est plus possible après 15 minutes"
+        )
+    
+    # Update the message
+    now_iso = now.isoformat()
+    result = await db.chat_messages.update_one(
+        {"id": message_id, "entreprise_id": entreprise_id},
+        {
+            "$set": {
+                "content": data.content,
+                "is_edited": True,
+                "edited_at": now_iso
+            }
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Erreur lors de la modification")
+    
+    # Get updated message
+    updated_message = await db.chat_messages.find_one(
+        {"id": message_id},
+        {"_id": 0}
+    )
+    
+    # Broadcast update event
+    event_data = {
+        "message_id": message_id,
+        "content": data.content,
+        "is_edited": True,
+        "edited_at": now_iso,
+        "action": "updated"
+    }
+    
+    background_tasks.add_task(
+        broadcast_event,
+        entreprise_id,
+        "chat_message_updated",
+        event_data,
+        None
+    )
+    
+    return serialize_doc(updated_message)
 
 
 @router.get("/unread-count")

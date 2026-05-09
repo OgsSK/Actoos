@@ -7,6 +7,27 @@
 ---
 
 
+## ACTOOS PRO - Chat Edit Feature (9 Mai 2026)
+
+### Fonctionnalité Implémentée
+- **Modification des messages** : L'expéditeur peut modifier ses propres messages pendant 15 minutes max
+- **Tag "(modifié)"** : S'affiche en italique à côté de l'heure pour les messages édités
+- **Suppression interdite** : Aucun bouton de suppression n'est disponible
+
+### Fichiers Modifiés
+- `/app/frontend/src/components/ChatWidget.jsx` - UI d'édition complète
+- `/app/backend/routers/chat.py` - Endpoint PUT /messages/{id} avec validation 15min
+
+### Action Requise pour l'Utilisateur
+Pour persister le tag "(modifié)" après rechargement, ajouter dans Supabase:
+```sql
+ALTER TABLE chat_messages 
+ADD COLUMN is_edited BOOLEAN DEFAULT FALSE,
+ADD COLUMN edited_at TIMESTAMPTZ;
+```
+
+---
+
 ## ACTOOS PRO - UI Branding Fix (9 Mai 2026)
 
 ### Problème Résolu
