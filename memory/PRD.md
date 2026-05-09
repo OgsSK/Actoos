@@ -6,6 +6,28 @@
 
 ---
 
+## ACTOOS PRO - Comptes Test (9 Mai 2026)
+
+### Comptes Admin (pour tester les plans)
+| Email | Password | Plan | Entreprise |
+|-------|----------|------|------------|
+| `contact@actoos.com` | `Salifkane&&7` | Enterprise | Test Enterprise |
+| `contact+pro@actoos.com` | `Salifkane&&7` | Pro | Test Pro |
+| `contact+startup@actoos.com` | `Salifkane&&7` | Startup | Test Startup |
+
+### Comptes Technicien
+| Email | Password | Plan | Entreprise |
+|-------|----------|------|------------|
+| `tech@actoos.com` | `Salifkane&&7` | Enterprise | Test Enterprise |
+| `tech+pro@actoos.com` | `Salifkane&&7` | Pro | Test Pro |
+| `tech+startup@actoos.com` | `Salifkane&&7` | Startup | Test Startup |
+
+### Accès Super Admin
+- Visible dans le sidebar pour `contact@actoos.com` et `salifkane612@gmail.com`
+- URL directe : `/super-admin`
+
+---
+
 ## ACTOOS PRO - Bug Fixes (9 Mai 2026 - Session 2)
 
 ### 1. Logout Redirect Fix ✅
