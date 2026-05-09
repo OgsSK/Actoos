@@ -1,3 +1,58 @@
+# 🔧 Guide de Déploiement - Edge Function Login
+
+## Étape 1: Vérifier les Secrets (Variables d'environnement)
+
+### Dans Supabase Dashboard:
+1. Allez sur **https://supabase.com/dashboard**
+2. Sélectionnez votre projet **ACTOOS**
+3. Dans le menu gauche: **Project Settings** (⚙️ icône engrenage en bas)
+4. Cliquez sur **Edge Functions**
+5. Cliquez sur **Manage Secrets**
+
+### Secrets REQUIS:
+Les secrets suivants doivent être définis :
+
+| Nom du Secret | Description | Où le trouver |
+|---------------|-------------|---------------|
+| `SUPABASE_URL` | URL de votre projet | **Project Settings → API → Project URL** |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clé service (bypass RLS) | **Project Settings → API → service_role key** (⚠️ secret!) |
+| `JWT_SECRET` | Clé pour signer les JWT | Choisissez une chaîne aléatoire longue (32+ caractères) |
+
+### ⚠️ IMPORTANT:
+- `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` sont normalement **auto-configurés** par Supabase
+- Si ils ne sont pas définis, ajoutez-les manuellement
+
+---
+
+## Étape 2: Déployer la nouvelle version
+
+### Option A: Via Supabase CLI (recommandé)
+```bash
+# Installer Supabase CLI si pas encore fait
+npm install -g supabase
+
+# Se connecter
+supabase login
+
+# Lier le projet
+supabase link --project-ref zmngftlkdimwvkxmduvr
+
+# Déployer la fonction login
+supabase functions deploy login
+```
+
+### Option B: Via le Dashboard (si CLI ne marche pas)
+1. Allez dans **Edge Functions** dans votre Dashboard
+2. Cliquez sur la fonction **login**
+3. Cliquez sur **Edit** ou **Update**
+4. Copiez-collez le code ci-dessous
+5. Cliquez sur **Deploy**
+
+---
+
+## Code à déployer (Version 2.1)
+
+```typescript
 // Supabase Edge Function: Login avec DEBUG COMPLET
 // Version 2.1 - Fix bcryptjs import + better logging
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -219,3 +274,40 @@ serve(async (req) => {
     );
   }
 });
+```
+
+---
+
+## Étape 3: Tester après déploiement
+
+Une fois déployé, testez avec:
+```bash
+curl -X POST "https://zmngftlkdimwvkxmduvr.supabase.co/functions/v1/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"contact@actoos.com","password":"Salifkane&&7"}'
+```
+
+### Réponse attendue en cas de succès:
+```json
+{
+  "status": "success",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": { ... },
+  "entreprise": { ... },
+  "debug": {
+    "steps": ["1. Request parsed OK", "2. Input validation OK", ...],
+    "version": "2.1"
+  }
+}
+```
+
+### En cas d'erreur, le `debug` vous dira exactement où ça coince:
+- Step 3 failed = Variables d'environnement manquantes
+- Step 5 failed = Utilisateur non trouvé dans la DB
+- Step 6 failed = Mot de passe incorrect ou problème bcrypt
+
+---
+
+## 🆘 Si ça ne fonctionne toujours pas
+
+Partagez-moi la réponse complète du curl (avec le champ `debug`) et je pourrai vous aider à identifier le problème exact.
