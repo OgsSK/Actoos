@@ -359,7 +359,7 @@ const MessageThread = ({
             disabled={sendingMessage}
           />
         ) : (
-          <form onSubmit={handleSend} className="flex gap-2">
+          <form onSubmit={handleSend} className="flex gap-2 items-center">
             <Input
               ref={inputRef}
               value={newMessage}
@@ -370,36 +370,38 @@ const MessageThread = ({
               data-testid="chat-input"
             />
             
-            {/* Mic button - only show when no text is entered */}
-            {!newMessage.trim() && (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsRecordingMode(true)}
-                disabled={sendingMessage}
-                className="h-10 w-10 p-0 rounded-full hover:bg-emerald-50 hover:text-emerald-600"
-                title="Message vocal"
-                data-testid="voice-record-btn"
-              >
-                <Mic className="w-5 h-5" />
-              </Button>
-            )}
+            {/* Always show mic button */}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsRecordingMode(true)}
+              disabled={sendingMessage || newMessage.trim().length > 0}
+              className={`h-10 w-10 p-0 rounded-full flex-shrink-0 ${
+                newMessage.trim().length > 0 
+                  ? 'opacity-30 cursor-not-allowed' 
+                  : 'hover:bg-emerald-50 hover:text-emerald-600'
+              }`}
+              title="Message vocal"
+              data-testid="voice-record-btn"
+            >
+              <Mic className="w-5 h-5" />
+            </Button>
             
-            {/* Send button - only show when text is entered */}
-            {newMessage.trim() && (
-              <Button 
-                type="submit" 
-                disabled={sendingMessage}
-                className="bg-emerald-600 hover:bg-emerald-700"
-                data-testid="send-message-btn"
-              >
-                {sendingMessage ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
-            )}
+            {/* Always show send button */}
+            <Button 
+              type="submit" 
+              disabled={!newMessage.trim() || sendingMessage}
+              className={`bg-emerald-600 hover:bg-emerald-700 flex-shrink-0 ${
+                !newMessage.trim() ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              data-testid="send-message-btn"
+            >
+              {sendingMessage ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
           </form>
         )}
       </div>
@@ -587,7 +589,7 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
       
       // Generate unique filename
       const timestamp = Date.now();
-      const extension = audioBlob.type.includes('webm') ? 'webm' : 'mp4';
+      const extension = audioBlob.type.includes('webm') ? 'webm' : 'm4a';
       const fileName = `voice_${user.id}_${timestamp}.${extension}`;
       const filePath = `${user.entreprise_id}/voice_notes/${fileName}`;
       
@@ -596,13 +598,22 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
         .from('chat-attachments')
         .upload(filePath, audioBlob, {
           contentType: audioBlob.type,
-          cacheControl: '3600'
+          cacheControl: '3600',
+          upsert: false
         });
       
       if (uploadError) {
-        // If bucket doesn't exist, try creating message without storage
         console.error('Storage upload error:', uploadError);
-        throw new Error('Impossible d\'envoyer le message vocal. Vérifiez la configuration du stockage.');
+        
+        // Check if it's a bucket not found error
+        if (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')) {
+          throw new Error('Le bucket de stockage n\'existe pas. Créez "chat-attachments" dans Supabase Storage.');
+        }
+        // Check if it's a permission error
+        if (uploadError.message?.includes('policy') || uploadError.message?.includes('permission')) {
+          throw new Error('Permission refusée. Vérifiez les politiques RLS du bucket.');
+        }
+        throw new Error(`Erreur d'upload: ${uploadError.message}`);
       }
       
       // Get public URL
@@ -623,16 +634,38 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
           is_read: false,
           message_type: 'voice',
           audio_url: audioUrl,
-          audio_duration: duration,
+          audio_duration: Math.round(duration),
           created_at: new Date().toISOString()
         })
         .select()
         .single();
       
-      if (error) throw error;
-      
-      // Add message to list
-      setMessages(prev => [...prev, data]);
+      if (error) {
+        // If columns don't exist, try without voice-specific columns
+        if (error.message?.includes('column')) {
+          console.warn('Voice columns missing, trying basic insert');
+          const { data: basicData, error: basicError } = await supabase
+            .from('chat_messages')
+            .insert({
+              sender_id: user.id,
+              recipient_id: selectedConversation.user_id,
+              content: `🎤 Message vocal (${Math.round(duration)}s) - ${audioUrl}`,
+              entreprise_id: user.entreprise_id,
+              is_read: false,
+              created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+          
+          if (basicError) throw basicError;
+          setMessages(prev => [...prev, basicData]);
+        } else {
+          throw error;
+        }
+      } else {
+        // Add message to list
+        setMessages(prev => [...prev, data]);
+      }
       
       // Update conversation list
       loadConversations();
@@ -717,21 +750,68 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
 
   // Listen for chat_message event manually via the hook
   useEffect(() => {
-    // Refresh conversations and unread count periodically when chat is open
+    // Initial load when chat opens
     if (isOpen) {
       loadConversations();
       loadUnreadCount();
-      
-      const interval = setInterval(() => {
-        if (selectedConversation) {
-          loadMessages(selectedConversation.user_id);
-        }
-        loadUnreadCount();
-      }, 5000);
-      
-      return () => clearInterval(interval);
     }
-  }, [isOpen, selectedConversation, loadConversations, loadMessages, loadUnreadCount]);
+    // Note: We don't poll anymore to avoid scroll issues
+    // Real-time updates will be handled by Supabase subscriptions
+  }, [isOpen, loadConversations, loadUnreadCount]);
+
+  // Subscribe to new messages in real-time (without reloading all messages)
+  useEffect(() => {
+    if (!isOpen || !user?.id) return;
+    
+    const channel = supabase
+      .channel('chat-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Add new message to the list if it's for the current conversation
+          const newMsg = payload.new;
+          if (selectedConversation && 
+              (newMsg.sender_id === selectedConversation.user_id || 
+               newMsg.recipient_id === selectedConversation.user_id)) {
+            setMessages(prev => {
+              // Avoid duplicates
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              return [...prev, newMsg];
+            });
+          }
+          // Refresh unread count
+          loadUnreadCount();
+          // Refresh conversation list for last message preview
+          loadConversations();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_messages',
+        },
+        (payload) => {
+          // Update message in list (for edits)
+          const updatedMsg = payload.new;
+          setMessages(prev => prev.map(m => 
+            m.id === updatedMsg.id ? updatedMsg : m
+          ));
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, user?.id, selectedConversation, loadUnreadCount, loadConversations]);
 
   // Load messages when conversation selected
   useEffect(() => {
