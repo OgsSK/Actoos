@@ -214,10 +214,17 @@ async def api_health_check():
     """Health check via /api/health"""
     return await health_check()
 
-# CORS configuration
+# CORS configuration - Use environment variable for allowed origins
+# In production, set CORS_ORIGINS to your specific domains
+cors_origins_str = os.environ.get("CORS_ORIGINS", "*")
+if cors_origins_str == "*":
+    cors_origins = ["*"]
+else:
+    cors_origins = [origin.strip() for origin in cors_origins_str.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

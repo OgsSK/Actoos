@@ -11,11 +11,11 @@
 - [x] JWT tokens
 - [x] Session persistence PWA
 - [x] Logout sécurisé avec cache clear
+- [x] CORS configurable via .env (restrictif en prod)
 
-### 🔴 À Faire
+### 🟡 À Faire en Production
 - [ ] **RLS Policies** - Réactiver avec policies optimisées
-- [ ] **Rate Limiting** - Limiter les requêtes API (déjà configuré mais à vérifier)
-- [ ] **CORS** - Changer `CORS_ORIGINS="*"` → domaines spécifiques
+- [ ] **CORS_ORIGINS** - Changer "*" → "https://actoos.com,https://app.actoos.com"
 - [ ] **Sanitization** - Vérifier XSS/SQL injection sur tous les inputs
 
 ---
@@ -28,11 +28,10 @@
 - [x] Hook `usePushNotifications` fonctionnel
 - [x] Table `push_subscriptions` dans Supabase
 - [x] Bouton toggle dans TechnicianApp
+- [x] Email via Resend (`noreply@actoos.com`)
 
-### 🟡 À Tester Manuellement
-- [ ] **Test sur mobile réel** - Activer les notifications sur votre iPhone/Android
-- [ ] **Email Notifications** - Configurer Resend avec votre domaine
-- [ ] **SMS Notifications** - Compléter numéro Twilio (+32XXXXXXXXX → vrai numéro)
+### ⏸️ Reporté
+- [ ] **SMS Notifications** - Reporté (utilisation Push + Email uniquement)
 
 ---
 
@@ -106,13 +105,15 @@
 
 ## 8. ⚖️ LÉGAL & CONFORMITÉ
 
-### 🔴 À Faire
-- [ ] **Mentions Légales** - Page /mentions-legales
-- [ ] **CGU** - Conditions Générales d'Utilisation
-- [ ] **CGV** - Conditions Générales de Vente
-- [ ] **Politique de Confidentialité** - RGPD compliant
-- [ ] **Cookies** - Bandeau cookie consent ✅ (déjà fait)
-- [ ] **DPA** - Data Processing Agreement pour clients B2B
+### ✅ Fait
+- [x] **Mentions Légales** - `/legal`
+- [x] **CGU** - Conditions Générales d'Utilisation `/terms`
+- [x] **Politique de Confidentialité** - RGPD compliant `/privacy`
+- [x] **Cookies** - Bandeau cookie consent
+
+### 🟡 À Vérifier
+- [ ] **CGV** - Conditions Générales de Vente (pour facturation)
+- [ ] **DPA** - Data Processing Agreement pour clients B2B (optionnel)
 
 ---
 
