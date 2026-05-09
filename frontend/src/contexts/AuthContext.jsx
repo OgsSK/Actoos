@@ -93,16 +93,23 @@ const updatePWAForRole = (role) => {
 };
 
 // SIMPLIFIED: No migration needed - single session system
-// Clear old migration flags and prefixed keys on first load
+// Clear old prefixed keys ONCE to migrate to simple system
 const cleanupOldSystem = () => {
   try {
-    // Remove all old prefixed and unprefixed keys to start fresh
+    // Check if cleanup was already done
+    const cleanupDone = localStorage.getItem('cleanup_v3_done');
+    if (cleanupDone) return;
+    
+    // Remove all old prefixed keys (but NOT the current session keys!)
     const keysToRemove = [
       'storage_migration_v2', 'app_variant', 'pwa_role',
       'admin_token', 'admin_user', 'admin_entreprise',
       'tech_token', 'tech_user', 'tech_entreprise'
     ];
     keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Mark cleanup as done
+    localStorage.setItem('cleanup_v3_done', 'true');
   } catch (e) {
     console.warn('[Auth] Cleanup failed:', e);
   }
