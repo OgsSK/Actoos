@@ -41,80 +41,21 @@ const getTokenExpiryTime = (token) => {
 
 // Constants for token refresh
 const TOKEN_REFRESH_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // Refresh 7 days before expiry
-const TOKEN_CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour (not every minute)
+const TOKEN_CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour
 
-// Detect which app variant we're in (Admin vs Tech) based on URL
-// This is determined ONCE at app load and cached
-let cachedAppVariant = null;
-
-const getAppVariant = () => {
-  // Return cached value if already determined this session
-  if (cachedAppVariant) {
-    return cachedAppVariant;
-  }
-  
-  const path = window.location.pathname;
-  const savedVariant = localStorage.getItem('app_variant');
-  const pwaRole = localStorage.getItem('pwa_role');
-  
-  // Priority 1: Use saved variant from previous session (most reliable for PWA)
-  if (savedVariant === 'tech' || savedVariant === 'admin') {
-    cachedAppVariant = savedVariant;
-    console.log(`[Auth] Using saved app_variant: ${savedVariant}`);
-    return cachedAppVariant;
-  }
-  
-  // Priority 2: If we're on a /tech path, it's the Tech app
-  if (path.startsWith('/tech')) {
-    cachedAppVariant = 'tech';
-    localStorage.setItem('app_variant', 'tech');
-    console.log('[Auth] Detected /tech path, setting variant to tech');
-    return cachedAppVariant;
-  }
-  
-  // Priority 3: If PWA role is set to technician
-  if (pwaRole === 'technicien' || pwaRole === 'tech') {
-    cachedAppVariant = 'tech';
-    localStorage.setItem('app_variant', 'tech');
-    console.log('[Auth] Detected pwa_role technician, setting variant to tech');
-    return cachedAppVariant;
-  }
-  
-  // Default to admin
-  cachedAppVariant = 'admin';
-  localStorage.setItem('app_variant', 'admin');
-  console.log('[Auth] Defaulting to admin variant');
-  return cachedAppVariant;
-};
-
-// Force re-detection of app variant (used after login when we know the user role)
-const setAppVariant = (variant) => {
-  cachedAppVariant = variant;
-  localStorage.setItem('app_variant', variant);
-  localStorage.setItem('pwa_role', variant === 'tech' ? 'technicien' : 'admin');
-};
-
-// Get storage key prefix based on app variant
-const getStoragePrefix = () => {
-  const variant = getAppVariant();
-  return variant === 'tech' ? 'tech_' : 'admin_';
-};
-
-// Helper: Safe localStorage operations (handles Safari private mode, quota exceeded, etc.)
-// Keys are prefixed by app variant (admin_ or tech_) to allow both PWAs on same device
+// SIMPLIFIED: No more dual sessions. One session at a time.
+// Helper: Safe localStorage operations
 const safeStorage = {
   getItem: (key) => {
     try {
-      const prefix = getStoragePrefix();
-      return localStorage.getItem(prefix + key);
+      return localStorage.getItem(key);
     } catch {
       return null;
     }
   },
   setItem: (key, value) => {
     try {
-      const prefix = getStoragePrefix();
-      localStorage.setItem(prefix + key, value);
+      localStorage.setItem(key, value);
       return true;
     } catch {
       console.warn('localStorage unavailable, session will not persist');
@@ -123,33 +64,15 @@ const safeStorage = {
   },
   removeItem: (key) => {
     try {
-      const prefix = getStoragePrefix();
-      localStorage.removeItem(prefix + key);
+      localStorage.removeItem(key);
     } catch {
       // Ignore errors
-    }
-  },
-  // Get raw item without prefix (for migration or special cases)
-  getRaw: (key) => {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  setRaw: (key, value) => {
-    try {
-      localStorage.setItem(key, value);
-      return true;
-    } catch {
-      return false;
     }
   }
 };
 
 // Function to update PWA theme based on user role (simplified - single icon)
 const updatePWAForRole = (role) => {
-  const isAdmin = role === 'admin' || role === 'super_admin';
   const isTech = role === 'technicien' || role === 'tech';
   
   // Get DOM elements
@@ -161,81 +84,32 @@ const updatePWAForRole = (role) => {
     if (themeColor) themeColor.content = '#10B981'; // Emerald
     if (appleTitle) appleTitle.content = 'ACTOOS PRO';
     document.title = 'ACTOOS PRO - Technicien';
-    // Save app variant for localStorage prefixing
-    safeStorage.setRaw('app_variant', 'tech');
-  } else if (isAdmin) {
+  } else {
     // Admin  
     if (themeColor) themeColor.content = '#10B981'; // Emerald
     if (appleTitle) appleTitle.content = 'ACTOOS PRO';
     document.title = 'ACTOOS PRO - Admin';
-    // Save app variant for localStorage prefixing
-    safeStorage.setRaw('app_variant', 'admin');
   }
-  
-  // Store the role preference for PWA (using raw to avoid prefix)
-  safeStorage.setRaw('pwa_role', role);
 };
 
-// Migration: Move old unprefixed localStorage keys to new prefixed format
-// This runs once to migrate existing users
-const migrateOldStorageKeys = () => {
+// SIMPLIFIED: No migration needed - single session system
+// Clear old migration flags and prefixed keys on first load
+const cleanupOldSystem = () => {
   try {
-    const migrationDone = localStorage.getItem('storage_migration_v2');
-    if (migrationDone) return;
-    
-    // Check if there are old unprefixed keys
-    const oldToken = localStorage.getItem('token');
-    const oldUser = localStorage.getItem('user');
-    const oldEntreprise = localStorage.getItem('entreprise');
-    
-    if (oldToken || oldUser || oldEntreprise) {
-      // Determine which variant to migrate to based on user role
-      let variant = 'admin';
-      if (oldUser) {
-        try {
-          const userData = JSON.parse(oldUser);
-          if (userData.role === 'technicien' || userData.role === 'tech') {
-            variant = 'tech';
-          }
-        } catch {}
-      }
-      
-      // Also check URL path
-      if (window.location.pathname.startsWith('/tech')) {
-        variant = 'tech';
-      }
-      
-      const prefix = variant === 'tech' ? 'tech_' : 'admin_';
-      
-      // Migrate keys
-      if (oldToken) {
-        localStorage.setItem(prefix + 'token', oldToken);
-        localStorage.removeItem('token');
-      }
-      if (oldUser) {
-        localStorage.setItem(prefix + 'user', oldUser);
-        localStorage.removeItem('user');
-      }
-      if (oldEntreprise) {
-        localStorage.setItem(prefix + 'entreprise', oldEntreprise);
-        localStorage.removeItem('entreprise');
-      }
-      
-      // Save the variant
-      localStorage.setItem('app_variant', variant);
-      
-      console.log(`[Auth] Migrated localStorage to ${variant}_ prefix`);
-    }
-    
-    // Mark migration as done
-    localStorage.setItem('storage_migration_v2', 'true');
+    // Remove all old prefixed and unprefixed keys to start fresh
+    const keysToRemove = [
+      'storage_migration_v2', 'app_variant', 'pwa_role',
+      'admin_token', 'admin_user', 'admin_entreprise',
+      'tech_token', 'tech_user', 'tech_entreprise'
+    ];
+    keysToRemove.forEach(key => localStorage.removeItem(key));
   } catch (e) {
-    console.warn('[Auth] Migration failed:', e);
+    console.warn('[Auth] Cleanup failed:', e);
   }
 };
 
-// Run migration on load
-migrateOldStorageKeys();
+// Run cleanup once
+cleanupOldSystem();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -616,42 +490,31 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Clear ALL auth data from localStorage (both prefixes to ensure clean logout)
-    // Remove with current prefix
-    safeStorage.removeItem('token');
-    safeStorage.removeItem('user');
-    safeStorage.removeItem('entreprise');
-    
-    // Also remove raw keys (no prefix) and opposite prefix keys
-    // This ensures a complete logout regardless of which app they're in
+    // Clear all auth data from localStorage
     try {
-      // Clear admin keys
-      localStorage.removeItem('admin_token');
-      localStorage.removeItem('admin_user');
-      localStorage.removeItem('admin_entreprise');
-      
-      // Clear tech keys
-      localStorage.removeItem('tech_token');
-      localStorage.removeItem('tech_user');
-      localStorage.removeItem('tech_entreprise');
-      
-      // Clear non-prefixed keys (legacy)
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('entreprise');
+      
+      // Also clear any old prefixed keys that might exist
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user');
+      localStorage.removeItem('admin_entreprise');
+      localStorage.removeItem('tech_token');
+      localStorage.removeItem('tech_user');
+      localStorage.removeItem('tech_entreprise');
     } catch (e) {
-      console.warn('Could not clear all localStorage keys:', e);
+      console.warn('Could not clear localStorage:', e);
     }
     
-    // Reset fetchAttempted ref for next session
+    // Reset state
     fetchAttempted.current = false;
-    
     setToken(null);
     setUser(null);
     setEntreprise(null);
     
-    // Redirect to login page
-    window.location.href = '/login';
+    // Force redirect to login page (using replace to prevent back button issues)
+    window.location.replace('/login');
   };
 
   // Currency formatting helpers based on entreprise settings
