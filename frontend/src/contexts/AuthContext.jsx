@@ -257,6 +257,10 @@ export const AuthProvider = ({ children }) => {
       }
       
       try {
+        // Give Supabase storage time to initialize IndexedDB and load cache
+        // This is critical for iOS PWA persistence
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Step 1: Try to recover from IndexedDB if localStorage was cleared
         console.log('[Auth] Checking IndexedDB for persisted session...');
         const idbToken = await safeStorage.getItemAsync('token');
@@ -284,7 +288,7 @@ export const AuthProvider = ({ children }) => {
           return;
         }
         
-        // Step 2: Check if Supabase has a valid session
+        // Step 2: Check if Supabase has a valid session (this will now check IndexedDB storage)
         console.log('[Auth] Checking Supabase session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
