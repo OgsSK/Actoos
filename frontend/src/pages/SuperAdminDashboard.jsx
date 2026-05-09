@@ -353,32 +353,34 @@ const SuperAdminDashboard = () => {
       <main className="max-w-[1800px] mx-auto px-4 lg:px-6 py-6">
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-white border border-slate-200 shadow-sm p-1 rounded-xl">
-            <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-emerald-500 data-[state=active]:text-white">
-              <Gauge className="w-4 h-4 mr-2" />
-              Vue d'ensemble
-            </TabsTrigger>
-            <TabsTrigger value="entreprises" className="rounded-lg data-[state=active]:bg-emerald-500 data-[state=active]:text-white">
-              <Building2 className="w-4 h-4 mr-2" />
-              Entreprises ({stats?.entreprises?.total || 0})
-            </TabsTrigger>
-            <TabsTrigger value="users" className="rounded-lg data-[state=active]:bg-emerald-500 data-[state=active]:text-white">
-              <Users className="w-4 h-4 mr-2" />
-              Utilisateurs ({stats?.users?.total || 0})
-            </TabsTrigger>
-            <TabsTrigger value="cancellations" className="rounded-lg data-[state=active]:bg-red-500 data-[state=active]:text-white">
-              <XCircle className="w-4 h-4 mr-2" />
-              Résiliations ({stats?.cancellations?.total || 0})
-            </TabsTrigger>
-            <TabsTrigger value="feedbacks" className="rounded-lg data-[state=active]:bg-emerald-500 data-[state=active]:text-white">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Feedbacks ({feedbacks.length})
-            </TabsTrigger>
-            <TabsTrigger value="coupons" className="rounded-lg data-[state=active]:bg-emerald-500 data-[state=active]:text-white">
-              <Gift className="w-4 h-4 mr-2" />
-              Coupons ({coupons.length})
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 pb-2">
+            <TabsList className="bg-white border border-slate-200 shadow-sm p-1 rounded-xl inline-flex min-w-max">
+              <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-emerald-500 data-[state=active]:text-white whitespace-nowrap">
+                <Gauge className="w-4 h-4 mr-2" />
+                Vue d'ensemble
+              </TabsTrigger>
+              <TabsTrigger value="entreprises" className="rounded-lg data-[state=active]:bg-emerald-500 data-[state=active]:text-white whitespace-nowrap">
+                <Building2 className="w-4 h-4 mr-2" />
+                Entreprises ({stats?.entreprises?.total || 0})
+              </TabsTrigger>
+              <TabsTrigger value="users" className="rounded-lg data-[state=active]:bg-emerald-500 data-[state=active]:text-white whitespace-nowrap">
+                <Users className="w-4 h-4 mr-2" />
+                Utilisateurs ({stats?.users?.total || 0})
+              </TabsTrigger>
+              <TabsTrigger value="cancellations" className="rounded-lg data-[state=active]:bg-red-500 data-[state=active]:text-white whitespace-nowrap">
+                <XCircle className="w-4 h-4 mr-2" />
+                Résiliations ({stats?.cancellations?.total || 0})
+              </TabsTrigger>
+              <TabsTrigger value="feedbacks" className="rounded-lg data-[state=active]:bg-emerald-500 data-[state=active]:text-white whitespace-nowrap">
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Feedbacks ({feedbacks.length})
+              </TabsTrigger>
+              <TabsTrigger value="coupons" className="rounded-lg data-[state=active]:bg-emerald-500 data-[state=active]:text-white whitespace-nowrap">
+                <Gift className="w-4 h-4 mr-2" />
+                Coupons ({coupons.length})
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* OVERVIEW TAB */}
           <TabsContent value="overview" className="space-y-6">
@@ -734,288 +736,303 @@ const SuperAdminDashboard = () => {
           </TabsContent>
 
           {/* USERS TAB */}
-          <TabsContent value="users" className="space-y-4">
-            <Card className="bg-white border border-slate-200 shadow-sm overflow-hidden">
-              <CardHeader>
-                <CardTitle>Tous les Utilisateurs</CardTitle>
-                <CardDescription>{users.length} utilisateurs au total</CardDescription>
-              </CardHeader>
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50">
-                    <TableHead>Utilisateur</TableHead>
-                    <TableHead>Rôle</TableHead>
-                    <TableHead>Entreprise</TableHead>
-                    <TableHead>Créé le</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((u) => {
-                    const ent = entreprises.find(e => e.id === u.entreprise_id);
-                    return (
-                      <TableRow key={u.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium text-slate-900">{u.nom || u.email}</p>
-                            <p className="text-sm text-slate-500">{u.email}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={u.role === 'admin' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}>
-                            {u.role === 'admin' ? 'Admin' : 'Technicien'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-slate-600">{ent?.nom || '-'}</span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-slate-500">{formatDate(u.created_at)}</span>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </Card>
-          </TabsContent>
-
-          {/* CANCELLATIONS TAB */}
-          <TabsContent value="cancellations" className="space-y-4">
-            {/* Cancellation Stats */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <Card className="bg-white border border-slate-200">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
-                      <XCircle className="w-7 h-7 text-red-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Total Résiliations</p>
-                      <p className="text-3xl font-bold text-slate-900">{stats?.cancellations?.total || 0}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-white border border-slate-200">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center">
-                      <Clock className="w-7 h-7 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Cette Semaine</p>
-                      <p className="text-3xl font-bold text-slate-900">{stats?.cancellations?.recent || 0}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-white border border-slate-200">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center">
-                      <TrendingDown className="w-7 h-7 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Taux de Churn</p>
-                      <p className="text-3xl font-bold text-slate-900">
-                        {stats?.entreprises?.total ? Math.round((stats.cancellations.total / stats.entreprises.total) * 100) : 0}%
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Reasons Breakdown */}
-            <Card className="bg-white border border-slate-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-red-500" />
-                  Analyse des Raisons de Résiliation
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {Object.keys(stats?.cancellations?.reasons || {}).length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(CANCELLATION_REASONS).map(([key, data]) => {
-                      const count = stats?.cancellations?.reasons?.[key] || 0;
-                      const Icon = data.icon;
-                      return (
-                        <div key={key} className={`p-4 rounded-xl border ${data.color.replace('text-', 'border-').replace('bg-', '')}`}>
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg ${data.color} flex items-center justify-center`}>
-                              <Icon className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-medium text-slate-900">{data.label}</p>
-                              <p className="text-sm text-slate-500">{count} résiliation{count > 1 ? 's' : ''}</p>
-                            </div>
-                            <span className="text-2xl font-bold text-slate-700">{count}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-                    <p className="text-xl font-medium text-slate-700">Aucune résiliation</p>
-                    <p className="text-slate-500 mt-2">Vos clients sont satisfaits ! Continuez ainsi.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Cancelled Entreprises List */}
-            <Card className="bg-white border border-slate-200">
-              <CardHeader>
-                <CardTitle>Entreprises Résiliées</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {cancellations.length > 0 ? (
+          {/* USERS TAB */}
+          {activeTab === 'users' && (
+            <div className="space-y-4">
+              <Card className="bg-white border border-slate-200 shadow-sm overflow-hidden">
+                <CardHeader>
+                  <CardTitle>Tous les Utilisateurs</CardTitle>
+                  <CardDescription>{users.length} utilisateurs au total</CardDescription>
+                </CardHeader>
+                <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
+                      <TableRow className="bg-slate-50">
+                        <TableHead>Utilisateur</TableHead>
+                        <TableHead>Rôle</TableHead>
                         <TableHead>Entreprise</TableHead>
-                        <TableHead>Plan</TableHead>
-                        <TableHead>Date résiliation</TableHead>
-                        <TableHead>Raison</TableHead>
+                        <TableHead>Créé le</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {cancellations.map((c) => {
-                        const reason = cancellationReasons.find(r => r.entreprise_id === c.id);
-                        const reasonData = reason ? CANCELLATION_REASONS[reason.reason] : null;
+                      {users.map((u) => {
+                        const ent = entreprises.find(e => e.id === u.entreprise_id);
                         return (
-                          <TableRow key={c.id}>
+                          <TableRow key={u.id}>
                             <TableCell>
                               <div>
-                                <p className="font-medium">{c.nom}</p>
-                                <p className="text-sm text-slate-500">{c.email}</p>
+                                <p className="font-medium text-slate-900">{u.nom || u.email}</p>
+                                <p className="text-sm text-slate-500">{u.email}</p>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="secondary">{c.plan}</Badge>
+                              <Badge className={u.role === 'admin' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}>
+                                {u.role === 'admin' ? 'Admin' : 'Technicien'}
+                              </Badge>
                             </TableCell>
-                            <TableCell>{formatDate(c.updated_at)}</TableCell>
                             <TableCell>
-                              {reasonData ? (
-                                <Badge className={reasonData.color}>{reasonData.label}</Badge>
-                              ) : (
-                                <span className="text-slate-400">Non spécifiée</span>
-                              )}
+                              <span className="text-slate-600">{ent?.nom || '-'}</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-slate-500">{formatDate(u.created_at)}</span>
                             </TableCell>
                           </TableRow>
                         );
                       })}
                     </TableBody>
                   </Table>
-                ) : (
-                  <p className="text-center py-8 text-slate-500">Aucune entreprise résiliée</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* CANCELLATIONS TAB */}
+          {activeTab === 'cancellations' && (
+            <div className="space-y-4">
+              {/* Cancellation Stats */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <Card className="bg-white border border-slate-200">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
+                        <XCircle className="w-7 h-7 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500">Total Résiliations</p>
+                        <p className="text-3xl font-bold text-slate-900">{stats?.cancellations?.total || 0}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white border border-slate-200">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center">
+                        <Clock className="w-7 h-7 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500">Cette Semaine</p>
+                        <p className="text-3xl font-bold text-slate-900">{stats?.cancellations?.recent || 0}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white border border-slate-200">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center">
+                        <TrendingDown className="w-7 h-7 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500">Taux de Churn</p>
+                        <p className="text-3xl font-bold text-slate-900">
+                          {stats?.entreprises?.total ? Math.round((stats.cancellations.total / stats.entreprises.total) * 100) : 0}%
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Reasons Breakdown */}
+              <Card className="bg-white border border-slate-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-red-500" />
+                    Analyse des Raisons de Résiliation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {Object.keys(stats?.cancellations?.reasons || {}).length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {Object.entries(CANCELLATION_REASONS).map(([key, data]) => {
+                        const count = stats?.cancellations?.reasons?.[key] || 0;
+                        const Icon = data.icon;
+                        return (
+                          <div key={key} className={`p-4 rounded-xl border ${data.color.replace('text-', 'border-').replace('bg-', '')}`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-lg ${data.color} flex items-center justify-center`}>
+                                <Icon className="w-5 h-5" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-medium text-slate-900">{data.label}</p>
+                                <p className="text-sm text-slate-500">{count} résiliation{count > 1 ? 's' : ''}</p>
+                              </div>
+                              <span className="text-2xl font-bold text-slate-700">{count}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+                      <p className="text-xl font-medium text-slate-700">Aucune résiliation</p>
+                      <p className="text-slate-500 mt-2">Vos clients sont satisfaits ! Continuez ainsi.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Cancelled Entreprises List */}
+              <Card className="bg-white border border-slate-200">
+                <CardHeader>
+                  <CardTitle>Entreprises Résiliées</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {cancellations.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Entreprise</TableHead>
+                            <TableHead>Plan</TableHead>
+                            <TableHead>Date résiliation</TableHead>
+                            <TableHead>Raison</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {cancellations.map((c) => {
+                            const reason = cancellationReasons.find(r => r.entreprise_id === c.id);
+                            const reasonData = reason ? CANCELLATION_REASONS[reason.reason] : null;
+                            return (
+                              <TableRow key={c.id}>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium">{c.nom}</p>
+                                    <p className="text-sm text-slate-500">{c.email}</p>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary">{c.plan}</Badge>
+                                </TableCell>
+                                <TableCell>{formatDate(c.updated_at)}</TableCell>
+                                <TableCell>
+                                  {reasonData ? (
+                                    <Badge className={reasonData.color}>{reasonData.label}</Badge>
+                                  ) : (
+                                    <span className="text-slate-400">Non spécifiée</span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <p className="text-center py-8 text-slate-500">Aucune entreprise résiliée</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* FEEDBACKS TAB */}
-          <TabsContent value="feedbacks" className="space-y-4">
-            <Card className="bg-white border border-slate-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-emerald-600" />
-                  Feedbacks Utilisateurs
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {feedbacks.length > 0 ? (
-                  <div className="space-y-4">
-                    {feedbacks.map((fb) => (
-                      <div key={fb.id} className="p-4 bg-slate-50 rounded-xl">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <p className="font-medium text-slate-900">{fb.user_email || 'Anonyme'}</p>
-                            <p className="text-sm text-slate-500">{formatDate(fb.created_at)}</p>
+          {activeTab === 'feedbacks' && (
+            <div className="space-y-4">
+              <Card className="bg-white border border-slate-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-emerald-600" />
+                    Feedbacks Utilisateurs
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {feedbacks.length > 0 ? (
+                    <div className="space-y-4">
+                      {feedbacks.map((fb) => (
+                        <div key={fb.id} className="p-4 bg-slate-50 rounded-xl">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-medium text-slate-900">{fb.user_email || 'Anonyme'}</p>
+                              <p className="text-sm text-slate-500">{formatDate(fb.created_at)}</p>
+                            </div>
+                            <Badge className={
+                              fb.type === 'bug' ? 'bg-red-50 text-red-700' :
+                              fb.type === 'feature' ? 'bg-blue-50 text-blue-700' :
+                              'bg-emerald-50 text-emerald-700'
+                            }>
+                              {fb.type === 'bug' ? 'Bug' : fb.type === 'feature' ? 'Suggestion' : 'Feedback'}
+                            </Badge>
                           </div>
-                          <Badge className={
-                            fb.type === 'bug' ? 'bg-red-50 text-red-700' :
-                            fb.type === 'feature' ? 'bg-blue-50 text-blue-700' :
-                            'bg-emerald-50 text-emerald-700'
-                          }>
-                            {fb.type === 'bug' ? 'Bug' : fb.type === 'feature' ? 'Suggestion' : 'Feedback'}
-                          </Badge>
+                          <p className="text-slate-700">{fb.message}</p>
                         </div>
-                        <p className="text-slate-700">{fb.message}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500">Aucun feedback pour le moment</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <p className="text-slate-500">Aucun feedback pour le moment</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* COUPONS TAB */}
-          <TabsContent value="coupons" className="space-y-4">
-            <div className="flex justify-end">
-              <Button onClick={() => setShowCreateCoupon(true)} className="bg-emerald-600 hover:bg-emerald-700">
-                <Gift className="w-4 h-4 mr-2" />
-                Créer un coupon
-              </Button>
+          {activeTab === 'coupons' && (
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <Button onClick={() => setShowCreateCoupon(true)} className="bg-emerald-600 hover:bg-emerald-700">
+                  <Gift className="w-4 h-4 mr-2" />
+                  Créer un coupon
+                </Button>
+              </div>
+              <Card className="bg-white border border-slate-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Gift className="w-5 h-5 text-emerald-600" />
+                    Coupons de Réduction
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {coupons.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Code</TableHead>
+                            <TableHead>Réduction</TableHead>
+                            <TableHead>Utilisations</TableHead>
+                            <TableHead>Statut</TableHead>
+                            <TableHead>Créé le</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {coupons.map((coupon) => (
+                            <TableRow key={coupon.id}>
+                              <TableCell>
+                                <code className="bg-slate-100 px-2 py-1 rounded font-mono">{coupon.code}</code>
+                              </TableCell>
+                              <TableCell>
+                                {coupon.type === 'percentage' ? `${coupon.value}%` : formatCurrency(coupon.value)}
+                              </TableCell>
+                              <TableCell>
+                                {coupon.uses || 0} / {coupon.max_uses === -1 ? '∞' : coupon.max_uses}
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={coupon.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}>
+                                  {coupon.active ? 'Actif' : 'Inactif'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{formatDate(coupon.created_at)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Gift className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <p className="text-slate-500">Aucun coupon créé</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-            <Card className="bg-white border border-slate-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Gift className="w-5 h-5 text-emerald-600" />
-                  Coupons de Réduction
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {coupons.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Réduction</TableHead>
-                        <TableHead>Utilisations</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead>Créé le</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {coupons.map((coupon) => (
-                        <TableRow key={coupon.id}>
-                          <TableCell>
-                            <code className="bg-slate-100 px-2 py-1 rounded font-mono">{coupon.code}</code>
-                          </TableCell>
-                          <TableCell>
-                            {coupon.type === 'percentage' ? `${coupon.value}%` : formatCurrency(coupon.value)}
-                          </TableCell>
-                          <TableCell>
-                            {coupon.uses || 0} / {coupon.max_uses === -1 ? '∞' : coupon.max_uses}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={coupon.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}>
-                              {coupon.active ? 'Actif' : 'Inactif'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{formatDate(coupon.created_at)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-12">
-                    <Gift className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500">Aucun coupon créé</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+          )}
         </Tabs>
       </main>
 
