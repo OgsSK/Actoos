@@ -501,18 +501,28 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('tech_token');
       localStorage.removeItem('tech_user');
       localStorage.removeItem('tech_entreprise');
+      
+      // Clear Service Worker cache to prevent caching authenticated pages
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          names.forEach(name => caches.delete(name));
+        });
+      }
     } catch (e) {
       console.warn('Could not clear localStorage:', e);
     }
     
-    // Reset state
+    // Reset state immediately
     fetchAttempted.current = false;
     setToken(null);
     setUser(null);
     setEntreprise(null);
     
-    // Force redirect to login page (using replace to prevent back button issues)
-    window.location.replace('/login');
+    // Force hard redirect to login page with cache busting
+    // Using setTimeout to ensure state is cleared before redirect
+    setTimeout(() => {
+      window.location.href = '/login?t=' + Date.now();
+    }, 50);
   };
 
   // Currency formatting helpers based on entreprise settings
@@ -528,9 +538,64 @@ export const AuthProvider = ({ children }) => {
   
   const currencySymbol = useMemo(() => getCurrencySymbol(currency), [currency]);
 
-  // Plan feature helpers
-  const planLimits = useMemo(() => entreprise?.plan_limits || {}, [entreprise]);
+  // Plan feature helpers - with fallback defaults based on plan type
   const currentPlan = useMemo(() => entreprise?.plan || 'startup', [entreprise]);
+  
+  // Default plan limits by plan type (fallback if plan_limits is empty in DB)
+  const DEFAULT_PLAN_LIMITS = {
+    startup: {
+      multi_sites: false,
+      offline_mode: false,
+      geolocation: false,
+      advanced_analytics: false,
+      auto_pdf_reports: false,
+      auto_devis_to_facture: false,
+      team_validation: false,
+      white_label: false,
+      api_access: false,
+      advanced_branding: false,
+      max_users: 2,
+      max_clients: 50,
+    },
+    pro: {
+      multi_sites: false,
+      offline_mode: true,
+      geolocation: true,
+      advanced_analytics: false,
+      auto_pdf_reports: true,
+      auto_devis_to_facture: true,
+      team_validation: false,
+      white_label: false,
+      api_access: false,
+      advanced_branding: false,
+      max_users: 5,
+      max_clients: 200,
+    },
+    enterprise: {
+      multi_sites: true,
+      offline_mode: true,
+      geolocation: true,
+      advanced_analytics: true,
+      auto_pdf_reports: true,
+      auto_devis_to_facture: true,
+      team_validation: true,
+      white_label: true,
+      api_access: true,
+      advanced_branding: true,
+      max_users: -1, // unlimited
+      max_clients: -1, // unlimited
+    }
+  };
+  
+  const planLimits = useMemo(() => {
+    const dbLimits = entreprise?.plan_limits;
+    // If plan_limits exists and is not empty, use it
+    if (dbLimits && Object.keys(dbLimits).length > 0) {
+      return dbLimits;
+    }
+    // Otherwise, use default limits based on plan type
+    return DEFAULT_PLAN_LIMITS[currentPlan] || DEFAULT_PLAN_LIMITS.startup;
+  }, [entreprise, currentPlan]);
   
   const hasFeature = useCallback((featureName) => {
     return planLimits[featureName] === true;
