@@ -2223,11 +2223,25 @@ export const TechnicianApp = () => {
     }
     
     try {
-      await photosApi.upload(selectedIntervention.id, file, photoTag || 'autre');
+      const uploadedPhoto = await photosApi.upload(selectedIntervention.id, file, photoTag || 'autre');
       toast.success('Photo ajoutée');
-      // Reload photos
-      const data = await photosApi.getForIntervention(selectedIntervention.id);
-      setPhotos(data);
+      
+      // Add the uploaded photo to the local state immediately
+      // This ensures the photo is visible even if it's stored locally (base64)
+      if (uploadedPhoto) {
+        setPhotos(prev => [...prev, uploadedPhoto]);
+      }
+      
+      // Also try to reload from API to get any other photos
+      try {
+        const data = await photosApi.getForIntervention(selectedIntervention.id);
+        if (data && data.length > 0) {
+          setPhotos(data);
+        }
+      } catch (reloadError) {
+        // Keep the locally added photo even if reload fails
+        console.warn('Could not reload photos from API:', reloadError);
+      }
     } catch (error) {
       console.error('Error uploading photo:', error);
       toast.error(error.message || 'Erreur lors de l\'upload');
@@ -2261,36 +2275,84 @@ export const TechnicianApp = () => {
     }
     
     try {
-      toast.info('Génération du rapport PDF...');
+      toast.info('Génération du rapport...');
       
-      // Use the backend API endpoint to generate PDF
-      const API_URL = process.env.REACT_APP_BACKEND_URL || '';
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${API_URL}/api/interventions/${interventionId}/report/pdf`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (!response.ok) {
-        // If backend fails, try Supabase Edge Function as fallback
-        throw new Error('Backend PDF generation failed');
+      // Get intervention details for the report
+      const intervention = selectedIntervention || interventions.find(i => i.id === interventionId);
+      if (!intervention) {
+        toast.error('Intervention non trouvée');
+        return;
       }
       
-      // Download the PDF
-      const blob = await response.blob();
+      // Create a simple HTML report that can be printed/saved as PDF
+      const reportHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Rapport d'intervention - ${intervention.titre}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+            h1 { color: #1e293b; border-bottom: 2px solid #10b981; padding-bottom: 10px; }
+            .section { margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 8px; }
+            .label { font-weight: bold; color: #64748b; }
+            .value { color: #1e293b; margin-left: 10px; }
+            .status { display: inline-block; padding: 4px 12px; border-radius: 20px; background: #10b981; color: white; }
+            .signature { margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+            .signature img { max-width: 200px; border: 1px solid #e2e8f0; }
+            @media print { body { padding: 20px; } }
+          </style>
+        </head>
+        <body>
+          <h1>Rapport d'intervention</h1>
+          <div class="section">
+            <p><span class="label">Titre:</span><span class="value">${intervention.titre || 'N/A'}</span></p>
+            <p><span class="label">Statut:</span><span class="status">${getStatusLabel(intervention.statut)}</span></p>
+            <p><span class="label">Date:</span><span class="value">${intervention.date_prevue ? format(parseISO(intervention.date_prevue), 'dd/MM/yyyy HH:mm', { locale: fr }) : 'N/A'}</span></p>
+            <p><span class="label">Durée:</span><span class="value">${intervention.duree_estimee || 0} min</span></p>
+          </div>
+          <div class="section">
+            <h3>Client</h3>
+            <p><span class="label">Nom:</span><span class="value">${intervention.client?.nom || ''} ${intervention.client?.prenom || ''}</span></p>
+            <p><span class="label">Téléphone:</span><span class="value">${intervention.client?.telephone || 'N/A'}</span></p>
+            <p><span class="label">Adresse:</span><span class="value">${intervention.adresse || ''}, ${intervention.code_postal || ''} ${intervention.ville || ''}</span></p>
+          </div>
+          <div class="section">
+            <h3>Description</h3>
+            <p>${intervention.description || 'Aucune description'}</p>
+          </div>
+          ${intervention.rapport ? `
+          <div class="section">
+            <h3>Notes du technicien</h3>
+            <p>${intervention.rapport}</p>
+          </div>
+          ` : ''}
+          ${intervention.signature_client ? `
+          <div class="signature">
+            <h3>Signature client</h3>
+            <p><span class="label">Signataire:</span><span class="value">${intervention.nom_signataire || 'Client'}</span></p>
+            <img src="${intervention.signature_client}" alt="Signature" />
+          </div>
+          ` : ''}
+          <p style="margin-top: 40px; color: #94a3b8; font-size: 12px;">
+            Généré le ${format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr })} - ACTOOS PRO
+          </p>
+        </body>
+        </html>
+      `;
+      
+      // Create blob and download
+      const blob = new Blob([reportHtml], { type: 'text/html' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `rapport_intervention_${interventionId}.pdf`;
+      a.download = `rapport_${intervention.titre?.replace(/[^a-zA-Z0-9]/g, '_') || interventionId}.html`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      toast.success('Rapport téléchargé !');
+      toast.success('Rapport téléchargé ! Ouvrez-le et utilisez Imprimer > PDF pour sauvegarder en PDF.');
     } catch (error) {
       console.error('Error downloading report:', error);
       toast.error('Erreur lors du téléchargement du rapport');
@@ -2799,8 +2861,19 @@ export const TechnicianApp = () => {
       {/* Intervention Detail Modal */}
       <Dialog open={!!selectedIntervention} onOpenChange={() => setSelectedIntervention(null)}>
         <DialogContent className="max-w-lg h-[90vh] flex flex-col p-0" aria-describedby="intervention-detail-description">
+          {/* Header with close button */}
           <DialogHeader className="sticky top-0 bg-white z-10 px-6 pt-6 pb-4 border-b border-slate-100">
-            <DialogTitle>{selectedIntervention?.titre}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="pr-8">{selectedIntervention?.titre}</DialogTitle>
+              <button
+                onClick={() => setSelectedIntervention(null)}
+                className="absolute right-4 top-4 rounded-full p-1 bg-slate-100 hover:bg-slate-200 transition-colors"
+                data-testid="close-intervention-modal"
+              >
+                <X className="h-5 w-5 text-slate-600" />
+                <span className="sr-only">Fermer</span>
+              </button>
+            </div>
             <p id="intervention-detail-description" className="sr-only">
               Détails de l'intervention et actions disponibles
             </p>
