@@ -56,15 +56,15 @@
 
 ### ✅ Fait
 - [x] Resend API Key configurée
+- [x] Domaine `actoos.com` vérifié (SPF/DKIM)
+- [x] SENDER_EMAIL: `noreply@actoos.com`
 
-### 🔴 À Faire
-- [ ] **Domaine vérifié** - Configurer SPF/DKIM pour actoos.com
-- [ ] **Templates emails** :
+### 🟡 À Faire (optionnel)
+- [ ] **Templates emails personnalisés** :
   - [ ] Bienvenue
   - [ ] Confirmation intervention
   - [ ] Rappel paiement
   - [ ] Résiliation confirmée
-  - [ ] Reset password
 
 ---
 
