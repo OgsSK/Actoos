@@ -431,16 +431,11 @@ export const AuthProvider = ({ children }) => {
       safeStorage.setItem('user', JSON.stringify(userData));
       safeStorage.setItem('entreprise', JSON.stringify(entData));
       
-      // Set the app variant based on user role BEFORE setting state
-      // This ensures future localStorage operations use the correct prefix
-      const isTech = userData.role === 'technicien' || userData.role === 'tech';
-      setAppVariant(isTech ? 'tech' : 'admin');
-      
       setToken(authToken);
       setUser(userData);
       setEntreprise(entData);
       
-      // Update PWA manifest and icons based on user role
+      // Update PWA theme based on user role
       updatePWAForRole(userData.role);
       
       return userData;
@@ -454,10 +449,6 @@ export const AuthProvider = ({ children }) => {
   const complete2FALogin = (authData) => {
     const { access_token, user: userData, entreprise: entData } = authData;
     
-    // Set the app variant based on user role
-    const isTech = userData.role === 'technicien' || userData.role === 'tech';
-    setAppVariant(isTech ? 'tech' : 'admin');
-    
     // Persist all data to localStorage
     safeStorage.setItem('token', access_token);
     safeStorage.setItem('user', JSON.stringify(userData));
@@ -467,7 +458,7 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     setEntreprise(entData);
     
-    // Update PWA manifest and icons based on user role
+    // Update PWA theme based on user role
     updatePWAForRole(userData.role);
     
     return userData;
