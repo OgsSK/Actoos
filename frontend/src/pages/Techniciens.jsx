@@ -23,10 +23,11 @@ import { Checkbox } from '../components/ui/checkbox';
 import { formatDate } from '../lib/utils';
 import {
   Plus, UserPlus, User, Mail, Phone, Copy, Check, AlertCircle, Loader2, Trash2, Wrench, Settings2,
-  MessageSquare, Clock, RefreshCw
+  MessageSquare, Clock, RefreshCw, CreditCard
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { ExtraTechnicianModal } from '../components/ExtraTechnicianModal';
 
 // Skills Manager Component
 const SkillsManager = ({ user, categories, onUpdate, onClose }) => {
@@ -137,11 +138,34 @@ export const TechniciensList = () => {
   const [inviteResult, setInviteResult] = useState(null);
   const [copied, setCopied] = useState(false);
   const [sendingSms, setSendingSms] = useState(null);
-  const { user, isAdmin, entreprise } = useAuth();
+  const [showExtraModal, setShowExtraModal] = useState(false);
+  const [pendingInviteAction, setPendingInviteAction] = useState(null);
+  const { user, token, isAdmin, entreprise } = useAuth();
   const navigate = useNavigate();
 
   const { data: users, loading, refetch: fetchUsers } = useTechniciens(user?.entreprise_id);
   const { data: categories, refetch: fetchCategories } = useCategories(user?.entreprise_id);
+
+  // Get plan limits for technicians
+  const planLimits = useMemo(() => {
+    const plan = entreprise?.plan?.toLowerCase() || 'startup';
+    const limits = {
+      startup: { included: 3, price: 5 },
+      pro: { included: 10, price: 5 },
+      enterprise: { included: 999, price: 0 }, // Unlimited
+      demo: { included: 2, price: 5 }
+    };
+    return limits[plan] || limits.startup;
+  }, [entreprise?.plan]);
+
+  // Count current technicians (active users with role 'technicien')
+  const currentTechCount = useMemo(() => {
+    return users?.filter(u => u.role === 'technicien' && u.statut === 'actif').length || 0;
+  }, [users]);
+
+  // Check if limit is reached
+  const isLimitReached = currentTechCount >= planLimits.included && planLimits.included < 999;
+  const extraTechCount = Math.max(0, currentTechCount - planLimits.included);
 
   useEffect(() => {
     fetchPendingInvites();
@@ -205,12 +229,32 @@ export const TechniciensList = () => {
     }
   };
 
+  // Check limit and show modal if needed, then proceed with invite
   const handleInvite = () => {
-    if (inviteMethod === 'sms') {
+    // If limit reached and plan is not Enterprise, show extra tech modal
+    if (isLimitReached) {
+      setPendingInviteAction(inviteMethod);
+      setShowExtraModal(true);
+      return;
+    }
+    
+    // Otherwise proceed normally
+    proceedWithInvite();
+  };
+
+  // Actual invite logic (called after limit check or modal confirmation)
+  const proceedWithInvite = () => {
+    if (inviteMethod === 'sms' || pendingInviteAction === 'sms') {
       handleSmsInvite();
     } else {
       handleEmailInvite();
     }
+    setPendingInviteAction(null);
+  };
+
+  // Called when user confirms adding extra tech (+5€/month)
+  const handleExtraConfirm = () => {
+    proceedWithInvite();
   };
 
   const handleResendInvite = async (inviteId) => {
@@ -286,25 +330,55 @@ export const TechniciensList = () => {
 
   return (
     <div className="space-y-6" data-testid="techniciens-list">
+      {/* Extra Technician Modal */}
+      <ExtraTechnicianModal
+        open={showExtraModal}
+        onOpenChange={setShowExtraModal}
+        currentCount={currentTechCount}
+        maxIncluded={planLimits.included}
+        pricePerExtra={planLimits.price}
+        onConfirm={handleExtraConfirm}
+        onUpgrade={() => navigate('/dashboard/subscription')}
+        entrepriseId={user?.entreprise_id}
+        token={token}
+      />
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">Équipe</h1>
           <p className="text-slate-500">Gérez les techniciens de votre entreprise</p>
         </div>
-        {isAdmin && (
-          <Dialog open={showInvite} onOpenChange={(open) => { if (!open) resetInviteDialog(); else setShowInvite(true); }}>
-            <DialogTrigger asChild>
-              <Button data-testid="invite-tech-btn" className="bg-emerald-600 hover:bg-emerald-700">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Inviter un technicien
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>
-                  {inviteResult ? '✅ Invitation envoyée' : 'Inviter un technicien'}
-                </DialogTitle>
-              </DialogHeader>
+        
+        {/* Tech count badge */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-sm">
+            <User className="w-4 h-4 text-slate-500" />
+            <span className="font-medium">
+              {currentTechCount}/{planLimits.included === 999 ? '∞' : planLimits.included}
+            </span>
+            <span className="text-slate-500">techniciens</span>
+            {extraTechCount > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">
+                +{extraTechCount} extra ({extraTechCount * planLimits.price}€/mois)
+              </Badge>
+            )}
+          </div>
+          
+          {isAdmin && (
+            <Dialog open={showInvite} onOpenChange={(open) => { if (!open) resetInviteDialog(); else setShowInvite(true); }}>
+              <DialogTrigger asChild>
+                <Button data-testid="invite-tech-btn" className="bg-emerald-600 hover:bg-emerald-700">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Inviter un technicien
+                  {isLimitReached && <CreditCard className="w-4 h-4 ml-2 text-amber-200" />}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    {inviteResult ? '✅ Invitation envoyée' : 'Inviter un technicien'}
+                  </DialogTitle>
+                </DialogHeader>
 
               {inviteResult ? (
                 <div className="space-y-4 py-4">
@@ -517,7 +591,8 @@ export const TechniciensList = () => {
               )}
             </DialogContent>
           </Dialog>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Pending Invites Section */}
