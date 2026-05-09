@@ -771,3 +771,12 @@ credentials.json
 actoos-one-backup/node_modules/.cache/default-development/3.pack
 actoos-one-backup/node_modules/.cache/default-development/32.pack
 actoos-one-backup/node_modules/.cache/default-development/14.pack
+-e 
+# Environment and credential files
+.env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
