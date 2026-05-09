@@ -594,33 +594,37 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
     try {
       setSendingMessage(true);
       
-      console.log('=== VOICE UPLOAD START ===');
-      console.log('Blob type:', audioBlob.type);
-      console.log('Blob size:', audioBlob.size);
-      console.log('Duration:', duration);
-      console.log('User ID:', user.id);
-      console.log('Entreprise ID:', user.entreprise_id);
+      // Determine correct file extension based on MIME type
+      const mimeType = audioBlob.type || 'audio/mp4';
+      let extension = 'mp4'; // Default for iOS
       
-      // Generate unique filename - simplified path
+      if (mimeType.includes('webm')) {
+        extension = 'webm';
+      } else if (mimeType.includes('ogg')) {
+        extension = 'ogg';
+      } else if (mimeType.includes('wav')) {
+        extension = 'wav';
+      } else if (mimeType.includes('mp4') || mimeType.includes('m4a') || mimeType.includes('aac')) {
+        extension = 'mp4';
+      }
+      
+      // Generate unique filename
       const timestamp = Date.now();
-      const extension = audioBlob.type.includes('webm') ? 'webm' : 'm4a';
       const fileName = `voice_${timestamp}.${extension}`;
       
-      console.log('Filename:', fileName);
+      console.log('Upload info:', { mimeType, extension, fileName, size: audioBlob.size });
       
-      // Upload to Supabase Storage - directly to root of bucket
+      // Upload to Supabase Storage with correct content type
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('chat-attachments')
         .upload(fileName, audioBlob, {
-          contentType: audioBlob.type,
+          contentType: mimeType,
           cacheControl: '3600',
-          upsert: true  // Allow overwrite
+          upsert: true
         });
       
-      console.log('Upload result:', { uploadData, uploadError });
-      
       if (uploadError) {
-        console.error('Storage upload error details:', JSON.stringify(uploadError, null, 2));
+        console.error('Upload error:', uploadError);
         throw new Error(`Erreur d'upload: ${uploadError.message || 'Erreur inconnue'}`);
       }
       

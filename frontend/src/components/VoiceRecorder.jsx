@@ -120,16 +120,22 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
       setDuration(0);
 
       // Start timer with limit check
+      let currentDuration = 0;
       timerRef.current = setInterval(() => {
-        setDuration(prev => {
-          const newDuration = prev + 1;
-          // Auto-stop at max duration
-          if (newDuration >= MAX_DURATION) {
-            stopRecording();
-            return MAX_DURATION;
+        currentDuration += 1;
+        setDuration(currentDuration);
+        
+        // Auto-stop at max duration
+        if (currentDuration >= MAX_DURATION) {
+          console.log('Max duration reached, stopping...');
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+          
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
           }
-          return newDuration;
-        });
+          setIsRecording(false);
+        }
       }, 1000);
 
     } catch (error) {
