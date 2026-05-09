@@ -594,41 +594,43 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
     try {
       setSendingMessage(true);
       
-      // Generate unique filename
+      console.log('=== VOICE UPLOAD START ===');
+      console.log('Blob type:', audioBlob.type);
+      console.log('Blob size:', audioBlob.size);
+      console.log('Duration:', duration);
+      console.log('User ID:', user.id);
+      console.log('Entreprise ID:', user.entreprise_id);
+      
+      // Generate unique filename - simplified path
       const timestamp = Date.now();
       const extension = audioBlob.type.includes('webm') ? 'webm' : 'm4a';
-      const fileName = `voice_${user.id}_${timestamp}.${extension}`;
-      const filePath = `${user.entreprise_id}/voice_notes/${fileName}`;
+      const fileName = `voice_${timestamp}.${extension}`;
       
-      // Upload to Supabase Storage
+      console.log('Filename:', fileName);
+      
+      // Upload to Supabase Storage - directly to root of bucket
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('chat-attachments')
-        .upload(filePath, audioBlob, {
+        .upload(fileName, audioBlob, {
           contentType: audioBlob.type,
           cacheControl: '3600',
-          upsert: false
+          upsert: true  // Allow overwrite
         });
       
+      console.log('Upload result:', { uploadData, uploadError });
+      
       if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        
-        // Check if it's a bucket not found error
-        if (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')) {
-          throw new Error('Le bucket de stockage n\'existe pas. Créez "chat-attachments" dans Supabase Storage.');
-        }
-        // Check if it's a permission error
-        if (uploadError.message?.includes('policy') || uploadError.message?.includes('permission')) {
-          throw new Error('Permission refusée. Vérifiez les politiques RLS du bucket.');
-        }
-        throw new Error(`Erreur d'upload: ${uploadError.message}`);
+        console.error('Storage upload error details:', JSON.stringify(uploadError, null, 2));
+        throw new Error(`Erreur d'upload: ${uploadError.message || 'Erreur inconnue'}`);
       }
       
       // Get public URL
       const { data: urlData } = supabase.storage
         .from('chat-attachments')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
       
       const audioUrl = urlData.publicUrl;
+      console.log('Audio URL:', audioUrl);
       
       // Create message in database
       const { data, error } = await supabase
@@ -646,6 +648,8 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
         })
         .select()
         .single();
+      
+      console.log('Message insert result:', { data, error });
       
       if (error) {
         // If columns don't exist, try without voice-specific columns
@@ -678,8 +682,10 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
       loadConversations();
       
       toast.success('Message vocal envoyé');
+      console.log('=== VOICE UPLOAD SUCCESS ===');
     } catch (error) {
-      console.error('Error sending voice message:', error);
+      console.error('=== VOICE UPLOAD ERROR ===');
+      console.error('Error details:', error);
       toast.error(error.message || 'Erreur lors de l\'envoi du message vocal');
     } finally {
       setSendingMessage(false);
