@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { formatCurrency, formatCurrencyCompact, getCurrencySymbol } from '../lib/currency';
-import { supabase } from '../lib/supabase';
+import { supabase, restoreSessionFromIDB } from '../lib/supabase';
 import supabaseApi from '../lib/supabaseApi';
 
 // Legacy API for endpoints not yet migrated (will be removed)
@@ -257,18 +257,24 @@ export const AuthProvider = ({ children }) => {
       }
       
       try {
-        // Give Supabase storage time to initialize IndexedDB and load cache
-        // This is critical for iOS PWA persistence
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // CRITICAL FOR iOS PWA: Try to restore session from IndexedDB first
+        // This must happen BEFORE Supabase checks its session
+        console.log('[Auth] Attempting to restore session from IndexedDB...');
+        const restored = await restoreSessionFromIDB();
+        if (restored) {
+          console.log('[Auth] Session restored from IndexedDB, refreshing Supabase...');
+          // Give Supabase time to pick up the restored session
+          await new Promise(r => setTimeout(r, 200));
+        }
         
-        // Step 1: Try to recover from IndexedDB if localStorage was cleared
-        console.log('[Auth] Checking IndexedDB for persisted session...');
+        // Step 1: Try to recover from our custom IndexedDB storage
+        console.log('[Auth] Checking custom IndexedDB for persisted session...');
         const idbToken = await safeStorage.getItemAsync('token');
         const idbUser = await safeStorage.getItemAsync('user');
         const idbEntreprise = await safeStorage.getItemAsync('entreprise');
         
         if (idbToken && idbUser && !isTokenExpired(idbToken)) {
-          console.log('[Auth] Found valid session in IndexedDB, restoring...');
+          console.log('[Auth] Found valid session in custom IndexedDB, restoring...');
           const parsedUser = typeof idbUser === 'string' ? JSON.parse(idbUser) : idbUser;
           const parsedEntreprise = idbEntreprise ? (typeof idbEntreprise === 'string' ? JSON.parse(idbEntreprise) : idbEntreprise) : null;
           
@@ -283,7 +289,7 @@ export const AuthProvider = ({ children }) => {
           setUser(parsedUser);
           setEntreprise(parsedEntreprise);
           
-          console.log('[Auth] Session restored from IndexedDB');
+          console.log('[Auth] Session restored from custom IndexedDB');
           setLoading(false);
           return;
         }
@@ -399,6 +405,42 @@ export const AuthProvider = ({ children }) => {
       subscription?.unsubscribe();
     };
   }, []); // Run once on mount
+
+  // Save session when app goes to background (iOS PWA persistence)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && token && user) {
+        console.log('[Auth] App going to background, saving session...');
+        // Force save to IndexedDB
+        safeStorage.setItem('token', token);
+        safeStorage.setItem('user', JSON.stringify(user));
+        if (entreprise) {
+          safeStorage.setItem('entreprise', JSON.stringify(entreprise));
+        }
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      if (token && user) {
+        console.log('[Auth] App closing, saving session...');
+        safeStorage.setItem('token', token);
+        safeStorage.setItem('user', JSON.stringify(user));
+        if (entreprise) {
+          safeStorage.setItem('entreprise', JSON.stringify(entreprise));
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
+    };
+  }, [token, user, entreprise]);
 
   // Create axios instance with memoization to prevent recreating on each render
   const api = useMemo(() => {

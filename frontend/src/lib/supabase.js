@@ -1,7 +1,7 @@
 /**
  * Supabase Client Configuration
  * Ultra-fast authentication and database access
- * With iOS PWA persistence fix using IndexedDB
+ * With iOS PWA persistence fix using IndexedDB + localStorage hybrid
  */
 import { createClient } from '@supabase/supabase-js';
 
@@ -10,168 +10,182 @@ const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zmngftlkdimwv
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptbmdmdGxrZGltd3ZreG1kdXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTQwNDksImV4cCI6MjA5MzU5MDA0OX0.uxXVKg1oIcakCPtnRxri9PPj1ZvAsgi-JVe6VhQNE2c';
 
 // ============================================
-// iOS PWA PERSISTENT STORAGE FOR SUPABASE
-// IndexedDB-based storage that survives app termination
+// iOS PWA PERSISTENT STORAGE V2
+// Synchronous-first approach with IndexedDB backup
 // ============================================
-const IDB_NAME = 'actoos-supabase-storage';
-const IDB_STORE = 'auth';
-const IDB_VERSION = 1;
 
-// In-memory cache for sync operations
-let memoryCache = {};
-let dbInstance = null;
-let dbInitPromise = null;
+const STORAGE_PREFIX = 'actoos-sb-';
+const IDB_NAME = 'actoos-pwa-persist';
+const IDB_STORE = 'session';
+const IDB_VERSION = 2;
 
-// Initialize IndexedDB
-const initDB = () => {
-  if (dbInitPromise) return dbInitPromise;
-  
-  dbInitPromise = new Promise((resolve) => {
-    if (typeof window === 'undefined' || !window.indexedDB) {
-      resolve(null);
-      return;
+// Initialize memory cache from localStorage IMMEDIATELY (synchronous)
+// This ensures Supabase has data on first load
+const memoryCache = {};
+
+// Pre-load from localStorage synchronously at module load
+try {
+  const keys = ['actoos-auth-token', 'actoos-auth-token-code-verifier'];
+  keys.forEach(key => {
+    const value = localStorage.getItem(key);
+    if (value) {
+      memoryCache[key] = value;
     }
-    
+  });
+  console.log('[PWA Storage] Pre-loaded from localStorage:', Object.keys(memoryCache).length, 'items');
+} catch (e) {
+  console.warn('[PWA Storage] localStorage pre-load failed:', e);
+}
+
+// IndexedDB instance
+let idbInstance = null;
+
+// Initialize IndexedDB and sync to memory cache
+const initIndexedDB = async () => {
+  if (idbInstance) return idbInstance;
+  if (typeof window === 'undefined' || !window.indexedDB) return null;
+  
+  return new Promise((resolve) => {
     try {
       const request = indexedDB.open(IDB_NAME, IDB_VERSION);
       
       request.onerror = () => {
-        console.warn('[Supabase Storage] IndexedDB open error');
+        console.warn('[PWA Storage] IndexedDB error');
         resolve(null);
       };
       
-      request.onsuccess = () => {
-        dbInstance = request.result;
-        // Load all data into memory cache on init
-        loadAllToCache().then(() => resolve(dbInstance));
+      request.onsuccess = async () => {
+        idbInstance = request.result;
+        console.log('[PWA Storage] IndexedDB opened');
+        
+        // Load all data from IndexedDB to memory cache
+        try {
+          const tx = idbInstance.transaction(IDB_STORE, 'readonly');
+          const store = tx.objectStore(IDB_STORE);
+          const getAllRequest = store.getAll();
+          const getAllKeysRequest = store.getAllKeys();
+          
+          await new Promise((res) => {
+            getAllRequest.onsuccess = () => {
+              getAllKeysRequest.onsuccess = () => {
+                const values = getAllRequest.result;
+                const keys = getAllKeysRequest.result;
+                keys.forEach((key, i) => {
+                  if (values[i] && !memoryCache[key]) {
+                    memoryCache[key] = values[i];
+                    // Also restore to localStorage
+                    try {
+                      localStorage.setItem(key, values[i]);
+                    } catch {}
+                  }
+                });
+                console.log('[PWA Storage] Synced from IndexedDB:', keys.length, 'items');
+                res();
+              };
+            };
+          });
+        } catch (e) {
+          console.warn('[PWA Storage] IndexedDB sync error:', e);
+        }
+        
+        resolve(idbInstance);
       };
       
       request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        if (!db.objectStoreNames.contains(IDB_STORE)) {
-          db.createObjectStore(IDB_STORE);
+        const database = event.target.result;
+        if (!database.objectStoreNames.contains(IDB_STORE)) {
+          database.createObjectStore(IDB_STORE);
         }
       };
     } catch (e) {
-      console.warn('[Supabase Storage] IndexedDB init error:', e);
+      console.warn('[PWA Storage] IndexedDB init error:', e);
       resolve(null);
     }
   });
-  
-  return dbInitPromise;
 };
 
-// Load all IndexedDB data to memory cache
-const loadAllToCache = async () => {
-  if (!dbInstance) return;
-  
-  return new Promise((resolve) => {
-    try {
-      const tx = dbInstance.transaction(IDB_STORE, 'readonly');
-      const store = tx.objectStore(IDB_STORE);
-      const request = store.openCursor();
-      
-      request.onsuccess = (event) => {
-        const cursor = event.target.result;
-        if (cursor) {
-          memoryCache[cursor.key] = cursor.value;
-          cursor.continue();
-        } else {
-          resolve();
-        }
-      };
-      
-      request.onerror = () => resolve();
-    } catch (e) {
-      resolve();
-    }
-  });
-};
+// Start IndexedDB initialization immediately
+initIndexedDB();
 
 // Save to IndexedDB (async, fire-and-forget)
-const saveToIDB = (key, value) => {
-  if (!dbInstance) return;
-  
+const saveToIDB = async (key, value) => {
   try {
-    const tx = dbInstance.transaction(IDB_STORE, 'readwrite');
+    const database = idbInstance || await initIndexedDB();
+    if (!database) return;
+    
+    const tx = database.transaction(IDB_STORE, 'readwrite');
     const store = tx.objectStore(IDB_STORE);
     store.put(value, key);
   } catch (e) {
-    console.warn('[Supabase Storage] IDB write error:', e);
+    console.warn('[PWA Storage] IDB write error:', e);
   }
 };
 
 // Remove from IndexedDB
-const removeFromIDB = (key) => {
-  if (!dbInstance) return;
-  
+const removeFromIDB = async (key) => {
   try {
-    const tx = dbInstance.transaction(IDB_STORE, 'readwrite');
+    const database = idbInstance || await initIndexedDB();
+    if (!database) return;
+    
+    const tx = database.transaction(IDB_STORE, 'readwrite');
     const store = tx.objectStore(IDB_STORE);
     store.delete(key);
   } catch (e) {
-    console.warn('[Supabase Storage] IDB delete error:', e);
+    console.warn('[PWA Storage] IDB delete error:', e);
   }
 };
 
-// Custom storage adapter for Supabase that uses IndexedDB + memory cache
-// This survives iOS PWA app termination
-const createPersistentStorage = () => {
-  // Initialize DB immediately
-  initDB();
-  
-  return {
-    getItem: (key) => {
-      // Return from memory cache (sync operation)
-      // Memory cache is populated from IndexedDB on init
-      const value = memoryCache[key];
-      if (value !== undefined) {
+// Custom storage for Supabase
+// Uses memory cache (pre-loaded from localStorage) + async IndexedDB backup
+const persistentStorage = {
+  getItem: (key) => {
+    // 1. Check memory cache first (fastest, pre-populated from localStorage)
+    if (memoryCache[key] !== undefined) {
+      return memoryCache[key];
+    }
+    
+    // 2. Try localStorage directly
+    try {
+      const value = localStorage.getItem(key);
+      if (value) {
+        memoryCache[key] = value;
         return value;
       }
-      // Fallback to localStorage
-      try {
-        return localStorage.getItem(key);
-      } catch {
-        return null;
-      }
-    },
+    } catch {}
     
-    setItem: (key, value) => {
-      // Save to memory cache
-      memoryCache[key] = value;
-      
-      // Save to IndexedDB (async)
-      saveToIDB(key, value);
-      
-      // Also save to localStorage as backup
-      try {
-        localStorage.setItem(key, value);
-      } catch {
-        // Ignore localStorage errors (quota, etc.)
-      }
-    },
+    return null;
+  },
+  
+  setItem: (key, value) => {
+    // Update memory cache
+    memoryCache[key] = value;
     
-    removeItem: (key) => {
-      // Remove from memory cache
-      delete memoryCache[key];
-      
-      // Remove from IndexedDB
-      removeFromIDB(key);
-      
-      // Remove from localStorage
-      try {
-        localStorage.removeItem(key);
-      } catch {
-        // Ignore
-      }
-    },
-  };
+    // Save to localStorage (sync)
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.warn('[PWA Storage] localStorage write failed:', e);
+    }
+    
+    // Save to IndexedDB (async backup)
+    saveToIDB(key, value);
+  },
+  
+  removeItem: (key) => {
+    // Remove from memory cache
+    delete memoryCache[key];
+    
+    // Remove from localStorage
+    try {
+      localStorage.removeItem(key);
+    } catch {}
+    
+    // Remove from IndexedDB
+    removeFromIDB(key);
+  },
 };
 
-// Create the persistent storage
-const persistentStorage = createPersistentStorage();
-
-// Create Supabase client with iOS-persistent storage
+// Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
@@ -179,17 +193,47 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     storage: persistentStorage,
     storageKey: 'actoos-auth-token',
-    flowType: 'pkce',
   },
   db: {
     schema: 'public',
   },
   global: {
     headers: {
-      'x-client-info': 'actoos-pro-web',
+      'x-client-info': 'actoos-pro-pwa',
     },
   },
 });
+
+// Export function to manually restore session from IndexedDB
+// Call this on app start before checking auth
+export const restoreSessionFromIDB = async () => {
+  try {
+    const database = await initIndexedDB();
+    if (!database) return false;
+    
+    const tx = database.transaction(IDB_STORE, 'readonly');
+    const store = tx.objectStore(IDB_STORE);
+    
+    return new Promise((resolve) => {
+      const request = store.get('actoos-auth-token');
+      request.onsuccess = () => {
+        const value = request.result;
+        if (value && !localStorage.getItem('actoos-auth-token')) {
+          console.log('[PWA Storage] Restoring session from IndexedDB...');
+          try {
+            localStorage.setItem('actoos-auth-token', value);
+            memoryCache['actoos-auth-token'] = value;
+          } catch {}
+          resolve(true);
+        }
+        resolve(false);
+      };
+      request.onerror = () => resolve(false);
+    });
+  } catch {
+    return false;
+  }
+};
 
 // Helper functions for common operations
 export const auth = supabase.auth;
