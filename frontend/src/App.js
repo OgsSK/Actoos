@@ -35,7 +35,7 @@ import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import { ClientsList, ClientForm, ClientDetail } from "./pages/Clients";
 import { InterventionsList, InterventionForm, InterventionDetail } from "./pages/Interventions";
 import { DevisList, DevisForm, DevisDetail } from "./pages/Devis";
-import { FacturesList, FactureDetail } from "./pages/Factures";
+import { FacturesList, FactureDetail, FactureForm } from "./pages/Factures";
 import { TechniciensList } from "./pages/Techniciens";
 import { SettingsPage } from "./pages/Settings";
 import { PlanningPage } from "./pages/Planning";
@@ -268,6 +268,7 @@ function App() {
               
               {/* Factures */}
               <Route path="factures" element={<FacturesList />} />
+              <Route path="factures/new" element={<FactureForm />} />
               <Route path="factures/:id" element={<FactureDetail />} />
               
               {/* Techniciens */}

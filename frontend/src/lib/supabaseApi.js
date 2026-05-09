@@ -360,19 +360,19 @@ export const facturesApi = {
   },
 
   create: async (facture) => {
-    // Generate numero
+    // Generate numero_facture
     const { count } = await supabase
       .from('factures')
       .select('id', { count: 'exact', head: true })
       .eq('entreprise_id', facture.entreprise_id);
     
-    const numero = `F-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`;
+    const numero_facture = `F-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`;
     
     const { data, error } = await supabase
       .from('factures')
       .insert({
         ...facture,
-        numero,
+        numero_facture,
         statut: 'brouillon',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

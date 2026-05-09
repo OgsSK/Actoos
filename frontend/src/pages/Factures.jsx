@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useFactures } from '../lib/supabaseHooks';
-import { facturesApi, edgeFunctionsApi, devisApi, clientsApi, interventionsApi } from '../lib/supabaseApi';
+import { facturesApi, edgeFunctionsApi, devisApi, clientsApi, interventionsApi, settingsApi } from '../lib/supabaseApi';
+import { Textarea } from '../components/ui/textarea';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -917,6 +918,330 @@ export const FactureDetail = () => {
           </Card>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Facture Form Component - for creating new blank invoice
+export const FactureForm = () => {
+  const navigate = useNavigate();
+  const { user, formatAmount } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [formData, setFormData] = useState({
+    client_id: '',
+    lignes: [{ description: '', quantite: 1, prix_unitaire: 0, tva: 20 }],
+    conditions_paiement: '',
+    message_client: '',
+    echeance_jours: 30,
+  });
+
+  useEffect(() => {
+    fetchClients();
+    fetchDefaults();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const data = await clientsApi.list(user?.entreprise_id);
+      setClients(data);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    }
+  };
+
+  const fetchDefaults = async () => {
+    try {
+      const defaults = await settingsApi.getDocumentSettings(user?.entreprise_id);
+      setFormData(prev => ({
+        ...prev,
+        conditions_paiement: defaults.conditions_generales || 'Paiement à réception de facture.',
+        message_client: defaults.message_client_facture || '',
+      }));
+    } catch (error) {
+      console.error('Error fetching defaults:', error);
+    }
+  };
+
+  const handleLigneChange = (index, field, value) => {
+    setFormData(prev => {
+      const newLignes = [...prev.lignes];
+      newLignes[index] = { ...newLignes[index], [field]: value };
+      return { ...prev, lignes: newLignes };
+    });
+  };
+
+  const addLigne = () => {
+    setFormData(prev => ({
+      ...prev,
+      lignes: [...prev.lignes, { description: '', quantite: 1, prix_unitaire: 0, tva: 20 }],
+    }));
+  };
+
+  const removeLigne = (index) => {
+    if (formData.lignes.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        lignes: prev.lignes.filter((_, i) => i !== index),
+      }));
+    }
+  };
+
+  const calculateTotals = () => {
+    const total_ht = formData.lignes.reduce((sum, l) => sum + (l.quantite * l.prix_unitaire), 0);
+    const total_tva = formData.lignes.reduce((sum, l) => sum + (l.quantite * l.prix_unitaire * l.tva / 100), 0);
+    return {
+      total_ht: total_ht.toFixed(2),
+      total_tva: total_tva.toFixed(2),
+      total_ttc: (total_ht + total_tva).toFixed(2),
+    };
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.client_id) {
+      toast.error('Veuillez sélectionner un client');
+      return;
+    }
+    
+    if (formData.lignes.length === 0 || !formData.lignes.some(l => l.description)) {
+      toast.error('Veuillez ajouter au moins une ligne');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const totals = calculateTotals();
+      const payload = {
+        entreprise_id: user?.entreprise_id,
+        client_id: formData.client_id,
+        lignes: formData.lignes,
+        total_ht: parseFloat(totals.total_ht),
+        total_tva: parseFloat(totals.total_tva),
+        total_ttc: parseFloat(totals.total_ttc),
+        conditions_paiement: formData.conditions_paiement,
+        message_client: formData.message_client,
+        statut: 'brouillon',
+      };
+      
+      await facturesApi.create(payload);
+      toast.success('Facture créée avec succès');
+      navigate('/dashboard/factures');
+    } catch (error) {
+      console.error('Error creating facture:', error);
+      toast.error('Erreur lors de la création de la facture');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const totals = calculateTotals();
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6" data-testid="facture-form">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <ChevronLeft className="w-4 h-4 mr-1" />
+          Retour
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 font-['Manrope']">
+            Nouvelle facture
+          </h1>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <Card className="border-slate-200 mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Informations générales</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Client *</Label>
+                <Select
+                  value={formData.client_id}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+                >
+                  <SelectTrigger data-testid="facture-client-select">
+                    <SelectValue placeholder="Sélectionner un client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.nom} {client.prenom}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Échéance (jours)</Label>
+                <Input
+                  type="number"
+                  value={formData.echeance_jours}
+                  onChange={(e) => setFormData(prev => ({ ...prev, echeance_jours: parseInt(e.target.value) || 30 }))}
+                  min="1"
+                  data-testid="facture-echeance"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Lignes */}
+        <Card className="border-slate-200 mb-6">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Lignes de facture</CardTitle>
+            <Button type="button" variant="outline" size="sm" onClick={addLigne} data-testid="add-facture-line">
+              <Plus className="w-4 h-4 mr-1" />
+              Ajouter une ligne
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[40%]">Description</TableHead>
+                  <TableHead className="w-[12%]">Quantité</TableHead>
+                  <TableHead className="w-[18%]">Prix unitaire HT</TableHead>
+                  <TableHead className="w-[12%]">TVA %</TableHead>
+                  <TableHead className="w-[15%] text-right">Total HT</TableHead>
+                  <TableHead className="w-[3%]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {formData.lignes.map((ligne, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <Input
+                        value={ligne.description}
+                        onChange={(e) => handleLigneChange(index, 'description', e.target.value)}
+                        placeholder="Description"
+                        data-testid={`facture-line-desc-${index}`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={ligne.quantite}
+                        onChange={(e) => handleLigneChange(index, 'quantite', parseFloat(e.target.value) || 0)}
+                        min="0"
+                        step="0.01"
+                        data-testid={`facture-line-qty-${index}`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={ligne.prix_unitaire}
+                        onChange={(e) => handleLigneChange(index, 'prix_unitaire', parseFloat(e.target.value) || 0)}
+                        min="0"
+                        step="0.01"
+                        data-testid={`facture-line-price-${index}`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={String(ligne.tva)}
+                        onValueChange={(value) => handleLigneChange(index, 'tva', parseFloat(value))}
+                      >
+                        <SelectTrigger data-testid={`facture-line-tva-${index}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">0%</SelectItem>
+                          <SelectItem value="5.5">5.5%</SelectItem>
+                          <SelectItem value="10">10%</SelectItem>
+                          <SelectItem value="20">20%</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatAmount(ligne.quantite * ligne.prix_unitaire)}
+                    </TableCell>
+                    <TableCell>
+                      {formData.lignes.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeLigne(index)}
+                          className="text-red-500 hover:text-red-700"
+                          data-testid={`remove-facture-line-${index}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Totals */}
+            <div className="mt-4 flex justify-end">
+              <div className="w-64 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Total HT</span>
+                  <span>{formatAmount(parseFloat(totals.total_ht))}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">TVA</span>
+                  <span>{formatAmount(parseFloat(totals.total_tva))}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <span>Total TTC</span>
+                  <span>{formatAmount(parseFloat(totals.total_ttc))}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Conditions */}
+        <Card className="border-slate-200 mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Conditions et messages</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Conditions de paiement</Label>
+              <Textarea
+                value={formData.conditions_paiement}
+                onChange={(e) => setFormData(prev => ({ ...prev, conditions_paiement: e.target.value }))}
+                rows={3}
+                placeholder="Conditions de paiement..."
+                data-testid="facture-conditions"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Message au client</Label>
+              <Textarea
+                value={formData.message_client}
+                onChange={(e) => setFormData(prev => ({ ...prev, message_client: e.target.value }))}
+                rows={3}
+                placeholder="Message à afficher sur la facture..."
+                data-testid="facture-message"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+            Annuler
+          </Button>
+          <Button type="submit" disabled={saving} data-testid="save-facture">
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Créer la facture
+          </Button>
+        </div>
+      </form>
     </div>
   );
 };
