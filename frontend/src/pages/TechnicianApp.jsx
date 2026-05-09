@@ -2260,8 +2260,41 @@ export const TechnicianApp = () => {
       return;
     }
     
-    // PDF generation requires Edge Function - show info for now
-    toast.info('Téléchargement PDF en cours de migration vers Supabase');
+    try {
+      toast.info('Génération du rapport PDF...');
+      
+      // Use the backend API endpoint to generate PDF
+      const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/api/interventions/${interventionId}/report/pdf`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        // If backend fails, try Supabase Edge Function as fallback
+        throw new Error('Backend PDF generation failed');
+      }
+      
+      // Download the PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rapport_intervention_${interventionId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Rapport téléchargé !');
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      toast.error('Erreur lors du téléchargement du rapport');
+    }
   };
 
   // Create intervention handler
@@ -2765,8 +2798,8 @@ export const TechnicianApp = () => {
 
       {/* Intervention Detail Modal */}
       <Dialog open={!!selectedIntervention} onOpenChange={() => setSelectedIntervention(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col" aria-describedby="intervention-detail-description">
-          <DialogHeader>
+        <DialogContent className="max-w-lg h-[90vh] flex flex-col p-0" aria-describedby="intervention-detail-description">
+          <DialogHeader className="sticky top-0 bg-white z-10 px-6 pt-6 pb-4 border-b border-slate-100">
             <DialogTitle>{selectedIntervention?.titre}</DialogTitle>
             <p id="intervention-detail-description" className="sr-only">
               Détails de l'intervention et actions disponibles
@@ -2774,7 +2807,7 @@ export const TechnicianApp = () => {
           </DialogHeader>
           
           {selectedIntervention && (
-            <ScrollArea className="flex-1 -mx-6 px-6">
+            <div className="flex-1 overflow-y-auto px-6 pb-6" style={{ WebkitOverflowScrolling: 'touch' }}>
               <div className="space-y-6 py-4">
                 {/* Status & Time */}
                 <div className="flex items-center gap-2 flex-wrap">
@@ -2907,7 +2940,7 @@ export const TechnicianApp = () => {
                   Créer un devis
                 </Button>
               </div>
-            </ScrollArea>
+            </div>
           )}
         </DialogContent>
       </Dialog>
