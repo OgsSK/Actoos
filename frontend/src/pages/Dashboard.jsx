@@ -108,7 +108,7 @@ const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
           {/* User */}
           <div className="p-4 border-t border-slate-800">
             {/* Super Admin Link - Only for platform owner */}
-            {user?.email?.toLowerCase().includes('salifkane612') && (
+            {(user?.email?.toLowerCase().includes('salifkane612') || user?.email?.toLowerCase() === 'contact@actoos.com') && (
               <Link
                 to="/super-admin"
                 onClick={onClose}
