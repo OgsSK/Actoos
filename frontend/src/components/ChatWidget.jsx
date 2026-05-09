@@ -2,6 +2,7 @@
  * ChatWidget - Real-time chat between Admin and Technicians
  * 
  * Migrated to use Supabase directly
+ * Supports text messages and voice notes
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,11 +17,13 @@ import {
 } from './ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
 import { 
-  MessageCircle, Send, X, User, Clock, ChevronLeft, Loader2, Pencil, Check, XCircle 
+  MessageCircle, Send, X, User, Clock, ChevronLeft, Loader2, Pencil, Check, XCircle, Mic 
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { VoiceRecorder } from './VoiceRecorder';
+import { AudioPlayer } from './AudioPlayer';
 
 // Chat Button with unread badge
 export const ChatButton = ({ onClick, unreadCount = 0 }) => {
@@ -83,10 +86,11 @@ const isEditable = (createdAt) => {
   return diffMinutes <= 15;
 };
 
-// Single Message Component with Edit capability
+// Single Message Component with Edit capability and Voice support
 const ChatMessage = ({ message, isOwn, showSender, onEdit, editingId, onSaveEdit, onCancelEdit, editValue, setEditValue }) => {
-  const canEdit = isOwn && isEditable(message.created_at);
+  const canEdit = isOwn && isEditable(message.created_at) && message.message_type !== 'voice';
   const isEditing = editingId === message.id;
+  const isVoiceMessage = message.message_type === 'voice';
   
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2 group`}>
@@ -129,6 +133,26 @@ const ChatMessage = ({ message, isOwn, showSender, onEdit, editingId, onSaveEdit
               </button>
             </div>
           </div>
+        ) : isVoiceMessage ? (
+          <>
+            {/* Voice message with audio player */}
+            <div className="flex items-center gap-2 mb-1">
+              <Mic className={`w-4 h-4 ${isOwn ? 'text-emerald-100' : 'text-emerald-500'}`} />
+              <span className={`text-xs ${isOwn ? 'text-emerald-100' : 'text-slate-500'}`}>
+                Message vocal
+              </span>
+            </div>
+            <AudioPlayer 
+              src={message.audio_url} 
+              duration={message.audio_duration}
+              isOwn={isOwn}
+            />
+            <div className={`flex items-center gap-2 mt-1 ${isOwn ? 'text-emerald-100' : 'text-slate-400'}`}>
+              <span className="text-xs">
+                {formatMessageTime(message.created_at)}
+              </span>
+            </div>
+          </>
         ) : (
           <>
             <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
@@ -143,7 +167,7 @@ const ChatMessage = ({ message, isOwn, showSender, onEdit, editingId, onSaveEdit
           </>
         )}
         
-        {/* Edit button - only visible on hover for own editable messages */}
+        {/* Edit button - only visible on hover for own editable text messages */}
         {canEdit && !isEditing && (
           <button
             onClick={() => onEdit(message)}
@@ -223,6 +247,7 @@ const MessageThread = ({
   conversation, 
   messages, 
   onSend,
+  onSendVoice,
   onEdit, 
   onBack, 
   loading,
@@ -234,6 +259,7 @@ const MessageThread = ({
   onCancelEdit
 }) => {
   const [newMessage, setNewMessage] = useState('');
+  const [isRecordingMode, setIsRecordingMode] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -244,14 +270,21 @@ const MessageThread = ({
 
   // Focus input on mount
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (!isRecordingMode) {
+      inputRef.current?.focus();
+    }
+  }, [isRecordingMode]);
 
   const handleSend = (e) => {
     e.preventDefault();
     if (!newMessage.trim() || sendingMessage) return;
     onSend(newMessage.trim());
     setNewMessage('');
+  };
+
+  const handleVoiceSend = async (audioBlob, duration) => {
+    await onSendVoice(audioBlob, duration);
+    setIsRecordingMode(false);
   };
 
   // Group messages by date
@@ -317,32 +350,59 @@ const MessageThread = ({
         <div ref={messagesEndRef} />
       </ScrollArea>
 
-      {/* Input */}
-      <form onSubmit={handleSend} className="p-4 border-t border-slate-200 bg-white">
-        <div className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Écrivez votre message..."
-            className="flex-1"
+      {/* Input area - switches between text and voice */}
+      <div className="p-4 border-t border-slate-200 bg-white">
+        {isRecordingMode ? (
+          <VoiceRecorder 
+            onSend={handleVoiceSend}
+            onCancel={() => setIsRecordingMode(false)}
             disabled={sendingMessage}
-            data-testid="chat-input"
           />
-          <Button 
-            type="submit" 
-            disabled={!newMessage.trim() || sendingMessage}
-            className="bg-emerald-600 hover:bg-emerald-700"
-            data-testid="send-message-btn"
-          >
-            {sendingMessage ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
+        ) : (
+          <form onSubmit={handleSend} className="flex gap-2">
+            <Input
+              ref={inputRef}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Écrivez votre message..."
+              className="flex-1"
+              disabled={sendingMessage}
+              data-testid="chat-input"
+            />
+            
+            {/* Mic button - only show when no text is entered */}
+            {!newMessage.trim() && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsRecordingMode(true)}
+                disabled={sendingMessage}
+                className="h-10 w-10 p-0 rounded-full hover:bg-emerald-50 hover:text-emerald-600"
+                title="Message vocal"
+                data-testid="voice-record-btn"
+              >
+                <Mic className="w-5 h-5" />
+              </Button>
             )}
-          </Button>
-        </div>
-      </form>
+            
+            {/* Send button - only show when text is entered */}
+            {newMessage.trim() && (
+              <Button 
+                type="submit" 
+                disabled={sendingMessage}
+                className="bg-emerald-600 hover:bg-emerald-700"
+                data-testid="send-message-btn"
+              >
+                {sendingMessage ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </Button>
+            )}
+          </form>
+        )}
+      </div>
     </div>
   );
 };
@@ -497,6 +557,7 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
           content,
           entreprise_id: user.entreprise_id,
           is_read: false,
+          message_type: 'text',
           created_at: new Date().toISOString()
         })
         .select()
@@ -512,6 +573,74 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Erreur lors de l\'envoi');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  // Send voice message via Supabase Storage
+  const handleSendVoice = async (audioBlob, duration) => {
+    if (!selectedConversation || !user?.id) return;
+    
+    try {
+      setSendingMessage(true);
+      
+      // Generate unique filename
+      const timestamp = Date.now();
+      const extension = audioBlob.type.includes('webm') ? 'webm' : 'mp4';
+      const fileName = `voice_${user.id}_${timestamp}.${extension}`;
+      const filePath = `${user.entreprise_id}/voice_notes/${fileName}`;
+      
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, audioBlob, {
+          contentType: audioBlob.type,
+          cacheControl: '3600'
+        });
+      
+      if (uploadError) {
+        // If bucket doesn't exist, try creating message without storage
+        console.error('Storage upload error:', uploadError);
+        throw new Error('Impossible d\'envoyer le message vocal. Vérifiez la configuration du stockage.');
+      }
+      
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath);
+      
+      const audioUrl = urlData.publicUrl;
+      
+      // Create message in database
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert({
+          sender_id: user.id,
+          recipient_id: selectedConversation.user_id,
+          content: '🎤 Message vocal',
+          entreprise_id: user.entreprise_id,
+          is_read: false,
+          message_type: 'voice',
+          audio_url: audioUrl,
+          audio_duration: duration,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Add message to list
+      setMessages(prev => [...prev, data]);
+      
+      // Update conversation list
+      loadConversations();
+      
+      toast.success('Message vocal envoyé');
+    } catch (error) {
+      console.error('Error sending voice message:', error);
+      toast.error(error.message || 'Erreur lors de l\'envoi du message vocal');
     } finally {
       setSendingMessage(false);
     }
@@ -656,6 +785,7 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
               conversation={selectedConversation}
               messages={messages}
               onSend={handleSendMessage}
+              onSendVoice={handleSendVoice}
               onEdit={handleStartEdit}
               onBack={isTech ? onClose : handleBack}
               loading={messagesLoading}

@@ -7,6 +7,49 @@
 ---
 
 
+## ACTOOS PRO - Voice Notes Feature (9 Mai 2026)
+
+### Fonctionnalité Implémentée
+- **Bouton micro** : Apparaît à côté du champ de texte (visible quand le champ est vide)
+- **Enregistrement** : Max 1 minute avec indicateur de durée et animation
+- **Prévisualisation** : Écouter, supprimer ou envoyer avant confirmation
+- **Lecteur audio** : Barre de progression waveform dans les bulles de chat
+
+### Fichiers Créés/Modifiés
+- `/app/frontend/src/components/VoiceRecorder.jsx` - Composant d'enregistrement
+- `/app/frontend/src/components/AudioPlayer.jsx` - Lecteur audio compact
+- `/app/frontend/src/components/ChatWidget.jsx` - Intégration complète
+
+### Action Requise dans Supabase
+
+1. **Créer le bucket de stockage** :
+   - Aller dans Storage > Create bucket
+   - Nom: `chat-attachments`
+   - Public: Oui (pour que les audios soient lisibles)
+
+2. **Ajouter les colonnes à chat_messages** :
+```sql
+ALTER TABLE chat_messages 
+ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) DEFAULT 'text',
+ADD COLUMN IF NOT EXISTS audio_url TEXT,
+ADD COLUMN IF NOT EXISTS audio_duration INTEGER;
+```
+
+3. **Politique RLS pour le bucket** (si RLS activé):
+```sql
+-- Permettre l'upload aux utilisateurs authentifiés
+CREATE POLICY "Allow uploads" ON storage.objects
+FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'chat-attachments');
+
+-- Permettre la lecture publique
+CREATE POLICY "Allow public read" ON storage.objects
+FOR SELECT TO public
+USING (bucket_id = 'chat-attachments');
+```
+
+---
+
 ## ACTOOS PRO - Chat Edit Feature (9 Mai 2026)
 
 ### Fonctionnalité Implémentée
