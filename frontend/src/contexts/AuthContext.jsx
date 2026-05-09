@@ -44,31 +44,50 @@ const TOKEN_REFRESH_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // Refresh 7 days befor
 const TOKEN_CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour (not every minute)
 
 // Detect which app variant we're in (Admin vs Tech) based on URL
+// This is determined ONCE at app load and cached
+let cachedAppVariant = null;
+
 const getAppVariant = () => {
+  // Return cached value if already determined
+  if (cachedAppVariant) {
+    return cachedAppVariant;
+  }
+  
   const path = window.location.pathname;
   const savedVariant = localStorage.getItem('app_variant');
+  const pwaRole = localStorage.getItem('pwa_role');
   
-  // If we're on a /tech path, it's the Tech app
+  // Priority 1: If we're on a /tech path, it's the Tech app
   if (path.startsWith('/tech')) {
-    return 'tech';
+    cachedAppVariant = 'tech';
+    localStorage.setItem('app_variant', 'tech');
+    return cachedAppVariant;
   }
   
-  // If we have a saved variant from PWA installation, use it
-  if (savedVariant) {
-    return savedVariant;
+  // Priority 2: If PWA role is set to technician
+  if (pwaRole === 'technicien' || pwaRole === 'tech') {
+    cachedAppVariant = 'tech';
+    localStorage.setItem('app_variant', 'tech');
+    return cachedAppVariant;
   }
   
-  // Check if launched as standalone PWA - use the start_url hint
-  if (window.matchMedia('(display-mode: standalone)').matches) {
-    // Check referrer or saved preference
-    const pwaRole = localStorage.getItem('pwa_role');
-    if (pwaRole === 'technicien' || pwaRole === 'tech') {
-      return 'tech';
-    }
+  // Priority 3: Use saved variant from previous session
+  if (savedVariant === 'tech' || savedVariant === 'admin') {
+    cachedAppVariant = savedVariant;
+    return cachedAppVariant;
   }
   
   // Default to admin
-  return 'admin';
+  cachedAppVariant = 'admin';
+  localStorage.setItem('app_variant', 'admin');
+  return cachedAppVariant;
+};
+
+// Force re-detection of app variant (used after login when we know the user role)
+const setAppVariant = (variant) => {
+  cachedAppVariant = variant;
+  localStorage.setItem('app_variant', variant);
+  localStorage.setItem('pwa_role', variant === 'tech' ? 'technicien' : 'admin');
 };
 
 // Get storage key prefix based on app variant
@@ -543,6 +562,11 @@ export const AuthProvider = ({ children }) => {
       safeStorage.setItem('user', JSON.stringify(userData));
       safeStorage.setItem('entreprise', JSON.stringify(entData));
       
+      // Set the app variant based on user role BEFORE setting state
+      // This ensures future localStorage operations use the correct prefix
+      const isTech = userData.role === 'technicien' || userData.role === 'tech';
+      setAppVariant(isTech ? 'tech' : 'admin');
+      
       setToken(authToken);
       setUser(userData);
       setEntreprise(entData);
@@ -560,6 +584,10 @@ export const AuthProvider = ({ children }) => {
   // Complete login after 2FA verification
   const complete2FALogin = (authData) => {
     const { access_token, user: userData, entreprise: entData } = authData;
+    
+    // Set the app variant based on user role
+    const isTech = userData.role === 'technicien' || userData.role === 'tech';
+    setAppVariant(isTech ? 'tech' : 'admin');
     
     // Persist all data to localStorage
     safeStorage.setItem('token', access_token);
