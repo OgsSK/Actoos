@@ -48,6 +48,8 @@ const TwoFactorSettings = () => {
       }
     } catch (error) {
       console.error('Error loading 2FA status:', error);
+      // Set default status if API fails - 2FA not enabled
+      setStatus({ enabled: false, method: null });
     } finally {
       setLoading(false);
     }

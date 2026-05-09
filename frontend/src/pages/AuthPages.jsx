@@ -162,7 +162,7 @@ export const LoginPage = () => {
             <div className="mt-4 pt-4 border-t border-slate-200 text-center text-sm text-slate-500">
               Pas encore de compte ?{' '}
               <Link to="/pricing" className="text-emerald-600 hover:underline font-medium">
-                Démarrer l'essai gratuit
+                Créer un compte
               </Link>
             </div>
           </CardContent>

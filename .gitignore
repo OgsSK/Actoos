@@ -768,3 +768,6 @@ credentials.json
 *.pem
 *.key
 .credentials
+actoos-one-backup/node_modules/.cache/default-development/3.pack
+actoos-one-backup/node_modules/.cache/default-development/32.pack
+actoos-one-backup/node_modules/.cache/default-development/14.pack
