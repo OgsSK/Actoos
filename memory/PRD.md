@@ -6,6 +6,29 @@
 
 ---
 
+
+## ACTOOS PRO - UI Branding Fix (9 Mai 2026)
+
+### Problème Résolu
+L'agent précédent avait utilisé les icônes carrées PWA (`actoos-pro-icon.png`) pour le branding de l'interface web, alors que le logo horizontal avec texte devait être utilisé.
+
+### Solution Implémentée
+- **Logo horizontal** (`/logo-actoos-pro-full.png`) pour l'UI web :
+  - AuthPages.jsx (Login, Forgot Password, Reset Password)
+  - LandingPage.jsx (Header, Footer)
+  - PricingPage.jsx (Header, Footer)
+  - SignupPage.jsx (Header, Footer)
+  - FeaturesPage.jsx (Header)
+  - SectorsPage.jsx (Header)
+  - Pricing.jsx (ancienne page)
+
+- **Icônes carrées** restent uniquement pour :
+  - Manifests PWA (`manifest.json`, `manifest-admin.json`, `manifest-tech.json`)
+  - Favicons (`favicon.ico`, `favicon-*.png`)
+  - Apps internes (Dashboard, TechnicianApp) où l'icône carrée est appropriée
+
+---
+
 ## ACTOOS PRO - Multi-PWA Session Support (9 Mai 2026)
 
 ### Problème Résolu

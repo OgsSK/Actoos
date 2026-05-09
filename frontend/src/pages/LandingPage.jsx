@@ -110,8 +110,7 @@ const LandingPage = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2">
-              <img src="/logo-actoos-icon.png" alt="ACTOOS PRO" className="h-10 sm:h-12" />
-              <span className="hidden sm:inline font-bold text-lg text-slate-900">ACTOOS PRO</span>
+              <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-10 sm:h-12" />
             </Link>
 
             {/* Desktop Menu */}
@@ -489,8 +488,7 @@ const LandingPage = () => {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <img src="/logo-actoos-icon.png" alt="ACTOOS PRO" className="h-10" />
-                <span className="font-bold text-white">ACTOOS PRO</span>
+                <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-10" />
               </div>
               <p className="text-emerald-400 text-sm font-medium mb-2">
                 Run your business, simply.

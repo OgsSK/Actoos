@@ -324,7 +324,7 @@ const SignupPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2">
-              <img src="/logo-actoos-icon.png" alt="ACTOOS PRO" className="h-10 sm:h-12" />
+              <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-10 sm:h-12" />
             </Link>
             
             <Button variant="ghost" onClick={() => navigate('/login')}>
@@ -809,7 +809,7 @@ const SignupPage = () => {
       {/* Footer */}
       <footer className="py-8 px-4 border-t bg-slate-50">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <img src="/logo-actoos-icon.png" alt="ACTOOS PRO" className="h-8" />
+          <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-8" />
           <p className="text-sm text-slate-500">© {new Date().getFullYear()} Actoos. Tous droits réservés.</p>
         </div>
       </footer>

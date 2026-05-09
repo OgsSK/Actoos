@@ -272,7 +272,7 @@ const PricingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2">
-              <img src="/logo-actoos-icon.png" alt="ACTOOS PRO" className="h-10 sm:h-12" />
+              <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-10 sm:h-12" />
             </Link>
 
             <div className="hidden md:flex items-center gap-8">
@@ -622,7 +622,7 @@ const PricingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <img src="/branding/actoos-pro-logo.png" alt="ACTOOS PRO" className="h-10" onError={(e) => { e.target.src = '/actoos-logo.svg'; }} />
+              <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-10" />
               <p className="text-sm text-slate-500 mt-4">
                 Le logiciel de gestion d'interventions terrain pour les professionnels.
               </p>
