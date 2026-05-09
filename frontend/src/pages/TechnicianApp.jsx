@@ -2907,29 +2907,32 @@ export const TechnicianApp = () => {
 
       {/* Available Intervention Detail Modal - View details before claiming */}
       <Dialog open={!!viewingAvailableIntervention} onOpenChange={() => setViewingAvailableIntervention(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto relative" aria-describedby="available-intervention-detail-description">
-          {/* Close button - always visible */}
-          <button
-            type="button"
-            onClick={() => setViewingAvailableIntervention(null)}
-            className="absolute right-3 top-3 z-50 w-10 h-10 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center shadow-md border border-slate-300"
-            aria-label="Fermer"
-          >
-            <X className="w-6 h-6 text-slate-700" />
-          </button>
+        <DialogContent className="max-w-lg h-[90vh] flex flex-col p-0" aria-describedby="available-intervention-detail-description">
+          {/* Fixed Header with close button */}
+          <div className="sticky top-0 bg-white z-10 p-4 pb-2 border-b border-slate-100">
+            <button
+              type="button"
+              onClick={() => setViewingAvailableIntervention(null)}
+              className="absolute right-3 top-3 z-50 w-10 h-10 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center shadow-md border border-slate-300"
+              aria-label="Fermer"
+            >
+              <X className="w-6 h-6 text-slate-700" />
+            </button>
+            
+            <DialogHeader className="pr-14">
+              <DialogTitle className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-amber-500" />
+                {viewingAvailableIntervention?.titre}
+              </DialogTitle>
+              <p id="available-intervention-detail-description" className="sr-only">
+                Détails de l'intervention disponible
+              </p>
+            </DialogHeader>
+          </div>
           
-          <DialogHeader className="pr-14">
-            <DialogTitle className="flex items-center gap-2">
-              <Bell className="w-5 h-5 text-amber-500" />
-              {viewingAvailableIntervention?.titre}
-            </DialogTitle>
-            <p id="available-intervention-detail-description" className="sr-only">
-              Détails de l'intervention disponible
-            </p>
-          </DialogHeader>
-          
+          {/* Scrollable content */}
           {viewingAvailableIntervention && (
-            <div className="space-y-4 pb-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {/* Alert banner */}
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                   <p className="text-sm font-medium text-amber-800">
@@ -3061,22 +3064,22 @@ export const TechnicianApp = () => {
                   </Card>
                 )}
 
-                {/* Action buttons - sticky at bottom */}
-                <div className="space-y-3 pt-4 border-t border-slate-200 sticky bottom-0 bg-white pb-2">
+                {/* Action buttons - at the bottom */}
+                <div className="space-y-3 pt-4 border-t border-slate-200 bg-white mt-4">
                   <Button 
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white h-12 text-base"
                     onClick={() => handleClaimIntervention(viewingAvailableIntervention.id)}
                     data-testid="claim-from-detail-btn"
                   >
-                    <CheckCircle className="w-4 h-4 mr-2" />
+                    <CheckCircle className="w-5 h-5 mr-2" />
                     Accepter cette mission
                   </Button>
                   <Button 
                     variant="outline"
-                    className="w-full"
+                    className="w-full h-12 text-base"
                     onClick={() => setViewingAvailableIntervention(null)}
                   >
-                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    <ChevronLeft className="w-5 h-5 mr-2" />
                     Retour à la liste
                   </Button>
                 </div>
