@@ -2392,18 +2392,14 @@ export const TechnicianApp = () => {
           <div className="flex items-center gap-3">
             {/* Show entreprise logo if available, otherwise default Actoos icon */}
             {entreprise?.logo_url ? (
-              <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center overflow-hidden">
-                <img 
-                  src={entreprise.logo_url} 
-                  alt={entreprise.nom || 'Logo'} 
-                  className="w-10 h-10 object-contain"
-                  onError={(e) => { e.target.src = '/pwa-icon-192.png'; }}
-                />
-              </div>
+              <img 
+                src={entreprise.logo_url} 
+                alt={entreprise.nom || 'Logo'} 
+                className="w-11 h-11 rounded-xl object-contain"
+                onError={(e) => { e.target.src = '/logo-icon-site.png'; }}
+              />
             ) : (
-              <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center overflow-hidden">
-                <img src="/pwa-icon-192.png" alt="ACTOOS PRO" className="w-10 h-10 object-contain" />
-              </div>
+              <img src="/logo-icon-site.png" alt="ACTOOS PRO" className="w-11 h-11 rounded-xl object-contain" />
             )}
             <div>
               <h1 className="font-bold text-lg text-slate-900">{dateLabel}</h1>

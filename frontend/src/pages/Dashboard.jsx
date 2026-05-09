@@ -75,9 +75,7 @@ const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
           <div className="p-4 border-b border-slate-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 bg-white rounded-xl shadow-sm flex items-center justify-center overflow-hidden">
-                  <img src="/pwa-icon-192.png" alt="ACTOOS PRO" className="w-9 h-9 object-contain" />
-                </div>
+                <img src="/logo-icon-site.png" alt="ACTOOS PRO" className="w-10 h-10 rounded-xl object-contain" />
                 <div>
                   <h1 className="font-bold text-lg">Actoos</h1>
                   <p className="text-xs text-slate-400 truncate max-w-[140px]">{entreprise?.nom}</p>
