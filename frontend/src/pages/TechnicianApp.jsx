@@ -2395,11 +2395,11 @@ export const TechnicianApp = () => {
               <img 
                 src={entreprise.logo_url} 
                 alt={entreprise.nom || 'Logo'} 
-                className="w-8 h-8 object-contain rounded"
-                onError={(e) => { e.target.src = '/branding/actoos-pro-icon.png'; }}
+                className="w-10 h-10 object-contain rounded"
+                onError={(e) => { e.target.src = '/pwa-icon-192.png'; }}
               />
             ) : (
-              <img src="/logo-actoos-icon.png" alt="ACTOOS PRO" className="w-8 h-8 object-contain" />
+              <img src="/pwa-icon-192.png" alt="ACTOOS PRO" className="w-10 h-10 object-contain" />
             )}
             <div>
               <h1 className="font-bold text-lg text-slate-900">{dateLabel}</h1>

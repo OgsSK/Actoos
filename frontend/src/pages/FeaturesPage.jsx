@@ -82,7 +82,8 @@ const FeaturesPage = () => {
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-10 sm:h-12" />
+            <img src="/pwa-icon-192.png" alt="ACTOOS" className="h-9 w-9" />
+            <span className="font-bold text-lg text-slate-900 hidden sm:inline">ACTOOS PRO</span>
           </Link>
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/login')}>

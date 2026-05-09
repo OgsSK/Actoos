@@ -108,9 +108,10 @@ const LandingPage = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
+            {/* Logo - Icon + Text */}
             <Link to="/" className="flex items-center gap-2">
-              <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-10 sm:h-12" />
+              <img src="/pwa-icon-192.png" alt="ACTOOS" className="h-9 w-9" />
+              <span className="font-bold text-lg text-slate-900 hidden sm:inline">ACTOOS PRO</span>
             </Link>
 
             {/* Desktop Menu */}
@@ -487,8 +488,9 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-10" />
+              <div className="flex items-center gap-3 mb-4">
+                <img src="/pwa-icon-192.png" alt="ACTOOS" className="h-10 w-10" />
+                <span className="font-bold text-xl text-white">ACTOOS PRO</span>
               </div>
               <p className="text-emerald-400 text-sm font-medium mb-2">
                 Run your business, simply.

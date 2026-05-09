@@ -147,36 +147,27 @@ const safeStorage = {
   }
 };
 
-// Function to update PWA manifest, favicon, and theme based on user role
+// Function to update PWA theme based on user role (simplified - single icon)
 const updatePWAForRole = (role) => {
   const isAdmin = role === 'admin' || role === 'super_admin';
   const isTech = role === 'technicien' || role === 'tech';
   
   // Get DOM elements
-  const manifestLink = document.getElementById('manifest-link') || document.querySelector('link[rel="manifest"]');
   const themeColor = document.querySelector('meta[name="theme-color"]');
   const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-  const appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
-  const favicon = document.querySelector('link[rel="icon"][type="image/png"]');
   
   if (isTech) {
-    // Technician - Orange theme
-    if (manifestLink) manifestLink.href = '/manifest-tech.json';
-    if (themeColor) themeColor.content = '#F97316';
-    if (appleTitle) appleTitle.content = 'Actoos Tech';
-    if (appleTouchIcon) appleTouchIcon.href = '/icons-tech/icon-192x192.png';
-    if (favicon) favicon.href = '/icons-tech/icon-48x48.png';
-    document.title = 'Actoos Tech';
+    // Technician
+    if (themeColor) themeColor.content = '#10B981'; // Emerald
+    if (appleTitle) appleTitle.content = 'ACTOOS PRO';
+    document.title = 'ACTOOS PRO - Technicien';
     // Save app variant for localStorage prefixing
     safeStorage.setRaw('app_variant', 'tech');
   } else if (isAdmin) {
-    // Admin - Blue theme  
-    if (manifestLink) manifestLink.href = '/manifest-admin.json';
-    if (themeColor) themeColor.content = '#2563EB';
-    if (appleTitle) appleTitle.content = 'Actoos Admin';
-    if (appleTouchIcon) appleTouchIcon.href = '/icons-admin/icon-192x192.png';
-    if (favicon) favicon.href = '/icons-admin/icon-48x48.png';
-    document.title = 'Actoos Admin';
+    // Admin  
+    if (themeColor) themeColor.content = '#10B981'; // Emerald
+    if (appleTitle) appleTitle.content = 'ACTOOS PRO';
+    document.title = 'ACTOOS PRO - Admin';
     // Save app variant for localStorage prefixing
     safeStorage.setRaw('app_variant', 'admin');
   }

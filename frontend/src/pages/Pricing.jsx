@@ -85,7 +85,7 @@ export const PricingPage = () => {
       <header className="py-6 px-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-10" />
+            <img src="/pwa-icon-192.png" alt="ACTOOS" className="h-9 w-9" />
           </div>
           <Button variant="outline" onClick={() => navigate('/login')} className="border-white/20 text-white hover:bg-white/10">
             Se connecter
@@ -387,7 +387,7 @@ export const SignupPage = () => {
       <Card className="w-full max-w-md bg-slate-800/90 border-slate-700">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-10" />
+            <img src="/pwa-icon-192.png" alt="ACTOOS" className="h-9 w-9" />
           </div>
           <CardTitle className="text-xl text-white">Créer votre compte ACTOOS PRO</CardTitle>
           {plan && (
@@ -552,7 +552,7 @@ export const SignupSuccessPage = () => {
       <Card className="w-full max-w-md bg-slate-800/90 border-slate-700 text-center">
         <CardHeader>
           <div className="flex items-center justify-center mb-4">
-            <img src="/logo-actoos-pro-full.png" alt="ACTOOS PRO" className="h-10" />
+            <img src="/pwa-icon-192.png" alt="ACTOOS" className="h-9 w-9" />
           </div>
         </CardHeader>
         
