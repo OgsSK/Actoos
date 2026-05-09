@@ -2226,22 +2226,18 @@ export const TechnicianApp = () => {
       const uploadedPhoto = await photosApi.upload(selectedIntervention.id, file, photoTag || 'autre');
       toast.success('Photo ajoutée');
       
-      // Add the uploaded photo to the local state immediately
-      // This ensures the photo is visible even if it's stored locally (base64)
-      if (uploadedPhoto) {
-        setPhotos(prev => [...prev, uploadedPhoto]);
+      // Add the uploaded photo to local state immediately for instant UI feedback
+      if (uploadedPhoto && uploadedPhoto.url) {
+        setPhotos(prev => {
+          // Avoid duplicates by checking if photo already exists
+          const exists = prev.some(p => p.id === uploadedPhoto.id || p.url === uploadedPhoto.url);
+          if (exists) return prev;
+          return [...prev, uploadedPhoto];
+        });
       }
       
-      // Also try to reload from API to get any other photos
-      try {
-        const data = await photosApi.getForIntervention(selectedIntervention.id);
-        if (data && data.length > 0) {
-          setPhotos(data);
-        }
-      } catch (reloadError) {
-        // Keep the locally added photo even if reload fails
-        console.warn('Could not reload photos from API:', reloadError);
-      }
+      // Note: We don't reload from API here to preserve locally added photos
+      // Photos will sync on next modal open
     } catch (error) {
       console.error('Error uploading photo:', error);
       toast.error(error.message || 'Erreur lors de l\'upload');
@@ -2860,20 +2856,14 @@ export const TechnicianApp = () => {
 
       {/* Intervention Detail Modal */}
       <Dialog open={!!selectedIntervention} onOpenChange={() => setSelectedIntervention(null)}>
-        <DialogContent className="max-w-lg h-[90vh] flex flex-col p-0" aria-describedby="intervention-detail-description">
-          {/* Header with close button */}
-          <DialogHeader className="sticky top-0 bg-white z-10 px-6 pt-6 pb-4 border-b border-slate-100">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="pr-8">{selectedIntervention?.titre}</DialogTitle>
-              <button
-                onClick={() => setSelectedIntervention(null)}
-                className="absolute right-4 top-4 rounded-full p-1 bg-slate-100 hover:bg-slate-200 transition-colors"
-                data-testid="close-intervention-modal"
-              >
-                <X className="h-5 w-5 text-slate-600" />
-                <span className="sr-only">Fermer</span>
-              </button>
-            </div>
+        <DialogContent 
+          className="max-w-lg h-[90vh] flex flex-col p-0" 
+          aria-describedby="intervention-detail-description"
+          data-testid="intervention-detail-modal"
+        >
+          {/* Header - Close button is provided by DialogContent component */}
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-100 pr-14">
+            <DialogTitle data-testid="intervention-modal-title">{selectedIntervention?.titre}</DialogTitle>
             <p id="intervention-detail-description" className="sr-only">
               Détails de l'intervention et actions disponibles
             </p>

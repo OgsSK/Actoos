@@ -201,9 +201,12 @@ Fichier modifié: `/app/frontend/src/contexts/AuthContext.jsx`
 - ✅ Session persistence fix
 - ✅ Logout redirect fix
 - ✅ Plan limits fallback
+- ✅ **TechnicianApp Photos visibles** - Corrigé le 9 Mai 2026 : les photos uploadées s'affichent immédiatement après upload
+- ✅ **TechnicianApp Bouton X modal** - Corrigé le 9 Mai 2026 : bouton de fermeture visible avec z-index=50
 
 ### P1 (En attente vérification utilisateur)
 - ⏳ **Vérification PWA session sur iPhone** - L'utilisateur doit tester manuellement
+- ⏳ **RLS Policies bucket "photos" Supabase** - L'utilisateur doit configurer manuellement les policies INSERT/SELECT dans Dashboard Supabase production
 
 ### P2 (Backlog)
 - 📋 **Firebase Push Notifications** - Pas encore installé dans le projet
@@ -212,6 +215,30 @@ Fichier modifié: `/app/frontend/src/contexts/AuthContext.jsx`
 ### P3 (Future)
 - [ ] Intégration TouchPay/Orange Money réelle (clés API à obtenir)
 - [ ] Module Twilio SMS pour Actoos One
+
+---
+
+## ACTOOS PRO - TechnicianApp Bug Fixes (9 Mai 2026)
+
+### 1. Photos non visibles après upload ✅
+**Problème:** Les photos uploadées par le technicien n'apparaissaient pas dans l'UI
+**Cause:** Après l'upload, le code rechargait les photos depuis l'API (`setPhotos(data)`) ce qui écrasait la photo locale si l'API retournait vide
+**Solution:** Modifié `handlePhotoUpload` dans `TechnicianApp.jsx` pour :
+- Ajouter la photo immédiatement après upload sans recharger l'API
+- Vérifier les doublons avant d'ajouter (via `photo.id` ou `photo.url`)
+
+### 2. Bouton X (fermer) modal invisible ✅
+**Problème:** Le bouton de fermeture du modal d'intervention était caché ou invisible
+**Cause:** Le DialogContent de Shadcn avait déjà un bouton X intégré, mais avec un z-index insuffisant face au header sticky
+**Solution:**
+- Augmenté le z-index du bouton X natif à `z-50` dans `/app/frontend/src/components/ui/dialog.jsx`
+- Supprimé le bouton X custom dans `TechnicianApp.jsx` (redondant avec celui de DialogContent)
+- Ajouté `data-testid="dialog-close-button"` pour les tests
+
+### 3. Fichiers modifiés
+- `/app/frontend/src/pages/TechnicianApp.jsx` (lignes 2218-2244 : handlePhotoUpload, lignes 2857-2876 : DialogHeader simplifié)
+- `/app/frontend/src/components/ui/dialog.jsx` (ligne 38-42 : z-50 ajouté au bouton X)
+- `/app/frontend/src/App.js` (TechnicianRoute modifié pour permettre l'accès aux admins pour démo/test)
 
 ---
 

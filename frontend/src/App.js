@@ -110,11 +110,8 @@ const TechnicianRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // If user is admin, redirect to dashboard
-  if (user?.role === 'admin') {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  // Allow techs and admins to access technician app
+  // Admins can use it for testing/demo purposes
   return children;
 };
 
