@@ -709,6 +709,24 @@ export const AuthProvider = ({ children }) => {
         const entData = data.entreprise;
         
         if (authToken && userData) {
+          // IMPORTANT: Create native Supabase session for persistence
+          // The Edge Function returns a custom token, but we need a real Supabase session
+          // for persistSession: true and autoRefreshToken: true to work on iOS PWA
+          try {
+            const { error: nativeAuthError } = await supabase.auth.signInWithPassword({
+              email,
+              password
+            });
+            if (nativeAuthError) {
+              console.warn('Native Supabase session creation failed:', nativeAuthError.message);
+              // Continue anyway - we have the Edge Function token
+            } else {
+              console.log('Native Supabase session created for persistence');
+            }
+          } catch (nativeErr) {
+            console.warn('Native auth error:', nativeErr);
+          }
+          
           // Persist all auth data to localStorage
           safeStorage.setItem('token', authToken);
           safeStorage.setItem('user', JSON.stringify(userData));

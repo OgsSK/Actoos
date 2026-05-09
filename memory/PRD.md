@@ -205,7 +205,7 @@ Fichier modifié: `/app/frontend/src/contexts/AuthContext.jsx`
 - ✅ **TechnicianApp Bouton X modal** - Corrigé le 9 Mai 2026 : bouton de fermeture visible avec z-index=50
 
 ### P1 (En attente vérification utilisateur)
-- ⏳ **Vérification PWA session sur iPhone** - L'utilisateur doit tester manuellement
+- ⏳ **Vérification PWA session sur iPhone** - Fix implémenté le 9 Mai 2026 : ajout de `supabase.auth.signInWithPassword` après Edge Function pour créer session native. À tester sur iPhone physique.
 - ⏳ **RLS Policies bucket "photos" Supabase** - L'utilisateur doit configurer manuellement les policies INSERT/SELECT dans Dashboard Supabase production
 
 ### P2 (Backlog)
