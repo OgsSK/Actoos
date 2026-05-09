@@ -43,18 +43,55 @@ const getTokenExpiryTime = (token) => {
 const TOKEN_REFRESH_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // Refresh 7 days before expiry
 const TOKEN_CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour (not every minute)
 
+// Detect which app variant we're in (Admin vs Tech) based on URL
+const getAppVariant = () => {
+  const path = window.location.pathname;
+  const savedVariant = localStorage.getItem('app_variant');
+  
+  // If we're on a /tech path, it's the Tech app
+  if (path.startsWith('/tech')) {
+    return 'tech';
+  }
+  
+  // If we have a saved variant from PWA installation, use it
+  if (savedVariant) {
+    return savedVariant;
+  }
+  
+  // Check if launched as standalone PWA - use the start_url hint
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    // Check referrer or saved preference
+    const pwaRole = localStorage.getItem('pwa_role');
+    if (pwaRole === 'technicien' || pwaRole === 'tech') {
+      return 'tech';
+    }
+  }
+  
+  // Default to admin
+  return 'admin';
+};
+
+// Get storage key prefix based on app variant
+const getStoragePrefix = () => {
+  const variant = getAppVariant();
+  return variant === 'tech' ? 'tech_' : 'admin_';
+};
+
 // Helper: Safe localStorage operations (handles Safari private mode, quota exceeded, etc.)
+// Keys are prefixed by app variant (admin_ or tech_) to allow both PWAs on same device
 const safeStorage = {
   getItem: (key) => {
     try {
-      return localStorage.getItem(key);
+      const prefix = getStoragePrefix();
+      return localStorage.getItem(prefix + key);
     } catch {
       return null;
     }
   },
   setItem: (key, value) => {
     try {
-      localStorage.setItem(key, value);
+      const prefix = getStoragePrefix();
+      localStorage.setItem(prefix + key, value);
       return true;
     } catch {
       console.warn('localStorage unavailable, session will not persist');
@@ -63,9 +100,26 @@ const safeStorage = {
   },
   removeItem: (key) => {
     try {
-      localStorage.removeItem(key);
+      const prefix = getStoragePrefix();
+      localStorage.removeItem(prefix + key);
     } catch {
       // Ignore errors
+    }
+  },
+  // Get raw item without prefix (for migration or special cases)
+  getRaw: (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setRaw: (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch {
+      return false;
     }
   }
 };
@@ -90,6 +144,8 @@ const updatePWAForRole = (role) => {
     if (appleTouchIcon) appleTouchIcon.href = '/icons-tech/icon-192x192.png';
     if (favicon) favicon.href = '/icons-tech/icon-48x48.png';
     document.title = 'Actoos Tech';
+    // Save app variant for localStorage prefixing
+    safeStorage.setRaw('app_variant', 'tech');
   } else if (isAdmin) {
     // Admin - Blue theme  
     if (manifestLink) manifestLink.href = '/manifest-admin.json';
@@ -98,11 +154,74 @@ const updatePWAForRole = (role) => {
     if (appleTouchIcon) appleTouchIcon.href = '/icons-admin/icon-192x192.png';
     if (favicon) favicon.href = '/icons-admin/icon-48x48.png';
     document.title = 'Actoos Admin';
+    // Save app variant for localStorage prefixing
+    safeStorage.setRaw('app_variant', 'admin');
   }
   
-  // Store the role preference for PWA
-  localStorage.setItem('pwa_role', role);
+  // Store the role preference for PWA (using raw to avoid prefix)
+  safeStorage.setRaw('pwa_role', role);
 };
+
+// Migration: Move old unprefixed localStorage keys to new prefixed format
+// This runs once to migrate existing users
+const migrateOldStorageKeys = () => {
+  try {
+    const migrationDone = localStorage.getItem('storage_migration_v2');
+    if (migrationDone) return;
+    
+    // Check if there are old unprefixed keys
+    const oldToken = localStorage.getItem('token');
+    const oldUser = localStorage.getItem('user');
+    const oldEntreprise = localStorage.getItem('entreprise');
+    
+    if (oldToken || oldUser || oldEntreprise) {
+      // Determine which variant to migrate to based on user role
+      let variant = 'admin';
+      if (oldUser) {
+        try {
+          const userData = JSON.parse(oldUser);
+          if (userData.role === 'technicien' || userData.role === 'tech') {
+            variant = 'tech';
+          }
+        } catch {}
+      }
+      
+      // Also check URL path
+      if (window.location.pathname.startsWith('/tech')) {
+        variant = 'tech';
+      }
+      
+      const prefix = variant === 'tech' ? 'tech_' : 'admin_';
+      
+      // Migrate keys
+      if (oldToken) {
+        localStorage.setItem(prefix + 'token', oldToken);
+        localStorage.removeItem('token');
+      }
+      if (oldUser) {
+        localStorage.setItem(prefix + 'user', oldUser);
+        localStorage.removeItem('user');
+      }
+      if (oldEntreprise) {
+        localStorage.setItem(prefix + 'entreprise', oldEntreprise);
+        localStorage.removeItem('entreprise');
+      }
+      
+      // Save the variant
+      localStorage.setItem('app_variant', variant);
+      
+      console.log(`[Auth] Migrated localStorage to ${variant}_ prefix`);
+    }
+    
+    // Mark migration as done
+    localStorage.setItem('storage_migration_v2', 'true');
+  } catch (e) {
+    console.warn('[Auth] Migration failed:', e);
+  }
+};
+
+// Run migration on load
+migrateOldStorageKeys();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -474,11 +593,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Clear all auth data from localStorage
+    // Clear all auth data from localStorage (with prefix)
     safeStorage.removeItem('token');
     safeStorage.removeItem('user');
     safeStorage.removeItem('entreprise');
-    safeStorage.removeItem('pwa_role');
+    
+    // Note: Don't remove pwa_role or app_variant as these are needed for PWA identification
     
     // Reset fetchAttempted ref for next session
     fetchAttempted.current = false;
@@ -487,8 +607,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setEntreprise(null);
     
-    // Reset to default admin manifest (will be updated on next login)
-    updatePWAForRole('admin');
+    // Keep the current app variant's theme (don't reset to admin if logging out from tech)
   };
 
   // Currency formatting helpers based on entreprise settings

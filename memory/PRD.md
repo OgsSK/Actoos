@@ -6,20 +6,58 @@
 
 ---
 
+## ACTOOS PRO - Multi-PWA Session Support (9 Mai 2026)
+
+### Problème Résolu
+Les techniciens étaient déconnectés à chaque fermeture de l'app alors que les admins restaient connectés. Cela était dû au fait que les deux PWA (Admin et Tech) partageaient les mêmes clés localStorage.
+
+### Solution Implémentée
+Fichier modifié: `/app/frontend/src/contexts/AuthContext.jsx`
+
+**Améliorations clés :**
+1. **`getAppVariant()`** - Détecte automatiquement si on est dans l'app Admin ou Tech
+2. **`getStoragePrefix()`** - Retourne `admin_` ou `tech_` selon le variant
+3. **`safeStorage` avec préfixe** - Toutes les clés sont préfixées (`admin_token`, `tech_token`, etc.)
+4. **`migrateOldStorageKeys()`** - Migration automatique des anciennes clés sans préfixe
+5. **Support Multi-PWA** - Deux apps peuvent coexister sur le même appareil sans conflit
+
+### Structure localStorage
+| App | Token | User | Entreprise |
+|-----|-------|------|------------|
+| Admin PWA | `admin_token` | `admin_user` | `admin_entreprise` |
+| Tech PWA | `tech_token` | `tech_user` | `tech_entreprise` |
+
+---
+
 ## ACTOOS PRO - Session Persistence Fix (8 Mai 2026)
 
 ### Problème Résolu
 Les utilisateurs mobile étaient déconnectés quand ils fermaient l'app, rendant impossible le travail terrain.
 
 ### Solution Implémentée
-Fichier modifié: `/app/frontend/src/contexts/AuthContext.jsx`
-
 **Améliorations clés :**
 1. **`isTokenExpired(token)`** - Vérifie l'expiration du JWT avant utilisation
 2. **`safeStorage`** - Wrapper sécurisé pour localStorage (compatible Safari mode privé)
 3. **Persistance complète** - Token, User et Entreprise stockés dans localStorage
 4. **Gestion d'erreur intelligente** - Ne supprime pas la session sur erreurs réseau, seulement sur erreurs d'auth (401)
 5. **Réhydratation optimisée** - Utilise les données cachées immédiatement pendant le refresh en arrière-plan
+
+---
+
+## ACTOOS PRO - Edge Function Login v2.5 (9 Mai 2026)
+
+### Problème Résolu
+La fonction Edge Supabase `login` était cassée après une mise à jour pour sessions 30 jours.
+
+### Solution Implémentée
+Fichier: `/app/supabase/functions/login/index.ts`
+
+**Fix appliqué :**
+- Import statique de bcryptjs : `import bcryptjs from "https://esm.sh/bcryptjs@2.4.3"`
+- JWT 30 jours via `crypto.subtle` (natif Deno)
+- Aucune dépendance Worker (incompatible avec Edge Functions)
+
+---
 
 ### Comptes de Test ACTOOS PRO
 | Email | Rôle | Plan | Mot de passe |
