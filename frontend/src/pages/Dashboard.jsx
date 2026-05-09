@@ -299,6 +299,13 @@ const AlertCard = ({ alerts }) => {
   };
 
   const handleAlertClick = (alert) => {
+    // If alert has a direct link, use it
+    if (alert.link) {
+      navigate(alert.link);
+      return;
+    }
+    
+    // Fallback: navigate based on type
     const id = alert.entity_id || alert.id;
     switch (alert.type) {
       case 'facture_retard':

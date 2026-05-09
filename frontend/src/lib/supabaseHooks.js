@@ -200,6 +200,7 @@ export function useAlerts(entrepriseId) {
       interventionsRetard.data?.forEach(i => {
         alertsList.push({
           id: `intervention-${i.id}`,
+          entity_id: i.id,
           type: 'intervention_retard',
           message: `Intervention "${i.titre}" en retard`,
           link: `/dashboard/interventions/${i.id}`,
@@ -210,6 +211,7 @@ export function useAlerts(entrepriseId) {
       facturesRetard.data?.forEach(f => {
         alertsList.push({
           id: `facture-${f.id}`,
+          entity_id: f.id,
           type: 'facture_retard',
           message: `Facture ${f.numero} impayée`,
           link: `/dashboard/factures/${f.id}`,
