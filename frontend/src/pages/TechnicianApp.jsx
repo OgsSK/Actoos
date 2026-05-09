@@ -2907,8 +2907,8 @@ export const TechnicianApp = () => {
 
       {/* Available Intervention Detail Modal - View details before claiming */}
       <Dialog open={!!viewingAvailableIntervention} onOpenChange={() => setViewingAvailableIntervention(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col" aria-describedby="available-intervention-detail-description">
-          <DialogHeader>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" aria-describedby="available-intervention-detail-description">
+          <DialogHeader className="sticky top-0 bg-white z-10 pb-2">
             <DialogTitle className="flex items-center gap-2">
               <Bell className="w-5 h-5 text-amber-500" />
               {viewingAvailableIntervention?.titre}
@@ -2919,8 +2919,7 @@ export const TechnicianApp = () => {
           </DialogHeader>
           
           {viewingAvailableIntervention && (
-            <ScrollArea className="flex-1 -mx-6 px-6">
-              <div className="space-y-4 py-4">
+            <div className="space-y-4 pb-4">
                 {/* Alert banner */}
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                   <p className="text-sm font-medium text-amber-800">
@@ -3052,8 +3051,8 @@ export const TechnicianApp = () => {
                   </Card>
                 )}
 
-                {/* Action buttons */}
-                <div className="space-y-3 pt-4 border-t border-slate-200">
+                {/* Action buttons - sticky at bottom */}
+                <div className="space-y-3 pt-4 border-t border-slate-200 sticky bottom-0 bg-white pb-2">
                   <Button 
                     className="w-full bg-amber-500 hover:bg-amber-600 text-white"
                     onClick={() => handleClaimIntervention(viewingAvailableIntervention.id)}
@@ -3072,7 +3071,6 @@ export const TechnicianApp = () => {
                   </Button>
                 </div>
               </div>
-            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>
