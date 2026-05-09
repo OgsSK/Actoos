@@ -64,7 +64,7 @@
       "purpose": "any"
     },
     {
-      "src": "/icons-admin/icon-512x512.png",
+      "src": "/pwa-icon-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -74,8 +74,8 @@
   "id": "/dashboard",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "theme_color": "#2563EB",
-  "background_color": "#F8FAFC",
+  "theme_color": "#000000",
+  "background_color": "#000000",
   "orientation": "any",
   "scope": "/",
   "categories": ["business", "productivity"],
