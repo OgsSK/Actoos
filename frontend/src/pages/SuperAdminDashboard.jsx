@@ -95,47 +95,100 @@ const SuperAdminDashboard = () => {
       setLoading(true);
       
       // Fetch data directly from Supabase
-      const [entreprisesRes, feedbacksRes, couponsRes] = await Promise.all([
-        supabase.from('entreprises').select('*, users(count)').order('created_at', { ascending: false }).limit(200),
+      const [entreprisesRes, feedbacksRes, couponsRes, usersRes] = await Promise.all([
+        supabase.from('entreprises').select('*').order('created_at', { ascending: false }).limit(200),
         supabase.from('feedbacks').select('*').order('created_at', { ascending: false }).limit(50),
-        supabase.from('coupons').select('*').order('created_at', { ascending: false })
+        supabase.from('coupons').select('*').order('created_at', { ascending: false }),
+        supabase.from('users').select('id, role, created_at')
       ]);
       
       // Calculate stats
       const allEntreprises = entreprisesRes.data || [];
+      const allUsers = usersRes.data || [];
       const totalEntreprises = allEntreprises.length;
-      const activeEntreprises = allEntreprises.filter(e => e.subscription_status === 'active').length;
+      const activeEntreprises = allEntreprises.filter(e => e.subscription_status === 'active' || !e.subscription_status).length;
       const trialEntreprises = allEntreprises.filter(e => e.subscription_status === 'trial' || e.plan === 'trial').length;
+      const cancelledEntreprises = allEntreprises.filter(e => e.subscription_status === 'cancelled').length;
       
-      // Get user counts
-      const { count: totalUsers } = await supabase.from('users').select('id', { count: 'exact', head: true });
+      // Count by plan
+      const byPlan = {
+        startup: allEntreprises.filter(e => e.plan === 'startup').length,
+        pro: allEntreprises.filter(e => e.plan === 'pro').length,
+        enterprise: allEntreprises.filter(e => e.plan === 'enterprise').length
+      };
+      
+      // Count by billing
+      const byBilling = {
+        monthly: allEntreprises.filter(e => e.billing_period === 'monthly' || !e.billing_period).length,
+        yearly: allEntreprises.filter(e => e.billing_period === 'yearly').length
+      };
+      
+      // Recent signups (last 30 days)
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const recentSignups = allEntreprises.filter(e => new Date(e.created_at) >= thirtyDaysAgo).length;
+      
+      // User counts
+      const totalUsers = allUsers.length;
+      const admins = allUsers.filter(u => u.role === 'admin').length;
+      const technicians = allUsers.filter(u => u.role === 'tech' || u.role === 'technicien').length;
+      
+      // MRR calculation (monthly recurring revenue)
+      const prices = { startup: 19.99, pro: 49.99, enterprise: 89.99 };
+      const mrr = allEntreprises.reduce((sum, e) => {
+        if (e.subscription_status === 'cancelled') return sum;
+        return sum + (prices[e.plan] || 0);
+      }, 0);
+      
+      // Recent cancellations (last 7 days)
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const recentCancellations = allEntreprises.filter(e => 
+        e.subscription_status === 'cancelled' && 
+        new Date(e.updated_at) >= sevenDaysAgo
+      ).length;
       
       setStats({
-        total_entreprises: totalEntreprises,
-        active_entreprises: activeEntreprises,
-        trial_entreprises: trialEntreprises,
-        total_users: totalUsers || 0,
-        mrr: allEntreprises.reduce((sum, e) => {
-          const prices = { startup: 29, pro: 79, enterprise: 199 };
-          return sum + (e.subscription_status === 'active' ? (prices[e.plan] || 0) : 0);
-        }, 0)
+        entreprises: {
+          total: totalEntreprises,
+          active: activeEntreprises,
+          trial: trialEntreprises,
+          cancelled: cancelledEntreprises,
+          recent_signups: recentSignups,
+          by_plan: byPlan,
+          by_billing: byBilling
+        },
+        users: {
+          total: totalUsers,
+          admins: admins,
+          technicians: technicians,
+          active_today: 0 // Would need activity tracking
+        },
+        revenue: {
+          mrr: Math.round(mrr * 100) / 100,
+          arr: Math.round(mrr * 12 * 100) / 100
+        },
+        cancellations: {
+          total: cancelledEntreprises,
+          recent: recentCancellations
+        },
+        activity: {
+          total_interventions: 0, // Would need to query interventions table
+          total_devis: 0,
+          total_factures: 0
+        }
       });
       
       setEntreprises(allEntreprises);
       setFeedbacks(feedbacksRes.data || []);
       setCoupons(couponsRes.data || []);
       
-      // Cancellations - entreprises that were cancelled in last 30 days
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: cancellationsData } = await supabase.from('entreprises')
-        .select('*')
-        .eq('subscription_status', 'cancelled')
-        .gte('updated_at', thirtyDaysAgo);
-      setCancellations(cancellationsData || []);
+      // Cancellations list
+      const cancelledList = allEntreprises.filter(e => e.subscription_status === 'cancelled');
+      setCancellations(cancelledList);
       
-      // Revenue calculation
+      // Revenue state
       setRevenue({
-        mrr: stats?.mrr || 0,
+        current_mrr: Math.round(mrr * 100) / 100,
+        arr: Math.round(mrr * 12 * 100) / 100,
         growth: 0
       });
       

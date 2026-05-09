@@ -23,8 +23,17 @@
 - Ajouté `DEFAULT_PLAN_LIMITS` avec fallback par type de plan (startup/pro/enterprise)
 - Si `plan_limits` est vide, utilise les valeurs par défaut selon `currentPlan`
 
+### 3. Super Admin Stats Fix ✅
+**Problème:** Les statistiques affichaient 0 pour tout (Entreprises, Utilisateurs, MRR)
+**Cause:** Structure de `stats` incompatible - `setStats` définissait `total_entreprises` mais le rendu attendait `stats.entreprises.total`
+**Solution:**
+- Restructuré complètement `loadData()` pour fournir la bonne structure
+- Stats maintenant: `stats.entreprises.total`, `stats.users.total`, `stats.revenue.mrr`, etc.
+- Ajouté calcul de répartition par plan et par facturation
+
 ### Fichiers Modifiés
 - `/app/frontend/src/contexts/AuthContext.jsx` (lignes 490-526, 541-595)
+- `/app/frontend/src/pages/SuperAdminDashboard.jsx` (loadData refactorisé)
 
 ---
 
