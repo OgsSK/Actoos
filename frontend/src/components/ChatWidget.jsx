@@ -112,24 +112,26 @@ const ChatMessage = ({ message, isOwn, showSender, onEdit, editingId, onSaveEdit
             <textarea
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
-              className="w-full p-2 text-sm rounded border border-slate-300 text-slate-900 resize-none"
+              className="w-full p-2 text-sm rounded border-2 border-emerald-400 text-slate-900 resize-none bg-white"
               rows={2}
               autoFocus
             />
-            <div className="flex gap-1 justify-end">
+            <div className="flex gap-2 justify-end">
               <button
                 onClick={onCancelEdit}
-                className="p-1 rounded hover:bg-slate-200 text-slate-600"
+                className="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-medium flex items-center gap-1"
                 title="Annuler"
               >
                 <XCircle className="w-4 h-4" />
+                Annuler
               </button>
               <button
                 onClick={() => onSaveEdit(message.id, editValue)}
-                className="p-1 rounded hover:bg-emerald-100 text-emerald-600"
+                className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium flex items-center gap-1"
                 title="Enregistrer"
               >
                 <Check className="w-4 h-4" />
+                OK
               </button>
             </div>
           </div>
@@ -370,38 +372,43 @@ const MessageThread = ({
               data-testid="chat-input"
             />
             
-            {/* Always show mic button */}
-            <Button
+            {/* Mic button - always visible, activates voice recording */}
+            <button
               type="button"
-              variant="ghost"
-              onClick={() => setIsRecordingMode(true)}
+              onClick={() => {
+                if (!sendingMessage && !newMessage.trim()) {
+                  setIsRecordingMode(true);
+                }
+              }}
               disabled={sendingMessage || newMessage.trim().length > 0}
-              className={`h-10 w-10 p-0 rounded-full flex-shrink-0 ${
-                newMessage.trim().length > 0 
-                  ? 'opacity-30 cursor-not-allowed' 
-                  : 'hover:bg-emerald-50 hover:text-emerald-600'
+              className={`h-10 w-10 p-0 rounded-full flex-shrink-0 flex items-center justify-center border-0 outline-none touch-manipulation ${
+                newMessage.trim().length > 0 || sendingMessage
+                  ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400' 
+                  : 'bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 active:bg-emerald-100'
               }`}
               title="Message vocal"
               data-testid="voice-record-btn"
             >
               <Mic className="w-5 h-5" />
-            </Button>
+            </button>
             
-            {/* Always show send button */}
-            <Button 
-              type="submit" 
+            {/* Send button - always visible */}
+            <button
+              type="submit"
               disabled={!newMessage.trim() || sendingMessage}
-              className={`bg-emerald-600 hover:bg-emerald-700 flex-shrink-0 ${
-                !newMessage.trim() ? 'opacity-50 cursor-not-allowed' : ''
+              className={`h-10 px-4 rounded-lg flex-shrink-0 flex items-center justify-center font-medium touch-manipulation ${
+                !newMessage.trim() || sendingMessage
+                  ? 'bg-emerald-300 cursor-not-allowed text-white' 
+                  : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white'
               }`}
               data-testid="send-message-btn"
             >
               {sendingMessage ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <Send className="w-4 h-4" />
+                <Send className="w-5 h-5" />
               )}
-            </Button>
+            </button>
           </form>
         )}
       </div>
