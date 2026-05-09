@@ -612,12 +612,20 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
       const timestamp = Date.now();
       const fileName = `voice_${timestamp}.${extension}`;
       
-      console.log('Upload info:', { mimeType, extension, fileName, size: audioBlob.size });
+      console.log('Upload info:', { mimeType, extension, fileName, blobSize: audioBlob.size });
       
-      // Upload to Supabase Storage with correct content type
+      // Convert Blob to File for better compatibility
+      const audioFile = new File([audioBlob], fileName, { 
+        type: mimeType,
+        lastModified: Date.now()
+      });
+      
+      console.log('File created:', { name: audioFile.name, size: audioFile.size, type: audioFile.type });
+      
+      // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('chat-attachments')
-        .upload(fileName, audioBlob, {
+        .upload(fileName, audioFile, {
           contentType: mimeType,
           cacheControl: '3600',
           upsert: true
@@ -627,6 +635,8 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
         console.error('Upload error:', uploadError);
         throw new Error(`Erreur d'upload: ${uploadError.message || 'Erreur inconnue'}`);
       }
+      
+      console.log('Upload success:', uploadData);
       
       // Get public URL
       const { data: urlData } = supabase.storage
