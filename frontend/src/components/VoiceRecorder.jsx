@@ -1,8 +1,7 @@
 /**
  * VoiceRecorder Component
  * Records audio with 1-minute max duration
- * Shows preview before sending
- * Supports iOS Safari and Chrome/Firefox
+ * iOS Safari compatible version
  */
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, Square, Trash2, Send, Loader2, Play, Pause } from 'lucide-react';
@@ -16,24 +15,10 @@ const formatTime = (seconds) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-// Get the best supported mime type for the browser
-const getSupportedMimeType = () => {
-  const types = [
-    'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/mp4',
-    'audio/ogg;codecs=opus',
-    'audio/wav',
-    ''  // Let browser choose default
-  ];
-  
-  for (const type of types) {
-    if (type === '' || MediaRecorder.isTypeSupported(type)) {
-      console.log('Using audio format:', type || 'browser default');
-      return type;
-    }
-  }
-  return '';
+// Detect iOS
+const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 };
 
 export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
@@ -67,50 +52,50 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
   const startRecording = async () => {
     try {
       setRecordingError(null);
-      console.log('=== STARTING RECORDING ===');
       
+      // Simple audio constraints - iOS doesn't like complex ones
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          channelCount: 1,
-          sampleRate: 44100
-        } 
+        audio: true
       });
       
-      console.log('Got audio stream:', stream.getAudioTracks()[0].label);
       streamRef.current = stream;
+      audioChunksRef.current = [];
       
-      // Get best supported format
-      const mimeType = getSupportedMimeType();
+      // On iOS, don't specify mimeType - let browser choose
+      let options = {};
       
-      // Create MediaRecorder with options
-      const options = mimeType ? { mimeType } : {};
-      console.log('MediaRecorder options:', options);
+      // On non-iOS, try webm
+      if (!isIOS()) {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          options = { mimeType: 'audio/webm;codecs=opus' };
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          options = { mimeType: 'audio/webm' };
+        }
+      }
       
       const mediaRecorder = new MediaRecorder(stream, options);
-      console.log('MediaRecorder created, actual mimeType:', mediaRecorder.mimeType);
-      
       mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        console.log('Data available, size:', event.data.size);
-        if (event.data.size > 0) {
+        if (event.data && event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
-        console.log('Recording stopped, chunks:', audioChunksRef.current.length);
-        const mimeType = mediaRecorder.mimeType || 'audio/webm';
-        const blob = new Blob(audioChunksRef.current, { type: mimeType });
-        console.log('Created blob, size:', blob.size, 'type:', blob.type);
+        // Create blob with recorded chunks
+        const chunks = audioChunksRef.current;
+        if (chunks.length === 0) {
+          setRecordingError('Aucune donnée audio enregistrée');
+          return;
+        }
         
-        if (blob.size < 1000) {
-          console.error('Blob too small, recording may have failed');
-          setRecordingError('Enregistrement trop court ou vide');
+        // Use the actual mime type from recorder
+        const mimeType = mediaRecorder.mimeType || 'audio/mp4';
+        const blob = new Blob(chunks, { type: mimeType });
+        
+        if (blob.size < 100) {
+          setRecordingError('Enregistrement vide');
           return;
         }
         
@@ -124,54 +109,52 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
       };
 
       mediaRecorder.onerror = (event) => {
-        console.error('MediaRecorder error:', event.error);
+        console.error('MediaRecorder error:', event);
         setRecordingError('Erreur d\'enregistrement');
       };
 
-      // Start recording - collect data every 250ms for better compatibility
-      mediaRecorder.start(250);
-      console.log('Recording started');
+      // Start with timeslice - important for iOS
+      mediaRecorder.start(1000);
       
       setIsRecording(true);
       setDuration(0);
 
-      // Start timer
+      // Start timer with limit check
       timerRef.current = setInterval(() => {
         setDuration(prev => {
-          if (prev >= MAX_DURATION - 1) {
+          const newDuration = prev + 1;
+          // Auto-stop at max duration
+          if (newDuration >= MAX_DURATION) {
             stopRecording();
             return MAX_DURATION;
           }
-          return prev + 1;
+          return newDuration;
         });
       }, 1000);
 
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-      setRecordingError('Impossible d\'accéder au microphone');
-      alert('Impossible d\'accéder au microphone. Vérifiez les permissions.');
+      console.error('Microphone error:', error);
+      if (error.name === 'NotAllowedError') {
+        setRecordingError('Microphone non autorisé');
+      } else {
+        setRecordingError('Impossible d\'accéder au microphone');
+      }
     }
   };
 
   // Stop recording
   const stopRecording = useCallback(() => {
-    console.log('Stopping recording...');
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
     }
+    
+    setIsRecording(false);
   }, []);
-
-  // Auto-stop at max duration
-  useEffect(() => {
-    if (duration >= MAX_DURATION && isRecording) {
-      stopRecording();
-    }
-  }, [duration, isRecording, stopRecording]);
 
   // Play/Pause preview
   const togglePlayback = async () => {
@@ -187,6 +170,7 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
       }
     } catch (err) {
       console.error('Playback error:', err);
+      setRecordingError('Impossible de lire l\'audio');
     }
   };
 
@@ -197,10 +181,18 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
 
   // Cancel and reset
   const handleCancel = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     if (audioUrl) URL.revokeObjectURL(audioUrl);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
     setAudioBlob(null);
     setAudioUrl(null);
     setIsPreviewing(false);
+    setIsRecording(false);
     setDuration(0);
     setIsPlaying(false);
     setRecordingError(null);
@@ -211,11 +203,10 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
   const handleSend = async () => {
     if (!audioBlob) return;
     
-    console.log('Sending audio, blob size:', audioBlob.size);
     setIsSending(true);
     try {
       await onSend(audioBlob, duration);
-      handleCancel(); // Reset after successful send
+      handleCancel();
     } catch (error) {
       console.error('Error sending audio:', error);
     } finally {
@@ -227,7 +218,7 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
   if (recordingError) {
     return (
       <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
-        <span className="text-red-600 text-sm">{recordingError}</span>
+        <span className="text-red-600 text-sm flex-1">{recordingError}</span>
         <Button variant="outline" size="sm" onClick={handleCancel}>
           Réessayer
         </Button>
@@ -241,9 +232,9 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
       <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-          <span className="text-red-600 font-medium">Enregistrement...</span>
+          <span className="text-red-600 font-medium text-sm">REC</span>
         </div>
-        <span className="text-red-500 font-mono text-lg">
+        <span className="text-red-500 font-mono">
           {formatTime(duration)} / {formatTime(MAX_DURATION)}
         </span>
         <div className="flex-1" />
@@ -251,10 +242,10 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
           variant="destructive"
           size="sm"
           onClick={stopRecording}
-          className="gap-2"
+          className="gap-1"
         >
           <Square className="w-4 h-4 fill-current" />
-          Arrêter
+          Stop
         </Button>
       </div>
     );
@@ -263,19 +254,19 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
   // Preview state
   if (isPreviewing && audioUrl) {
     return (
-      <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+      <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
         <audio
           ref={audioRef}
           src={audioUrl}
           onEnded={handleAudioEnded}
-          className="hidden"
+          preload="auto"
         />
         
         <Button
           variant="outline"
           size="sm"
           onClick={togglePlayback}
-          className="h-10 w-10 p-0 rounded-full"
+          className="h-9 w-9 p-0 rounded-full flex-shrink-0"
         >
           {isPlaying ? (
             <Pause className="w-4 h-4" />
@@ -284,24 +275,18 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
           )}
         </Button>
         
-        <div className="flex-1">
-          <div className="h-2 bg-emerald-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-emerald-500 transition-all duration-100"
-              style={{ width: isPlaying ? '100%' : '0%' }}
-            />
-          </div>
-          <span className="text-sm text-emerald-700 mt-1">
-            {formatTime(duration)}
-          </span>
-        </div>
+        <span className="text-sm text-emerald-700 font-mono">
+          {formatTime(duration)}
+        </span>
+        
+        <div className="flex-1" />
         
         <Button
           variant="ghost"
           size="sm"
           onClick={handleCancel}
           disabled={isSending}
-          className="text-red-500 hover:text-red-600 hover:bg-red-50"
+          className="h-9 w-9 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
         >
           <Trash2 className="w-4 h-4" />
         </Button>
@@ -310,20 +295,22 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
           size="sm"
           onClick={handleSend}
           disabled={isSending}
-          className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+          className="bg-emerald-600 hover:bg-emerald-700 gap-1"
         >
           {isSending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            <Send className="w-4 h-4" />
+            <>
+              <Send className="w-4 h-4" />
+              OK
+            </>
           )}
-          Envoyer
         </Button>
       </div>
     );
   }
 
-  // Default state - show mic button
+  // Default state
   return (
     <Button
       variant="ghost"
@@ -331,7 +318,7 @@ export const VoiceRecorder = ({ onSend, onCancel, disabled }) => {
       onClick={startRecording}
       disabled={disabled}
       className="h-10 w-10 p-0 rounded-full hover:bg-emerald-50 hover:text-emerald-600"
-      title="Enregistrer un message vocal"
+      title="Message vocal"
     >
       <Mic className="w-5 h-5" />
     </Button>
