@@ -616,12 +616,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Clear all auth data from localStorage (with prefix)
+    // Clear ALL auth data from localStorage (both prefixes to ensure clean logout)
+    // Remove with current prefix
     safeStorage.removeItem('token');
     safeStorage.removeItem('user');
     safeStorage.removeItem('entreprise');
     
-    // Note: Don't remove pwa_role or app_variant as these are needed for PWA identification
+    // Also remove raw keys (no prefix) and opposite prefix keys
+    // This ensures a complete logout regardless of which app they're in
+    try {
+      // Clear admin keys
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user');
+      localStorage.removeItem('admin_entreprise');
+      
+      // Clear tech keys
+      localStorage.removeItem('tech_token');
+      localStorage.removeItem('tech_user');
+      localStorage.removeItem('tech_entreprise');
+      
+      // Clear non-prefixed keys (legacy)
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('entreprise');
+    } catch (e) {
+      console.warn('Could not clear all localStorage keys:', e);
+    }
     
     // Reset fetchAttempted ref for next session
     fetchAttempted.current = false;
@@ -630,7 +650,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setEntreprise(null);
     
-    // Keep the current app variant's theme (don't reset to admin if logging out from tech)
+    // Redirect to login page
+    window.location.href = '/login';
   };
 
   // Currency formatting helpers based on entreprise settings

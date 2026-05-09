@@ -23,6 +23,11 @@ export const LoginPage = () => {
   
   const { login, complete2FALogin } = useAuth();
   const navigate = useNavigate();
+  
+  // Detect if running as PWA (standalone mode)
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                window.navigator.standalone || 
+                document.referrer.includes('android-app://');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -158,12 +163,28 @@ export const LoginPage = () => {
               </Link>
             </div>
 
-            <div className="mt-4 pt-4 border-t border-slate-200 text-center text-sm text-slate-500">
-              Pas encore de compte ?{' '}
-              <Link to="/pricing" className="text-emerald-600 hover:underline font-medium">
-                Créer un compte
-              </Link>
-            </div>
+            {isPWA ? (
+              /* PWA Mode - Simple link to website */
+              <div className="mt-4 pt-4 border-t border-slate-200 text-center text-sm text-slate-500">
+                Pas encore de compte ?{' '}
+                <a 
+                  href="https://actoos.com/pricing" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-emerald-600 hover:underline font-medium"
+                >
+                  Inscrivez-vous sur actoos.com
+                </a>
+              </div>
+            ) : (
+              /* Website Mode - Full signup link */
+              <div className="mt-4 pt-4 border-t border-slate-200 text-center text-sm text-slate-500">
+                Pas encore de compte ?{' '}
+                <Link to="/pricing" className="text-emerald-600 hover:underline font-medium">
+                  Créer un compte
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
