@@ -31,7 +31,7 @@ import {
   Loader2, ChevronRight, User, Navigation, Wifi, WifiOff, RefreshCw,
   Plus, X, Upload, Image as ImageIcon, ChevronLeft, CalendarDays,
   LogOut, Settings, Wrench, Euro, Trash2, Bell, BellOff, Route, Sparkles,
-  Download, Smartphone, PenTool, MapPinned, Mail
+  Download, Smartphone, PenTool, MapPinned, Mail, XCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO, isToday } from 'date-fns';
@@ -1764,7 +1764,7 @@ export const TechnicianApp = () => {
     onInterventionChange: (eventType, data) => {
       // Refresh interventions when admin creates/updates/assigns
       console.log('[TechnicianApp] SSE Intervention event:', eventType, data);
-      if (eventType === EventType.INTERVENTION_ASSIGNED && data?.technicien_id === user?.user_id) {
+      if (eventType === EventType.INTERVENTION_ASSIGNED && data?.technicien_id === user?.id) {
         toast.info(`Nouvelle mission assignée: ${data.titre || 'Intervention'}`, {
           description: 'Votre planning a été mis à jour'
         });
@@ -1880,17 +1880,17 @@ export const TechnicianApp = () => {
   const loadInterventions = async () => {
     setLoading(true);
     try {
-      if (isOnline && entreprise?.id && user?.user_id) {
+      if (isOnline && entreprise?.id && user?.id) {
         let data;
         if (activeTab === 'today') {
-          data = await technicianApi.getTodayInterventions(entreprise.id, user.user_id);
+          data = await technicianApi.getTodayInterventions(entreprise.id, user.id);
         } else {
           // Week view - fetch all interventions for the week
           const dateDebut = format(weekStart, 'yyyy-MM-dd');
           const dateFin = format(addDays(weekStart, 6), 'yyyy-MM-dd');
           data = await technicianApi.getWeekInterventions(
             entreprise.id, 
-            user.user_id, 
+            user.id, 
             dateDebut + 'T00:00:00', 
             dateFin + 'T23:59:59'
           );
@@ -1956,8 +1956,8 @@ export const TechnicianApp = () => {
   // Load technician's devis (created by this tech, pending signature)
   const loadMyDevis = async () => {
     try {
-      if (isOnline && entreprise?.id && user?.user_id) {
-        const data = await technicianApi.getDevisForTech(entreprise.id, user.user_id);
+      if (isOnline && entreprise?.id && user?.id) {
+        const data = await technicianApi.getDevisForTech(entreprise.id, user.id);
         setMyDevis(data.filter(d => d.statut === 'envoye'));
       }
     } catch (error) {
@@ -2152,7 +2152,14 @@ export const TechnicianApp = () => {
     }
     
     try {
-      await technicianApi.claimIntervention(id, user?.user_id);
+      // Use user.id (from users table) as technicien_id
+      const technicienId = user?.id;
+      if (!technicienId) {
+        toast.error('Erreur: ID utilisateur non trouvé');
+        return;
+      }
+      
+      await technicianApi.claimIntervention(id, technicienId);
       toast.success('Mission acceptée ! Elle vous est maintenant assignée.');
       loadInterventions();
       loadAvailableInterventions();
@@ -2285,7 +2292,7 @@ export const TechnicianApp = () => {
       await devisApi.create({
         ...data,
         entreprise_id: entreprise?.id,
-        created_by: user?.user_id
+        created_by: user?.id
       });
       toast.success('Devis créé');
       setShowCreateDevis(false);
