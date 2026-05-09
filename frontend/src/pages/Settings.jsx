@@ -2288,6 +2288,20 @@ const SecuritySettings = ({ entrepriseId }) => {
     try {
       // Use Supabase Auth for password change
       const supabase = (await import('../lib/supabase')).default;
+      
+      // Step 1: Verify current password by re-authenticating
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: formData.currentPassword
+      });
+      
+      if (signInError) {
+        setErrors({ currentPassword: 'Mot de passe actuel incorrect' });
+        setLoading(false);
+        return;
+      }
+      
+      // Step 2: Update to new password
       const { error } = await supabase.auth.updateUser({
         password: formData.newPassword
       });
@@ -2299,8 +2313,8 @@ const SecuritySettings = ({ entrepriseId }) => {
     } catch (error) {
       const message = error.message || 'Erreur lors du changement de mot de passe';
       toast.error(message);
-      if (message.includes('actuel') || message.includes('current')) {
-        setErrors({ currentPassword: message });
+      if (message.includes('actuel') || message.includes('current') || message.includes('Invalid')) {
+        setErrors({ currentPassword: 'Mot de passe actuel incorrect' });
       }
     } finally {
       setLoading(false);

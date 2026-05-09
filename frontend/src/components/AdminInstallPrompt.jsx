@@ -37,24 +37,29 @@ const AdminInstallPrompt = () => {
     setIsMobile(isMobileDevice);
     setIsIOS(isIOSDevice);
 
-    // Check localStorage for dismissed state
+    // Check localStorage for dismissed state - increased to 30 days and respect "never show again"
     const dismissed = localStorage.getItem('pwa-admin-install-dismissed');
+    const neverShow = localStorage.getItem('pwa-admin-install-never');
+    
+    if (neverShow) return; // User chose to never show again
+    
     if (dismissed) {
       const dismissedDate = new Date(dismissed);
       const daysSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismissed < 14) return; // Don't show for 14 days
+      if (daysSinceDismissed < 30) return; // Don't show for 30 days (was 14)
     }
 
-    // For iOS, show manual guide after delay
+    // For iOS, show manual guide only after 15 seconds (was 5)
     if (isIOSDevice) {
-      setTimeout(() => setShowPrompt(true), 5000);
+      setTimeout(() => setShowPrompt(true), 15000);
       return;
     }
 
     const handleBeforeInstall = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setTimeout(() => setShowPrompt(true), 3000);
+      // Only show after 10 seconds (was 3)
+      setTimeout(() => setShowPrompt(true), 10000);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
@@ -99,6 +104,12 @@ const AdminInstallPrompt = () => {
 
   const handleDismiss = () => {
     localStorage.setItem('pwa-admin-install-dismissed', new Date().toISOString());
+    setShowPrompt(false);
+    setShowIOSGuide(false);
+  };
+  
+  const handleNeverShow = () => {
+    localStorage.setItem('pwa-admin-install-never', 'true');
     setShowPrompt(false);
     setShowIOSGuide(false);
   };
@@ -167,7 +178,7 @@ const AdminInstallPrompt = () => {
               <p className="text-xs text-indigo-100 mb-3">
                 Accédez au tableau de bord depuis votre {isMobile ? 'écran d\'accueil' : 'bureau'}
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   size="sm" 
                   onClick={handleInstall}
@@ -183,6 +194,14 @@ const AdminInstallPrompt = () => {
                   className="text-white hover:bg-white/20 text-xs h-8"
                 >
                   Plus tard
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={handleNeverShow}
+                  className="text-white/70 hover:text-white hover:bg-white/10 text-xs h-8"
+                >
+                  Ne plus afficher
                 </Button>
               </div>
             </div>
