@@ -2907,8 +2907,18 @@ export const TechnicianApp = () => {
 
       {/* Available Intervention Detail Modal - View details before claiming */}
       <Dialog open={!!viewingAvailableIntervention} onOpenChange={() => setViewingAvailableIntervention(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" aria-describedby="available-intervention-detail-description">
-          <DialogHeader className="sticky top-0 bg-white z-10 pb-2">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto relative" aria-describedby="available-intervention-detail-description">
+          {/* Close button - always visible */}
+          <button
+            type="button"
+            onClick={() => setViewingAvailableIntervention(null)}
+            className="absolute right-3 top-3 z-50 w-10 h-10 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center shadow-md border border-slate-300"
+            aria-label="Fermer"
+          >
+            <X className="w-6 h-6 text-slate-700" />
+          </button>
+          
+          <DialogHeader className="pr-14">
             <DialogTitle className="flex items-center gap-2">
               <Bell className="w-5 h-5 text-amber-500" />
               {viewingAvailableIntervention?.titre}
