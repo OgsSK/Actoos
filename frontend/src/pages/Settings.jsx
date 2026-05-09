@@ -21,7 +21,7 @@ import {
   CheckCircle, XCircle, ExternalLink, Info, Palette, Upload, 
   Tags, Plus, Pencil, Trash2, Wrench, Globe, Coins, CreditCard,
   Calendar, Link2, Unlink, DollarSign, Shield, Clock, AlertTriangle,
-  Database, Trash, Eye, Lock, Key, Settings2
+  Database, Trash, Eye, Lock, Key, Settings2, Mail, Receipt, Users, Smartphone
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PlanUsageWidget from '../components/PlanUsageWidget';
@@ -908,16 +908,6 @@ const SMSConfiguration = ({ entrepriseId, smsStatus, onStatusChange }) => {
 const IntegrationsHub = ({ entrepriseId }) => {
   const [loading, setLoading] = useState(true);
   const [integrations, setIntegrations] = useState(null);
-  const [savingWhatsApp, setSavingWhatsApp] = useState(false);
-  const [testingWhatsApp, setTestingWhatsApp] = useState(false);
-  const [whatsAppMode, setWhatsAppMode] = useState('shared');
-  const [showWhatsAppForm, setShowWhatsAppForm] = useState(false);
-  const [testPhone, setTestPhone] = useState('');
-  const [whatsAppConfig, setWhatsAppConfig] = useState({
-    whatsapp_access_token: '',
-    whatsapp_phone_number_id: '',
-    whatsapp_business_account_id: ''
-  });
 
   useEffect(() => {
     if (entrepriseId) loadIntegrationsStatus();
@@ -927,7 +917,6 @@ const IntegrationsHub = ({ entrepriseId }) => {
     try {
       const data = await settingsApi.getIntegrationsStatus(entrepriseId);
       setIntegrations(data);
-      setWhatsAppMode(data.whatsapp?.use_shared !== false ? 'shared' : 'custom');
     } catch (error) {
       console.error('Error loading integrations:', error);
     } finally {
@@ -935,75 +924,10 @@ const IntegrationsHub = ({ entrepriseId }) => {
     }
   };
 
-  const handleWhatsAppModeChange = async (newMode) => {
-    setWhatsAppMode(newMode);
-    if (newMode === 'shared') {
-      setSavingWhatsApp(true);
-      try {
-        await entrepriseApi.update(entrepriseId, { 
-          integrations_config: { whatsapp: { use_shared: true } }
-        });
-        toast.success('WhatsApp configuré en mode service Actoos');
-        loadIntegrationsStatus();
-      } catch (error) {
-        toast.error(error.message || 'Erreur');
-      } finally {
-        setSavingWhatsApp(false);
-      }
-    } else {
-      setShowWhatsAppForm(true);
-    }
-  };
-
-  const handleWhatsAppCustomSave = async () => {
-    if (!whatsAppConfig.whatsapp_access_token || !whatsAppConfig.whatsapp_phone_number_id) {
-      toast.error('Access Token et Phone Number ID sont requis');
-      return;
-    }
-    
-    setSavingWhatsApp(true);
-    try {
-      await entrepriseApi.update(entrepriseId, {
-        integrations_config: {
-          whatsapp: {
-            use_shared: false,
-            access_token: whatsAppConfig.whatsapp_access_token,
-            phone_number_id: whatsAppConfig.whatsapp_phone_number_id,
-            business_account_id: whatsAppConfig.whatsapp_business_account_id
-          }
-        }
-      });
-      toast.success('Configuration WhatsApp personnalisée enregistrée');
-      setShowWhatsAppForm(false);
-      loadIntegrationsStatus();
-    } catch (error) {
-      toast.error(error.message || 'Erreur lors de la configuration');
-    } finally {
-      setSavingWhatsApp(false);
-    }
-  };
-
-  const handleTestWhatsApp = async () => {
-    if (!testPhone) {
-      toast.error('Veuillez entrer un numéro de téléphone');
-      return;
-    }
-    
-    setTestingWhatsApp(true);
-    try {
-      // WhatsApp test requires Edge Function - for now just show info
-      toast.info('Test WhatsApp non disponible - fonctionnalité en cours de migration');
-    } catch (error) {
-      toast.error(error.message || 'Échec de l\'envoi');
-    } finally {
-      setTestingWhatsApp(false);
-    }
-  };
-
   const handleMessagingPreference = async (channel) => {
     try {
       await entrepriseApi.update(entrepriseId, { messaging_preference: channel });
-      toast.success(`Canal préféré: ${channel === 'whatsapp' ? 'WhatsApp' : channel === 'sms' ? 'SMS' : 'Email'}`);
+      toast.success(`Canal préféré: ${channel === 'push' ? 'Notifications Push' : 'Email'}`);
       loadIntegrationsStatus();
     } catch (error) {
       toast.error('Erreur lors de la mise à jour');
@@ -1021,13 +945,13 @@ const IntegrationsHub = ({ entrepriseId }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">Intégrations & Messagerie</h3>
+        <h3 className="text-lg font-semibold text-slate-900">Notifications</h3>
         <p className="text-sm text-slate-500 mt-1">
-          Configurez WhatsApp Business, SMS et synchronisez vos services externes
+          Configurez vos canaux de notification pour communiquer avec vos clients
         </p>
       </div>
 
-      {/* Messaging Preference */}
+      {/* Messaging Preference - Only Push and Email */}
       <Card className="border-slate-200">
         <CardHeader>
           <CardTitle className="text-base">Canal de notification préféré</CardTitle>
@@ -1036,243 +960,151 @@ const IntegrationsHub = ({ entrepriseId }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, color: 'green', recommended: true },
-              { value: 'sms', label: 'SMS', icon: MessageSquare, color: 'blue', recommended: false },
-              { value: 'email', label: 'Email', icon: Bell, color: 'purple', recommended: false }
-            ].map(({ value, label, icon: Icon, color, recommended }) => (
-              <button
-                key={value}
-                onClick={() => handleMessagingPreference(value)}
-                className={`p-4 rounded-lg border-2 transition-all text-left ${
-                  integrations?.messaging_preference === value
-                    ? `border-${color}-500 bg-${color}-50`
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-                data-testid={`messaging-pref-${value}`}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon className={`w-5 h-5 ${integrations?.messaging_preference === value ? `text-${color}-600` : 'text-slate-400'}`} />
-                  <span className="font-medium">{label}</span>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Push Notifications */}
+            <button
+              onClick={() => handleMessagingPreference('push')}
+              className={`p-4 rounded-lg border-2 transition-all text-left ${
+                integrations?.messaging_preference === 'push'
+                  ? 'border-emerald-500 bg-emerald-50'
+                  : 'border-slate-200 hover:border-slate-300'
+              }`}
+              data-testid="messaging-pref-push"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  integrations?.messaging_preference === 'push' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500'
+                }`}>
+                  <Bell className="w-5 h-5" />
                 </div>
-                {recommended && (
-                  <Badge className="bg-green-100 text-green-700 text-xs">Recommandé</Badge>
-                )}
-                {integrations?.messaging_preference === value && (
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-2" />
-                )}
-              </button>
-            ))}
+                <div>
+                  <span className="font-medium text-slate-900">Notifications Push</span>
+                  <p className="text-xs text-slate-500">Instantanées sur mobile</p>
+                </div>
+              </div>
+              <Badge className="bg-emerald-100 text-emerald-700 text-xs">Recommandé</Badge>
+              {integrations?.messaging_preference === 'push' && (
+                <CheckCircle className="w-4 h-4 text-emerald-500 mt-2" />
+              )}
+            </button>
+
+            {/* Email */}
+            <button
+              onClick={() => handleMessagingPreference('email')}
+              className={`p-4 rounded-lg border-2 transition-all text-left ${
+                integrations?.messaging_preference === 'email'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-200 hover:border-slate-300'
+              }`}
+              data-testid="messaging-pref-email"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  integrations?.messaging_preference === 'email' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'
+                }`}>
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="font-medium text-slate-900">Email</span>
+                  <p className="text-xs text-slate-500">Via noreply@actoos.com</p>
+                </div>
+              </div>
+              {integrations?.messaging_preference === 'email' && (
+                <CheckCircle className="w-4 h-4 text-blue-500 mt-2" />
+              )}
+            </button>
           </div>
         </CardContent>
       </Card>
 
-      {/* WhatsApp Business */}
+      {/* Push Notifications Info */}
       <Card className="border-slate-200">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-green-600" />
+              <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <Bell className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <CardTitle className="text-base">WhatsApp Business</CardTitle>
+                <CardTitle className="text-base">Notifications Push</CardTitle>
                 <CardDescription>
-                  Envoyez des notifications via WhatsApp (98% taux d'ouverture)
+                  Envoyez des notifications instantanées sur les appareils mobiles
                 </CardDescription>
               </div>
             </div>
-            {integrations?.whatsapp?.configured ? (
-              <Badge className="bg-green-100 text-green-700">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                {integrations.whatsapp.mode === 'shared' ? 'Service Actoos' : 'Configuré'}
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="bg-amber-100 text-amber-700">
-                Non configuré
-              </Badge>
-            )}
+            <Badge className="bg-emerald-100 text-emerald-700">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Disponible
+            </Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Mode Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div
-              onClick={() => handleWhatsAppModeChange('shared')}
-              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                whatsAppMode === 'shared' ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-slate-300'
-              }`}
-              data-testid="whatsapp-mode-shared"
-            >
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  whatsAppMode === 'shared' ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-500'
-                }`}>
-                  <Globe className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-slate-900">Service Actoos (recommandé)</h4>
-                  <p className="text-sm text-slate-500 mt-1">
-                    WhatsApp partagé d'Actoos. Aucune configuration requise.
-                  </p>
-                  {integrations?.whatsapp?.shared_available ? (
-                    <Badge className="mt-2 bg-green-100 text-green-700">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Disponible
-                    </Badge>
-                  ) : (
-                    <Badge className="mt-2 bg-amber-100 text-amber-700">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Bientôt disponible
-                    </Badge>
-                  )}
-                </div>
-                {whatsAppMode === 'shared' && <CheckCircle className="w-5 h-5 text-green-500" />}
+        <CardContent>
+          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+            <div className="flex items-start gap-3">
+              <Smartphone className="w-5 h-5 text-slate-500 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-slate-700">Pour vos techniciens</p>
+                <p className="text-xs text-slate-500">
+                  Les techniciens reçoivent des notifications instantanées pour les nouvelles interventions, 
+                  modifications et messages via l'application PWA.
+                </p>
               </div>
             </div>
-
-            <div
-              onClick={() => handleWhatsAppModeChange('custom')}
-              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                whatsAppMode === 'custom' ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-slate-300'
-              }`}
-              data-testid="whatsapp-mode-custom"
-            >
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  whatsAppMode === 'custom' ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-500'
-                }`}>
-                  <Key className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-slate-900">Mon propre WhatsApp Business</h4>
-                  <p className="text-sm text-slate-500 mt-1">
-                    Utilisez votre propre compte Meta Business / WhatsApp.
-                  </p>
-                  {integrations?.whatsapp?.has_custom_config && (
-                    <Badge className="mt-2 bg-green-100 text-green-700">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Configuré
-                    </Badge>
-                  )}
-                </div>
-                {whatsAppMode === 'custom' && <CheckCircle className="w-5 h-5 text-green-500" />}
+            <div className="flex items-start gap-3">
+              <Users className="w-5 h-5 text-slate-500 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-slate-700">Pour vos clients (bientôt)</p>
+                <p className="text-xs text-slate-500">
+                  Les notifications clients par push seront disponibles prochainement.
+                </p>
               </div>
             </div>
           </div>
-
-          {/* Custom WhatsApp Form */}
-          {showWhatsAppForm && whatsAppMode === 'custom' && (
-            <Card className="border-slate-200 mt-4">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Key className="w-4 h-4" />
-                  Configuration WhatsApp Business
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert className="bg-blue-50 border-blue-200">
-                  <Info className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800 text-sm">
-                    <strong>Prérequis:</strong>
-                    <ol className="list-decimal ml-4 mt-2 space-y-1">
-                      <li>Créez un compte Meta Business sur <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="underline">business.facebook.com</a></li>
-                      <li>Accédez à la section WhatsApp dans Meta for Developers</li>
-                      <li>Créez une application et obtenez vos credentials</li>
-                      <li>Créez et faites approuver vos templates de messages</li>
-                    </ol>
-                  </AlertDescription>
-                </Alert>
-                
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <Label>Access Token (permanent)</Label>
-                    <PasswordInput
-                      value={whatsAppConfig.whatsapp_access_token}
-                      onChange={(e) => setWhatsAppConfig(prev => ({ ...prev, whatsapp_access_token: e.target.value }))}
-                      placeholder="EAAxxxxxxxx..."
-                      data-testid="whatsapp-token-input"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Phone Number ID</Label>
-                    <Input
-                      value={whatsAppConfig.whatsapp_phone_number_id}
-                      onChange={(e) => setWhatsAppConfig(prev => ({ ...prev, whatsapp_phone_number_id: e.target.value }))}
-                      placeholder="123456789012345"
-                      data-testid="whatsapp-phone-id-input"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Business Account ID (optionnel)</Label>
-                    <Input
-                      value={whatsAppConfig.whatsapp_business_account_id}
-                      onChange={(e) => setWhatsAppConfig(prev => ({ ...prev, whatsapp_business_account_id: e.target.value }))}
-                      placeholder="123456789012345"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 pt-2">
-                  <Button onClick={handleWhatsAppCustomSave} disabled={savingWhatsApp} data-testid="save-whatsapp-config">
-                    {savingWhatsApp ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
-                    Enregistrer
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowWhatsAppForm(false)}>
-                    Annuler
-                  </Button>
-                  <Button variant="ghost" size="sm" asChild>
-                    <a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started" target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Documentation
-                    </a>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Test WhatsApp */}
-          {integrations?.whatsapp?.configured && (
-            <div className="pt-4 border-t border-slate-200">
-              <Label className="text-sm font-medium mb-2 block">Tester la configuration</Label>
-              <div className="flex items-center gap-3">
-                <Input
-                  value={testPhone}
-                  onChange={(e) => setTestPhone(e.target.value)}
-                  placeholder="+32470123456"
-                  className="max-w-xs"
-                  data-testid="whatsapp-test-phone"
-                />
-                <Button
-                  variant="outline"
-                  onClick={handleTestWhatsApp}
-                  disabled={testingWhatsApp || !testPhone}
-                  data-testid="send-whatsapp-test"
-                >
-                  {testingWhatsApp ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MessageSquare className="w-4 h-4 mr-2" />}
-                  Tester WhatsApp
-                </Button>
-              </div>
-              <p className="text-xs text-slate-500 mt-2">
-                Note: Les messages de test fonctionnent uniquement si le destinataire a envoyé un message dans les dernières 24h.
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      {/* Info about templates */}
-      <Alert className="bg-blue-50 border-blue-200">
-        <Info className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-blue-800">
-          <strong>Templates WhatsApp:</strong> Les messages envoyés via WhatsApp Business utilisent des templates pré-approuvés par Meta pour les rappels d'intervention, notifications de devis/factures, et relances de paiement. Ces templates sont automatiquement configurés avec le service Actoos.
-        </AlertDescription>
-      </Alert>
-
-      {/* Google Calendar Configuration */}
-      <GoogleCalendarConfig entrepriseId={entrepriseId} integrations={integrations} onStatusChange={loadIntegrationsStatus} />
+      {/* Email Info */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Mail className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Notifications Email</CardTitle>
+                <CardDescription>
+                  Emails transactionnels envoyés depuis noreply@actoos.com
+                </CardDescription>
+              </div>
+            </div>
+            <Badge className="bg-emerald-100 text-emerald-700">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Configuré
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { icon: FileText, label: 'Devis envoyés', desc: 'Email avec PDF en pièce jointe' },
+                { icon: Receipt, label: 'Factures', desc: 'Notification de facturation' },
+                { icon: Calendar, label: 'Rappels intervention', desc: 'J-1 avant l\'intervention' },
+                { icon: CreditCard, label: 'Relances paiement', desc: 'Factures en retard' }
+              ].map(({ icon: Icon, label, desc }) => (
+                <div key={label} className="flex items-start gap-2 p-3 bg-slate-50 rounded-lg">
+                  <Icon className="w-4 h-4 text-blue-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">{label}</p>
+                    <p className="text-xs text-slate-500">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -44,7 +44,76 @@ const TOKEN_REFRESH_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // Refresh 7 days befor
 const TOKEN_CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour
 
 // SIMPLIFIED: No more dual sessions. One session at a time.
-// Helper: Safe localStorage operations
+// Hybrid Storage: localStorage + IndexedDB for iOS Safari persistence
+const DB_NAME = 'actoos-auth-db';
+const DB_STORE = 'auth';
+const DB_VERSION = 1;
+
+// Open IndexedDB
+const openDB = () => {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      resolve(null);
+      return;
+    }
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = () => resolve(null);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(DB_STORE)) {
+        db.createObjectStore(DB_STORE);
+      }
+    };
+  });
+};
+
+// IndexedDB operations
+const idbGet = async (key) => {
+  try {
+    const db = await openDB();
+    if (!db) return null;
+    return new Promise((resolve) => {
+      const tx = db.transaction(DB_STORE, 'readonly');
+      const store = tx.objectStore(DB_STORE);
+      const request = store.get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+};
+
+const idbSet = async (key, value) => {
+  try {
+    const db = await openDB();
+    if (!db) return false;
+    return new Promise((resolve) => {
+      const tx = db.transaction(DB_STORE, 'readwrite');
+      const store = tx.objectStore(DB_STORE);
+      const request = store.put(value, key);
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+    });
+  } catch {
+    return false;
+  }
+};
+
+const idbRemove = async (key) => {
+  try {
+    const db = await openDB();
+    if (!db) return;
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    const store = tx.objectStore(DB_STORE);
+    store.delete(key);
+  } catch {
+    // Ignore
+  }
+};
+
+// Hybrid storage: try localStorage first, fallback to IndexedDB
 const safeStorage = {
   getItem: (key) => {
     try {
@@ -56,17 +125,32 @@ const safeStorage = {
   setItem: (key, value) => {
     try {
       localStorage.setItem(key, value);
+      // Also save to IndexedDB for iOS persistence
+      idbSet(key, value).catch(() => {});
       return true;
     } catch {
-      console.warn('localStorage unavailable, session will not persist');
+      // Try IndexedDB only
+      idbSet(key, value).catch(() => {});
       return false;
     }
   },
   removeItem: (key) => {
     try {
       localStorage.removeItem(key);
+      idbRemove(key).catch(() => {});
     } catch {
-      // Ignore errors
+      idbRemove(key).catch(() => {});
+    }
+  },
+  // Async method to get from IndexedDB if localStorage is empty
+  getItemAsync: async (key) => {
+    try {
+      const localValue = localStorage.getItem(key);
+      if (localValue) return localValue;
+      // Fallback to IndexedDB
+      return await idbGet(key);
+    } catch {
+      return await idbGet(key);
     }
   }
 };
@@ -161,18 +245,47 @@ export const AuthProvider = ({ children }) => {
   // Track if we've attempted to fetch user data this session
   const fetchAttempted = useRef(false);
   
-  // PWA Session Recovery: Check Supabase session on app start
+  // PWA Session Recovery: Check Supabase session AND IndexedDB on app start
   // This helps recover session when iOS Safari clears localStorage
   useEffect(() => {
     const recoverSession = async () => {
       // If we already have a valid token and user, skip recovery
       if (token && user && !isTokenExpired(token)) {
+        console.log('[Auth] Valid session in memory, skipping recovery');
         setLoading(false);
         return;
       }
       
       try {
-        // Check if Supabase has a valid session (persisted in its own storage key)
+        // Step 1: Try to recover from IndexedDB if localStorage was cleared
+        console.log('[Auth] Checking IndexedDB for persisted session...');
+        const idbToken = await safeStorage.getItemAsync('token');
+        const idbUser = await safeStorage.getItemAsync('user');
+        const idbEntreprise = await safeStorage.getItemAsync('entreprise');
+        
+        if (idbToken && idbUser && !isTokenExpired(idbToken)) {
+          console.log('[Auth] Found valid session in IndexedDB, restoring...');
+          const parsedUser = typeof idbUser === 'string' ? JSON.parse(idbUser) : idbUser;
+          const parsedEntreprise = idbEntreprise ? (typeof idbEntreprise === 'string' ? JSON.parse(idbEntreprise) : idbEntreprise) : null;
+          
+          // Restore to localStorage
+          safeStorage.setItem('token', idbToken);
+          safeStorage.setItem('user', typeof idbUser === 'string' ? idbUser : JSON.stringify(parsedUser));
+          if (parsedEntreprise) {
+            safeStorage.setItem('entreprise', typeof idbEntreprise === 'string' ? idbEntreprise : JSON.stringify(parsedEntreprise));
+          }
+          
+          setToken(idbToken);
+          setUser(parsedUser);
+          setEntreprise(parsedEntreprise);
+          
+          console.log('[Auth] Session restored from IndexedDB');
+          setLoading(false);
+          return;
+        }
+        
+        // Step 2: Check if Supabase has a valid session
+        console.log('[Auth] Checking Supabase session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error || !session) {
