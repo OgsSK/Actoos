@@ -1908,30 +1908,32 @@ export const SettingsPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
-                      <MessageSquare className="w-5 h-5" />
-                      Configuration SMS (Twilio)
+                      <Bell className="w-5 h-5" />
+                      Notifications Push
                     </CardTitle>
                     <CardDescription>
-                      Envoyez des SMS automatiques à vos clients pour les rappels et notifications
+                      Recevez des notifications en temps réel sur votre appareil mobile
                     </CardDescription>
                   </div>
-                  {loadingSmsStatus ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
-                  ) : smsStatus.configured ? (
-                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      {smsStatus.mode === 'shared' ? 'Service Actoos' : 'Configuré'}
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-700">
-                      <XCircle className="w-3 h-3 mr-1" />
-                      Non configuré
-                    </Badge>
-                  )}
+                  <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Disponible
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <SMSConfiguration entrepriseId={entreprise?.id} smsStatus={smsStatus} onStatusChange={loadSmsStatus} />
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-600">
+                    Les notifications Push sont activées automatiquement lorsque vous installez l'application PWA sur votre appareil.
+                  </p>
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                    <Bell className="w-5 h-5 text-blue-600" />
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-900">Comment activer ?</p>
+                      <p className="text-blue-700">Installez l'app via le bouton "Installer" dans votre navigateur, puis autorisez les notifications.</p>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -1943,74 +1945,67 @@ export const SettingsPage = () => {
                   <CardDescription>Choisissez quand envoyer des notifications à vos clients</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* SMS Notifications */}
+                  {/* Push Notifications */}
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm text-slate-700 flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4" />
-                      Notifications SMS
-                      {!smsStatus.configured && (
-                        <Badge variant="outline" className="text-xs">Configurez d'abord le SMS</Badge>
-                      )}
+                      <Bell className="w-4 h-4" />
+                      Notifications Push & Email
                     </h4>
                     
                     <div className="space-y-3 pl-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <Label htmlFor="sms_intervention_reminder" className="font-normal">
+                          <Label htmlFor="push_intervention_reminder" className="font-normal">
                             Rappel d'intervention (J-1)
                           </Label>
-                          <p className="text-xs text-slate-500">SMS envoyé la veille de l'intervention</p>
+                          <p className="text-xs text-slate-500">Notification la veille de l'intervention</p>
                         </div>
                         <Switch
-                          id="sms_intervention_reminder"
+                          id="push_intervention_reminder"
                           checked={notifSettings.sms_intervention_reminder}
                           onCheckedChange={(v) => handleNotifChange('sms_intervention_reminder', v)}
-                          disabled={!smsStatus.configured}
                         />
                       </div>
                       
                       <div className="flex items-center justify-between">
                         <div>
-                          <Label htmlFor="sms_devis_notification" className="font-normal">
+                          <Label htmlFor="push_devis_notification" className="font-normal">
                             Nouveau devis
                           </Label>
-                          <p className="text-xs text-slate-500">SMS à l'envoi d'un devis</p>
+                          <p className="text-xs text-slate-500">Notification à l'envoi d'un devis</p>
                         </div>
                         <Switch
-                          id="sms_devis_notification"
+                          id="push_devis_notification"
                           checked={notifSettings.sms_devis_notification}
                           onCheckedChange={(v) => handleNotifChange('sms_devis_notification', v)}
-                          disabled={!smsStatus.configured}
                         />
                       </div>
                       
                       <div className="flex items-center justify-between">
                         <div>
-                          <Label htmlFor="sms_facture_notification" className="font-normal">
+                          <Label htmlFor="push_facture_notification" className="font-normal">
                             Nouvelle facture
                           </Label>
-                          <p className="text-xs text-slate-500">SMS à l'émission d'une facture</p>
+                          <p className="text-xs text-slate-500">Notification à l'émission d'une facture</p>
                         </div>
                         <Switch
-                          id="sms_facture_notification"
+                          id="push_facture_notification"
                           checked={notifSettings.sms_facture_notification}
                           onCheckedChange={(v) => handleNotifChange('sms_facture_notification', v)}
-                          disabled={!smsStatus.configured}
                         />
                       </div>
                       
                       <div className="flex items-center justify-between">
                         <div>
-                          <Label htmlFor="sms_payment_reminder" className="font-normal">
+                          <Label htmlFor="push_payment_reminder" className="font-normal">
                             Relance de paiement
                           </Label>
-                          <p className="text-xs text-slate-500">SMS pour les factures en retard</p>
+                          <p className="text-xs text-slate-500">Notification pour les factures en retard</p>
                         </div>
                         <Switch
-                          id="sms_payment_reminder"
+                          id="push_payment_reminder"
                           checked={notifSettings.sms_payment_reminder}
                           onCheckedChange={(v) => handleNotifChange('sms_payment_reminder', v)}
-                          disabled={!smsStatus.configured}
                         />
                       </div>
                     </div>

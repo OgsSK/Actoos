@@ -248,9 +248,9 @@ const PricingPage = () => {
     {
       name: 'Communications',
       features: [
-        { name: 'SMS inclus / mois', startup: '0', pro: '50', enterprise: '500' },
+        { name: 'Notifications Push', startup: true, pro: true, enterprise: true },
         { name: 'Notifications email', startup: true, pro: true, enterprise: true },
-        { name: 'Notifications WhatsApp', startup: false, pro: true, enterprise: true },
+        { name: 'Rappels automatiques', startup: false, pro: true, enterprise: true },
       ]
     }
   ];
