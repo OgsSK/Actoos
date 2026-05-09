@@ -1,0 +1,100 @@
+{
+  "summary": "Frontend testing of ACTOOS PRO AuthContext refactoring. Tested login, session persistence, logout, multi-sites gate, localStorage keys, and JWT token validation. 4/6 tests passed. Found 2 issues: logout redirect not working and plan_limits empty for Enterprise plan.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AuthContext.jsx - logout function",
+        "issue": "Logout clears localStorage token but redirect to /login doesn't happen. User stays on /dashboard. The window.location.replace('/login') is called but the page reloads back to dashboard. Service Worker may be caching the authenticated state.",
+        "selector": "[data-testid='logout-button']",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Multi-sites Gate",
+        "issue": "Enterprise plan account (contact@actoos.com) has plan='enterprise' but plan_limits={} is empty. This causes canUseMultiSites to return false because hasFeature('multi_sites') checks planLimits['multi_sites'] === true which is undefined. The 'Passer à Entreprise' button shows instead of 'Ajouter un site'.",
+        "affected_selectors": ["[data-testid='add-site-btn']", "button:has-text('Passer à Entreprise')"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_92.json"
+  ],
+  "action_items": [
+    "HIGH: Fix logout redirect - The window.location.replace('/login') in AuthContext.jsx line 515 is not working. Consider using window.location.href = '/login' or adding a hard reload after clearing localStorage. Also ensure Service Worker doesn't cache authenticated pages.",
+    "HIGH: Fix plan_limits for Enterprise accounts - The entreprise object returned from Supabase login has plan='enterprise' but plan_limits={}. Need to populate plan_limits with {multi_sites: true, ...} for Enterprise plan in the Supabase Edge Function or database.",
+    "MEDIUM: Verify logout clears all localStorage keys - Test showed token was cleared but user object persisted after logout attempt"
+  ],
+  "critical_code_review_comments": [
+    "AuthContext.jsx refactoring successfully removed admin_/tech_ prefixes from localStorage keys",
+    "Simple keys (token, user, entreprise) are now used correctly",
+    "JWT token validation works correctly - 30 day expiry",
+    "Session persistence after page refresh works correctly",
+    "Login flow works correctly with Supabase Edge Function",
+    "The logout function at line 490-516 clears localStorage but window.location.replace() may be intercepted by Service Worker"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Frontend only testing",
+    "frontend": "67% (4/6 tests passed)"
+  },
+  "test_credentials": {
+    "admin_account_tested": {
+      "email": "contact@actoos.com",
+      "password": "Salifkane&&7",
+      "plan": "enterprise",
+      "plan_limits": "EMPTY {} - BUG"
+    }
+  },
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "AuthContext refactoring verified - localStorage uses simple keys without prefixes. Two bugs found: 1) Logout redirect doesn't work (localStorage cleared but page stays on dashboard), 2) Enterprise plan has empty plan_limits so multi-sites feature appears disabled. Login and session persistence work correctly.",
+  "test_results": {
+    "test_1_admin_login": {
+      "status": "PASS",
+      "details": "Login with contact@actoos.com / Salifkane&&7 works, redirects to /dashboard"
+    },
+    "test_2_session_persistence": {
+      "status": "PASS",
+      "details": "User remains logged in after page refresh - session persists correctly"
+    },
+    "test_3_logout_flow": {
+      "status": "FAIL",
+      "details": "Logout button clicked, localStorage token cleared, but redirect to /login doesn't happen. User stays on /dashboard."
+    },
+    "test_4_multi_sites_gate": {
+      "status": "FAIL",
+      "details": "Enterprise plan shows 'Passer à Entreprise' button instead of 'Ajouter un site' because plan_limits is empty {}"
+    },
+    "test_5_localStorage_keys": {
+      "status": "PASS",
+      "details": "Using simple keys (token, user, entreprise) without admin_/tech_ prefixes"
+    },
+    "test_6_token_validation": {
+      "status": "PASS",
+      "details": "JWT valid, expires in 29 days. User ID and Entreprise ID correctly encoded."
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  },
+  "rca_of_issues": {
+    "logout_redirect_issue": {
+      "root_cause": "The window.location.replace('/login') at line 515 of AuthContext.jsx is being called but the redirect doesn't complete. The Service Worker (sw.js) may be caching the authenticated dashboard page and serving it even after logout. Additionally, the React app may be re-initializing from remaining localStorage data before the redirect completes.",
+      "evidence": "Console logs show '[PWA] Manifest switched to: /manifest.json' then back to '/manifest-admin.json' after logout click, suggesting the app is re-authenticating.",
+      "mitigation": "1) Add cache-busting to logout: clear Service Worker cache before redirect. 2) Use window.location.href instead of replace. 3) Add a hard reload: window.location.reload(true) after setting href."
+    },
+    "plan_limits_empty_issue": {
+      "root_cause": "The Supabase Edge Function /functions/v1/login returns entreprise object with plan='enterprise' but plan_limits={} empty. The plan_limits should be populated based on the plan type.",
+      "evidence": "localStorage entreprise shows: {plan: 'enterprise', plan_limits: {}}",
+      "mitigation": "Update Supabase Edge Function or database to include plan_limits for each plan. Enterprise should have: {multi_sites: true, offline_mode: true, geolocation: true, ...}"
+    }
+  }
+}
