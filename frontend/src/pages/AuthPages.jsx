@@ -89,7 +89,7 @@ export const LoginPage = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-6">
-            <img src="/pwa-icon-192.png" alt="ACTOOS" className="h-9 w-9" />
+            <img src="/logo-icon-site.png" alt="ACTOOS" className="h-9 w-9" />
             <span className="text-sm text-slate-500">Gestion d'interventions terrain</span>
           </div>
         </div>
@@ -183,7 +183,7 @@ export const RegisterPage = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-lg text-center">
         <div className="mb-8">
-          <img src="/pwa-icon-192.png" alt="ACTOOS" className="h-9 w-9" />
+          <img src="/logo-icon-site.png" alt="ACTOOS" className="h-9 w-9" />
           <h1 className="text-2xl font-bold text-slate-900">ACTOOS PRO</h1>
         </div>
         
@@ -378,7 +378,7 @@ export const ForgotPasswordPage = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-6">
-            <img src="/pwa-icon-192.png" alt="ACTOOS" className="h-9 w-9" />
+            <img src="/logo-icon-site.png" alt="ACTOOS" className="h-9 w-9" />
             <span className="text-sm text-slate-500">Gestion d'interventions terrain</span>
           </div>
         </div>
@@ -533,7 +533,7 @@ export const ResetPasswordPage = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-6">
-            <img src="/pwa-icon-192.png" alt="ACTOOS" className="h-9 w-9" />
+            <img src="/logo-icon-site.png" alt="ACTOOS" className="h-9 w-9" />
             <span className="text-sm text-slate-500">Gestion d'interventions terrain</span>
           </div>
         </div>
