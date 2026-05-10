@@ -347,7 +347,7 @@ export default function HomePage() {
               <img 
                 src="/logo-icon.png" 
                 alt="Actoos" 
-                className="h-14 w-14 object-contain"
+                className="h-10 w-10 object-contain"
               />
               <span className="font-black text-xl tracking-tighter uppercase">
                 ACTOOS GROUP<span className="text-[#D4AF37]">.</span>
