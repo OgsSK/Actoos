@@ -2380,14 +2380,24 @@ export const TechnicianApp = () => {
   const handleCreateDevis = async (data) => {
     setFormLoading(true);
     try {
-      await devisApi.create({
+      // Create devis
+      const newDevis = await devisApi.create({
         ...data,
         entreprise_id: entreprise?.id
-        // Note: created_by column does not exist in Supabase devis table
       });
-      toast.success('Devis créé');
+      
+      // For technician-created devis, immediately set to 'envoye' status
+      // so it appears in the "pending signature" list
+      if (newDevis?.id) {
+        await devisApi.updateStatut(newDevis.id, 'envoye');
+      }
+      
+      toast.success('Devis créé et prêt pour signature');
       setShowCreateDevis(false);
       setPreselectedClientId(null);
+      
+      // Refresh devis list
+      loadMyDevis();
     } catch (error) {
       console.error('Error creating devis:', error);
       toast.error(error.message || 'Erreur lors de la création');

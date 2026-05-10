@@ -263,27 +263,69 @@ export const devisApi = {
   },
 
   create: async (devis) => {
+    // Extract lignes from devis data
+    const { lignes, ...devisData } = devis;
+    
+    // Calculate totals from lignes
+    let total_ht = 0;
+    let total_ttc = 0;
+    
+    if (lignes && lignes.length > 0) {
+      lignes.forEach(ligne => {
+        const ligneHt = (ligne.quantite || 1) * (ligne.prix_unitaire || 0);
+        const ligneTva = ligneHt * (ligne.tva || 0) / 100;
+        total_ht += ligneHt;
+        total_ttc += ligneHt + ligneTva;
+      });
+    }
+    
     // Generate numero_devis
     const { count } = await supabase
       .from('devis')
       .select('id', { count: 'exact', head: true })
-      .eq('entreprise_id', devis.entreprise_id);
+      .eq('entreprise_id', devisData.entreprise_id);
     
     const numero_devis = `D-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`;
     
-    const { data, error } = await supabase
+    // Create the devis with totals
+    const { data: newDevis, error } = await supabase
       .from('devis')
       .insert({
-        ...devis,
+        ...devisData,
         numero_devis,
+        total_ht,
+        total_ttc,
         statut: 'brouillon',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .select()
       .single();
+    
     if (error) throw error;
-    return data;
+    
+    // Create devis_lignes if we have lignes
+    if (newDevis && lignes && lignes.length > 0) {
+      const lignesData = lignes.map((ligne, index) => ({
+        devis_id: newDevis.id,
+        description: ligne.description,
+        quantite: ligne.quantite || 1,
+        prix_unitaire: ligne.prix_unitaire || 0,
+        tva: ligne.tva || 0,
+        ordre: index + 1
+      }));
+      
+      const { error: lignesError } = await supabase
+        .from('devis_lignes')
+        .insert(lignesData);
+      
+      if (lignesError) {
+        console.warn('Could not create devis_lignes:', lignesError);
+        // Continue anyway - devis was created
+      }
+    }
+    
+    return newDevis;
   },
 
   update: async (id, updates) => {
