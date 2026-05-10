@@ -1,31 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { 
-  Smartphone, Building2, ArrowRight, 
-  Layers, CreditCard, Menu, X, ChevronDown
+  Building2, ArrowRight, 
+  Layers, Menu, X
 } from 'lucide-react';
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [portalDropdownOpen, setPortalDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setPortalDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const portals = [
-    { name: 'Actoos Pro', href: 'https://pro.actoos.com', color: '#10B981', desc: 'B2B Europe' },
-    { name: 'Actoos One', href: 'https://one.actoos.com', color: '#D4AF37', desc: 'Super-App Afrique' },
-  ];
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-orange-100/50">
@@ -56,36 +38,15 @@ export default function HomePage() {
             <a href="#contact" className="hover:text-black transition-colors">Contact</a>
           </div>
 
-          {/* Global Portal Dropdown */}
-          <div className="hidden md:block relative" ref={dropdownRef}>
-            <button 
-              onClick={() => setPortalDropdownOpen(!portalDropdownOpen)}
-              className="bg-slate-950 text-white px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#D4AF37] transition-all shadow-2xl hover:shadow-yellow-500/20 flex items-center space-x-2"
+          {/* Bouton Actoos Pro */}
+          <div className="hidden md:block">
+            <a
+              href="https://pro.actoos.com"
+              className="bg-slate-950 text-white px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#10B981] transition-all shadow-2xl hover:shadow-emerald-500/20 flex items-center space-x-2"
             >
-              <span>Global Portal</span>
-              <ChevronDown size={14} className={`transition-transform ${portalDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {portalDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
-                {portals.map((portal) => (
-                  <a
-                    key={portal.name}
-                    href={portal.href}
-                    className="flex items-center space-x-3 px-4 py-3 hover:bg-slate-50 transition-colors group"
-                  >
-                    <div 
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: portal.color }}
-                    />
-                    <div>
-                      <p className="font-bold text-sm text-slate-900 group-hover:text-slate-950">{portal.name}</p>
-                      <p className="text-[10px] text-slate-400">{portal.desc}</p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            )}
+              <span>Actoos Pro</span>
+              <ArrowRight size={14} />
+            </a>
           </div>
 
           {/* Mobile menu button */}
@@ -104,21 +65,14 @@ export default function HomePage() {
             <a href="#products" className="block text-sm font-bold text-slate-600 hover:text-black">Software Suite</a>
             <a href="#vision" className="block text-sm font-bold text-slate-600 hover:text-black">Philosophy</a>
             <a href="#contact" className="block text-sm font-bold text-slate-600 hover:text-black">Contact</a>
-            <div className="pt-2 border-t border-slate-100 space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Accès Portails</p>
-              {portals.map((portal) => (
-                <a 
-                  key={portal.name}
-                  href={portal.href}
-                  className="flex items-center space-x-3 py-2"
-                >
-                  <div 
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: portal.color }}
-                  />
-                  <span className="font-bold text-sm text-slate-700">{portal.name}</span>
-                </a>
-              ))}
+            <div className="pt-2 border-t border-slate-100">
+              <a 
+                href="https://pro.actoos.com"
+                className="flex items-center space-x-3 py-2 text-sm font-bold text-[#10B981]"
+              >
+                <span>Actoos Pro</span>
+                <ArrowRight size={14} />
+              </a>
             </div>
           </div>
         )}
@@ -168,78 +122,48 @@ export default function HomePage() {
               Our Software Suite<span className="text-[#D4AF37]">.</span>
             </h2>
             <p className="text-slate-400 mt-4 md:mt-6 text-base md:text-xl max-w-2xl">
-              Un écosystème de produits étanches, interconnectés par une technologie de pointe.
+              Des solutions conçues pour l&apos;économie réelle, déployées à l&apos;échelle continentale.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 relative z-10">
+          <div className="relative z-10">
             
-            {/* ACTOOS ONE */}
-            <div className="lg:col-span-2 group bg-white/5 backdrop-blur-md p-8 md:p-12 rounded-[32px] md:rounded-[48px] border border-white/10 hover:border-[#D4AF37]/50 transition-all duration-500 flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-[#D4AF37] to-[#F5D78E] rounded-2xl flex items-center justify-center mb-6 md:mb-8 shadow-lg shadow-yellow-500/20">
-                  <Smartphone size={24} className="text-slate-900 md:w-7 md:h-7" />
-                </div>
-                <h3 className="text-2xl md:text-3xl font-black italic tracking-tighter text-white mb-3 md:mb-4">
-                  Actoos One
-                </h3>
-                <p className="text-slate-400 text-base md:text-lg leading-relaxed mb-4 md:mb-6">
-                  La Super-App d&apos;Afrique de l&apos;Ouest. Une interface unique pour la livraison, la santé, le commerce et la finance souveraine via Actoos Pay.
-                </p>
-                <div className="inline-block px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[#D4AF37] text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-8 md:mb-12">
-                  &quot;Tout. Tout de suite. Partout.&quot;
-                </div>
-              </div>
-              <a 
-                href="https://one.actoos.com" 
-                className="flex items-center space-x-4 text-white font-black text-xs uppercase tracking-widest group-hover:text-[#D4AF37] transition-colors cursor-pointer"
-              >
-                <span>Accéder au portail One</span>
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              </a>
-            </div>
-
-            {/* ACTOOS PRO */}
-            <div className="group bg-white/5 backdrop-blur-md p-8 md:p-12 rounded-[32px] md:rounded-[48px] border border-white/10 hover:border-[#10B981]/50 transition-all duration-500 flex flex-col justify-between">
-              <div>
+            {/* ACTOOS PRO - Vedette */}
+            <div className="group bg-white/5 backdrop-blur-md p-8 md:p-12 rounded-[32px] md:rounded-[48px] border border-white/10 hover:border-[#10B981]/50 transition-all duration-500 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+              <div className="flex-1">
                 <div className="w-12 h-12 md:w-14 md:h-14 bg-[#10B981] rounded-2xl flex items-center justify-center mb-6 md:mb-8 shadow-lg shadow-emerald-500/20">
                   <Building2 size={24} className="text-white md:w-7 md:h-7" />
                 </div>
                 <h3 className="text-2xl md:text-3xl font-black italic tracking-tighter text-white mb-3 md:mb-4">
                   Actoos Pro
                 </h3>
-                <p className="text-slate-400 text-base md:text-lg leading-relaxed mb-4 md:mb-6">
-                  SaaS B2B de gestion d&apos;interventions terrain en Europe. Pilotage de flotte et optimisation en temps réel.
+                <p className="text-slate-400 text-base md:text-lg leading-relaxed mb-4 md:mb-6 max-w-xl">
+                  SaaS B2B de gestion d&apos;interventions terrain en Europe. Planning, devis, factures, techniciens — tout est connecté pour piloter votre activité en temps réel.
                 </p>
+                <div className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#10B981] text-[10px] font-black uppercase tracking-widest">
+                  Disponible maintenant
+                </div>
               </div>
               <a 
                 href="https://pro.actoos.com" 
-                className="flex items-center space-x-4 text-white font-black text-xs uppercase tracking-widest group-hover:text-[#10B981] transition-colors cursor-pointer mt-8 md:mt-12"
+                className="flex items-center space-x-4 text-white font-black text-xs uppercase tracking-widest hover:text-[#10B981] transition-colors cursor-pointer bg-white/10 px-6 py-4 rounded-2xl hover:bg-white/20 transition-all shrink-0"
               >
-                <span>Espace B2B</span>
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                <span>Essai gratuit</span>
+                <ArrowRight size={18} />
               </a>
             </div>
 
-            {/* ACTOOS PAY - Infrastructure financière */}
-            <div className="lg:col-span-3 group bg-gradient-to-r from-white/5 to-white/[0.02] backdrop-blur-md p-8 md:p-12 rounded-[32px] md:rounded-[48px] border border-white/10 hover:border-[#D4AF37]/30 transition-all duration-500">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div className="flex items-center space-x-4 md:space-x-6">
-                  <div className="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl flex items-center justify-center shadow-lg">
-                    <CreditCard size={24} className="text-[#D4AF37] md:w-7 md:h-7" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl md:text-2xl font-black italic tracking-tighter text-white">
-                      Actoos Pay
-                    </h3>
-                    <p className="text-slate-500 text-sm md:text-base">
-                      Infrastructure financière souveraine intégrée
-                    </p>
-                  </div>
-                </div>
-                <div className="inline-block px-4 py-2 rounded-full bg-slate-800 border border-slate-700 text-slate-400 text-[9px] md:text-[10px] font-black uppercase tracking-widest">
-                  Intégré dans Actoos One
-                </div>
+            {/* Produits à venir */}
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white/5 backdrop-blur-md p-6 rounded-[24px] border border-white/5 opacity-50">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Bientôt disponible</p>
+                <h4 className="text-lg font-black italic text-white/60">Actoos One</h4>
+                <p className="text-slate-500 text-sm">Super-App Afrique de l&apos;Ouest</p>
+              </div>
+              <div className="bg-white/5 backdrop-blur-md p-6 rounded-[24px] border border-white/5 opacity-50">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">En développement</p>
+                <h4 className="text-lg font-black italic text-white/60">Actoos Pay</h4>
+                <p className="text-slate-500 text-sm">Infrastructure financière souveraine</p>
               </div>
             </div>
 
@@ -302,14 +226,20 @@ export default function HomePage() {
                   className="w-full max-w-sm mx-auto"
                 />
               </div>
-              {/* Stats */}
-              <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl p-4 md:p-6 shadow-2xl border border-slate-100">
-                <p className="text-2xl md:text-3xl font-black text-slate-950">3</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Continents</p>
-              </div>
-              <div className="absolute -top-6 -right-6 bg-white rounded-2xl p-4 md:p-6 shadow-2xl border border-slate-100">
-                <p className="text-2xl md:text-3xl font-black text-[#D4AF37]">2026</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Fondation</p>
+              {/* Stats - Glassmorphism */}
+              <div className="absolute -bottom-6 -left-6 right-6 flex gap-3">
+                <div className="flex-1 bg-white/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 shadow-2xl border border-white/50">
+                  <p className="text-xl md:text-2xl font-black text-[#10B981]">+500</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Interventions / mois</p>
+                </div>
+                <div className="flex-1 bg-white/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 shadow-2xl border border-white/50">
+                  <p className="text-xl md:text-2xl font-black text-slate-950">3</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Continents</p>
+                </div>
+                <div className="flex-1 bg-white/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 shadow-2xl border border-white/50">
+                  <p className="text-xl md:text-2xl font-black text-[#D4AF37]">2026</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Fondation</p>
+                </div>
               </div>
             </div>
           </div>
@@ -364,11 +294,6 @@ export default function HomePage() {
             </h5>
             <ul className="space-y-3 md:space-y-4 text-sm font-bold text-slate-500">
               <li>
-                <a href="https://one.actoos.com" className="hover:text-[#D4AF37] transition-colors">
-                  Actoos One
-                </a>
-              </li>
-              <li>
                 <a href="https://pro.actoos.com" className="hover:text-[#10B981] transition-colors">
                   Actoos Pro
                 </a>
@@ -376,6 +301,11 @@ export default function HomePage() {
               <li>
                 <a href="#vision" className="hover:text-black transition-colors">
                   Philosophy
+                </a>
+              </li>
+              <li>
+                <a href="#contact" className="hover:text-black transition-colors">
+                  Contact
                 </a>
               </li>
             </ul>
