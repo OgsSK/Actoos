@@ -38,7 +38,7 @@ export default function HomePage() {
             <img 
               src="/logo-icon.png" 
               alt="Actoos" 
-              className="h-10 w-10 object-contain"
+              className="h-14 w-14 object-contain"
             />
             <div className="flex flex-col">
               <span className="font-black text-xl md:text-2xl tracking-tighter uppercase leading-none">
@@ -347,7 +347,7 @@ export default function HomePage() {
               <img 
                 src="/logo-icon.png" 
                 alt="Actoos" 
-                className="h-8 w-8 object-contain"
+                className="h-14 w-14 object-contain"
               />
               <span className="font-black text-xl tracking-tighter uppercase">
                 ACTOOS GROUP<span className="text-[#D4AF37]">.</span>
