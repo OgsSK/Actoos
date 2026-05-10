@@ -1979,7 +1979,9 @@ export const TechnicianApp = () => {
       loadMyDevis(); // Refresh devis list
     } catch (error) {
       console.error('Error signing devis:', error);
-      toast.error('Erreur lors de la signature');
+      // Show detailed error message
+      const errorMsg = error.message || 'Erreur lors de la signature';
+      toast.error(errorMsg);
     } finally {
       setFormLoading(false);
     }

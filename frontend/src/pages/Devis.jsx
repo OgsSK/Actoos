@@ -528,22 +528,43 @@ export const DevisForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.client_id) {
+      toast.error('Veuillez sélectionner un client');
+      return;
+    }
+    
+    if (!formData.lignes || formData.lignes.length === 0) {
+      toast.error('Veuillez ajouter au moins une ligne');
+      return;
+    }
+    
+    const hasValidLigne = formData.lignes.some(l => l.description && l.prix_unitaire > 0);
+    if (!hasValidLigne) {
+      toast.error('Veuillez remplir au moins une ligne avec description et prix');
+      return;
+    }
+    
     setSaving(true);
     try {
       const payload = {
         ...formData,
         entreprise_id: user?.entreprise_id,
-        validite_jours: parseInt(formData.validite_jours),
+        validite_jours: parseInt(formData.validite_jours) || 30,
       };
       
       if (isEdit) {
         await devisApi.update(id, payload);
+        toast.success('Devis mis à jour');
       } else {
         await devisApi.create(payload);
+        toast.success('Devis créé avec succès');
       }
       navigate('/dashboard/devis');
     } catch (error) {
       console.error('Error saving devis:', error);
+      toast.error(error.message || 'Erreur lors de la création du devis');
     } finally {
       setSaving(false);
     }

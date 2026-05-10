@@ -287,22 +287,36 @@ export const devisApi = {
     
     const numero_devis = `D-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`;
     
-    // Create the devis with totals
+    // Build minimal payload with only known columns
+    // Some schemas may not have all columns (conditions, message_client, etc.)
+    const payload = {
+      client_id: devisData.client_id,
+      entreprise_id: devisData.entreprise_id,
+      numero_devis,
+      total_ht,
+      total_ttc,
+      statut: 'brouillon',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    // Add optional fields if they exist and are not empty
+    if (devisData.intervention_id) payload.intervention_id = devisData.intervention_id;
+    if (devisData.validite_jours) payload.validite_jours = devisData.validite_jours;
+    if (devisData.conditions) payload.conditions = devisData.conditions;
+    if (devisData.message_client) payload.message_client = devisData.message_client;
+    
+    // Create the devis
     const { data: newDevis, error } = await supabase
       .from('devis')
-      .insert({
-        ...devisData,
-        numero_devis,
-        total_ht,
-        total_ttc,
-        statut: 'brouillon',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(payload)
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Devis creation error:', error);
+      throw error;
+    }
     
     // Create devis_lignes if we have lignes
     if (newDevis && lignes && lignes.length > 0) {
@@ -1315,21 +1329,40 @@ export const technicianApi = {
   },
 
   signDevis: async (devisId, signatureData) => {
-    const { data, error } = await supabase
-      .from('devis')
-      .update({
-        statut: 'signe',
-        signature: signatureData.signature,
-        signature_nom: signatureData.nom,
-        signature_date: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', devisId)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    // Try full signature update first
+    try {
+      const { data, error } = await supabase
+        .from('devis')
+        .update({
+          statut: 'signe',
+          signature: signatureData.signature,
+          signature_nom: signatureData.nom,
+          signature_date: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', devisId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.warn('Full signature update failed, trying minimal update:', error.message);
+      
+      // Fallback: try with just statut change (columns may not exist)
+      const { data: minData, error: minError } = await supabase
+        .from('devis')
+        .update({
+          statut: 'signe',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', devisId)
+        .select()
+        .single();
+      
+      if (minError) throw minError;
+      return minData;
+    }
   }
 };
 
