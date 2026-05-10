@@ -796,24 +796,10 @@ export const DevisDetail = () => {
     }
   };
 
-  const handleCreateFacture = async () => {
+      const handleCreateFacture = async () => {
     try {
-      // Create facture from devis data
-      const factureData = {
-        client_id: devis.client_id,
-        entreprise_id: devis.entreprise_id,
-        devis_id: devis.id,
-        lignes: devis.lignes,
-        montant_ht: devis.montant_ht,
-        montant_tva: devis.montant_tva,
-        montant_ttc: devis.montant_ttc || devis.total_ttc,
-        statut: 'brouillon',
-        conditions: devis.conditions,
-        notes: devis.notes
-      };
-      
-      const newFacture = await facturesApi.create(factureData);
-      toast.success(`Facture créée`);
+      const newFacture = await devisApi.convertToFacture(id);
+      toast.success(newFacture.message || 'Facture créée');
       navigate(`/dashboard/factures/${newFacture.id}`);
     } catch (error) {
       console.error('Error creating facture:', error);

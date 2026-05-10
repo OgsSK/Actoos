@@ -288,7 +288,6 @@ export const devisApi = {
     const numero_devis = `D-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`;
     
     // Build minimal payload with only known columns
-    // Some schemas may not have all columns (conditions, message_client, etc.)
     const payload = {
       client_id: devisData.client_id,
       entreprise_id: devisData.entreprise_id,
@@ -335,7 +334,6 @@ export const devisApi = {
       
       if (lignesError) {
         console.warn('Could not create devis_lignes:', lignesError);
-        // Continue anyway - devis was created
       }
     }
     
@@ -385,6 +383,85 @@ export const devisApi = {
       .single();
     if (error) throw error;
     return data;
+  },
+
+  convertToFacture: async (devisId) => {
+    // 1. Récupérer le devis
+    const { data: devis, error: devisError } = await supabase
+      .from('devis')
+      .select('*, lignes:devis_lignes(*)')
+      .eq('id', devisId)
+      .single();
+    if (devisError) throw devisError;
+    if (!devis) throw new Error('Devis non trouvé');
+    if (devis.statut !== 'signe') throw new Error('Le devis doit être signé pour être converti');
+
+    // 2. Vérifier qu'il n'a pas déjà été converti
+    const { data: existing } = await supabase
+      .from('factures')
+      .select('id')
+      .eq('devis_id', devisId)
+      .maybeSingle();
+    if (existing) throw new Error('Ce devis a déjà été converti en facture');
+
+    // 3. Générer un numéro de facture
+    const { count } = await supabase
+      .from('factures')
+      .select('id', { count: 'exact', head: true })
+      .eq('entreprise_id', devis.entreprise_id);
+    const numero_facture = `F-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`;
+
+    // 4. Créer la facture
+    const { data: facture, error: factureError } = await supabase
+      .from('factures')
+      .insert({
+        entreprise_id: devis.entreprise_id,
+        client_id: devis.client_id,
+        devis_id: devisId,
+        numero_facture: numero_facture,
+        total_ht: devis.total_ht,
+        total_tva: devis.total_tva || 0,
+        total_ttc: devis.total_ttc,
+        statut: 'brouillon',
+        notes: devis.notes || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    if (factureError) throw factureError;
+
+    // 5. Copier les lignes du devis vers facture_lignes
+    if (devis.lignes && devis.lignes.length > 0) {
+      const lignesFacture = devis.lignes.map(ligne => ({
+        facture_id: facture.id,
+        description: ligne.description || '',
+        quantite: ligne.quantite || 1,
+        prix_unitaire: ligne.prix_unitaire || 0,
+        tva: ligne.tva || 0,
+        total_ht: (ligne.quantite || 1) * (ligne.prix_unitaire || 0)
+      }));
+      
+      const { error: lignesError } = await supabase
+        .from('facture_lignes')
+        .insert(lignesFacture);
+      if (lignesError) {
+        console.warn('Erreur copie lignes:', lignesError);
+      }
+    }
+
+    // 6. Mettre à jour le statut du devis
+    await supabase
+      .from('devis')
+      .update({ statut: 'facture', updated_at: new Date().toISOString() })
+      .eq('id', devisId);
+
+    return {
+      ...facture,
+      message: `Devis converti en facture ${numero_facture}`,
+      facture_id: facture.id,
+      numero_facture: numero_facture
+    };
   }
 };
 
