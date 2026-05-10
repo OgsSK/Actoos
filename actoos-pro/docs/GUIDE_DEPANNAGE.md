@@ -21,14 +21,27 @@
 | Composant | Hébergement | URL | Dashboard |
 |-----------|-------------|-----|-----------|
 | **Frontend** | Vercel | https://pro.actoos.com | https://vercel.com/dashboard |
-| **Backend** | Railway | https://actoos-backend.up.railway.app | https://railway.app/dashboard |
 | **Base de données** | Supabase (PostgreSQL) | - | https://supabase.com/dashboard |
+| **API principale** | Supabase (direct) | - | Le frontend appelle Supabase directement |
 | **Auth** | Supabase Auth | - | Supabase Dashboard > Authentication |
 | **Storage (Photos)** | Supabase Storage | - | Supabase Dashboard > Storage |
+| **Edge Functions** | Supabase | - | Supabase Dashboard > Edge Functions |
+| **Backend FastAPI** | Railway (optionnel) | - | https://railway.app/dashboard |
 | **Emails** | Resend | - | https://resend.com/emails |
 | **Paiements** | Stripe | - | https://dashboard.stripe.com |
 | **Cache** | Upstash Redis | - | https://console.upstash.com |
-| **DNS/Domaine** | Vercel/Cloudflare | actoos.com | - |
+
+### ⚠️ Important : Architecture Supabase-First
+
+**90% des opérations passent directement par Supabase** (via `supabaseApi.js`) :
+- Clients, Devis, Factures, Interventions → Supabase PostgreSQL
+- Authentification → Supabase Auth
+- Photos → Supabase Storage
+
+**Le backend FastAPI (Railway) est utilisé seulement pour** :
+- Génération de PDF (rapports, factures)
+- Envoi d'emails (Resend)
+- Webhooks Stripe
 
 ## 📂 Structure du Code
 
