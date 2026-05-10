@@ -137,9 +137,36 @@ const Statements = () => {
     }
   };
 
-  const handleDownload = async (clientId, clientName) => {
-    // PDF generation requires Edge Function
-    toast.info('Téléchargement PDF en cours de migration vers Supabase');
+      const handleDownload = async (clientId, clientName) => {
+    try {
+      const token = localStorage.getItem('token');
+      const entrepriseId = user?.entreprise_id || '';
+      const response = await fetch('https://zmngftlkdimwvkxmduvr.supabase.co/functions/v1/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          type: 'statement',
+          id: clientId,
+          client_id: clientId,
+          entreprise_id: entrepriseId,
+          month: selectedMonth,
+          year: selectedYear
+        })
+      });
+
+      if (!response.ok) throw new Error('Erreur');
+      const html = await response.text();
+      const win = window.open('', '_blank');
+      win.document.write(html);
+      win.document.close();
+      setTimeout(() => win.print(), 500);
+    } catch (error) {
+      console.error('Error downloading statement:', error);
+      toast.error('Erreur lors du téléchargement');
+    }
   };
 
   const handleSendAll = async () => {
