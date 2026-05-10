@@ -41,7 +41,7 @@ export default function HomePage() {
           {/* Bouton Actoos Pro */}
           <div className="hidden md:block">
             <a
-              href="https://pro.actoos.com/signup"
+              href="https://pro.actoos.com"
               className="bg-slate-950 text-white px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#10B981] transition-all shadow-2xl hover:shadow-emerald-500/20 flex items-center space-x-2"
             >
               <span>Actoos Pro</span>
@@ -67,7 +67,7 @@ export default function HomePage() {
             <a href="#contact" className="block text-sm font-bold text-slate-600 hover:text-black">Contact</a>
             <div className="pt-2 border-t border-slate-100">
               <a 
-                href="https://pro.actoos.com/signup"
+                href="https://pro.actoos.com"
                 className="flex items-center space-x-3 py-2 text-sm font-bold text-[#10B981]"
               >
                 <span>Actoos Pro</span>
@@ -294,7 +294,7 @@ export default function HomePage() {
             </h5>
             <ul className="space-y-3 md:space-y-4 text-sm font-bold text-slate-500">
               <li>
-                <a href="https://pro.actoos.com/signup" className="hover:text-[#10B981] transition-colors">
+                <a href="https://pro.actoos.com" className="hover:text-[#10B981] transition-colors">
                   Actoos Pro
                 </a>
               </li>
