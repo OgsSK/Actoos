@@ -2,25 +2,23 @@
 
 import { useState } from 'react';
 import { 
-  Building2, ArrowRight, 
-  Layers, Menu, X
+  Code, Smartphone, Globe, ArrowRight, Layers, Menu, X 
 } from 'lucide-react';
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-orange-100/50">
+    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-amber-50">
       
-      {/* NAVIGATION PREMIUM */}
+      {/* NAVIGATION */}
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-xl z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            {/* LOGO ACTOOS GROUP */}
             <img 
               src="/logo-icon.png" 
               alt="Actoos" 
-              className="h-14 w-14 object-contain"
+              className="h-16 w-16 object-contain"
             />
             <div className="flex flex-col">
               <span className="font-black text-xl md:text-2xl tracking-tighter uppercase leading-none">
@@ -33,18 +31,18 @@ export default function HomePage() {
           </div>
           
           <div className="hidden md:flex items-center space-x-10 text-[11px] font-black uppercase tracking-widest text-slate-400">
-            <a href="#products" className="hover:text-black transition-colors">Software Suite</a>
-            <a href="#vision" className="hover:text-black transition-colors">Philosophy</a>
+            <a href="#expertise" className="hover:text-black transition-colors">Expertise</a>
+            <a href="#about" className="hover:text-black transition-colors">Philosophie</a>
             <a href="#contact" className="hover:text-black transition-colors">Contact</a>
           </div>
 
-          {/* Bouton Actoos Pro */}
+          {/* Bouton Essai (vers le produit existant) */}
           <div className="hidden md:block">
             <a
-              href="https://pro.actoos.com"
+              href="https://pro.actoos.com/signup"
               className="bg-slate-950 text-white px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#10B981] transition-all shadow-2xl hover:shadow-emerald-500/20 flex items-center space-x-2"
             >
-              <span>Actoos Pro</span>
+              <span>Essai gratuit</span>
               <ArrowRight size={14} />
             </a>
           </div>
@@ -62,15 +60,15 @@ export default function HomePage() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-slate-100 px-6 py-4 space-y-4">
-            <a href="#products" className="block text-sm font-bold text-slate-600 hover:text-black">Software Suite</a>
-            <a href="#vision" className="block text-sm font-bold text-slate-600 hover:text-black">Philosophy</a>
+            <a href="#expertise" className="block text-sm font-bold text-slate-600 hover:text-black">Expertise</a>
+            <a href="#about" className="block text-sm font-bold text-slate-600 hover:text-black">Philosophie</a>
             <a href="#contact" className="block text-sm font-bold text-slate-600 hover:text-black">Contact</a>
             <div className="pt-2 border-t border-slate-100">
               <a 
                 href="https://pro.actoos.com"
                 className="flex items-center space-x-3 py-2 text-sm font-bold text-[#10B981]"
               >
-                <span>Actoos Pro</span>
+                <span>Essai gratuit</span>
                 <ArrowRight size={14} />
               </a>
             </div>
@@ -78,105 +76,123 @@ export default function HomePage() {
         )}
       </nav>
 
-      {/* HERO SECTION - SLATE & GOLD */}
+      {/* HERO */}
       <header className="pt-32 md:pt-48 pb-20 md:pb-32 px-6 max-w-7xl mx-auto flex flex-col items-center text-center">
         <div className="inline-flex items-center space-x-2 bg-slate-50 px-5 py-2.5 rounded-full border border-slate-100 mb-8 md:mb-10">
           <Layers size={14} className="text-[#D4AF37]" />
           <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-            Multi-Continental Software Factory
+            Créateur de solutions logicielles
           </span>
         </div>
         
         <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tighter leading-[0.9] mb-8 md:mb-12 text-slate-950">
-          Empowering Action.<br/>
+          Nous donnons vie<br/>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#F5D78E] to-[#D4AF37] italic">
-            Delivering Progress.
+            à vos idées.
           </span>
         </h1>
         
         <p className="text-lg md:text-xl lg:text-2xl text-slate-400 font-medium max-w-3xl leading-relaxed px-4">
-          Nous bâtissons les infrastructures logicielles qui redéfinissent l&apos;efficacité des entreprises en Europe et la souveraineté financière des citoyens en Afrique.
+          Actoos conçoit et développe des logiciels sur mesure – applications mobiles, 
+          tableaux de bord, plateformes de gestion… Nous transformons votre vision 
+          en un produit numérique puissant, prêt à être déployé.
         </p>
 
         <div className="mt-12 md:mt-16 flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0">
           <a 
-            href="#products"
+            href="#expertise"
             className="bg-slate-950 text-white px-8 md:px-10 py-4 md:py-5 rounded-2xl font-black uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-2xl text-center"
           >
-            Explorer nos solutions
+            Notre expertise
           </a>
           <a 
             href="#contact"
             className="bg-white text-slate-950 border-2 border-slate-100 px-8 md:px-10 py-4 md:py-5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition-all text-center"
           >
-            Contacter le groupe
+            Parlez-nous de votre projet
           </a>
         </div>
       </header>
 
-      {/* SECTION PRODUITS - FOND ARDOISE SOMBRE */}
-      <section id="products" className="py-16 md:py-32 px-4">
-        <div className="max-w-7xl mx-auto bg-[#0F172A] rounded-[32px] md:rounded-[64px] p-6 md:p-12 lg:p-20 relative overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)]">
-          <div className="relative z-10 mb-12 md:mb-20 text-center md:text-left">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-white">
-              Our Software Suite<span className="text-[#D4AF37]">.</span>
+      {/* SECTION EXPERTISE */}
+      <section id="expertise" className="py-16 md:py-32 px-4 bg-slate-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-4 block">
+              Ce que nous faisons
+            </span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-slate-950 mb-6">
+              Des solutions logicielles<br/>conçues pour durer.
             </h2>
-            <p className="text-slate-400 mt-4 md:mt-6 text-base md:text-xl max-w-2xl">
-              Des solutions conçues pour l&apos;économie réelle, déployées à l&apos;échelle continentale.
+            <p className="text-slate-500 text-base md:text-xl max-w-3xl mx-auto leading-relaxed">
+              Nous maîtrisons tout le cycle de vie d'un logiciel : conception, développement, 
+              maintenance. De l'application mobile grand public à la plateforme métier complexe, 
+              nous créons des outils fiables, évolutifs et sécurisés.
             </p>
           </div>
 
-          <div className="relative z-10">
-            
-            {/* ACTOOS PRO - Vedette */}
-            <div className="group bg-white/5 backdrop-blur-md p-8 md:p-12 rounded-[32px] md:rounded-[48px] border border-white/10 hover:border-[#10B981]/50 transition-all duration-500 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
-              <div className="flex-1">
-                <div className="w-12 h-12 md:w-14 md:h-14 bg-[#10B981] rounded-2xl flex items-center justify-center mb-6 md:mb-8 shadow-lg shadow-emerald-500/20">
-                  <Building2 size={24} className="text-white md:w-7 md:h-7" />
-                </div>
-                <h3 className="text-2xl md:text-3xl font-black italic tracking-tighter text-white mb-3 md:mb-4">
-                  Actoos Pro
-                </h3>
-                <p className="text-slate-400 text-base md:text-lg leading-relaxed mb-4 md:mb-6 max-w-xl">
-                  SaaS B2B de gestion d&apos;interventions terrain en Europe. Planning, devis, factures, techniciens — tout est connecté pour piloter votre activité en temps réel.
-                </p>
-                <div className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#10B981] text-[10px] font-black uppercase tracking-widest">
-                  Disponible maintenant
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {/* Carte 1 - Applications mobiles */}
+            <div className="bg-white rounded-[32px] p-8 md:p-10 shadow-xl border border-slate-100 hover:border-[#D4AF37]/30 transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#F5D78E] rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-yellow-500/20">
+                <Smartphone size={24} className="text-slate-900" />
               </div>
-              <a 
-                href="https://pro.actoos.com/signup" 
-                className="flex items-center space-x-4 text-white font-black text-xs uppercase tracking-widest hover:text-[#10B981] transition-colors cursor-pointer bg-white/10 px-6 py-4 rounded-2xl hover:bg-white/20 transition-all shrink-0"
-              >
-                <span>Essai gratuit</span>
-                <ArrowRight size={18} />
-              </a>
+              <h3 className="text-xl font-black italic tracking-tighter text-slate-950 mb-3">
+                Applications mobiles
+              </h3>
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Des apps iOS et Android performantes, avec ou sans mode hors-ligne, 
+                pour vos clients, vos équipes terrain ou vos partenaires.
+              </p>
             </div>
 
-            {/* Produits à venir */}
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white/5 backdrop-blur-md p-6 rounded-[24px] border border-white/5 opacity-50">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Bientôt disponible</p>
-                <h4 className="text-lg font-black italic text-white/60">Actoos One</h4>
-                <p className="text-slate-500 text-sm">Super-App Afrique de l&apos;Ouest</p>
+            {/* Carte 2 - Plateformes web */}
+            <div className="bg-white rounded-[32px] p-8 md:p-10 shadow-xl border border-slate-100 hover:border-[#D4AF37]/30 transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                <Globe size={24} className="text-white" />
               </div>
-              <div className="bg-white/5 backdrop-blur-md p-6 rounded-[24px] border border-white/5 opacity-50">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">En développement</p>
-                <h4 className="text-lg font-black italic text-white/60">Actoos Pay</h4>
-                <p className="text-slate-500 text-sm">Infrastructure financière souveraine</p>
-              </div>
+              <h3 className="text-xl font-black italic tracking-tighter text-slate-950 mb-3">
+                Plateformes web
+              </h3>
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Dashboards, back-offices, portails clients… Des interfaces complètes 
+                et intuitives pour piloter votre activité en temps réel.
+              </p>
             </div>
 
+            {/* Carte 3 - Logiciels sur mesure */}
+            <div className="bg-white rounded-[32px] p-8 md:p-10 shadow-xl border border-slate-100 hover:border-[#D4AF37]/30 transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#10B981] to-emerald-400 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
+                <Code size={24} className="text-white" />
+              </div>
+              <h3 className="text-xl font-black italic tracking-tighter text-slate-950 mb-3">
+                Logiciels sur mesure
+              </h3>
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Vous avez un besoin unique ? Nous créons un logiciel entièrement 
+                personnalisé, adapté à vos processus et à votre secteur d'activité.
+              </p>
+            </div>
           </div>
 
-          {/* DÉCORATION ARRIÈRE-PLAN */}
-          <div className="absolute top-[-100px] right-[-100px] w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-[#D4AF37]/10 blur-[150px] rounded-full" />
-          <div className="absolute bottom-[-50px] left-[-50px] w-[200px] md:w-[300px] h-[200px] md:h-[300px] bg-[#10B981]/5 blur-[100px] rounded-full" />
+          {/* Note sur le produit disponible */}
+          <div className="mt-12 text-center">
+            <p className="text-sm text-slate-400 mb-4">
+              Un exemple concret ? Découvrez notre logiciel de gestion d'interventions terrain, déjà utilisé par des entreprises.
+            </p>
+            <a
+              href="https://pro.actoos.com"
+              className="inline-flex items-center space-x-2 text-[#10B981] font-bold text-sm hover:underline"
+            >
+              <span>Découvrez Actoos Pro (gestion d'interventions)</span>
+              <ArrowRight size={14} />
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* SECTION VISION / PHILOSOPHY */}
-      <section id="vision" className="py-16 md:py-32 px-6">
+      {/* SECTION À PROPOS / PHILOSOPHIE */}
+      <section id="about" className="py-16 md:py-32 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20 items-center">
             <div>
@@ -184,62 +200,45 @@ export default function HomePage() {
                 Notre philosophie
               </span>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-slate-950 mb-6">
-                Construire pour<br/>
+                Le logiciel doit<br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F5D78E]">
-                  l&apos;économie réelle
+                  servir votre métier,
                 </span>
+                <br/>pas l'inverse.
               </h2>
               <p className="text-slate-500 text-base md:text-lg leading-relaxed mb-8">
-                Chez Actoos, nous croyons que la technologie doit servir l&apos;économie réelle. 
-                Nos solutions sont conçues pour les entrepreneurs, les artisans, les PME et 
-                les citoyens qui font tourner l&apos;économie au quotidien.
+                Trop de solutions vous imposent de changer votre façon de travailler. 
+                Nous faisons le contraire : nous comprenons votre activité et concevons 
+                un outil qui s'y adapte parfaitement. Simple, efficace, et conçu pour durer.
               </p>
               <div className="space-y-4">
                 <div className="flex items-start space-x-4">
                   <div className="w-2 h-2 bg-[#D4AF37] rounded-full mt-2 flex-shrink-0" />
                   <p className="text-slate-600 text-sm md:text-base">
-                    <strong className="text-slate-900">Souveraineté</strong> — Des infrastructures conçues 
-                    pour l&apos;indépendance technologique
+                    <strong className="text-slate-900">Sur mesure</strong> — Chaque solution est unique, développée pour vos besoins spécifiques.
                   </p>
                 </div>
                 <div className="flex items-start space-x-4">
                   <div className="w-2 h-2 bg-[#10B981] rounded-full mt-2 flex-shrink-0" />
                   <p className="text-slate-600 text-sm md:text-base">
-                    <strong className="text-slate-900">Efficacité</strong> — Des outils qui simplifient 
-                    le quotidien des professionnels
+                    <strong className="text-slate-900">Accompagnement</strong> — De la conception à la maintenance, nous restons à vos côtés.
                   </p>
                 </div>
                 <div className="flex items-start space-x-4">
                   <div className="w-2 h-2 bg-slate-400 rounded-full mt-2 flex-shrink-0" />
                   <p className="text-slate-600 text-sm md:text-base">
-                    <strong className="text-slate-900">Accessibilité</strong> — La technologie de pointe 
-                    accessible à tous
+                    <strong className="text-slate-900">Évolutivité</strong> — Votre logiciel grandit avec votre entreprise, sans refonte.
                   </p>
                 </div>
               </div>
             </div>
             <div className="relative">
-              <div className="bg-slate-50 rounded-[32px] md:rounded-[48px] p-8 md:p-12 relative overflow-hidden">
+              <div className="bg-slate-50 rounded-[32px] md:rounded-[48px] p-8 md:p-12 shadow-2xl border border-slate-100 relative overflow-hidden">
                 <img 
                   src="/logo-actoos-slogan.png" 
                   alt="Actoos - Empowering Action. Delivering Progress."
                   className="w-full max-w-sm mx-auto"
                 />
-              </div>
-              {/* Stats - Glassmorphism */}
-              <div className="absolute -bottom-6 -left-6 right-6 flex gap-3">
-                <div className="flex-1 bg-white/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 shadow-2xl border border-white/50">
-                  <p className="text-xl md:text-2xl font-black text-[#10B981]">+500</p>
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Interventions / mois</p>
-                </div>
-                <div className="flex-1 bg-white/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 shadow-2xl border border-white/50">
-                  <p className="text-xl md:text-2xl font-black text-slate-950">3</p>
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Continents</p>
-                </div>
-                <div className="flex-1 bg-white/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 shadow-2xl border border-white/50">
-                  <p className="text-xl md:text-2xl font-black text-[#D4AF37]">2026</p>
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Fondation</p>
-                </div>
               </div>
             </div>
           </div>
@@ -253,11 +252,11 @@ export default function HomePage() {
             Contact
           </span>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-slate-950 mb-6">
-            Parlons de votre projet
+            Vous avez un projet ?
           </h2>
           <p className="text-slate-500 text-base md:text-lg mb-10 max-w-2xl mx-auto">
-            Que vous soyez une entreprise européenne cherchant à optimiser vos opérations 
-            ou un acteur africain souhaitant intégrer notre écosystème.
+            Que vous ayez une idée précise ou simplement envie d'échanger sur le potentiel 
+            du numérique dans votre secteur, nous sommes à votre écoute.
           </p>
           <a 
             href="mailto:contact@actoos.com"
@@ -269,7 +268,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FOOTER PREMIUM */}
+      {/* FOOTER */}
       <footer className="bg-white py-16 md:py-20 px-6 border-t border-slate-100">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 md:gap-16">
           <div className="sm:col-span-2 space-y-6 md:space-y-8">
@@ -277,15 +276,15 @@ export default function HomePage() {
               <img 
                 src="/logo-icon.png" 
                 alt="Actoos" 
-                className="h-10 w-10 object-contain"
+                className="h-12 w-12 object-contain"
               />
               <span className="font-black text-xl tracking-tighter uppercase">
                 ACTOOS GROUP<span className="text-[#D4AF37]">.</span>
               </span>
             </div>
             <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-sm">
-              Concepteur d&apos;écosystèmes numériques souverains. Nous développons les outils 
-              qui propulsent l&apos;économie réelle vers le futur.
+              Créateur de logiciels sur mesure pour les entreprises et les entrepreneurs.
+              Nous transformons vos idées en solutions numériques performantes.
             </p>
           </div>
           <div>
@@ -294,13 +293,13 @@ export default function HomePage() {
             </h5>
             <ul className="space-y-3 md:space-y-4 text-sm font-bold text-slate-500">
               <li>
-                <a href="https://pro.actoos.com" className="hover:text-[#10B981] transition-colors">
-                  Actoos Pro
+                <a href="#expertise" className="hover:text-black transition-colors">
+                  Expertise
                 </a>
               </li>
               <li>
-                <a href="#vision" className="hover:text-black transition-colors">
-                  Philosophy
+                <a href="#about" className="hover:text-black transition-colors">
+                  Philosophie
                 </a>
               </li>
               <li>
@@ -312,21 +311,24 @@ export default function HomePage() {
           </div>
           <div>
             <h5 className="font-black uppercase tracking-[0.2em] text-[10px] text-slate-950 mb-6 md:mb-8">
-              Hubs
+              Légal
             </h5>
             <ul className="space-y-3 md:space-y-4 text-sm font-bold text-slate-400">
-              <li>Bruxelles, Belgique</li>
-              <li>Paris, France</li>
-              <li>Bamako, Mali</li>
+              <li>
+                <a href="/privacy" className="hover:text-black transition-colors">
+                  Confidentialité
+                </a>
+              </li>
+              <li>
+                <a href="/legal" className="hover:text-black transition-colors">
+                  Mentions légales
+                </a>
+              </li>
             </ul>
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-16 md:mt-20 pt-8 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-300">
-          <p>© 2026 Actoos Group. All rights reserved.</p>
-          <div className="flex space-x-8">
-            <a href="/privacy" className="hover:text-black cursor-pointer transition-colors">Privacy</a>
-            <a href="/legal" className="hover:text-black cursor-pointer transition-colors">Legal</a>
-          </div>
+          <p>© 2026 Actoos Group. Tous droits réservés.</p>
         </div>
       </footer>
     </div>

@@ -34,7 +34,7 @@ export default function PrivacyPage() {
         <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">
           Politique de Confidentialité<span className="text-[#D4AF37]">.</span>
         </h1>
-        <p className="text-slate-400 text-sm mb-12">Dernière mise à jour : Janvier 2026</p>
+        <p className="text-slate-400 text-sm mb-12">Dernière mise à jour : Mai 2026</p>
 
         <div className="prose prose-slate max-w-none">
           <section className="mb-12">
@@ -45,8 +45,8 @@ export default function PrivacyPage() {
               partageons et protégeons vos informations personnelles.
             </p>
             <p className="text-slate-600 leading-relaxed">
-              Cette politique s&apos;applique à tous nos produits et services, y compris Actoos Pro, Actoos One 
-              et Actoos Pay.
+              Cette politique s&apos;applique à tous nos services numériques, qu&apos;il s&apos;agisse de solutions 
+              sur mesure, d&apos;applications mobiles ou de plateformes web.
             </p>
           </section>
 
@@ -135,8 +135,7 @@ export default function PrivacyPage() {
             <p className="text-slate-600 leading-relaxed">
               Pour toute question concernant cette politique ou vos données personnelles :<br /><br />
               <strong>ACTOOS Group</strong><br />
-              Email : <a href="mailto:contact@actoos.com" className="text-[#D4AF37] hover:underline">contact@actoos.com</a><br />
-              Adresse : Bruxelles, Belgique
+              Email : <a href="mailto:contact@actoos.com" className="text-[#D4AF37] hover:underline">contact@actoos.com</a>
             </p>
           </section>
         </div>
@@ -145,10 +144,10 @@ export default function PrivacyPage() {
       {/* Footer */}
       <footer className="bg-slate-50 py-8 px-6 border-t border-slate-100">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
-          <p>© 2026 Actoos Group. All rights reserved.</p>
+          <p>© 2026 Actoos Group. Tous droits réservés.</p>
           <div className="flex space-x-8">
-            <span className="text-slate-600">Privacy</span>
-            <a href="/legal" className="hover:text-black transition-colors">Legal</a>
+            <span className="text-slate-600">Confidentialité</span>
+            <a href="/legal" className="hover:text-black transition-colors">Mentions légales</a>
           </div>
         </div>
       </footer>
