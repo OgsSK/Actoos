@@ -570,6 +570,16 @@ export const settingsApi = {
     return data;
   },
 
+  getById: async (entrepriseId) => {
+    const { data, error } = await supabase
+      .from('entreprises')
+      .select('*')
+      .eq('id', entrepriseId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   update: async (entrepriseId, updates) => {
     const { data, error } = await supabase
       .from('entreprises')
@@ -612,6 +622,9 @@ export const settingsApi = {
     return publicUrl;
   }
 };
+
+// Alias for backwards compatibility
+export const entrepriseApi = settingsApi;
 
 // ==================== SITES ====================
 export const sitesApi = {
@@ -999,6 +1012,123 @@ export const analyticsApi = {
   }
 };
 
+// ==================== STATS API (for Rapports) ====================
+export const statsApi = {
+  getStats: async (entrepriseId) => {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const startOfMonthISO = startOfMonth.toISOString();
+    
+    const [
+      devisEnAttente,
+      devisSignesMois,
+      facturesEnAttente,
+      facturesEnRetard,
+      facturesPayeesMois,
+      totalDevisMois,
+      caTotal
+    ] = await Promise.all([
+      supabase.from('devis').select('id', { count: 'exact', head: true })
+        .eq('entreprise_id', entrepriseId).eq('statut', 'envoye'),
+      supabase.from('devis').select('id', { count: 'exact', head: true })
+        .eq('entreprise_id', entrepriseId).eq('statut', 'signe').gte('date_signature', startOfMonthISO),
+      supabase.from('factures').select('total_ttc')
+        .eq('entreprise_id', entrepriseId).in('statut', ['envoyee', 'brouillon']),
+      supabase.from('factures').select('total_ttc')
+        .eq('entreprise_id', entrepriseId).eq('statut', 'en_retard'),
+      supabase.from('factures').select('total_ttc')
+        .eq('entreprise_id', entrepriseId).eq('statut', 'payee').gte('date_paiement', startOfMonthISO),
+      supabase.from('devis').select('id', { count: 'exact', head: true })
+        .eq('entreprise_id', entrepriseId).gte('created_at', startOfMonthISO),
+      supabase.from('factures').select('total_ttc')
+        .eq('entreprise_id', entrepriseId).eq('statut', 'payee')
+    ]);
+    
+    const pendingAmount = (facturesEnAttente.data || []).reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+    const retardAmount = (facturesEnRetard.data || []).reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+    const caMois = (facturesPayeesMois.data || []).reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+    const caAnnuel = (caTotal.data || []).reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+    
+    const tauxConversion = totalDevisMois.count > 0 
+      ? Math.round((devisSignesMois.count / totalDevisMois.count) * 100) 
+      : 0;
+    
+    return {
+      devis: {
+        en_attente: devisEnAttente.count || 0,
+        signes_mois: devisSignesMois.count || 0
+      },
+      factures: {
+        en_attente: facturesEnAttente.data?.length || 0,
+        pending_amount: pendingAmount,
+        en_retard: facturesEnRetard.data?.length || 0,
+        retard_amount: retardAmount
+      },
+      taux_conversion: tauxConversion,
+      ca_mois: caMois,
+      ca_annuel: caAnnuel
+    };
+  },
+
+  getMonthlyRevenue: async (entrepriseId) => {
+    const months = [];
+    const today = new Date();
+    
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const endDate = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
+      
+      const { data } = await supabase
+        .from('factures')
+        .select('total_ttc')
+        .eq('entreprise_id', entrepriseId)
+        .eq('statut', 'payee')
+        .gte('date_paiement', date.toISOString())
+        .lt('date_paiement', endDate.toISOString());
+      
+      const total = (data || []).reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+      
+      months.push({
+        month: date.toLocaleDateString('fr-FR', { month: 'short' }),
+        year: date.getFullYear(),
+        revenue: total
+      });
+    }
+    
+    return months;
+  },
+
+  getTopClients: async (entrepriseId, limit = 10) => {
+    const { data: factures } = await supabase
+      .from('factures')
+      .select('client_id, total_ttc, client:clients(id, nom, prenom)')
+      .eq('entreprise_id', entrepriseId)
+      .eq('statut', 'payee');
+    
+    // Group by client
+    const clientTotals = {};
+    (factures || []).forEach(f => {
+      const clientId = f.client_id;
+      if (!clientTotals[clientId]) {
+        clientTotals[clientId] = {
+          client_id: clientId,
+          nom: f.client?.nom || 'Client',
+          prenom: f.client?.prenom || '',
+          total: 0,
+          count: 0
+        };
+      }
+      clientTotals[clientId].total += f.total_ttc || 0;
+      clientTotals[clientId].count++;
+    });
+    
+    // Sort by total and return top N
+    return Object.values(clientTotals)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, limit);
+  }
+};
+
 // Export all APIs
 export default {
   interventions: interventionsApi,
@@ -1015,5 +1145,6 @@ export default {
   technician: technicianApi,
   offlineSync: offlineSyncApi,
   edge: edgeFunctionsApi,
-  analytics: analyticsApi
+  analytics: analyticsApi,
+  stats: statsApi
 };

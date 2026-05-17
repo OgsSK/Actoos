@@ -1,5 +1,5 @@
 {
-  "buildCommand": "yarn build",
+  "buildCommand": "DISABLE_ESLINT_PLUGIN=true yarn build",
   "outputDirectory": "build",
   "framework": null,
   "installCommand": "yarn install",
