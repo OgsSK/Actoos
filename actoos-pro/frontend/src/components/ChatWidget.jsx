@@ -786,34 +786,61 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
     // Real-time updates will be handled by Supabase subscriptions
   }, [isOpen, loadConversations, loadUnreadCount]);
 
-  // Subscribe to new messages in real-time (without reloading all messages)
+  // Subscribe to new messages in real-time
   useEffect(() => {
-    if (!isOpen || !user?.id) return;
+    if (!isOpen || !user?.id || !user?.entreprise_id) return;
+    
+    // Create a unique channel name to avoid conflicts
+    const channelName = `chat_${user.entreprise_id}_${user.id}_${Date.now()}`;
     
     const channel = supabase
-      .channel('chat-messages')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
-          filter: `recipient_id=eq.${user.id}`,
+          filter: `entreprise_id=eq.${user.entreprise_id}`,
         },
         (payload) => {
-          // Add new message to the list if it's for the current conversation
           const newMsg = payload.new;
-          if (selectedConversation && 
-              (newMsg.sender_id === selectedConversation.user_id || 
-               newMsg.recipient_id === selectedConversation.user_id)) {
-            setMessages(prev => {
-              // Avoid duplicates
-              if (prev.some(m => m.id === newMsg.id)) return prev;
-              return [...prev, newMsg];
-            });
+          
+          // Check if this message is relevant to the current user
+          const isForMe = newMsg.recipient_id === user.id;
+          const isFromMe = newMsg.sender_id === user.id;
+          
+          if (!isForMe && !isFromMe) return;
+          
+          // If we have a conversation open, add the message if it's part of it
+          if (selectedConversation) {
+            const isInCurrentConversation = 
+              (newMsg.sender_id === selectedConversation.user_id && newMsg.recipient_id === user.id) ||
+              (newMsg.sender_id === user.id && newMsg.recipient_id === selectedConversation.user_id);
+            
+            if (isInCurrentConversation) {
+              setMessages(prev => {
+                // Avoid duplicates
+                if (prev.some(m => m.id === newMsg.id)) return prev;
+                return [...prev, newMsg];
+              });
+              
+              // Mark as read if it's for me and I'm viewing this conversation
+              if (isForMe) {
+                supabase
+                  .from('chat_messages')
+                  .update({ is_read: true })
+                  .eq('id', newMsg.id)
+                  .then(() => {});
+              }
+            }
           }
-          // Refresh unread count
-          loadUnreadCount();
+          
+          // Refresh unread count if message is for me
+          if (isForMe) {
+            loadUnreadCount();
+          }
+          
           // Refresh conversation list for last message preview
           loadConversations();
         }
@@ -824,6 +851,7 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
           event: 'UPDATE',
           schema: 'public',
           table: 'chat_messages',
+          filter: `entreprise_id=eq.${user.entreprise_id}`,
         },
         (payload) => {
           // Update message in list (for edits)
@@ -833,12 +861,18 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
           ));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Chat Realtime] Connected');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[Chat Realtime] Error connecting');
+        }
+      });
     
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isOpen, user?.id, selectedConversation, loadUnreadCount, loadConversations]);
+  }, [isOpen, user?.id, user?.entreprise_id, selectedConversation?.user_id, loadUnreadCount, loadConversations]);
 
   // Load messages when conversation selected
   useEffect(() => {
@@ -916,7 +950,7 @@ export const ChatWidget = ({ isOpen, onClose, isTech = false }) => {
   );
 };
 
-// Hook to get unread count
+// Hook to get unread count with real-time updates
 export const useChatUnread = () => {
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -939,11 +973,53 @@ export const useChatUnread = () => {
     }
   }, [user?.id]);
 
+  // Initial load
   useEffect(() => {
     loadUnread();
-    const interval = setInterval(loadUnread, 30000);
-    return () => clearInterval(interval);
   }, [loadUnread]);
+
+  // Real-time subscription for unread count
+  useEffect(() => {
+    if (!user?.id || !user?.entreprise_id) return;
+    
+    const channelName = `unread_${user.id}_${Date.now()}`;
+    
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        () => {
+          // New message received, increment count immediately
+          setUnreadCount(prev => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Message was marked as read, refresh count
+          if (payload.new?.is_read === true && payload.old?.is_read === false) {
+            loadUnread();
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, user?.entreprise_id, loadUnread]);
 
   return { unreadCount, refreshUnread: loadUnread };
 };
