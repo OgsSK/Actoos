@@ -63,6 +63,13 @@ Application SaaS B2B de gestion d'interventions terrain pour les entreprises de 
 - [x] **Template email releve_mensuel** - Email personnalisé avec PDF en pièce jointe
 - [x] **Envoi individuel** - Bouton "Envoyer" par client
 - [x] **Envoi groupé** - Avec barre de progression
+- [x] **Photos liées aux interventions** - Comptées par intervention dans le PDF
+
+### Corrections 17 Mai 2026 (Chat)
+- [x] **Messages instantanés** - Latence réduite à ~0.5s
+- [x] **Canal Supabase unique** - Évite les conflits de subscription
+- [x] **Filtre entreprise_id** - Pour tous les messages de l'entreprise
+- [x] **Indicateur connexion** - Point vert dans le header du chat
 
 ---
 
