@@ -59,6 +59,10 @@ Application SaaS B2B de gestion d'interventions terrain pour les entreprises de 
 - [x] **Modal aperçu PDF** - Avec statistiques, iframe, boutons Fermer et Télécharger
 - [x] **Correction bugs** - Plus de "Invalid Date" ou "undefined"
 - [x] **Bouton fermer** - X en haut + bouton "Fermer" en bas du modal
+- [x] **Envoi email automatique** - Via Supabase Edge Function + Resend
+- [x] **Template email releve_mensuel** - Email personnalisé avec PDF en pièce jointe
+- [x] **Envoi individuel** - Bouton "Envoyer" par client
+- [x] **Envoi groupé** - Avec barre de progression
 
 ---
 

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
+import { Progress } from '../components/ui/progress';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
@@ -22,8 +23,9 @@ import {
   Search, Share2, MessageCircle, Copy, Check, X, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { facturesApi, clientsApi } from '../lib/supabaseApi';
+import { facturesApi, clientsApi, entrepriseApi } from '../lib/supabaseApi';
 import { fetchClientStatementData, generateStatementPDF, downloadStatementPDF } from '../lib/statementService';
+import { sendStatementEmail, sendBulkStatementEmails } from '../lib/emailService';
 
 const Statements = () => {
   const { formatAmount, user } = useAuth();
@@ -33,6 +35,7 @@ const Statements = () => {
   const [statements, setStatements] = useState([]);
   const [pdfPreview, setPdfPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [sendProgress, setSendProgress] = useState(null); // { current, total, clientName, status }
   const [filteredStatements, setFilteredStatements] = useState([]);
   const [history, setHistory] = useState([]);
   const [showConfirmSend, setShowConfirmSend] = useState(false);
@@ -216,20 +219,143 @@ const Statements = () => {
   const handleSendAll = async () => {
     setSending(true);
     setShowConfirmSend(false);
+    setSendProgress({ current: 0, total: 0, clientName: '', status: 'preparing' });
+    
     try {
-      // Group statements by client and open mailto
-      const clientEmails = [...new Set(statements.map(s => s.client?.email).filter(Boolean))];
+      // Filter statements with valid emails
+      const statementsWithEmail = statements.filter(s => s.client_email);
       
-      if (clientEmails.length > 0) {
-        toast.success(`${clientEmails.length} relevé(s) prêts à envoyer. Ouvrez votre client mail.`);
-      } else {
+      if (statementsWithEmail.length === 0) {
         toast.warning('Aucun client avec email trouvé');
+        setSending(false);
+        setSendProgress(null);
+        return;
       }
+
+      // Get entreprise info
+      let entreprise = null;
+      try {
+        entreprise = await entrepriseApi.get(user?.entreprise_id);
+      } catch (e) {
+        console.warn('Could not fetch entreprise info');
+      }
+
+      const periode = `${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`;
+      
+      // Prepare email data for each statement
+      const emailsToSend = [];
+      
+      for (const statement of statementsWithEmail) {
+        try {
+          // Fetch complete data and generate PDF
+          const data = await fetchClientStatementData(
+            statement.client_id,
+            user?.entreprise_id,
+            selectedMonth,
+            selectedYear
+          );
+          
+          const doc = await generateStatementPDF(data);
+          
+          // Get PDF as base64
+          const pdfBase64 = doc.output('datauristring').split(',')[1];
+          
+          emailsToSend.push({
+            clientEmail: statement.client_email,
+            clientName: statement.client_name,
+            periode,
+            totals: data.totals,
+            pdfBase64,
+            entreprise,
+            portalUrl: `${window.location.origin}/portal/client/${statement.client_id}`
+          });
+        } catch (err) {
+          console.error(`Error preparing email for ${statement.client_name}:`, err);
+        }
+      }
+
+      if (emailsToSend.length === 0) {
+        toast.error('Impossible de préparer les relevés');
+        setSending(false);
+        setSendProgress(null);
+        return;
+      }
+
+      // Send emails with progress tracking
+      const results = await sendBulkStatementEmails(emailsToSend, (current, total, clientName, status) => {
+        setSendProgress({ current, total, clientName, status });
+      });
+
+      // Show results
+      if (results.sent > 0 && results.failed.length === 0) {
+        toast.success(`${results.sent} relevé(s) envoyé(s) avec succès !`);
+      } else if (results.sent > 0 && results.failed.length > 0) {
+        toast.warning(`${results.sent} envoyé(s), ${results.failed.length} échec(s)`);
+      } else {
+        toast.error('Échec de l\'envoi des relevés');
+      }
+
+      // Log failures
+      if (results.failed.length > 0) {
+        console.error('Failed to send to:', results.failed);
+      }
+      
     } catch (error) {
       console.error('Error sending statements:', error);
       toast.error('Erreur lors de l\'envoi');
     } finally {
       setSending(false);
+      setSendProgress(null);
+    }
+  };
+
+  // Send single statement email
+  const handleSendSingle = async (clientId, clientName, clientEmail) => {
+    if (!clientEmail) {
+      toast.error('Email manquant pour ce client');
+      return;
+    }
+
+    const toastId = toast.loading(`Envoi du relevé à ${clientName}...`);
+
+    try {
+      // Get entreprise info
+      let entreprise = null;
+      try {
+        entreprise = await entrepriseApi.get(user?.entreprise_id);
+      } catch (e) {
+        console.warn('Could not fetch entreprise info');
+      }
+
+      // Fetch complete data and generate PDF
+      const data = await fetchClientStatementData(
+        clientId,
+        user?.entreprise_id,
+        selectedMonth,
+        selectedYear
+      );
+      
+      const doc = await generateStatementPDF(data);
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      
+      const periode = `${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`;
+      
+      await sendStatementEmail({
+        clientEmail,
+        clientName,
+        periode,
+        totals: data.totals,
+        pdfBase64,
+        entreprise,
+        portalUrl: `${window.location.origin}/portal/client/${clientId}`
+      });
+
+      toast.dismiss(toastId);
+      toast.success(`Relevé envoyé à ${clientName}`);
+    } catch (error) {
+      console.error('Error sending statement:', error);
+      toast.dismiss(toastId);
+      toast.error(`Erreur lors de l'envoi: ${error.message}`);
     }
   };
 
@@ -457,6 +583,17 @@ const Statements = () => {
                               <Download className="w-4 h-4 mr-1" />
                               PDF
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleSendSingle(statement.client_id, statement.client_name, statement.client_email)}
+                              disabled={sending || !statement.client_email}
+                              data-testid={`send-${statement.client_id}`}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Mail className="w-4 h-4 mr-1" />
+                              Envoyer
+                            </Button>
                             
                             {/* Share dropdown */}
                             <DropdownMenu>
@@ -553,22 +690,58 @@ const Statements = () => {
           <DialogHeader>
             <DialogTitle>Confirmer l'envoi</DialogTitle>
             <DialogDescription>
-              Vous êtes sur le point d'envoyer {statements.filter(s => s.client_email).length} relevé(s) par email.
+              Vous êtes sur le point d'envoyer {statements.filter(s => s.client_email).length} relevé(s) par email avec le PDF en pièce jointe.
             </DialogDescription>
           </DialogHeader>
           <Alert className="bg-blue-50 border-blue-200">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-800">
-              Seuls les clients avec une adresse email recevront leur relevé.
+              Chaque client recevra un email personnalisé avec son relevé en PDF.
+              Seuls les clients avec une adresse email valide recevront leur relevé.
             </AlertDescription>
           </Alert>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirmSend(false)}>Annuler</Button>
-            <Button onClick={handleSendAll} disabled={sending}>
+            <Button onClick={handleSendAll} disabled={sending} className="bg-blue-600 hover:bg-blue-700">
               {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               Envoyer
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Progress Dialog */}
+      <Dialog open={sending && sendProgress !== null} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5 text-blue-600" />
+              Envoi des relevés en cours
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <Progress value={(sendProgress?.current / sendProgress?.total) * 100 || 0} className="h-2" />
+            
+            <div className="text-center">
+              <p className="text-lg font-medium text-slate-900">
+                {sendProgress?.current || 0} / {sendProgress?.total || 0}
+              </p>
+              <p className="text-sm text-slate-500 mt-1">
+                {sendProgress?.status === 'preparing' && 'Préparation...'}
+                {sendProgress?.status === 'sending' && `Envoi à ${sendProgress?.clientName}...`}
+                {sendProgress?.status === 'success' && `✓ ${sendProgress?.clientName}`}
+                {sendProgress?.status === 'error' && `✗ Erreur pour ${sendProgress?.clientName}`}
+              </p>
+            </div>
+          </div>
+
+          <Alert className="bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800 text-sm">
+              Ne fermez pas cette fenêtre pendant l'envoi.
+            </AlertDescription>
+          </Alert>
         </DialogContent>
       </Dialog>
 
