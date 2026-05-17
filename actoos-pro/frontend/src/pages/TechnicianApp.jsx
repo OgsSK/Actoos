@@ -2416,7 +2416,7 @@ export const TechnicianApp = () => {
 
   const selectIntervention = async (intervention) => {
     setSelectedIntervention(intervention);
-    setNotes(intervention.notes_terrain || '');
+    setNotes(intervention.notes_technicien || intervention.notes_terrain || '');
     setChecklistResponses(intervention.checklist_responses || []);
     
     // Load category for checklist

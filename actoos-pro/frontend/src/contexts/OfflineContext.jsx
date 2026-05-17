@@ -172,7 +172,7 @@ export const OfflineProvider = ({ children }) => {
             
           case ACTION_TYPES.COMPLETE_INTERVENTION:
             const completeParams = new URLSearchParams();
-            if (data.notes) completeParams.append('notes_terrain', data.notes);
+            if (data.notes) completeParams.append('notes_technicien', data.notes);
             
             response = await fetch(`${API_URL}/api/interventions/${data.interventionId}/complete?${completeParams}`, {
               method: 'POST',
@@ -184,7 +184,7 @@ export const OfflineProvider = ({ children }) => {
             response = await fetch(`${API_URL}/api/interventions/${data.interventionId}`, {
               method: 'PUT',
               headers,
-              body: JSON.stringify({ notes_terrain: data.notes })
+              body: JSON.stringify({ notes_technicien: data.notes })
             });
             break;
             
@@ -462,7 +462,7 @@ export const OfflineProvider = ({ children }) => {
       const changes = modifiedInterventions.map(intervention => ({
         intervention_id: intervention.id,
         updates: {
-          notes_terrain: intervention.notes_terrain,
+          notes_technicien: intervention.notes_technicien || intervention.notes_terrain,
           statut: intervention.statut,
           checklist_responses: intervention.checklist_responses
         },

@@ -448,7 +448,7 @@ export const FacturesList = () => {
                         <p className="text-sm text-slate-500">{intervention.client_nom || 'Client'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-slate-500">{formatDate(intervention.date_intervention)}</p>
+                        <p className="text-sm text-slate-500">{formatDate(intervention.date_prevue)}</p>
                         <Badge variant="secondary" className={`status-${intervention.statut}`}>
                           {getStatusLabel(intervention.statut)}
                         </Badge>
