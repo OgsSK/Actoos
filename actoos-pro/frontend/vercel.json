@@ -1,9 +1,8 @@
 {
-  "version": 2,
-  "buildCommand": "cd actoos-pro/frontend && yarn install && yarn build",
-  "outputDirectory": "actoos-pro/frontend/build",
+  "buildCommand": "yarn build",
+  "outputDirectory": "build",
   "framework": null,
-  "installCommand": "cd actoos-pro/frontend && yarn install",
+  "installCommand": "yarn install",
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
