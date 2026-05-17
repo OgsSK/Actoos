@@ -19,10 +19,11 @@ import {
 import { Alert, AlertDescription } from '../components/ui/alert';
 import {
   FileText, Download, Send, Loader2, Calendar, Users, Mail, CheckCircle, AlertCircle, Info,
-  Search, Share2, MessageCircle, Copy, Check
+  Search, Share2, MessageCircle, Copy, Check, X, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { facturesApi, clientsApi } from '../lib/supabaseApi';
+import { fetchClientStatementData, generateStatementPDF, downloadStatementPDF } from '../lib/statementService';
 
 const Statements = () => {
   const { formatAmount, user } = useAuth();
@@ -30,6 +31,8 @@ const Statements = () => {
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [statements, setStatements] = useState([]);
+  const [pdfPreview, setPdfPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [filteredStatements, setFilteredStatements] = useState([]);
   const [history, setHistory] = useState([]);
   const [showConfirmSend, setShowConfirmSend] = useState(false);
@@ -138,51 +141,76 @@ const Statements = () => {
   };
 
   const handleDownload = async (clientId, clientName) => {
+    setPreviewLoading(true);
+    const toastId = toast.loading('Génération du relevé complet...');
+    
     try {
-      toast.loading('Génération du relevé...');
+      // Fetch complete statement data using the service
+      const data = await fetchClientStatementData(
+        clientId,
+        user?.entreprise_id,
+        selectedMonth,
+        selectedYear
+      );
       
-      const clientStatements = statements.filter(s => s.client_id === clientId);
+      // Generate the PDF
+      const doc = await generateStatementPDF(data);
       
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Relevé - ${clientName}</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 40px; }
-              h1 { color: #1e293b; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-              th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
-              th { background: #f8fafc; }
-              .total { font-weight: bold; text-align: right; margin-top: 20px; font-size: 1.2em; }
-            </style>
-          </head>
-          <body>
-            <h1>Relevé de compte - ${clientName}</h1>
-            <p>Période: ${selectedMonth}/${selectedYear}</p>
-            <table>
-              <tr><th>Date</th><th>Numéro</th><th>Montant</th><th>Statut</th></tr>
-              ${clientStatements.map(s => `
-                <tr>
-                  <td>${new Date(s.created_at).toLocaleDateString('fr-FR')}</td>
-                  <td>${s.numero_facture || '-'}</td>
-                  <td>${s.total_ttc?.toFixed(2)} €</td>
-                  <td>${s.statut}</td>
-                </tr>
-              `).join('')}
-            </table>
-            <p class="total">Total: ${clientStatements.reduce((sum, s) => sum + (s.total_ttc || 0), 0).toFixed(2)} €</p>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-      toast.dismiss();
-      toast.success('Relevé généré');
+      // Download the PDF
+      downloadStatementPDF(doc, clientName, selectedMonth, selectedYear);
+      
+      toast.dismiss(toastId);
+      toast.success('Relevé téléchargé avec succès');
     } catch (err) {
-      toast.dismiss();
-      toast.error('Erreur lors de la génération');
+      console.error('Error generating statement PDF:', err);
+      toast.dismiss(toastId);
+      toast.error('Erreur lors de la génération du relevé');
+    } finally {
+      setPreviewLoading(false);
     }
+  };
+
+  const handlePreview = async (clientId, clientName) => {
+    setPreviewLoading(true);
+    const toastId = toast.loading('Chargement de l\'aperçu...');
+    
+    try {
+      // Fetch complete statement data using the service
+      const data = await fetchClientStatementData(
+        clientId,
+        user?.entreprise_id,
+        selectedMonth,
+        selectedYear
+      );
+      
+      // Generate the PDF
+      const doc = await generateStatementPDF(data);
+      
+      // Create blob URL for preview
+      const blob = doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      
+      setPdfPreview({
+        url,
+        clientName,
+        data
+      });
+      
+      toast.dismiss(toastId);
+    } catch (err) {
+      console.error('Error generating preview:', err);
+      toast.dismiss(toastId);
+      toast.error('Erreur lors de la génération de l\'aperçu');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const closePdfPreview = () => {
+    if (pdfPreview?.url) {
+      URL.revokeObjectURL(pdfPreview.url);
+    }
+    setPdfPreview(null);
   };
 
   const handleSendAll = async () => {
@@ -405,14 +433,25 @@ const Statements = () => {
                           )}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant="secondary">{statement.facture_count}</Badge>
+                          <Badge variant="secondary">{statement.factures_count}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handlePreview(statement.client_id, statement.client_name)}
+                              disabled={previewLoading}
+                              data-testid={`preview-${statement.client_id}`}
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              Aperçu
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleDownload(statement.client_id, statement.client_name)}
+                              disabled={previewLoading}
                               data-testid={`download-${statement.client_id}`}
                             >
                               <Download className="w-4 h-4 mr-1" />
@@ -528,6 +567,74 @@ const Statements = () => {
             <Button onClick={handleSendAll} disabled={sending}>
               {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               Envoyer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={!!pdfPreview} onOpenChange={(open) => !open && closePdfPreview()}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-emerald-500" />
+                Relevé - {pdfPreview?.clientName}
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={closePdfPreview}
+                className="h-8 w-8"
+                data-testid="close-preview-btn"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <DialogDescription>
+              {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
+              {pdfPreview?.data && (
+                <span className="ml-2 text-slate-600">
+                  • {pdfPreview.data.totals?.interventions || 0} interventions
+                  • {pdfPreview.data.totals?.photos || 0} photos
+                  • {pdfPreview.data.devis?.length || 0} devis
+                  • {pdfPreview.data.factures?.length || 0} factures
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* PDF Embed */}
+          <div className="flex-1 min-h-0 mt-4 rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+            {pdfPreview?.url && (
+              <iframe
+                src={pdfPreview.url}
+                className="w-full h-full"
+                title="Aperçu du relevé"
+              />
+            )}
+          </div>
+          
+          <DialogFooter className="flex-shrink-0 mt-4 gap-2 sm:gap-0">
+            <Button variant="outline" onClick={closePdfPreview} data-testid="close-preview-btn-footer">
+              <X className="w-4 h-4 mr-2" />
+              Fermer
+            </Button>
+            <Button 
+              onClick={() => {
+                if (pdfPreview?.url) {
+                  const link = document.createElement('a');
+                  link.href = pdfPreview.url;
+                  link.download = `releve_${pdfPreview.clientName?.replace(/\s+/g, '_')}_${selectedMonth}_${selectedYear}.pdf`;
+                  link.click();
+                  toast.success('Relevé téléchargé');
+                }
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700"
+              data-testid="download-preview-btn"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Télécharger
             </Button>
           </DialogFooter>
         </DialogContent>
