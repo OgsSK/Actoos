@@ -758,16 +758,26 @@ export const DevisDetail = () => {
   const handleSend = async () => {
     setSending(true);
     try {
+      // Update status to sent
       await devisApi.update(id, { 
         statut: 'envoye', 
         date_envoi: new Date().toISOString() 
       });
-      toast.success('Devis marqué comme envoyé');
-      // Note: Actual email sending requires Edge Function
+      
+      // Send email
+      const { sendDevisEmail } = await import('../lib/emailService');
+      const result = await sendDevisEmail(devis, devis.client, devis.entreprise);
+      
+      if (result.method === 'mailto') {
+        toast.success('Devis envoyé - Votre client mail s\'ouvre pour confirmer l\'envoi');
+      } else {
+        toast.success('Devis envoyé par email');
+      }
+      
       fetchDevis();
     } catch (error) {
       console.error('Error sending devis:', error);
-      toast.error('Erreur lors de l\'envoi');
+      toast.error(error.message || 'Erreur lors de l\'envoi');
     } finally {
       setSending(false);
     }
@@ -815,15 +825,16 @@ export const DevisDetail = () => {
 
   const downloadPDF = async () => {
     try {
-      await edgeFunctionsApi.downloadPDF({ 
-        type: 'devis', 
-        id, 
-        entreprise_id: devis.entreprise_id,
-        filename: `devis_${devis.numero_devis || devis.numero || id.slice(0, 8)}.pdf`
-      });
+      toast.loading('Génération du PDF...');
+      const { generateDevisPDF, downloadPDF: savePDF } = await import('../lib/pdfService');
+      const doc = await generateDevisPDF(devis, devis.entreprise, devis.client);
+      savePDF(doc, `devis_${devis.numero_devis || id.slice(0, 8)}.pdf`);
+      toast.dismiss();
+      toast.success('PDF téléchargé');
     } catch (error) {
+      toast.dismiss();
       console.error('Error downloading PDF:', error);
-      toast.error('Erreur lors du téléchargement');
+      toast.error('Erreur lors de la génération du PDF');
     }
   };
 

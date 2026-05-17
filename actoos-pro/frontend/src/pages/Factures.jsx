@@ -515,17 +515,25 @@ export const FactureDetail = () => {
   const handleRelance = async () => {
     setSendingRelance(true);
     try {
-      // Get client email and send relance
-      if (facture.client?.email) {
-        const subject = `Relance - Facture ${facture.numero_facture}`;
-        const message = `Bonjour,\n\nNous vous rappelons que la facture ${facture.numero_facture} d'un montant de ${facture.total_ttc?.toFixed(2)} € est en attente de paiement.\n\nCordialement`;
-        
-        // Open mailto link as fallback
-        window.location.href = `mailto:${facture.client.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
-        toast.success('Email de relance préparé');
-      } else {
-        toast.error('Aucune adresse email pour ce client');
+      if (!facture.client?.email) {
+        throw new Error('Aucune adresse email pour ce client');
       }
+      
+      const { sendRelanceEmail } = await import('../lib/emailService');
+      const result = await sendRelanceEmail(facture, facture.client, facture.entreprise || {});
+      
+      // Update relance count
+      await facturesApi.update(id, { 
+        derniere_relance: new Date().toISOString(),
+        nombre_relances: (facture.nombre_relances || 0) + 1
+      });
+      
+      if (result.method === 'mailto') {
+        toast.success('Email de relance préparé - Votre client mail s\'ouvre');
+      } else {
+        toast.success('Relance envoyée par email');
+      }
+      
       fetchFacture();
     } catch (error) {
       console.error('Error sending relance:', error);
@@ -588,15 +596,16 @@ export const FactureDetail = () => {
 
   const downloadPDF = async () => {
     try {
-      await edgeFunctionsApi.downloadPDF({ 
-        type: 'facture', 
-        id, 
-        entreprise_id: facture.entreprise_id,
-        filename: `facture_${facture.numero_facture || facture.numero || id.slice(0, 8)}.pdf`
-      });
+      toast.loading('Génération du PDF...');
+      const { generateFacturePDF, downloadPDF: savePDF } = await import('../lib/pdfService');
+      const doc = await generateFacturePDF(facture, facture.entreprise || {}, facture.client);
+      savePDF(doc, `facture_${facture.numero_facture || id.slice(0, 8)}.pdf`);
+      toast.dismiss();
+      toast.success('PDF téléchargé');
     } catch (error) {
+      toast.dismiss();
       console.error('Error downloading PDF:', error);
-      toast.error('Erreur lors du téléchargement');
+      toast.error('Erreur lors de la génération du PDF');
     }
   };
 

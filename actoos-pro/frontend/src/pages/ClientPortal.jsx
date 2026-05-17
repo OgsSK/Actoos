@@ -225,46 +225,15 @@ export const ClientPortalDevis = () => {
       
       if (!devisData) throw new Error('Devis non trouvé');
       
-      // Generate simple PDF using browser print
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Devis ${devisData.numero_devis}</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 40px; }
-              h1 { color: #1e293b; }
-              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-              th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
-              th { background: #f8fafc; }
-              .total { font-weight: bold; font-size: 1.2em; }
-            </style>
-          </head>
-          <body>
-            <h1>Devis ${devisData.numero_devis}</h1>
-            <p><strong>Client:</strong> ${devisData.client?.nom} ${devisData.client?.prenom || ''}</p>
-            <p><strong>Date:</strong> ${new Date(devisData.created_at).toLocaleDateString('fr-FR')}</p>
-            <table>
-              <tr><th>Description</th><th>Qté</th><th>Prix HT</th><th>Total HT</th></tr>
-              ${(devisData.lignes || []).map(l => `
-                <tr>
-                  <td>${l.description}</td>
-                  <td>${l.quantite}</td>
-                  <td>${l.prix_unitaire?.toFixed(2)} €</td>
-                  <td>${(l.quantite * l.prix_unitaire)?.toFixed(2)} €</td>
-                </tr>
-              `).join('')}
-            </table>
-            <p class="total">Total TTC: ${devisData.total_ttc?.toFixed(2)} €</p>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
+      // Generate PDF using jsPDF
+      const { generateDevisPDF, downloadPDF: savePDF } = await import('../lib/pdfService');
+      const doc = await generateDevisPDF(devisData, devisData.entreprise, devisData.client);
+      savePDF(doc, `devis_${devisData.numero_devis || 'client'}.pdf`);
       toast.dismiss();
-      toast.success('PDF généré');
+      toast.success('PDF téléchargé');
     } catch (err) {
       toast.dismiss();
+      console.error('PDF error:', err);
       toast.error('Erreur lors de la génération du PDF');
     }
   };

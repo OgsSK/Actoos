@@ -636,54 +636,14 @@ export const InterventionDetail = () => {
     
     try {
       toast.loading('Génération du rapport...');
-      
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Rapport Intervention ${intervention.titre}</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 40px; }
-              h1 { color: #1e293b; border-bottom: 2px solid #10b981; padding-bottom: 10px; }
-              .section { margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 8px; }
-              .label { font-weight: bold; color: #64748b; }
-              .photos { display: flex; gap: 10px; flex-wrap: wrap; }
-              .photos img { max-width: 200px; border-radius: 8px; }
-            </style>
-          </head>
-          <body>
-            <h1>${intervention.titre}</h1>
-            <div class="section">
-              <p><span class="label">Client:</span> ${intervention.client?.nom || ''} ${intervention.client?.prenom || ''}</p>
-              <p><span class="label">Adresse:</span> ${intervention.adresse || ''}, ${intervention.code_postal || ''} ${intervention.ville || ''}</p>
-              <p><span class="label">Date:</span> ${new Date(intervention.date_prevue).toLocaleDateString('fr-FR')}</p>
-              <p><span class="label">Statut:</span> ${intervention.statut}</p>
-            </div>
-            <div class="section">
-              <p><span class="label">Description:</span></p>
-              <p>${intervention.description || 'Aucune description'}</p>
-            </div>
-            ${intervention.rapport ? `
-              <div class="section">
-                <p><span class="label">Rapport technicien:</span></p>
-                <p>${intervention.rapport}</p>
-              </div>
-            ` : ''}
-            ${intervention.signature_client ? `
-              <div class="section">
-                <p><span class="label">Signé par:</span> ${intervention.nom_signataire || 'Client'}</p>
-                <img src="${intervention.signature_client}" style="max-width: 300px;" />
-              </div>
-            ` : ''}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
+      const { generateInterventionPDF, downloadPDF: savePDF } = await import('../lib/pdfService');
+      const doc = await generateInterventionPDF(intervention, intervention.entreprise || {}, intervention.client);
+      savePDF(doc, `rapport_intervention_${intervention.titre?.replace(/\s+/g, '_') || id.slice(0, 8)}.pdf`);
       toast.dismiss();
-      toast.success('Rapport généré');
+      toast.success('Rapport téléchargé');
     } catch (err) {
       toast.dismiss();
+      console.error('PDF error:', err);
       toast.error('Erreur lors de la génération');
     }
   };
