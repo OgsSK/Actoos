@@ -71,6 +71,11 @@ Application SaaS B2B de gestion d'interventions terrain pour les entreprises de 
 - [x] **Templates HTML professionnels** - Design cohérent pour tous les emails
 - [x] **Fallback mailto:** - En cas d'échec de l'Edge Function
 
+### Corrections 17 Mai 2026 (Analytics PDF)
+- [x] **Aperçu PDF modal** - Comme les Relevés avec jsPDF
+- [x] **Boutons Fermer/Télécharger** - UX cohérente
+- [x] **Rapport PDF complet** - KPIs, interventions, devis, factures, techniciens
+
 ### Corrections 17 Mai 2026 (Chat)
 - [x] **Messages instantanés** - Latence réduite à ~0.5s
 - [x] **Canal Supabase unique** - Évite les conflits de subscription

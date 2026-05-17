@@ -12,11 +12,15 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '../components/ui/table';
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
+} from '../components/ui/dialog';
+import {
   TrendingUp, TrendingDown, Users, FileText, Wrench,
   Loader2, BarChart3, PieChart, ArrowUp, ArrowDown, Minus,
-  Calendar, Target, Clock, CheckCircle, Coins, Download
+  Calendar, Target, Clock, CheckCircle, Coins, Download, X, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
 
 const Analytics = () => {
   const { user, formatAmount, formatAmountCompact, currencySymbol } = useAuth();
@@ -26,6 +30,8 @@ const Analytics = () => {
   const [data, setData] = useState(null);
   const [trends, setTrends] = useState([]);
   const [technicians, setTechnicians] = useState([]);
+  const [pdfPreview, setPdfPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
     loadAnalytics();
@@ -214,56 +220,251 @@ const Analytics = () => {
     }
   };
 
-  const handleExportPDF = async () => {
-    try {
-      toast.loading('Génération du rapport...');
+  // Generate PDF document with jsPDF
+  const generateAnalyticsPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    const formatCurrency = (amount) => {
+      return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0);
+    };
+
+    // Header
+    doc.setFillColor(30, 41, 59);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Rapport Analytics', 20, 25);
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(getPeriodLabel(period), pageWidth - 20, 25, { align: 'right' });
+    
+    // Date
+    doc.setTextColor(148, 163, 184);
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, 20, 35);
+
+    let y = 55;
+
+    // KPI Summary Boxes
+    const boxWidth = (pageWidth - 50) / 4;
+    const boxData = [
+      { label: 'Chiffre d\'affaires', value: formatCurrency(data?.revenue?.total || 0) + ' €', color: [16, 185, 129] },
+      { label: 'Factures en attente', value: formatCurrency(data?.revenue?.pending_amount || 0) + ' €', color: [245, 158, 11] },
+      { label: 'Interventions', value: `${data?.interventions?.completed || 0} / ${data?.interventions?.total || 0}`, color: [59, 130, 246] },
+      { label: 'Taux conversion', value: `${data?.devis?.conversion_rate || 0}%`, color: [139, 92, 246] }
+    ];
+
+    boxData.forEach((box, index) => {
+      const x = 20 + (boxWidth + 3) * index;
       
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Rapport Analytics - ${period}</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 40px; }
-              h1 { color: #1e293b; }
-              .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 30px 0; }
-              .stat-card { padding: 20px; background: #f8fafc; border-radius: 8px; }
-              .stat-value { font-size: 24px; font-weight: bold; color: #10b981; }
-              .stat-label { color: #64748b; }
-            </style>
-          </head>
-          <body>
-            <h1>Rapport Analytics - ${period}</h1>
-            <p>Généré le ${new Date().toLocaleDateString('fr-FR')}</p>
-            <div class="stat-grid">
-              <div class="stat-card">
-                <div class="stat-value">${data?.revenue?.total?.toFixed(2) || 0} €</div>
-                <div class="stat-label">Chiffre d'affaires</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-value">${data?.interventions?.total || 0}</div>
-                <div class="stat-label">Interventions</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-value">${data?.devis?.total || 0}</div>
-                <div class="stat-label">Devis créés</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-value">${data?.clients?.total || 0}</div>
-                <div class="stat-label">Clients actifs</div>
-              </div>
-            </div>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-      toast.dismiss();
-      toast.success('Rapport généré');
-    } catch (err) {
-      toast.dismiss();
-      toast.error('Erreur lors de la génération');
+      // Box background
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(x, y, boxWidth, 35, 3, 3, 'F');
+      
+      // Color accent
+      doc.setFillColor(...box.color);
+      doc.roundedRect(x, y, 4, 35, 2, 2, 'F');
+      
+      // Value
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...box.color);
+      doc.text(box.value, x + 10, y + 18);
+      
+      // Label
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 116, 139);
+      doc.text(box.label, x + 10, y + 28);
+    });
+
+    y += 50;
+
+    // Interventions Section
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text('Détail des Interventions', 20, y);
+    y += 10;
+
+    const interventionStats = [
+      { label: 'Total', value: data?.interventions?.total || 0 },
+      { label: 'Terminées', value: data?.interventions?.completed || 0 },
+      { label: 'Taux de complétion', value: `${data?.interventions?.completion_rate || 0}%` }
+    ];
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    interventionStats.forEach((stat, index) => {
+      doc.setTextColor(100, 116, 139);
+      doc.text(stat.label + ':', 20, y);
+      doc.setTextColor(30, 41, 59);
+      doc.setFont('helvetica', 'bold');
+      doc.text(String(stat.value), 80, y);
+      doc.setFont('helvetica', 'normal');
+      y += 8;
+    });
+
+    y += 10;
+
+    // Devis Section
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text('Détail des Devis', 20, y);
+    y += 10;
+
+    const devisStats = [
+      { label: 'Total créés', value: data?.devis?.total || 0 },
+      { label: 'Signés', value: data?.devis?.signed || 0 },
+      { label: 'Taux de conversion', value: `${data?.devis?.conversion_rate || 0}%` }
+    ];
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    devisStats.forEach((stat) => {
+      doc.setTextColor(100, 116, 139);
+      doc.text(stat.label + ':', 20, y);
+      doc.setTextColor(30, 41, 59);
+      doc.setFont('helvetica', 'bold');
+      doc.text(String(stat.value), 80, y);
+      doc.setFont('helvetica', 'normal');
+      y += 8;
+    });
+
+    y += 10;
+
+    // Factures Section
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text('Détail des Factures', 20, y);
+    y += 10;
+
+    const facturesStats = [
+      { label: 'Total', value: data?.factures?.total || 0 },
+      { label: 'Payées', value: data?.factures?.paid || 0 },
+      { label: 'Taux de paiement', value: `${data?.factures?.payment_rate || 0}%` }
+    ];
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    facturesStats.forEach((stat) => {
+      doc.setTextColor(100, 116, 139);
+      doc.text(stat.label + ':', 20, y);
+      doc.setTextColor(30, 41, 59);
+      doc.setFont('helvetica', 'bold');
+      doc.text(String(stat.value), 80, y);
+      doc.setFont('helvetica', 'normal');
+      y += 8;
+    });
+
+    y += 15;
+
+    // Technicians Table (if any)
+    if (technicians.length > 0) {
+      if (y > 220) {
+        doc.addPage();
+        y = 20;
+      }
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(30, 41, 59);
+      doc.text('Performance des Techniciens', 20, y);
+      y += 10;
+
+      // Table header
+      doc.setFillColor(30, 41, 59);
+      doc.rect(20, y, pageWidth - 40, 8, 'F');
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.text('Technicien', 25, y + 5.5);
+      doc.text('Interventions', 90, y + 5.5);
+      doc.text('Terminées', 130, y + 5.5);
+      doc.text('Taux', 165, y + 5.5);
+      y += 10;
+
+      technicians.slice(0, 10).forEach((tech, index) => {
+        const bgColor = index % 2 === 0 ? [255, 255, 255] : [248, 250, 252];
+        doc.setFillColor(...bgColor);
+        doc.rect(20, y - 3, pageWidth - 40, 8, 'F');
+        
+        doc.setFontSize(8);
+        doc.setTextColor(30, 41, 59);
+        const techName = `${tech.prenom || ''} ${tech.nom || ''}`.trim() || tech.email || 'Technicien';
+        doc.text(techName.substring(0, 25), 25, y + 2);
+        doc.text(String(tech.interventions || 0), 95, y + 2);
+        doc.text(String(tech.completed || 0), 135, y + 2);
+        
+        // Rate with color
+        const rate = tech.completion_rate || 0;
+        if (rate >= 80) doc.setTextColor(22, 163, 74);
+        else if (rate >= 50) doc.setTextColor(245, 158, 11);
+        else doc.setTextColor(220, 38, 38);
+        doc.text(`${rate}%`, 165, y + 2);
+        
+        y += 8;
+      });
     }
+
+    // Footer
+    const footerY = pageHeight - 15;
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Rapport généré par ACTOOS PRO', 20, footerY);
+    doc.text(`Page 1`, pageWidth - 20, footerY, { align: 'right' });
+
+    return doc;
+  };
+
+  const handlePreviewPDF = async () => {
+    setPreviewLoading(true);
+    const toastId = toast.loading('Génération de l\'aperçu...');
+    
+    try {
+      const doc = generateAnalyticsPDF();
+      
+      // Create blob URL for preview
+      const blob = doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      
+      setPdfPreview({
+        url,
+        filename: `rapport_analytics_${period}_${new Date().toISOString().split('T')[0]}.pdf`
+      });
+      
+      toast.dismiss(toastId);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      toast.dismiss(toastId);
+      toast.error('Erreur lors de la génération');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    try {
+      const doc = generateAnalyticsPDF();
+      doc.save(`rapport_analytics_${period}_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('Rapport PDF téléchargé');
+    } catch (err) {
+      console.error('Error downloading PDF:', err);
+      toast.error('Erreur lors du téléchargement');
+    }
+  };
+
+  const closePdfPreview = () => {
+    if (pdfPreview?.url) {
+      URL.revokeObjectURL(pdfPreview.url);
+    }
+    setPdfPreview(null);
   };
 
   if (loading) {
@@ -302,12 +503,12 @@ const Analytics = () => {
             <Button
               variant="default"
               size="sm"
-              onClick={handleExportPDF}
-              disabled={exporting || loading}
+              onClick={handlePreviewPDF}
+              disabled={previewLoading || loading}
               data-testid="export-pdf-btn"
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {exporting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+              {previewLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
               PDF
             </Button>
             <Button
@@ -676,6 +877,65 @@ const Analytics = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={!!pdfPreview} onOpenChange={(open) => !open && closePdfPreview()}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+                Rapport Analytics - {getPeriodLabel(period)}
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={closePdfPreview}
+                className="h-8 w-8"
+                data-testid="close-preview-btn"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <DialogDescription>
+              Généré le {new Date().toLocaleDateString('fr-FR')}
+              {data && (
+                <span className="ml-2 text-slate-600">
+                  • CA: {formatAmount(data.revenue?.total || 0)}
+                  • {data.interventions?.total || 0} interventions
+                  • {data.devis?.total || 0} devis
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* PDF Embed */}
+          <div className="flex-1 min-h-0 mt-4 rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+            {pdfPreview?.url && (
+              <iframe
+                src={pdfPreview.url}
+                className="w-full h-full"
+                title="Aperçu du rapport"
+              />
+            )}
+          </div>
+          
+          <DialogFooter className="flex-shrink-0 mt-4 gap-2 sm:gap-0">
+            <Button variant="outline" onClick={closePdfPreview} data-testid="close-preview-btn-footer">
+              <X className="w-4 h-4 mr-2" />
+              Fermer
+            </Button>
+            <Button 
+              onClick={handleDownloadPDF}
+              className="bg-blue-600 hover:bg-blue-700"
+              data-testid="download-preview-btn"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Télécharger
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
