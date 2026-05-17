@@ -160,11 +160,12 @@ export const ClientPortalDevis = () => {
 
   const fetchDevis = async () => {
     try {
-      // Fetch devis by public token from Supabase
+      // Fetch devis by token_client from Supabase (not public_token)
+      // Include devis_lignes to show details
       const { data: devisData, error: devisError } = await supabase
         .from('devis')
-        .select(`*, client:clients(*), entreprise:entreprises(*)`)
-        .eq('public_token', token)
+        .select(`*, client:clients(*), entreprise:entreprises(*), lignes:devis_lignes(*)`)
+        .eq('token_client', token)
         .single();
       
       if (devisError || !devisData) {
@@ -194,12 +195,12 @@ export const ClientPortalDevis = () => {
         .from('devis')
         .update({
           statut: 'signe',
-          signature: signature,
-          signature_nom: nom,
-          signature_date: new Date().toISOString(),
+          signature_client: signature,
+          nom_signataire: nom,
+          date_signature: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .eq('public_token', token);
+        .eq('token_client', token);
       
       if (error) throw error;
       

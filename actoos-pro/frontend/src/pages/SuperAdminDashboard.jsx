@@ -114,7 +114,7 @@ const SuperAdminDashboard = () => {
         supabase.from('users').select('*').order('created_at', { ascending: false }),
         supabase.from('feedbacks').select('*').order('created_at', { ascending: false }).limit(100),
         supabase.from('coupons').select('*').order('created_at', { ascending: false }),
-        supabase.from('interventions').select('id, status, created_at').limit(1000),
+        supabase.from('interventions').select('id, statut, created_at').limit(1000),
         supabase.from('cancellation_reasons').select('*').order('created_at', { ascending: false })
       ]);
       

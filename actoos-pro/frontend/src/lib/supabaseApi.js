@@ -320,13 +320,12 @@ export const devisApi = {
     
     // Create devis_lignes if we have lignes
     if (newDevis && lignes && lignes.length > 0) {
-      const lignesData = lignes.map((ligne, index) => ({
+      const lignesData = lignes.map((ligne) => ({
         devis_id: newDevis.id,
         description: ligne.description,
         quantite: ligne.quantite || 1,
         prix_unitaire: ligne.prix_unitaire || 0,
-        tva: ligne.tva || 0,
-        ordre: index + 1
+        tva: ligne.tva || 0
       }));
       
       const { error: lignesError } = await supabase
@@ -375,9 +374,9 @@ export const devisApi = {
       .from('devis')
       .update({
         statut: 'signe',
-        signature: signatureData.signature,
-        signature_nom: signatureData.nom,
-        signature_date: new Date().toISOString(),
+        signature_client: signatureData.signature,
+        nom_signataire: signatureData.nom,
+        date_signature: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -480,14 +479,16 @@ export const facturesApi = {
       .single();
     if (devisError) throw devisError;
 
-    // Create facture
+    // Create facture - using correct column names per SCHEMA_SUPABASE.md
     const facture = await facturesApi.create({
       entreprise_id: entrepriseId,
       client_id: devis.client_id,
-      montant_ht: devis.montant_ht,
-      montant_tva: devis.montant_tva,
-      montant_total: devis.montant_total,
-      devis_id: devisId
+      total_ht: devis.total_ht || devis.montant_ht,
+      total_tva: devis.total_tva || devis.montant_tva,
+      total_ttc: devis.total_ttc || devis.montant_total,
+      devis_id: devisId,
+      lignes: devis.lignes,
+      conditions_paiement: devis.conditions || ''
     });
 
     return facture;
@@ -1329,15 +1330,15 @@ export const technicianApi = {
   },
 
   signDevis: async (devisId, signatureData) => {
-    // Try full signature update first
+    // Try full signature update first - using correct column names per SCHEMA_SUPABASE.md
     try {
       const { data, error } = await supabase
         .from('devis')
         .update({
           statut: 'signe',
-          signature: signatureData.signature,
-          signature_nom: signatureData.nom,
-          signature_date: new Date().toISOString(),
+          signature_client: signatureData.signature,
+          nom_signataire: signatureData.nom,
+          date_signature: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', devisId)

@@ -785,9 +785,9 @@ export const DevisDetail = () => {
     try {
       await devisApi.update(id, {
         statut: 'signe',
-        signature: signature,
-        signature_nom: nom,
-        signature_date: new Date().toISOString()
+        signature_client: signature,
+        nom_signataire: nom,
+        date_signature: new Date().toISOString()
       });
       setShowSignature(false);
       fetchDevis();
@@ -798,18 +798,18 @@ export const DevisDetail = () => {
 
   const handleCreateFacture = async () => {
     try {
-      // Create facture from devis data
+      // Create facture from devis data - using correct column names per SCHEMA_SUPABASE.md
       const factureData = {
         client_id: devis.client_id,
         entreprise_id: devis.entreprise_id,
         devis_id: devis.id,
         lignes: devis.lignes,
-        montant_ht: devis.montant_ht,
-        montant_tva: devis.montant_tva,
-        montant_ttc: devis.montant_ttc || devis.total_ttc,
+        total_ht: devis.total_ht || devis.montant_ht,
+        total_tva: devis.total_tva || devis.montant_tva,
+        total_ttc: devis.total_ttc || devis.montant_ttc,
         statut: 'brouillon',
-        conditions: devis.conditions,
-        notes: devis.notes
+        conditions_paiement: devis.conditions || '',
+        notes: devis.message_client || ''
       };
       
       const newFacture = await facturesApi.create(factureData);
