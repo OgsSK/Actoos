@@ -756,7 +756,13 @@ export const DevisDetail = () => {
   };
 
   const handleSend = async () => {
+    if (!devis?.client?.email) {
+      toast.error('Le client n\'a pas d\'adresse email');
+      return;
+    }
+    
     setSending(true);
+    const toastId = toast.loading('Génération et envoi du devis...');
     try {
       // Update status to sent
       await devisApi.update(id, { 
@@ -764,19 +770,26 @@ export const DevisDetail = () => {
         date_envoi: new Date().toISOString() 
       });
       
-      // Send email
-      const { sendDevisEmail } = await import('../lib/emailService');
-      const result = await sendDevisEmail(devis, devis.client, devis.entreprise);
+      // Generate PDF for attachment
+      const { generateDevisPDF } = await import('../lib/pdfService');
+      const doc = await generateDevisPDF(devis, devis.entreprise);
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
       
+      // Send email with PDF attachment
+      const { sendDevisEmail } = await import('../lib/emailService');
+      const result = await sendDevisEmail(devis, devis.client, devis.entreprise, pdfBase64);
+      
+      toast.dismiss(toastId);
       if (result.method === 'mailto') {
         toast.success('Devis envoyé - Votre client mail s\'ouvre pour confirmer l\'envoi');
       } else {
-        toast.success('Devis envoyé par email');
+        toast.success('Devis envoyé par email avec le PDF en pièce jointe !');
       }
       
       fetchDevis();
     } catch (error) {
       console.error('Error sending devis:', error);
+      toast.dismiss(toastId);
       toast.error(error.message || 'Erreur lors de l\'envoi');
     } finally {
       setSending(false);

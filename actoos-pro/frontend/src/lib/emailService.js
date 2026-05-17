@@ -69,43 +69,66 @@ export const sendEmail = async ({ to, subject, body, html, template, templateDat
 };
 
 /**
- * Send Devis to client
+ * Send Devis to client with PDF attachment
  */
-export const sendDevisEmail = async (devis, client, entreprise) => {
+export const sendDevisEmail = async (devis, client, entreprise, pdfBase64 = null) => {
   if (!client?.email) {
     throw new Error('Le client n\'a pas d\'adresse email');
   }
   
   const portalUrl = `${window.location.origin}/portal/devis/${devis.token_client}`;
   
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0);
+  };
+
+  const templateData = {
+    numero: devis.numero_devis,
+    client_nom: `${client.prenom || ''} ${client.nom || ''}`.trim() || client.nom_entreprise || 'Client',
+    entreprise_nom: entreprise?.nom || 'ACTOOS PRO',
+    montant_ttc: formatCurrency(devis.total_ttc),
+    validite_jours: devis.validite_jours || 30,
+    portal_url: portalUrl,
+  };
+
   const subject = `Devis ${devis.numero_devis} - ${entreprise?.nom || 'Votre devis'}`;
   
-  const body = `Bonjour ${client.prenom || ''} ${client.nom || ''},
+  // Plain text fallback
+  const body = `Bonjour ${templateData.client_nom},
 
 Veuillez trouver ci-joint votre devis ${devis.numero_devis}.
 
-Montant total TTC: ${(devis.total_ttc || 0).toFixed(2)} €
+Montant total TTC: ${templateData.montant_ttc} €
 
 Pour consulter et signer votre devis en ligne, cliquez sur le lien suivant:
 ${portalUrl}
 
-Ce devis est valable ${devis.validite_jours || 30} jours.
+Ce devis est valable ${templateData.validite_jours} jours.
 
 Cordialement,
 ${entreprise?.nom || 'L\'équipe'}
 ${entreprise?.telephone ? `Tél: ${entreprise.telephone}` : ''}`;
 
+  const attachments = pdfBase64 ? [{
+    filename: `devis_${devis.numero_devis}.pdf`,
+    content: pdfBase64,
+    type: 'application/pdf'
+  }] : undefined;
+
   return sendEmail({
     to: client.email,
     subject,
-    body
+    body,
+    template: 'devis_sent',
+    templateData,
+    attachments
   });
 };
 
 /**
- * Send Facture to client
+ * Send Facture to client with PDF attachment
  */
-export const sendFactureEmail = async (facture, client, entreprise) => {
+export const sendFactureEmail = async (facture, client, entreprise, pdfBase64 = null) => {
   if (!client?.email) {
     throw new Error('Le client n\'a pas d\'adresse email');
   }
@@ -113,14 +136,39 @@ export const sendFactureEmail = async (facture, client, entreprise) => {
   const portalUrl = facture.token_client 
     ? `${window.location.origin}/portal/facture/${facture.token_client}`
     : null;
-  
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0);
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('fr-FR');
+  };
+
+  // Calculate due date (30 days from creation by default)
+  const dateEcheance = facture.date_echeance 
+    ? formatDate(facture.date_echeance)
+    : formatDate(new Date(new Date(facture.created_at).getTime() + 30 * 24 * 60 * 60 * 1000));
+
+  const templateData = {
+    numero: facture.numero_facture,
+    client_nom: `${client.prenom || ''} ${client.nom || ''}`.trim() || client.nom_entreprise || 'Client',
+    entreprise_nom: entreprise?.nom || 'ACTOOS PRO',
+    montant_ttc: formatCurrency(facture.total_ttc),
+    date_echeance: dateEcheance,
+    portal_url: portalUrl,
+  };
+
   const subject = `Facture ${facture.numero_facture} - ${entreprise?.nom || 'Votre facture'}`;
   
-  let body = `Bonjour ${client.prenom || ''} ${client.nom || ''},
+  // Plain text fallback
+  let body = `Bonjour ${templateData.client_nom},
 
 Veuillez trouver ci-joint votre facture ${facture.numero_facture}.
 
-Montant total TTC: ${(facture.total_ttc || 0).toFixed(2)} €`;
+Montant total TTC: ${templateData.montant_ttc} €
+Échéance: ${dateEcheance}`;
 
   if (portalUrl) {
     body += `
@@ -137,30 +185,63 @@ Cordialement,
 ${entreprise?.nom || 'L\'équipe'}
 ${entreprise?.telephone ? `Tél: ${entreprise.telephone}` : ''}`;
 
+  const attachments = pdfBase64 ? [{
+    filename: `facture_${facture.numero_facture}.pdf`,
+    content: pdfBase64,
+    type: 'application/pdf'
+  }] : undefined;
+
   return sendEmail({
     to: client.email,
     subject,
-    body
+    body,
+    template: 'facture_sent',
+    templateData,
+    attachments
   });
 };
 
 /**
- * Send payment reminder
+ * Send payment reminder with PDF attachment
  */
-export const sendRelanceEmail = async (facture, client, entreprise) => {
+export const sendRelanceEmail = async (facture, client, entreprise, pdfBase64 = null) => {
   if (!client?.email) {
     throw new Error('Le client n\'a pas d\'adresse email');
   }
-  
-  const subject = `Relance - Facture ${facture.numero_facture}`;
-  
-  const body = `Bonjour ${client.prenom || ''} ${client.nom || ''},
 
-Nous vous rappelons que la facture ${facture.numero_facture} d'un montant de ${(facture.total_ttc || 0).toFixed(2)} € est en attente de règlement.
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0);
+  };
+
+  // Calculate days overdue
+  const createdDate = new Date(facture.created_at);
+  const dueDate = facture.date_echeance ? new Date(facture.date_echeance) : new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const today = new Date();
+  const joursRetard = Math.max(0, Math.floor((today - dueDate) / (1000 * 60 * 60 * 24)));
+
+  const portalUrl = facture.token_client 
+    ? `${window.location.origin}/portal/facture/${facture.token_client}`
+    : null;
+
+  const templateData = {
+    numero: facture.numero_facture,
+    client_nom: `${client.prenom || ''} ${client.nom || ''}`.trim() || client.nom_entreprise || 'Client',
+    entreprise_nom: entreprise?.nom || 'ACTOOS PRO',
+    montant_du: formatCurrency(facture.total_ttc - (facture.montant_paye || 0)),
+    jours_retard: joursRetard,
+    portal_url: portalUrl,
+  };
+
+  const subject = `Relance - Facture ${facture.numero_facture} en attente`;
+  
+  // Plain text fallback
+  const body = `Bonjour ${templateData.client_nom},
+
+Nous vous rappelons que la facture ${facture.numero_facture} d'un montant de ${templateData.montant_du} € est en attente de règlement${joursRetard > 0 ? ` depuis ${joursRetard} jours` : ''}.
 
 Date d'émission: ${new Date(facture.created_at).toLocaleDateString('fr-FR')}
 
-Nous vous remercions de bien vouloir procéder au règlement dans les meilleurs délais.
+${portalUrl ? `Pour régler en ligne: ${portalUrl}\n\n` : ''}Nous vous remercions de bien vouloir procéder au règlement dans les meilleurs délais.
 
 Si vous avez déjà effectué le paiement, veuillez ignorer ce message.
 
@@ -168,10 +249,19 @@ Cordialement,
 ${entreprise?.nom || 'L\'équipe'}
 ${entreprise?.telephone ? `Tél: ${entreprise.telephone}` : ''}`;
 
+  const attachments = pdfBase64 ? [{
+    filename: `relance_facture_${facture.numero_facture}.pdf`,
+    content: pdfBase64,
+    type: 'application/pdf'
+  }] : undefined;
+
   return sendEmail({
     to: client.email,
     subject,
-    body
+    body,
+    template: 'facture_relance',
+    templateData,
+    attachments
   });
 };
 

@@ -498,29 +498,58 @@ export const FactureDetail = () => {
   };
 
   const handleEmit = async () => {
+    const toastId = toast.loading('Émission de la facture...');
     try {
       await facturesApi.update(id, { 
         statut: 'envoyee', 
         date_emission: new Date().toISOString() 
       });
-      toast.success('Facture émise');
-      // Note: Email sending requires Edge Function
+      
+      // Send email with PDF if client has email
+      if (facture.client?.email) {
+        toast.loading('Envoi par email...', { id: toastId });
+        
+        const { generateFacturePDF } = await import('../lib/pdfService');
+        const doc = await generateFacturePDF(facture, facture.entreprise || {});
+        const pdfBase64 = doc.output('datauristring').split(',')[1];
+        
+        const { sendFactureEmail } = await import('../lib/emailService');
+        const result = await sendFactureEmail(facture, facture.client, facture.entreprise || {}, pdfBase64);
+        
+        toast.dismiss(toastId);
+        if (result.method === 'mailto') {
+          toast.success('Facture émise - Email préparé dans votre client mail');
+        } else {
+          toast.success('Facture émise et envoyée par email avec le PDF !');
+        }
+      } else {
+        toast.dismiss(toastId);
+        toast.success('Facture émise (pas d\'email client)');
+      }
+      
       fetchFacture();
     } catch (error) {
       console.error('Error emitting facture:', error);
+      toast.dismiss(toastId);
       toast.error('Erreur lors de l\'émission');
     }
   };
 
   const handleRelance = async () => {
     setSendingRelance(true);
+    const toastId = toast.loading('Génération de la relance...');
     try {
       if (!facture.client?.email) {
         throw new Error('Aucune adresse email pour ce client');
       }
       
+      // Generate PDF for attachment
+      const { generateFacturePDF } = await import('../lib/pdfService');
+      const doc = await generateFacturePDF(facture, facture.entreprise || {});
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      
       const { sendRelanceEmail } = await import('../lib/emailService');
-      const result = await sendRelanceEmail(facture, facture.client, facture.entreprise || {});
+      const result = await sendRelanceEmail(facture, facture.client, facture.entreprise || {}, pdfBase64);
       
       // Update relance count
       await facturesApi.update(id, { 
@@ -528,15 +557,17 @@ export const FactureDetail = () => {
         nombre_relances: (facture.nombre_relances || 0) + 1
       });
       
+      toast.dismiss(toastId);
       if (result.method === 'mailto') {
         toast.success('Email de relance préparé - Votre client mail s\'ouvre');
       } else {
-        toast.success('Relance envoyée par email');
+        toast.success('Relance envoyée avec la facture en pièce jointe !');
       }
       
       fetchFacture();
     } catch (error) {
       console.error('Error sending relance:', error);
+      toast.dismiss(toastId);
       toast.error(error.message || 'Erreur lors de l\'envoi de la relance');
     } finally {
       setSendingRelance(false);

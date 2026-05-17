@@ -65,6 +65,12 @@ Application SaaS B2B de gestion d'interventions terrain pour les entreprises de 
 - [x] **Envoi groupé** - Avec barre de progression
 - [x] **Photos liées aux interventions** - Comptées par intervention dans le PDF
 
+### Corrections 17 Mai 2026 (Emails)
+- [x] **Tous les emails via Resend** - Devis, Factures, Relances, Relevés
+- [x] **PDF en pièce jointe** - Attaché automatiquement aux emails
+- [x] **Templates HTML professionnels** - Design cohérent pour tous les emails
+- [x] **Fallback mailto:** - En cas d'échec de l'Edge Function
+
 ### Corrections 17 Mai 2026 (Chat)
 - [x] **Messages instantanés** - Latence réduite à ~0.5s
 - [x] **Canal Supabase unique** - Évite les conflits de subscription

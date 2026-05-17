@@ -293,3 +293,5 @@ credentials.json
 *.pem
 *.key
 .credentials
+actoos-pro/frontend/node_modules/.cache/default-development/5.pack
+actoos-pro/frontend/node_modules/.cache/default-development/4.pack
