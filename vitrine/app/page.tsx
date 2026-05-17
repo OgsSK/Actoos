@@ -39,10 +39,10 @@ export default function HomePage() {
           {/* Bouton Essai (vers le produit existant) */}
           <div className="hidden md:block">
             <a
-              href="https://pro.actoos.com/signup"
+              href="https://pro.actoos.com"
               className="bg-slate-950 text-white px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#10B981] transition-all shadow-2xl hover:shadow-emerald-500/20 flex items-center space-x-2"
             >
-              <span>Essai gratuit</span>
+              <span>Découvrez Actoos Pro</span>
               <ArrowRight size={14} />
             </a>
           </div>
