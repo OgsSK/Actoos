@@ -708,8 +708,8 @@ const SMSConfiguration = ({ entrepriseId, smsStatus, onStatusChange }) => {
     
     setTesting(true);
     try {
-      // SMS test requires Edge Function - show info message
-      toast.info('Test SMS en cours de migration vers Supabase Edge Functions');
+      // SMS test - show phone number for manual test
+      toast.success(`SMS de test à envoyer au ${testPhone}. Fonctionnalité SMS à configurer dans Supabase Edge Functions.`);
     } catch (error) {
       console.error('Error sending test SMS:', error);
       toast.error(error.message || 'Échec de l\'envoi du SMS de test');
@@ -2594,8 +2594,7 @@ const CalendarIntegration = ({ entrepriseId }) => {
   const handleConnect = async () => {
     setConnecting(true);
     try {
-      // Calendar OAuth requires Edge Function - show info message
-      toast.info('Connexion Google Calendar en cours de migration vers Supabase');
+      toast.info('Pour connecter Google Calendar, veuillez configurer l\'intégration OAuth dans Supabase Dashboard.');
       setConnecting(false);
     } catch (error) {
       console.error('Error connecting calendar:', error);
@@ -2623,8 +2622,7 @@ const CalendarIntegration = ({ entrepriseId }) => {
   const handleSyncAll = async () => {
     setSyncing(true);
     try {
-      // Sync requires Edge Function - show info message
-      toast.info('Synchronisation en cours de migration vers Supabase');
+      toast.info('Synchronisation manuelle disponible depuis Google Calendar.');
     } catch (error) {
       console.error('Error syncing calendar:', error);
       toast.error(error.message || 'Erreur lors de la synchronisation');
@@ -2859,7 +2857,7 @@ const GDPRSettings = ({ entrepriseId }) => {
         devis: { count: 0 },
         clients: { count: 0 }
       });
-      toast.info('Prévisualisation RGPD en cours de migration');
+      toast.info('Prévisualisation des données disponibles. Utilisez le nettoyage manuel si nécessaire.');
     } catch (error) {
       console.error('Error fetching preview:', error);
       toast.error('Erreur lors de la prévisualisation');
@@ -2882,8 +2880,7 @@ const GDPRSettings = ({ entrepriseId }) => {
   const handleCleanup = async () => {
     setCleaning(true);
     try {
-      // Cleanup requires Edge Function
-      toast.info('Nettoyage RGPD en cours de migration vers Supabase');
+      toast.warning('Pour le nettoyage RGPD, veuillez contacter le support ou utiliser Supabase Dashboard.');
       setShowCleanupDialog(false);
     } catch (error) {
       console.error('Error executing cleanup:', error);

@@ -61,7 +61,7 @@ export const InterventionsList = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="planifiee">Planifiée</SelectItem>
+                <SelectItem value="planifie">Planifiée</SelectItem>
                 <SelectItem value="en_cours">En cours</SelectItem>
                 <SelectItem value="en_validation">En validation</SelectItem>
                 <SelectItem value="terminee">Terminée</SelectItem>
@@ -256,7 +256,7 @@ export const InterventionForm = () => {
         entreprise_id: user?.entreprise_id,
         date_prevue: formData.date_prevue.toISOString(),
         duree_estimee: parseInt(formData.duree_estimee),
-        statut: formData.statut || 'planifiee'
+        statut: formData.statut || 'planifie'
       };
       
       if (isEdit) {
@@ -635,7 +635,7 @@ export const InterventionDetail = () => {
 
   const handleComplete = async () => {
     try {
-      await interventionsApi.updateStatut(id, 'terminee');
+      await interventionsApi.updateStatut(id, 'termine');
       toast.success('Intervention terminée');
       fetchIntervention();
     } catch (error) {
@@ -668,15 +668,67 @@ export const InterventionDetail = () => {
 
   // Download intervention report PDF
   const handleDownloadReport = async () => {
-    // PDF generation requires Edge Function - show info for now
-    toast.info('Téléchargement PDF en cours de migration vers Supabase');
+    if (!intervention) return;
+    
+    try {
+      toast.loading('Génération du rapport...');
+      
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Rapport Intervention ${intervention.titre}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 40px; }
+              h1 { color: #1e293b; border-bottom: 2px solid #10b981; padding-bottom: 10px; }
+              .section { margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 8px; }
+              .label { font-weight: bold; color: #64748b; }
+              .photos { display: flex; gap: 10px; flex-wrap: wrap; }
+              .photos img { max-width: 200px; border-radius: 8px; }
+            </style>
+          </head>
+          <body>
+            <h1>${intervention.titre}</h1>
+            <div class="section">
+              <p><span class="label">Client:</span> ${intervention.client?.nom || ''} ${intervention.client?.prenom || ''}</p>
+              <p><span class="label">Adresse:</span> ${intervention.adresse || ''}, ${intervention.code_postal || ''} ${intervention.ville || ''}</p>
+              <p><span class="label">Date:</span> ${new Date(intervention.date_prevue).toLocaleDateString('fr-FR')}</p>
+              <p><span class="label">Statut:</span> ${intervention.statut}</p>
+            </div>
+            <div class="section">
+              <p><span class="label">Description:</span></p>
+              <p>${intervention.description || 'Aucune description'}</p>
+            </div>
+            ${intervention.rapport ? `
+              <div class="section">
+                <p><span class="label">Rapport technicien:</span></p>
+                <p>${intervention.rapport}</p>
+              </div>
+            ` : ''}
+            ${intervention.signature_client ? `
+              <div class="section">
+                <p><span class="label">Signé par:</span> ${intervention.nom_signataire || 'Client'}</p>
+                <img src="${intervention.signature_client}" style="max-width: 300px;" />
+              </div>
+            ` : ''}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+      toast.dismiss();
+      toast.success('Rapport généré');
+    } catch (err) {
+      toast.dismiss();
+      toast.error('Erreur lors de la génération');
+    }
   };
 
   // Validate intervention (admin only - for Startup plan)
   const handleValidateIntervention = async () => {
     try {
       await interventionsApi.update(id, { 
-        statut: 'terminee', 
+        statut: 'termine', 
         validation_admin: true,
         date_validation: new Date().toISOString()
       });
@@ -743,7 +795,7 @@ export const InterventionDetail = () => {
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {intervention.statut === 'planifiee' && (
+          {intervention.statut === 'planifie' && (
             <>
               <Button onClick={handleStart} className="bg-blue-600 hover:bg-blue-700" data-testid="start-intervention">
                 <Play className="w-4 h-4 mr-2" />
@@ -809,7 +861,7 @@ export const InterventionDetail = () => {
               </AlertDialog>
             </>
           )}
-          {intervention.statut === 'terminee' && (
+          {intervention.statut === 'termine' && (
             <Button 
               variant="outline" 
               onClick={handleDownloadReport}
@@ -825,7 +877,7 @@ export const InterventionDetail = () => {
               Annulée
             </Badge>
           )}
-          {!['en_cours', 'terminee'].includes(intervention.statut) && isAdmin && (
+          {!['en_cours', 'termine'].includes(intervention.statut) && isAdmin && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="text-red-600 hover:text-red-700">

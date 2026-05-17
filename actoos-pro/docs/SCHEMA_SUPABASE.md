@@ -135,9 +135,9 @@
 | rapport | text | |
 | photos | jsonb | |
 | checklist_completed | jsonb | |
-| signature_client | text | |
-| nom_signataire | varchar | |
-| date_signature | timestamp | |
+| signature_client | text | ⚠️ Pas `signature` |
+| nom_signataire | varchar | ⚠️ Pas `signature_nom` |
+| date_signature | timestamp | ⚠️ Pas `signature_date` |
 | date_debut_reelle | timestamp | |
 | date_fin_reelle | timestamp | |
 | created_at | timestamp | |

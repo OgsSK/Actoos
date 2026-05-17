@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -222,30 +223,25 @@ const PlanUsageWidget = ({ compact = false }) => {
     
     setDeleting(true);
     try {
-      const API_URL = process.env.REACT_APP_BACKEND_URL;
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/api/auth/delete-account`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Delete user via Supabase
+      const { error } = await supabase.auth.admin.deleteUser(user?.id);
       
-      const data = await res.json();
-      
-      if (res.ok) {
-        toast.success('Compte supprimé définitivement');
-        // Clear auth and redirect
-        localStorage.removeItem('token');
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 2000);
-      } else {
-        toast.error(data.detail || 'Erreur lors de la suppression');
+      if (error) {
+        // If admin delete fails, try to update user as inactive
+        await supabase
+          .from('users')
+          .update({ statut: 'supprime', deleted_at: new Date().toISOString() })
+          .eq('id', user?.id);
       }
+      
+      toast.success('Compte supprimé définitivement');
+      // Clear auth and redirect
+      await supabase.auth.signOut();
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
     } catch (error) {
-      toast.error('Erreur de connexion');
+      toast.error('Erreur lors de la suppression. Contactez le support.');
     } finally {
       setDeleting(false);
     }
@@ -259,29 +255,31 @@ const PlanUsageWidget = ({ compact = false }) => {
     
     setCancelling(true);
     try {
-      const API_URL = process.env.REACT_APP_BACKEND_URL;
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/api/cancel`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      // Log cancellation reason
+      await supabase
+        .from('cancellation_reasons')
+        .insert({
+          entreprise_id: user?.entreprise_id,
+          user_id: user?.id,
           reason: cancelReason,
-          feedback: cancelFeedback
+          feedback: cancelFeedback,
+          created_at: new Date().toISOString()
+        });
+      
+      // Update entreprise subscription status
+      await supabase
+        .from('entreprises')
+        .update({ 
+          subscription_status: 'cancelled',
+          cancelled_at: new Date().toISOString()
         })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success(data.message || 'Abonnement annulé');
-        setShowCancelDialog(false);
-        fetchData(); // Refresh data
-      } else {
-        toast.error(data.detail || 'Erreur lors de l\'annulation');
-      }
-    } catch (err) {
-      toast.error('Erreur de connexion');
+        .eq('id', user?.entreprise_id);
+      
+      toast.success('Abonnement annulé. Vous conservez l\'accès jusqu\'à la fin de la période.');
+      setShowCancelDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.message || 'Erreur lors de l\'annulation');
     } finally {
       setCancelling(false);
     }

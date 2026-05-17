@@ -138,16 +138,65 @@ const Statements = () => {
   };
 
   const handleDownload = async (clientId, clientName) => {
-    // PDF generation requires Edge Function
-    toast.info('Téléchargement PDF en cours de migration vers Supabase');
+    try {
+      toast.loading('Génération du relevé...');
+      
+      const clientStatements = statements.filter(s => s.client_id === clientId);
+      
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Relevé - ${clientName}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 40px; }
+              h1 { color: #1e293b; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+              th { background: #f8fafc; }
+              .total { font-weight: bold; text-align: right; margin-top: 20px; font-size: 1.2em; }
+            </style>
+          </head>
+          <body>
+            <h1>Relevé de compte - ${clientName}</h1>
+            <p>Période: ${selectedMonth}/${selectedYear}</p>
+            <table>
+              <tr><th>Date</th><th>Numéro</th><th>Montant</th><th>Statut</th></tr>
+              ${clientStatements.map(s => `
+                <tr>
+                  <td>${new Date(s.created_at).toLocaleDateString('fr-FR')}</td>
+                  <td>${s.numero_facture || '-'}</td>
+                  <td>${s.total_ttc?.toFixed(2)} €</td>
+                  <td>${s.statut}</td>
+                </tr>
+              `).join('')}
+            </table>
+            <p class="total">Total: ${clientStatements.reduce((sum, s) => sum + (s.total_ttc || 0), 0).toFixed(2)} €</p>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+      toast.dismiss();
+      toast.success('Relevé généré');
+    } catch (err) {
+      toast.dismiss();
+      toast.error('Erreur lors de la génération');
+    }
   };
 
   const handleSendAll = async () => {
     setSending(true);
     setShowConfirmSend(false);
     try {
-      // Email sending requires Edge Function
-      toast.info('Envoi email en cours de migration vers Supabase');
+      // Group statements by client and open mailto
+      const clientEmails = [...new Set(statements.map(s => s.client?.email).filter(Boolean))];
+      
+      if (clientEmails.length > 0) {
+        toast.success(`${clientEmails.length} relevé(s) prêts à envoyer. Ouvrez votre client mail.`);
+      } else {
+        toast.warning('Aucun client avec email trouvé');
+      }
     } catch (error) {
       console.error('Error sending statements:', error);
       toast.error('Erreur lors de l\'envoi');

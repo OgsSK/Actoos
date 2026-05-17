@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -260,17 +261,19 @@ export const ActivatePage = () => {
     setLoading(true);
 
     try {
-      // Call Supabase Edge Function for activation
-      const API_URL = process.env.REACT_APP_BACKEND_URL;
-      const response = await fetch(`${API_URL}/api/auth/activate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password })
+      // Use Supabase Auth to update password with token
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password
       });
       
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || 'Erreur lors de l\'activation');
+      if (updateError) throw updateError;
+      
+      // Mark invitation as used if this is an invite flow
+      if (token) {
+        await supabase
+          .from('user_invites')
+          .update({ status: 'accepted', activated_at: new Date().toISOString() })
+          .eq('invite_token', token);
       }
       
       setSuccess(true);
@@ -374,21 +377,16 @@ export const ForgotPasswordPage = () => {
     setLoading(true);
 
     try {
-      const API_URL = process.env.REACT_APP_BACKEND_URL;
-      const response = await fetch(`${API_URL}/api/auth/request-password-reset`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+      // Use Supabase Auth password reset
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
       });
 
-      if (response.ok) {
-        setSent(true);
-      } else {
-        const data = await response.json();
-        setError(data.detail || 'Erreur lors de l\'envoi');
-      }
+      if (resetError) throw resetError;
+      
+      setSent(true);
     } catch (err) {
-      setError('Erreur de connexion au serveur');
+      setError(err.message || 'Erreur lors de l\'envoi');
     } finally {
       setLoading(false);
     }
@@ -509,22 +507,17 @@ export const ResetPasswordPage = () => {
     setLoading(true);
 
     try {
-      const API_URL = process.env.REACT_APP_BACKEND_URL;
-      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, new_password: password })
+      // Use Supabase Auth to update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password
       });
 
-      if (response.ok) {
-        setSuccess(true);
-        setTimeout(() => navigate('/login'), 3000);
-      } else {
-        const data = await response.json();
-        setError(data.detail || 'Erreur lors de la réinitialisation');
-      }
+      if (updateError) throw updateError;
+      
+      setSuccess(true);
+      setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
-      setError('Erreur de connexion au serveur');
+      setError(err.message || 'Erreur lors de la réinitialisation');
     } finally {
       setLoading(false);
     }

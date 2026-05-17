@@ -12,10 +12,36 @@ import {
   Trees, Shield, Settings, Brush, CheckCircle2, X
 } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
+import { supabase } from '../lib/supabase';
 import { PasswordInput } from '../components/ui/password-input';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+// Static plans (Supabase handles pricing through Stripe integration)
+const STATIC_PLANS = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price: 0,
+    description: 'Pour démarrer',
+    features: ['1 utilisateur', '50 interventions/mois', 'App mobile'],
+    limits: { max_categories: 1, max_users: 1 }
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: 49,
+    description: 'Pour les équipes',
+    features: ['5 utilisateurs', 'Interventions illimitées', 'Devis & Factures', 'Support prioritaire'],
+    limits: { max_categories: 3, max_users: 5 }
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 149,
+    description: 'Pour les grandes entreprises',
+    features: ['Utilisateurs illimités', 'API personnalisée', 'Support dédié'],
+    limits: { max_categories: -1, max_users: -1 }
+  }
+];
 
 // =====================================================
 // CATÉGORIES MÉTIER OFFICIELLES ACTOOS
@@ -174,11 +200,11 @@ const SignupPage = () => {
 
   const loadPlans = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/plans`);
-      setPlans(response.data);
+      // Use static plans - Stripe integration handles actual pricing
+      setPlans(STATIC_PLANS);
     } catch (error) {
       console.error('Error loading plans:', error);
-      toast.error('Erreur lors du chargement des plans');
+      setPlans(STATIC_PLANS);
     } finally {
       setLoading(false);
     }
@@ -273,35 +299,68 @@ const SignupPage = () => {
     setSubmitting(true);
     
     try {
-      const originUrl = window.location.origin;
-      
-      // Créer la session de paiement avec toutes les infos
-      const response = await axios.post(`${API_URL}/api/checkout/session`, null, {
-        params: {
-          plan_id: selectedPlan,
-          origin_url: originUrl,
-          entreprise_name: formData.entrepriseName,
-          admin_email: formData.adminEmail,
-          billing_cycle: billingCycle
+      // Create user via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.adminEmail,
+        password: formData.adminPassword,
+        options: {
+          data: {
+            nom: formData.entrepriseName.split(' ')[0] || 'Admin',
+            prenom: formData.entrepriseName.split(' ').slice(1).join(' ') || '',
+            role: 'admin'
+          }
         }
       });
-
-      // Stocker les données supplémentaires en localStorage pour après paiement
-      localStorage.setItem('signup_data', JSON.stringify({
-        categories: selectedCategories,
-        password: formData.adminPassword,
-        phone: formData.phone,
-        referral_source: formData.referralSource,
-        billing_cycle: billingCycle,
-        session_id: response.data.session_id
-      }));
-
-      // Redirection vers Stripe Checkout
-      window.location.href = response.data.url;
+      
+      if (authError) throw authError;
+      
+      if (authData.user) {
+        // Create entreprise
+        const { data: entreprise, error: entrepriseError } = await supabase
+          .from('entreprises')
+          .insert({
+            nom: formData.entrepriseName,
+            email: formData.adminEmail,
+            telephone: formData.phone || null,
+            plan: selectedPlan || 'starter',
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+        
+        if (entrepriseError) throw entrepriseError;
+        
+        // Update user with entreprise_id
+        await supabase
+          .from('users')
+          .update({ 
+            entreprise_id: entreprise.id,
+            role: 'admin'
+          })
+          .eq('id', authData.user.id);
+        
+        // Create default categories
+        if (selectedCategories.length > 0) {
+          const categoriesData = selectedCategories.map(catId => {
+            const category = BUSINESS_CATEGORIES.find(c => c.id === catId);
+            return {
+              entreprise_id: entreprise.id,
+              nom: category?.name || catId,
+              description: category?.description || ''
+            };
+          });
+          
+          await supabase.from('categories').insert(categoriesData);
+        }
+        
+        toast.success('Inscription réussie ! Vérifiez votre email pour confirmer votre compte.');
+        navigate('/login');
+      }
       
     } catch (error) {
-      console.error('Error creating checkout:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la création du paiement');
+      console.error('Error during signup:', error);
+      toast.error(error.message || 'Erreur lors de l\'inscription');
+    } finally {
       setSubmitting(false);
     }
   };

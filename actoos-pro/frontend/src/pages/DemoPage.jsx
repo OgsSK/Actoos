@@ -25,27 +25,18 @@ const DemoPage = () => {
         const demoEmail = 'demo@actoos.com';
         const demoPassword = 'Salifkane&&7';
 
-        // Step 1: Initialize demo session (reset data)
+        // Steps for UX
         setStep(1);
         setStatus(steps[0]);
+        await new Promise(r => setTimeout(r, 500));
         
-        try {
-          // Call init endpoint to reset demo data
-          await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/demo/init`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          });
-          
-          setStep(2);
-          setStatus(steps[1]);
-          await new Promise(r => setTimeout(r, 500)); // Brief pause for UX
-          
-          setStep(3);
-          setStatus(steps[2]);
-          await new Promise(r => setTimeout(r, 500));
-        } catch (initError) {
-          console.log('Demo init endpoint not available, proceeding with login');
-        }
+        setStep(2);
+        setStatus(steps[1]);
+        await new Promise(r => setTimeout(r, 500));
+        
+        setStep(3);
+        setStatus(steps[2]);
+        await new Promise(r => setTimeout(r, 500));
 
         // Step 4: Login
         setStep(4);

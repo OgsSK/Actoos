@@ -215,8 +215,55 @@ const Analytics = () => {
   };
 
   const handleExportPDF = async () => {
-    // PDF generation requires Edge Function
-    toast.info('Export PDF en cours de migration vers Supabase');
+    try {
+      toast.loading('Génération du rapport...');
+      
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Rapport Analytics - ${period}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 40px; }
+              h1 { color: #1e293b; }
+              .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 30px 0; }
+              .stat-card { padding: 20px; background: #f8fafc; border-radius: 8px; }
+              .stat-value { font-size: 24px; font-weight: bold; color: #10b981; }
+              .stat-label { color: #64748b; }
+            </style>
+          </head>
+          <body>
+            <h1>Rapport Analytics - ${period}</h1>
+            <p>Généré le ${new Date().toLocaleDateString('fr-FR')}</p>
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="stat-value">${data?.revenue?.total?.toFixed(2) || 0} €</div>
+                <div class="stat-label">Chiffre d'affaires</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value">${data?.interventions?.total || 0}</div>
+                <div class="stat-label">Interventions</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value">${data?.devis?.total || 0}</div>
+                <div class="stat-label">Devis créés</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value">${data?.clients?.total || 0}</div>
+                <div class="stat-label">Clients actifs</div>
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+      toast.dismiss();
+      toast.success('Rapport généré');
+    } catch (err) {
+      toast.dismiss();
+      toast.error('Erreur lors de la génération');
+    }
   };
 
   if (loading) {
@@ -419,14 +466,14 @@ const Analytics = () => {
                 const total = interventions?.total || 1;
                 const percent = (count / total) * 100;
                 const colors = {
-                  planifiee: 'bg-blue-500',
+                  planifie: 'bg-blue-500',
                   en_cours: 'bg-amber-500',
                   terminee: 'bg-emerald-500',
                   facturee: 'bg-purple-500',
                   annulee: 'bg-red-500'
                 };
                 const labels = {
-                  planifiee: 'Planifiées',
+                  planifie: 'Planifiées',
                   en_cours: 'En cours',
                   terminee: 'Terminées',
                   facturee: 'Facturées',

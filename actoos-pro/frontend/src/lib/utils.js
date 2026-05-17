@@ -87,22 +87,21 @@ export const isOverdue = (dateString) => {
 };
 
 export const statusLabels = {
-  // Interventions
-  planifiee: 'Planifiée',
+  // Interventions - Valeurs: planifie, accepte, en_cours, termine, annule
+  planifie: 'Planifiée',
+  accepte: 'Acceptée',
   en_cours: 'En cours',
-  en_validation: 'En validation',
-  terminee: 'Terminée',
-  annulee: 'Annulée',
-  // Devis
+  termine: 'Terminée',
+  annule: 'Annulée',
+  // Devis - Valeurs: brouillon, envoye, signe, refuse, expire, facture
   brouillon: 'Brouillon',
   envoye: 'Envoyé',
   signe: 'Signé',
   refuse: 'Refusé',
   expire: 'Expiré',
   facture: 'Facturé',
-  converti: 'Converti en facture',
   // Factures
-  emise: 'Émise',
+  envoyee: 'Envoyée',
   partiel: 'Paiement partiel',
   payee: 'Payée',
   en_retard: 'En retard',

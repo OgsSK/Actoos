@@ -72,7 +72,7 @@ export const FacturesList = () => {
       const allInterventions = await interventionsApi.list(user?.entreprise_id);
       // Filter completed interventions
       const billable = allInterventions.filter(i => 
-        i.statut === 'terminee' || i.statut === 'planifiee'
+        i.statut === 'termine' || i.statut === 'planifie'
       );
       setAvailableInterventions(billable);
     } catch (error) {
@@ -514,8 +514,17 @@ export const FactureDetail = () => {
   const handleRelance = async () => {
     setSendingRelance(true);
     try {
-      // Note: Email sending requires Edge Function
-      toast.info('Envoi de relance en cours de migration vers Supabase');
+      // Get client email and send relance
+      if (facture.client?.email) {
+        const subject = `Relance - Facture ${facture.numero_facture}`;
+        const message = `Bonjour,\n\nNous vous rappelons que la facture ${facture.numero_facture} d'un montant de ${facture.total_ttc?.toFixed(2)} € est en attente de paiement.\n\nCordialement`;
+        
+        // Open mailto link as fallback
+        window.location.href = `mailto:${facture.client.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+        toast.success('Email de relance préparé');
+      } else {
+        toast.error('Aucune adresse email pour ce client');
+      }
       fetchFacture();
     } catch (error) {
       console.error('Error sending relance:', error);

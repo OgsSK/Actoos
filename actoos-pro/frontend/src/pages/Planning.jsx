@@ -432,7 +432,7 @@ export const PlanningPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="planifiee">Planifiée</SelectItem>
+                  <SelectItem value="planifie">Planifiée</SelectItem>
                   <SelectItem value="en_cours">En cours</SelectItem>
                   <SelectItem value="terminee">Terminée</SelectItem>
                   <SelectItem value="annulee">Annulée</SelectItem>
