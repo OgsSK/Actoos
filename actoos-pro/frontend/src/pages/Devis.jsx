@@ -22,6 +22,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
+import { ClientSelect } from '../components/ui/searchable-select';
 import { formatDate, getStatusLabel } from '../lib/utils';
 import {
   Plus, Search, ChevronLeft, Edit, FileText, Send, PenTool, Download,
@@ -604,21 +605,12 @@ export const DevisForm = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Client *</Label>
-                <Select
+                <ClientSelect
+                  clients={clients}
                   value={formData.client_id}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
-                >
-                  <SelectTrigger data-testid="devis-client">
-                    <SelectValue placeholder="Sélectionner un client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.nom} {client.prenom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  data-testid="devis-client"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="validite_jours">Validité (jours)</Label>

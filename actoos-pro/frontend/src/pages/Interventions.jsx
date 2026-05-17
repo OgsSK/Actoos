@@ -15,6 +15,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
+import { ClientSelect, TechnicianSelect, CategorySelect } from '../components/ui/searchable-select';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
@@ -331,21 +332,12 @@ export const InterventionForm = () => {
             {/* Client */}
             <div className="space-y-2">
               <Label>Client *</Label>
-              <Select
+              <ClientSelect
+                clients={clients}
                 value={formData.client_id}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value, site_id: '' }))}
-              >
-                <SelectTrigger data-testid="intervention-client">
-                  <SelectValue placeholder="Sélectionner un client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.nom} {client.prenom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                data-testid="intervention-client"
+              />
             </div>
 
             {/* Site (if client has multiple sites) */}
@@ -383,30 +375,12 @@ export const InterventionForm = () => {
             {categories.length > 0 && (
               <div className="space-y-2">
                 <Label>Catégorie</Label>
-                <Select
+                <CategorySelect
+                  categories={categories}
                   value={formData.categorie_id || ''}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, categorie_id: value === 'none' ? '' : value }))}
-                >
-                  <SelectTrigger data-testid="intervention-categorie">
-                    <SelectValue placeholder="Sélectionner une catégorie" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      <span className="text-slate-500">Aucune catégorie</span>
-                    </SelectItem>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: cat.couleur }}
-                          />
-                          {cat.nom}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, categorie_id: value || null }))}
+                  data-testid="intervention-categorie"
+                />
               </div>
             )}
 
@@ -512,22 +486,12 @@ export const InterventionForm = () => {
             {/* Technician */}
             <div className="space-y-2">
               <Label>Technicien assigné</Label>
-              <Select
-                value={formData.technicien_id || 'none'}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, technicien_id: value === 'none' ? '' : value }))}
-              >
-                <SelectTrigger data-testid="intervention-technicien">
-                  <SelectValue placeholder="Non assigné" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Non assigné</SelectItem>
-                  {techniciens.map((tech) => (
-                    <SelectItem key={tech.id} value={tech.id}>
-                      {tech.prenom} {tech.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <TechnicianSelect
+                technicians={techniciens}
+                value={formData.technicien_id || ''}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, technicien_id: value || null }))}
+                data-testid="intervention-technicien"
+              />
             </div>
 
             {/* Address */}
