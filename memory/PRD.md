@@ -53,6 +53,13 @@ Application SaaS B2B de gestion d'interventions terrain pour les entreprises de 
 - [x] PDF via impression navigateur
 - [x] Export analytics imprimable
 
+### Corrections 17 Mai 2026 (Relevés)
+- [x] **Relevés (Statements) complets** - Génération PDF avec interventions, photos, devis, factures
+- [x] **statementService.js** - Service dédié avec requêtes Supabase
+- [x] **Modal aperçu PDF** - Avec statistiques, iframe, boutons Fermer et Télécharger
+- [x] **Correction bugs** - Plus de "Invalid Date" ou "undefined"
+- [x] **Bouton fermer** - X en haut + bouton "Fermer" en bas du modal
+
 ---
 
 ## 🔴 P0 - Phase 1 (En cours)
@@ -153,4 +160,4 @@ Référence complète: `/app/actoos-pro/docs/SCHEMA_SUPABASE.md`
 
 ---
 
-**Dernière mise à jour**: 17 Mai 2025
+**Dernière mise à jour**: 17 Mai 2026
