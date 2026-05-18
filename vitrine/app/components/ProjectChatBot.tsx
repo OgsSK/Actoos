@@ -522,32 +522,55 @@ export default function ProjectChatBot() {
         </div>
 
         {/* --- PANEAU PREVIEW --- */}
-        {showPreview && previewCode && (
-          <div className="w-[560px] bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl flex items-center justify-between">
-              <span className="font-bold text-sm text-slate-700">🖥️ Aperçu interactif</span>
-              <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
-            </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <div className="h-full w-full">
-                <SandpackProvider template="react" files={{ '/App.js': previewCode }} customSetup={{ dependencies: { react: '^18.0.0', 'react-dom': '^18.0.0' } }}>
-                  <SandpackPreview showNavigator={false} showOpenInCodeSandbox={false} showRefreshButton={false} />
-                </SandpackProvider>
-              </div>
-            </div>
-            <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl space-y-2">
-              <div className="flex gap-2">
-                <input type="text" value={adjustInput} onChange={(e) => setAdjustInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAdjust(adjustInput); }} placeholder="Modifier (ex: changer la couleur, ajouter un bouton…)" className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37]" />
-                <button onClick={() => handleAdjust(adjustInput)} disabled={!adjustInput.trim() || loading} className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 disabled:opacity-50">Ajuster</button>
-              </div>
-              {previewReady && (
-                <button onClick={() => setShowSubmitPreviewForm(true)} className="w-full bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-amber-200 hover:scale-[1.01] transition-all">
-                  Soumettre l'aperçu
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+       {showPreview && previewCode && (
+  <div className="w-[560px] flex flex-col bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden">
+    <div className="p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl flex items-center justify-between shrink-0">
+      <span className="font-bold text-sm text-slate-700">🖥️ Aperçu interactif</span>
+      <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+    </div>
+    <div className="flex-1 min-h-0">
+      <SandpackProvider
+        template="react"
+        files={{ "/App.js": previewCode }}
+        customSetup={{ dependencies: { react: "^18.0.0", "react-dom": "^18.0.0" } }}
+      >
+        <SandpackPreview
+          showNavigator={false}
+          showOpenInCodeSandbox={false}
+          showRefreshButton={false}
+          style={{ height: "100%" }}
+        />
+      </SandpackProvider>
+    </div>
+    <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl space-y-2 shrink-0">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={adjustInput}
+          onChange={(e) => setAdjustInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleAdjust(adjustInput); }}
+          placeholder="Modifier (ex: changer la couleur, ajouter un bouton…)"
+          className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+        />
+        <button
+          onClick={() => handleAdjust(adjustInput)}
+          disabled={!adjustInput.trim() || loading}
+          className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 disabled:opacity-50"
+        >
+          Ajuster
+        </button>
+      </div>
+      {previewReady && (
+        <button
+          onClick={() => setShowSubmitPreviewForm(true)}
+          className="w-full bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-amber-200 hover:scale-[1.01] transition-all"
+        >
+          Soumettre l'aperçu
+        </button>
+      )}
+    </div>
+  </div>
+)}
       </div>
     </div>
   );
