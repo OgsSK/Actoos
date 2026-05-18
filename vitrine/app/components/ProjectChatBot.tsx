@@ -282,7 +282,7 @@ export default function ProjectChatBot() {
         setPreviewReady(true);
         setMessages((prev) => [
           ...prev,
-          { id: generateId(), role: 'assistant', content: "🖥️ Voici l'aperçu interactif. Vous pouvez le modifier dans le panneau de droite, puis soumettre lorsque vous êtes satisfait." },
+          { id: generateId(), role: 'assistant', content: "🖥️ Voici l'conception interactive. Vous pouvez le modifier dans le panneau de droite, puis soumettre lorsque vous êtes satisfait." },
         ]);
       } else {
         setMessages((prev) => [
@@ -333,7 +333,7 @@ export default function ProjectChatBot() {
     setLoading(true);
     try {
       const html = `
-        <h2>Soumission d'un aperçu interactif</h2>
+        <h2>Soumission d'une conception interactif</h2>
         <p><strong>Nom :</strong> ${previewSubmit.name}</p>
         <p><strong>Email :</strong> ${previewSubmit.email}</p>
         <p><strong>Message :</strong> ${previewSubmit.message || '-'}</p>
@@ -479,9 +479,9 @@ export default function ProjectChatBot() {
             {/* Formulaire Preview */}
             {showPreviewForm && (
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl space-y-3">
-                <h4 className="font-bold text-sm text-slate-800">Générer un aperçu</h4>
+                <h4 className="font-bold text-sm text-slate-800">Générer une conception</h4>
                 <p className="text-xs text-slate-500 leading-relaxed">
-  Décrivez votre projet. Notre IA générera un prototype que vous pourrez <strong>modifier en direct</strong> jusqu’à obtenir exactement ce que vous voulez. 
+  Décrivez votre projet. Notre IA générera un prototype que vous pourrez modifier <strong>modifier en direct</strong> jusqu’à obtenir exactement ce que vous voulez. 
   Quand vous êtes prêt, soumettez‑le et l’équipe Actoos le transformera en solution réelle.
 </p>
                 <form onSubmit={handlePreviewGenerate} className="space-y-3">
@@ -499,7 +499,7 @@ export default function ProjectChatBot() {
             {/* Formulaire Soumission Preview */}
             {showSubmitPreviewForm && (
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl space-y-3">
-                <h4 className="font-bold text-sm text-slate-800">Soumettre l'aperçu</h4>
+                <h4 className="font-bold text-sm text-slate-800">Soumettre la conception</h4>
                 <form onSubmit={handlePreviewSubmit} className="space-y-3">
                   <input name="name" placeholder="Nom *" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={previewSubmit.name} onChange={(e) => setPreviewSubmit({ ...previewSubmit, name: e.target.value })} required />
                   <input name="email" type="email" placeholder="Email *" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={previewSubmit.email} onChange={(e) => setPreviewSubmit({ ...previewSubmit, email: e.target.value })} required />
@@ -574,7 +574,7 @@ export default function ProjectChatBot() {
               </div>
               {previewReady && (
                 <button onClick={() => setShowSubmitPreviewForm(true)} className="w-full bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-amber-200 hover:scale-[1.01] transition-all">
-                  Soumettre l'aperçu
+                  Soumettre la conception
                 </button>
               )}
             </div>
