@@ -21,24 +21,17 @@ export default function ProjectChatBot() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [adjustInput, setAdjustInput] = useState('');
-  const [previewReady, setPreviewReady] = useState(false);
+  const [projectDetected, setProjectDetected] = useState(false);
+  const [dataSource, setDataSource] = useState<'standard' | 'personalized'>('standard');
+  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(true);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-  // Détecter si l'agent a proposé la preview
-  useEffect(() => {
-    const lastMsg = [...messages].reverse().find(m => m.role === 'assistant');
-    if (lastMsg && /Je peux maintenant vous montrer un aperçu/i.test(lastMsg.content)) {
-      setPreviewReady(true);
-    }
-  }, [messages]);
-
-  // États des boutons
-  const canPreview = (previewReady || messages.length >= 3) && !loading && !previewCode;
-  const canQuote = !!previewCode && !loading;
+  // Détecter un projet : dès que l'utilisateur a envoyé au moins 2 messages
+  const shouldDetectProject = messages.filter(m => m.role === 'user').length >= 1 && !projectDetected;
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -54,7 +47,85 @@ export default function ProjectChatBot() {
     }
   }, []);
 
-  // Envoyer un message (conversation normale)
+  // Générer les versions standard dès la détection du projet
+  useEffect(() => {
+    if (shouldDetectProject && !projectDetected && !loading) {
+      setProjectDetected(true);
+      generateStandardVersions();
+    }
+  }, [shouldDetectProject, loading, projectDetected]);
+
+  // Mettre à jour automatiquement quand l'utilisateur envoie un nouveau message (après la première détection)
+  useEffect(() => {
+    if (projectDetected && autoUpdateEnabled && messages.length > 0) {
+      const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+      if (lastUserMsg && lastUserMsg.content.trim().length > 0) {
+        updateVersions();
+      }
+    }
+  }, [messages]);
+
+  const generateStandardVersions = async () => {
+    setLoading(true);
+    try {
+      // Générer preview standard
+      const previewRes = await fetch('/api/generate-proposal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate-preview', role: 'designer', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
+      });
+      const previewData = await previewRes.json();
+      if (previewData.previewCode && previewData.previewCode.trim().length > 0) {
+        setPreviewCode(previewData.previewCode);
+      }
+
+      // Générer devis standard
+      const quoteRes = await fetch('/api/generate-proposal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate-proposal', role: 'commercial', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
+      });
+      const quoteData = await quoteRes.json();
+      if (quoteData.ready && quoteData.proposal) {
+        setProposal(quoteData.proposal);
+      }
+
+      setDataSource('standard');
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'J\'ai préparé une première version de votre projet. Vous pouvez voir l\'aperçu ou le devis en cliquant sur les boutons correspondants. Nous pourrons les ajuster ensemble.' }]);
+    } catch (error) {
+      console.error('Erreur génération standard', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateVersions = async () => {
+    // Mettre à jour la preview et le devis en arrière-plan
+    try {
+      // Preview
+      const previewRes = await fetch('/api/generate-proposal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate-preview', role: 'designer', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
+      });
+      const previewData = await previewRes.json();
+      if (previewData.previewCode && previewData.previewCode.trim().length > 0) {
+        setPreviewCode(previewData.previewCode);
+      }
+
+      // Devis
+      const quoteRes = await fetch('/api/generate-proposal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate-proposal', role: 'commercial', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
+      });
+      const quoteData = await quoteRes.json();
+      if (quoteData.ready && quoteData.proposal) {
+        setProposal(quoteData.proposal);
+      }
+
+      // On ne change pas dataSource ici, il reste standard tant que l'utilisateur n'a pas explicitement ajusté
+    } catch (error) {
+      console.error('Erreur mise à jour automatique', error);
+    }
+  };
+
   const handleSend = async (content?: string) => {
     const messageContent = content || input.trim();
     if (!messageContent || loading) return;
@@ -75,9 +146,6 @@ export default function ProjectChatBot() {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` }]);
       } else if (data.response) {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: data.response }]);
-      } else if (data.ready && data.proposal) {
-        // Ignorer les devis non sollicités, ne rien afficher
-        console.warn('Devis reçu sans demande, ignoré');
       }
     } catch {
       setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
@@ -86,54 +154,29 @@ export default function ProjectChatBot() {
     }
   };
 
-  // Générer la preview
-  const handlePreview = async () => {
-    if (!canPreview || previewCode || loading) return;
-    setPreviewLoading(true);
-    try {
-      const res = await fetch('/api/generate-proposal', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate-preview', role: 'designer', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
-      });
-      const data = await res.json();
-      if (data.previewCode && data.previewCode.trim().length > 0) {
-        setPreviewCode(data.previewCode);
-        setShowPreview(true);
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '🖥️ Voici un aperçu interactif de votre projet. Vous pouvez le modifier directement dans le panneau de droite.' }]);
-      } else {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Désolé, je n\'ai pas réussi à générer l\'aperçu. Voulez-vous que je vous propose un devis à la place ?' }]);
+  // Bouton Preview : afficher/masquer la preview existante
+  const handlePreview = () => {
+    if (previewCode) {
+      setShowPreview(!showPreview);
+      if (!showPreview) {
+        // Informer l'utilisateur si c'est standard
+        if (dataSource === 'standard') {
+          setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Voici un aperçu standard basé sur votre projet. Vous pouvez le modifier à tout moment.' }]);
+        }
       }
-    } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de la génération de l\'aperçu.' }]);
-    } finally {
-      setPreviewLoading(false);
     }
   };
 
-  // Générer le devis
-  const handleQuote = async () => {
-    if (!canQuote || loading) return;
-    setQuoteLoading(true);
-    try {
-      const res = await fetch('/api/generate-proposal', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate-proposal', role: 'commercial', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
-      });
-      const data = await res.json();
-      if (data.ready && data.proposal) {
-        setProposal(data.proposal);
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre devis personnalisé :' }]);
-      } else {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Je n\'ai pas assez d\'informations pour le devis. Pouvez-vous me donner plus de détails sur votre projet ?' }]);
-      }
-    } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de la génération du devis.' }]);
-    } finally {
-      setQuoteLoading(false);
+  // Bouton Devis : afficher le devis s'il existe
+  const handleQuote = () => {
+    if (proposal) {
+      // Le devis s'affiche déjà dans la conversation via la variable proposal, on peut scroller jusqu'à lui
+      // Si on veut l'afficher en popup, on peut, mais ici on va simplement mettre en évidence
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Voici le devis actuel (vous pouvez le trouver ci-dessous).' }]);
     }
   };
 
-  // Ajuster la preview (depuis le champ ou depuis le chat)
+  // Ajustement depuis le champ de la preview
   const handleAdjust = async (modification: string) => {
     if (!modification.trim() || !previewCode || loading) return;
     setAdjustInput('');
@@ -152,16 +195,16 @@ export default function ProjectChatBot() {
       const data = await res.json();
       if (data.previewCode) {
         setPreviewCode(data.previewCode);
-        // Mettre à jour le devis automatiquement
-        if (proposal) {
-          const quoteRes = await fetch('/api/generate-proposal', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'generate-proposal', role: 'commercial', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
-          });
-          const quoteData = await quoteRes.json();
-          if (quoteData.ready && quoteData.proposal) setProposal(quoteData.proposal);
-        }
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Aperçu mis à jour.' }]);
+        // Marquer comme personnalisé
+        setDataSource('personalized');
+        // Mettre à jour le devis
+        const quoteRes = await fetch('/api/generate-proposal', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'generate-proposal', role: 'commercial', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
+        });
+        const quoteData = await quoteRes.json();
+        if (quoteData.ready && quoteData.proposal) setProposal(quoteData.proposal);
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Aperçu mis à jour selon votre demande.' }]);
       }
     } catch {
       setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de l\'ajustement.' }]);
@@ -170,7 +213,6 @@ export default function ProjectChatBot() {
     }
   };
 
-  // Envoyer le formulaire de contact
   const handleSubmit = async () => {
     if (!formData.name || !formData.email) return;
     setLoading(true);
@@ -216,27 +258,27 @@ export default function ProjectChatBot() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePreview}
-                disabled={!canPreview || previewLoading}
+                disabled={!previewCode}
                 className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-                  canPreview && !previewLoading
+                  previewCode
                     ? 'bg-[#D4AF37] text-white hover:bg-amber-500 shadow-lg shadow-amber-200'
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`}
               >
                 <Eye size={14} />
-                {previewLoading ? 'Génération...' : 'Preview'}
+                Preview
               </button>
               <button
                 onClick={handleQuote}
-                disabled={!canQuote || quoteLoading}
+                disabled={!proposal}
                 className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-                  canQuote && !quoteLoading
+                  proposal
                     ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg'
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`}
               >
                 <FileText size={14} />
-                {quoteLoading ? 'Génération...' : 'Devis'}
+                Devis
               </button>
               {showPreview && (
                 <button
