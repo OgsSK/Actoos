@@ -388,7 +388,7 @@ export default function ProjectChatBot() {
                 <FileText size={14} /> Devis
               </button>
               {previewCode && !showPreview && (
-                <button onClick={() => setShowPreview(true)} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200" title="Rouvrir l'aperçu">
+                <button onClick={() => setShowPreview(true)} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200" title="Rouvrir la conception">
                   <Eye size={18} />
                 </button>
               )}
@@ -480,6 +480,10 @@ export default function ProjectChatBot() {
             {showPreviewForm && (
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl space-y-3">
                 <h4 className="font-bold text-sm text-slate-800">Générer un aperçu</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+  Décrivez votre projet. Notre IA générera un prototype que vous pourrez <strong>modifier en direct</strong> jusqu’à obtenir exactement ce que vous voulez. 
+  Quand vous êtes prêt, soumettez‑le et l’équipe Actoos le transformera en solution réelle.
+</p>
                 <form onSubmit={handlePreviewGenerate} className="space-y-3">
                   <input name="project" placeholder="Projet *" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={previewProject.project} onChange={(e) => setPreviewProject({ ...previewProject, project: e.target.value })} required />
                   <input name="projectName" placeholder="Nom du projet" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={previewProject.projectName} onChange={(e) => setPreviewProject({ ...previewProject, projectName: e.target.value })} />
@@ -536,7 +540,7 @@ export default function ProjectChatBot() {
         {showPreview && previewCode && (
           <div className="w-[560px] flex flex-col bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden">
             <div className="p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl flex items-center justify-between shrink-0">
-              <span className="font-bold text-sm text-slate-700">🖥️ Aperçu interactif</span>
+              <span className="font-bold text-sm text-slate-700">🖥️ Conception interactive</span>
               <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
             </div>
             <div className="flex-1 min-h-0" style={{ height: "100%" }}>
