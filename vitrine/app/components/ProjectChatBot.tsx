@@ -283,41 +283,51 @@ export default function ProjectChatBot() {
       <div className="flex gap-4 h-[700px]">
         {/* Panneau de chat */}
         <div className="flex-1 flex flex-col bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden">
-          <div className="p-4 flex items-center gap-3 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Zap size={20} className="text-white" />
-              </div>
-              <div>
-                <span className="font-bold text-lg">Agent Actoos</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-[10px] text-green-600 font-medium">En ligne</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={openPreviewForm}
-                className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-[#D4AF37] text-white hover:bg-amber-500 shadow-lg shadow-amber-200"
-              >
-                <Eye size={14} />
-                Preview
-              </button>
-              <button
-                onClick={openDevisForm}
-                className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-slate-900 text-white hover:bg-slate-800 shadow-lg"
-              >
-                <FileText size={14} />
-                Devis
-              </button>
-              {showPreview && (
-                <button onClick={() => setShowPreview(!showPreview)} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200">
-                  {showPreview ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
-                </button>
-              )}
-            </div>
-          </div>
+  <div className="p-4 flex items-center gap-3 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl">
+    <div className="flex items-center gap-3 flex-1">
+      <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
+        <Zap size={20} className="text-white" />
+      </div>
+      <div>
+        <span className="font-bold text-lg">Agent Actoos</span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+          <span className="text-[10px] text-green-600 font-medium">En ligne</span>
+        </div>
+      </div>
+    </div>
+    <div className="flex items-center gap-2">
+      <button
+        onClick={openPreviewForm}
+        className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-[#D4AF37] text-white hover:bg-amber-500 shadow-lg shadow-amber-200"
+      >
+        <Eye size={14} />
+        Preview
+      </button>
+      <button
+        onClick={openDevisForm}
+        className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-slate-900 text-white hover:bg-slate-800 shadow-lg"
+      >
+        <FileText size={14} />
+        Devis
+      </button>
+      {/* Bouton pour rouvrir la preview après fermeture */}
+      {previewCode && !showPreview && (
+        <button
+          onClick={() => setShowPreview(true)}
+          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
+          title="Rouvrir l'aperçu"
+        >
+          <Eye size={18} />
+        </button>
+      )}
+      {showPreview && (
+        <button onClick={() => setShowPreview(!showPreview)} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200">
+          {showPreview ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+        </button>
+      )}
+    </div>
+  </div>
 
           {/* Messages (avec scroll) */}
           <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
