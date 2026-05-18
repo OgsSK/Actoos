@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { WebContainer } from '@webcontainer/api';
-import { X } from 'lucide-react';
 
 interface Props {
   code: string;
@@ -19,16 +18,21 @@ const defaultDependencies: Record<string, string> = {
   'postcss': '^8.4.0',
 };
 
+// Instance globale pour éviter les boots multiples
+let globalContainer: WebContainer | null = null;
+let globalBootPromise: Promise<WebContainer> | null = null;
+
 export default function WebContainerPreview({ code, dependencies = {} }: Props) {
   const [url, setUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [progress, setProgress] = useState<string>('Démarrage du conteneur...');
-  const containerRef = useRef<WebContainer | null>(null);
-  const bootedRef = useRef(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const mountedRef = useRef(true);
+  const serverStartedRef = useRef(false);
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
     setLoading(true);
     setError('');
     setUrl('');
@@ -36,12 +40,16 @@ export default function WebContainerPreview({ code, dependencies = {} }: Props) 
 
     async function boot() {
       try {
-        // Éviter de démarrer plusieurs conteneurs
-        if (!bootedRef.current) {
-          containerRef.current = await WebContainer.boot();
-          bootedRef.current = true;
+        // Réutiliser ou créer le conteneur global
+        if (!globalContainer) {
+          if (!globalBootPromise) {
+            globalBootPromise = WebContainer.boot();
+          }
+          globalContainer = await globalBootPromise;
+          globalBootPromise = null;
         }
-        const container = containerRef.current!;
+
+        const container = globalContainer;
 
         // Fusionner les dépendances
         const allDeps = { ...defaultDependencies, ...dependencies };
@@ -138,29 +146,29 @@ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(
         await container.mount(files);
 
         setProgress('Installation des dépendances...');
-
-        // Installer les dépendances
         const installProcess = await container.spawn('npm', ['install']);
         const installExit = await installProcess.exit;
-
         if (installExit !== 0) {
           throw new Error('Erreur lors de l\'installation des dépendances');
         }
 
         setProgress('Démarrage du serveur...');
 
-        // Démarrer le serveur de développement
-        container.spawn('npm', ['run', 'dev']);
+        // Démarrer le serveur seulement s'il n'est pas déjà lancé
+        if (!serverStartedRef.current) {
+          container.spawn('npm', ['run', 'dev']);
+          serverStartedRef.current = true;
+        }
 
         // Écouter l'URL du serveur
         container.on('server-ready', (port, serverUrl) => {
-          if (mounted) {
+          if (mountedRef.current) {
             setUrl(serverUrl);
             setLoading(false);
           }
         });
       } catch (err: any) {
-        if (mounted) {
+        if (mountedRef.current) {
           setError(err.message || 'Erreur lors du démarrage du conteneur');
           setLoading(false);
         }
@@ -170,7 +178,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(
     boot();
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
     };
   }, [code, JSON.stringify(dependencies)]);
 
@@ -190,15 +198,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(
     return (
       <div className="flex items-center justify-center h-full bg-red-50 rounded-2xl p-6">
         <div className="text-center">
-          <X className="h-8 w-8 text-red-400 mx-auto mb-2" />
-          <p className="text-red-600 text-sm font-medium">Erreur</p>
+          <span className="text-red-400 text-2xl font-bold">✕</span>
+          <p className="text-red-600 text-sm font-medium mt-2">Erreur</p>
           <p className="text-red-500 text-xs mt-1 max-w-md">{error}</p>
           <button
             onClick={() => {
               setLoading(true);
               setError('');
               setUrl('');
-              bootedRef.current = false;
+              globalBootPromise = null;
+              serverStartedRef.current = false;
             }}
             className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-xl text-sm font-medium hover:bg-red-200 transition-colors"
           >
@@ -211,6 +220,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(
 
   return (
     <iframe
+      ref={iframeRef}
       src={url}
       className="w-full h-full border-0 rounded-2xl"
       title="Preview"
