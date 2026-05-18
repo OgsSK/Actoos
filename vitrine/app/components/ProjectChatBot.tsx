@@ -18,7 +18,7 @@ interface DevisForm {
   description: string;
 }
 
-interface PreviewForm {
+interface PreviewProject {
   project: string;
   projectName: string;
   description: string;
@@ -38,7 +38,6 @@ export default function ProjectChatBot() {
   const [showPreview, setShowPreview] = useState(false);
   const [adjustInput, setAdjustInput] = useState('');
 
-  // Devis
   const [showDevisForm, setShowDevisForm] = useState(false);
   const [devisForm, setDevisForm] = useState<DevisForm>({
     name: '',
@@ -47,11 +46,9 @@ export default function ProjectChatBot() {
     project: '',
     description: '',
   });
-  const [devisSent, setDevisSent] = useState(false);
 
-  // Preview
   const [showPreviewForm, setShowPreviewForm] = useState(false);
-  const [previewProject, setPreviewProject] = useState<PreviewForm>({
+  const [previewProject, setPreviewProject] = useState<PreviewProject>({
     project: '',
     projectName: '',
     description: '',
@@ -62,28 +59,37 @@ export default function ProjectChatBot() {
     email: '',
     message: '',
   });
-  const [previewReady, setPreviewReady] = useState(false); // pour afficher le bouton "Soumettre"
+  const [previewReady, setPreviewReady] = useState(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
+  // Scroll fluide
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' });
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
     }
   }, [messages]);
 
-  useEffect(() => { if (!loading) setTimeout(() => inputRef.current?.focus(), 50); }, [loading]);
+  useEffect(() => {
+    if (!loading) setTimeout(() => inputRef.current?.focus(), 50);
+  }, [loading]);
 
   useEffect(() => {
     if (messages.length === 0) {
-      setMessages([{ id: generateId(), role: 'assistant', content: 'Bonjour ! Je suis l\'agent Actoos. Décrivez-moi votre projet.' }]);
+      setMessages([{
+        id: generateId(),
+        role: 'assistant',
+        content: 'Bonjour ! Je suis l\'agent Actoos. Décrivez-moi votre projet.',
+      }]);
     }
   }, []);
 
-  // Conversation normale
   const handleSend = async (content?: string) => {
     const messageContent = content || input.trim();
     if (!messageContent || loading) return;
@@ -96,8 +102,13 @@ export default function ProjectChatBot() {
 
     try {
       const res = await fetch('/api/generate-proposal', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'chat', role: 'analyst', messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'chat',
+          role: 'analyst',
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+        }),
       });
       const data = await res.json();
       if (data.error) {
@@ -112,10 +123,9 @@ export default function ProjectChatBot() {
     }
   };
 
-  // ----- DEVIS -----
+  // Devis
   const openDevisForm = () => {
     setShowDevisForm(true);
-    setDevisSent(false);
     setDevisForm({ name: '', prenom: '', email: '', project: '', description: '' });
   };
 
@@ -125,7 +135,6 @@ export default function ProjectChatBot() {
 
     setLoading(true);
     try {
-      // Envoyer les informations par email (via l'API send-project-email)
       const html = `
         <h2>Demande de devis</h2>
         <p><strong>Nom :</strong> ${devisForm.name} ${devisForm.prenom || ''}</p>
@@ -134,7 +143,8 @@ export default function ProjectChatBot() {
         <p><strong>Description :</strong> ${devisForm.description || '-'}</p>
       `;
       await fetch('/api/send-project-email', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: devisForm.name,
           email: devisForm.email,
@@ -142,9 +152,12 @@ export default function ProjectChatBot() {
           html,
         }),
       });
-      setDevisSent(true);
       setShowDevisForm(false);
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Votre demande de devis a bien été transmise. Un agent vous contactera pour finaliser le devis.' }]);
+      setMessages(prev => [...prev, {
+        id: generateId(),
+        role: 'assistant',
+        content: '✅ Votre demande de devis a bien été transmise. Un agent vous contactera pour finaliser le devis.',
+      }]);
     } catch {
       setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de l\'envoi.' }]);
     } finally {
@@ -152,7 +165,7 @@ export default function ProjectChatBot() {
     }
   };
 
-  // ----- PREVIEW -----
+  // Preview
   const openPreviewForm = () => {
     setShowPreviewForm(true);
     setPreviewProject({ project: '', projectName: '', description: '' });
@@ -174,15 +187,24 @@ export default function ProjectChatBot() {
 
     try {
       const res = await fetch('/api/generate-proposal', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate-preview', role: 'designer', messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generate-preview',
+          role: 'designer',
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+        }),
       });
       const data = await res.json();
       if (data.previewCode && data.previewCode.trim().length > 0) {
         setPreviewCode(data.previewCode);
         setShowPreview(true);
-        setPreviewReady(true); // active le bouton Soumettre
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '🖥️ Voici l\'aperçu interactif. Vous pouvez le modifier dans le panneau de droite, puis soumettre lorsque vous êtes satisfait.' }]);
+        setPreviewReady(true);
+        setMessages(prev => [...prev, {
+          id: generateId(),
+          role: 'assistant',
+          content: '🖥️ Voici l\'aperçu interactif. Vous pouvez le modifier dans le panneau de droite, puis soumettre lorsque vous êtes satisfait.',
+        }]);
       } else {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Désolé, je n\'ai pas pu générer l\'aperçu. Veuillez réessayer avec plus de détails.' }]);
       }
@@ -193,14 +215,14 @@ export default function ProjectChatBot() {
     }
   };
 
-  // Ajustement de la preview
   const handleAdjust = async (modification: string) => {
     if (!modification.trim() || !previewCode || loading) return;
     setAdjustInput('');
     setLoading(true);
     try {
       const res = await fetch('/api/generate-proposal', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'adjust-preview',
           role: 'frontend',
@@ -221,7 +243,6 @@ export default function ProjectChatBot() {
     }
   };
 
-  // Soumission de la preview
   const handlePreviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!previewSubmit.name.trim() || !previewSubmit.email.trim()) return;
@@ -239,7 +260,8 @@ export default function ProjectChatBot() {
         ${messages.map(m => `<p><strong>${m.role === 'user' ? 'Client' : 'Agent'}:</strong> ${m.content}</p>`).join('')}
       `;
       await fetch('/api/send-project-email', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: previewSubmit.name,
           email: previewSubmit.email,
@@ -297,6 +319,7 @@ export default function ProjectChatBot() {
             </div>
           </div>
 
+          {/* Messages (avec scroll) */}
           <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group`}>
@@ -315,7 +338,7 @@ export default function ProjectChatBot() {
               <div className="flex justify-start">
                 <div className="bg-white/80 p-3 rounded-2xl rounded-bl-md border border-slate-200/80">
                   <div className="flex space-x-1.5">
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
@@ -357,7 +380,7 @@ export default function ProjectChatBot() {
               </div>
             )}
 
-            {/* Formulaire de soumission de la preview (après ajustement) */}
+            {/* Formulaire de soumission de la preview */}
             {showSubmitPreviewForm && (
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl space-y-3">
                 <h4 className="font-bold text-sm text-slate-800">Soumettre l'aperçu</h4>
