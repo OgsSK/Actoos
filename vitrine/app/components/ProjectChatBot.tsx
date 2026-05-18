@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, Sparkles, Mail, Copy, Check, Edit3, Zap, Maximize2, Minimize2 } from 'lucide-react';
+import { Send, Loader2, Sparkles, Mail, Copy, Check, Edit3, Zap, Maximize2, Minimize2, Eye } from 'lucide-react';
 import { Sandpack } from '@codesandbox/sandpack-react';
 
 interface Message {
@@ -24,6 +24,7 @@ export default function ProjectChatBot() {
   const [adjustInput, setAdjustInput] = useState('');
   const [previewCode, setPreviewCode] = useState<string>('');
   const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [previewRequested, setPreviewRequested] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +49,30 @@ export default function ProjectChatBot() {
     }
   }, []);
 
+  // Demander la preview
+  const handleRequestPreview = async () => {
+    if (previewCode || loading) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/generate-proposal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate-preview', role: 'designer', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
+      });
+      const data = await res.json();
+      if (data.previewCode) {
+        setPreviewCode(data.previewCode);
+        setPreviewRequested(true);
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '🖥️ Voici un aperçu interactif de votre projet. Vous pouvez le modifier ou me demander des ajustements.' }]);
+      } else {
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Je n\'ai pas réussi à générer l\'aperçu, mais je peux continuer à vous aider.' }]);
+      }
+    } catch {
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSend = async (content?: string) => {
     const messageContent = content || input.trim();
     if (!messageContent || loading) return;
@@ -58,22 +83,24 @@ export default function ProjectChatBot() {
     setMessages(newMessages);
     setLoading(true);
 
+    // Détecter si le visiteur demande une preview (mots-clés)
+    const previewKeywords = ['preview', 'aperçu', 'montre-moi', 'montre moi', 'génère un aperçu', 'voir à quoi ça ressemble', 'peux-tu me montrer', 'je veux voir', 'montre'];
+    if (previewKeywords.some(kw => messageContent.toLowerCase().includes(kw)) && !previewCode) {
+      await handleRequestPreview();
+      return;
+    }
+
     try {
       const res = await fetch('/api/generate-proposal', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'chat', role: 'analyst', messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
       });
       const data = await res.json();
-      console.log('📥 Chat:', data);
-
       if (data.error) {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` }]);
       } else if (data.ready && data.proposal) {
         setProposal(data.proposal);
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre proposition personnalisée :' }]);
-      } else if (data.previewCode) {
-        setPreviewCode(data.previewCode);
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '🖥️ J\'ai généré une preview interactive de votre projet. Vous pouvez la voir ci-dessus et demander des modifications.' }]);
       } else {
         const cleaned = cleanResponse(data.response || '');
         if (cleaned) setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
@@ -86,30 +113,37 @@ export default function ProjectChatBot() {
   };
 
   const handleAdjustSubmit = async () => {
-    if (!adjustInput.trim() || !previewCode) return;
+    if (!adjustInput.trim()) return;
     const modification = adjustInput.trim();
     setAdjustInput('');
     setLoading(true);
     try {
+      if (previewCode) {
+        const res = await fetch('/api/generate-proposal', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'adjust-preview',
+            role: 'frontend',
+            messages: messages.map(m => ({ role: m.role, content: m.content })),
+            currentCode: previewCode,
+            modification,
+          }),
+        });
+        const data = await res.json();
+        if (data.previewCode) setPreviewCode(data.previewCode);
+      }
+      // Générer un nouveau devis mis à jour
       const res = await fetch('/api/generate-proposal', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'adjust-preview',
-          role: 'frontend',
-          messages: messages.map(m => ({ role: m.role, content: m.content })),
-          currentCode: previewCode,
-          modification,
-        }),
+        body: JSON.stringify({ action: 'generate-proposal', role: 'commercial', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
       });
       const data = await res.json();
-      if (data.previewCode) {
-        setPreviewCode(data.previewCode);
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Preview mise à jour selon votre demande.' }]);
-      } else {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de la modification.' }]);
+      if (data.ready && data.proposal) {
+        setProposal(data.proposal);
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici le devis mis à jour avec vos modifications :' }]);
       }
     } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de l\'ajustement.' }]);
     } finally {
       setLoading(false);
     }
@@ -176,11 +210,11 @@ export default function ProjectChatBot() {
 
   return (
     <div className="relative max-w-2xl mx-auto">
-      <div className="relative bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 ring-1 ring-black/5 overflow-hidden flex flex-col" style={{ height: previewCode ? '800px' : '620px' }}>
+      <div className="relative bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 ring-1 ring-black/5 overflow-hidden flex flex-col" style={{ height: '620px' }}>
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-[#D4AF37]/20 rounded-full blur-[80px] pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-sky-400/10 rounded-full blur-[80px] pointer-events-none" />
 
-        {/* En-tête */}
+        {/* En-tête avec bouton Preview */}
         <div className="relative z-10 p-4 flex items-center space-x-3 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl">
           <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
             <Zap size={20} className="text-white" />
@@ -195,10 +229,24 @@ export default function ProjectChatBot() {
           <div className="ml-auto flex items-center space-x-2">
             <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded-full">Agent</span>
             <Sparkles size={14} className="text-[#D4AF37]" />
+            {/* Bouton Preview */}
+            <button
+              onClick={handleRequestPreview}
+              disabled={loading || messages.length < 3} // Actif seulement après quelques messages
+              className={`ml-2 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 transition-all ${
+                messages.length >= 3 && !loading
+                  ? 'bg-[#D4AF37] text-white hover:bg-amber-500 cursor-pointer'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+              title="Générer un aperçu interactif"
+            >
+              <Eye size={14} />
+              <span>Preview</span>
+            </button>
           </div>
         </div>
 
-        {/* Preview */}
+        {/* Zone de preview (affichée seulement si du code existe) */}
         {previewCode && (
           <div className="relative z-10 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl">
             <div className="px-4 py-2 flex items-center justify-between">
@@ -217,6 +265,20 @@ export default function ProjectChatBot() {
                 options={{ showNavigator: false, showTabs: false, editorHeight: previewExpanded ? 400 : 200, editorWidthPercentage: 0 }}
                 customSetup={{ dependencies: { 'react': '^18.0.0', 'react-dom': '^18.0.0' } }}
               />
+            </div>
+            {/* Champ d'ajustement rapide */}
+            <div className="flex gap-2 p-3">
+              <input
+                type="text"
+                value={adjustInput}
+                onChange={e => setAdjustInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAdjustSubmit(); }}
+                placeholder="Modifier (ex: changer la couleur, ajouter un bouton…)"
+                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37] transition-colors"
+              />
+              <button onClick={handleAdjustSubmit} disabled={!adjustInput.trim() || loading} className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 transition-colors disabled:opacity-50">
+                Ajuster
+              </button>
             </div>
           </div>
         )}
@@ -256,6 +318,7 @@ export default function ProjectChatBot() {
               </div>
             </div>
           )}
+          {/* Carte de devis */}
           {proposal && !showForm && (
             <div className="pt-2 space-y-3 animate-fade-in">
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl">
@@ -271,6 +334,7 @@ export default function ProjectChatBot() {
               </div>
             </div>
           )}
+          {/* Formulaire de contact */}
           {showForm && (
             <div className="pt-2 space-y-3 animate-fade-in">
               <input type="text" placeholder="Votre nom" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37] transition-colors" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
