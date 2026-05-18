@@ -21,24 +21,24 @@ export default function ProjectChatBot() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [adjustInput, setAdjustInput] = useState('');
-  const [agentProposedPreview, setAgentProposedPreview] = useState(false);
+  const [previewReady, setPreviewReady] = useState(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-  // Détecter si l'agent a proposé l'aperçu
+  // Détecter si l'agent a proposé la preview
   useEffect(() => {
-    const lastAssistantMsg = messages.filter(m => m.role === 'assistant').pop();
-    if (lastAssistantMsg && lastAssistantMsg.content.includes("Je peux maintenant vous montrer un aperçu")) {
-      setAgentProposedPreview(true);
+    const lastMsg = [...messages].reverse().find(m => m.role === 'assistant');
+    if (lastMsg && /Je peux maintenant vous montrer un aperçu/i.test(lastMsg.content)) {
+      setPreviewReady(true);
     }
   }, [messages]);
 
   // États des boutons
-  const canPreview = agentProposedPreview && !loading && !previewCode;
-  const canQuote = previewCode && !loading;
+  const canPreview = (previewReady || messages.length >= 3) && !loading && !previewCode;
+  const canQuote = !!previewCode && !loading;
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -54,6 +54,7 @@ export default function ProjectChatBot() {
     }
   }, []);
 
+  // Envoyer un message (conversation normale)
   const handleSend = async (content?: string) => {
     const messageContent = content || input.trim();
     if (!messageContent || loading) return;
@@ -72,13 +73,11 @@ export default function ProjectChatBot() {
       const data = await res.json();
       if (data.error) {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` }]);
+      } else if (data.response) {
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: data.response }]);
       } else if (data.ready && data.proposal) {
-        // Ignorer les devis non sollicités
-        const cleaned = cleanResponse(data.response || '');
-        if (cleaned) setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
-      } else {
-        const cleaned = cleanResponse(data.response || '');
-        if (cleaned) setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
+        // Ignorer les devis non sollicités, ne rien afficher
+        console.warn('Devis reçu sans demande, ignoré');
       }
     } catch {
       setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
@@ -87,6 +86,7 @@ export default function ProjectChatBot() {
     }
   };
 
+  // Générer la preview
   const handlePreview = async () => {
     if (!canPreview || previewCode || loading) return;
     setPreviewLoading(true);
@@ -110,6 +110,7 @@ export default function ProjectChatBot() {
     }
   };
 
+  // Générer le devis
   const handleQuote = async () => {
     if (!canQuote || loading) return;
     setQuoteLoading(true);
@@ -132,6 +133,7 @@ export default function ProjectChatBot() {
     }
   };
 
+  // Ajuster la preview (depuis le champ ou depuis le chat)
   const handleAdjust = async (modification: string) => {
     if (!modification.trim() || !previewCode || loading) return;
     setAdjustInput('');
@@ -150,6 +152,7 @@ export default function ProjectChatBot() {
       const data = await res.json();
       if (data.previewCode) {
         setPreviewCode(data.previewCode);
+        // Mettre à jour le devis automatiquement
         if (proposal) {
           const quoteRes = await fetch('/api/generate-proposal', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -167,6 +170,7 @@ export default function ProjectChatBot() {
     }
   };
 
+  // Envoyer le formulaire de contact
   const handleSubmit = async () => {
     if (!formData.name || !formData.email) return;
     setLoading(true);
@@ -188,11 +192,6 @@ export default function ProjectChatBot() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const cleanResponse = (text: string): string => {
-    if (!text) return '';
-    return text.replace(/\{[^}]*\}/g, '').trim();
   };
 
   return (
@@ -243,7 +242,6 @@ export default function ProjectChatBot() {
                 <button
                   onClick={() => setShowPreview(!showPreview)}
                   className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
-                  title={showPreview ? 'Masquer la preview' : 'Afficher la preview'}
                 >
                   {showPreview ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
                 </button>
@@ -278,7 +276,7 @@ export default function ProjectChatBot() {
               </div>
             )}
 
-            {/* Devis + formulaire */}
+            {/* Devis + Formulaire */}
             {proposal && (
               <div className="space-y-4">
                 <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl">
@@ -307,50 +305,22 @@ export default function ProjectChatBot() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100">
-                    <div>
-                      <p className="text-xs text-slate-400 mb-0.5">Budget estimé</p>
-                      <p className="font-bold text-slate-900">{proposal.budget}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400 mb-0.5">Délai estimé</p>
-                      <p className="font-bold text-slate-900">{proposal.timeline}</p>
-                    </div>
+                    <div><p className="text-xs text-slate-400 mb-0.5">Budget estimé</p><p className="font-bold text-slate-900">{proposal.budget}</p></div>
+                    <div><p className="text-xs text-slate-400 mb-0.5">Délai estimé</p><p className="font-bold text-slate-900">{proposal.timeline}</p></div>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-3 pt-3 border-t border-slate-100">* Le prix final dépendra des fonctionnalités spécifiques et du niveau de personnalisation du design.</p>
                 </div>
 
                 <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl space-y-3">
                   <h4 className="font-bold text-sm text-slate-800">Finalisez votre demande</h4>
-                  <input
-                    type="text"
-                    placeholder="Votre nom"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
-                    value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  />
-                  <input
-                    type="email"
-                    placeholder="Votre email"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
-                    value={formData.email}
-                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  />
-                  <textarea
-                    placeholder="Message (optionnel)"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
-                    rows={2}
-                    value={formData.message}
-                    onChange={e => setFormData({ ...formData, message: e.target.value })}
-                  />
+                  <input type="text" placeholder="Votre nom" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                  <input type="email" placeholder="Votre email" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                  <textarea placeholder="Message (optionnel)" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" rows={2} value={formData.message} onChange={e => setFormData({ ...formData, message: e.target.value })} />
                   <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">
                     <input type="checkbox" checked readOnly className="rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]" />
                     <span>La conversation et la preview seront jointes automatiquement.</span>
                   </div>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={loading || !formData.name || !formData.email}
-                    className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-xl font-bold disabled:opacity-50 hover:from-green-400 hover:to-emerald-400 transition-all shadow-lg shadow-green-200"
-                  >
+                  <button onClick={handleSubmit} disabled={loading || !formData.name || !formData.email} className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-xl font-bold disabled:opacity-50 hover:from-green-400 hover:to-emerald-400 transition-all shadow-lg shadow-green-200">
                     Envoyer ma demande
                   </button>
                 </div>
@@ -361,21 +331,8 @@ export default function ProjectChatBot() {
           {/* Barre de saisie */}
           <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl">
             <div className="flex gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Écrivez votre message..."
-                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] transition-all"
-                disabled={loading}
-              />
-              <button
-                onClick={() => handleSend()}
-                disabled={loading || !input.trim()}
-                className="bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white p-3 rounded-xl disabled:opacity-50 hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-200"
-              >
+              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Écrivez votre message..." className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] transition-all" disabled={loading} />
+              <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white p-3 rounded-xl disabled:opacity-50 hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-200">
                 <Send size={18} />
               </button>
             </div>
@@ -388,9 +345,7 @@ export default function ProjectChatBot() {
           <div className="w-[500px] bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden flex flex-col">
             <div className="p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl flex items-center justify-between">
               <span className="font-bold text-sm text-slate-700">🖥️ Aperçu interactif</span>
-              <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600">
-                <X size={18} />
-              </button>
+              <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
             </div>
             <div className="flex-1">
               <Sandpack
@@ -402,19 +357,8 @@ export default function ProjectChatBot() {
             </div>
             <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl">
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={adjustInput}
-                  onChange={e => setAdjustInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleAdjust(adjustInput); }}
-                  placeholder="Modifier (ex: changer la couleur, ajouter un bouton…)"
-                  className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37] transition-colors"
-                />
-                <button
-                  onClick={() => handleAdjust(adjustInput)}
-                  disabled={!adjustInput.trim() || loading}
-                  className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 transition-colors disabled:opacity-50"
-                >
+                <input type="text" value={adjustInput} onChange={e => setAdjustInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAdjust(adjustInput); }} placeholder="Modifier (ex: changer la couleur, ajouter un bouton…)" className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37] transition-colors" />
+                <button onClick={() => handleAdjust(adjustInput)} disabled={!adjustInput.trim() || loading} className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 transition-colors disabled:opacity-50">
                   Ajuster
                 </button>
               </div>
