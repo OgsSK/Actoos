@@ -21,15 +21,24 @@ export default function ProjectChatBot() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [adjustInput, setAdjustInput] = useState('');
+  const [agentProposedPreview, setAgentProposedPreview] = useState(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
+  // Détecter si l'agent a proposé l'aperçu
+  useEffect(() => {
+    const lastAssistantMsg = messages.filter(m => m.role === 'assistant').pop();
+    if (lastAssistantMsg && lastAssistantMsg.content.includes("Je peux maintenant vous montrer un aperçu")) {
+      setAgentProposedPreview(true);
+    }
+  }, [messages]);
+
   // États des boutons
-  const canPreview = messages.length >= 2 && !loading && !previewCode;
-  const canQuote = (previewCode && !loading) || (messages.length >= 4 && !loading);
+  const canPreview = agentProposedPreview && !loading && !previewCode;
+  const canQuote = previewCode && !loading;
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -64,8 +73,9 @@ export default function ProjectChatBot() {
       if (data.error) {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` }]);
       } else if (data.ready && data.proposal) {
-        setProposal(data.proposal);
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre proposition personnalisée :' }]);
+        // Ignorer les devis non sollicités
+        const cleaned = cleanResponse(data.response || '');
+        if (cleaned) setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
       } else {
         const cleaned = cleanResponse(data.response || '');
         if (cleaned) setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
