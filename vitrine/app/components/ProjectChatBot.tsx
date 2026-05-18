@@ -57,42 +57,73 @@ export default function ProjectChatBot() {
   }, []);
 
   const handleSend = async (content?: string) => {
-    const messageContent = content || input.trim();
-    if (!messageContent || loading) return;
+  const messageContent = content || input.trim();
+  if (!messageContent || loading) return;
 
-    const userMsg: Message = { id: generateId(), role: 'user', content: messageContent };
-    setInput('');
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
-    setLoading(true);
+  const userMsg: Message = { id: generateId(), role: 'user', content: messageContent };
+  setInput('');
+  const newMessages = [...messages, userMsg];
+  setMessages(newMessages);
+  setLoading(true);
 
-    try {
-      const res = await fetch('/api/generate-proposal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-        }),
-      });
-      const data = await res.json();
+  try {
+    const res = await fetch('/api/generate-proposal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+      }),
+    });
+    const data = await res.json();
+    console.log('📥 Données reçues de l\'API :', data);
 
-      if (data.error) {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` }]);
-      } else if (data.ready) {
-        setProposal(data.proposal);
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre proposition personnalisée :' }]);
-      } else {
-        const cleaned = cleanResponse(data.response || '');
-        if (cleaned) {
-          setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
+    // 1. Si l'API renvoie une erreur explicite
+    if (data.error) {
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` }]);
+      return;
+    }
+
+    // 2. Si l'API renvoie directement une proposition (ready: true)
+    if (data.ready && data.proposal) {
+      setProposal(data.proposal);
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre proposition personnalisée :' }]);
+      return;
+    }
+
+    // 3. Si l'API renvoie une réponse textuelle simple
+    const rawResponse = data.response || '';
+    if (typeof rawResponse === 'string' && rawResponse.trim().length > 0) {
+      // Essayer d'extraire un JSON mal caché dans la réponse (au cas où l'agent aurait ajouté du texte avant)
+      const jsonMatch = rawResponse.match(/\{[\s\S]*"ready"[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.ready && parsed.proposal) {
+            setProposal(parsed.proposal);
+            setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre proposition personnalisée :' }]);
+            return;
+          }
+        } catch (e) {
+          console.warn('JSON trouvé mais mal formé, on continue avec le texte brut');
         }
       }
-    } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
-    } finally {
-      setLoading(false);
+      // Sinon, afficher le texte nettoyé
+      const cleaned = cleanResponse(rawResponse);
+      if (cleaned) {
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
+      }
+      return;
     }
-  };
+
+    // 4. Si on arrive ici, c'est que la réponse est vide ou inattendue
+    setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Je n\'ai pas compris la réponse du serveur, pouvez-vous réessayer ?' }]);
+  } catch (error) {
+    console.error('🔥 Erreur fetch:', error);
+    setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleEdit = (msg: Message) => {
     setEditingId(msg.id);
