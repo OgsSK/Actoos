@@ -15,6 +15,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
+import { ClientSelect, TechnicianSelect, CategorySelect } from '../components/ui/searchable-select';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
@@ -61,7 +62,7 @@ export const InterventionsList = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="planifiee">Planifiée</SelectItem>
+                <SelectItem value="planifie">Planifiée</SelectItem>
                 <SelectItem value="en_cours">En cours</SelectItem>
                 <SelectItem value="en_validation">En validation</SelectItem>
                 <SelectItem value="terminee">Terminée</SelectItem>
@@ -256,7 +257,7 @@ export const InterventionForm = () => {
         entreprise_id: user?.entreprise_id,
         date_prevue: formData.date_prevue.toISOString(),
         duree_estimee: parseInt(formData.duree_estimee),
-        statut: formData.statut || 'planifiee'
+        statut: formData.statut || 'planifie'
       };
       
       if (isEdit) {
@@ -331,21 +332,12 @@ export const InterventionForm = () => {
             {/* Client */}
             <div className="space-y-2">
               <Label>Client *</Label>
-              <Select
+              <ClientSelect
+                clients={clients}
                 value={formData.client_id}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value, site_id: '' }))}
-              >
-                <SelectTrigger data-testid="intervention-client">
-                  <SelectValue placeholder="Sélectionner un client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.nom} {client.prenom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                data-testid="intervention-client"
+              />
             </div>
 
             {/* Site (if client has multiple sites) */}
@@ -383,30 +375,12 @@ export const InterventionForm = () => {
             {categories.length > 0 && (
               <div className="space-y-2">
                 <Label>Catégorie</Label>
-                <Select
+                <CategorySelect
+                  categories={categories}
                   value={formData.categorie_id || ''}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, categorie_id: value === 'none' ? '' : value }))}
-                >
-                  <SelectTrigger data-testid="intervention-categorie">
-                    <SelectValue placeholder="Sélectionner une catégorie" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      <span className="text-slate-500">Aucune catégorie</span>
-                    </SelectItem>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: cat.couleur }}
-                          />
-                          {cat.nom}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, categorie_id: value || null }))}
+                  data-testid="intervention-categorie"
+                />
               </div>
             )}
 
@@ -512,22 +486,12 @@ export const InterventionForm = () => {
             {/* Technician */}
             <div className="space-y-2">
               <Label>Technicien assigné</Label>
-              <Select
-                value={formData.technicien_id || 'none'}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, technicien_id: value === 'none' ? '' : value }))}
-              >
-                <SelectTrigger data-testid="intervention-technicien">
-                  <SelectValue placeholder="Non assigné" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Non assigné</SelectItem>
-                  {techniciens.map((tech) => (
-                    <SelectItem key={tech.id} value={tech.id}>
-                      {tech.prenom} {tech.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <TechnicianSelect
+                technicians={techniciens}
+                value={formData.technicien_id || ''}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, technicien_id: value || null }))}
+                data-testid="intervention-technicien"
+              />
             </div>
 
             {/* Address */}
@@ -635,7 +599,7 @@ export const InterventionDetail = () => {
 
   const handleComplete = async () => {
     try {
-      await interventionsApi.updateStatut(id, 'terminee');
+      await interventionsApi.updateStatut(id, 'termine');
       toast.success('Intervention terminée');
       fetchIntervention();
     } catch (error) {
@@ -668,15 +632,27 @@ export const InterventionDetail = () => {
 
   // Download intervention report PDF
   const handleDownloadReport = async () => {
-    // PDF generation requires Edge Function - show info for now
-    toast.info('Téléchargement PDF en cours de migration vers Supabase');
+    if (!intervention) return;
+    
+    try {
+      toast.loading('Génération du rapport...');
+      const { generateInterventionPDF, downloadPDF: savePDF } = await import('../lib/pdfService');
+      const doc = await generateInterventionPDF(intervention, intervention.entreprise || {}, intervention.client);
+      savePDF(doc, `rapport_intervention_${intervention.titre?.replace(/\s+/g, '_') || id.slice(0, 8)}.pdf`);
+      toast.dismiss();
+      toast.success('Rapport téléchargé');
+    } catch (err) {
+      toast.dismiss();
+      console.error('PDF error:', err);
+      toast.error('Erreur lors de la génération');
+    }
   };
 
   // Validate intervention (admin only - for Startup plan)
   const handleValidateIntervention = async () => {
     try {
       await interventionsApi.update(id, { 
-        statut: 'terminee', 
+        statut: 'termine', 
         validation_admin: true,
         date_validation: new Date().toISOString()
       });
@@ -743,7 +719,7 @@ export const InterventionDetail = () => {
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {intervention.statut === 'planifiee' && (
+          {intervention.statut === 'planifie' && (
             <>
               <Button onClick={handleStart} className="bg-blue-600 hover:bg-blue-700" data-testid="start-intervention">
                 <Play className="w-4 h-4 mr-2" />
@@ -809,7 +785,7 @@ export const InterventionDetail = () => {
               </AlertDialog>
             </>
           )}
-          {intervention.statut === 'terminee' && (
+          {intervention.statut === 'termine' && (
             <Button 
               variant="outline" 
               onClick={handleDownloadReport}
@@ -825,7 +801,7 @@ export const InterventionDetail = () => {
               Annulée
             </Badge>
           )}
-          {!['en_cours', 'terminee'].includes(intervention.statut) && isAdmin && (
+          {!['en_cours', 'termine'].includes(intervention.statut) && isAdmin && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="text-red-600 hover:text-red-700">

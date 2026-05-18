@@ -44,7 +44,7 @@ export function useDashboardStats(entrepriseId) {
           .from('interventions')
           .select('id', { count: 'exact', head: true })
           .eq('entreprise_id', entrepriseId)
-          .eq('statut', 'planifiee')
+          .eq('statut', 'planifie')
           .lt('date_prevue', todayISO),
         
         supabase
@@ -185,7 +185,7 @@ export function useAlerts(entrepriseId) {
           .from('interventions')
           .select('id, titre, date_prevue')
           .eq('entreprise_id', entrepriseId)
-          .eq('statut', 'planifiee')
+          .eq('statut', 'planifie')
           .lt('date_prevue', today)
           .limit(5),
         supabase
@@ -505,7 +505,7 @@ export function usePlanning(entrepriseId, dateRange = {}) {
         .from('interventions')
         .select(`*, client:clients!interventions_client_id_fkey(id, nom, prenom, adresse, ville), technicien:users!interventions_technicien_id_fkey(id, nom, prenom, telephone)`)
         .eq('entreprise_id', entrepriseId)
-        .in('statut', ['planifiee', 'en_cours']);
+        .in('statut', ['planifie', 'en_cours']);
 
       if (dateRange.start) {
         query = query.gte('date_prevue', dateRange.start);

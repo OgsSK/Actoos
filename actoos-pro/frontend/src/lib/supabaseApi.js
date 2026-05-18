@@ -1,11 +1,8 @@
 /**
- * Supabase API Service - Complete replacement for Railway backend
- * All CRUD operations go directly to Supabase PostgREST
+ * Supabase-only API Service
+ * All functionality via Supabase - No Railway/MongoDB
  * 
- * OPTIMIZATIONS:
- * - Caching for frequently accessed data
- * - Minimal select() to reduce payload
- * - Parallel queries where possible
+ * Reference: /app/actoos-pro/docs/SCHEMA_SUPABASE.md
  */
 import { supabase } from './supabase';
 import { cachedFetch, cacheService } from './cacheService';
@@ -44,7 +41,7 @@ export const interventionsApi = {
       const { data, error } = await query.order('date_prevue', { ascending: false }).limit(filters.limit || 100);
       if (error) throw error;
       return data || [];
-    }, 60000); // Cache 1 minute
+    }, 60000);
   },
 
   get: async (id) => {
@@ -58,10 +55,8 @@ export const interventionsApi = {
   },
 
   create: async (intervention) => {
-    // Invalidate cache
     cacheService.invalidate(/^interventions_/);
     
-    // Sanitize empty strings to null for UUID fields
     const sanitizedIntervention = { ...intervention };
     const uuidFields = ['client_id', 'technicien_id', 'categorie_id', 'site_id'];
     uuidFields.forEach(field => {
@@ -69,7 +64,6 @@ export const interventionsApi = {
         sanitizedIntervention[field] = null;
       }
     });
-    // Remove devis_id if present (column doesn't exist in interventions table)
     delete sanitizedIntervention.devis_id;
     
     const { data, error } = await supabase
@@ -86,10 +80,8 @@ export const interventionsApi = {
   },
 
   update: async (id, updates) => {
-    // Invalidate cache
     cacheService.invalidate(/^interventions_/);
     
-    // Sanitize empty strings to null for UUID fields
     const sanitizedUpdates = { ...updates };
     const uuidFields = ['client_id', 'technicien_id', 'categorie_id', 'site_id'];
     uuidFields.forEach(field => {
@@ -97,7 +89,6 @@ export const interventionsApi = {
         sanitizedUpdates[field] = null;
       }
     });
-    // Remove devis_id if present (column doesn't exist in interventions table)
     delete sanitizedUpdates.devis_id;
     
     const { data, error } = await supabase
@@ -117,11 +108,16 @@ export const interventionsApi = {
     return true;
   },
 
-  updateStatut: async (id, statut, extras = {}) => {
-    const updates = { statut, updated_at: new Date().toISOString(), ...extras };
-    if (statut === 'terminee') {
-      updates.date_fin = new Date().toISOString();
+  updateStatut: async (id, statut) => {
+    cacheService.invalidate(/^interventions_/);
+    const updates = { statut, updated_at: new Date().toISOString() };
+    
+    if (statut === 'en_cours') {
+      updates.date_debut_reelle = new Date().toISOString();
+    } else if (statut === 'termine') {
+      updates.date_fin_reelle = new Date().toISOString();
     }
+    
     const { data, error } = await supabase
       .from('interventions')
       .update(updates)
@@ -135,29 +131,19 @@ export const interventionsApi = {
 
 // ==================== CLIENTS ====================
 export const clientsApi = {
-  list: async (entrepriseId, options = {}) => {
-    const cacheKey = `${CACHE_KEYS.clients(entrepriseId)}_${JSON.stringify(options)}`;
+  list: async (entrepriseId, includeArchived = false) => {
+    let query = supabase
+      .from('clients')
+      .select('*')
+      .eq('entreprise_id', entrepriseId);
     
-    return cachedFetch(cacheKey, async () => {
-      let query = supabase
-        .from('clients')
-        .select('id, nom, prenom, email, telephone, adresse, ville, code_postal, statut, created_at')
-        .eq('entreprise_id', entrepriseId);
-
-      if (options.archivedOnly) {
-        query = query.eq('statut', 'archive');
-      } else {
-        query = query.neq('statut', 'archive');
-      }
-
-      if (options.search) {
-        query = query.or(`nom.ilike.%${options.search}%,prenom.ilike.%${options.search}%,email.ilike.%${options.search}%,telephone.ilike.%${options.search}%`);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false }).limit(100);
-      if (error) throw error;
-      return data || [];
-    }, 60000); // Cache 1 minute
+    if (!includeArchived) {
+      query = query.neq('statut', 'archive');
+    }
+    
+    const { data, error } = await query.order('nom');
+    if (error) throw error;
+    return data || [];
   },
 
   get: async (id) => {
@@ -175,7 +161,6 @@ export const clientsApi = {
       .from('clients')
       .insert({
         ...client,
-        statut: 'actif',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -202,36 +187,14 @@ export const clientsApi = {
     return true;
   },
 
-  archive: async (id) => {
+  getByPortalToken: async (token) => {
     const { data, error } = await supabase
       .from('clients')
-      .update({ statut: 'archive', updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
+      .select('*, entreprise:entreprises(*)')
+      .eq('portal_token', token)
       .single();
     if (error) throw error;
     return data;
-  },
-
-  restore: async (id) => {
-    const { data, error } = await supabase
-      .from('clients')
-      .update({ statut: 'actif', updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  },
-
-  getArchivedCount: async (entrepriseId) => {
-    const { count, error } = await supabase
-      .from('clients')
-      .select('id', { count: 'exact', head: true })
-      .eq('entreprise_id', entrepriseId)
-      .eq('statut', 'archive');
-    if (error) throw error;
-    return count || 0;
   }
 };
 
@@ -255,29 +218,25 @@ export const devisApi = {
   get: async (id) => {
     const { data, error } = await supabase
       .from('devis')
-      .select(`*, client:clients(*), lignes:devis_lignes(*)`)
+      .select(`*, client:clients(*), entreprise:entreprises(*), lignes:devis_lignes(*)`)
       .eq('id', id)
       .single();
     if (error) throw error;
     return data;
   },
 
-  create: async (devis) => {
-    // Extract lignes from devis data
-    const { lignes, ...devisData } = devis;
+  create: async (devisData) => {
+    const lignes = devisData.lignes || [];
+    delete devisData.lignes;
     
-    // Calculate totals from lignes
+    // Calculate totals
     let total_ht = 0;
     let total_ttc = 0;
-    
-    if (lignes && lignes.length > 0) {
-      lignes.forEach(ligne => {
-        const ligneHt = (ligne.quantite || 1) * (ligne.prix_unitaire || 0);
-        const ligneTva = ligneHt * (ligne.tva || 0) / 100;
-        total_ht += ligneHt;
-        total_ttc += ligneHt + ligneTva;
-      });
-    }
+    lignes.forEach(ligne => {
+      const lineTotal = (ligne.quantite || 1) * (ligne.prix_unitaire || 0);
+      total_ht += lineTotal;
+      total_ttc += lineTotal * (1 + (ligne.tva || 0) / 100);
+    });
     
     // Generate numero_devis
     const { count } = await supabase
@@ -286,48 +245,49 @@ export const devisApi = {
       .eq('entreprise_id', devisData.entreprise_id);
     
     const numero_devis = `D-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`;
+    const token_client = crypto.randomUUID();
     
+<<<<<<< HEAD
     // Build minimal payload with only known columns
+=======
+>>>>>>> origin/main
     const payload = {
       client_id: devisData.client_id,
       entreprise_id: devisData.entreprise_id,
       numero_devis,
       total_ht,
       total_ttc,
+      total_tva: total_ttc - total_ht,
       statut: 'brouillon',
+      token_client,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
     
-    // Add optional fields if they exist and are not empty
     if (devisData.intervention_id) payload.intervention_id = devisData.intervention_id;
     if (devisData.validite_jours) payload.validite_jours = devisData.validite_jours;
     if (devisData.conditions) payload.conditions = devisData.conditions;
     if (devisData.message_client) payload.message_client = devisData.message_client;
     
-    // Create the devis
     const { data: newDevis, error } = await supabase
       .from('devis')
       .insert(payload)
       .select()
       .single();
     
-    if (error) {
-      console.error('Devis creation error:', error);
-      throw error;
-    }
+    if (error) throw error;
     
-    // Create devis_lignes if we have lignes
-    if (newDevis && lignes && lignes.length > 0) {
-      const lignesData = lignes.map((ligne, index) => ({
+    // Create devis_lignes
+    if (newDevis && lignes.length > 0) {
+      const lignesData = lignes.map((ligne) => ({
         devis_id: newDevis.id,
         description: ligne.description,
         quantite: ligne.quantite || 1,
         prix_unitaire: ligne.prix_unitaire || 0,
-        tva: ligne.tva || 0,
-        ordre: index + 1
+        tva: ligne.tva || 0
       }));
       
+<<<<<<< HEAD
       const { error: lignesError } = await supabase
         .from('devis_lignes')
         .insert(lignesData);
@@ -335,6 +295,9 @@ export const devisApi = {
       if (lignesError) {
         console.warn('Could not create devis_lignes:', lignesError);
       }
+=======
+      await supabase.from('devis_lignes').insert(lignesData);
+>>>>>>> origin/main
     }
     
     return newDevis;
@@ -352,6 +315,7 @@ export const devisApi = {
   },
 
   delete: async (id) => {
+    await supabase.from('devis_lignes').delete().eq('devis_id', id);
     const { error } = await supabase.from('devis').delete().eq('id', id);
     if (error) throw error;
     return true;
@@ -373,9 +337,9 @@ export const devisApi = {
       .from('devis')
       .update({
         statut: 'signe',
-        signature: signatureData.signature,
-        signature_nom: signatureData.nom,
-        signature_date: new Date().toISOString(),
+        signature_client: signatureData.signature,
+        nom_signataire: signatureData.nom,
+        date_signature: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -493,23 +457,39 @@ export const facturesApi = {
   },
 
   create: async (facture) => {
-    // Generate numero_facture
     const { count } = await supabase
       .from('factures')
       .select('id', { count: 'exact', head: true })
       .eq('entreprise_id', facture.entreprise_id);
     
     const numero_facture = `F-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`;
+    const token_client = crypto.randomUUID();
+    
+    // Clean payload - only use columns that exist in factures table
+    const payload = {
+      entreprise_id: facture.entreprise_id,
+      client_id: facture.client_id,
+      numero_facture,
+      token_client,
+      statut: facture.statut || 'brouillon',
+      total_ht: facture.total_ht || 0,
+      total_tva: facture.total_tva || 0,
+      total_ttc: facture.total_ttc || 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    // Add optional fields
+    if (facture.devis_id) payload.devis_id = facture.devis_id;
+    if (facture.intervention_id) payload.intervention_id = facture.intervention_id;
+    if (facture.conditions_paiement) payload.conditions_paiement = facture.conditions_paiement;
+    if (facture.echeance_jours) payload.echeance_jours = facture.echeance_jours;
+    if (facture.notes) payload.notes = facture.notes;
+    if (facture.lignes) payload.lignes = facture.lignes;
     
     const { data, error } = await supabase
       .from('factures')
-      .insert({
-        ...facture,
-        numero_facture,
-        statut: 'brouillon',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(payload)
       .select()
       .single();
     if (error) throw error;
@@ -537,6 +517,7 @@ export const facturesApi = {
     const updates = { statut, updated_at: new Date().toISOString() };
     if (statut === 'payee') {
       updates.date_paiement = new Date().toISOString();
+      updates.paye = true;
     }
     const { data, error } = await supabase
       .from('factures')
@@ -549,7 +530,6 @@ export const facturesApi = {
   },
 
   createFromDevis: async (devisId, entrepriseId) => {
-    // Get devis
     const { data: devis, error: devisError } = await supabase
       .from('devis')
       .select(`*, lignes:devis_lignes(*)`)
@@ -557,15 +537,19 @@ export const facturesApi = {
       .single();
     if (devisError) throw devisError;
 
-    // Create facture
     const facture = await facturesApi.create({
       entreprise_id: entrepriseId,
       client_id: devis.client_id,
-      montant_ht: devis.montant_ht,
-      montant_tva: devis.montant_tva,
-      montant_total: devis.montant_total,
-      devis_id: devisId
+      total_ht: devis.total_ht,
+      total_tva: devis.total_tva,
+      total_ttc: devis.total_ttc,
+      devis_id: devisId,
+      lignes: devis.lignes,
+      conditions_paiement: devis.conditions || ''
     });
+
+    // Update devis status
+    await devisApi.updateStatut(devisId, 'facture');
 
     return facture;
   }
@@ -588,7 +572,7 @@ export const usersApi = {
       .from('users')
       .select('*')
       .eq('entreprise_id', entrepriseId)
-      .in('role', ['technicien'])
+      .in('role', ['technicien', 'tech'])
       .order('nom');
     if (error) throw error;
     return data || [];
@@ -616,80 +600,13 @@ export const usersApi = {
   },
 
   delete: async (id) => {
-    const { error } = await supabase
-      .from('users')
-      .delete()
-      .eq('id', id);
-    if (error) throw error;
-    return true;
-  },
-
-  updateSkills: async (id, skills) => {
-    const { data, error } = await supabase
-      .from('users')
-      .update({ skills, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  },
-
-  getInvites: async (entrepriseId) => {
-    const { data, error } = await supabase
-      .from('user_invites')
-      .select('*')
-      .eq('entreprise_id', entrepriseId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data || [];
-  },
-
-  invite: async (inviteData) => {
-    // Generate invite token
-    const inviteToken = crypto.randomUUID();
-    
-    const { data, error } = await supabase
-      .from('user_invites')
-      .insert({
-        ...inviteData,
-        invite_token: inviteToken,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    // Note: Actual SMS/Email sending requires Edge Function
-    return { ...data, invite_token: inviteToken };
-  },
-
-  resendInvite: async (inviteId) => {
-    // Update invite timestamp and trigger resend
-    const { data, error } = await supabase
-      .from('user_invites')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', inviteId)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    // Note: Actual SMS sending requires Edge Function
-    return data;
-  },
-
-  cancelInvite: async (inviteId) => {
-    const { error } = await supabase
-      .from('user_invites')
-      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-      .eq('id', inviteId);
-    
+    const { error } = await supabase.from('users').delete().eq('id', id);
     if (error) throw error;
     return true;
   }
 };
+
+export const techniciensApi = usersApi;
 
 // ==================== CATEGORIES ====================
 export const categoriesApi = {
@@ -734,62 +651,62 @@ export const categoriesApi = {
   }
 };
 
-// ==================== ENTREPRISE ====================
-export const entrepriseApi = {
-  get: async (id) => {
+// ==================== SETTINGS / ENTREPRISE ====================
+export const settingsApi = {
+  get: async (entrepriseId) => {
     const { data, error } = await supabase
       .from('entreprises')
       .select('*')
-      .eq('id', id)
+      .eq('id', entrepriseId)
       .single();
     if (error) throw error;
     return data;
   },
 
-  getById: async (id) => {
+  getById: async (entrepriseId) => {
     const { data, error } = await supabase
       .from('entreprises')
       .select('*')
-      .eq('id', id)
+      .eq('id', entrepriseId)
       .single();
     if (error) throw error;
     return data;
   },
 
-  update: async (id, updates) => {
+  update: async (entrepriseId, updates) => {
     const { data, error } = await supabase
       .from('entreprises')
       .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
+      .eq('id', entrepriseId)
       .select()
       .single();
     if (error) throw error;
     return data;
   },
 
-  uploadLogo: async (entrepriseId, file) => {
-    const fileName = `logos/${entrepriseId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-    
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('entreprise-assets')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: true
-      });
-    
-    if (uploadError) {
-      // Try to create bucket and retry
-      console.error('Upload error:', uploadError);
-      throw new Error('Erreur lors du téléchargement du logo');
-    }
+  getDocumentDefaults: async (entrepriseId) => {
+    const { data, error } = await supabase
+      .from('entreprises')
+      .select('conditions_generales, message_client_devis, message_client_facture, validite_devis_jours, devis_footer, facture_footer, conditions_paiement, delai_paiement_jours, mentions_legales, prefixe_devis, prefixe_facture')
+      .eq('id', entrepriseId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
 
-    // Get public URL
+  uploadLogo: async (entrepriseId, file) => {
+    const fileName = `${entrepriseId}/logo_${Date.now()}.${file.name.split('.').pop()}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('entreprise-assets')
+      .upload(fileName, file, { cacheControl: '3600', upsert: true });
+    
+    if (uploadError) throw new Error('Erreur lors du téléchargement du logo');
+
     const { data: { publicUrl } } = supabase.storage
       .from('entreprise-assets')
       .getPublicUrl(fileName);
 
-    // Update entreprise with new logo URL
     await supabase
       .from('entreprises')
       .update({ logo_url: publicUrl, updated_at: new Date().toISOString() })
@@ -798,6 +715,9 @@ export const entrepriseApi = {
     return publicUrl;
   }
 };
+
+// Alias for backwards compatibility
+export const entrepriseApi = settingsApi;
 
 // ==================== SITES ====================
 export const sitesApi = {
@@ -814,10 +734,7 @@ export const sitesApi = {
   create: async (site) => {
     const { data, error } = await supabase
       .from('sites')
-      .insert({
-        ...site,
-        created_at: new Date().toISOString()
-      })
+      .insert({ ...site, created_at: new Date().toISOString() })
       .select()
       .single();
     if (error) throw error;
@@ -837,6 +754,53 @@ export const sitesApi = {
 
   delete: async (id) => {
     const { error } = await supabase.from('sites').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+};
+
+// ==================== PHOTOS ====================
+export const photosApi = {
+  upload: async (interventionId, file, typePhoto = 'autre') => {
+    const fileName = `interventions/${interventionId}/${Date.now()}_${file.name}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('photos')
+      .upload(fileName, file);
+    
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('photos')
+      .getPublicUrl(fileName);
+
+    const { data, error } = await supabase
+      .from('photos')
+      .insert({
+        intervention_id: interventionId,
+        url: publicUrl,
+        type_photo: typePhoto,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  list: async (interventionId) => {
+    const { data, error } = await supabase
+      .from('photos')
+      .select('*')
+      .eq('intervention_id', interventionId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  delete: async (id) => {
+    const { error } = await supabase.from('photos').delete().eq('id', id);
     if (error) throw error;
     return true;
   }
@@ -866,7 +830,7 @@ export const dashboardApi = {
           .eq('entreprise_id', entrepriseId).gte('date_prevue', todayISO)
           .lt('date_prevue', new Date(today.getTime() + 86400000).toISOString()),
         supabase.from('interventions').select('id', { count: 'exact', head: true })
-          .eq('entreprise_id', entrepriseId).eq('statut', 'planifiee').lt('date_prevue', todayISO),
+          .eq('entreprise_id', entrepriseId).eq('statut', 'planifie').lt('date_prevue', todayISO),
         supabase.from('devis').select('id', { count: 'exact', head: true })
           .eq('entreprise_id', entrepriseId).eq('statut', 'envoye'),
         supabase.from('factures').select('id', { count: 'exact', head: true })
@@ -874,7 +838,7 @@ export const dashboardApi = {
         supabase.from('clients').select('id', { count: 'exact', head: true })
           .eq('entreprise_id', entrepriseId).neq('statut', 'archive'),
         supabase.from('users').select('id', { count: 'exact', head: true })
-          .eq('entreprise_id', entrepriseId).in('role', ['technicien']),
+          .eq('entreprise_id', entrepriseId).in('role', ['technicien', 'tech']),
         supabase.from('factures').select('id', { count: 'exact', head: true })
           .eq('entreprise_id', entrepriseId).eq('statut', 'payee').gte('date_paiement', startOfMonth)
       ]);
@@ -883,368 +847,44 @@ export const dashboardApi = {
         interventions_today: interventionsToday.count || 0,
         interventions_en_retard: interventionsRetard.count || 0,
         devis_en_attente: devisAttente.count || 0,
-        montant_devis_attente: 0, // Fallback - montant_total not accessible
         factures_impayees: facturesImpayees.count || 0,
-        montant_factures_impayees: 0, // Fallback - montant_total not accessible
         total_clients: clients.count || 0,
-        total_techniciens: techniciens.count || 0,
-        ca_mois: 0 // Fallback - montant_total not accessible
+        total_techniciens: techniciens.count || 0
       };
-    }, 30000); // Cache 30 seconds for dashboard
+    }, 30000);
   },
 
   getRecent: async (entrepriseId, limit = 5) => {
-    const cacheKey = CACHE_KEYS.dashboard(entrepriseId) + '_recent';
-    
-    return cachedFetch(cacheKey, async () => {
-      const [interventions, devis, factures] = await Promise.all([
-        supabase.from('interventions')
-          .select(`id, titre, statut, date_prevue, created_at, client:clients!interventions_client_id_fkey(id, nom, prenom)`)
-          .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit),
-        supabase.from('devis')
-          .select(`id, numero, statut, created_at, client:clients(id, nom, prenom)`)
-          .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit),
-        supabase.from('factures')
-          .select(`id, numero, statut, created_at, client:clients(id, nom, prenom)`)
-          .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit)
-      ]);
-      
-      return {
-        interventions: interventions.data || [],
-        devis: devis.data || [],
-        factures: factures.data || []
-      };
-    }, 30000); // Cache 30 seconds
-  },
-
-  getAlerts: async (entrepriseId) => {
-    const today = new Date().toISOString();
-    const alerts = [];
-
-    const [facturesRetard, interventionsRetard] = await Promise.all([
-      supabase.from('factures')
-        .select('id, numero, date_echeance')
-        .eq('entreprise_id', entrepriseId).eq('statut', 'envoyee').lt('date_echeance', today).limit(5),
+    const [interventions, devis, factures] = await Promise.all([
       supabase.from('interventions')
-        .select('id, titre, date_prevue')
-        .eq('entreprise_id', entrepriseId).eq('statut', 'planifiee').lt('date_prevue', today).limit(5)
+        .select(`id, titre, statut, date_prevue, created_at, client:clients!interventions_client_id_fkey(id, nom, prenom)`)
+        .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit),
+      supabase.from('devis')
+        .select(`id, numero_devis, statut, total_ttc, created_at, client:clients(id, nom, prenom)`)
+        .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit),
+      supabase.from('factures')
+        .select(`id, numero_facture, statut, total_ttc, created_at, client:clients(id, nom, prenom)`)
+        .eq('entreprise_id', entrepriseId).order('created_at', { ascending: false }).limit(limit)
     ]);
-
-    facturesRetard.data?.forEach(f => {
-      alerts.push({ id: `f-${f.id}`, type: 'facture_retard', message: `Facture ${f.numero} en retard`, priority: 'high' });
-    });
-    interventionsRetard.data?.forEach(i => {
-      alerts.push({ id: `i-${i.id}`, type: 'intervention_retard', message: `Intervention "${i.titre}" en retard`, priority: 'medium' });
-    });
-
-    return alerts;
-  }
-};
-
-// ==================== PLANNING ====================
-export const planningApi = {
-  getInterventions: async (entrepriseId, dateRange = {}) => {
-    let query = supabase
-      .from('interventions')
-      .select(`*, client:clients!interventions_client_id_fkey(id, nom, prenom, adresse, ville), technicien:users!interventions_technicien_id_fkey(id, nom, prenom)`)
-      .eq('entreprise_id', entrepriseId)
-      .in('statut', ['planifiee', 'en_cours', 'terminee']);
-
-    if (dateRange.start) {
-      query = query.gte('date_prevue', dateRange.start);
-    }
-    if (dateRange.end) {
-      query = query.lte('date_prevue', dateRange.end);
-    }
-
-    const { data, error } = await query.order('date_prevue', { ascending: true });
-    if (error) throw error;
-    return data || [];
-  }
-};
-
-// ==================== STATS / RAPPORTS ====================
-export const statsApi = {
-  getStats: async (entrepriseId) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayISO = today.toISOString();
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59).toISOString();
-
-    const [
-      interventionsToday,
-      interventionsTerminees,
-      interventionsEnRetard,
-      devisAttente,
-      devisSignesMois,
-      facturesEnAttente,
-      facturesPayeesMois,
-      facturesEnRetard,
-      clientsTotal,
-      techniciensActifs
-    ] = await Promise.all([
-      supabase.from('interventions').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).gte('date_prevue', todayISO)
-        .lt('date_prevue', new Date(today.getTime() + 86400000).toISOString()),
-      supabase.from('interventions').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).eq('statut', 'terminee')
-        .gte('date_fin', startOfMonth).lte('date_fin', endOfMonth),
-      supabase.from('interventions').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).eq('statut', 'planifiee').lt('date_prevue', todayISO),
-      supabase.from('devis').select('id, montant_total', { count: 'exact' })
-        .eq('entreprise_id', entrepriseId).eq('statut', 'envoye'),
-      supabase.from('devis').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).eq('statut', 'signe').gte('updated_at', startOfMonth),
-      supabase.from('factures').select('id, montant_total', { count: 'exact' })
-        .eq('entreprise_id', entrepriseId).in('statut', ['envoyee', 'partiel']),
-      supabase.from('factures').select('montant_total')
-        .eq('entreprise_id', entrepriseId).eq('statut', 'payee').gte('date_paiement', startOfMonth),
-      supabase.from('factures').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).eq('statut', 'envoyee').lt('date_echeance', todayISO),
-      supabase.from('clients').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).neq('statut', 'archive'),
-      supabase.from('users').select('id', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).in('role', ['technicien'])
-    ]);
-
-    const montantDevisAttente = devisAttente.data?.reduce((sum, d) => sum + (d.montant_total || 0), 0) || 0;
-    const montantFacturesImpayees = facturesEnAttente.data?.reduce((sum, f) => sum + (f.montant_total || 0), 0) || 0;
-    const caMois = facturesPayeesMois.data?.reduce((sum, f) => sum + (f.montant_total || 0), 0) || 0;
-    const totalDevis = (devisAttente.count || 0) + (devisSignesMois.count || 0);
-    const tauxConversion = totalDevis > 0 ? Math.round(((devisSignesMois.count || 0) / totalDevis) * 100) : 0;
 
     return {
-      interventions: {
-        today: interventionsToday.count || 0,
-        terminees: interventionsTerminees.count || 0,
-        en_retard: interventionsEnRetard.count || 0
-      },
-      devis: {
-        en_attente: devisAttente.count || 0,
-        signes_mois: devisSignesMois.count || 0,
-        total: totalDevis,
-        montant_total: montantDevisAttente
-      },
-      factures: {
-        en_attente: facturesEnAttente.count || 0,
-        pending_amount: montantFacturesImpayees,
-        en_retard: facturesEnRetard.count || 0,
-        payees_mois: facturesPayeesMois.data?.length || 0
-      },
-      clients: clientsTotal.count || 0,
-      techniciens_actifs: techniciensActifs.count || 0,
-      ca_mois: caMois,
-      taux_conversion: tauxConversion
-    };
-  },
-
-  getMonthlyRevenue: async (entrepriseId) => {
-    const months = [];
-    const now = new Date();
-    
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const startOfMonth = date.toISOString();
-      const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59).toISOString();
-      
-      const { data } = await supabase
-        .from('factures')
-        .select('montant_total')
-        .eq('entreprise_id', entrepriseId)
-        .eq('statut', 'payee')
-        .gte('date_paiement', startOfMonth)
-        .lte('date_paiement', endOfMonth);
-      
-      const revenue = data?.reduce((sum, f) => sum + (f.montant_total || 0), 0) || 0;
-      months.push({
-        month: date.toLocaleDateString('fr-FR', { month: 'short' }),
-        revenue
-      });
-    }
-    
-    return months;
-  },
-
-  getTopClients: async (entrepriseId) => {
-    // Get clients with their total revenue from paid invoices
-    const { data: factures } = await supabase
-      .from('factures')
-      .select('client_id, montant_total')
-      .eq('entreprise_id', entrepriseId)
-      .eq('statut', 'payee');
-
-    if (!factures || factures.length === 0) return [];
-
-    // Group by client
-    const clientRevenue = {};
-    factures.forEach(f => {
-      if (f.client_id) {
-        clientRevenue[f.client_id] = (clientRevenue[f.client_id] || 0) + (f.montant_total || 0);
-      }
-    });
-
-    // Get top 5 client IDs sorted by revenue
-    const topClientIds = Object.entries(clientRevenue)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5)
-      .map(([id]) => id);
-
-    if (topClientIds.length === 0) return [];
-
-    // Fetch client details
-    const { data: clients } = await supabase
-      .from('clients')
-      .select('id, nom, prenom')
-      .in('id', topClientIds);
-
-    // Count interventions per client
-    const { data: interventionCounts } = await supabase
-      .from('interventions')
-      .select('client_id')
-      .eq('entreprise_id', entrepriseId)
-      .in('client_id', topClientIds);
-
-    const interventionsByClient = {};
-    interventionCounts?.forEach(i => {
-      interventionsByClient[i.client_id] = (interventionsByClient[i.client_id] || 0) + 1;
-    });
-
-    // Build result
-    return topClientIds.map(clientId => {
-      const client = clients?.find(c => c.id === clientId) || {};
-      return {
-        id: clientId,
-        nom: client.nom || 'Client',
-        prenom: client.prenom || '',
-        total_ca: clientRevenue[clientId],
-        interventions: interventionsByClient[clientId] || 0
-      };
-    });
-  }
-};
-
-// ==================== DOCUMENT SETTINGS ====================
-export const settingsApi = {
-  getDocumentSettings: async (entrepriseId) => {
-    const { data, error } = await supabase
-      .from('entreprises')
-      .select('conditions_generales, message_client_devis, message_client_facture, validite_devis_jours, devis_footer, facture_footer, conditions_paiement, delai_paiement_jours, mentions_legales, prefixe_devis, prefixe_facture')
-      .eq('id', entrepriseId)
-      .single();
-    if (error) throw error;
-    return data || {};
-  },
-
-  updateDocumentSettings: async (entrepriseId, settings) => {
-    const { data, error } = await supabase
-      .from('entreprises')
-      .update({
-        ...settings,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', entrepriseId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  },
-
-  getCurrencies: () => {
-    return Promise.resolve([
-      { code: 'EUR', symbol: '€', name: 'Euro' },
-      { code: 'USD', symbol: '$', name: 'Dollar US' },
-      { code: 'GBP', symbol: '£', name: 'Livre sterling' },
-      { code: 'CHF', symbol: 'CHF', name: 'Franc suisse' }
-    ]);
-  },
-
-  getLocales: () => {
-    return Promise.resolve([
-      { code: 'fr-FR', name: 'Français (France)' },
-      { code: 'fr-BE', name: 'Français (Belgique)' },
-      { code: 'fr-CH', name: 'Français (Suisse)' },
-      { code: 'en-US', name: 'English (US)' },
-      { code: 'nl-BE', name: 'Nederlands (België)' }
-    ]);
-  },
-
-  getSmsStatus: async (entrepriseId) => {
-    const { data } = await supabase
-      .from('entreprises')
-      .select('sms_config')
-      .eq('id', entrepriseId)
-      .single();
-    
-    const config = data?.sms_config || {};
-    return {
-      configured: !!config.twilio_account_sid || config.use_shared === true,
-      use_shared: config.use_shared !== false,
-      shared_available: true,
-      has_custom_config: !!config.twilio_account_sid,
-      phone_number: config.twilio_phone_number,
-      mode: config.use_shared !== false ? 'shared' : 'custom'
-    };
-  },
-
-  getIntegrationsStatus: async (entrepriseId) => {
-    const { data } = await supabase
-      .from('entreprises')
-      .select('integrations_config, messaging_preference')
-      .eq('id', entrepriseId)
-      .single();
-    
-    const config = data?.integrations_config || {};
-    return {
-      whatsapp: {
-        configured: !!config.whatsapp?.access_token || config.whatsapp?.use_shared === true,
-        use_shared: config.whatsapp?.use_shared !== false,
-        shared_available: true,
-        has_custom_config: !!config.whatsapp?.access_token,
-        mode: config.whatsapp?.use_shared !== false ? 'shared' : 'custom'
-      },
-      google_calendar: {
-        connected: !!config.google_calendar?.refresh_token,
-        shared_available: true,
-        has_custom_config: !!config.google_calendar?.client_id
-      },
-      messaging_preference: data?.messaging_preference || 'email'
+      interventions: interventions.data || [],
+      devis: devis.data || [],
+      factures: factures.data || []
     };
   }
 };
 
-// ==================== TECHNICIAN APP SPECIFIC ====================
+// ==================== TECHNICIAN API ====================
 export const technicianApi = {
-  getTodayInterventions: async (entrepriseId, technicienId) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayISO = today.toISOString();
-    const tomorrowISO = new Date(today.getTime() + 86400000).toISOString();
-
+  getMyInterventions: async (technicienId, entrepriseId) => {
     const { data, error } = await supabase
       .from('interventions')
-      .select(`*, client:clients!interventions_client_id_fkey(id, nom, prenom, telephone, adresse, ville, code_postal), technicien:users!interventions_technicien_id_fkey(id, nom, prenom)`)
+      .select(`*, client:clients(id, nom, prenom, telephone, adresse, ville, code_postal)`)
       .eq('entreprise_id', entrepriseId)
       .eq('technicien_id', technicienId)
-      .gte('date_prevue', todayISO)
-      .lt('date_prevue', tomorrowISO)
+      .in('statut', ['planifie', 'accepte', 'en_cours'])
       .order('date_prevue', { ascending: true });
-    
-    if (error) throw error;
-    return data || [];
-  },
-
-  getWeekInterventions: async (entrepriseId, technicienId, startDate, endDate) => {
-    let query = supabase
-      .from('interventions')
-      .select(`*, client:clients!interventions_client_id_fkey(id, nom, prenom, telephone, adresse, ville, code_postal), technicien:users!interventions_technicien_id_fkey(id, nom, prenom)`)
-      .eq('entreprise_id', entrepriseId)
-      .eq('technicien_id', technicienId)
-      .gte('date_prevue', startDate)
-      .lte('date_prevue', endDate)
-      .order('date_prevue', { ascending: true });
-
-    const { data, error } = await query;
     if (error) throw error;
     return data || [];
   },
@@ -1252,40 +892,26 @@ export const technicianApi = {
   getAvailableInterventions: async (entrepriseId) => {
     const { data, error } = await supabase
       .from('interventions')
-      .select(`*, client:clients!interventions_client_id_fkey(id, nom, prenom, adresse, ville), categorie:categories!interventions_categorie_id_fkey(id, nom, couleur)`)
+      .select(`*, client:clients(id, nom, prenom, telephone, adresse, ville, code_postal)`)
       .eq('entreprise_id', entrepriseId)
       .is('technicien_id', null)
-      .eq('statut', 'planifiee')
+      .eq('statut', 'planifie')
       .order('date_prevue', { ascending: true });
-    
     if (error) throw error;
     return data || [];
-  },
-
-  getAvailableCount: async (entrepriseId) => {
-    const { count, error } = await supabase
-      .from('interventions')
-      .select('id', { count: 'exact', head: true })
-      .eq('entreprise_id', entrepriseId)
-      .is('technicien_id', null)
-      .eq('statut', 'planifiee');
-    
-    if (error) throw error;
-    return count || 0;
   },
 
   claimIntervention: async (interventionId, technicienId) => {
     const { data, error } = await supabase
       .from('interventions')
       .update({ 
-        technicien_id: technicienId,
-        updated_at: new Date().toISOString()
+        technicien_id: technicienId, 
+        statut: 'accepte',
+        updated_at: new Date().toISOString() 
       })
       .eq('id', interventionId)
-      .is('technicien_id', null)
       .select()
       .single();
-    
     if (error) throw error;
     return data;
   },
@@ -1294,27 +920,47 @@ export const technicianApi = {
     const { data, error } = await supabase
       .from('interventions')
       .update({ 
-        technicien_id: null,
-        updated_at: new Date().toISOString()
+        technicien_id: null, 
+        statut: 'planifie',
+        updated_at: new Date().toISOString() 
       })
       .eq('id', interventionId)
       .select()
       .single();
-    
     if (error) throw error;
     return data;
   },
 
-  startIntervention: async (interventionId, geoData = null) => {
-    // Only update statut and updated_at - other columns may not exist in schema
+  startIntervention: async (interventionId) => {
+    const { data, error } = await supabase
+      .from('interventions')
+      .update({ 
+        statut: 'en_cours',
+        date_debut_reelle: new Date().toISOString(),
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', interventionId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  completeIntervention: async (interventionId, completionData) => {
     const updates = {
-      statut: 'en_cours',
+      statut: 'termine',
+      date_fin_reelle: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
     
-    // Note: geo_start column may not exist in some Supabase schemas
-    // If needed, store geolocation in notes or a separate table
-    
+    if (completionData.rapport) updates.rapport = completionData.rapport;
+    if (completionData.notes_technicien) updates.notes_technicien = completionData.notes_technicien;
+    if (completionData.signature) updates.signature_client = completionData.signature;
+    if (completionData.signature_nom || completionData.nom_signataire) {
+      updates.nom_signataire = completionData.signature_nom || completionData.nom_signataire;
+    }
+    if (completionData.signature) updates.date_signature = new Date().toISOString();
+
     const { data, error } = await supabase
       .from('interventions')
       .update(updates)
@@ -1322,435 +968,276 @@ export const technicianApi = {
       .select()
       .single();
     
-    if (error) {
-      console.error('startIntervention error:', error);
-      throw error;
-    }
+    if (error) throw error;
     return data;
   },
 
-  completeIntervention: async (interventionId, completionData = {}) => {
-    // MINIMAL UPDATE - Only use columns that definitely exist
-    const updates = {
-      statut: 'terminee',
-      updated_at: new Date().toISOString()
-    };
-    
-    // Add rapport if provided
-    if (completionData.rapport) {
-      updates.rapport = completionData.rapport;
-    }
-    
-    // Add signature and signer name
-    if (completionData.signature) {
-      updates.signature_client = completionData.signature;
-    }
-    if (completionData.signature_nom) {
-      updates.nom_signataire = completionData.signature_nom;
-    }
-    
-    console.log('Completing intervention with updates:', Object.keys(updates));
-    
-    try {
-      const { data, error } = await supabase
-        .from('interventions')
-        .update(updates)
-        .eq('id', interventionId)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Complete intervention error:', error);
-        // If error mentions a column, retry without optional columns
-        if (error.message?.includes('signature') || error.message?.includes('nom_signataire')) {
-          console.warn('Signature columns issue, retrying with minimal update');
-          const minimalUpdates = {
-            statut: 'terminee',
-            updated_at: new Date().toISOString()
-          };
-          if (completionData.rapport) {
-            minimalUpdates.rapport = completionData.rapport;
-          }
-          
-          const { data: retryData, error: retryError } = await supabase
-            .from('interventions')
-            .update(minimalUpdates)
-            .eq('id', interventionId)
-            .select()
-            .single();
-          
-          if (retryError) throw retryError;
-          return retryData;
-        }
-        throw error;
-      }
-      return data;
-    } catch (err) {
-      console.error('completeIntervention error:', err);
-      throw err;
-    }
-  },
-
-  getDevisForTech: async (entrepriseId, technicienId) => {
-    // Note: Some schemas may not have created_by column, fetch all devis for entreprise
-    // In production, filter should be based on intervention->technicien_id relationship
+  updateNotes: async (interventionId, notes) => {
     const { data, error } = await supabase
-      .from('devis')
-      .select(`*, client:clients(id, nom, prenom, email, telephone)`)
-      .eq('entreprise_id', entrepriseId)
-      .order('created_at', { ascending: false })
-      .limit(50);
-    
+      .from('interventions')
+      .update({ 
+        notes_technicien: notes,
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', interventionId)
+      .select()
+      .single();
     if (error) throw error;
-    return data || [];
-  },
-
-  signDevis: async (devisId, signatureData) => {
-    // Try full signature update first
-    try {
-      const { data, error } = await supabase
-        .from('devis')
-        .update({
-          statut: 'signe',
-          signature: signatureData.signature,
-          signature_nom: signatureData.nom,
-          signature_date: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', devisId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.warn('Full signature update failed, trying minimal update:', error.message);
-      
-      // Fallback: try with just statut change (columns may not exist)
-      const { data: minData, error: minError } = await supabase
-        .from('devis')
-        .update({
-          statut: 'signe',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', devisId)
-        .select()
-        .single();
-      
-      if (minError) throw minError;
-      return minData;
-    }
+    return data;
   }
 };
 
-// ==================== PHOTOS ====================
-export const photosApi = {
-  getForIntervention: async (interventionId) => {
-    const { data, error } = await supabase
-      .from('photos')
-      .select('*')
-      .eq('intervention_id', interventionId)
-      .order('created_at', { ascending: true });
-    
-    if (error) {
-      console.warn('Photos table may not exist:', error);
-      return [];
+// ==================== OFFLINE SYNC API ====================
+export const offlineSyncApi = {
+  syncClient: async (clientData) => {
+    if (clientData.id) {
+      return clientsApi.update(clientData.id, clientData);
     }
-    return data || [];
+    return clientsApi.create(clientData);
   },
 
-  upload: async (interventionId, file, typePhoto = 'pendant') => {
-    // Try Supabase Storage first with multiple bucket names
-    const bucketNames = ['photos', 'interventions', 'uploads', 'images', 'actoos-photos', 'public'];
-    let uploadSuccess = false;
-    let publicUrl = null;
-    
-    for (const bucketName of bucketNames) {
-      try {
-        const fileName = `${interventionId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from(bucketName)
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
-        
-        if (!uploadError) {
-          const { data: { publicUrl: url } } = supabase.storage
-            .from(bucketName)
-            .getPublicUrl(fileName);
-          
-          publicUrl = url;
-          uploadSuccess = true;
-          console.log(`Photo uploaded to bucket: ${bucketName}`);
-          break;
-        }
-      } catch (e) {
-        console.warn(`Bucket ${bucketName} not available`);
-      }
+  syncDevis: async (devisData) => {
+    if (devisData.id && !devisData.tempId) {
+      return devisApi.update(devisData.id, devisData);
     }
-    
-    // If storage upload failed, try base64 fallback
-    if (!uploadSuccess) {
-      console.log('Storage not available, using base64 fallback');
-      try {
-        // Convert file to base64
-        const base64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        
-        // Store directly in photos table with base64 URL
-        const { data, error } = await supabase
-          .from('photos')
-          .insert({
-            intervention_id: interventionId,
-            url: base64,
-            type_photo: typePhoto,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-        
-        if (error) {
-          // If photos table doesn't exist, store in intervention notes as fallback
-          console.warn('Photos table error, photo stored locally only');
-          return { 
-            url: base64, 
-            type_photo: typePhoto, 
-            id: `local_${Date.now()}`,
-            _isLocal: true 
-          };
-        }
-        return data;
-      } catch (base64Error) {
-        console.error('Base64 conversion failed:', base64Error);
-        throw new Error('Impossible d\'enregistrer la photo. Réessayez plus tard.');
-      }
-    }
-
-    // Storage upload succeeded, create record in photos table
-    try {
-      const { data, error } = await supabase
-        .from('photos')
-        .insert({
-          intervention_id: interventionId,
-          url: publicUrl,
-          type_photo: typePhoto,
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.warn('Could not save photo record:', error);
-        return { url: publicUrl, type_photo: typePhoto, id: `temp_${Date.now()}` };
-      }
-      return data;
-    } catch (dbError) {
-      console.warn('Database error:', dbError);
-      return { url: publicUrl, type_photo: typePhoto, id: `temp_${Date.now()}` };
-    }
+    return devisApi.create(devisData);
   },
 
-  delete: async (photoId) => {
-    // Handle local photos
-    if (String(photoId).startsWith('local_') || String(photoId).startsWith('temp_')) {
-      return true;
-    }
-    
-    try {
-      const { data: photo } = await supabase
-        .from('photos')
-        .select('url')
-        .eq('id', photoId)
-        .single();
-
-      // Try to delete from storage if URL is not base64
-      if (photo?.url && !photo.url.startsWith('data:')) {
-        const bucketNames = ['photos', 'interventions', 'uploads', 'images', 'actoos-photos', 'public'];
-        for (const bucket of bucketNames) {
-          try {
-            const pathMatch = photo.url.split(`/${bucket}/`)[1];
-            if (pathMatch) {
-              await supabase.storage.from(bucket).remove([pathMatch]);
-              break;
-            }
-          } catch (e) {
-            // Continue
-          }
-        }
-      }
-
-      const { error } = await supabase
-        .from('photos')
-        .delete()
-        .eq('id', photoId);
-      
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error deleting photo:', error);
-      throw error;
-    }
-  },
+  signDevis: async (devisId, signatureData) => {
+    return devisApi.sign(devisId, signatureData);
+  }
 };
 
-// ==================== AUTH HELPER ====================
-export const authApi = {
-  activateAccount: async (token, password) => {
-    // This will be handled by Edge Function
-    const response = await fetch(
-      `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/activate`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password })
-      }
-    );
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Activation failed');
+// ==================== PDF & EMAIL (Supabase Edge Functions) ====================
+export const edgeFunctionsApi = {
+  generatePDF: async ({ type, id, entreprise_id }) => {
+    // Call Supabase Edge Function for PDF generation
+    const { data, error } = await supabase.functions.invoke('generate-pdf', {
+      body: { type, id, entreprise_id }
+    });
+    
+    if (error) {
+      console.error('PDF generation error:', error);
+      throw new Error('Erreur lors de la génération du PDF');
     }
-    return response.json();
+    
+    return data;
   },
 
-  changePassword: async (currentPassword, newPassword) => {
-    // Use Supabase Auth to change password
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
+  downloadPDF: async ({ type, id, entreprise_id, filename }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-pdf', {
+        body: { type, id, entreprise_id }
+      });
+      
+      if (error) throw error;
+      
+      // If we get base64 PDF data
+      if (data?.pdf) {
+        const blob = new Blob([Uint8Array.from(atob(data.pdf), c => c.charCodeAt(0))], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || `${type}_${id}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+        return true;
+      }
+      
+      throw new Error('Format PDF invalide');
+    } catch (err) {
+      console.error('PDF download error:', err);
+      throw new Error('Erreur lors du téléchargement du PDF');
+    }
+  },
+
+  sendEmail: async ({ to, subject, html, attachments }) => {
+    const { data, error } = await supabase.functions.invoke('send-email', {
+      body: { to, subject, html, attachments }
     });
+    
     if (error) throw error;
-    return { success: true };
+    return data;
+  },
+
+  sendDevisEmail: async (devisId) => {
+    const { data, error } = await supabase.functions.invoke('send-devis-email', {
+      body: { devis_id: devisId }
+    });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  sendFactureEmail: async (factureId) => {
+    const { data, error } = await supabase.functions.invoke('send-facture-email', {
+      body: { facture_id: factureId }
+    });
+    
+    if (error) throw error;
+    return data;
+  }
+};
+
+// ==================== ANALYTICS ====================
+export const analyticsApi = {
+  getStats: async (entrepriseId, startDate, endDate) => {
+    const startISO = startDate.toISOString();
+    const endISO = endDate.toISOString();
+
+    const [interventions, devis, factures, techniciens] = await Promise.all([
+      supabase.from('interventions').select('*').eq('entreprise_id', entrepriseId)
+        .gte('created_at', startISO).lte('created_at', endISO),
+      supabase.from('devis').select('*').eq('entreprise_id', entrepriseId)
+        .gte('created_at', startISO).lte('created_at', endISO),
+      supabase.from('factures').select('*').eq('entreprise_id', entrepriseId)
+        .gte('created_at', startISO).lte('created_at', endISO),
+      supabase.from('users').select('*').eq('entreprise_id', entrepriseId)
+        .in('role', ['tech', 'technicien'])
+    ]);
+
+    return {
+      interventions: interventions.data || [],
+      devis: devis.data || [],
+      factures: factures.data || [],
+      techniciens: techniciens.data || []
+    };
+  }
+};
+
+// ==================== STATS API (for Rapports) ====================
+export const statsApi = {
+  getStats: async (entrepriseId) => {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const startOfMonthISO = startOfMonth.toISOString();
+    
+    const [
+      devisEnAttente,
+      devisSignesMois,
+      facturesEnAttente,
+      facturesEnRetard,
+      facturesPayeesMois,
+      totalDevisMois,
+      caTotal
+    ] = await Promise.all([
+      supabase.from('devis').select('id', { count: 'exact', head: true })
+        .eq('entreprise_id', entrepriseId).eq('statut', 'envoye'),
+      supabase.from('devis').select('id', { count: 'exact', head: true })
+        .eq('entreprise_id', entrepriseId).eq('statut', 'signe').gte('date_signature', startOfMonthISO),
+      supabase.from('factures').select('total_ttc')
+        .eq('entreprise_id', entrepriseId).in('statut', ['envoyee', 'brouillon']),
+      supabase.from('factures').select('total_ttc')
+        .eq('entreprise_id', entrepriseId).eq('statut', 'en_retard'),
+      supabase.from('factures').select('total_ttc')
+        .eq('entreprise_id', entrepriseId).eq('statut', 'payee').gte('date_paiement', startOfMonthISO),
+      supabase.from('devis').select('id', { count: 'exact', head: true })
+        .eq('entreprise_id', entrepriseId).gte('created_at', startOfMonthISO),
+      supabase.from('factures').select('total_ttc')
+        .eq('entreprise_id', entrepriseId).eq('statut', 'payee')
+    ]);
+    
+    const pendingAmount = (facturesEnAttente.data || []).reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+    const retardAmount = (facturesEnRetard.data || []).reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+    const caMois = (facturesPayeesMois.data || []).reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+    const caAnnuel = (caTotal.data || []).reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+    
+    const tauxConversion = totalDevisMois.count > 0 
+      ? Math.round((devisSignesMois.count / totalDevisMois.count) * 100) 
+      : 0;
+    
+    return {
+      devis: {
+        en_attente: devisEnAttente.count || 0,
+        signes_mois: devisSignesMois.count || 0
+      },
+      factures: {
+        en_attente: facturesEnAttente.data?.length || 0,
+        pending_amount: pendingAmount,
+        en_retard: facturesEnRetard.data?.length || 0,
+        retard_amount: retardAmount
+      },
+      taux_conversion: tauxConversion,
+      ca_mois: caMois,
+      ca_annuel: caAnnuel
+    };
+  },
+
+  getMonthlyRevenue: async (entrepriseId) => {
+    const months = [];
+    const today = new Date();
+    
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const endDate = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
+      
+      const { data } = await supabase
+        .from('factures')
+        .select('total_ttc')
+        .eq('entreprise_id', entrepriseId)
+        .eq('statut', 'payee')
+        .gte('date_paiement', date.toISOString())
+        .lt('date_paiement', endDate.toISOString());
+      
+      const total = (data || []).reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+      
+      months.push({
+        month: date.toLocaleDateString('fr-FR', { month: 'short' }),
+        year: date.getFullYear(),
+        revenue: total
+      });
+    }
+    
+    return months;
+  },
+
+  getTopClients: async (entrepriseId, limit = 10) => {
+    const { data: factures } = await supabase
+      .from('factures')
+      .select('client_id, total_ttc, client:clients(id, nom, prenom)')
+      .eq('entreprise_id', entrepriseId)
+      .eq('statut', 'payee');
+    
+    // Group by client
+    const clientTotals = {};
+    (factures || []).forEach(f => {
+      const clientId = f.client_id;
+      if (!clientTotals[clientId]) {
+        clientTotals[clientId] = {
+          client_id: clientId,
+          nom: f.client?.nom || 'Client',
+          prenom: f.client?.prenom || '',
+          total: 0,
+          count: 0
+        };
+      }
+      clientTotals[clientId].total += f.total_ttc || 0;
+      clientTotals[clientId].count++;
+    });
+    
+    // Sort by total and return top N
+    return Object.values(clientTotals)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, limit);
   }
 };
 
 // Export all APIs
-// ==================== EDGE FUNCTIONS ====================
-const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
-
-export const edgeFunctionsApi = {
-  // Send email via Edge Function
-  sendEmail: async ({ to, subject, html, text, from, replyTo, template, templateData }) => {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
-      },
-      body: JSON.stringify({ to, subject, html, text, from, replyTo, template, templateData })
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to send email');
-    }
-    
-    return response.json();
-  },
-
-  // Send SMS via Edge Function
-  sendSMS: async ({ to, message, entreprise_id, template, templateData }) => {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
-      },
-      body: JSON.stringify({ to, message, entreprise_id, template, templateData })
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to send SMS');
-    }
-    
-    return response.json();
-  },
-
-  // Send WhatsApp via Edge Function
-  sendWhatsApp: async ({ to, message, template, entreprise_id }) => {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-whatsapp`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
-      },
-      body: JSON.stringify({ to, message, template, entreprise_id })
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to send WhatsApp message');
-    }
-    
-    return response.json();
-  },
-
-  // Generate PDF via Edge Function
-  generatePDF: async ({ type, id, entreprise_id }) => {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-pdf`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`
-      },
-      body: JSON.stringify({ type, id, entreprise_id })
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to generate PDF');
-    }
-    
-    // Return HTML that can be printed as PDF
-    const html = await response.text();
-    return html;
-  },
-
-  // Open PDF in new window for printing
-  downloadPDF: async ({ type, id, entreprise_id, filename }) => {
-    try {
-      const html = await edgeFunctionsApi.generatePDF({ type, id, entreprise_id });
-      
-      // Open in new window and trigger print
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.document.close();
-        
-        // Wait for content to load then print
-        printWindow.onload = () => {
-          printWindow.print();
-        };
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('PDF download error:', error);
-      throw error;
-    }
-  }
-};
-
 export default {
   interventions: interventionsApi,
   clients: clientsApi,
   devis: devisApi,
   factures: facturesApi,
   users: usersApi,
+  techniciens: techniciensApi,
   categories: categoriesApi,
-  entreprise: entrepriseApi,
-  sites: sitesApi,
-  dashboard: dashboardApi,
-  planning: planningApi,
-  stats: statsApi,
   settings: settingsApi,
-  technician: technicianApi,
+  sites: sitesApi,
   photos: photosApi,
-  auth: authApi,
-  edge: edgeFunctionsApi
+  dashboard: dashboardApi,
+  technician: technicianApi,
+  offlineSync: offlineSyncApi,
+  edge: edgeFunctionsApi,
+  analytics: analyticsApi,
+  stats: statsApi
 };

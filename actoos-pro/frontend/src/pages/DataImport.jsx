@@ -14,10 +14,10 @@ import {
   Users, FileText, Receipt, Wrench, HelpCircle, Trash2, History
 } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
+import * as XLSX from 'xlsx';
 import ImportHistory from '../components/ImportHistory';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 // Entity type configurations
 const ENTITY_TYPES = {
@@ -61,11 +61,22 @@ const DataImport = () => {
   const [importResult, setImportResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dateFormat, setDateFormat] = useState('%d/%m/%Y');
+  
+  const { user } = useAuth();
+  const entrepriseId = user?.entreprise_id;
 
-  const token = localStorage.getItem('token');
-  const headers = { Authorization: `Bearer ${token}` };
+  // Parse date with format
+  const parseDate = (dateStr, format) => {
+    if (!dateStr) return null;
+    try {
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
+    } catch {
+      return null;
+    }
+  };
 
-  // File upload handler
+  // File upload handler - client-side parsing
   const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
     if (!file) return;
@@ -74,37 +85,75 @@ const DataImport = () => {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('entity_type', entityType);
-
-      const response = await axios.post(
-        `${API_URL}/api/import/upload`,
-        formData,
-        { headers: { ...headers, 'Content-Type': 'multipart/form-data' } }
-      );
-
-      setFilePreview(response.data);
-      
-      // Initialize mappings from suggestions
-      const initialMappings = Object.entries(response.data.suggested_mappings || {}).map(
-        ([source, target]) => ({
-          source_column: source,
-          target_field: target,
-          transform: null
-        })
-      );
-      setMappings(initialMappings);
-      
-      setCurrentStep(2); // Go to mapping step
-      toast.success('Fichier analysé avec succès');
+      // Read file client-side using xlsx library
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          
+          if (jsonData.length < 2) {
+            toast.error('Le fichier doit contenir au moins un en-tête et une ligne de données');
+            setLoading(false);
+            return;
+          }
+          
+          const headers = jsonData[0].map(h => String(h || '').trim());
+          const rows = jsonData.slice(1, 6).map(row => 
+            headers.reduce((obj, header, i) => ({ ...obj, [header]: row[i] || '' }), {})
+          );
+          
+          // Auto-suggest mappings based on column names
+          const fieldMappings = {
+            clients: { nom: ['nom', 'name', 'client'], email: ['email', 'mail'], telephone: ['telephone', 'phone', 'tel'], adresse: ['adresse', 'address'], ville: ['ville', 'city'], code_postal: ['code_postal', 'postal', 'zip'] },
+            interventions: { titre: ['titre', 'title', 'sujet'], description: ['description', 'desc'], date_prevue: ['date', 'date_prevue'], adresse: ['adresse'], client_id: ['client_id', 'client'] },
+            devis: { client_id: ['client_id', 'client'], total_ht: ['total_ht', 'montant', 'amount'] },
+            factures: { client_id: ['client_id', 'client'], total_ttc: ['total_ttc', 'montant', 'amount'] }
+          };
+          
+          const suggested = {};
+          const entityFields = fieldMappings[entityType] || {};
+          headers.forEach(header => {
+            const headerLower = header.toLowerCase();
+            Object.entries(entityFields).forEach(([field, aliases]) => {
+              if (aliases.some(alias => headerLower.includes(alias))) {
+                suggested[header] = field;
+              }
+            });
+          });
+          
+          setFilePreview({
+            filename: file.name,
+            columns: headers,
+            row_count: jsonData.length - 1,
+            preview_rows: rows,
+            suggested_mappings: suggested,
+            raw_data: jsonData.slice(1) // All data rows for import
+          });
+          
+          const initialMappings = Object.entries(suggested).map(
+            ([source, target]) => ({ source_column: source, target_field: target, transform: null })
+          );
+          setMappings(initialMappings);
+          
+          setCurrentStep(2);
+          toast.success('Fichier analysé avec succès');
+        } catch (parseError) {
+          console.error('Parse error:', parseError);
+          toast.error('Erreur lors de l\'analyse du fichier');
+        }
+        setLoading(false);
+      };
+      reader.readAsArrayBuffer(file);
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de l\'analyse du fichier');
-    } finally {
+      toast.error('Erreur lors du chargement du fichier');
       setLoading(false);
     }
-  }, [entityType, headers]);
+  }, [entityType]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -136,74 +185,104 @@ const DataImport = () => {
     setMappings(prev => prev.filter(m => m.source_column !== sourceColumn));
   };
 
-  // Preview import
+  // Preview import - client-side
   const handlePreview = async () => {
-    if (!uploadedFile) return;
+    if (!filePreview?.raw_data) return;
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append('file', uploadedFile);
-      formData.append('entity_type', entityType);
-      formData.append('mappings_json', JSON.stringify(mappings));
-      formData.append('date_format', dateFormat);
+      const headers = filePreview.columns;
+      const mappingObj = mappings.reduce((acc, m) => ({ ...acc, [m.source_column]: m.target_field }), {});
+      
+      const valid = [];
+      const errors = [];
+      
+      filePreview.raw_data.slice(0, 100).forEach((row, idx) => {
+        const mapped = {};
+        headers.forEach((h, i) => {
+          if (mappingObj[h]) {
+            let value = row[i];
+            // Parse dates if needed
+            if (mappingObj[h].includes('date') && value) {
+              value = parseDate(value, dateFormat);
+            }
+            mapped[mappingObj[h]] = value;
+          }
+        });
+        
+        // Basic validation
+        if (entityType === 'clients' && !mapped.nom) {
+          errors.push({ row: idx + 2, error: 'Nom manquant', data: mapped });
+        } else if (entityType === 'interventions' && !mapped.titre) {
+          errors.push({ row: idx + 2, error: 'Titre manquant', data: mapped });
+        } else {
+          valid.push(mapped);
+        }
+      });
 
-      const response = await axios.post(
-        `${API_URL}/api/import/preview`,
-        formData,
-        { headers: { ...headers, 'Content-Type': 'multipart/form-data' } }
-      );
-
-      setPreviewResult(response.data);
+      setPreviewResult({
+        valid_records: valid,
+        error_records: errors,
+        total_rows: filePreview.raw_data.length,
+        valid_count: valid.length,
+        error_count: errors.length
+      });
       setCurrentStep(3);
     } catch (error) {
       console.error('Preview error:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de la prévisualisation');
+      toast.error('Erreur lors de la prévisualisation');
     } finally {
       setLoading(false);
     }
   };
 
-  // Execute import
+  // Execute import - directly to Supabase
   const handleImport = async (skipErrors = false) => {
-    if (!uploadedFile) return;
+    if (!previewResult?.valid_records?.length) return;
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append('file', uploadedFile);
-      formData.append('entity_type', entityType);
-      formData.append('mappings_json', JSON.stringify(mappings));
-      formData.append('date_format', dateFormat);
-      formData.append('skip_errors', skipErrors);
+      const records = previewResult.valid_records.map(r => ({
+        ...r,
+        entreprise_id: entrepriseId,
+        created_at: new Date().toISOString()
+      }));
+      
+      const tableName = entityType; // clients, interventions, devis, factures
+      
+      const { data, error } = await supabase
+        .from(tableName)
+        .insert(records)
+        .select();
+      
+      if (error) throw error;
 
-      const response = await axios.post(
-        `${API_URL}/api/import/execute`,
-        formData,
-        { headers: { ...headers, 'Content-Type': 'multipart/form-data' } }
-      );
-
-      setImportResult(response.data);
+      setImportResult({
+        imported_count: data?.length || 0,
+        skipped_count: skipErrors ? previewResult.error_count : 0,
+        total_processed: previewResult.total_rows
+      });
       setCurrentStep(4);
-      toast.success(`${response.data.imported_count} enregistrements importés`);
+      toast.success(`${data?.length || 0} enregistrements importés`);
     } catch (error) {
       console.error('Import error:', error);
-      toast.error(error.response?.data?.detail || 'Erreur lors de l\'import');
+      toast.error(error.message || 'Erreur lors de l\'import');
     } finally {
       setLoading(false);
     }
   };
 
-  // Download template
+  // Download template - generate client-side
   const downloadTemplate = async () => {
     try {
-      const response = await axios.get(
-        `${API_URL}/api/import/templates/${entityType}`,
-        { headers }
-      );
+      const templates = {
+        clients: 'nom,email,telephone,adresse,ville,code_postal',
+        interventions: 'titre,description,date_prevue,adresse,ville,code_postal',
+        devis: 'client_id,description,quantite,prix_unitaire,tva',
+        factures: 'client_id,description,quantite,prix_unitaire,tva'
+      };
       
-      // Create and download CSV
-      const csvContent = response.data.csv_template;
+      const csvContent = templates[entityType] || '';
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');

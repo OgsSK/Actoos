@@ -40,6 +40,12 @@ async function getResendConfig() {
 
 const DEFAULT_FROM = "ACTOOS PRO <noreply@actoos.com>";
 
+interface Attachment {
+  filename: string;
+  content: string; // Base64 encoded
+  type?: string; // MIME type, defaults to application/pdf
+}
+
 interface EmailRequest {
   to: string | string[];
   subject: string;
@@ -47,8 +53,9 @@ interface EmailRequest {
   text?: string;
   from?: string;
   replyTo?: string;
+  attachments?: Attachment[];
   // Template support
-  template?: "devis_sent" | "facture_sent" | "facture_relance" | "invitation" | "password_reset";
+  template?: "devis_sent" | "facture_sent" | "facture_relance" | "invitation" | "password_reset" | "releve_mensuel";
   templateData?: Record<string, unknown>;
 }
 
@@ -197,6 +204,65 @@ const templates: Record<string, (data: Record<string, unknown>) => { subject: st
       </div>
     `
   }),
+
+  releve_mensuel: (data) => ({
+    subject: `Relevé de compte ${data.periode} - ${data.entreprise_nom}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
+        <div style="background: white; border-radius: 8px; padding: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <h2 style="color: #1e293b; margin-top: 0;">Relevé de compte mensuel</h2>
+          <p>Bonjour ${data.client_nom},</p>
+          <p>Veuillez trouver ci-joint votre relevé de compte pour la période <strong>${data.periode}</strong>.</p>
+          
+          <div style="background: #f1f5f9; border-radius: 6px; padding: 20px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #475569; font-size: 14px; text-transform: uppercase;">Récapitulatif</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; color: #64748b;">Interventions</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${data.nb_interventions || 0}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #64748b;">Devis</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${data.nb_devis || 0}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #64748b;">Factures</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${data.nb_factures || 0}</td>
+              </tr>
+              <tr style="border-top: 2px solid #e2e8f0;">
+                <td style="padding: 12px 0; color: #1e293b; font-weight: bold;">Total TTC</td>
+                <td style="padding: 12px 0; text-align: right; font-weight: bold; color: #16a34a; font-size: 18px;">${data.total_ttc || '0,00'} €</td>
+              </tr>
+              ${data.total_impaye > 0 ? `
+              <tr>
+                <td style="padding: 8px 0; color: #dc2626;">Reste à payer</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #dc2626;">${data.total_impaye} €</td>
+              </tr>
+              ` : ''}
+            </table>
+          </div>
+          
+          ${data.portal_url ? `
+          <p>
+            <a href="${data.portal_url}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+              Accéder à mon espace client
+            </a>
+          </p>
+          ` : ''}
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+            Cordialement,<br>
+            <strong>${data.entreprise_nom}</strong>
+            ${data.entreprise_tel ? `<br>Tél: ${data.entreprise_tel}` : ''}
+            ${data.entreprise_email ? `<br>${data.entreprise_email}` : ''}
+          </p>
+        </div>
+        <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 20px;">
+          Ce relevé a été généré automatiquement par ACTOOS PRO
+        </p>
+      </div>
+    `
+  }),
 };
 
 serve(async (req) => {
@@ -218,7 +284,7 @@ serve(async (req) => {
     }
 
     const body: EmailRequest = await req.json();
-    const { to, subject, html, text, from, replyTo, template, templateData } = body;
+    const { to, subject, html, text, from, replyTo, template, templateData, attachments } = body;
 
     // Build email content
     let emailSubject = subject;
@@ -237,6 +303,25 @@ serve(async (req) => {
       );
     }
 
+    // Build email payload
+    const emailPayload: Record<string, unknown> = {
+      from: from || configuredFrom || DEFAULT_FROM,
+      to: Array.isArray(to) ? to : [to],
+      subject: emailSubject,
+      html: emailHtml,
+      text: text,
+      reply_to: replyTo,
+    };
+
+    // Add attachments if provided
+    if (attachments && attachments.length > 0) {
+      emailPayload.attachments = attachments.map((att: Attachment) => ({
+        filename: att.filename,
+        content: att.content, // Base64 encoded content
+        type: att.type || "application/pdf",
+      }));
+    }
+
     // Send via Resend API
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -244,14 +329,7 @@ serve(async (req) => {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: from || configuredFrom || DEFAULT_FROM,
-        to: Array.isArray(to) ? to : [to],
-        subject: emailSubject,
-        html: emailHtml,
-        text: text,
-        reply_to: replyTo,
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
     const result = await response.json();

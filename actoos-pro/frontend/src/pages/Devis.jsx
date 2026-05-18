@@ -22,6 +22,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
+import { ClientSelect } from '../components/ui/searchable-select';
 import { formatDate, getStatusLabel } from '../lib/utils';
 import {
   Plus, Search, ChevronLeft, Edit, FileText, Send, PenTool, Download,
@@ -604,21 +605,12 @@ export const DevisForm = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Client *</Label>
-                <Select
+                <ClientSelect
+                  clients={clients}
                   value={formData.client_id}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
-                >
-                  <SelectTrigger data-testid="devis-client">
-                    <SelectValue placeholder="Sélectionner un client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.nom} {client.prenom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  data-testid="devis-client"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="validite_jours">Validité (jours)</Label>
@@ -764,18 +756,41 @@ export const DevisDetail = () => {
   };
 
   const handleSend = async () => {
+    if (!devis?.client?.email) {
+      toast.error('Le client n\'a pas d\'adresse email');
+      return;
+    }
+    
     setSending(true);
+    const toastId = toast.loading('Génération et envoi du devis...');
     try {
+      // Update status to sent
       await devisApi.update(id, { 
         statut: 'envoye', 
         date_envoi: new Date().toISOString() 
       });
-      toast.success('Devis marqué comme envoyé');
-      // Note: Actual email sending requires Edge Function
+      
+      // Generate PDF for attachment
+      const { generateDevisPDF } = await import('../lib/pdfService');
+      const doc = await generateDevisPDF(devis, devis.entreprise);
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      
+      // Send email with PDF attachment
+      const { sendDevisEmail } = await import('../lib/emailService');
+      const result = await sendDevisEmail(devis, devis.client, devis.entreprise, pdfBase64);
+      
+      toast.dismiss(toastId);
+      if (result.method === 'mailto') {
+        toast.success('Devis envoyé - Votre client mail s\'ouvre pour confirmer l\'envoi');
+      } else {
+        toast.success('Devis envoyé par email avec le PDF en pièce jointe !');
+      }
+      
       fetchDevis();
     } catch (error) {
       console.error('Error sending devis:', error);
-      toast.error('Erreur lors de l\'envoi');
+      toast.dismiss(toastId);
+      toast.error(error.message || 'Erreur lors de l\'envoi');
     } finally {
       setSending(false);
     }
@@ -785,9 +800,9 @@ export const DevisDetail = () => {
     try {
       await devisApi.update(id, {
         statut: 'signe',
-        signature: signature,
-        signature_nom: nom,
-        signature_date: new Date().toISOString()
+        signature_client: signature,
+        nom_signataire: nom,
+        date_signature: new Date().toISOString()
       });
       setShowSignature(false);
       fetchDevis();
@@ -798,8 +813,27 @@ export const DevisDetail = () => {
 
       const handleCreateFacture = async () => {
     try {
+<<<<<<< HEAD
       const newFacture = await devisApi.convertToFacture(id);
       toast.success(newFacture.message || 'Facture créée');
+=======
+      // Create facture from devis data - using correct column names per SCHEMA_SUPABASE.md
+      const factureData = {
+        client_id: devis.client_id,
+        entreprise_id: devis.entreprise_id,
+        devis_id: devis.id,
+        lignes: devis.lignes,
+        total_ht: devis.total_ht || devis.montant_ht,
+        total_tva: devis.total_tva || devis.montant_tva,
+        total_ttc: devis.total_ttc || devis.montant_ttc,
+        statut: 'brouillon',
+        conditions_paiement: devis.conditions || '',
+        notes: devis.message_client || ''
+      };
+      
+      const newFacture = await facturesApi.create(factureData);
+      toast.success(`Facture créée`);
+>>>>>>> origin/main
       navigate(`/dashboard/factures/${newFacture.id}`);
     } catch (error) {
       console.error('Error creating facture:', error);
@@ -809,15 +843,16 @@ export const DevisDetail = () => {
 
   const downloadPDF = async () => {
     try {
-      await edgeFunctionsApi.downloadPDF({ 
-        type: 'devis', 
-        id, 
-        entreprise_id: devis.entreprise_id,
-        filename: `devis_${devis.numero_devis || devis.numero || id.slice(0, 8)}.pdf`
-      });
+      toast.loading('Génération du PDF...');
+      const { generateDevisPDF, downloadPDF: savePDF } = await import('../lib/pdfService');
+      const doc = await generateDevisPDF(devis, devis.entreprise, devis.client);
+      savePDF(doc, `devis_${devis.numero_devis || id.slice(0, 8)}.pdf`);
+      toast.dismiss();
+      toast.success('PDF téléchargé');
     } catch (error) {
+      toast.dismiss();
       console.error('Error downloading PDF:', error);
-      toast.error('Erreur lors du téléchargement');
+      toast.error('Erreur lors de la génération du PDF');
     }
   };
 

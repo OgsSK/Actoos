@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import db from '../lib/offlineDb';
 import { toast } from 'sonner';
+import { supabase } from '../lib/supabase';
+import { technicianApi, interventionsApi } from '../lib/supabaseApi';
 
 const OfflineContext = createContext(null);
 
@@ -130,7 +132,7 @@ export const OfflineProvider = ({ children }) => {
     return null;
   }, [isOnline]);
 
-  // Sync pending actions with server
+  // Sync pending actions with server using Supabase directly
   const syncPendingActions = useCallback(async () => {
     if (!isOnline || isSyncing) return;
     
@@ -138,9 +140,8 @@ export const OfflineProvider = ({ children }) => {
     if (actions.length === 0) return;
     
     setIsSyncing(true);
-    console.log(`[Offline] Syncing ${actions.length} pending actions...`);
+    console.log(`[Offline] Syncing ${actions.length} pending actions via Supabase...`);
     
-    const API_URL = process.env.REACT_APP_BACKEND_URL || '';
     let successCount = 0;
     let failCount = 0;
     
@@ -152,55 +153,33 @@ export const OfflineProvider = ({ children }) => {
       }
       
       try {
-        const headers = {
-          'Authorization': `Bearer ${action.token}`,
-          'Content-Type': 'application/json'
-        };
-        
-        let response;
+        let result;
         const { type, data } = action;
         
         switch (type) {
           case ACTION_TYPES.START_INTERVENTION:
-            // Send geo data directly if available
-            response = await fetch(`${API_URL}/api/interventions/${data.interventionId}/start`, {
-              method: 'POST',
-              headers,
-              body: data.geo ? JSON.stringify(data.geo) : null
-            });
+            result = await technicianApi.startIntervention(data.interventionId);
             break;
             
           case ACTION_TYPES.COMPLETE_INTERVENTION:
-            const completeParams = new URLSearchParams();
-            if (data.notes) completeParams.append('notes_terrain', data.notes);
-            
-            response = await fetch(`${API_URL}/api/interventions/${data.interventionId}/complete?${completeParams}`, {
-              method: 'POST',
-              headers
+            result = await technicianApi.completeIntervention(data.interventionId, {
+              notes_technicien: data.notes,
+              rapport: data.notes
             });
             break;
             
           case ACTION_TYPES.UPDATE_NOTES:
-            response = await fetch(`${API_URL}/api/interventions/${data.interventionId}`, {
-              method: 'PUT',
-              headers,
-              body: JSON.stringify({ notes_terrain: data.notes })
-            });
+            result = await technicianApi.updateNotes(data.interventionId, data.notes);
             break;
             
           case ACTION_TYPES.UPDATE_CHECKLIST:
-            response = await fetch(`${API_URL}/api/interventions/${data.interventionId}/checklist`, {
-              method: 'PUT',
-              headers,
-              body: JSON.stringify(data.responses)
+            result = await interventionsApi.update(data.interventionId, {
+              checklist_completed: data.responses
             });
             break;
             
           case ACTION_TYPES.CLAIM_INTERVENTION:
-            response = await fetch(`${API_URL}/api/interventions/${data.interventionId}/claim`, {
-              method: 'POST',
-              headers
-            });
+            result = await technicianApi.claimIntervention(data.interventionId, data.technicienId);
             break;
             
           default:
@@ -208,7 +187,7 @@ export const OfflineProvider = ({ children }) => {
             continue;
         }
         
-        if (response && response.ok) {
+        if (result) {
           await db.markActionSynced(action.id);
           successCount++;
           console.log(`[Offline] Synced action ${action.id}: ${type}`);
@@ -224,7 +203,7 @@ export const OfflineProvider = ({ children }) => {
           
           // Update local cache with server response
           if (type.includes('intervention')) {
-            const updatedIntervention = await response.json();
+            const updatedIntervention = result;
             
             // Check for LWW conflict (server version is newer)
             const localVersion = await db.getIntervention(data.interventionId);
@@ -316,100 +295,132 @@ export const OfflineProvider = ({ children }) => {
       const totalPending = pendingDevis.length + pendingClients.length + pendingInterventions.length;
       if (totalPending === 0) return;
       
-      console.log(`[Offline] Syncing ${totalPending} offline items...`);
+      console.log(`[Offline] Syncing ${totalPending} offline items via Supabase...`);
       
-      // Get API URL
-      const apiUrl = process.env.REACT_APP_BACKEND_URL || '';
+      let syncedClients = 0;
+      let syncedDevis = 0;
+      let syncedInterventions = 0;
       
-      // Prepare batch sync data
-      const batchData = {
-        clients: pendingClients.map(c => ({
-          temp_id: c.tempId,
-          nom: c.nom,
-          email: c.email,
-          telephone: c.telephone,
-          adresse: c.adresse,
-          ville: c.ville,
-          code_postal: c.code_postal,
-          created_at: c.created_at
-        })),
-        devis: await Promise.all(pendingDevis.map(async d => {
-          const signature = await db.getSignature(d.tempId);
-          return {
-            temp_id: d.tempId,
-            client_id: d.client_id,
-            client_name: d.client_name,
-            lignes: d.lignes,
-            total_ht: d.total_ht,
-            total_tva: d.total_tva,
-            total_ttc: d.total_ttc,
-            devise: d.devise,
-            validite_jours: d.validite_jours,
-            conditions: d.conditions,
-            notes_internes: d.notes_internes,
-            created_at: d.created_at,
-            signature: signature ? {
-              signature_data: signature.signature_data,
-              signatory_name: signature.signatory_name,
-              created_at: signature.created_at
-            } : null
-          };
-        })),
-        interventions: pendingInterventions.map(i => ({
-          temp_id: i.tempId,
-          client_id: i.client_id,
-          titre: i.titre,
-          description: i.description,
-          date_prevue: i.date_prevue,
-          duree_estimee: i.duree_estimee,
-          adresse: i.adresse,
-          ville: i.ville,
-          code_postal: i.code_postal,
-          priorite: i.priorite,
-          categorie_id: i.categorie_id,
-          created_at: i.created_at
-        }))
-      };
-      
-      // Send batch sync request
-      const response = await fetch(`${apiUrl}/api/offline/sync/batch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(batchData)
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Mark items as synced based on response
-        for (const clientResult of result.details.clients) {
-          if (clientResult.status === 'synced' || clientResult.status === 'already_synced') {
-            await db.markClientSynced(clientResult.temp_id, clientResult.client_id);
+      // Sync clients directly to Supabase
+      for (const client of pendingClients) {
+        try {
+          const { data: newClient, error } = await supabase
+            .from('clients')
+            .insert({
+              nom: client.nom,
+              email: client.email,
+              telephone: client.telephone,
+              adresse: client.adresse,
+              ville: client.ville,
+              code_postal: client.code_postal,
+              entreprise_id: client.entreprise_id,
+              created_at: client.created_at || new Date().toISOString()
+            })
+            .select()
+            .single();
+          
+          if (!error && newClient) {
+            await db.markClientSynced(client.tempId, newClient.id);
+            syncedClients++;
           }
+        } catch (err) {
+          console.error('[Offline] Error syncing client:', err);
         }
-        
-        for (const devisResult of result.details.devis) {
-          if (devisResult.status === 'synced' || devisResult.status === 'already_synced') {
-            await db.markDevisSynced(devisResult.temp_id, devisResult.devis_id, devisResult.numero);
-          }
-        }
-        
-        // Clean up synced offline data
-        await db.clearSyncedOfflineData();
-        
-        const syncedCount = result.synced.clients + result.synced.devis + result.synced.interventions;
-        if (syncedCount > 0) {
-          toast.success(`${syncedCount} élément(s) hors ligne synchronisé(s)`);
-        }
-        
-        console.log('[Offline] Offline data sync complete:', result);
-      } else {
-        const errorText = await response.text();
-        console.error('[Offline] Failed to sync offline data:', errorText);
       }
+      
+      // Sync devis directly to Supabase
+      for (const d of pendingDevis) {
+        try {
+          const signature = await db.getSignature(d.tempId);
+          const { count } = await supabase
+            .from('devis')
+            .select('id', { count: 'exact', head: true })
+            .eq('entreprise_id', d.entreprise_id);
+          
+          const numero_devis = `D-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(4, '0')}`;
+          
+          const { data: newDevis, error } = await supabase
+            .from('devis')
+            .insert({
+              client_id: d.client_id,
+              entreprise_id: d.entreprise_id,
+              numero_devis,
+              total_ht: d.total_ht,
+              total_tva: d.total_tva,
+              total_ttc: d.total_ttc,
+              conditions: d.conditions,
+              statut: signature ? 'signe' : 'brouillon',
+              signature_client: signature?.signature_data,
+              nom_signataire: signature?.signatory_name,
+              date_signature: signature ? new Date().toISOString() : null,
+              token_client: crypto.randomUUID(),
+              created_at: d.created_at || new Date().toISOString()
+            })
+            .select()
+            .single();
+          
+          if (!error && newDevis) {
+            // Create devis_lignes
+            if (d.lignes?.length > 0) {
+              await supabase.from('devis_lignes').insert(
+                d.lignes.map(l => ({
+                  devis_id: newDevis.id,
+                  description: l.description,
+                  quantite: l.quantite,
+                  prix_unitaire: l.prix_unitaire,
+                  tva: l.tva
+                }))
+              );
+            }
+            await db.markDevisSynced(d.tempId, newDevis.id, numero_devis);
+            syncedDevis++;
+          }
+        } catch (err) {
+          console.error('[Offline] Error syncing devis:', err);
+        }
+      }
+      
+      // Sync interventions directly to Supabase
+      for (const i of pendingInterventions) {
+        try {
+          const { data: newIntervention, error } = await supabase
+            .from('interventions')
+            .insert({
+              client_id: i.client_id,
+              entreprise_id: i.entreprise_id,
+              titre: i.titre,
+              description: i.description,
+              date_prevue: i.date_prevue,
+              duree_estimee: i.duree_estimee,
+              adresse: i.adresse,
+              ville: i.ville,
+              code_postal: i.code_postal,
+              priorite: i.priorite,
+              categorie_id: i.categorie_id,
+              statut: 'planifie',
+              created_at: i.created_at || new Date().toISOString()
+            })
+            .select()
+            .single();
+          
+          if (!error && newIntervention) {
+            await db.offlineInterventions.update(i.tempId, { synced: true, serverId: newIntervention.id });
+            syncedInterventions++;
+          }
+        } catch (err) {
+          console.error('[Offline] Error syncing intervention:', err);
+        }
+      }
+      
+      // Clean up synced offline data
+      await db.clearSyncedOfflineData();
+      
+      const totalSynced = syncedClients + syncedDevis + syncedInterventions;
+      if (totalSynced > 0) {
+        toast.success(`${totalSynced} élément(s) hors ligne synchronisé(s)`);
+      }
+      
+      console.log('[Offline] Offline data sync complete:', { syncedClients, syncedDevis, syncedInterventions });
     } catch (error) {
       console.error('[Offline] Error syncing offline data:', error);
     }
@@ -439,13 +450,11 @@ export const OfflineProvider = ({ children }) => {
     return await db.updateInterventionLocally(id, updates);
   }, []);
 
-  // Sync interventions with LWW conflict resolution
+  // Sync interventions with LWW conflict resolution using Supabase
   const syncInterventionsLWW = useCallback(async () => {
     if (!isOnline || isSyncing) return null;
     
     setIsSyncing(true);
-    const API_URL = process.env.REACT_APP_BACKEND_URL || '';
-    const token = localStorage.getItem('token');
     
     try {
       // Get locally modified interventions
@@ -458,126 +467,97 @@ export const OfflineProvider = ({ children }) => {
         return { synced: 0, conflicts: 0, errors: 0 };
       }
       
-      // Prepare changes for sync
-      const changes = modifiedInterventions.map(intervention => ({
-        intervention_id: intervention.id,
-        updates: {
-          notes_terrain: intervention.notes_terrain,
-          statut: intervention.statut,
-          checklist_responses: intervention.checklist_responses
-        },
-        local_updated_at: intervention._modifiedAt || intervention._cachedAt
-      }));
+      console.log(`[Offline] Syncing ${modifiedInterventions.length} modified interventions via Supabase...`);
       
-      // Get last sync time
-      const lastSyncTime = await db.getLastSyncTime('interventions_last_sync');
+      let syncedCount = 0;
+      let conflictCount = 0;
+      let errorCount = 0;
       
-      console.log(`[Offline] Syncing ${changes.length} modified interventions via LWW...`);
-      
-      const response = await fetch(`${API_URL}/api/interventions/sync`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          changes,
-          last_sync: lastSyncTime
-        })
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Update local cache with synced data
-        for (const synced of result.synced) {
-          await db.interventions.put({
-            ...synced.data,
-            _locallyModified: false,
-            _cachedAt: new Date().toISOString()
-          });
-        }
-        
-        // Handle conflicts - server wins, update local
-        for (const conflict of result.conflicts) {
-          await db.interventions.put({
-            ...conflict.server_data,
-            _locallyModified: false,
-            _cachedAt: new Date().toISOString()
-          });
+      for (const intervention of modifiedInterventions) {
+        try {
+          // Get server version
+          const { data: serverData, error: fetchError } = await supabase
+            .from('interventions')
+            .select('*')
+            .eq('id', intervention.id)
+            .single();
           
-          // Log the conflict
-          await db.logSyncEvent({
-            type: 'conflict',
-            entityId: conflict.intervention_id,
-            action: 'sync_lww',
-            result: 'lww_resolved',
-            conflictResolved: true,
-            serverVersion: conflict.server_updated_at,
-            localVersion: conflict.local_updated_at,
-            details: conflict.message
-          });
+          if (fetchError) {
+            errorCount++;
+            continue;
+          }
           
-          // Store conflict info for visual indicator
-          const conflictInfo = {
-            interventionId: conflict.intervention_id,
-            resolvedAt: new Date().toISOString(),
-            reason: 'server_wins',
-            message: 'Vos modifications ont été écrasées par une version plus récente du serveur'
-          };
+          // LWW: Compare timestamps
+          const localTime = new Date(intervention._modifiedAt || intervention._cachedAt);
+          const serverTime = new Date(serverData.updated_at);
           
-          // Store in localStorage for persistent notification
-          const recentConflicts = JSON.parse(localStorage.getItem('lww_conflicts') || '[]');
-          recentConflicts.unshift(conflictInfo);
-          // Keep only last 10 conflicts
-          localStorage.setItem('lww_conflicts', JSON.stringify(recentConflicts.slice(0, 10)));
-          
-          toast.warning(
-            <div className="space-y-1">
-              <p className="font-medium">Conflit de synchronisation résolu</p>
-              <p className="text-sm opacity-90">La version du serveur était plus récente et a été appliquée.</p>
-              <p className="text-xs opacity-75">Vérifiez l'historique de sync pour plus de détails.</p>
-            </div>,
-            { duration: 6000 }
-          );
-        }
-        
-        // Apply server updates
-        for (const serverUpdate of result.server_updates) {
-          const existing = await db.getIntervention(serverUpdate.id);
-          if (!existing || !existing._locallyModified) {
+          if (localTime > serverTime) {
+            // Local wins - push changes
+            const updates = {
+              notes_technicien: intervention.notes_technicien,
+              statut: intervention.statut,
+              checklist_completed: intervention.checklist_responses
+            };
+            
+            const { error: updateError } = await supabase
+              .from('interventions')
+              .update({ ...updates, updated_at: new Date().toISOString() })
+              .eq('id', intervention.id);
+            
+            if (!updateError) {
+              await db.interventions.put({
+                ...intervention,
+                _locallyModified: false,
+                _cachedAt: new Date().toISOString()
+              });
+              syncedCount++;
+            } else {
+              errorCount++;
+            }
+          } else {
+            // Server wins - update local
             await db.interventions.put({
-              ...serverUpdate,
+              ...serverData,
+              _locallyModified: false,
               _cachedAt: new Date().toISOString()
             });
+            
+            await db.logSyncEvent({
+              type: 'conflict',
+              entityId: intervention.id,
+              action: 'sync_lww',
+              result: 'lww_resolved',
+              conflictResolved: true,
+              serverVersion: serverData.updated_at,
+              localVersion: intervention._modifiedAt,
+              details: 'Conflit résolu: version serveur plus récente'
+            });
+            
+            conflictCount++;
           }
+        } catch (err) {
+          console.error(`[Offline] Error syncing intervention ${intervention.id}:`, err);
+          errorCount++;
         }
-        
-        // Update last sync time
-        await db.setLastSyncTime('interventions_last_sync', result.timestamp);
-        
-        console.log('[Offline] LWW Sync complete:', result.summary);
-        
-        if (result.summary.synced > 0) {
-          toast.success(`${result.summary.synced} intervention(s) synchronisée(s)`);
-        }
-        if (result.summary.conflicts > 0) {
-          toast.warning(`${result.summary.conflicts} conflit(s) résolu(s) (version serveur)`);
-        }
-        
-        setIsSyncing(false);
-        await loadDbStats();
-        
-        return result.summary;
-      } else {
-        console.error('[Offline] LWW Sync failed:', response.status);
-        setIsSyncing(false);
-        return null;
       }
+      
+      // Save sync time
+      await db.setLastSyncTime('interventions_last_sync');
+      setLastSyncTime(new Date());
+      
+      if (syncedCount > 0) {
+        toast.success(`${syncedCount} intervention(s) synchronisée(s)`);
+      }
+      if (conflictCount > 0) {
+        toast.info(`${conflictCount} conflit(s) résolu(s) (version serveur)`);
+      }
+      
+      return { synced: syncedCount, conflicts: conflictCount, errors: errorCount };
     } catch (error) {
-      console.error('[Offline] LWW Sync error:', error);
+      console.error('[Offline] LWW sync error:', error);
+      return { synced: 0, conflicts: 0, errors: 1 };
+    } finally {
       setIsSyncing(false);
-      return null;
     }
   }, [isOnline, isSyncing]);
 

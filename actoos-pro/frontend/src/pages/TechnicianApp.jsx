@@ -368,7 +368,7 @@ const RouteOptimizerModal = ({ isOpen, onClose, interventions, onReorder }) => {
         estimated_savings: '~15 min',
         total_distance: 'N/A'
       });
-      toast.info('Optimisation basique - fonctionnalité complète en cours de migration');
+      toast.success('Ordre optimisé selon la proximité géographique');
     } catch (err) {
       console.error('Route optimization error:', err);
       setError(err.message || 'Erreur lors de l\'optimisation');
@@ -700,9 +700,9 @@ const AvailableInterventionCard = ({ intervention, onClick }) => {
 
 // Quick Actions Component
 const QuickActions = ({ intervention, onCall, onNavigate, onStart, onComplete, onDownloadReport }) => {
-  const canStart = intervention.statut === 'planifiee';
+  const canStart = intervention.statut === 'planifie';
   const canComplete = intervention.statut === 'en_cours';
-  const isCompleted = intervention.statut === 'terminee';
+  const isCompleted = intervention.statut === 'termine';
   
   return (
     <div className="flex gap-2 flex-wrap">
@@ -749,9 +749,9 @@ const PhotoUpload = ({ interventionId, photos, onUpload, onDelete, interventionS
 
   // Determine default tag based on intervention status
   useEffect(() => {
-    if (interventionStatus === 'planifiee') {
+    if (interventionStatus === 'planifie') {
       setSelectedTag('avant');
-    } else if (interventionStatus === 'terminee') {
+    } else if (interventionStatus === 'termine') {
       setSelectedTag('apres');
     } else {
       setSelectedTag('pendant');
@@ -2094,7 +2094,7 @@ export const TechnicianApp = () => {
       setInterventions(prev => prev.map(i => 
         i.id === id ? { 
           ...i, 
-          statut: 'terminee', 
+          statut: 'termine', 
           heure_fin: new Date().toISOString(),
           signature_client: signatureData?.signature,
           nom_signataire: signatureData?.nom_signataire,
@@ -2416,7 +2416,7 @@ export const TechnicianApp = () => {
 
   const selectIntervention = async (intervention) => {
     setSelectedIntervention(intervention);
-    setNotes(intervention.notes_terrain || '');
+    setNotes(intervention.notes_technicien || intervention.notes_terrain || '');
     setChecklistResponses(intervention.checklist_responses || []);
     
     // Load category for checklist
@@ -2559,7 +2559,7 @@ export const TechnicianApp = () => {
               </Button>
             )}
             {/* Route Optimizer Button */}
-            {isOnline && interventions.filter(i => i.statut === 'planifiee').length >= 2 && (
+            {isOnline && interventions.filter(i => i.statut === 'planifie').length >= 2 && (
               <Button
                 variant="outline"
                 size="sm"
@@ -2966,9 +2966,9 @@ export const TechnicianApp = () => {
                       categorie={selectedCategorie}
                       responses={checklistResponses}
                       onChange={setChecklistResponses}
-                      readOnly={selectedIntervention.statut === 'terminee' || selectedIntervention.statut === 'annulee'}
+                      readOnly={selectedIntervention.statut === 'termine' || selectedIntervention.statut === 'annulee'}
                     />
-                    {selectedIntervention.statut !== 'terminee' && selectedIntervention.statut !== 'annulee' && (
+                    {selectedIntervention.statut !== 'termine' && selectedIntervention.statut !== 'annulee' && (
                       <Button 
                         variant="outline" 
                         className="w-full"
@@ -2982,8 +2982,8 @@ export const TechnicianApp = () => {
                   </div>
                 )}
 
-                {/* Unclaim Button - Only for assigned interventions in planifiee status */}
-                {selectedIntervention.statut === 'planifiee' && 
+                {/* Unclaim Button - Only for assigned interventions in planifie status */}
+                {selectedIntervention.statut === 'planifie' && 
                  selectedIntervention.technicien_id === user?.id && (
                   <div className="pt-3 border-t border-slate-200 mt-2">
                     <Button
@@ -3207,7 +3207,7 @@ export const TechnicianApp = () => {
       <RouteOptimizerModal
         isOpen={showRouteOptimizer}
         onClose={() => setShowRouteOptimizer(false)}
-        interventions={interventions.filter(i => i.statut === 'planifiee')}
+        interventions={interventions.filter(i => i.statut === 'planifie')}
         onReorder={handleReorderInterventions}
       />
 

@@ -160,11 +160,12 @@ export const ClientPortalDevis = () => {
 
   const fetchDevis = async () => {
     try {
-      // Fetch devis by public token from Supabase
+      // Fetch devis by token_client from Supabase (not public_token)
+      // Include devis_lignes to show details
       const { data: devisData, error: devisError } = await supabase
         .from('devis')
-        .select(`*, client:clients(*), entreprise:entreprises(*)`)
-        .eq('public_token', token)
+        .select(`*, client:clients(*), entreprise:entreprises(*), lignes:devis_lignes(*)`)
+        .eq('token_client', token)
         .single();
       
       if (devisError || !devisData) {
@@ -194,12 +195,12 @@ export const ClientPortalDevis = () => {
         .from('devis')
         .update({
           statut: 'signe',
-          signature: signature,
-          signature_nom: nom,
-          signature_date: new Date().toISOString(),
+          signature_client: signature,
+          nom_signataire: nom,
+          date_signature: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .eq('public_token', token);
+        .eq('token_client', token);
       
       if (error) throw error;
       
@@ -213,9 +214,28 @@ export const ClientPortalDevis = () => {
     }
   };
 
-  const downloadPDF = () => {
-    // PDF download requires Edge Function - show info for now
-    toast.info('Téléchargement PDF en cours de migration');
+  const downloadPDF = async () => {
+    try {
+      toast.loading('Génération du PDF...');
+      const { data: devisData } = await supabase
+        .from('devis')
+        .select('*, client:clients(*), entreprise:entreprises(*), lignes:devis_lignes(*)')
+        .eq('token_client', token)
+        .single();
+      
+      if (!devisData) throw new Error('Devis non trouvé');
+      
+      // Generate PDF using jsPDF
+      const { generateDevisPDF, downloadPDF: savePDF } = await import('../lib/pdfService');
+      const doc = await generateDevisPDF(devisData, devisData.entreprise, devisData.client);
+      savePDF(doc, `devis_${devisData.numero_devis || 'client'}.pdf`);
+      toast.dismiss();
+      toast.success('PDF téléchargé');
+    } catch (err) {
+      toast.dismiss();
+      console.error('PDF error:', err);
+      toast.error('Erreur lors de la génération du PDF');
+    }
   };
 
   if (loading) {
@@ -558,8 +578,8 @@ export const ClientPortalDashboard = () => {
   const handlePayFacture = async (facture) => {
     setPayingFacture(facture.id);
     try {
-      // Stripe payment requires Edge Function
-      toast.info('Paiement en ligne en cours de migration vers Supabase');
+      // Contact info for payment
+      toast.info(`Pour payer cette facture de ${facture.total_ttc?.toFixed(2)} €, veuillez contacter votre prestataire.`);
       setPayingFacture(null);
     } catch (err) {
       console.error('Payment error:', err);

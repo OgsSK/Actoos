@@ -22,6 +22,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
+import { ClientSelect } from '../components/ui/searchable-select';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger
@@ -72,7 +73,7 @@ export const FacturesList = () => {
       const allInterventions = await interventionsApi.list(user?.entreprise_id);
       // Filter completed interventions
       const billable = allInterventions.filter(i => 
-        i.statut === 'terminee' || i.statut === 'planifiee'
+        i.statut === 'termine' || i.statut === 'planifie'
       );
       setAvailableInterventions(billable);
     } catch (error) {
@@ -448,7 +449,7 @@ export const FacturesList = () => {
                         <p className="text-sm text-slate-500">{intervention.client_nom || 'Client'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-slate-500">{formatDate(intervention.date_intervention)}</p>
+                        <p className="text-sm text-slate-500">{formatDate(intervention.date_prevue)}</p>
                         <Badge variant="secondary" className={`status-${intervention.statut}`}>
                           {getStatusLabel(intervention.statut)}
                         </Badge>
@@ -497,28 +498,76 @@ export const FactureDetail = () => {
   };
 
   const handleEmit = async () => {
+    const toastId = toast.loading('Émission de la facture...');
     try {
       await facturesApi.update(id, { 
         statut: 'envoyee', 
         date_emission: new Date().toISOString() 
       });
-      toast.success('Facture émise');
-      // Note: Email sending requires Edge Function
+      
+      // Send email with PDF if client has email
+      if (facture.client?.email) {
+        toast.loading('Envoi par email...', { id: toastId });
+        
+        const { generateFacturePDF } = await import('../lib/pdfService');
+        const doc = await generateFacturePDF(facture, facture.entreprise || {});
+        const pdfBase64 = doc.output('datauristring').split(',')[1];
+        
+        const { sendFactureEmail } = await import('../lib/emailService');
+        const result = await sendFactureEmail(facture, facture.client, facture.entreprise || {}, pdfBase64);
+        
+        toast.dismiss(toastId);
+        if (result.method === 'mailto') {
+          toast.success('Facture émise - Email préparé dans votre client mail');
+        } else {
+          toast.success('Facture émise et envoyée par email avec le PDF !');
+        }
+      } else {
+        toast.dismiss(toastId);
+        toast.success('Facture émise (pas d\'email client)');
+      }
+      
       fetchFacture();
     } catch (error) {
       console.error('Error emitting facture:', error);
+      toast.dismiss(toastId);
       toast.error('Erreur lors de l\'émission');
     }
   };
 
   const handleRelance = async () => {
     setSendingRelance(true);
+    const toastId = toast.loading('Génération de la relance...');
     try {
-      // Note: Email sending requires Edge Function
-      toast.info('Envoi de relance en cours de migration vers Supabase');
+      if (!facture.client?.email) {
+        throw new Error('Aucune adresse email pour ce client');
+      }
+      
+      // Generate PDF for attachment
+      const { generateFacturePDF } = await import('../lib/pdfService');
+      const doc = await generateFacturePDF(facture, facture.entreprise || {});
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      
+      const { sendRelanceEmail } = await import('../lib/emailService');
+      const result = await sendRelanceEmail(facture, facture.client, facture.entreprise || {}, pdfBase64);
+      
+      // Update relance count
+      await facturesApi.update(id, { 
+        derniere_relance: new Date().toISOString(),
+        nombre_relances: (facture.nombre_relances || 0) + 1
+      });
+      
+      toast.dismiss(toastId);
+      if (result.method === 'mailto') {
+        toast.success('Email de relance préparé - Votre client mail s\'ouvre');
+      } else {
+        toast.success('Relance envoyée avec la facture en pièce jointe !');
+      }
+      
       fetchFacture();
     } catch (error) {
       console.error('Error sending relance:', error);
+      toast.dismiss(toastId);
       toast.error(error.message || 'Erreur lors de l\'envoi de la relance');
     } finally {
       setSendingRelance(false);
@@ -578,15 +627,16 @@ export const FactureDetail = () => {
 
   const downloadPDF = async () => {
     try {
-      await edgeFunctionsApi.downloadPDF({ 
-        type: 'facture', 
-        id, 
-        entreprise_id: facture.entreprise_id,
-        filename: `facture_${facture.numero_facture || facture.numero || id.slice(0, 8)}.pdf`
-      });
+      toast.loading('Génération du PDF...');
+      const { generateFacturePDF, downloadPDF: savePDF } = await import('../lib/pdfService');
+      const doc = await generateFacturePDF(facture, facture.entreprise || {}, facture.client);
+      savePDF(doc, `facture_${facture.numero_facture || id.slice(0, 8)}.pdf`);
+      toast.dismiss();
+      toast.success('PDF téléchargé');
     } catch (error) {
+      toast.dismiss();
       console.error('Error downloading PDF:', error);
-      toast.error('Erreur lors du téléchargement');
+      toast.error('Erreur lors de la génération du PDF');
     }
   };
 
@@ -1062,21 +1112,12 @@ export const FactureForm = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Client *</Label>
-                <Select
+                <ClientSelect
+                  clients={clients}
                   value={formData.client_id}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
-                >
-                  <SelectTrigger data-testid="facture-client-select">
-                    <SelectValue placeholder="Sélectionner un client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.nom} {client.prenom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  data-testid="facture-client-select"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Échéance (jours)</Label>

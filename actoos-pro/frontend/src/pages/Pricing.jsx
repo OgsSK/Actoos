@@ -8,9 +8,37 @@ import { Badge } from '../components/ui/badge';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Check, Loader2, Sparkles, Building, Zap, Crown, ArrowRight, CheckCircle, Gift, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+// Static plans - pricing handled by Stripe
+const STATIC_PLANS = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price: 0,
+    price_annual: 0,
+    description: 'Parfait pour démarrer',
+    features: ['1 utilisateur', '50 interventions/mois', 'App mobile PWA', 'Devis & Factures basiques'],
+    badge: 'Gratuit'
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: 49,
+    price_annual: 470,
+    description: 'Pour les équipes en croissance',
+    features: ['Jusqu\'à 5 utilisateurs', 'Interventions illimitées', 'Devis multi-options', 'Dispatch board', 'Support prioritaire'],
+    badge: 'Populaire'
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 149,
+    price_annual: 1428,
+    description: 'Pour les grandes entreprises',
+    features: ['Utilisateurs illimités', 'API personnalisée', 'Optimisation tournées', 'Support dédié', 'SLA garanti'],
+    badge: 'Tout inclus'
+  }
+];
 
 // Plan Icons
 const PlanIcons = {
@@ -37,11 +65,11 @@ export const PricingPage = () => {
 
   const loadPlans = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/plans`);
-      setPlans(response.data);
+      // Use static plans - Stripe handles actual pricing
+      setPlans(STATIC_PLANS);
     } catch (error) {
       console.error('Error loading plans:', error);
-      toast.error('Erreur lors du chargement des plans');
+      setPlans(STATIC_PLANS);
     } finally {
       setLoading(false);
     }

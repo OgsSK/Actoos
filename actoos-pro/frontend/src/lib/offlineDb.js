@@ -720,7 +720,7 @@ class ActoosDatabase extends Dexie {
       const offlineIntervention = {
         tempId,
         ...interventionData,
-        statut: 'planifiee',
+        statut: 'planifie',
         synced: false,
         created_at: new Date().toISOString()
       };
