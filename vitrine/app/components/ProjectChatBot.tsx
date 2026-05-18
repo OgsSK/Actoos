@@ -506,28 +506,47 @@ export default function ProjectChatBot() {
           )}
 
           {/* Preview active */}
-          {showPreview && previewCode && (
-            <div className="flex-1 bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden flex flex-col min-h-0">
-              <div className="p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl flex items-center justify-between shrink-0">
-                <span className="font-bold text-sm text-slate-700">🖥️ Conception interactive</span>
-                <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
-              </div>
-              <div className="flex-1 min-h-0">
-                <SandpackProvider template="react" files={{ '/App.js': previewCode }} customSetup={{ dependencies: { react: '^18.0.0', 'react-dom': '^18.0.0' } }}>
-                  <SandpackPreview showNavigator={false} showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: '100%' }} />
-                </SandpackProvider>
-              </div>
-              <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl space-y-2 shrink-0">
-                <div className="flex gap-2">
-                  <input type="text" value={adjustInput} onChange={e => setAdjustInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAdjust(adjustInput); }} placeholder="Modifier..." className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37]" />
-                  <button onClick={() => handleAdjust(adjustInput)} disabled={!adjustInput.trim() || loading} className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm">Ajuster</button>
-                </div>
-                <button onClick={handleSaveModule} className="w-full bg-green-500 text-white py-2 rounded-xl font-bold text-sm">
-                  Enregistrer dans le projet
-                </button>
-              </div>
-            </div>
-          )}
+{showPreview && previewCode && (
+  <div className="flex-1 bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden flex flex-col min-h-0" style={{ height: '100%' }}>
+    <div className="p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl flex items-center justify-between shrink-0">
+      <span className="font-bold text-sm text-slate-700">🖥️ Conception interactive</span>
+      <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+    </div>
+    <div className="flex-1" style={{ minHeight: 0, height: '100%' }}>
+      <SandpackProvider
+        template="react"
+        files={{ '/App.js': previewCode }}
+        customSetup={{ dependencies: { react: '^18.0.0', 'react-dom': '^18.0.0' } }}
+        style={{ height: '100%' }}
+      >
+        <SandpackPreview
+          showNavigator={false}
+          showOpenInCodeSandbox={false}
+          showRefreshButton={false}
+          style={{ height: '100%' }}
+        />
+      </SandpackProvider>
+    </div>
+    <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl space-y-2 shrink-0">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={adjustInput}
+          onChange={e => setAdjustInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleAdjust(adjustInput); }}
+          placeholder="Modifier..."
+          className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+        />
+        <button onClick={() => handleAdjust(adjustInput)} disabled={!adjustInput.trim() || loading} className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm">
+          Ajuster
+        </button>
+      </div>
+      <button onClick={handleSaveModule} className="w-full bg-green-500 text-white py-2 rounded-xl font-bold text-sm">
+        Enregistrer dans le projet
+      </button>
+    </div>
+  </div>
+)}
 
           {/* Modules enregistrés */}
           {modules.length > 0 && (
