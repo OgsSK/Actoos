@@ -59,6 +59,7 @@ export default function ProjectChatBot() {
   });
 
   const [previewReady, setPreviewReady] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false); // ← indicateur de chargement
 
   // Copie & Édition
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -163,7 +164,6 @@ export default function ProjectChatBot() {
     const editedIndex = messages.findIndex((m) => m.id === editingId);
     if (editedIndex === -1) return;
 
-    // Garder les messages avant celui qu'on édite
     const truncated = messages.slice(0, editedIndex);
     const editedMsg: Message = { id: generateId(), role: 'user', content: editContent.trim() };
     const updatedMessages = [...truncated, editedMsg];
@@ -171,12 +171,11 @@ export default function ProjectChatBot() {
     setMessages(updatedMessages);
     setEditingId(null);
     setEditContent('');
-    setPreviewCode('');       // reset la preview après édition
+    setPreviewCode('');
     setShowPreview(false);
     setPreviewReady(false);
     setLoading(true);
 
-    // Relancer l'IA avec la conversation modifiée
     try {
       const res = await fetch('/api/generate-proposal', {
         method: 'POST',
@@ -258,7 +257,7 @@ export default function ProjectChatBot() {
     if (!previewProject.project.trim()) return;
 
     setShowPreviewForm(false);
-    setLoading(true);
+    setPreviewLoading(true); // ← afficher le squelette
 
     const summary = `Projet : ${previewProject.project}. Nom : ${previewProject.projectName}. Description : ${previewProject.description}.`;
     const userMsg: Message = { id: generateId(), role: 'user', content: summary };
@@ -294,7 +293,7 @@ export default function ProjectChatBot() {
     } catch {
       setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: "Erreur lors de la génération de l'aperçu." }]);
     } finally {
-      setLoading(false);
+      setPreviewLoading(false);
     }
   };
 
@@ -367,7 +366,7 @@ export default function ProjectChatBot() {
         {/* --- PANEAU CHAT --- */}
         <div className="flex-1 flex flex-col bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden">
           {/* Barre d'outils */}
-          <div className="p-4 flex items-center gap-3 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl">
+          <div className="p-4 flex items-center gap-3 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl shrink-0">
             <div className="flex items-center gap-3 flex-1">
               <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
                 <Zap size={20} className="text-white" />
@@ -429,7 +428,7 @@ export default function ProjectChatBot() {
                     </div>
                   )}
 
-                  {/* Boutons copier / modifier (apparaissent au survol) */}
+                  {/* Boutons copier / modifier */}
                   {editingId !== msg.id && (
                     <div className="absolute -bottom-6 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => handleCopy(msg.content, msg.id)} className="p-1 rounded text-slate-400 hover:text-slate-600 bg-white shadow-sm" title="Copier">
@@ -511,66 +510,72 @@ export default function ProjectChatBot() {
           </div>
 
           {/* Barre de saisie */}
-          <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl">
+          <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl shrink-0">
             <div className="flex gap-2">
               <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Écrivez votre message..." className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] transition-all" disabled={loading} />
               <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white p-3 rounded-xl disabled:opacity-50 hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-200">
                 {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
               </button>
             </div>
+            <p className="text-[9px] text-slate-400 text-center mt-2">Propulsé par l'IA • Réponses en temps réel</p>
           </div>
         </div>
 
+        {/* --- SQUELETTE DE CHARGEMENT PREVIEW --- */}
+        {previewLoading && !previewCode && (
+          <div className="w-[560px] flex items-center justify-center bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60">
+            <div className="text-center p-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#D4AF37] border-t-transparent mx-auto mb-4"></div>
+              <p className="text-slate-600 font-medium">Génération de l'aperçu en cours...</p>
+              <p className="text-xs text-slate-400 mt-2">Cela peut prendre quelques secondes</p>
+            </div>
+          </div>
+        )}
+
         {/* --- PANEAU PREVIEW --- */}
-      {showPreview && previewCode && (
-  <div className="w-[560px] flex flex-col bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden">
-    <div className="p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl flex items-center justify-between shrink-0">
-      <span className="font-bold text-sm text-slate-700">🖥️ Aperçu interactif</span>
-      <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
-    </div>
-    <div className="flex-1" style={{ minHeight: 0 }}>
-      <SandpackProvider
-        template="react"
-        files={{ "/App.js": previewCode }}
-        customSetup={{ dependencies: { react: "^18.0.0", "react-dom": "^18.0.0" } }}
-      >
-        <SandpackPreview
-          showNavigator={false}
-          showOpenInCodeSandbox={false}
-          showRefreshButton={false}
-          style={{ height: "100%" }}
-        />
-      </SandpackProvider>
-    </div>
-    <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl space-y-2 shrink-0">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={adjustInput}
-          onChange={(e) => setAdjustInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") handleAdjust(adjustInput); }}
-          placeholder="Modifier (ex: changer la couleur, ajouter un bouton…)"
-          className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
-        />
-        <button
-          onClick={() => handleAdjust(adjustInput)}
-          disabled={!adjustInput.trim() || loading}
-          className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 disabled:opacity-50"
-        >
-          Ajuster
-        </button>
-      </div>
-      {previewReady && (
-        <button
-          onClick={() => setShowSubmitPreviewForm(true)}
-          className="w-full bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-amber-200 hover:scale-[1.01] transition-all"
-        >
-          Soumettre l'aperçu
-        </button>
-      )}
-    </div>
-  </div>
-)}
+        {showPreview && previewCode && (
+          <div className="w-[560px] flex flex-col bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden">
+            <div className="p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl flex items-center justify-between shrink-0">
+              <span className="font-bold text-sm text-slate-700">🖥️ Aperçu interactif</span>
+              <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+            </div>
+            <div className="flex-1 min-h-0" style={{ height: "100%" }}>
+              <SandpackProvider
+                template="react"
+                files={{ "/App.js": previewCode }}
+                customSetup={{ dependencies: { react: "^18.0.0", "react-dom": "^18.0.0" } }}
+                style={{ height: "100%" }}
+              >
+                <SandpackPreview
+                  showNavigator={false}
+                  showOpenInCodeSandbox={false}
+                  showRefreshButton={false}
+                  style={{ height: "100%" }}
+                />
+              </SandpackProvider>
+            </div>
+            <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl space-y-2 shrink-0">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={adjustInput}
+                  onChange={(e) => setAdjustInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAdjust(adjustInput); }}
+                  placeholder="Modifier (ex: changer la couleur, ajouter un bouton…)"
+                  className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                />
+                <button onClick={() => handleAdjust(adjustInput)} disabled={!adjustInput.trim() || loading} className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 disabled:opacity-50">
+                  Ajuster
+                </button>
+              </div>
+              {previewReady && (
+                <button onClick={() => setShowSubmitPreviewForm(true)} className="w-full bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-amber-200 hover:scale-[1.01] transition-all">
+                  Soumettre l'aperçu
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
