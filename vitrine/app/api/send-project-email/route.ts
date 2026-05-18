@@ -1,42 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { name, email, message, html } = await req.json();
-    if (!name || !email) {
-      return NextResponse.json({ error: 'Nom et email requis' }, { status: 400 });
-    }
+    const body = await req.json();
 
-    const emailHtml = html || `
-      <h2>Nouveau message depuis la vitrine</h2>
-      <p><strong>Nom :</strong> ${name}</p>
-      <p><strong>Email :</strong> ${email}</p>
-      <p><strong>Message :</strong> ${message || '-'}</p>
-    `;
+    const res = await fetch(
+      'https://zmngftlkdimwvkxmduvr.supabase.co/functions/v1/handle-request/send-email',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }
+    );
 
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'Actoos <noreply@actoos.com>',
-        to: 'contact@actoos.com',
-        subject: `Nouveau projet : ${name}`,
-        html: emailHtml,
-      }),
+    const data = await res.json();
+    return new Response(JSON.stringify(data), {
+      status: res.status,
+      headers: { 'Content-Type': 'application/json' },
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Erreur Resend:', response.status, errorText);
-      return NextResponse.json({ error: 'Erreur envoi email' }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('🔥 send-project-email error:', error);
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+    return new Response(
+      JSON.stringify({ error: 'Erreur serveur' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
