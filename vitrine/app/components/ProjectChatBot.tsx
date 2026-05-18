@@ -382,7 +382,7 @@ export default function ProjectChatBot() {
 
             <div className="flex items-center gap-2">
               <button onClick={openPreviewForm} className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-[#D4AF37] text-white hover:bg-amber-500 shadow-lg shadow-amber-200">
-                <Eye size={14} /> Preview
+                <Eye size={14} /> Conception
               </button>
               <button onClick={openDevisForm} className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-slate-900 text-white hover:bg-slate-800 shadow-lg">
                 <FileText size={14} /> Devis
