@@ -50,28 +50,32 @@ export default function ProjectChatBot() {
   }, []);
 
   // Demander la preview
-  const handleRequestPreview = async () => {
-    if (previewCode || loading) return;
-    setLoading(true);
-    try {
-      const res = await fetch('/api/generate-proposal', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate-preview', role: 'designer', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
-      });
-      const data = await res.json();
-      if (data.previewCode) {
-        setPreviewCode(data.previewCode);
-        setPreviewRequested(true);
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '🖥️ Voici un aperçu interactif de votre projet. Vous pouvez le modifier ou me demander des ajustements.' }]);
-      } else {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Je n\'ai pas réussi à générer l\'aperçu, mais je peux continuer à vous aider.' }]);
-      }
-    } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
-    } finally {
-      setLoading(false);
+ const handleRequestPreview = async () => {
+  if (previewCode || loading) return;
+  setLoading(true);
+  try {
+    const res = await fetch('/api/generate-proposal', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'generate-preview', role: 'designer', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
+    });
+    const data = await res.json();
+    console.log('📥 Réponse preview :', data);
+    if (data.previewCode && data.previewCode.trim().length > 0) {
+      setPreviewCode(data.previewCode);
+      setPreviewRequested(true);
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '🖥️ Voici un aperçu interactif de votre projet. Vous pouvez le modifier ou me demander des ajustements.' }]);
+    } else if (data.error) {
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Désolé, je n'ai pas réussi à générer l'aperçu : ${data.error}. Je peux continuer à vous aider et vous proposer un devis.` }]);
+    } else {
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Je n\'ai pas réussi à générer l\'aperçu pour le moment. Voulez-vous que je vous propose un devis à la place ?' }]);
     }
-  };
+  } catch (error) {
+    console.error('🔥 Erreur preview:', error);
+    setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion lors de la génération de l\'aperçu.' }]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSend = async (content?: string) => {
     const messageContent = content || input.trim();
