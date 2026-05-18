@@ -56,7 +56,7 @@ export default function ProjectChatBot() {
       setMessages([{
         id: generateId(),
         role: 'assistant',
-        content: 'Bonjour ! Je suis l\'assistant Actoos. Décrivez-moi votre projet.',
+        content: 'Bonjour ! Je suis l\'agent Actoos. Décrivez-moi votre projet.',
       }]);
     }
   }, []);
@@ -239,7 +239,7 @@ export default function ProjectChatBot() {
             <Zap size={20} className="text-white" />
           </div>
           <div>
-            <span className="text-slate-900 font-bold text-lg tracking-tight">Assistant Actoos</span>
+            <span className="text-white font-bold text-lg tracking-tight">Agent Actoos</span>
             <div className="flex items-center space-x-1.5">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
               <span className="text-[10px] text-green-600 font-medium">En ligne</span>
