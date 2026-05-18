@@ -20,20 +20,17 @@ export default function ProjectChatBot() {
   const [editContent, setEditContent] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [includeConversation, setIncludeConversation] = useState(true);
+  const [adjustInput, setAdjustInput] = useState(''); // pour le champ d'ajustement
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-  // Nettoyer les réponses de tout JSON résiduel
   const cleanResponse = (text: string): string => {
     if (!text) return '';
-    const cleaned = text.replace(/\{[^}]*\}/g, '').trim();
-    console.log('🧹 Nettoyage réponse :', { avant: text, apres: cleaned });
-    return cleaned;
+    return text.replace(/\{[^}]*\}/g, '').trim();
   };
 
-  // Scroll fluide
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
@@ -43,14 +40,12 @@ export default function ProjectChatBot() {
     }
   }, [messages]);
 
-  // Auto-focus après envoi
   useEffect(() => {
     if (!loading) {
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [loading]);
 
-  // Message de bienvenue
   useEffect(() => {
     if (messages.length === 0) {
       setMessages([{
@@ -72,7 +67,6 @@ export default function ProjectChatBot() {
     setLoading(true);
 
     try {
-      console.log('📤 Envoi à l\'API...', newMessages);
       const res = await fetch('/api/generate-proposal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -81,7 +75,6 @@ export default function ProjectChatBot() {
         }),
       });
       const data = await res.json();
-      console.log('📥 Réponse API :', data);
 
       if (data.error) {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` }]);
@@ -94,8 +87,7 @@ export default function ProjectChatBot() {
           setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
         }
       }
-    } catch (error) {
-      console.error('🔥 Erreur fetch:', error);
+    } catch {
       setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
     } finally {
       setLoading(false);
@@ -146,7 +138,7 @@ export default function ProjectChatBot() {
           setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
         }
       }
-    } catch (error) {
+    } catch {
       setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
     } finally {
       setLoading(false);
@@ -160,8 +152,12 @@ export default function ProjectChatBot() {
     });
   };
 
-  const handleAdjustProposal = () => {
-    handleSend('Peux-tu ajuster ce devis ?');
+  // Envoi d'une demande d'ajustement
+  const handleAdjustSubmit = () => {
+    if (!adjustInput.trim()) return;
+    const modification = adjustInput.trim();
+    setAdjustInput('');
+    handleSend(`J'aimerais modifier le devis : ${modification}`);
   };
 
   const handleSubmitProject = async () => {
@@ -191,7 +187,7 @@ export default function ProjectChatBot() {
           <h3 style="color:#2563eb">💬 Conversation</h3>
           ${messages.map(m => `
             <div style="margin-bottom:8px">
-              <span style="font-weight:bold;color:${m.role === 'user' ? '#2563eb' : '#10b981'}">${m.role === 'user' ? '👤 Client' : '🤖 Assistant'}</span><br>
+              <span style="font-weight:bold;color:${m.role === 'user' ? '#2563eb' : '#10b981'}">${m.role === 'user' ? '👤 Client' : '🤖 Agent'}</span><br>
               <span style="background:#f9fafb;padding:4px 8px;border-radius:4px;display:inline-block;max-width:100%">${m.content}</span>
             </div>
           `).join('')}
@@ -214,11 +210,11 @@ export default function ProjectChatBot() {
       if (data.success) {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Votre demande a bien été transmise ! L\'équipe Actoos vous contactera dans les 24h.' }]);
         setShowForm(false);
-        setProposal(null); // Permet de continuer la conversation
+        setProposal(null); // Continuer la conversation
       } else {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de l\'envoi.' }]);
       }
-    } catch (error) {
+    } catch {
       setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
     } finally {
       setLoading(false);
@@ -227,9 +223,7 @@ export default function ProjectChatBot() {
 
   return (
     <div className="relative max-w-2xl mx-auto">
-      {/* Conteneur flottant glassmorphism */}
       <div className="relative bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 ring-1 ring-black/5 overflow-hidden flex flex-col" style={{ height: '620px' }}>
-        {/* Orbe de lumière décoratif */}
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-[#D4AF37]/20 rounded-full blur-[80px] pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-sky-400/10 rounded-full blur-[80px] pointer-events-none" />
 
@@ -239,14 +233,14 @@ export default function ProjectChatBot() {
             <Zap size={20} className="text-white" />
           </div>
           <div>
-            <span className="text-white font-bold text-lg tracking-tight">Agent Actoos</span>
+            <span className="text-slate-900 font-bold text-lg tracking-tight">Agent Actoos</span>
             <div className="flex items-center space-x-1.5">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
               <span className="text-[10px] text-green-600 font-medium">En ligne</span>
             </div>
           </div>
           <div className="ml-auto flex items-center space-x-2">
-            <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded-full">IA</span>
+            <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded-full">Agent</span>
             <Sparkles size={14} className="text-[#D4AF37]" />
           </div>
         </div>
@@ -261,10 +255,7 @@ export default function ProjectChatBot() {
                     <input
                       value={editContent}
                       onChange={e => setEditContent(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(); }
-                        if (e.key === 'Escape') cancelEdit();
-                      }}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(); } if (e.key === 'Escape') cancelEdit(); }}
                       className="w-full bg-white border border-[#D4AF37] rounded-xl px-4 py-3 text-sm outline-none"
                       autoFocus
                     />
@@ -299,7 +290,6 @@ export default function ProjectChatBot() {
             </div>
           ))}
 
-          {/* Indicateur de frappe */}
           {loading && (
             <div className="flex justify-start animate-fade-in">
               <div className="bg-white/80 backdrop-blur-sm p-3 rounded-2xl rounded-bl-md border border-slate-200/80 shadow-sm">
@@ -312,7 +302,7 @@ export default function ProjectChatBot() {
             </div>
           )}
 
-          {/* Carte de proposition */}
+          {/* Carte de proposition avec ajustement */}
           {proposal && !showForm && (
             <div className="pt-2 space-y-3 animate-fade-in">
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl">
@@ -346,14 +336,8 @@ export default function ProjectChatBot() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100">
-                  <div>
-                    <p className="text-xs text-slate-400 mb-0.5">Budget estimé</p>
-                    <p className="font-bold text-slate-900">{proposal.budget}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-400 mb-0.5">Délai estimé</p>
-                    <p className="font-bold text-slate-900">{proposal.timeline}</p>
-                  </div>
+                  <div><p className="text-xs text-slate-400 mb-0.5">Budget estimé</p><p className="font-bold text-slate-900">{proposal.budget}</p></div>
+                  <div><p className="text-xs text-slate-400 mb-0.5">Délai estimé</p><p className="font-bold text-slate-900">{proposal.timeline}</p></div>
                 </div>
 
                 <p className="text-[10px] text-slate-400 mt-3 pt-3 border-t border-slate-100">
@@ -363,34 +347,37 @@ export default function ProjectChatBot() {
 
               <div className="flex gap-2">
                 <button onClick={() => setShowForm(true)} className="flex-1 bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white py-3 rounded-xl font-bold flex items-center justify-center space-x-2 hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-200">
-                  <Mail size={16} />
-                  <span>Contacter Actoos</span>
+                  <Mail size={16} /><span>Contacter Actoos</span>
                 </button>
-                <button onClick={handleAdjustProposal} className="flex-1 bg-white text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center space-x-2 hover:bg-slate-50 transition-all border border-slate-200 shadow-sm">
-                  <Edit3 size={16} />
-                  <span>Ajuster le devis</span>
+              </div>
+
+              {/* Champ d'ajustement */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={adjustInput}
+                  onChange={e => setAdjustInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAdjustSubmit(); }}
+                  placeholder="Modifier le devis (ex: ajouter un blog, changer le prix…)"
+                  className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37] transition-colors"
+                />
+                <button onClick={handleAdjustSubmit} disabled={!adjustInput.trim() || loading} className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 transition-colors disabled:opacity-50">
+                  Ajuster
                 </button>
               </div>
             </div>
           )}
 
-          {/* Formulaire */}
+          {/* Formulaire de contact */}
           {showForm && (
             <div className="pt-2 space-y-3 animate-fade-in">
               <input type="text" placeholder="Votre nom" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37] transition-colors" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
               <input type="email" placeholder="Votre email" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37] transition-colors" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
               <textarea placeholder="Message (optionnel)" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37] transition-colors" rows={2} value={formData.message} onChange={e => setFormData({ ...formData, message: e.target.value })} />
-              
               <label className="flex items-center space-x-2 text-sm text-slate-600 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={includeConversation}
-                  onChange={(e) => setIncludeConversation(e.target.checked)}
-                  className="rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
-                />
+                <input type="checkbox" checked={includeConversation} onChange={(e) => setIncludeConversation(e.target.checked)} className="rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]" />
                 <span>Joindre la conversation pour plus de contexte</span>
               </label>
-
               <button onClick={handleSubmitProject} className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-xl font-bold disabled:opacity-50 hover:from-green-400 hover:to-emerald-400 transition-all shadow-lg shadow-green-200" disabled={loading}>
                 {loading ? 'Envoi...' : 'Envoyer ma demande'}
               </button>
@@ -407,27 +394,16 @@ export default function ProjectChatBot() {
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               placeholder="Écrivez votre message..."
               className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] transition-all"
               disabled={loading}
             />
-            <button
-              onClick={() => handleSend()}
-              disabled={loading || !input.trim()}
-              className="bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white p-3 rounded-xl disabled:opacity-50 hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-200"
-            >
+            <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white p-3 rounded-xl disabled:opacity-50 hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-200">
               {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>
           </div>
-          <p className="text-[9px] text-slate-400 text-center mt-2">
-            Propulsé par l'IA • Réponses en temps réel
-          </p>
+          <p className="text-[9px] text-slate-400 text-center mt-2">Propulsé par l'IA • Réponses en temps réel</p>
         </div>
       </div>
     </div>
