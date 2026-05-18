@@ -18,23 +18,17 @@ export default function ProjectChatBot() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [previewCode, setPreviewCode] = useState<string>('');
   const [showPreview, setShowPreview] = useState(false);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [quoteLoading, setQuoteLoading] = useState(false);
   const [adjustInput, setAdjustInput] = useState('');
-  const [projectDetected, setProjectDetected] = useState(false);
-  const [showMiniForm, setShowMiniForm] = useState<'preview' | 'quote' | null>(null);
+
+  // États pour les mini-formulaires
+  const [showDevisForm, setShowDevisForm] = useState(false);
+  const [showPreviewForm, setShowPreviewForm] = useState(false);
+  const [useQuoteData, setUseQuoteData] = useState(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
-
-  // Détection du projet : au moins 2 messages utilisateur
-  useEffect(() => {
-    if (!projectDetected && messages.filter(m => m.role === 'user').length >= 2) {
-      setProjectDetected(true);
-    }
-  }, [messages, projectDetected]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -78,78 +72,103 @@ export default function ProjectChatBot() {
     }
   };
 
-  // Actions des boutons
-  const handlePreviewClick = () => {
-    if (!projectDetected) return;
-    if (messages.filter(m => m.role === 'user').length >= 3) {
-      generatePreview();
-    } else {
-      setShowMiniForm('preview');
-    }
+  // ----- BOUTON DEVIS -----
+  const handleDevisClick = () => {
+    // Si on a déjà un devis, on le réaffiche ? Non, on laisse l'utilisateur en générer un nouveau s'il veut.
+    // On ouvre toujours le mini-formulaire (sauf s'il est déjà ouvert)
+    setShowDevisForm(true);
+    setShowPreviewForm(false); // fermer l'autre
   };
 
-  const handleQuoteClick = () => {
-    if (!projectDetected) return;
-    if (messages.filter(m => m.role === 'user').length >= 3) {
-      generateQuote();
-    } else {
-      setShowMiniForm('quote');
-    }
-  };
+  const handleDevisFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    const title = (form.elements.namedItem('title') as HTMLInputElement).value.trim();
+    const desc = (form.elements.namedItem('desc') as HTMLTextAreaElement).value.trim();
+    if (!title) return;
 
-  const generatePreview = async () => {
-    setPreviewLoading(true);
+    setShowDevisForm(false);
+    setLoading(true);
+
+    // Construire un message utilisateur simulant la demande de devis
+    const devisRequest = `Titre du projet : ${title}. Description : ${desc || 'Voir conversation'}.`;
+    const userMsg: Message = { id: generateId(), role: 'user', content: devisRequest };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+
     try {
       const res = await fetch('/api/generate-proposal', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate-preview', role: 'designer', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
+        body: JSON.stringify({ action: 'generate-proposal', role: 'commercial', messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
+      });
+      const data = await res.json();
+      if (data.ready && data.proposal) {
+        setProposal(data.proposal);
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre devis personnalisé. Vous pouvez le modifier ou nous contacter directement.' }]);
+      } else {
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Je n\'ai pas pu générer le devis. Veuillez réessayer avec plus de détails.' }]);
+      }
+    } catch {
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de la génération du devis.' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ----- BOUTON PREVIEW -----
+  const handlePreviewClick = () => {
+    setShowPreviewForm(true);
+    setShowDevisForm(false);
+    // Si un devis existe, on propose de l'utiliser par défaut
+    if (proposal) {
+      setUseQuoteData(true);
+    }
+  };
+
+  const handlePreviewFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    const title = (form.elements.namedItem('title') as HTMLInputElement).value.trim();
+    const desc = (form.elements.namedItem('desc') as HTMLTextAreaElement).value.trim();
+    const useQuote = (form.elements.namedItem('useQuote') as HTMLInputElement)?.checked;
+
+    if (!title && !useQuote) return;
+
+    setShowPreviewForm(false);
+    setLoading(true);
+
+    let previewRequest = '';
+    if (useQuote && proposal) {
+      previewRequest = `Utilise le devis suivant pour générer la preview : ${JSON.stringify(proposal)}`;
+    } else {
+      previewRequest = `Titre du projet : ${title}. Description : ${desc || 'Voir conversation'}.`;
+    }
+
+    const userMsg: Message = { id: generateId(), role: 'user', content: previewRequest };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+
+    try {
+      const res = await fetch('/api/generate-proposal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate-preview', role: 'designer', messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
       });
       const data = await res.json();
       if (data.previewCode && data.previewCode.trim().length > 0) {
         setPreviewCode(data.previewCode);
         setShowPreview(true);
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '🖥️ Voici l\'aperçu interactif. Vous pouvez le modifier dans le panneau de droite.' }]);
       } else {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Désolé, je n\'ai pas pu générer l\'aperçu. Veuillez réessayer.' }]);
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Désolé, je n\'ai pas pu générer l\'aperçu.' }]);
       }
     } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de la génération.' }]);
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de la génération de l\'aperçu.' }]);
     } finally {
-      setPreviewLoading(false);
+      setLoading(false);
     }
   };
 
-  const generateQuote = async () => {
-    setQuoteLoading(true);
-    try {
-      const res = await fetch('/api/generate-proposal', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate-proposal', role: 'commercial', messages: messages.map(m => ({ role: m.role, content: m.content })) }),
-      });
-      const data = await res.json();
-      if (data.ready && data.proposal) {
-        setProposal(data.proposal);
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre devis personnalisé :' }]);
-      } else {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Je n\'ai pas assez d\'informations pour le devis. Veuillez décrire votre projet plus en détail.' }]);
-      }
-    } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de la génération du devis.' }]);
-    } finally {
-      setQuoteLoading(false);
-    }
-  };
-
-  const handleMiniFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const form = e.currentTarget as HTMLFormElement;
-    const title = (form.elements.namedItem('title') as HTMLInputElement).value;
-    const desc = (form.elements.namedItem('desc') as HTMLTextAreaElement).value;
-    if (!title.trim()) return;
-    const newMsg = `Projet : ${title}. Description : ${desc}`;
-    setShowMiniForm(null);
-    handleSend(newMsg);
-  };
-
+  // ----- AJUSTEMENT PREVIEW -----
   const handleAdjust = async (modification: string) => {
     if (!modification.trim() || !previewCode || loading) return;
     setAdjustInput('');
@@ -168,6 +187,7 @@ export default function ProjectChatBot() {
       const data = await res.json();
       if (data.previewCode) {
         setPreviewCode(data.previewCode);
+        // Si un devis existe, le mettre à jour automatiquement
         if (proposal) {
           const quoteRes = await fetch('/api/generate-proposal', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -185,6 +205,7 @@ export default function ProjectChatBot() {
     }
   };
 
+  // ----- ENVOI CONTACT -----
   const handleSubmit = async () => {
     if (!formData.name || !formData.email) return;
     setLoading(true);
@@ -198,7 +219,7 @@ export default function ProjectChatBot() {
         body: JSON.stringify({ name: formData.name, email: formData.email, message: formData.message, html: emailHtml }),
       });
       if (res.ok) {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Votre demande a bien été transmise !' }]);
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Votre demande a bien été transmise ! L\'équipe Actoos vous contactera dans les 24h.' }]);
         setProposal(null);
       }
     } catch {
@@ -229,27 +250,17 @@ export default function ProjectChatBot() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePreviewClick}
-                disabled={!projectDetected || previewLoading}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-                  projectDetected && !previewLoading
-                    ? 'bg-[#D4AF37] text-white hover:bg-amber-500 shadow-lg shadow-amber-200'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                }`}
+                className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-[#D4AF37] text-white hover:bg-amber-500 shadow-lg shadow-amber-200"
               >
                 <Eye size={14} />
-                {previewLoading ? 'Génération...' : 'Preview'}
+                Preview
               </button>
               <button
-                onClick={handleQuoteClick}
-                disabled={!projectDetected || quoteLoading}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-                  projectDetected && !quoteLoading
-                    ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                }`}
+                onClick={handleDevisClick}
+                className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-slate-900 text-white hover:bg-slate-800 shadow-lg"
               >
                 <FileText size={14} />
-                {quoteLoading ? 'Génération...' : 'Devis'}
+                Devis
               </button>
               {showPreview && (
                 <button onClick={() => setShowPreview(!showPreview)} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200">
@@ -285,16 +296,48 @@ export default function ProjectChatBot() {
               </div>
             )}
 
-            {/* Mini-formulaire si pas assez d'infos */}
-            {showMiniForm && (
+            {/* Mini-formulaire Devis */}
+            {showDevisForm && (
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl space-y-3">
-                <h4 className="font-bold text-sm text-slate-800">
-                  {showMiniForm === 'preview' ? 'Décrivez votre projet pour générer un aperçu' : 'Décrivez votre projet pour obtenir un devis'}
-                </h4>
-                <form onSubmit={handleMiniFormSubmit} className="space-y-3">
+                <h4 className="font-bold text-sm text-slate-800">Décrivez votre projet pour obtenir un devis</h4>
+                <form onSubmit={handleDevisFormSubmit} className="space-y-3">
                   <input name="title" placeholder="Titre du projet" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" required />
                   <textarea name="desc" placeholder="Description rapide" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" rows={2} />
-                  <button type="submit" className="w-full bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm">Valider</button>
+                  <div className="flex gap-2">
+                    <button type="submit" className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm">Générer le devis</button>
+                    <button type="button" onClick={() => setShowDevisForm(false)} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm">Annuler</button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Mini-formulaire Preview */}
+            {showPreviewForm && (
+              <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl space-y-3">
+                <h4 className="font-bold text-sm text-slate-800">Décrivez votre projet pour générer un aperçu</h4>
+                <form onSubmit={handlePreviewFormSubmit} className="space-y-3">
+                  {proposal && (
+                    <label className="flex items-center gap-2 text-sm text-slate-600">
+                      <input
+                        type="checkbox"
+                        name="useQuote"
+                        checked={useQuoteData}
+                        onChange={(e) => setUseQuoteData(e.target.checked)}
+                        className="rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                      />
+                      Utiliser les informations du devis existant
+                    </label>
+                  )}
+                  {!useQuoteData && (
+                    <>
+                      <input name="title" placeholder="Titre du projet" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" required />
+                      <textarea name="desc" placeholder="Description rapide" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" rows={2} />
+                    </>
+                  )}
+                  <div className="flex gap-2">
+                    <button type="submit" className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm">Générer l'aperçu</button>
+                    <button type="button" onClick={() => setShowPreviewForm(false)} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm">Annuler</button>
+                  </div>
                 </form>
               </div>
             )}
