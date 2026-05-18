@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, Sparkles, Mail, Copy, Check, Edit3, Zap } from 'lucide-react';
+import { Send, Loader2, Sparkles, Mail, Copy, Check, Edit3, Zap, Maximize2, Minimize2 } from 'lucide-react';
+import { Sandpack } from '@codesandbox/sandpack-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -21,6 +22,8 @@ export default function ProjectChatBot() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [includeConversation, setIncludeConversation] = useState(true);
   const [adjustInput, setAdjustInput] = useState('');
+  const [previewCode, setPreviewCode] = useState<string>('');
+  const [previewExpanded, setPreviewExpanded] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -58,47 +61,52 @@ export default function ProjectChatBot() {
     try {
       const res = await fetch('/api/generate-proposal', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
+        body: JSON.stringify({ action: 'chat', role: 'analyst', messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
       });
       const data = await res.json();
-      console.log('📥 Données reçues :', data);
+      console.log('📥 Chat:', data);
 
       if (data.error) {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` }]);
       } else if (data.ready && data.proposal) {
         setProposal(data.proposal);
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre proposition personnalisée :' }]);
+      } else if (data.previewCode) {
+        setPreviewCode(data.previewCode);
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '🖥️ J\'ai généré une preview interactive de votre projet. Vous pouvez la voir ci-dessus et demander des modifications.' }]);
       } else {
-        const rawResponse = data.response || '';
-        if (typeof rawResponse === 'string' && rawResponse.trim().length > 0) {
-          // Méthode 1 : chercher un bloc JSON complet avec "ready"
-          const jsonMatch = rawResponse.match(/\{[\s\S]*"ready"[\s\S]*\}/);
-          if (jsonMatch) {
-            try {
-              const parsed = JSON.parse(jsonMatch[0]);
-              if (parsed.ready && parsed.proposal) {
-                setProposal(parsed.proposal);
-                setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre proposition personnalisée :' }]);
-                return;
-              }
-            } catch {}
-          }
-          // Méthode 2 : chercher n'importe quel objet JSON contenant "proposal"
-          const proposalMatch = rawResponse.match(/\{[\s\S]*"proposal"[\s\S]*\}/);
-          if (proposalMatch) {
-            try {
-              const parsed = JSON.parse(proposalMatch[0]);
-              if (parsed.proposal) {
-                setProposal(parsed.proposal);
-                setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre proposition personnalisée :' }]);
-                return;
-              }
-            } catch {}
-          }
-          // Sinon, afficher le texte nettoyé
-          const cleaned = cleanResponse(rawResponse);
-          if (cleaned) setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
-        }
+        const cleaned = cleanResponse(data.response || '');
+        if (cleaned) setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
+      }
+    } catch {
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdjustSubmit = async () => {
+    if (!adjustInput.trim() || !previewCode) return;
+    const modification = adjustInput.trim();
+    setAdjustInput('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/generate-proposal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'adjust-preview',
+          role: 'frontend',
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          currentCode: previewCode,
+          modification,
+        }),
+      });
+      const data = await res.json();
+      if (data.previewCode) {
+        setPreviewCode(data.previewCode);
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Preview mise à jour selon votre demande.' }]);
+      } else {
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de la modification.' }]);
       }
     } catch {
       setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
@@ -121,7 +129,7 @@ export default function ProjectChatBot() {
     try {
       const res = await fetch('/api/generate-proposal', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updatedMessages.map(m => ({ role: m.role, content: m.content })) }),
+        body: JSON.stringify({ action: 'chat', role: 'analyst', messages: updatedMessages.map(m => ({ role: m.role, content: m.content })) }),
       });
       const data = await res.json();
       if (data.error) {
@@ -130,8 +138,7 @@ export default function ProjectChatBot() {
         setProposal(data.proposal);
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '📄 Voici votre proposition personnalisée :' }]);
       } else {
-        const rawResponse = data.response || '';
-        const cleaned = cleanResponse(rawResponse);
+        const cleaned = cleanResponse(data.response || '');
         if (cleaned) setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: cleaned }]);
       }
     } catch {
@@ -143,20 +150,15 @@ export default function ProjectChatBot() {
     navigator.clipboard.writeText(content).then(() => { setCopiedId(id); setTimeout(() => setCopiedId(null), 2000); });
   };
 
-  const handleAdjustSubmit = () => {
-    if (!adjustInput.trim()) return;
-    const modification = adjustInput.trim();
-    setAdjustInput('');
-    handleSend(`J'aimerais modifier le devis : ${modification}`);
-  };
-
   const handleSubmitProject = async () => {
     if (!formData.name || !formData.email) return;
     setLoading(true);
     try {
       let emailHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1f2937"><h2>Nouveau projet depuis le chatbot</h2><p><strong>Client :</strong> ${formData.name} (${formData.email})</p><p><strong>Message :</strong> ${formData.message || '-'}</p>`;
-      if (includeConversation && proposal) {
-        emailHtml += `<hr /><h3>📋 Proposition</h3><table style="width:100%"><tr><td><strong>Titre</strong></td><td>${proposal.title}</td></tr>…</table><hr /><h3>💬 Conversation</h3>${messages.map(m => `<div>${m.role === 'user' ? '👤' : '🤖'} ${m.content}</div>`).join('')}`;
+      if (includeConversation && (proposal || previewCode)) {
+        emailHtml += `<hr /><h3>📋 Proposition</h3><pre>${JSON.stringify(proposal, null, 2)}</pre>`;
+        if (previewCode) emailHtml += `<h3>🖥️ Code de la preview</h3><pre>${previewCode}</pre>`;
+        emailHtml += `<hr /><h3>💬 Conversation</h3>${messages.map(m => `<div>${m.role === 'user' ? '👤' : '🤖'} ${m.content}</div>`).join('')}`;
       }
       emailHtml += `<hr /><p style="font-size:12px">Envoyé depuis le chatbot de la vitrine.</p></div>`;
       const res = await fetch('/api/send-project-email', {
@@ -174,10 +176,11 @@ export default function ProjectChatBot() {
 
   return (
     <div className="relative max-w-2xl mx-auto">
-      <div className="relative bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 ring-1 ring-black/5 overflow-hidden flex flex-col" style={{ height: '620px' }}>
+      <div className="relative bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 ring-1 ring-black/5 overflow-hidden flex flex-col" style={{ height: previewCode ? '800px' : '620px' }}>
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-[#D4AF37]/20 rounded-full blur-[80px] pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-sky-400/10 rounded-full blur-[80px] pointer-events-none" />
 
+        {/* En-tête */}
         <div className="relative z-10 p-4 flex items-center space-x-3 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl">
           <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
             <Zap size={20} className="text-white" />
@@ -195,6 +198,30 @@ export default function ProjectChatBot() {
           </div>
         </div>
 
+        {/* Preview */}
+        {previewCode && (
+          <div className="relative z-10 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl">
+            <div className="px-4 py-2 flex items-center justify-between">
+              <span className="text-sm font-bold text-slate-600">🖥️ Aperçu interactif</span>
+              <div className="flex gap-2">
+                <button onClick={() => setPreviewExpanded(!previewExpanded)} className="text-slate-400 hover:text-slate-600">
+                  {previewExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                </button>
+                <button onClick={() => setPreviewCode('')} className="text-slate-400 hover:text-slate-600">✕</button>
+              </div>
+            </div>
+            <div style={{ height: previewExpanded ? '400px' : '200px' }}>
+              <Sandpack
+                template="react"
+                files={{ '/App.js': previewCode }}
+                options={{ showNavigator: false, showTabs: false, editorHeight: previewExpanded ? 400 : 200, editorWidthPercentage: 0 }}
+                customSetup={{ dependencies: { 'react': '^18.0.0', 'react-dom': '^18.0.0' } }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Messages */}
         <div ref={chatContainerRef} className="relative z-10 flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group animate-fade-in`}>
@@ -242,10 +269,6 @@ export default function ProjectChatBot() {
               <div className="flex gap-2">
                 <button onClick={() => setShowForm(true)} className="flex-1 bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white py-3 rounded-xl font-bold flex items-center justify-center space-x-2 hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-200"><Mail size={16} /><span>Contacter Actoos</span></button>
               </div>
-              <div className="flex gap-2">
-                <input type="text" value={adjustInput} onChange={e => setAdjustInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAdjustSubmit(); }} placeholder="Modifier le devis (ex: ajouter un blog, changer le prix…)" className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37] transition-colors" />
-                <button onClick={handleAdjustSubmit} disabled={!adjustInput.trim() || loading} className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 transition-colors disabled:opacity-50">Ajuster</button>
-              </div>
             </div>
           )}
           {showForm && (
@@ -260,6 +283,7 @@ export default function ProjectChatBot() {
           )}
         </div>
 
+        {/* Barre de saisie */}
         <div className="relative z-10 p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl">
           <div className="flex gap-2">
             <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Écrivez votre message..." className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] transition-all" disabled={loading} />
