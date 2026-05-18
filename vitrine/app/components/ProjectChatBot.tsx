@@ -1,8 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, Sparkles, Mail, Eye, FileText, PanelRightClose, PanelRightOpen, X, Zap, Save } from 'lucide-react';
-import { Sandpack } from '@codesandbox/sandpack-react';
+import {
+  Send,
+  Eye,
+  FileText,
+  PanelRightClose,
+  PanelRightOpen,
+  X,
+  Zap,
+} from 'lucide-react';
+import {
+  SandpackProvider,
+  SandpackPreview,
+} from '@codesandbox/sandpack-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -53,20 +64,21 @@ export default function ProjectChatBot() {
     projectName: '',
     description: '',
   });
+
   const [showSubmitPreviewForm, setShowSubmitPreviewForm] = useState(false);
   const [previewSubmit, setPreviewSubmit] = useState<PreviewSubmitForm>({
     name: '',
     email: '',
     message: '',
   });
+
   const [previewReady, setPreviewReady] = useState(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+  const generateId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-  // Scroll fluide
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
@@ -77,17 +89,22 @@ export default function ProjectChatBot() {
   }, [messages]);
 
   useEffect(() => {
-    if (!loading) setTimeout(() => inputRef.current?.focus(), 50);
+    if (!loading) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
   }, [loading]);
 
   useEffect(() => {
     if (messages.length === 0) {
-      setMessages([{
-        id: generateId(),
-        role: 'assistant',
-        content: 'Bonjour ! Je suis l\'agent Actoos. Décrivez-moi votre projet.',
-      }]);
+      setMessages([
+        {
+          id: generateId(),
+          role: 'assistant',
+          content: "Bonjour ! Je suis l'agent Actoos. Décrivez-moi votre projet.",
+        },
+      ]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSend = async (content?: string) => {
@@ -107,25 +124,37 @@ export default function ProjectChatBot() {
         body: JSON.stringify({
           action: 'chat',
           role: 'analyst',
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+          messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
+
       const data = await res.json();
+
       if (data.error) {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` }]);
+        setMessages((prev) => [
+          ...prev,
+          { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` },
+        ]);
       } else if (data.response) {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: data.response }]);
+        setMessages((prev) => [
+          ...prev,
+          { id: generateId(), role: 'assistant', content: data.response },
+        ]);
       }
     } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' },
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Devis
   const openDevisForm = () => {
     setShowDevisForm(true);
+    setShowPreviewForm(false);
+    setShowSubmitPreviewForm(false);
     setDevisForm({ name: '', prenom: '', email: '', project: '', description: '' });
   };
 
@@ -142,6 +171,7 @@ export default function ProjectChatBot() {
         <p><strong>Projet :</strong> ${devisForm.project}</p>
         <p><strong>Description :</strong> ${devisForm.description || '-'}</p>
       `;
+
       await fetch('/api/send-project-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -152,22 +182,30 @@ export default function ProjectChatBot() {
           html,
         }),
       });
+
       setShowDevisForm(false);
-      setMessages(prev => [...prev, {
-        id: generateId(),
-        role: 'assistant',
-        content: '✅ Votre demande de devis a bien été transmise. Un agent vous contactera pour finaliser le devis.',
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          role: 'assistant',
+          content:
+            '✅ Votre demande de devis a bien été transmise. Un agent vous contactera pour finaliser le devis.',
+        },
+      ]);
     } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de l\'envoi.' }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: generateId(), role: 'assistant', content: "Erreur lors de l'envoi." },
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Preview
   const openPreviewForm = () => {
     setShowPreviewForm(true);
+    setShowDevisForm(false);
     setPreviewProject({ project: '', projectName: '', description: '' });
     setShowSubmitPreviewForm(false);
     setPreviewReady(false);
@@ -192,24 +230,41 @@ export default function ProjectChatBot() {
         body: JSON.stringify({
           action: 'generate-preview',
           role: 'designer',
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+          messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
+
       const data = await res.json();
+
       if (data.previewCode && data.previewCode.trim().length > 0) {
         setPreviewCode(data.previewCode);
         setShowPreview(true);
         setPreviewReady(true);
-        setMessages(prev => [...prev, {
-          id: generateId(),
-          role: 'assistant',
-          content: '🖥️ Voici l\'aperçu interactif. Vous pouvez le modifier dans le panneau de droite, puis soumettre lorsque vous êtes satisfait.',
-        }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: generateId(),
+            role: 'assistant',
+            content:
+              "🖥️ Voici l'aperçu interactif. Vous pouvez le modifier dans le panneau de droite, puis soumettre lorsque vous êtes satisfait.",
+          },
+        ]);
       } else {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Désolé, je n\'ai pas pu générer l\'aperçu. Veuillez réessayer avec plus de détails.' }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: generateId(),
+            role: 'assistant',
+            content:
+              "Désolé, je n'ai pas pu générer l'aperçu. Veuillez réessayer avec plus de détails.",
+          },
+        ]);
       }
     } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de la génération de l\'aperçu.' }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: generateId(), role: 'assistant', content: "Erreur lors de la génération de l'aperçu." },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -217,8 +272,10 @@ export default function ProjectChatBot() {
 
   const handleAdjust = async (modification: string) => {
     if (!modification.trim() || !previewCode || loading) return;
+
     setAdjustInput('');
     setLoading(true);
+
     try {
       const res = await fetch('/api/generate-proposal', {
         method: 'POST',
@@ -226,18 +283,26 @@ export default function ProjectChatBot() {
         body: JSON.stringify({
           action: 'adjust-preview',
           role: 'frontend',
-          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          messages: messages.map((m) => ({ role: m.role, content: m.content })),
           currentCode: previewCode,
           modification,
         }),
       });
+
       const data = await res.json();
+
       if (data.previewCode) {
         setPreviewCode(data.previewCode);
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Aperçu mis à jour.' }]);
+        setMessages((prev) => [
+          ...prev,
+          { id: generateId(), role: 'assistant', content: '✅ Aperçu mis à jour.' },
+        ]);
       }
     } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de l\'ajustement.' }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: generateId(), role: 'assistant', content: "Erreur lors de l'ajustement." },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -255,10 +320,19 @@ export default function ProjectChatBot() {
         <p><strong>Email :</strong> ${previewSubmit.email}</p>
         <p><strong>Message :</strong> ${previewSubmit.message || '-'}</p>
         <h3>Code de la preview</h3>
-        <pre>${previewCode}</pre>
+        <pre>${previewCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
         <h3>Conversation</h3>
-        ${messages.map(m => `<p><strong>${m.role === 'user' ? 'Client' : 'Agent'}:</strong> ${m.content}</p>`).join('')}
+        ${messages
+          .map(
+            (m) =>
+              `<p><strong>${m.role === 'user' ? 'Client' : 'Agent'}:</strong> ${m.content.replace(
+                /</g,
+                '&lt;'
+              ).replace(/>/g, '&gt;')}</p>`
+          )
+          .join('')}
       `;
+
       await fetch('/api/send-project-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -269,10 +343,21 @@ export default function ProjectChatBot() {
           html,
         }),
       });
+
       setShowSubmitPreviewForm(false);
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Votre aperçu a été soumis. L\'équipe Actoos vous contactera.' }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          role: 'assistant',
+          content: "✅ Votre aperçu a été soumis. L'équipe Actoos vous contactera.",
+        },
+      ]);
     } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de l\'envoi.' }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: generateId(), role: 'assistant', content: "Erreur lors de l'envoi." },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -281,126 +366,256 @@ export default function ProjectChatBot() {
   return (
     <div className="max-w-7xl mx-auto p-4">
       <div className="flex gap-4 h-[700px]">
-        {/* Panneau de chat */}
         <div className="flex-1 flex flex-col bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden">
-  <div className="p-4 flex items-center gap-3 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl">
-    <div className="flex items-center gap-3 flex-1">
-      <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
-        <Zap size={20} className="text-white" />
-      </div>
-      <div>
-        <span className="font-bold text-lg">Agent Actoos</span>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-[10px] text-green-600 font-medium">En ligne</span>
-        </div>
-      </div>
-    </div>
-    <div className="flex items-center gap-2">
-      <button
-        onClick={openPreviewForm}
-        className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-[#D4AF37] text-white hover:bg-amber-500 shadow-lg shadow-amber-200"
-      >
-        <Eye size={14} />
-        Preview
-      </button>
-      <button
-        onClick={openDevisForm}
-        className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-slate-900 text-white hover:bg-slate-800 shadow-lg"
-      >
-        <FileText size={14} />
-        Devis
-      </button>
-      {/* Bouton pour rouvrir la preview après fermeture */}
-      {previewCode && !showPreview && (
-        <button
-          onClick={() => setShowPreview(true)}
-          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
-          title="Rouvrir l'aperçu"
-        >
-          <Eye size={18} />
-        </button>
-      )}
-      {showPreview && (
-        <button onClick={() => setShowPreview(!showPreview)} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200">
-          {showPreview ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
-        </button>
-      )}
-    </div>
-  </div>
+          <div className="p-4 flex items-center gap-3 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Zap size={20} className="text-white" />
+              </div>
+              <div>
+                <span className="font-bold text-lg">Agent Actoos</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-[10px] text-green-600 font-medium">En ligne</span>
+                </div>
+              </div>
+            </div>
 
-          {/* Messages (avec scroll) */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={openPreviewForm}
+                className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-[#D4AF37] text-white hover:bg-amber-500 shadow-lg shadow-amber-200"
+              >
+                <Eye size={14} />
+                Preview
+              </button>
+
+              <button
+                onClick={openDevisForm}
+                className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all bg-slate-900 text-white hover:bg-slate-800 shadow-lg"
+              >
+                <FileText size={14} />
+                Devis
+              </button>
+
+              {previewCode && !showPreview && (
+                <button
+                  onClick={() => setShowPreview(true)}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
+                  title="Rouvrir l'aperçu"
+                >
+                  <Eye size={18} />
+                </button>
+              )}
+
+              {showPreview && (
+                <button
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200"
+                >
+                  {showPreview ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+                </button>
+              )}
+            </div>
+          </div>
+
           <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group`}>
+              <div
+                key={msg.id}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group`}
+              >
                 <div className="max-w-[85%]">
-                  <div className={`p-3.5 rounded-2xl text-sm whitespace-pre-wrap break-words ${
-                    msg.role === 'user'
-                      ? 'bg-gradient-to-br from-[#D4AF37] to-amber-500 text-white rounded-br-md shadow-md'
-                      : 'bg-white/80 backdrop-blur-sm text-slate-700 rounded-bl-md border border-slate-200/80'
-                  }`}>
+                  <div
+                    className={`p-3.5 rounded-2xl text-sm whitespace-pre-wrap break-words ${
+                      msg.role === 'user'
+                        ? 'bg-gradient-to-br from-[#D4AF37] to-amber-500 text-white rounded-br-md shadow-md'
+                        : 'bg-white/80 backdrop-blur-sm text-slate-700 rounded-bl-md border border-slate-200/80'
+                    }`}
+                  >
                     {msg.content}
                   </div>
                 </div>
               </div>
             ))}
+
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-white/80 p-3 rounded-2xl rounded-bl-md border border-slate-200/80">
                   <div className="flex space-x-1.5">
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <div
+                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '0ms' }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '150ms' }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '300ms' }}
+                    />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Mini-formulaire Devis */}
             {showDevisForm && (
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl space-y-3">
                 <h4 className="font-bold text-sm text-slate-800">Demande de devis</h4>
                 <form onSubmit={handleDevisSubmit} className="space-y-3">
-                  <input name="name" placeholder="Nom *" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={devisForm.name} onChange={e => setDevisForm({ ...devisForm, name: e.target.value })} required />
-                  <input name="prenom" placeholder="Prénom (optionnel)" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={devisForm.prenom} onChange={e => setDevisForm({ ...devisForm, prenom: e.target.value })} />
-                  <input name="email" type="email" placeholder="Email *" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={devisForm.email} onChange={e => setDevisForm({ ...devisForm, email: e.target.value })} required />
-                  <input name="project" placeholder="Votre projet *" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={devisForm.project} onChange={e => setDevisForm({ ...devisForm, project: e.target.value })} required />
-                  <textarea name="description" placeholder="Description" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" rows={2} value={devisForm.description} onChange={e => setDevisForm({ ...devisForm, description: e.target.value })} />
+                  <input
+                    name="name"
+                    placeholder="Nom *"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                    value={devisForm.name}
+                    onChange={(e) => setDevisForm({ ...devisForm, name: e.target.value })}
+                    required
+                  />
+                  <input
+                    name="prenom"
+                    placeholder="Prénom (optionnel)"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                    value={devisForm.prenom}
+                    onChange={(e) => setDevisForm({ ...devisForm, prenom: e.target.value })}
+                  />
+                  <input
+                    name="email"
+                    type="email"
+                    placeholder="Email *"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                    value={devisForm.email}
+                    onChange={(e) => setDevisForm({ ...devisForm, email: e.target.value })}
+                    required
+                  />
+                  <input
+                    name="project"
+                    placeholder="Votre projet *"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                    value={devisForm.project}
+                    onChange={(e) => setDevisForm({ ...devisForm, project: e.target.value })}
+                    required
+                  />
+                  <textarea
+                    name="description"
+                    placeholder="Description"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                    rows={2}
+                    value={devisForm.description}
+                    onChange={(e) => setDevisForm({ ...devisForm, description: e.target.value })}
+                  />
                   <div className="flex gap-2">
-                    <button type="submit" className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm">Soumettre</button>
-                    <button type="button" onClick={() => setShowDevisForm(false)} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm">Annuler</button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm"
+                    >
+                      Soumettre
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDevisForm(false)}
+                      className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm"
+                    >
+                      Annuler
+                    </button>
                   </div>
                 </form>
               </div>
             )}
 
-            {/* Mini-formulaire Preview */}
             {showPreviewForm && (
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl space-y-3">
                 <h4 className="font-bold text-sm text-slate-800">Générer un aperçu</h4>
                 <form onSubmit={handlePreviewGenerate} className="space-y-3">
-                  <input name="project" placeholder="Projet *" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={previewProject.project} onChange={e => setPreviewProject({ ...previewProject, project: e.target.value })} required />
-                  <input name="projectName" placeholder="Nom du projet" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={previewProject.projectName} onChange={e => setPreviewProject({ ...previewProject, projectName: e.target.value })} />
-                  <textarea name="description" placeholder="Description" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" rows={2} value={previewProject.description} onChange={e => setPreviewProject({ ...previewProject, description: e.target.value })} />
+                  <input
+                    name="project"
+                    placeholder="Projet *"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                    value={previewProject.project}
+                    onChange={(e) => setPreviewProject({ ...previewProject, project: e.target.value })}
+                    required
+                  />
+                  <input
+                    name="projectName"
+                    placeholder="Nom du projet"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                    value={previewProject.projectName}
+                    onChange={(e) =>
+                      setPreviewProject({ ...previewProject, projectName: e.target.value })
+                    }
+                  />
+                  <textarea
+                    name="description"
+                    placeholder="Description"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                    rows={2}
+                    value={previewProject.description}
+                    onChange={(e) =>
+                      setPreviewProject({ ...previewProject, description: e.target.value })
+                    }
+                  />
                   <div className="flex gap-2">
-                    <button type="submit" className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm">Générer</button>
-                    <button type="button" onClick={() => setShowPreviewForm(false)} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm">Annuler</button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm"
+                    >
+                      Générer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPreviewForm(false)}
+                      className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm"
+                    >
+                      Annuler
+                    </button>
                   </div>
                 </form>
               </div>
             )}
 
-            {/* Formulaire de soumission de la preview */}
             {showSubmitPreviewForm && (
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl space-y-3">
                 <h4 className="font-bold text-sm text-slate-800">Soumettre l'aperçu</h4>
                 <form onSubmit={handlePreviewSubmit} className="space-y-3">
-                  <input name="name" placeholder="Nom *" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={previewSubmit.name} onChange={e => setPreviewSubmit({ ...previewSubmit, name: e.target.value })} required />
-                  <input name="email" type="email" placeholder="Email *" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={previewSubmit.email} onChange={e => setPreviewSubmit({ ...previewSubmit, email: e.target.value })} required />
-                  <textarea name="message" placeholder="Message (optionnel)" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" rows={2} value={previewSubmit.message} onChange={e => setPreviewSubmit({ ...previewSubmit, message: e.target.value })} />
+                  <input
+                    name="name"
+                    placeholder="Nom *"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                    value={previewSubmit.name}
+                    onChange={(e) => setPreviewSubmit({ ...previewSubmit, name: e.target.value })}
+                    required
+                  />
+                  <input
+                    name="email"
+                    type="email"
+                    placeholder="Email *"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                    value={previewSubmit.email}
+                    onChange={(e) => setPreviewSubmit({ ...previewSubmit, email: e.target.value })}
+                    required
+                  />
+                  <textarea
+                    name="message"
+                    placeholder="Message (optionnel)"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+                    rows={2}
+                    value={previewSubmit.message}
+                    onChange={(e) => setPreviewSubmit({ ...previewSubmit, message: e.target.value })}
+                  />
                   <div className="flex gap-2">
-                    <button type="submit" className="flex-1 bg-green-500 text-white py-2 rounded-xl font-bold text-sm">Envoyer</button>
-                    <button type="button" onClick={() => setShowSubmitPreviewForm(false)} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm">Annuler</button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-green-500 text-white py-2 rounded-xl font-bold text-sm"
+                    >
+                      Envoyer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSubmitPreviewForm(false)}
+                      className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm"
+                    >
+                      Annuler
+                    </button>
                   </div>
                 </form>
               </div>
@@ -409,45 +624,252 @@ export default function ProjectChatBot() {
 
           <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl">
             <div className="flex gap-2">
-              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Écrivez votre message..." className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] transition-all" disabled={loading} />
-              <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white p-3 rounded-xl disabled:opacity-50 hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-200">
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder="Écrivez votre message..."
+                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] transition-all"
+                disabled={loading}
+              />
+              <button
+                onClick={() => handleSend()}
+                disabled={loading || !input.trim()}
+                className="bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white p-3 rounded-xl disabled:opacity-50 hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-200"
+              >
                 <Send size={18} />
               </button>
             </div>
-            <p className="text-[9px] text-slate-400 text-center mt-2">Propulsé par l'IA • Réponses en temps réel</p>
+            <p className="text-[9px] text-slate-400 text-center mt-2">
+              Propulsé par l'IA • Réponses en temps réel
+            </p>
           </div>
         </div>
 
-        {/* Panneau de preview */}
         {showPreview && previewCode && (
-          <div className="w-[500px] bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl flex items-center justify-between">
-              <span className="font-bold text-sm text-slate-700">🖥️ Aperçu interactif</span>
-              <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
-            </div>
-            <div className="flex-1">
-              <Sandpack
-                template="react"
-                files={{ '/App.js': previewCode }}
-                options={{ showNavigator: false, showTabs: false, editorHeight: '100%', editorWidthPercentage: 0 }}
-                customSetup={{ dependencies: { 'react': '^18.0.0', 'react-dom': '^18.0.0' } }}
-              />
-            </div>
-            <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl space-y-2">
-              <div className="flex gap-2">
-                <input type="text" value={adjustInput} onChange={e => setAdjustInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAdjust(adjustInput); }} placeholder="Modifier (ex: changer la couleur, ajouter un bouton…)" className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37] transition-colors" />
-                <button onClick={() => handleAdjust(adjustInput)} disabled={!adjustInput.trim() || loading} className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 transition-colors disabled:opacity-50">
-                  Ajuster
-                </button>
-              </div>
-              {previewReady && (
-                <button onClick={() => setShowSubmitPreviewForm(true)} className="w-full bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm">
-                  Soumettre l'aperçu
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+  <div className="w-[560px] bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden flex flex-col">
+
+    {/* HEADER */}
+    <div className="p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <span className="font-bold text-sm text-slate-700">
+          🖥️ Aperçu interactif
+        </span>
+
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <span className="text-[11px] text-slate-500">
+            Navigation interactive activée
+          </span>
+        </div>
+      </div>
+
+      <button
+        onClick={() => setShowPreview(false)}
+        className="text-slate-400 hover:text-slate-600 transition-colors"
+      >
+        <X size={18} />
+      </button>
+    </div>
+
+    {/* NAVIGATION */}
+    <div className="border-b border-slate-200 bg-white px-4 py-3 flex items-center gap-2 overflow-x-auto">
+
+      <button
+        onClick={() =>
+          handleAdjust(`
+            ajoute une section HERO premium moderne avec:
+            - gros titre
+            - sous titre
+            - bouton CTA
+            - image mockup
+          `)
+        }
+        className="whitespace-nowrap px-4 py-2 rounded-xl bg-[#D4AF37] text-white text-xs font-bold hover:bg-amber-500 transition-all"
+      >
+        Hero
+      </button>
+
+      <button
+        onClick={() =>
+          handleAdjust(`
+            ajoute une section SERVICES moderne en cards responsive
+          `)
+        }
+        className="whitespace-nowrap px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-all"
+      >
+        Services
+      </button>
+
+      <button
+        onClick={() =>
+          handleAdjust(`
+            ajoute une section TARIFS moderne premium avec 3 offres
+          `)
+        }
+        className="whitespace-nowrap px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-all"
+      >
+        Tarifs
+      </button>
+
+      <button
+        onClick={() =>
+          handleAdjust(`
+            ajoute une section FAQ accordéon moderne
+          `)
+        }
+        className="whitespace-nowrap px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-all"
+      >
+        FAQ
+      </button>
+
+      <button
+        onClick={() =>
+          handleAdjust(`
+            ajoute une section CONTACT premium avec formulaire
+          `)
+        }
+        className="whitespace-nowrap px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-all"
+      >
+        Contact
+      </button>
+
+      <button
+        onClick={() =>
+          handleAdjust(`
+            améliore complètement le design:
+            - glassmorphism
+            - animations
+            - meilleurs espacements
+            - responsive premium
+          `)
+        }
+        className="whitespace-nowrap px-4 py-2 rounded-xl bg-black text-white text-xs font-bold hover:bg-slate-800 transition-all"
+      >
+        Upgrade UI
+      </button>
+    </div>
+
+    {/* PREVIEW */}
+    <div className="flex-1 min-h-0 overflow-hidden">
+
+      <div className="h-full w-full actoos-sandpack">
+        <SandpackProvider
+          template="react"
+          files={{
+            '/App.js': previewCode,
+          }}
+          customSetup={{
+            dependencies: {
+              react: '^18.0.0',
+              'react-dom': '^18.0.0',
+              'lucide-react': '^0.400.0',
+            },
+          }}
+        >
+          <SandpackPreview
+            showNavigator={false}
+            showOpenInCodeSandbox={false}
+            showRefreshButton={false}
+            showOpenNewtab={false}
+            startRoute="/"
+          />
+        </SandpackProvider>
+      </div>
+
+    </div>
+
+    {/* FOOTER */}
+    <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl space-y-3">
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={adjustInput}
+          onChange={(e) => setAdjustInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleAdjust(adjustInput);
+            }
+          }}
+          placeholder="Ex: ajoute une navbar premium..."
+          className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37]"
+        />
+
+        <button
+          onClick={() => handleAdjust(adjustInput)}
+          disabled={!adjustInput.trim() || loading}
+          className="bg-[#D4AF37] text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-amber-500 transition-all disabled:opacity-50"
+        >
+          Ajuster
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+
+        <button
+          onClick={() =>
+            handleAdjust(`
+              rends le site ultra premium style Apple + Stripe + Linear
+            `)
+          }
+          className="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-semibold"
+        >
+          Style Premium
+        </button>
+
+        <button
+          onClick={() =>
+            handleAdjust(`
+              rends le site mobile first responsive
+            `)
+          }
+          className="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-semibold"
+        >
+          Responsive
+        </button>
+
+        <button
+          onClick={() =>
+            handleAdjust(`
+              ajoute animations modernes fluides
+            `)
+          }
+          className="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-semibold"
+        >
+          Animations
+        </button>
+
+        <button
+          onClick={() =>
+            handleAdjust(`
+              améliore totalement UX/UI et hiérarchie visuelle
+            `)
+          }
+          className="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-semibold"
+        >
+          UX/UI
+        </button>
+      </div>
+
+      {previewReady && (
+        <button
+          onClick={() => setShowSubmitPreviewForm(true)}
+          className="w-full bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-amber-200 hover:scale-[1.01] transition-all"
+        >
+          Soumettre l'aperçu
+        </button>
+      )}
+    </div>
+  </div>
+)}
       </div>
     </div>
   );
