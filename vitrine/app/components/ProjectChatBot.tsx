@@ -152,6 +152,10 @@ export default function ProjectChatBot() {
     });
   };
 
+  const handleAdjustProposal = () => {
+    handleSend('Peux-tu ajuster ce devis ?');
+  };
+
   const handleSubmitProject = async () => {
     if (!formData.name || !formData.email) return;
     setLoading(true);
@@ -202,6 +206,7 @@ export default function ProjectChatBot() {
       if (data.success) {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Votre demande a bien été transmise ! L\'équipe Actoos vous contactera dans les 24h.' }]);
         setShowForm(false);
+        setProposal(null); // Réinitialiser la proposition pour continuer la conversation
       } else {
         setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur lors de l\'envoi.' }]);
       }
@@ -345,10 +350,17 @@ export default function ProjectChatBot() {
               </p>
             </div>
 
-            <button onClick={() => setShowForm(true)} className="w-full bg-gradient-to-r from-[#D4AF37] to-amber-500 text-slate-900 py-3 rounded-xl font-bold flex items-center justify-center space-x-2 hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-500/20">
-              <Mail size={16} />
-              <span>Contacter Actoos pour ce projet</span>
-            </button>
+            {/* Boutons d'action */}
+            <div className="flex gap-2">
+              <button onClick={() => setShowForm(true)} className="flex-1 bg-gradient-to-r from-[#D4AF37] to-amber-500 text-slate-900 py-3 rounded-xl font-bold flex items-center justify-center space-x-2 hover:from-amber-400 hover:to-amber-400 transition-all shadow-lg shadow-amber-500/20">
+                <Mail size={16} />
+                <span>Contacter Actoos</span>
+              </button>
+              <button onClick={handleAdjustProposal} className="flex-1 bg-slate-800 text-slate-300 py-3 rounded-xl font-bold flex items-center justify-center space-x-2 hover:bg-slate-700 transition-all border border-slate-700/50">
+                <Edit3 size={16} />
+                <span>Ajuster le devis</span>
+              </button>
+            </div>
           </div>
         )}
 
