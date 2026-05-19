@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -12,33 +12,37 @@ export default function DirectPreview({ code }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-  if (!containerRef.current || !code) return;
-  containerRef.current.innerHTML = '';
+    if (!containerRef.current || !code) return;
+    containerRef.current.innerHTML = '';
 
-  try {
-    // Supprimer TOUS les imports et les remplacer par rien
-    let cleanCode = code
-      .replace(/import\s+.*?from\s+['"].*?['"];?\s*/g, '')
-      .replace(/import\s+['"].*?['"];?\s*/g, '')
-      .trim();
+    try {
+      // 1. Supprimer TOUS les imports
+      let cleanCode = code
+        .split('\n')
+        .filter(line => !line.trim().startsWith('import '))
+        .join('\n');
 
-    // Si le code est vide après nettoyage, afficher un message
-    if (!cleanCode.includes('function App') && !cleanCode.includes('const App')) {
-      containerRef.current.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;">Preview non disponible</div>';
-      return;
+      // 2. Si le code ne contient pas "function App" ou "const App", fallback
+      if (!cleanCode.includes('function App') && !cleanCode.includes('const App') && !cleanCode.includes('export default')) {
+        containerRef.current.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;">Aperçu non disponible</div>';
+        return;
+      }
+
+      // 3. Supprimer "export default" pour pouvoir appeler App directement
+      cleanCode = cleanCode.replace(/export\s+default\s+/g, '');
+
+      // 4. Exécuter le code
+      const AppComponent = new Function('React', `${cleanCode}; return App;`)(React);
+
+      // 5. Rendre le composant
+      const root = ReactDOM.createRoot(containerRef.current);
+      root.render(React.createElement(AppComponent));
+
+      return () => { root.unmount(); };
+    } catch (err) {
+      containerRef.current.innerHTML = `<div style="padding:20px;color:#ef4444;">Erreur: ${(err as Error).message}</div>`;
     }
-
-    // Exécuter le code nettoyé
-    const AppComponent = new Function('React', `${cleanCode}; return App;`)(React);
-
-    const root = ReactDOM.createRoot(containerRef.current);
-    root.render(React.createElement(AppComponent));
-
-    return () => { root.unmount(); };
-  } catch (err) {
-    containerRef.current.innerHTML = `<div style="padding:20px;color:red;">Erreur: ${(err as Error).message}</div>`;
-  }
-}, [code]);
+  }, [code]);
 
   return <div ref={containerRef} className="w-full h-full overflow-auto" />;
 }
