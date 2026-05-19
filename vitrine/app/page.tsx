@@ -60,7 +60,7 @@ export default function HomePage() {
             <a href="/expertise" className="hover:text-black transition-colors">Expertise</a>
             <a href="/a-propos" className="hover:text-black transition-colors">À propos</a>
             <a href="/philosophie" className="hover:text-black transition-colors">Philosophie</a>
-            <a href="/contact" className="hover:text-black transition-colors">Contact</a>
+            <a href="#chatbot" className="hover:text-black transition-colors">Contact</a>
           </div>
 
           <div className="hidden md:block">
@@ -88,7 +88,7 @@ export default function HomePage() {
             <a href="/expertise" className="block text-sm font-bold text-slate-600 hover:text-black">Expertise</a>
             <a href="/a-propos" className="block text-sm font-bold text-slate-600 hover:text-black">À propos</a>
             <a href="/philosophie" className="block text-sm font-bold text-slate-600 hover:text-black">Philosophie</a>
-            <a href="/contact" className="block text-sm font-bold text-slate-600 hover:text-black">Contact</a>
+            <a href="#chatbot" className="block text-sm font-bold text-slate-600 hover:text-black">Contact</a>
             <div className="pt-2 border-t border-slate-100">
               <a 
                 href="/produits"
@@ -133,7 +133,7 @@ export default function HomePage() {
               Notre expertise
             </a>
             <a 
-              href="/contact"
+              href="#chatbot"
               className="bg-white text-slate-950 border-2 border-slate-100 px-8 md:px-10 py-4 md:py-5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition-all text-center"
             >
               Parlez-nous de votre projet
@@ -144,7 +144,7 @@ export default function HomePage() {
 
       {/* CHATBOT */}
       <FadeInSection>
-        <section className="py-16 px-4 bg-slate-50">
+        <section id="chatbot" className="py-16 px-4 bg-slate-50 scroll-mt-[100px]">
           <div className="max-w-4xl mx-auto text-center mb-8">
             <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-950 mb-4">
               Votre logiciel sur mesure commence ici.
@@ -302,7 +302,7 @@ export default function HomePage() {
               Discutons de vos besoins et voyons comment Actoos peut vous aider à concrétiser votre vision.
             </p>
             <a 
-              href="/contact"
+              href="#chatbot"
               className="inline-flex items-center space-x-3 bg-slate-950 text-white px-10 py-5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-[#D4AF37] transition-all shadow-2xl"
             >
               <span>Nous contacter</span>
@@ -348,7 +348,7 @@ export default function HomePage() {
                   </a>
                 </li>
                 <li>
-                  <a href="/contact" className="hover:text-black transition-colors">
+                  <a href="#chatbot" className="hover:text-black transition-colors">
                     Contact
                   </a>
                 </li>
