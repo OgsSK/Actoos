@@ -5,7 +5,7 @@ import {
   Send, Loader2, Eye, FileText, PanelRightClose, PanelRightOpen,
   X, Zap, Copy, Check, Edit3, Plus, Trash2, FolderKanban
 } from 'lucide-react';
-import WebContainerPreview from './WebContainerPreview';
+import { SandpackProvider, SandpackPreview } from '@codesandbox/sandpack-react';
 import { useProject, ProjectModule } from '../context/ProjectContext';
 
 // --- Interfaces ---
@@ -523,14 +523,9 @@ export default function ProjectChatBot() {
       <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
     </div>
     <div className="flex-1" style={{ minHeight: 0, height: '100%' }}>
-              <WebContainerPreview 
-  code={previewCode} 
-  onRetry={() => {
-    setPreviewCode('');
-    setShowPreview(false);
-    handlePreviewGenerate({ preventDefault: () => {} } as any);
-  }}
-/>
+              <SandpackProvider template="react" files={{ "/App.js": previewCode }} customSetup={{ dependencies: { react: "^18.0.0", "react-dom": "^18.0.0" } }} style={{ height: "100%" }}>
+                <SandpackPreview showNavigator={false} showOpenInCodeSandbox={false} showRefreshButton={false} style={{ height: "100%" }} />
+              </SandpackProvider>
     </div>
     <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl space-y-2 shrink-0">
       <div className="flex gap-2">
