@@ -1,25 +1,51 @@
-export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    body.action = 'send-email';
+    const { name, email, message, html } = await req.json();
+    if (!name || !email) {
+      return NextResponse.json({ error: 'Nom et email requis' }, { status: 400 });
+    }
 
-    const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/handle-request', {
+    // Si un HTML personnalisé est fourni (depuis le chatbot), on l'utilise
+    const emailHtml = html || buildDefaultEmail(name, email, message);
+
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Actoos <noreply@actoos.com>',
+        to: 'contact@actoos.com',
+        subject: `Nouveau projet : ${name}`,
+        html: emailHtml,
+      }),
     });
 
-    const data = await res.json();
-    return new Response(JSON.stringify(data), {
-      status: res.status,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Erreur Resend:', response.status, errorText);
+      return NextResponse.json({ error: 'Erreur envoi email' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Erreur serveur' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error('🔥 send-project-email error:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
+}
+
+function buildDefaultEmail(name: string, email: string, message: string): string {
+  return `
+    <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1f2937;">
+      <h2 style="color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">Nouveau message depuis la vitrine</h2>
+      <p><strong>Nom :</strong> ${name}</p>
+      <p><strong>Email :</strong> ${email}</p>
+      <p><strong>Message :</strong> ${message || '-'}</p>
+      <hr style="border: 1px solid #e5e7eb; margin: 20px 0;" />
+      <p style="color: #6b7280; font-size: 12px;">Envoyé depuis la page contact.</p>
+    </div>
+  `;
 }
