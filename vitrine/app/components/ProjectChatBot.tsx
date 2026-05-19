@@ -29,6 +29,8 @@ interface ProjectBrief {
   stack?: string[];
   priority?: string;
 }
+
+// ----- Persistance intelligente (survit aux navigations, pas au refresh) -----
 const STORAGE_KEY = 'actoos-chat-messages';
 
 const isReload = () => {
@@ -84,29 +86,38 @@ export default function ProjectChatBot() {
       chatContainerRef.current.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
+  // Scroll vers le bas quand le formulaire de soumission apparaît
+  useEffect(() => {
+    if (showSubmitForm && chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [showSubmitForm]);
+
   useEffect(() => { if (!loading) setTimeout(() => inputRef.current?.focus(), 50); }, [loading]);
 
-  // Message de bienvenue (toujours à zéro)
- useEffect(() => {
-  const saved = loadMessages();
-  if (saved.length > 0) {
-    setMessages(saved);
-    const lastBriefMsg = [...saved].reverse().find(m => m.type === 'briefing' && m.briefing);
-    if (lastBriefMsg?.briefing) {
-      setCurrentBrief(lastBriefMsg.briefing);
-      setStep(saved.some(m => m.content.includes('transmis')) ? 'soumettre' : 'ajuster');
+  // Chargement initial
+  useEffect(() => {
+    const saved = loadMessages();
+    if (saved.length > 0) {
+      setMessages(saved);
+      const lastBriefMsg = [...saved].reverse().find(m => m.type === 'briefing' && m.briefing);
+      if (lastBriefMsg?.briefing) {
+        setCurrentBrief(lastBriefMsg.briefing);
+        setStep(saved.some(m => m.content.includes('transmis')) ? 'soumettre' : 'ajuster');
+      }
+    } else {
+      setMessages([{
+        id: generateId(),
+        role: 'assistant',
+        content: "Bonjour ! Je suis l'Agent Actoos. Décrivez votre projet en une phrase, je vous aide à le structurer et à l'affiner."
+      }]);
     }
-  } else {
-    setMessages([{
-      id: generateId(),
-      role: 'assistant',
-      content: "Bonjour ! Je suis l'Agent Actoos. Décrivez votre projet en une phrase, je vous aide à le structurer et à l'affiner."
-    }]);
-  }
-}, []);
-useEffect(() => {
-  if (messages.length > 0) saveMessages(messages);
-}, [messages]);
+  }, []);
+
+  // Sauvegarde automatique
+  useEffect(() => {
+    if (messages.length > 0) saveMessages(messages);
+  }, [messages]);
 
   // ----- Envoi / discussion -----
   const handleSend = async (content?: string) => {
@@ -130,13 +141,11 @@ useEffect(() => {
         return;
       }
 
-      // 1. Briefing déjà structuré par l'Edge Function
       if (data.briefing) {
         handleBriefingResponse(data);
         return;
       }
 
-      // 2. Réponse texte classique -> tenter de parser un JSON
       const rawResponse = data.response || '';
       if (!rawResponse) return;
 
@@ -162,7 +171,6 @@ useEffect(() => {
     }
   };
 
-  // Extraire la logique d'affichage du briefing
   const handleBriefingResponse = (data: any) => {
     const brief: ProjectBrief = data.briefing;
     setCurrentBrief(brief);
@@ -189,44 +197,40 @@ useEffect(() => {
     }
   };
 
-  // ----- Suggestion cliquable -----
   const handleSuggestionClick = async (suggestion: string) => {
-  setMessages(prev => [...prev, { id: generateId(), role: 'user', content: suggestion }]);
-  setLoading(true);
-  try {
-    const res = await fetch('/api/generate-proposal', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'adjust-brief', role: 'analyst',
-        currentBrief, modification: suggestion,
-        messages: messages.map(m => ({ role: m.role, content: m.content })),
-      }),
-    });
+    setMessages(prev => [...prev, { id: generateId(), role: 'user', content: suggestion }]);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/generate-proposal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'adjust-brief', role: 'analyst',
+          currentBrief, modification: suggestion,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+        }),
+      });
 
-    // Si l'API répond correctement
-    if (res.ok) {
-      const data = await res.json();
-      if (data.briefing) {
-        handleBriefingResponse(data);
-        return;
-      } else if (data.response) {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: data.response }]);
-        return;
+      if (res.ok) {
+        const data = await res.json();
+        if (data.briefing) {
+          handleBriefingResponse(data);
+          return;
+        } else if (data.response) {
+          setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: data.response }]);
+          return;
+        }
       }
+      
+      console.warn('adjust-brief failed, fallback to chat');
+      await handleSend(suggestion);
+    } catch (err) {
+      console.error('Suggestion click error', err);
+      await handleSend(suggestion);
+    } finally {
+      setLoading(false);
     }
-    
-    // Si l'API échoue, on retraite la suggestion comme un message normal
-    console.warn('adjust-brief failed, fallback to chat');
-    await handleSend(suggestion);
-  } catch (err) {
-    console.error('Suggestion click error', err);
-    await handleSend(suggestion);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-  // ----- Copie / Édition (messages texte uniquement) -----
   const handleCopy = (content: string, id: string) => {
     navigator.clipboard.writeText(content).then(() => { setCopiedId(id); setTimeout(() => setCopiedId(null), 2000); });
   };
@@ -256,129 +260,105 @@ useEffect(() => {
 
   // ----- Soumission finale -----
   const handleSubmitProject = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!submitForm.name.trim() || !submitForm.email.trim()) return;
-  setLoading(true);
-  try {
-    // Construire le HTML de l'email pour Actoos
-    const html = `
-      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 650px; margin: 0 auto; color: #1f2937; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-        <div style="background: linear-gradient(135deg, #D4AF37 0%, #F5D78E 100%); padding: 32px 24px; text-align: center;">
-          <h1 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;">✨ Nouveau projet</h1>
-          <p style="color: #475569; margin: 8px 0 0; font-size: 14px;">Soumis depuis l'Agent Actoos</p>
-        </div>
-        <div style="padding: 24px;">
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-            <tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b; width: 120px;">Client</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.name}</td></tr>
-            <tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b;">Email</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.email}</td></tr>
-            ${submitForm.message ? `<tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b;">Message</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.message}</td></tr>` : ''}
-          </table>
-
-          ${currentBrief ? `
-          <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-            <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 20px;">📋</span> Brief structuré
-            </h2>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b; width: 130px;">Nom du projet</td><td style="padding: 6px 8px; color: #0f172a; font-weight: 600;">${currentBrief.projectName || 'N/A'}</td></tr>
-              <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Objectif</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.objective || 'N/A'}</td></tr>
-              <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Type</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.type}</td></tr>
-              <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Complexité</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.complexity}</td></tr>
-              <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Fonctionnalités</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.features.join(', ')}</td></tr>
-              <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Pages</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.pages.join(', ')}</td></tr>
-              <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Rôles</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.roles.join(', ')}</td></tr>
-              <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Modules</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.modules?.join(', ') || 'N/A'}</td></tr>
-              <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Architecture</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.architecture}</td></tr>
-              <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Stack</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.stack?.join(', ') || 'N/A'}</td></tr>
-              <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Priorité</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.priority || 'Standard'}</td></tr>
+    e.preventDefault();
+    if (!submitForm.name.trim() || !submitForm.email.trim()) return;
+    setLoading(true);
+    try {
+      const html = `
+        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 650px; margin: 0 auto; color: #1f2937; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+          <div style="background: linear-gradient(135deg, #D4AF37 0%, #F5D78E 100%); padding: 32px 24px; text-align: center;">
+            <h1 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;">✨ Nouveau projet</h1>
+            <p style="color: #475569; margin: 8px 0 0; font-size: 14px;">Soumis depuis l'Agent Actoos</p>
+          </div>
+          <div style="padding: 24px;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+              <tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b; width: 120px;">Client</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.name}</td></tr>
+              <tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b;">Email</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.email}</td></tr>
+              ${submitForm.message ? `<tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b;">Message</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.message}</td></tr>` : ''}
             </table>
+            ${currentBrief ? `
+            <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+              <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">📋</span> Brief structuré
+              </h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b; width: 130px;">Nom du projet</td><td style="padding: 6px 8px; color: #0f172a; font-weight: 600;">${currentBrief.projectName || 'N/A'}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Objectif</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.objective || 'N/A'}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Type</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.type}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Complexité</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.complexity}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Fonctionnalités</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.features.join(', ')}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Pages</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.pages.join(', ')}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Rôles</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.roles.join(', ')}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Modules</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.modules?.join(', ') || 'N/A'}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Architecture</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.architecture}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Stack</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.stack?.join(', ') || 'N/A'}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Priorité</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.priority || 'Standard'}</td></tr>
+              </table>
+            </div>
+            ` : ''}
+            <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
+              <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">💬</span> Conversation
+              </h2>
+              ${messages.map(m => `
+                <div style="margin-bottom: 12px; padding: 10px 14px; background: ${m.role === 'user' ? '#D4AF37' : '#ffffff'}; color: ${m.role === 'user' ? '#ffffff' : '#0f172a'}; border-radius: 12px; border: 1px solid ${m.role === 'user' ? '#D4AF37' : '#e5e7eb'};">
+                  <div style="font-size: 11px; font-weight: 600; margin-bottom: 4px; color: ${m.role === 'user' ? '#fef3c7' : '#64748b'};">${m.role === 'user' ? '👤 Client' : '🤖 Agent Actoos'}</div>
+                  <div style="font-size: 14px; line-height: 1.5;">${m.content}</div>
+                </div>
+              `).join('')}
+            </div>
           </div>
-          ` : ''}
+          <div style="background: #f1f5f9; padding: 16px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+            <p style="color: #64748b; font-size: 12px; margin: 0;">Envoyé depuis la vitrine Actoos • <a href="https://actoos.com" style="color: #D4AF37;">actoos.com</a></p>
+          </div>
+        </div>
+      `;
 
-          <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
-            <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 20px;">💬</span> Conversation
-            </h2>
-            ${messages.map(m => `
-              <div style="margin-bottom: 12px; padding: 10px 14px; background: ${m.role === 'user' ? '#D4AF37' : '#ffffff'}; color: ${m.role === 'user' ? '#ffffff' : '#0f172a'}; border-radius: 12px; border: 1px solid ${m.role === 'user' ? '#D4AF37' : '#e5e7eb'};">
-                <div style="font-size: 11px; font-weight: 600; margin-bottom: 4px; color: ${m.role === 'user' ? '#fef3c7' : '#64748b'};">${m.role === 'user' ? '👤 Client' : '🤖 Agent Actoos'}</div>
-                <div style="font-size: 14px; line-height: 1.5;">${m.content}</div>
+      // 1. Envoi à Actoos
+      const res = await fetch('/api/send-project-email', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: submitForm.name, email: submitForm.email, message: submitForm.message, html }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        // Email de confirmation au visiteur
+        await fetch('/api/send-project-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: submitForm.name,
+            email: submitForm.email,
+            to: submitForm.email,
+            html: `
+              <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1f2937;">
+                <div style="background: linear-gradient(135deg, #D4AF37 0%, #F5D78E 100%); padding: 24px; text-align: center; border-radius: 16px 16px 0 0;">
+                  <h1 style="color: #0f172a; margin: 0; font-size: 20px;">✨ Projet bien reçu !</h1>
+                </div>
+                <div style="padding: 24px; background: #ffffff; border-radius: 0 0 16px 16px; border: 1px solid #e5e7eb;">
+                  <p>Bonjour ${submitForm.name},</p>
+                  <p>Nous avons bien reçu votre projet <strong>${currentBrief?.projectName || 'votre projet'}</strong>.</p>
+                  <p>Notre équipe l'étudie avec attention et reviendra vers vous sous <strong>24h ouvrées</strong>.</p>
+                  <p>En attendant, vous pouvez nous contacter à tout moment :</p>
+                  <p>📧 <a href="mailto:contact@actoos.com" style="color: #D4AF37;">contact@actoos.com</a></p>
+                  <p>À très bientôt,</p>
+                  <p><strong>L'équipe Actoos</strong></p>
+                </div>
               </div>
-            `).join('')}
-          </div>
-        </div>
-        <div style="background: #f1f5f9; padding: 16px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
-          <p style="color: #64748b; font-size: 12px; margin: 0;">Envoyé depuis la vitrine Actoos • <a href="https://actoos.com" style="color: #D4AF37;">actoos.com</a></p>
-        </div>
-      </div>
-    `;
+            `,
+          }),
+        });
 
-    // 1. Envoi à Actoos
-    const res = await fetch('/api/send-project-email', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: submitForm.name, email: submitForm.email, message: submitForm.message, html }),
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      // Email de confirmation au visiteur
-await fetch('/api/send-project-email', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    name: submitForm.name,
-    email: submitForm.email,
-    to: submitForm.email, // ← Destinataire = visiteur
-    html: `
-      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1f2937;">
-        <div style="background: linear-gradient(135deg, #D4AF37 0%, #F5D78E 100%); padding: 24px; text-align: center; border-radius: 16px 16px 0 0;">
-          <h1 style="color: #0f172a; margin: 0; font-size: 20px;">✨ Projet bien reçu !</h1>
-        </div>
-        <div style="padding: 24px; background: #ffffff; border-radius: 0 0 16px 16px; border: 1px solid #e5e7eb;">
-          <p>Bonjour ${submitForm.name},</p>
-          <p>Nous avons bien reçu votre projet <strong>${currentBrief?.projectName || 'votre projet'}</strong>.</p>
-          <p>Notre équipe l'étudie avec attention et reviendra vers vous sous <strong>24h ouvrées</strong>.</p>
-          <p>En attendant, vous pouvez nous contacter à tout moment :</p>
-          <p>📧 <a href="mailto:contact@actoos.com" style="color: #D4AF37;">contact@actoos.com</a></p>
-          <p>À très bientôt,</p>
-          <p><strong>L'équipe Actoos</strong></p>
-        </div>
-      </div>
-    `,
-  }),
-});
-
-      setShowSubmitForm(false);
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Votre projet a été transmis à l\'équipe Actoos. Vous recevrez une réponse sous 24h.' }]);
-      {step === 'soumettre' && (
-  <div className="flex justify-center mt-4">
-    <button
-      onClick={() => {
-        setMessages([{
-          id: generateId(),
-          role: 'assistant',
-          content: "Bonjour ! Je suis l'Agent Actoos. Décrivez votre projet en une phrase, je vous aide à le structurer et à l'affiner."
-        }]);
-        setCurrentBrief(null);
-        setStep('decrire');
         setShowSubmitForm(false);
-        setSubmitForm({ name: '', email: '', message: '' });
-        setShowBriefPanel(true);
-      }}
-      className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-green-200 hover:scale-105 transition-all"
-    >
-      <Sparkles size={16} className="inline mr-2" />Démarrer un nouveau projet
-    </button>
-  </div>
-)}
-      setStep('soumettre');
-    } else {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: "Erreur lors de l'envoi. Veuillez réessayer." }]);
-    }
-  } catch {
-    setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: "Erreur de connexion." }]);
-  } finally { setLoading(false); }
-};
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: '✅ Votre projet a été transmis à l\'équipe Actoos. Vous recevrez une réponse sous 24h.' }]);
+        setStep('soumettre');
+      } else {
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: "Erreur lors de l'envoi. Veuillez réessayer." }]);
+      }
+    } catch {
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: "Erreur de connexion." }]);
+    } finally { setLoading(false); }
+  };
 
   // ----- Rendu -----
   return (
@@ -491,6 +471,29 @@ await fetch('/api/send-project-email', {
                     <button type="button" onClick={() => setShowSubmitForm(false)} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm">Annuler</button>
                   </div>
                 </form>
+              </div>
+            )}
+
+            {/* Bouton Nouveau projet (après soumission) */}
+            {step === 'soumettre' && (
+              <div className="flex justify-center mt-4">
+                <button
+                  onClick={() => {
+                    setMessages([{
+                      id: generateId(),
+                      role: 'assistant',
+                      content: "Bonjour ! Je suis l'Agent Actoos. Décrivez votre projet en une phrase, je vous aide à le structurer et à l'affiner."
+                    }]);
+                    setCurrentBrief(null);
+                    setStep('decrire');
+                    setShowSubmitForm(false);
+                    setSubmitForm({ name: '', email: '', message: '' });
+                    setShowBriefPanel(true);
+                  }}
+                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-green-200 hover:scale-105 transition-all"
+                >
+                  <Sparkles size={16} className="inline mr-2" />Démarrer un nouveau projet
+                </button>
               </div>
             )}
           </div>

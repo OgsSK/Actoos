@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, message, html } = await req.json();
+    const { name, email, message, html, to } = await req.json();
     if (!name || !email) {
       return NextResponse.json({ error: 'Nom et email requis' }, { status: 400 });
     }
 
-    // Si un HTML personnalisé est fourni (depuis le chatbot), on l'utilise
-    const emailHtml = html || buildDefaultEmail(name, email, message);
+    // Utiliser le destinataire fourni, sinon envoyer à Actoos
+    const recipient = to || 'contact@actoos.com';
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         from: 'Actoos <noreply@actoos.com>',
-        to: 'contact@actoos.com',
+        to: recipient,
         subject: `Nouveau projet : ${name}`,
-        html: emailHtml,
+        html: html || buildDefaultEmail(name, email, message),
       }),
     });
 
