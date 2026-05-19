@@ -16,18 +16,31 @@ const defaultDependencies: Record<string, string> = {
   'tailwindcss': '^3.4.0',
   'autoprefixer': '^10.4.0',
   'postcss': '^8.4.0',
+  'react-tabs': '^6.0.0',
 };
 
 // Instance globale pour éviter les boots multiples
 let globalContainer: WebContainer | null = null;
 let globalBootPromise: Promise<WebContainer> | null = null;
 
+function extractImports(code: string): Record<string, string> {
+  const deps: Record<string, string> = {};
+  const regex = /import\s+(?:(?:\{[^}]*\}|\w+)\s+from\s+)?['"]([^'"]+)['"]/g;
+  let match;
+  while ((match = regex.exec(code)) !== null) {
+    const pkg = match[1];
+    if (!pkg.startsWith('.') && !pkg.startsWith('/') && !defaultDependencies[pkg] && !pkg.startsWith('react/')) {
+      deps[pkg] = 'latest';
+    }
+  }
+  return deps;
+}
+
 export default function WebContainerPreview({ code, dependencies = {} }: Props) {
   const [url, setUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [progress, setProgress] = useState<string>('Démarrage du conteneur...');
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const mountedRef = useRef(true);
   const serverStartedRef = useRef(false);
 
@@ -51,12 +64,12 @@ export default function WebContainerPreview({ code, dependencies = {} }: Props) 
 
         const container = globalContainer;
 
-        // Fusionner les dépendances
-        const allDeps = { ...defaultDependencies, ...dependencies };
+        // Extraire les dépendances du code
+        const extractedDeps = extractImports(code);
+        const allDeps = { ...defaultDependencies, ...extractedDeps, ...dependencies };
 
         setProgress('Préparation des fichiers...');
 
-        // Fichiers de base
         const files: Record<string, any> = {
           'package.json': {
             file: {
@@ -154,13 +167,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(
 
         setProgress('Démarrage du serveur...');
 
-        // Démarrer le serveur seulement s'il n'est pas déjà lancé
         if (!serverStartedRef.current) {
           container.spawn('npm', ['run', 'dev']);
           serverStartedRef.current = true;
         }
 
-        // Écouter l'URL du serveur
         container.on('server-ready', (port, serverUrl) => {
           if (mountedRef.current) {
             setUrl(serverUrl);
@@ -220,7 +231,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(
 
   return (
     <iframe
-      ref={iframeRef}
       src={url}
       className="w-full h-full border-0 rounded-2xl"
       title="Preview"
