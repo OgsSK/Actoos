@@ -16,25 +16,26 @@ export default function DirectPreview({ code }: Props) {
     containerRef.current.innerHTML = '';
 
     try {
-      // 1. Supprimer TOUS les imports
+      // 1. Supprimer TOUT ce qui commence par "import" jusqu'au point-virgule (sur plusieurs lignes)
       let cleanCode = code
-        .split('\n')
-        .filter(line => !line.trim().startsWith('import '))
-        .join('\n');
+        .replace(/import\s+[\s\S]*?;\s*/g, '')  // imports sur une ligne
+        .replace(/import\s+\{[\s\S]*?\}\s+from\s+['"][^'"]+['"];?\s*/g, '') // imports nommés
+        .replace(/import\s+\w+\s+from\s+['"][^'"]+['"];?\s*/g, '') // imports par défaut
+        .replace(/import\s+['"][^'"]+['"];?\s*/g, '') // imports CSS
+        .trim();
 
-      // 2. Si le code ne contient pas "function App" ou "const App", fallback
-      if (!cleanCode.includes('function App') && !cleanCode.includes('const App') && !cleanCode.includes('export default')) {
-        containerRef.current.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;">Aperçu non disponible</div>';
+      // 2. Fallback si vide
+      if (!cleanCode || cleanCode.length < 20) {
+        containerRef.current.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;">Aperçu en cours de génération...</div>';
         return;
       }
 
-      // 3. Supprimer "export default" pour pouvoir appeler App directement
+      // 3. Supprimer "export default"
       cleanCode = cleanCode.replace(/export\s+default\s+/g, '');
 
-      // 4. Exécuter le code
+      // 4. Exécuter
       const AppComponent = new Function('React', `${cleanCode}; return App;`)(React);
 
-      // 5. Rendre le composant
       const root = ReactDOM.createRoot(containerRef.current);
       root.render(React.createElement(AppComponent));
 
