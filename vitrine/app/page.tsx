@@ -10,29 +10,6 @@ import FadeInSection from './components/FadeInSection';
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
-    const message = formData.get('message') as string;
-
-    if (!name || !email) return;
-
-    try {
-      await fetch('/api/send-project-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, message, proposal: {}, conversation: [] }),
-      });
-      alert('Message envoyé !');
-      form.reset();
-    } catch (error) {
-      alert('Erreur lors de l\'envoi.');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-amber-50">
       
@@ -63,16 +40,6 @@ export default function HomePage() {
             <a href="#chatbot" className="hover:text-black transition-colors">Contact</a>
           </div>
 
-          <div className="hidden md:block">
-            <a
-              href="/produits"
-              className="bg-slate-950 text-white px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#10B981] transition-all shadow-2xl hover:shadow-emerald-500/20 flex items-center space-x-2"
-            >
-              <span>Nos solutions</span>
-              <ArrowRight size={14} />
-            </a>
-          </div>
-
           <button 
             className="md:hidden p-2"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -84,20 +51,11 @@ export default function HomePage() {
 
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-slate-100 px-6 py-4 space-y-4">
-            <a href="/produits" className="hover:text-black transition-colors">Produits</a>
+            <a href="/produits" className="block text-sm font-bold text-slate-600 hover:text-black">Produits</a>
             <a href="/expertise" className="block text-sm font-bold text-slate-600 hover:text-black">Expertise</a>
             <a href="/a-propos" className="block text-sm font-bold text-slate-600 hover:text-black">À propos</a>
             <a href="/philosophie" className="block text-sm font-bold text-slate-600 hover:text-black">Philosophie</a>
             <a href="#chatbot" className="block text-sm font-bold text-slate-600 hover:text-black">Contact</a>
-            <div className="pt-2 border-t border-slate-100">
-              <a 
-                href="/produits"
-                className="flex items-center space-x-3 py-2 text-sm font-bold text-[#10B981]"
-              >
-                <span>Nos solutions</span>
-                <ArrowRight size={14} />
-              </a>
-            </div>
           </div>
         )}
       </nav>
@@ -288,9 +246,9 @@ export default function HomePage() {
         </section>
       </FadeInSection>
 
-            {/* SECTION CONTACT */}
+      {/* SECTION CONTACT */}
       <FadeInSection>
-        <section id="contact" className="py-16 md:py-24 px-6 bg-white">
+        <section className="py-16 md:py-24 px-6 bg-white">
           <div className="max-w-4xl mx-auto text-center">
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-4 block">
               Contact
