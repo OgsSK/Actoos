@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import React from 'react';
-import ReactDOM from 'react-dom/client';
 
 interface Props {
   code: string;
@@ -16,30 +14,52 @@ export default function DirectPreview({ code }: Props) {
     containerRef.current.innerHTML = '';
 
     try {
-      // 1. Supprimer TOUT ce qui commence par "import" jusqu'au point-virgule (sur plusieurs lignes)
-      let cleanCode = code
-        .replace(/import\s+[\s\S]*?;\s*/g, '')  // imports sur une ligne
-        .replace(/import\s+\{[\s\S]*?\}\s+from\s+['"][^'"]+['"];?\s*/g, '') // imports nommés
-        .replace(/import\s+\w+\s+from\s+['"][^'"]+['"];?\s*/g, '') // imports par défaut
-        .replace(/import\s+['"][^'"]+['"];?\s*/g, '') // imports CSS
-        .trim();
+      // Créer un objet React minimal pour createElement
+      const React = {
+        createElement: (type: any, props: any, ...children: any[]) => {
+          const el = document.createElement(type);
+          if (props) {
+            Object.entries(props).forEach(([key, value]) => {
+              if (key === 'style' && typeof value === 'object') {
+                Object.assign(el.style, value);
+              } else if (key === 'className') {
+                el.setAttribute('class', value as string);
+              } else if (key.startsWith('on')) {
+                el.addEventListener(key.slice(2).toLowerCase(), value as any);
+              } else if (key !== 'children') {
+                el.setAttribute(key, value as string);
+              }
+            });
+          }
+          children.forEach(child => {
+            if (typeof child === 'string' || typeof child === 'number') {
+              el.appendChild(document.createTextNode(String(child)));
+            } else if (child instanceof Node) {
+              el.appendChild(child);
+            }
+          });
+          return el;
+        },
+        useState: (initial: any) => {
+          let state = initial;
+          const setState = (newState: any) => {
+            state = typeof newState === 'function' ? newState(state) : newState;
+          };
+          return [state, setState];
+        },
+        useEffect: (fn: any, deps?: any[]) => { fn(); },
+        useRef: (initial: any) => ({ current: initial }),
+        useMemo: (fn: any) => fn(),
+        useCallback: (fn: any) => fn,
+      };
 
-      // 2. Fallback si vide
-      if (!cleanCode || cleanCode.length < 20) {
-        containerRef.current.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;">Aperçu en cours de génération...</div>';
-        return;
+      const AppComponent = new Function('React', `${code}; return App;`)(React);
+      const element = AppComponent();
+      
+      containerRef.current.innerHTML = '';
+      if (element instanceof Node) {
+        containerRef.current.appendChild(element);
       }
-
-      // 3. Supprimer "export default"
-      cleanCode = cleanCode.replace(/export\s+default\s+/g, '');
-
-      // 4. Exécuter
-      const AppComponent = new Function('React', `${cleanCode}; return App;`)(React);
-
-      const root = ReactDOM.createRoot(containerRef.current);
-      root.render(React.createElement(AppComponent));
-
-      return () => { root.unmount(); };
     } catch (err) {
       containerRef.current.innerHTML = `<div style="padding:20px;color:#ef4444;">Erreur: ${(err as Error).message}</div>`;
     }
