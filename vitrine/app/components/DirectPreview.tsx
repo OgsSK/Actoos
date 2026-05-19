@@ -53,7 +53,13 @@ export default function DirectPreview({ code }: Props) {
         useCallback: (fn: any) => fn,
       };
 
-      const AppComponent = new Function('React', `${code}; return App;`)(React);
+      // Supprimer "export default" et "import" du code
+      let cleanCode = code
+        .replace(/export\s+default\s+/g, '')
+        .replace(/import\s+[^;]+;/g, '')
+        .trim();
+
+      const AppComponent = new Function('React', `${cleanCode}; return App;`)(React);
       const element = AppComponent();
       
       containerRef.current.innerHTML = '';
