@@ -214,46 +214,56 @@ export default function ProjectChatBot() {
 
   // --- Conception (Preview) ---
   const openPreviewForm = () => {
-    setShowPreviewForm(true);
-    setShowDevisForm(false);
-    setShowFinalForm(false);
-    setPreviewProject({ project: '', projectName: '', description: '' });
-    setPreviewReady(false);
-  };
+  setShowPreviewForm(true);
+  setShowDevisForm(false);
+  setShowFinalForm(false);
+  setPreviewProject({ project: '', projectName: '', description: '' });
+  setPreviewReady(false);
+  setPreviewCode('');     // ← Réinitialiser l'ancien code
+  setShowPreview(false);  // ← Fermer la preview précédente
+};
   const handlePreviewGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!previewProject.project.trim()) return;
-    setShowPreviewForm(false);
-    setPreviewLoading(true);
-    const summary = `Projet : ${previewProject.project}. Nom : ${previewProject.projectName}. Description : ${previewProject.description}.`;
-    const userMsg: Message = { id: generateId(), role: 'user', content: summary };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
-    try {
-      const res = await fetch('/api/generate-proposal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'generate-preview',
-          role: 'designer',
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-        }),
-      });
-      const data = await res.json();
-      if (data.previewCode && data.previewCode.trim().length > 0) {
-        setPreviewCode(data.previewCode);
-        setShowPreview(true);
-        setPreviewReady(true);
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: "🖥️ Voici l'aperçu interactif." }]);
-      } else {
-        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: "Désolé, je n'ai pas pu générer l'aperçu." }]);
-      }
-    } catch {
-      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: "Erreur lors de la génération." }]);
-    } finally {
-      setPreviewLoading(false);
+  e.preventDefault();
+  if (!previewProject.project.trim()) return;
+
+  setShowPreviewForm(false);
+  setPreviewLoading(true);
+  setPreviewCode(''); // Réinitialiser l'ancien code
+  setShowPreview(false);
+  setPreviewReady(false);
+
+  const summary = `Projet : ${previewProject.project}. Nom : ${previewProject.projectName}. Description : ${previewProject.description}.`;
+  const userMsg: Message = { id: generateId(), role: 'user', content: summary };
+  const newMessages = [...messages, userMsg];
+  setMessages(newMessages);
+  setLoading(true); // Bloquer le chat pendant la génération
+
+  try {
+    const res = await fetch('/api/generate-proposal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'generate-preview',
+        role: 'designer',
+        messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+      }),
+    });
+    const data = await res.json();
+    if (data.previewCode && data.previewCode.trim().length > 0) {
+      setPreviewCode(data.previewCode);
+      setShowPreview(true);
+      setPreviewReady(true);
+      // Ne pas ajouter de message dans le chat
+    } else {
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: "Désolé, je n'ai pas pu générer l'aperçu. Veuillez réessayer avec plus de détails." }]);
     }
-  };
+  } catch {
+    setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: "Erreur lors de la génération." }]);
+  } finally {
+    setLoading(false);
+    setPreviewLoading(false);
+  }
+};
 
   const handleAdjust = async (modification: string) => {
     if (!modification.trim() || !previewCode || loading) return;
