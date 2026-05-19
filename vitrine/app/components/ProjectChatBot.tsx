@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   Send, Loader2, Zap, Copy, Check, Edit3, ChevronRight,
-  Sparkles, Layout, Lightbulb, FileText, PanelRightClose
+  Sparkles, Layout, Lightbulb, FileText, PanelRightClose,
+  X, Menu
 } from 'lucide-react';
 
 // ----- Types -----
@@ -67,6 +68,9 @@ export default function ProjectChatBot() {
   const [showBriefPanel, setShowBriefPanel] = useState(true);
   const [step, setStep] = useState<'decrire' | 'ajuster' | 'soumettre'>('decrire');
 
+  // Mobile : panneau brief en overlay
+  const [mobileBriefOpen, setMobileBriefOpen] = useState(false);
+
   // Formulaire de soumission
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [submitForm, setSubmitForm] = useState({ name: '', email: '', message: '' });
@@ -80,18 +84,11 @@ export default function ProjectChatBot() {
 
   const generateId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-  // Scroll & focus
+  // Scroll
   useEffect(() => {
     if (chatContainerRef.current)
       chatContainerRef.current.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages]);
-
-  // Scroll vers le bas quand le formulaire de soumission apparaît
-  useEffect(() => {
-    if (showSubmitForm && chatContainerRef.current) {
-      chatContainerRef.current.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' });
-    }
-  }, [showSubmitForm]);
+  }, [messages, showSubmitForm]);
 
   useEffect(() => { if (!loading) setTimeout(() => inputRef.current?.focus(), 50); }, [loading]);
 
@@ -362,48 +359,57 @@ export default function ProjectChatBot() {
 
   // ----- Rendu -----
   return (
-    <div className="max-w-7xl mx-auto p-4">
-      <div className="flex gap-4">
+    <div className="max-w-7xl mx-auto p-2 md:p-4">
+      <div className="flex flex-col md:flex-row gap-4">
         {/* Chat */}
-        <div className="flex-1 flex flex-col bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden h-[650px]">
-          {/* Étapes + bouton Brief */}
-          <div className="flex items-center justify-between p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl">
-            <div className="flex items-center justify-center gap-6 flex-1">
+        <div className="flex-1 flex flex-col bg-white/70 backdrop-blur-2xl rounded-[32px] md:rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 overflow-hidden h-[calc(100vh-120px)] md:h-[650px]">
+          {/* Étapes compactes + boutons */}
+          <div className="flex items-center justify-between px-3 py-2 md:p-4 border-b border-slate-200/50 bg-white/40 backdrop-blur-xl">
+            <div className="flex items-center gap-1 md:gap-4 flex-1">
               {['Décrire', 'Ajuster', 'Soumettre'].map((label, i) => (
-                <div key={label} className="flex items-center gap-2">
-                  <div className={`flex items-center gap-2 text-sm font-bold ${step === (i === 0 ? 'decrire' : i === 1 ? 'ajuster' : 'soumettre') ? 'text-[#D4AF37]' : 'text-slate-400'}`}>
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center ${step === (i === 0 ? 'decrire' : i === 1 ? 'ajuster' : 'soumettre') ? 'bg-[#D4AF37] text-white' : 'bg-slate-200 text-slate-400'} text-xs`}>{i + 1}</span>
-                    {label}
+                <div key={label} className="flex items-center gap-1 md:gap-2">
+                  <div className={`flex items-center gap-1 text-[10px] md:text-sm font-bold ${step === (i === 0 ? 'decrire' : i === 1 ? 'ajuster' : 'soumettre') ? 'text-[#D4AF37]' : 'text-slate-400'}`}>
+                    <span className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center ${step === (i === 0 ? 'decrire' : i === 1 ? 'ajuster' : 'soumettre') ? 'bg-[#D4AF37] text-white' : 'bg-slate-200 text-slate-400'} text-[10px] md:text-xs`}>{i + 1}</span>
+                    <span className="hidden sm:inline">{label}</span>
                   </div>
-                  {i < 2 && <ChevronRight size={16} className="text-slate-300" />}
+                  {i < 2 && <ChevronRight size={12} className="text-slate-300 hidden sm:block" />}
                 </div>
               ))}
             </div>
-            {currentBrief && !showBriefPanel && (
-              <button
-                onClick={() => setShowBriefPanel(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#D4AF37]/10 text-[#D4AF37] hover:bg-[#D4AF37]/20 transition-colors flex items-center gap-1"
-                title="Afficher le brief"
-              >
-                <Sparkles size={14} /> Brief
-              </button>
-            )}
+            <div className="flex items-center gap-1 md:gap-2">
+              {/* Bouton Brief (mobile : ouvre l'overlay) */}
+              {currentBrief && (
+                <button
+                  onClick={() => {
+                    if (window.innerWidth < 768) {
+                      setMobileBriefOpen(true);
+                    } else {
+                      setShowBriefPanel(!showBriefPanel);
+                    }
+                  }}
+                  className="px-2 py-1 md:px-3 md:py-1.5 rounded-xl text-[10px] md:text-xs font-bold bg-[#D4AF37]/10 text-[#D4AF37] hover:bg-[#D4AF37]/20 transition-colors flex items-center gap-1"
+                  title="Afficher le brief"
+                >
+                  <Sparkles size={12} className="md:w-4 md:h-4" /> Brief
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Messages */}
-          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4">
             {messages.map(msg => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group`}>
-                <div className="relative max-w-[90%]">
+                <div className="relative max-w-[92%] md:max-w-[85%]">
                   {editingId === msg.id ? (
                     <div className="flex flex-col gap-2">
-                      <input value={editContent} onChange={e => setEditContent(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(); } if (e.key === 'Escape') cancelEdit(); }} className="w-full bg-white border border-[#D4AF37] rounded-xl px-4 py-3 text-sm outline-none" autoFocus />
+                      <input value={editContent} onChange={e => setEditContent(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(); } if (e.key === 'Escape') cancelEdit(); }} className="w-full bg-white border border-[#D4AF37] rounded-xl px-3 py-2 md:px-4 md:py-3 text-sm outline-none" autoFocus />
                       <div className="flex justify-end gap-2"><button onClick={cancelEdit} className="text-xs text-slate-500">Annuler</button><button onClick={saveEdit} disabled={!editContent.trim()} className="text-xs bg-[#D4AF37] text-white px-3 py-1 rounded-full">Modifier</button></div>
                     </div>
                   ) : msg.type === 'briefing' && msg.briefing ? (
-                    <div className="bg-white rounded-2xl p-5 border border-[#D4AF37]/30 shadow-lg">
-                      <div className="flex items-center gap-2 mb-3"><Layout size={18} className="text-[#D4AF37]" /><h3 className="font-bold text-slate-900">{msg.briefing.projectName || 'Cadrage du projet'}</h3></div>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="bg-white rounded-2xl p-3 md:p-5 border border-[#D4AF37]/30 shadow-lg">
+                      <div className="flex items-center gap-2 mb-2 md:mb-3"><Layout size={16} className="text-[#D4AF37]" /><h3 className="font-bold text-sm md:text-lg text-slate-900">{msg.briefing.projectName || 'Cadrage du projet'}</h3></div>
+                      <div className="grid grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm">
                         <div><span className="text-slate-400">Type :</span> <strong>{msg.briefing.type}</strong></div>
                         <div><span className="text-slate-400">Complexité :</span> <strong>{msg.briefing.complexity}</strong></div>
                         <div className="col-span-2"><span className="text-slate-400">Fonctionnalités :</span> <strong>{msg.briefing.features.join(', ')}</strong></div>
@@ -412,20 +418,20 @@ export default function ProjectChatBot() {
                       </div>
                     </div>
                   ) : msg.type === 'suggestions' && msg.suggestions ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 md:gap-2">
                       {msg.suggestions.map((s, i) => (
-                        <button key={i} onClick={() => handleSuggestionClick(s)} className="px-3 py-1.5 bg-[#D4AF37]/10 text-[#D4AF37] rounded-full text-sm font-medium hover:bg-[#D4AF37]/20 transition-colors">
-                          <Lightbulb size={14} className="inline mr-1" />{s}
+                        <button key={i} onClick={() => handleSuggestionClick(s)} className="px-2 py-1 md:px-3 md:py-1.5 bg-[#D4AF37]/10 text-[#D4AF37] rounded-full text-xs md:text-sm font-medium hover:bg-[#D4AF37]/20 transition-colors">
+                          <Lightbulb size={12} className="inline mr-1" />{s}
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <div className={`p-3.5 rounded-2xl text-sm whitespace-pre-wrap break-words ${msg.role === 'user' ? 'bg-gradient-to-br from-[#D4AF37] to-amber-500 text-white rounded-br-md shadow-md' : 'bg-white/80 backdrop-blur-sm text-slate-700 rounded-bl-md border border-slate-200/80'}`}>
+                    <div className={`p-2.5 md:p-3.5 rounded-2xl text-xs md:text-sm whitespace-pre-wrap break-words ${msg.role === 'user' ? 'bg-gradient-to-br from-[#D4AF37] to-amber-500 text-white rounded-br-md shadow-md' : 'bg-white/80 backdrop-blur-sm text-slate-700 rounded-bl-md border border-slate-200/80'}`}>
                       {msg.content}
                     </div>
                   )}
                   {editingId !== msg.id && msg.type !== 'suggestions' && msg.type !== 'briefing' && (
-                    <div className="absolute -bottom-6 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute -bottom-5 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => handleCopy(msg.content, msg.id)} className="p-1 rounded text-slate-400 hover:text-slate-600 bg-white shadow-sm" title="Copier">
                         {copiedId === msg.id ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
                       </button>
@@ -439,7 +445,7 @@ export default function ProjectChatBot() {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white/80 p-3 rounded-2xl rounded-bl-md border border-slate-200/80">
+                <div className="bg-white/80 p-2 md:p-3 rounded-2xl rounded-bl-md border border-slate-200/80">
                   <div className="flex space-x-1.5"><div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" /><div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} /><div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} /></div>
                 </div>
               </div>
@@ -448,27 +454,27 @@ export default function ProjectChatBot() {
             {/* Bouton Valider */}
             {currentBrief && !showSubmitForm && step !== 'soumettre' && (
               <div className="flex justify-center mt-4">
-                <button onClick={() => setShowSubmitForm(true)} className="px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-amber-200 hover:scale-105 transition-all">
-                  <FileText size={16} className="inline mr-2" />Valider et transmettre à Actoos
+                <button onClick={() => setShowSubmitForm(true)} className="px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white rounded-2xl font-bold text-xs md:text-sm shadow-lg shadow-amber-200 hover:scale-105 transition-all">
+                  <FileText size={14} className="inline mr-1 md:mr-2" />Valider et transmettre à Actoos
                 </button>
               </div>
             )}
 
             {/* Formulaire de soumission */}
             {showSubmitForm && (
-              <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xl space-y-3">
-                <h4 className="font-bold text-sm text-slate-800">Finaliser la transmission</h4>
-                <form onSubmit={handleSubmitProject} className="space-y-3">
-                  <input name="name" placeholder="Nom *" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={submitForm.name} onChange={e => setSubmitForm({ ...submitForm, name: e.target.value })} required />
-                  <input name="email" type="email" placeholder="Email *" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" value={submitForm.email} onChange={e => setSubmitForm({ ...submitForm, email: e.target.value })} required />
-                  <textarea name="message" placeholder="Message (optionnel)" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37]" rows={2} value={submitForm.message} onChange={e => setSubmitForm({ ...submitForm, message: e.target.value })} />
-                  <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">
+              <div className="bg-white rounded-2xl p-3 md:p-5 border border-slate-200/80 shadow-xl space-y-2 md:space-y-3">
+                <h4 className="font-bold text-xs md:text-sm text-slate-800">Finaliser la transmission</h4>
+                <form onSubmit={handleSubmitProject} className="space-y-2 md:space-y-3">
+                  <input name="name" placeholder="Nom *" className="w-full border border-slate-200 rounded-lg px-3 py-2 md:py-2.5 text-xs md:text-sm outline-none focus:border-[#D4AF37]" value={submitForm.name} onChange={e => setSubmitForm({ ...submitForm, name: e.target.value })} required />
+                  <input name="email" type="email" placeholder="Email *" className="w-full border border-slate-200 rounded-lg px-3 py-2 md:py-2.5 text-xs md:text-sm outline-none focus:border-[#D4AF37]" value={submitForm.email} onChange={e => setSubmitForm({ ...submitForm, email: e.target.value })} required />
+                  <textarea name="message" placeholder="Message (optionnel)" className="w-full border border-slate-200 rounded-lg px-3 py-2 md:py-2.5 text-xs md:text-sm outline-none focus:border-[#D4AF37]" rows={2} value={submitForm.message} onChange={e => setSubmitForm({ ...submitForm, message: e.target.value })} />
+                  <div className="flex items-center gap-2 text-xs md:text-sm text-slate-600 bg-slate-50 p-2 md:p-3 rounded-lg">
                     <input type="checkbox" checked readOnly className="rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]" />
                     <span>La conversation et le brief seront joints automatiquement.</span>
                   </div>
                   <div className="flex gap-2">
-                    <button type="submit" className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm">Soumettre</button>
-                    <button type="button" onClick={() => setShowSubmitForm(false)} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm">Annuler</button>
+                    <button type="submit" className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-xs md:text-sm">Soumettre</button>
+                    <button type="button" onClick={() => setShowSubmitForm(false)} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-xs md:text-sm">Annuler</button>
                   </div>
                 </form>
               </div>
@@ -490,45 +496,64 @@ export default function ProjectChatBot() {
                     setSubmitForm({ name: '', email: '', message: '' });
                     setShowBriefPanel(true);
                   }}
-                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-green-200 hover:scale-105 transition-all"
+                  className="px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl font-bold text-xs md:text-sm shadow-lg shadow-green-200 hover:scale-105 transition-all"
                 >
-                  <Sparkles size={16} className="inline mr-2" />Démarrer un nouveau projet
+                  <Sparkles size={14} className="inline mr-1 md:mr-2" />Démarrer un nouveau projet
                 </button>
               </div>
             )}
           </div>
 
           {/* Barre de saisie */}
-          <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl shrink-0">
+          <div className="p-2 md:p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl shrink-0">
             <div className="flex gap-2">
-              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Décrivez votre projet..." className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] transition-all" disabled={loading} />
-              <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white p-3 rounded-xl disabled:opacity-50">
-                {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="Décrivez votre projet..." className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 md:px-4 md:py-3 text-sm outline-none focus:border-[#D4AF37] transition-all" disabled={loading} />
+              <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white p-2.5 md:p-3 rounded-xl disabled:opacity-50">
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Panneau Brief */}
+        {/* Panneau Brief desktop */}
         {currentBrief && showBriefPanel && (
-          <div className="w-80 bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 p-5 space-y-4 h-fit sticky top-24">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2"><Sparkles size={16} className="text-[#D4AF37]" /> Brief vivant</h3>
-              <button onClick={() => setShowBriefPanel(false)} className="text-slate-400 hover:text-slate-600"><PanelRightClose size={16} /></button>
-            </div>
-            <div className="space-y-3 text-sm">
-              <div><span className="text-slate-400">Nom :</span> <strong>{currentBrief.projectName || 'À définir'}</strong></div>
-              <div><span className="text-slate-400">Type :</span> <strong>{currentBrief.type}</strong></div>
-              <div><span className="text-slate-400">Objectif :</span> <strong>{currentBrief.objective || 'À définir'}</strong></div>
-              <div><span className="text-slate-400">Modules :</span> <strong>{currentBrief.modules?.join(', ') || 'À définir'}</strong></div>
-              <div><span className="text-slate-400">Pages :</span> <strong>{currentBrief.pages.join(', ')}</strong></div>
-              <div><span className="text-slate-400">Stack :</span> <strong>{currentBrief.stack?.join(', ') || 'À définir'}</strong></div>
-              <div><span className="text-slate-400">Complexité :</span> <span className={`px-2 py-0.5 rounded-full text-xs ${currentBrief.complexity === 'Élevé' ? 'bg-red-100 text-red-600' : currentBrief.complexity === 'Moyen' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>{currentBrief.complexity}</span></div>
-              <div><span className="text-slate-400">Priorité :</span> <strong>{currentBrief.priority || 'Standard'}</strong></div>
+          <div className="hidden md:block w-80 bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/60 p-5 space-y-4 h-fit sticky top-24">
+            <BriefContent brief={currentBrief} onClose={() => setShowBriefPanel(false)} />
+          </div>
+        )}
+
+        {/* Overlay Brief mobile */}
+        {mobileBriefOpen && currentBrief && (
+          <div className="fixed inset-0 z-50 md:hidden bg-black/50 flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl relative max-h-[80vh] overflow-y-auto">
+              <button onClick={() => setMobileBriefOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X size={18} /></button>
+              <BriefContent brief={currentBrief} onClose={() => setMobileBriefOpen(false)} />
             </div>
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+// Petit composant pour le contenu du brief (réutilisé desktop + mobile)
+function BriefContent({ brief, onClose }: { brief: ProjectBrief; onClose: () => void }) {
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold text-slate-900 flex items-center gap-2"><Sparkles size={16} className="text-[#D4AF37]" /> Brief vivant</h3>
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><PanelRightClose size={16} /></button>
+      </div>
+      <div className="space-y-3 text-sm">
+        <div><span className="text-slate-400">Nom :</span> <strong>{brief.projectName || 'À définir'}</strong></div>
+        <div><span className="text-slate-400">Type :</span> <strong>{brief.type}</strong></div>
+        <div><span className="text-slate-400">Objectif :</span> <strong>{brief.objective || 'À définir'}</strong></div>
+        <div><span className="text-slate-400">Modules :</span> <strong>{brief.modules?.join(', ') || 'À définir'}</strong></div>
+        <div><span className="text-slate-400">Pages :</span> <strong>{brief.pages.join(', ')}</strong></div>
+        <div><span className="text-slate-400">Stack :</span> <strong>{brief.stack?.join(', ') || 'À définir'}</strong></div>
+        <div><span className="text-slate-400">Complexité :</span> <span className={`px-2 py-0.5 rounded-full text-xs ${brief.complexity === 'Élevé' ? 'bg-red-100 text-red-600' : brief.complexity === 'Moyen' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>{brief.complexity}</span></div>
+        <div><span className="text-slate-400">Priorité :</span> <strong>{brief.priority || 'Standard'}</strong></div>
+      </div>
+    </>
   );
 }
