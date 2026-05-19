@@ -523,7 +523,14 @@ export default function ProjectChatBot() {
       <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
     </div>
     <div className="flex-1" style={{ minHeight: 0, height: '100%' }}>
-              <WebContainerPreview code={previewCode} />
+              <WebContainerPreview 
+  code={previewCode} 
+  onRetry={() => {
+    setPreviewCode('');
+    setShowPreview(false);
+    handlePreviewGenerate({ preventDefault: () => {} } as any);
+  }}
+/>
     </div>
     <div className="p-4 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl space-y-2 shrink-0">
       <div className="flex gap-2">
