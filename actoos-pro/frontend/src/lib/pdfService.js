@@ -157,6 +157,207 @@ export const generateDevisPDF = async (devis, entreprise, client) => {
 };
 
 /**
+ * Generate Multi-Options Devis PDF
+ * Displays multiple pricing options side by side
+ */
+export const generateMultiOptionsDevisPDF = async (devis, entreprise, client) => {
+  const doc = new jsPDF({ orientation: 'landscape' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  let y = 20;
+  
+  const options = devis.options || [];
+  const optionCount = options.length;
+  
+  // Header - Entreprise info
+  doc.setFontSize(18);
+  doc.setTextColor(30, 41, 59);
+  doc.text(entreprise?.nom || 'Entreprise', 20, y);
+  
+  y += 8;
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  if (entreprise?.adresse) doc.text(entreprise.adresse, 20, y);
+  y += 4;
+  if (entreprise?.telephone) doc.text(`Tél: ${entreprise.telephone}`, 20, y);
+  
+  // Devis title
+  doc.setFontSize(14);
+  doc.setTextColor(16, 185, 129);
+  doc.text(`DEVIS ${devis.numero_devis || ''} - OPTIONS COMPARATIVES`, pageWidth - 20, 20, { align: 'right' });
+  
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Date: ${formatDate(devis.created_at)} | Validité: ${devis.validite_jours || 30} jours`, pageWidth - 20, 28, { align: 'right' });
+  
+  // Client info
+  doc.setFillColor(248, 250, 252);
+  doc.rect(pageWidth - 85, 35, 65, 25, 'F');
+  doc.setFontSize(8);
+  doc.setTextColor(30, 41, 59);
+  doc.text('Client:', pageWidth - 80, 42);
+  doc.setFontSize(9);
+  doc.text(`${client?.nom || ''} ${client?.prenom || ''}`, pageWidth - 80, 48);
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  if (client?.email) doc.text(client.email, pageWidth - 80, 54);
+  
+  // Options columns
+  y = 70;
+  const colWidth = (pageWidth - 40) / optionCount;
+  const colGap = 5;
+  
+  // Option colors
+  const colorMap = {
+    slate: { bg: [248, 250, 252], accent: [100, 116, 139] },
+    blue: { bg: [239, 246, 255], accent: [59, 130, 246] },
+    amber: { bg: [255, 251, 235], accent: [245, 158, 11] },
+    emerald: { bg: [236, 253, 245], accent: [16, 185, 129] },
+    purple: { bg: [250, 245, 255], accent: [168, 85, 247] },
+  };
+  
+  options.forEach((option, index) => {
+    const x = 20 + (index * colWidth);
+    const colors = colorMap[option.color] || colorMap.slate;
+    
+    // Option header
+    doc.setFillColor(...colors.bg);
+    doc.rect(x, y, colWidth - colGap, 25, 'F');
+    
+    // Recommended badge
+    if (option.recommended) {
+      doc.setFillColor(...colors.accent);
+      doc.rect(x + (colWidth - colGap) / 2 - 20, y - 5, 40, 8, 'F');
+      doc.setFontSize(6);
+      doc.setTextColor(255, 255, 255);
+      doc.text('RECOMMANDE', x + (colWidth - colGap) / 2, y - 1, { align: 'center' });
+    }
+    
+    // Option name
+    doc.setFontSize(12);
+    doc.setTextColor(...colors.accent);
+    doc.text(option.name || `Option ${index + 1}`, x + (colWidth - colGap) / 2, y + 10, { align: 'center' });
+    
+    // Option description
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    const desc = option.description || '';
+    doc.text(desc.substring(0, 35), x + (colWidth - colGap) / 2, y + 18, { align: 'center' });
+  });
+  
+  // Lines table for each option
+  y += 35;
+  
+  // Table header
+  options.forEach((option, index) => {
+    const x = 20 + (index * colWidth);
+    
+    doc.setFillColor(30, 41, 59);
+    doc.rect(x, y, colWidth - colGap, 8, 'F');
+    doc.setFontSize(7);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Description', x + 3, y + 5);
+    doc.text('Qte', x + colWidth - colGap - 35, y + 5);
+    doc.text('Total HT', x + colWidth - colGap - 5, y + 5, { align: 'right' });
+  });
+  
+  y += 10;
+  
+  // Find max lines
+  const maxLines = Math.max(...options.map(o => (o.lignes || []).length));
+  
+  // Table rows
+  for (let lineIdx = 0; lineIdx < maxLines; lineIdx++) {
+    if (y > pageHeight - 50) {
+      doc.addPage();
+      y = 20;
+    }
+    
+    options.forEach((option, optIndex) => {
+      const x = 20 + (optIndex * colWidth);
+      const ligne = (option.lignes || [])[lineIdx];
+      
+      const bgColor = lineIdx % 2 === 0 ? [255, 255, 255] : [248, 250, 252];
+      doc.setFillColor(...bgColor);
+      doc.rect(x, y - 3, colWidth - colGap, 8, 'F');
+      
+      if (ligne) {
+        doc.setFontSize(7);
+        doc.setTextColor(30, 41, 59);
+        const desc = (ligne.description || '').substring(0, 25);
+        doc.text(desc, x + 3, y + 2);
+        doc.text(String(ligne.quantite || 1), x + colWidth - colGap - 35, y + 2);
+        const lineTotal = (ligne.quantite || 1) * (ligne.prix_unitaire || 0);
+        doc.text(formatCurrency(lineTotal), x + colWidth - colGap - 5, y + 2, { align: 'right' });
+      }
+    });
+    
+    y += 8;
+  }
+  
+  // Totals for each option
+  y += 10;
+  options.forEach((option, index) => {
+    const x = 20 + (index * colWidth);
+    const colors = colorMap[option.color] || colorMap.slate;
+    const lignes = option.lignes || [];
+    
+    const total_ht = lignes.reduce((sum, l) => sum + ((l.quantite || 0) * (l.prix_unitaire || 0)), 0);
+    const total_tva = lignes.reduce((sum, l) => sum + ((l.quantite || 0) * (l.prix_unitaire || 0) * (l.tva || 0) / 100), 0);
+    const total_ttc = total_ht + total_tva;
+    
+    doc.setFillColor(...colors.bg);
+    doc.rect(x, y, colWidth - colGap, 30, 'F');
+    
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Total HT:', x + 5, y + 8);
+    doc.text('TVA:', x + 5, y + 15);
+    
+    doc.setTextColor(30, 41, 59);
+    doc.text(formatCurrency(total_ht), x + colWidth - colGap - 5, y + 8, { align: 'right' });
+    doc.text(formatCurrency(total_tva), x + colWidth - colGap - 5, y + 15, { align: 'right' });
+    
+    // Total TTC - highlighted
+    doc.setFillColor(...colors.accent);
+    doc.rect(x, y + 20, colWidth - colGap, 10, 'F');
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Total TTC', x + 5, y + 27);
+    doc.text(formatCurrency(total_ttc), x + colWidth - colGap - 5, y + 27, { align: 'right' });
+  });
+  
+  // Conditions
+  if (devis.conditions) {
+    y += 45;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Conditions:', 20, y);
+    y += 4;
+    doc.setTextColor(30, 41, 59);
+    const conditionsLines = doc.splitTextToSize(devis.conditions, pageWidth - 40);
+    doc.text(conditionsLines.slice(0, 3), 20, y);
+  }
+  
+  // Signature if signed
+  if (devis.signature_client) {
+    y = pageHeight - 35;
+    doc.setFontSize(9);
+    doc.setTextColor(16, 185, 129);
+    doc.text('Devis signe', 20, y);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Par: ${devis.nom_signataire || 'Client'} | Le: ${formatDate(devis.date_signature)}`, 20, y + 5);
+  }
+  
+  // Footer
+  doc.setFontSize(7);
+  doc.setTextColor(148, 163, 184);
+  doc.text(`Genere le ${formatDate(new Date())} - ACTOOS PRO`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+  
+  return doc;
+};
+
+/**
  * Generate Facture PDF
  */
 export const generateFacturePDF = async (facture, entreprise, client) => {

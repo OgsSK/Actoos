@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
@@ -22,13 +22,15 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
+import { Switch } from '../components/ui/switch';
 import { ClientSelect } from '../components/ui/searchable-select';
 import { formatDate, getStatusLabel } from '../lib/utils';
 import {
   Plus, Search, ChevronLeft, Edit, FileText, Send, PenTool, Download,
-  Trash2, Receipt, Loader2, X, Check, Mail, ExternalLink
+  Trash2, Receipt, Loader2, X, Check, Mail, ExternalLink, Layers, Package
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { MultiOptionsDevis, DEFAULT_OPTIONS } from '../components/MultiOptionsDevis';
 
 // Signature Pad Component
 const SignaturePad = ({ onSave, onCancel }) => {
@@ -432,6 +434,12 @@ export const DevisForm = () => {
   const [saving, setSaving] = useState(false);
   const [defaultsLoaded, setDefaultsLoaded] = useState(false);
   
+  // Multi-options mode
+  const [multiOptionsMode, setMultiOptionsMode] = useState(false);
+  const [options, setOptions] = useState(() => 
+    DEFAULT_OPTIONS.map(opt => ({ ...opt, lignes: [] }))
+  );
+  
   // Use hook for clients
   const { data: clients, loading: clientsLoading } = useClients(user?.entreprise_id);
   
@@ -442,6 +450,9 @@ export const DevisForm = () => {
     conditions: '',
     validite_jours: 30,
     message_client: '',
+    // Multi-options fields
+    multi_options: false,
+    options: null,
   });
 
   useEffect(() => {
@@ -455,7 +466,7 @@ export const DevisForm = () => {
 
   const fetchDevisDefaults = async () => {
     try {
-      const defaults = await settingsApi.getDocumentSettings(user?.entreprise_id);
+      const defaults = await settingsApi.getDocumentDefaults(user?.entreprise_id);
       
       // Pre-fill form with global defaults
       setFormData(prev => ({
@@ -476,6 +487,12 @@ export const DevisForm = () => {
     try {
       const data = await devisApi.get(id);
       setFormData(data);
+      
+      // Check if devis has multi-options
+      if (data.multi_options && data.options) {
+        setMultiOptionsMode(true);
+        setOptions(data.options);
+      }
     } catch (error) {
       console.error('Error fetching devis:', error);
     } finally {
@@ -511,6 +528,31 @@ export const DevisForm = () => {
   };
 
   const calculateTotals = () => {
+    if (multiOptionsMode) {
+      // Calculate totals for each option
+      const optionTotals = options.map(opt => {
+        const total_ht = (opt.lignes || []).reduce((sum, l) => sum + ((l.quantite || 0) * (l.prix_unitaire || 0)), 0);
+        const total_tva = (opt.lignes || []).reduce((sum, l) => sum + ((l.quantite || 0) * (l.prix_unitaire || 0) * (l.tva || 0) / 100), 0);
+        return {
+          name: opt.name,
+          total_ht,
+          total_tva,
+          total_ttc: total_ht + total_tva,
+        };
+      });
+      
+      // Return the recommended option's totals as default
+      const recommended = options.find(o => o.recommended) || options[0];
+      const recTotals = optionTotals.find(t => t.name === recommended?.name) || optionTotals[0];
+      
+      return {
+        total_ht: recTotals?.total_ht?.toFixed(2) || '0.00',
+        total_tva: recTotals?.total_tva?.toFixed(2) || '0.00',
+        total_ttc: recTotals?.total_ttc?.toFixed(2) || '0.00',
+        optionTotals,
+      };
+    }
+    
     const total_ht = formData.lignes.reduce((sum, l) => sum + (l.quantite * l.prix_unitaire), 0);
     const total_tva = formData.lignes.reduce((sum, l) => sum + (l.quantite * l.prix_unitaire * l.tva / 100), 0);
     return {
@@ -529,24 +571,60 @@ export const DevisForm = () => {
       return;
     }
     
-    if (!formData.lignes || formData.lignes.length === 0) {
-      toast.error('Veuillez ajouter au moins une ligne');
-      return;
-    }
-    
-    const hasValidLigne = formData.lignes.some(l => l.description && l.prix_unitaire > 0);
-    if (!hasValidLigne) {
-      toast.error('Veuillez remplir au moins une ligne avec description et prix');
-      return;
+    if (multiOptionsMode) {
+      // Validate multi-options
+      const hasValidOption = options.some(opt => 
+        opt.lignes && opt.lignes.length > 0 && 
+        opt.lignes.some(l => l.description && l.prix_unitaire > 0)
+      );
+      
+      if (!hasValidOption) {
+        toast.error('Veuillez remplir au moins une option avec des lignes valides');
+        return;
+      }
+    } else {
+      if (!formData.lignes || formData.lignes.length === 0) {
+        toast.error('Veuillez ajouter au moins une ligne');
+        return;
+      }
+      
+      const hasValidLigne = formData.lignes.some(l => l.description && l.prix_unitaire > 0);
+      if (!hasValidLigne) {
+        toast.error('Veuillez remplir au moins une ligne avec description et prix');
+        return;
+      }
     }
     
     setSaving(true);
     try {
+      // Calculate totals
+      const totals = calculateTotals();
+      
+      // Prepare payload
       const payload = {
         ...formData,
         entreprise_id: user?.entreprise_id,
         validite_jours: parseInt(formData.validite_jours) || 30,
+        multi_options: multiOptionsMode,
+        total_ht: parseFloat(totals.total_ht),
+        total_tva: parseFloat(totals.total_tva),
+        total_ttc: parseFloat(totals.total_ttc),
       };
+      
+      if (multiOptionsMode) {
+        // Store options in the payload
+        payload.options = options.map(opt => ({
+          id: opt.id,
+          name: opt.name,
+          description: opt.description,
+          color: opt.color,
+          recommended: opt.recommended,
+          lignes: opt.lignes,
+        }));
+        // Keep lignes from recommended option for backwards compatibility
+        const recommended = options.find(o => o.recommended) || options[0];
+        payload.lignes = recommended?.lignes || [];
+      }
       
       if (isEdit) {
         await devisApi.update(id, payload);
@@ -623,59 +701,110 @@ export const DevisForm = () => {
           </CardContent>
         </Card>
 
-        {/* Lines */}
+        {/* Mode Toggle - Multi-options */}
         <Card className="border-slate-200 mb-6">
-          <CardHeader>
+          <CardContent className="py-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Lignes du devis</CardTitle>
-              <Button variant="outline" size="sm" onClick={addLigne} type="button" data-testid="add-ligne">
-                <Plus className="w-4 h-4 mr-1" />
-                Ajouter une ligne
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Header */}
-            <div className="grid grid-cols-12 gap-2 text-xs font-medium text-slate-500 uppercase">
-              <div className="col-span-5">Description</div>
-              <div className="col-span-2">Quantité</div>
-              <div className="col-span-2">Prix HT</div>
-              <div className="col-span-2">TVA %</div>
-              <div className="col-span-1"></div>
-            </div>
-            
-            {/* Lines */}
-            {formData.lignes.map((ligne, index) => (
-              <LineItem
-                key={index}
-                ligne={ligne}
-                index={index}
-                onChange={handleLigneChange}
-                onRemove={removeLigne}
-              />
-            ))}
-
-            {/* Totals */}
-            <div className="border-t border-slate-200 pt-4 mt-4">
-              <div className="flex justify-end">
-                <div className="w-64 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Total HT</span>
-                    <span className="font-medium">{formatAmount(parseFloat(totals.total_ht))}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">TVA</span>
-                    <span className="font-medium">{formatAmount(parseFloat(totals.total_tva))}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold border-t border-slate-200 pt-2">
-                    <span>Total TTC</span>
-                    <span>{formatAmount(parseFloat(totals.total_ttc))}</span>
-                  </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-emerald-100 flex items-center justify-center">
+                  <Layers className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <Label htmlFor="multi-options-toggle" className="text-base font-semibold cursor-pointer">
+                    Mode multi-options (Good/Better/Best)
+                  </Label>
+                  <p className="text-sm text-slate-500">
+                    Proposez plusieurs options tarifaires à votre client
+                  </p>
                 </div>
               </div>
+              <Switch
+                id="multi-options-toggle"
+                checked={multiOptionsMode}
+                onCheckedChange={(checked) => {
+                  setMultiOptionsMode(checked);
+                  if (checked && options[0].lignes.length === 0) {
+                    // Copy current lignes to first option
+                    const newOptions = [...options];
+                    newOptions[0].lignes = [...formData.lignes];
+                    setOptions(newOptions);
+                  }
+                }}
+                data-testid="multi-options-toggle"
+              />
             </div>
           </CardContent>
         </Card>
+
+        {/* Lines - Standard Mode */}
+        {!multiOptionsMode && (
+          <Card className="border-slate-200 mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Lignes du devis</CardTitle>
+                <Button variant="outline" size="sm" onClick={addLigne} type="button" data-testid="add-ligne">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Ajouter une ligne
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Header */}
+              <div className="grid grid-cols-12 gap-2 text-xs font-medium text-slate-500 uppercase">
+                <div className="col-span-5">Description</div>
+                <div className="col-span-2">Quantité</div>
+                <div className="col-span-2">Prix HT</div>
+                <div className="col-span-2">TVA %</div>
+                <div className="col-span-1"></div>
+              </div>
+              
+              {/* Lines */}
+              {formData.lignes.map((ligne, index) => (
+                <LineItem
+                  key={index}
+                  ligne={ligne}
+                  index={index}
+                  onChange={handleLigneChange}
+                  onRemove={removeLigne}
+                />
+              ))}
+
+              {/* Totals */}
+              <div className="border-t border-slate-200 pt-4 mt-4">
+                <div className="flex justify-end">
+                  <div className="w-64 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Total HT</span>
+                      <span className="font-medium">{formatAmount(parseFloat(totals.total_ht))}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">TVA</span>
+                      <span className="font-medium">{formatAmount(parseFloat(totals.total_tva))}</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold border-t border-slate-200 pt-2">
+                      <span>Total TTC</span>
+                      <span>{formatAmount(parseFloat(totals.total_ttc))}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Multi-Options Mode */}
+        {multiOptionsMode && (
+          <Card className="border-slate-200 mb-6">
+            <CardContent className="pt-6">
+              <MultiOptionsDevis
+                options={options}
+                onChange={setOptions}
+                formatAmount={formatAmount}
+                mode="edit"
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Conditions */}
         <Card className="border-slate-200 mb-6">
@@ -765,9 +894,14 @@ export const DevisDetail = () => {
         date_envoi: new Date().toISOString() 
       });
       
-      // Generate PDF for attachment
-      const { generateDevisPDF } = await import('../lib/pdfService');
-      const doc = await generateDevisPDF(devis, devis.entreprise);
+      // Generate PDF for attachment (use multi-options PDF if applicable)
+      const pdfModule = await import('../lib/pdfService');
+      let doc;
+      if (devis.multi_options && devis.options) {
+        doc = await pdfModule.generateMultiOptionsDevisPDF(devis, devis.entreprise, devis.client);
+      } else {
+        doc = await pdfModule.generateDevisPDF(devis, devis.entreprise, devis.client);
+      }
       const pdfBase64 = doc.output('datauristring').split(',')[1];
       
       // Send email with PDF attachment
@@ -834,9 +968,18 @@ export const DevisDetail = () => {
   const downloadPDF = async () => {
     try {
       toast.loading('Génération du PDF...');
-      const { generateDevisPDF, downloadPDF: savePDF } = await import('../lib/pdfService');
-      const doc = await generateDevisPDF(devis, devis.entreprise, devis.client);
-      savePDF(doc, `devis_${devis.numero_devis || id.slice(0, 8)}.pdf`);
+      const pdfModule = await import('../lib/pdfService');
+      
+      let doc;
+      if (devis.multi_options && devis.options) {
+        // Use multi-options PDF generator
+        doc = await pdfModule.generateMultiOptionsDevisPDF(devis, devis.entreprise, devis.client);
+      } else {
+        // Use standard PDF generator
+        doc = await pdfModule.generateDevisPDF(devis, devis.entreprise, devis.client);
+      }
+      
+      pdfModule.downloadPDF(doc, `devis_${devis.numero_devis || id.slice(0, 8)}.pdf`);
       toast.dismiss();
       toast.success('PDF téléchargé');
     } catch (error) {
@@ -993,58 +1136,80 @@ export const DevisDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Lines */}
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-base">Lignes du devis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Qté</TableHead>
-                    <TableHead className="text-right">Prix HT</TableHead>
-                    <TableHead className="text-right">TVA</TableHead>
-                    <TableHead className="text-right">Total HT</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {devis.lignes?.map((ligne, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>{ligne.description}</TableCell>
-                      <TableCell className="text-right">{ligne.quantite}</TableCell>
-                      <TableCell className="text-right">{formatAmount(ligne.prix_unitaire)}</TableCell>
-                      <TableCell className="text-right">{ligne.tva}%</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatAmount(ligne.quantite * ligne.prix_unitaire)}
-                      </TableCell>
+          {/* Lines or Multi-Options */}
+          {devis.multi_options && devis.options ? (
+            <Card className="border-slate-200">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-blue-600" />
+                  <CardTitle className="text-base">Options du devis</CardTitle>
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                    {devis.options.length} options
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <MultiOptionsDevis
+                  options={devis.options}
+                  onChange={() => {}}
+                  formatAmount={formatAmount}
+                  mode="comparison"
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-base">Lignes du devis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Qté</TableHead>
+                      <TableHead className="text-right">Prix HT</TableHead>
+                      <TableHead className="text-right">TVA</TableHead>
+                      <TableHead className="text-right">Total HT</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {devis.lignes?.map((ligne, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>{ligne.description}</TableCell>
+                        <TableCell className="text-right">{ligne.quantite}</TableCell>
+                        <TableCell className="text-right">{formatAmount(ligne.prix_unitaire)}</TableCell>
+                        <TableCell className="text-right">{ligne.tva}%</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatAmount(ligne.quantite * ligne.prix_unitaire)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
 
-              {/* Totals */}
-              <div className="border-t border-slate-200 mt-4 pt-4">
-                <div className="flex justify-end">
-                  <div className="w-64 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Total HT</span>
-                      <span className="font-medium">{formatAmount(devis.total_ht)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">TVA</span>
-                      <span className="font-medium">{formatAmount(devis.total_tva)}</span>
-                    </div>
-                    <div className="flex justify-between text-lg font-bold border-t border-slate-200 pt-2">
-                      <span>Total TTC</span>
-                      <span>{formatAmount(devis.total_ttc || devis.montant_ttc)}</span>
+                {/* Totals */}
+                <div className="border-t border-slate-200 mt-4 pt-4">
+                  <div className="flex justify-end">
+                    <div className="w-64 space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Total HT</span>
+                        <span className="font-medium">{formatAmount(devis.total_ht)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">TVA</span>
+                        <span className="font-medium">{formatAmount(devis.total_tva)}</span>
+                      </div>
+                      <div className="flex justify-between text-lg font-bold border-t border-slate-200 pt-2">
+                        <span>Total TTC</span>
+                        <span>{formatAmount(devis.total_ttc || devis.montant_ttc)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}
