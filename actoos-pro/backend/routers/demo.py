@@ -9,8 +9,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime, timezone, timedelta
 import uuid
 import os
+import logging
 
 router = APIRouter(prefix="/demo", tags=["demo"])
+logger = logging.getLogger(__name__)
 
 # Use shared database from dependencies
 from dependencies import db
@@ -20,11 +22,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from auth import get_password_hash, get_current_user
 
-# Configuration du mode démo
-DEMO_EMAIL = "demo@actoos.com"
-DEMO_PASSWORD = "demo2024"
-DEMO_PLAN = "enterprise"  # Le plan simulé en démo
-DEMO_RESET_INTERVAL_HOURS = 24  # Réinitialisation toutes les 24 heures
+# Configuration du mode démo (from environment variables)
+DEMO_EMAIL = os.getenv("DEMO_EMAIL", "demo@actoos.com")
+DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "demo2024")  # Override in production!
+DEMO_PLAN = os.getenv("DEMO_PLAN", "enterprise")  # Le plan simulé en démo
+DEMO_RESET_INTERVAL_HOURS = int(os.getenv("DEMO_RESET_INTERVAL_HOURS", "24"))
 
 # Données de démonstration initiales
 DEMO_SEED_DATA = {
@@ -191,7 +193,7 @@ async def setup_main_admin(data: SetupAdminRequest):
         now = datetime.now(timezone.utc)
         
         # Récupérer les limites du plan
-        plan_data = PLANS.get(data.plan, PLANS.get("enterprise", {}))
+        _ = PLANS.get(data.plan, PLANS.get("enterprise", {}))  # Reserved for future use
         
         # Créer l'entreprise
         entreprise = {
@@ -212,7 +214,7 @@ async def setup_main_admin(data: SetupAdminRequest):
         
         logger.info(f"Creating entreprise: {entreprise_id}")
         await db.entreprises.insert_one(entreprise)
-        logger.info(f"Entreprise created successfully")
+        logger.info("Entreprise created successfully")
         
         # Créer l'admin
         admin = {
@@ -230,7 +232,7 @@ async def setup_main_admin(data: SetupAdminRequest):
         
         logger.info(f"Creating admin user: {admin_id}")
         await db.users.insert_one(admin)
-        logger.info(f"Admin created successfully")
+        logger.info("Admin created successfully")
         
         return {
             "success": True,
@@ -285,7 +287,7 @@ async def setup_technician(data: SetupTechnicianRequest):
         
         logger.info(f"Creating technician: {tech_id}")
         await db.users.insert_one(technicien)
-        logger.info(f"Technician created successfully")
+        logger.info("Technician created successfully")
         
         return {
             "success": True,
@@ -543,7 +545,7 @@ async def init_demo_session(force: bool = False):
                 last_reset_dt = datetime.fromisoformat(last_reset.replace('Z', '+00:00'))
                 hours_since_reset = (datetime.now(timezone.utc) - last_reset_dt).total_seconds() / 3600
                 should_reset = hours_since_reset >= DEMO_RESET_INTERVAL_HOURS
-            except:
+            except (ValueError, TypeError):
                 should_reset = True  # Reset if we can't parse the date
         else:
             should_reset = True  # Reset if never reset before
@@ -569,7 +571,7 @@ async def init_demo_session(force: bool = False):
             last_reset_dt = datetime.fromisoformat(last_reset.replace('Z', '+00:00'))
             hours_since = (datetime.now(timezone.utc) - last_reset_dt).total_seconds() / 3600
             next_reset_in_hours = max(0, DEMO_RESET_INTERVAL_HOURS - hours_since)
-        except:
+        except (ValueError, TypeError):
             pass
     
     return {
@@ -616,7 +618,7 @@ async def get_demo_status(current_user: dict = Depends(get_current_user)):
             last_reset_dt = datetime.fromisoformat(last_reset.replace('Z', '+00:00'))
             hours_since = (datetime.now(timezone.utc) - last_reset_dt).total_seconds() / 3600
             next_reset_in_hours = max(0, DEMO_RESET_INTERVAL_HOURS - hours_since)
-        except:
+        except (ValueError, TypeError):
             pass
     
     return {

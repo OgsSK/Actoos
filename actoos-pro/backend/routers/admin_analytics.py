@@ -100,7 +100,7 @@ async def get_referral_sources(current_user: dict = Depends(require_super_admin)
     Analyse des sources d'acquisition - Comment les utilisateurs ont connu Actoos
     """
     pipeline = [
-        {"$match": {"referral_source": {"$exists": True, "$ne": None, "$ne": ""}}},
+        {"$match": {"referral_source": {"$exists": True, "$nin": [None, ""]}}},
         {"$group": {"_id": "$referral_source", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}}
     ]
@@ -346,8 +346,8 @@ async def setup_demo_account(secret_key: str):
     
     # 2. Créer ou mettre à jour le compte démo
     try:
-        demo_email = "demo@actoos.com"
-        demo_password = "demo2024"
+        demo_email = os.getenv("DEMO_EMAIL", "demo@actoos.com")
+        demo_password = os.getenv("DEMO_PASSWORD", "demo2024")  # Override in production!
         
         # Vérifier si le compte démo existe déjà
         existing_demo = await db.users.find_one({"email": demo_email})
