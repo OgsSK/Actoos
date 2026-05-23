@@ -44,6 +44,7 @@ import Analytics from "./pages/Analytics";
 import Statements from "./pages/Statements";
 import APISettings from "./pages/APISettings";
 import DispatchBoard from "./pages/DispatchBoard";
+import GPSMap from "./pages/GPSMap";
 
 // Technician App
 import { TechnicianApp } from "./pages/TechnicianApp";
@@ -277,6 +278,9 @@ function App() {
               
               {/* Dispatch Board */}
               <Route path="dispatch" element={<DispatchBoard />} />
+              
+              {/* GPS Map */}
+              <Route path="map" element={<GPSMap />} />
               
               {/* Rapports */}
               <Route path="rapports" element={<RapportsPage />} />

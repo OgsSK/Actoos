@@ -74,6 +74,7 @@ Application SaaS B2B de gestion d'interventions terrain pour les entreprises de 
 ### Corrections 23 Mai 2026 (P0 Features)
 - [x] **Mode hors-ligne complet** - Indicateur de connexion + modal de statut
 - [x] **Dispatch Board temps réel** - Vue Kanban drag & drop avec filtres
+- [x] **Carte GPS techniciens** - OpenStreetMap + markers + légende + liste
 
 ### Corrections 23 Mai 2026 (Code Quality)
 - [x] **Suppression tests backend obsolètes** - Backend déprécié (100% Supabase)
