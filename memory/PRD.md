@@ -1,39 +1,38 @@
 # ACTOOS PRO - Product Requirements Document
 
-## 🎯 Vision Produit
+## Vision Produit
 Application SaaS B2B de gestion d'interventions terrain pour les entreprises de services en Europe. Objectif: devenir le "ServiceTitan Killer" européen.
 
 ---
 
-## 🏗 Architecture
+## Architecture
 
 ### Stack Technique
 - **Frontend**: React 19 PWA (Progressive Web App)
 - **Backend**: 100% Supabase (PostgreSQL, Auth, Storage, Edge Functions)
-- **Déploiement**: Vercel (frontend)
+- **Deploiement**: Vercel (frontend)
 
 ### Structure du Repo
 ```
 /app/
 ├── actoos-pro/          ← PROJET PRINCIPAL
 │   ├── frontend/        ← React PWA (Vercel)
-│   ├── backend/         ← FastAPI (optionnel, PDF/Email)
+│   ├── backend/         ← (DEPRECATED)
 │   ├── supabase/        ← Edge Functions
 │   └── docs/            ← Documentation
-├── actoos-one/          ← Projet secondaire (pausé)
-└── vitrine/             ← Site marketing
+└── memory/              ← PRD et documentation
 ```
 
 ---
 
-## ✅ Fonctionnalités Implémentées
+## Fonctionnalites Implementees
 
 ### Core (v1.0)
 - [x] Authentification Supabase (email/password)
 - [x] Gestion des interventions (CRUD, statuts)
 - [x] Gestion des clients
-- [x] Devis avec lignes détaillées
-- [x] Signature électronique (devis)
+- [x] Devis avec lignes detaillees
+- [x] Signature electronique (devis)
 - [x] Factures depuis devis
 - [x] Portail client (lien token_client)
 - [x] Interface technicien PWA
@@ -41,162 +40,97 @@ Application SaaS B2B de gestion d'interventions terrain pour les entreprises de 
 - [x] Photos d'intervention
 
 ### Dashboard Admin
-- [x] Statistiques temps réel
+- [x] Statistiques temps reel
 - [x] Gestion des techniciens
-- [x] Gestion des catégories
-- [x] Paramètres entreprise
+- [x] Gestion des categories
+- [x] Parametres entreprise
 
-### Corrections 17 Mai 2025
-- [x] Migration 100% Supabase (suppression Railway)
-- [x] Alignement colonnes schéma (signature_client, token_client, etc.)
-- [x] Suppression messages "en cours de migration"
-- [x] PDF via impression navigateur
-- [x] Export analytics imprimable
+### P0 Phase 1 - Complete
+- [x] **Mode Hors-ligne** - Indicateur de connexion (OfflineIndicator.jsx)
+- [x] **Dispatch Board Temps Reel** - Vue Kanban drag & drop (DispatchBoard.jsx)
+- [x] **Carte GPS Techniciens** - OpenStreetMap/Leaflet (GPSMap.jsx)
+- [x] **Devis Multi-options (Good/Better/Best)** - Complete le 23 Mai 2026
+  - Toggle mode multi-options dans le formulaire
+  - 3 options par defaut (Essentiel/Standard/Premium)
+  - Editeur de lignes par option
+  - Badge "Recommande" configurable
+  - Apercu comparatif cote a cote
+  - Generation PDF en paysage avec colonnes
+  - Integration email avec PDF multi-options
 
-### Corrections 17 Mai 2026 (Relevés)
-- [x] **Relevés (Statements) complets** - Génération PDF avec interventions, photos, devis, factures
-- [x] **statementService.js** - Service dédié avec requêtes Supabase
-- [x] **Modal aperçu PDF** - Avec statistiques, iframe, boutons Fermer et Télécharger
-- [x] **Correction bugs** - Plus de "Invalid Date" ou "undefined"
-- [x] **Bouton fermer** - X en haut + bouton "Fermer" en bas du modal
-- [x] **Envoi email automatique** - Via Supabase Edge Function + Resend
-- [x] **Template email releve_mensuel** - Email personnalisé avec PDF en pièce jointe
-- [x] **Envoi individuel** - Bouton "Envoyer" par client
-- [x] **Envoi groupé** - Avec barre de progression
-- [x] **Photos liées aux interventions** - Comptées par intervention dans le PDF
-
-### Corrections 17 Mai 2026 (Emails)
-- [x] **Tous les emails via Resend** - Devis, Factures, Relances, Relevés
-- [x] **PDF en pièce jointe** - Attaché automatiquement aux emails
-- [x] **Templates HTML professionnels** - Design cohérent pour tous les emails
-- [x] **Fallback mailto:** - En cas d'échec de l'Edge Function
-
-### Corrections 23 Mai 2026 (P0 Features)
-- [x] **Mode hors-ligne complet** - Indicateur de connexion + modal de statut
-- [x] **Dispatch Board temps réel** - Vue Kanban drag & drop avec filtres
-- [x] **Carte GPS techniciens** - OpenStreetMap + markers + légende + liste
-
-### Corrections 23 Mai 2026 (Code Quality)
-- [x] **Suppression tests backend obsolètes** - Backend déprécié (100% Supabase)
-- [x] **Secrets en variables d'environnement** - DEMO_EMAIL, DEMO_PASSWORD dans .env
-- [x] **Bare excepts corrigés** - Utilisation de (ValueError, TypeError)
-- [x] **Lint Python clean** - demo.py et admin_analytics.py
-
-### Corrections 23 Mai 2026 (Recherche Clients/Techniciens)
-- [x] **Hooks Supabase directs** - Utilisation de `useClients`, `useTechniciens`, `useCategories`
-- [x] **Loading states** - Attente des données avant affichage du formulaire
-- [x] **Recherche fonctionnelle** - Filtrage par nom, email, téléphone
-- [x] **Pages corrigées** - Interventions, Devis, Factures
-
-### Corrections 17 Mai 2026 (Analytics PDF)
-- [x] **Aperçu PDF modal** - Comme les Relevés avec jsPDF
-- [x] **Boutons Fermer/Télécharger** - UX cohérente
-- [x] **Rapport PDF complet** - KPIs, interventions, devis, factures, techniciens
-
-### Corrections 17 Mai 2026 (Chat)
-- [x] **Messages instantanés** - Latence réduite à ~0.5s
-- [x] **Canal Supabase unique** - Évite les conflits de subscription
-- [x] **Filtre entreprise_id** - Pour tous les messages de l'entreprise
-- [x] **Indicateur connexion** - Point vert dans le header du chat
+### Corrections et Ameliorations
+- [x] Releves (Statements) complets avec PDF
+- [x] Envoi email via Supabase Edge Functions + Resend
+- [x] Chat temps reel corrige
+- [x] Recherche clients/techniciens fonctionnelle
+- [x] Export Analytics en PDF
+- [x] Suppression code obsolete (secrets hardcodes)
 
 ---
 
-## 🔴 P0 - Phase 1 (En cours)
+## P0 - Reste a faire
 
-### Mode Hors-ligne Complet
-- [ ] Sync bidirectionnelle avec conflit LWW
-- [ ] Création devis/interventions offline
-- [ ] File d'attente de sync visible
-- [ ] Indicateur de statut sync
-
-### Dispatch Board Temps Réel
-- [ ] Vue Kanban interventions
-- [ ] Drag & drop assignation
-- [ ] Filtres par technicien/statut
-- [ ] Mise à jour temps réel (Supabase Realtime)
-
-### Carte GPS Techniciens
-- [ ] Position live des techniciens
-- [ ] Tracking des tournées
-- [ ] ETA client
-
-### Devis Multi-options
-- [ ] Options Good/Better/Best
-- [ ] Sélection par le client
-- [ ] Comparaison visuelle
-
-### Pricebook
+### Pricebook (Catalogue de prix)
 - [ ] Catalogue de prestations
-- [ ] Tarifs prédéfinis
-- [ ] Import depuis Excel
+- [ ] Tarifs predefinis par service
+- [ ] Import depuis Excel/CSV
+- [ ] Integration avec devis multi-options
 
 ---
 
-## 🟠 P1 - Phase 2
+## P1 - Phase 2
 
 - [ ] Rappels RDV (email + push notifications)
 - [ ] Paiement CB en ligne (Stripe)
-- [ ] Portail client avancé (historique, documents)
-- [ ] Dashboard analytics détaillé
+- [ ] Portail client avance (historique, documents)
+- [ ] Dashboard analytics detaille
 - [ ] 2FA (Supabase MFA)
 
 ---
 
-## 🟡 P2 - Phase 3
+## P2 - Phase 3
 
-- [ ] Optimisation des tournées (algorithme)
-- [ ] Temps de trajet estimé
+- [ ] Optimisation des tournees (algorithme)
+- [ ] Temps de trajet estime
 - [ ] Tap to Pay (CB sur place)
 - [ ] Relances devis automatiques
-- [ ] Intégration comptabilité
+- [ ] Integration comptabilite
 
 ---
 
-## 📊 Schéma Base de Données
+## Schema Base de Donnees
 
-Référence complète: `/app/actoos-pro/docs/SCHEMA_SUPABASE.md`
+Reference complete: `/app/actoos-pro/docs/SCHEMA_SUPABASE.md`
 
 ### Tables Principales
 - `users` - Utilisateurs (admin, tech)
 - `entreprises` - Comptes entreprise
 - `clients` - Clients finaux
 - `interventions` - Interventions terrain
-- `devis` - Devis
-- `devis_lignes` - Lignes de devis
+- `devis` - Devis (avec champs multi_options, options)
 - `factures` - Factures
-- `facture_lignes` - Lignes de factures
-- `photos` - Photos d'intervention
-- `categories` - Catégories d'intervention
 
-### Colonnes Importantes ⚠️
-| Table | Colonne correcte | ❌ NE PAS utiliser |
-|-------|------------------|-------------------|
-| devis | `token_client` | public_token |
-| devis | `signature_client` | signature |
-| devis | `nom_signataire` | signature_nom |
-| devis | `date_signature` | signature_date |
-| interventions | `date_prevue` | date_intervention |
-| interventions | `notes_technicien` | notes_terrain |
-| factures | `total_ht/tva/ttc` | montant_ht/tva |
-| interventions | `statut` = planifie | planifiee |
+### Colonnes pour Multi-Options Devis
+| Colonne | Type | Description |
+|---------|------|-------------|
+| multi_options | boolean | Active le mode multi-options |
+| options | jsonb | Array d'options avec lignes |
 
 ---
 
-## 🔐 Credentials Test
+## Credentials Test
 
 - Email: `contact@actoos.com`
 - Password: `Salifkane&&7`
 
 ---
 
-## 📁 Documents de Référence
+## Documents de Reference
 
-- `/app/actoos-pro/docs/SCHEMA_SUPABASE.md` - Schéma DB complet
-- `/app/actoos-pro/docs/CAHIER_DE_TEXTE.md` - Roadmap détaillé
+- `/app/actoos-pro/docs/SCHEMA_SUPABASE.md` - Schema DB complet
+- `/app/actoos-pro/docs/CAHIER_DE_TEXTE.md` - Roadmap detaille
 - `/app/actoos-pro/docs/PLAN_SERVICETITAN_KILLER.md` - Analyse concurrentielle
-- `/app/actoos-pro/docs/GUIDE_DEPANNAGE.md` - Troubleshooting
-- `/app/actoos-pro/docs/CHANGELOG_2025-05-17.md` - Dernières modifications
 
 ---
 
-**Dernière mise à jour**: 17 Mai 2026
+**Derniere mise a jour**: 23 Mai 2026
