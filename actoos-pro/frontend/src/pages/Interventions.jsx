@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useInterventions, useClients, useTechniciens, useCategories } from '../lib/supabaseHooks';
 import { interventionsApi } from '../lib/supabaseApi';
+import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -162,13 +163,16 @@ export const InterventionForm = () => {
   const location = useLocation();
   const isEdit = !!id;
   const navigate = useNavigate();
-  const { user, supabaseApi } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [clients, setClients] = useState([]);
-  const [techniciens, setTechniciens] = useState([]);
   const [sites, setSites] = useState([]);
-  const [categories, setCategories] = useState([]);
+  
+  // Use hooks for data loading
+  const { data: clients, loading: clientsLoading } = useClients(user?.entreprise_id);
+  const { data: techniciens, loading: techsLoading } = useTechniciens(user?.entreprise_id);
+  const { data: categories, loading: catsLoading } = useCategories(user?.entreprise_id);
+  
   const [formData, setFormData] = useState({
     client_id: location.state?.client_id || '',
     site_id: '',
@@ -186,35 +190,30 @@ export const InterventionForm = () => {
   });
 
   useEffect(() => {
-    loadFormData();
+    if (isEdit) {
+      loadIntervention();
+    }
   }, [id]);
 
-  const loadFormData = async () => {
+  const loadIntervention = async () => {
     try {
-      const [clientsData, techsData, catsData] = await Promise.all([
-        supabaseApi.clients.list(user?.entreprise_id),
-        supabaseApi.users.getTechniciens(user?.entreprise_id),
-        supabaseApi.categories.list(user?.entreprise_id)
-      ]);
-      setClients(clientsData);
-      setTechniciens(techsData.filter(t => t.statut === 'actif'));
-      setCategories(catsData);
-      
-      if (isEdit) {
-        setLoading(true);
-        const intervention = await supabaseApi.interventions.get(id);
-        setFormData({
-          ...intervention,
-          date_prevue: new Date(intervention.date_prevue),
-        });
-        if (intervention.client_id) {
-          const sitesData = await supabaseApi.sites.list(intervention.client_id);
-          setSites(sitesData);
-        }
-        setLoading(false);
+      setLoading(true);
+      const intervention = await interventionsApi.get(id);
+      setFormData({
+        ...intervention,
+        date_prevue: new Date(intervention.date_prevue),
+      });
+      if (intervention.client_id) {
+        const { data: sitesData } = await supabase
+          .from('sites')
+          .select('*')
+          .eq('client_id', intervention.client_id);
+        setSites(sitesData || []);
       }
     } catch (error) {
-      console.error('Error loading form data:', error);
+      console.error('Error loading intervention:', error);
+      toast.error('Erreur lors du chargement');
+    } finally {
       setLoading(false);
     }
   };
@@ -226,8 +225,12 @@ export const InterventionForm = () => {
       return;
     }
     try {
-      const sitesData = await supabaseApi.sites.list(clientId);
-      setSites(sitesData);
+      const { data, error } = await supabase
+        .from('sites')
+        .select('*')
+        .eq('client_id', clientId);
+      if (error) throw error;
+      setSites(data || []);
     } catch (error) {
       console.error('Error fetching sites:', error);
       setSites([]);
@@ -261,13 +264,16 @@ export const InterventionForm = () => {
       };
       
       if (isEdit) {
-        await supabaseApi.interventions.update(id, payload);
+        await interventionsApi.update(id, payload);
+        toast.success('Intervention mise à jour');
       } else {
-        await supabaseApi.interventions.create(payload);
+        await interventionsApi.create(payload);
+        toast.success('Intervention créée');
       }
       navigate('/dashboard/interventions');
     } catch (error) {
       console.error('Error saving intervention:', error);
+      toast.error('Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
@@ -304,10 +310,14 @@ export const InterventionForm = () => {
     }
   }, [formData.client_id, formData.site_id, clients, sites]);
 
-  if (loading) {
+  // Show loading while data is being fetched
+  const isDataLoading = loading || clientsLoading || techsLoading;
+
+  if (isDataLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex flex-col items-center justify-center py-12 gap-3">
         <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <p className="text-sm text-slate-500">Chargement des données...</p>
       </div>
     );
   }
@@ -333,11 +343,17 @@ export const InterventionForm = () => {
             <div className="space-y-2">
               <Label>Client *</Label>
               <ClientSelect
-                clients={clients}
+                clients={clients || []}
                 value={formData.client_id}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value, site_id: '' }))}
+                loading={clientsLoading}
                 data-testid="intervention-client"
               />
+              {clients?.length === 0 && !clientsLoading && (
+                <p className="text-xs text-amber-600">
+                  Aucun client trouvé. <a href="/dashboard/clients/new" className="underline">Créer un client</a>
+                </p>
+              )}
             </div>
 
             {/* Site (if client has multiple sites) */}
@@ -372,13 +388,14 @@ export const InterventionForm = () => {
             )}
 
             {/* Categorie */}
-            {categories.length > 0 && (
+            {(categories?.length > 0 || catsLoading) && (
               <div className="space-y-2">
                 <Label>Catégorie</Label>
                 <CategorySelect
-                  categories={categories}
+                  categories={categories || []}
                   value={formData.categorie_id || ''}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, categorie_id: value || null }))}
+                  loading={catsLoading}
                   data-testid="intervention-categorie"
                 />
               </div>
@@ -487,9 +504,10 @@ export const InterventionForm = () => {
             <div className="space-y-2">
               <Label>Technicien assigné</Label>
               <TechnicianSelect
-                technicians={techniciens}
+                technicians={techniciens || []}
                 value={formData.technicien_id || ''}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, technicien_id: value || null }))}
+                loading={techsLoading}
                 data-testid="intervention-technicien"
               />
             </div>

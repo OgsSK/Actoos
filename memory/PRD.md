@@ -71,6 +71,12 @@ Application SaaS B2B de gestion d'interventions terrain pour les entreprises de 
 - [x] **Templates HTML professionnels** - Design cohérent pour tous les emails
 - [x] **Fallback mailto:** - En cas d'échec de l'Edge Function
 
+### Corrections 23 Mai 2026 (Recherche Clients/Techniciens)
+- [x] **Hooks Supabase directs** - Utilisation de `useClients`, `useTechniciens`, `useCategories`
+- [x] **Loading states** - Attente des données avant affichage du formulaire
+- [x] **Recherche fonctionnelle** - Filtrage par nom, email, téléphone
+- [x] **Pages corrigées** - Interventions, Devis, Factures
+
 ### Corrections 17 Mai 2026 (Analytics PDF)
 - [x] **Aperçu PDF modal** - Comme les Relevés avec jsPDF
 - [x] **Boutons Fermer/Télécharger** - UX cohérente

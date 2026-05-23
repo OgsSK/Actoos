@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useFactures } from '../lib/supabaseHooks';
+import { useFactures, useClients } from '../lib/supabaseHooks';
 import { facturesApi, edgeFunctionsApi, devisApi, clientsApi, interventionsApi, settingsApi } from '../lib/supabaseApi';
 import { Textarea } from '../components/ui/textarea';
 import { Button } from '../components/ui/button';
@@ -978,7 +978,10 @@ export const FactureForm = () => {
   const { user, formatAmount } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [clients, setClients] = useState([]);
+  
+  // Use hook for clients
+  const { data: clients, loading: clientsLoading } = useClients(user?.entreprise_id);
+  
   const [formData, setFormData] = useState({
     client_id: '',
     lignes: [{ description: '', quantite: 1, prix_unitaire: 0, tva: 20 }],
@@ -988,18 +991,8 @@ export const FactureForm = () => {
   });
 
   useEffect(() => {
-    fetchClients();
     fetchDefaults();
   }, []);
-
-  const fetchClients = async () => {
-    try {
-      const data = await clientsApi.list(user?.entreprise_id);
-      setClients(data);
-    } catch (error) {
-      console.error('Error fetching clients:', error);
-    }
-  };
 
   const fetchDefaults = async () => {
     try {
@@ -1089,6 +1082,15 @@ export const FactureForm = () => {
 
   const totals = calculateTotals();
 
+  if (clientsLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-3">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <p className="text-sm text-slate-500">Chargement des données...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6" data-testid="facture-form">
       <div className="flex items-center gap-4">
@@ -1113,9 +1115,10 @@ export const FactureForm = () => {
               <div className="space-y-2">
                 <Label>Client *</Label>
                 <ClientSelect
-                  clients={clients}
+                  clients={clients || []}
                   value={formData.client_id}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+                  loading={clientsLoading}
                   data-testid="facture-client-select"
                 />
               </div>

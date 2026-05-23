@@ -314,3 +314,4 @@ credentials.json
 *.pem
 *.key
 .credentials
+actoos-pro/frontend/node_modules/.cache/default-development/8.pack

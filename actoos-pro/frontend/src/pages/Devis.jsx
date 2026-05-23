@@ -427,11 +427,14 @@ export const DevisForm = () => {
   const location = useLocation();
   const isEdit = !!id;
   const navigate = useNavigate();
-  const { user, api, formatAmount } = useAuth();
+  const { user, formatAmount } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [clients, setClients] = useState([]);
   const [defaultsLoaded, setDefaultsLoaded] = useState(false);
+  
+  // Use hook for clients
+  const { data: clients, loading: clientsLoading } = useClients(user?.entreprise_id);
+  
   const [formData, setFormData] = useState({
     client_id: location.state?.client_id || '',
     intervention_id: location.state?.intervention_id || '',
@@ -442,7 +445,6 @@ export const DevisForm = () => {
   });
 
   useEffect(() => {
-    fetchClients();
     if (isEdit) {
       fetchDevis();
     } else {
@@ -450,15 +452,6 @@ export const DevisForm = () => {
       fetchDevisDefaults();
     }
   }, [id]);
-
-  const fetchClients = async () => {
-    try {
-      const data = await clientsApi.list(user?.entreprise_id);
-      setClients(data);
-    } catch (error) {
-      console.error('Error fetching clients:', error);
-    }
-  };
 
   const fetchDevisDefaults = async () => {
     try {
@@ -573,10 +566,11 @@ export const DevisForm = () => {
 
   const totals = calculateTotals();
 
-  if (loading) {
+  if (loading || clientsLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex flex-col items-center justify-center py-12 gap-3">
         <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <p className="text-sm text-slate-500">Chargement des données...</p>
       </div>
     );
   }
@@ -606,9 +600,10 @@ export const DevisForm = () => {
               <div className="space-y-2">
                 <Label>Client *</Label>
                 <ClientSelect
-                  clients={clients}
+                  clients={clients || []}
                   value={formData.client_id}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+                  loading={clientsLoading}
                   data-testid="devis-client"
                 />
               </div>
