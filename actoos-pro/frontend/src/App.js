@@ -43,6 +43,7 @@ import { RapportsPage } from "./pages/Rapports";
 import Analytics from "./pages/Analytics";
 import Statements from "./pages/Statements";
 import APISettings from "./pages/APISettings";
+import DispatchBoard from "./pages/DispatchBoard";
 
 // Technician App
 import { TechnicianApp } from "./pages/TechnicianApp";
@@ -273,6 +274,9 @@ function App() {
               
               {/* Planning */}
               <Route path="planning" element={<PlanningPage />} />
+              
+              {/* Dispatch Board */}
+              <Route path="dispatch" element={<DispatchBoard />} />
               
               {/* Rapports */}
               <Route path="rapports" element={<RapportsPage />} />

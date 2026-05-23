@@ -39,6 +39,7 @@ import { fr } from 'date-fns/locale';
 import SignaturePad from '../components/SignaturePad';
 import SyncStatusPanel from '../components/SyncStatusPanel';
 import OfflineDevisForm from '../components/OfflineDevisForm';
+import OfflineIndicator from '../components/OfflineIndicator';
 import db from '../lib/offlineDb';
 import ConflictNotificationBanner, { ConflictBadge } from '../components/ConflictNotificationBanner';
 import { useRealtimeEvents, EventType } from '../hooks/useRealtimeEvents';
@@ -2524,6 +2525,9 @@ export const TechnicianApp = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Offline Indicator */}
+            <OfflineIndicator />
+            
             {/* Push Notification Toggle */}
             {pushSupported && (
               <Button

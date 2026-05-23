@@ -71,6 +71,10 @@ Application SaaS B2B de gestion d'interventions terrain pour les entreprises de 
 - [x] **Templates HTML professionnels** - Design cohérent pour tous les emails
 - [x] **Fallback mailto:** - En cas d'échec de l'Edge Function
 
+### Corrections 23 Mai 2026 (P0 Features)
+- [x] **Mode hors-ligne complet** - Indicateur de connexion + modal de statut
+- [x] **Dispatch Board temps réel** - Vue Kanban drag & drop avec filtres
+
 ### Corrections 23 Mai 2026 (Code Quality)
 - [x] **Suppression tests backend obsolètes** - Backend déprécié (100% Supabase)
 - [x] **Secrets en variables d'environnement** - DEMO_EMAIL, DEMO_PASSWORD dans .env
