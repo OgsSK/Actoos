@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -13,7 +13,7 @@ const Footer = () => {
               Actoos <span className="text-blue-500">Jobs</span>
             </Link>
             <p className="mt-4 text-sm text-slate-400">
-              La plateforme de recrutement nouvelle generation au Mali. Trouvez votre emploi ideal ou recrutez les meilleurs talents.
+              La plateforme de recrutement nouvelle generation. Trouvez votre emploi ideal ou recrutez les meilleurs talents.
             </p>
             <div className="flex gap-4 mt-6">
               <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors">
@@ -117,14 +117,10 @@ const Footer = () => {
               <Mail className="w-4 h-4" />
               contact@actoos.com
             </a>
-            <a href="tel:+22376000000" className="flex items-center gap-2 hover:text-white">
+            <a href="tel:+32465743661" className="flex items-center gap-2 hover:text-white">
               <Phone className="w-4 h-4" />
-              +223 76 00 00 00
+              +32 465 74 36 61
             </a>
-            <span className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              Bamako, Mali
-            </span>
           </div>
         </div>
 

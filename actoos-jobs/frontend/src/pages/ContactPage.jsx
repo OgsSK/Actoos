@@ -63,8 +63,8 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <p className="font-medium text-slate-900">Telephone</p>
-                    <a href="tel:+22376000000" className="text-slate-600">
-                      +223 76 00 00 00
+                    <a href="tel:+32465743661" className="text-slate-600">
+                      +32 465 74 36 61
                     </a>
                   </div>
                 </div>
@@ -76,8 +76,7 @@ const ContactPage = () => {
                   <div>
                     <p className="font-medium text-slate-900">Adresse</p>
                     <p className="text-slate-600">
-                      ACI 2000, Bamako<br />
-                      Mali
+                      Bruxelles, Belgique
                     </p>
                   </div>
                 </div>
