@@ -7,6 +7,8 @@ import Homepage from './pages/Homepage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import JobsPage from './pages/JobsPage';
+import CandidateDashboard from './pages/CandidateDashboard';
+import CandidateProfilePage from './pages/CandidateProfilePage';
 import './index.css';
 
 // Protected Route wrapper
@@ -65,25 +67,6 @@ const BlogPage = () => (
   </div>
 );
 
-const DashboardPage = () => {
-  const { profile, isCandidate, isCompany } = useAuth();
-  
-  return (
-    <div className="pt-20 min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold">
-          Bienvenue, {profile?.first_name || 'Utilisateur'} !
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {isCandidate && 'Votre espace candidat'}
-          {isCompany && 'Votre espace entreprise'}
-        </p>
-        <p className="text-slate-500 mt-4">Dashboard en cours de développement...</p>
-      </div>
-    </div>
-  );
-};
-
 const NotFoundPage = () => (
   <div className="pt-20 min-h-screen bg-slate-50 flex items-center justify-center">
     <div className="text-center">
@@ -118,17 +101,17 @@ const AppContent = () => {
         {/* Protected routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
-            <DashboardPage />
+            <CandidateDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/dashboard/candidat" element={
+          <ProtectedRoute>
+            <CandidateDashboard />
           </ProtectedRoute>
         } />
         <Route path="/profil" element={
           <ProtectedRoute>
-            <div className="pt-20 min-h-screen bg-slate-50">
-              <div className="max-w-7xl mx-auto px-4 py-8">
-                <h1 className="text-3xl font-bold">Mon Profil</h1>
-                <p className="text-slate-600 mt-2">Page en cours de développement...</p>
-              </div>
-            </div>
+            <CandidateProfilePage />
           </ProtectedRoute>
         } />
         
