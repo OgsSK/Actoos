@@ -9,14 +9,14 @@ CREATE POLICY "Users can insert own profile" ON users
     FOR INSERT 
     WITH CHECK (auth.uid() = id);
 
--- Allow insert for service role and authenticated
+-- Allow insert for service role (for triggers)
 DROP POLICY IF EXISTS "Service role can insert users" ON users;
 CREATE POLICY "Service role can insert users" ON users 
     FOR INSERT 
     TO service_role
     WITH CHECK (true);
 
--- Allow anon to insert (for signup flow)
+-- Allow anon to insert (for signup flow before auth completes)
 DROP POLICY IF EXISTS "Allow signup insert" ON users;
 CREATE POLICY "Allow signup insert" ON users 
     FOR INSERT 
@@ -31,7 +31,6 @@ CREATE POLICY "Allow candidate profile insert" ON candidate_profiles
     WITH CHECK (true);
 
 -- ============================================
--- Go to Authentication > Email Templates
--- And disable "Confirm email" in settings
--- OR enable auto-confirm in Auth settings
+-- SUCCESS! RLS policies updated.
+-- La confirmation email reste activée (sécurité)
 -- ============================================
