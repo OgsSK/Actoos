@@ -1,7 +1,6 @@
 -- ============================================
 -- ACTOOS JOBS - Additional SQL for MVP P0
 -- Execute this in Supabase SQL Editor
--- Version 2: With DROP IF EXISTS to avoid conflicts
 -- ============================================
 
 -- Saved Jobs Table (for favorites)
@@ -16,138 +15,76 @@ CREATE TABLE IF NOT EXISTS saved_jobs (
 -- Enable RLS
 ALTER TABLE saved_jobs ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for saved_jobs (drop first to avoid conflicts)
-DROP POLICY IF EXISTS "Users can view their own saved jobs" ON saved_jobs;
-DROP POLICY IF EXISTS "Users can save jobs" ON saved_jobs;
-DROP POLICY IF EXISTS "Users can unsave jobs" ON saved_jobs;
+-- RLS Policies for saved_jobs
+DROP POLICY IF EXISTS users_view_saved_jobs ON saved_jobs;
+DROP POLICY IF EXISTS users_save_jobs ON saved_jobs;
+DROP POLICY IF EXISTS users_unsave_jobs ON saved_jobs;
 
-CREATE POLICY "Users can view their own saved jobs"
-    ON saved_jobs FOR SELECT
-    USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can save jobs"
-    ON saved_jobs FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can unsave jobs"
-    ON saved_jobs FOR DELETE
-    USING (auth.uid() = user_id);
+CREATE POLICY users_view_saved_jobs ON saved_jobs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY users_save_jobs ON saved_jobs FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY users_unsave_jobs ON saved_jobs FOR DELETE USING (auth.uid() = user_id);
 
 -- ============================================
--- RPC Functions for atomic counter increments
+-- RPC Functions
 -- ============================================
 
--- Increment job views
 CREATE OR REPLACE FUNCTION increment_job_views(job_id UUID)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $func$
+AS $f$
 BEGIN
-    UPDATE jobs 
-    SET views_count = COALESCE(views_count, 0) + 1,
-        updated_at = NOW()
-    WHERE id = job_id;
+    UPDATE jobs SET views_count = COALESCE(views_count, 0) + 1, updated_at = NOW() WHERE id = job_id;
 END;
-$func$;
+$f$;
 
--- Increment applications count
 CREATE OR REPLACE FUNCTION increment_applications_count(job_id UUID)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $func$
+AS $f$
 BEGIN
-    UPDATE jobs 
-    SET applications_count = COALESCE(applications_count, 0) + 1,
-        updated_at = NOW()
-    WHERE id = job_id;
+    UPDATE jobs SET applications_count = COALESCE(applications_count, 0) + 1, updated_at = NOW() WHERE id = job_id;
 END;
-$func$;
+$f$;
 
 -- ============================================
 -- Storage Buckets
 -- ============================================
 
--- Create bucket for company logos (if not exists)
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('company-logos', 'company-logos', true)
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('company-logos', 'company-logos', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('cvs', 'cvs', true) ON CONFLICT (id) DO NOTHING;
 
--- Create bucket for CVs (if not exists)
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('cvs', 'cvs', true)
-ON CONFLICT (id) DO NOTHING;
+-- Storage policies
+DROP POLICY IF EXISTS logos_public_read ON storage.objects;
+DROP POLICY IF EXISTS logos_auth_insert ON storage.objects;
+DROP POLICY IF EXISTS cvs_public_read ON storage.objects;
+DROP POLICY IF EXISTS cvs_auth_insert ON storage.objects;
 
--- Storage policies (drop first)
-DROP POLICY IF EXISTS "Company logos are publicly accessible" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can upload company logos" ON storage.objects;
-DROP POLICY IF EXISTS "Users can update their own company logos" ON storage.objects;
-DROP POLICY IF EXISTS "CVs are publicly accessible" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can upload CVs" ON storage.objects;
-DROP POLICY IF EXISTS "Users can update their own CVs" ON storage.objects;
-
-CREATE POLICY "Company logos are publicly accessible"
-    ON storage.objects FOR SELECT
-    USING (bucket_id = 'company-logos');
-
-CREATE POLICY "Authenticated users can upload company logos"
-    ON storage.objects FOR INSERT
-    WITH CHECK (bucket_id = 'company-logos' AND auth.role() = 'authenticated');
-
-CREATE POLICY "Users can update their own company logos"
-    ON storage.objects FOR UPDATE
-    USING (bucket_id = 'company-logos' AND auth.uid()::text = (storage.foldername(name))[1]);
-
-CREATE POLICY "CVs are publicly accessible"
-    ON storage.objects FOR SELECT
-    USING (bucket_id = 'cvs');
-
-CREATE POLICY "Authenticated users can upload CVs"
-    ON storage.objects FOR INSERT
-    WITH CHECK (bucket_id = 'cvs' AND auth.role() = 'authenticated');
-
-CREATE POLICY "Users can update their own CVs"
-    ON storage.objects FOR UPDATE
-    USING (bucket_id = 'cvs' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY logos_public_read ON storage.objects FOR SELECT USING (bucket_id = 'company-logos');
+CREATE POLICY logos_auth_insert ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'company-logos' AND auth.role() = 'authenticated');
+CREATE POLICY cvs_public_read ON storage.objects FOR SELECT USING (bucket_id = 'cvs');
+CREATE POLICY cvs_auth_insert ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'cvs' AND auth.role() = 'authenticated');
 
 -- ============================================
--- RLS for jobs table (drop existing first)
+-- RLS for jobs table
 -- ============================================
 
-DROP POLICY IF EXISTS "Company members can insert jobs" ON jobs;
-DROP POLICY IF EXISTS "Company members can update jobs" ON jobs;
-DROP POLICY IF EXISTS "Company members can delete jobs" ON jobs;
+DROP POLICY IF EXISTS company_insert_jobs ON jobs;
+DROP POLICY IF EXISTS company_update_jobs ON jobs;
+DROP POLICY IF EXISTS company_delete_jobs ON jobs;
 
-CREATE POLICY "Company members can insert jobs"
-    ON jobs FOR INSERT
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM company_members 
-            WHERE company_members.company_id = jobs.company_id 
-            AND company_members.user_id = auth.uid()
-        )
-    );
+CREATE POLICY company_insert_jobs ON jobs FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM company_members WHERE company_members.company_id = jobs.company_id AND company_members.user_id = auth.uid())
+);
 
-CREATE POLICY "Company members can update jobs"
-    ON jobs FOR UPDATE
-    USING (
-        EXISTS (
-            SELECT 1 FROM company_members 
-            WHERE company_members.company_id = jobs.company_id 
-            AND company_members.user_id = auth.uid()
-        )
-    );
+CREATE POLICY company_update_jobs ON jobs FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM company_members WHERE company_members.company_id = jobs.company_id AND company_members.user_id = auth.uid())
+);
 
-CREATE POLICY "Company members can delete jobs"
-    ON jobs FOR DELETE
-    USING (
-        EXISTS (
-            SELECT 1 FROM company_members 
-            WHERE company_members.company_id = jobs.company_id 
-            AND company_members.user_id = auth.uid()
-        )
-    );
+CREATE POLICY company_delete_jobs ON jobs FOR DELETE USING (
+    EXISTS (SELECT 1 FROM company_members WHERE company_members.company_id = jobs.company_id AND company_members.user_id = auth.uid())
+);
 
 -- ============================================
 -- RLS for company_members
@@ -155,54 +92,29 @@ CREATE POLICY "Company members can delete jobs"
 
 ALTER TABLE company_members ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "View company members" ON company_members;
-DROP POLICY IF EXISTS "Company admins can add members" ON company_members;
+DROP POLICY IF EXISTS view_company_members ON company_members;
+DROP POLICY IF EXISTS add_company_members ON company_members;
 
-CREATE POLICY "View company members"
-    ON company_members FOR SELECT
-    USING (
-        user_id = auth.uid() OR
-        EXISTS (
-            SELECT 1 FROM company_members cm
-            WHERE cm.company_id = company_members.company_id
-            AND cm.user_id = auth.uid()
-        )
-    );
+CREATE POLICY view_company_members ON company_members FOR SELECT USING (
+    user_id = auth.uid() OR EXISTS (SELECT 1 FROM company_members cm WHERE cm.company_id = company_members.company_id AND cm.user_id = auth.uid())
+);
 
-CREATE POLICY "Company admins can add members"
-    ON company_members FOR INSERT
-    WITH CHECK (
-        user_id = auth.uid() OR
-        EXISTS (
-            SELECT 1 FROM company_members cm
-            WHERE cm.company_id = company_members.company_id
-            AND cm.user_id = auth.uid()
-            AND cm.is_admin = true
-        )
-    );
+CREATE POLICY add_company_members ON company_members FOR INSERT WITH CHECK (
+    user_id = auth.uid() OR EXISTS (SELECT 1 FROM company_members cm WHERE cm.company_id = company_members.company_id AND cm.user_id = auth.uid() AND cm.is_admin = true)
+);
 
 -- ============================================
 -- RLS for companies
 -- ============================================
 
-DROP POLICY IF EXISTS "Authenticated users can create companies" ON companies;
-DROP POLICY IF EXISTS "Company admins can update company" ON companies;
+DROP POLICY IF EXISTS create_companies ON companies;
+DROP POLICY IF EXISTS update_companies ON companies;
 
-CREATE POLICY "Authenticated users can create companies"
-    ON companies FOR INSERT
-    WITH CHECK (auth.uid() = owner_id);
+CREATE POLICY create_companies ON companies FOR INSERT WITH CHECK (auth.uid() = owner_id);
 
-CREATE POLICY "Company admins can update company"
-    ON companies FOR UPDATE
-    USING (
-        owner_id = auth.uid() OR
-        EXISTS (
-            SELECT 1 FROM company_members 
-            WHERE company_members.company_id = companies.id 
-            AND company_members.user_id = auth.uid()
-            AND company_members.is_admin = true
-        )
-    );
+CREATE POLICY update_companies ON companies FOR UPDATE USING (
+    owner_id = auth.uid() OR EXISTS (SELECT 1 FROM company_members WHERE company_members.company_id = companies.id AND company_members.user_id = auth.uid() AND company_members.is_admin = true)
+);
 
 -- ============================================
 -- RLS for applications
@@ -210,73 +122,53 @@ CREATE POLICY "Company admins can update company"
 
 ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Candidates can view own applications" ON applications;
-DROP POLICY IF EXISTS "Candidates can create applications" ON applications;
-DROP POLICY IF EXISTS "Companies can view applications for their jobs" ON applications;
-DROP POLICY IF EXISTS "Companies can update application status" ON applications;
+DROP POLICY IF EXISTS candidates_view_applications ON applications;
+DROP POLICY IF EXISTS candidates_create_applications ON applications;
+DROP POLICY IF EXISTS companies_view_applications ON applications;
+DROP POLICY IF EXISTS companies_update_applications ON applications;
 
-CREATE POLICY "Candidates can view own applications"
-    ON applications FOR SELECT
-    USING (candidate_id = auth.uid());
+CREATE POLICY candidates_view_applications ON applications FOR SELECT USING (candidate_id = auth.uid());
+CREATE POLICY candidates_create_applications ON applications FOR INSERT WITH CHECK (candidate_id = auth.uid());
 
-CREATE POLICY "Candidates can create applications"
-    ON applications FOR INSERT
-    WITH CHECK (candidate_id = auth.uid());
+CREATE POLICY companies_view_applications ON applications FOR SELECT USING (
+    EXISTS (SELECT 1 FROM jobs j JOIN company_members cm ON cm.company_id = j.company_id WHERE j.id = applications.job_id AND cm.user_id = auth.uid())
+);
 
-CREATE POLICY "Companies can view applications for their jobs"
-    ON applications FOR SELECT
-    USING (
-        EXISTS (
-            SELECT 1 FROM jobs j
-            JOIN company_members cm ON cm.company_id = j.company_id
-            WHERE j.id = applications.job_id
-            AND cm.user_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Companies can update application status"
-    ON applications FOR UPDATE
-    USING (
-        EXISTS (
-            SELECT 1 FROM jobs j
-            JOIN company_members cm ON cm.company_id = j.company_id
-            WHERE j.id = applications.job_id
-            AND cm.user_id = auth.uid()
-        )
-    );
+CREATE POLICY companies_update_applications ON applications FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM jobs j JOIN company_members cm ON cm.company_id = j.company_id WHERE j.id = applications.job_id AND cm.user_id = auth.uid())
+);
 
 -- ============================================
--- Job Categories (upsert)
+-- Job Categories
 -- ============================================
 
 INSERT INTO job_categories (name, slug, icon, is_active) VALUES
-    ('Technologie & IT', 'technologie-it', 'laptop', true),
-    ('Marketing & Communication', 'marketing-communication', 'megaphone', true),
-    ('Finance & Comptabilite', 'finance-comptabilite', 'calculator', true),
+    ('Technologie et IT', 'technologie-it', 'laptop', true),
+    ('Marketing et Communication', 'marketing-communication', 'megaphone', true),
+    ('Finance et Comptabilite', 'finance-comptabilite', 'calculator', true),
     ('Ressources Humaines', 'ressources-humaines', 'users', true),
-    ('Commerce & Vente', 'commerce-vente', 'shopping-cart', true),
-    ('Sante & Medical', 'sante-medical', 'heart', true),
-    ('Education & Formation', 'education-formation', 'book', true),
-    ('BTP & Construction', 'btp-construction', 'building', true),
-    ('Transport & Logistique', 'transport-logistique', 'truck', true),
-    ('Agriculture & Environnement', 'agriculture-environnement', 'leaf', true),
-    ('Tourisme & Hotellerie', 'tourisme-hotellerie', 'plane', true),
-    ('Juridique & Droit', 'juridique-droit', 'scale', true),
+    ('Commerce et Vente', 'commerce-vente', 'shopping-cart', true),
+    ('Sante et Medical', 'sante-medical', 'heart', true),
+    ('Education et Formation', 'education-formation', 'book', true),
+    ('BTP et Construction', 'btp-construction', 'building', true),
+    ('Transport et Logistique', 'transport-logistique', 'truck', true),
+    ('Agriculture et Environnement', 'agriculture-environnement', 'leaf', true),
+    ('Tourisme et Hotellerie', 'tourisme-hotellerie', 'plane', true),
+    ('Juridique et Droit', 'juridique-droit', 'scale', true),
     ('Administration', 'administration', 'briefcase', true),
-    ('ONG & Humanitaire', 'ong-humanitaire', 'globe', true),
+    ('ONG et Humanitaire', 'ong-humanitaire', 'globe', true),
     ('Autre', 'autre', 'folder', true)
 ON CONFLICT (slug) DO NOTHING;
 
 -- ============================================
--- Cities (only if not exist)
+-- Cities
 -- ============================================
 
-DO $block$
+DO $b$
 DECLARE
     mali_id UUID;
 BEGIN
     SELECT id INTO mali_id FROM countries WHERE code = 'ML';
-    
     IF mali_id IS NOT NULL THEN
         INSERT INTO cities (name, slug, country_id, region, is_active) VALUES
             ('Bamako', 'bamako', mali_id, 'District de Bamako', true),
@@ -290,6 +182,6 @@ BEGIN
             ('Tombouctou', 'tombouctou', mali_id, 'Tombouctou', true)
         ON CONFLICT (slug) DO NOTHING;
     END IF;
-END $block$;
+END $b$;
 
-SELECT 'MVP_P0_SETUP.sql v2 executed successfully!' as result;
+SELECT 'MVP_P0_SETUP executed successfully' as result;
