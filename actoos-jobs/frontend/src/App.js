@@ -7,8 +7,12 @@ import Homepage from './pages/Homepage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import JobsPage from './pages/JobsPage';
+import JobDetailPage from './pages/JobDetailPage';
 import CandidateDashboard from './pages/CandidateDashboard';
 import CandidateProfilePage from './pages/CandidateProfilePage';
+import CompanyDashboard from './pages/CompanyDashboard';
+import CreateCompanyPage from './pages/CreateCompanyPage';
+import CreateJobPage from './pages/CreateJobPage';
 import './index.css';
 
 // Protected Route wrapper
@@ -31,15 +35,6 @@ const ProtectedRoute = ({ children }) => {
 };
 
 // Placeholder pages
-const JobDetailPage = () => (
-  <div className="pt-20 min-h-screen bg-slate-50">
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold">Détail de l'offre</h1>
-      <p className="text-slate-600 mt-2">Page en cours de développement...</p>
-    </div>
-  </div>
-);
-
 const CompaniesPage = () => (
   <div className="pt-20 min-h-screen bg-slate-50">
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -98,7 +93,7 @@ const AppContent = () => {
         <Route path="/connexion" element={<LoginPage />} />
         <Route path="/inscription" element={<RegisterPage />} />
         
-        {/* Protected routes */}
+        {/* Protected routes - Candidat */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <CandidateDashboard />
@@ -112,6 +107,28 @@ const AppContent = () => {
         <Route path="/profil" element={
           <ProtectedRoute>
             <CandidateProfilePage />
+          </ProtectedRoute>
+        } />
+        
+        {/* Protected routes - Entreprise */}
+        <Route path="/dashboard/entreprise" element={
+          <ProtectedRoute>
+            <CompanyDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/dashboard/entreprise/creer" element={
+          <ProtectedRoute>
+            <CreateCompanyPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/dashboard/entreprise/offres/nouvelle" element={
+          <ProtectedRoute>
+            <CreateJobPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/dashboard/entreprise/offres/:id/modifier" element={
+          <ProtectedRoute>
+            <CreateJobPage />
           </ProtectedRoute>
         } />
         
