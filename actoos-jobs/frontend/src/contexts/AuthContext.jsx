@@ -85,16 +85,41 @@ export const AuthProvider = ({ children }) => {
 
     if (error) throw error;
 
-    // Update user profile with names
+    // Manually create user profile (trigger backup)
     if (data.user) {
-      await supabase
-        .from('users')
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          role: role,
-        })
-        .eq('id', data.user.id);
+      try {
+        // Check if user already exists in users table
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', data.user.id)
+          .single();
+
+        if (!existingUser) {
+          // Create user profile
+          await supabase
+            .from('users')
+            .insert({
+              id: data.user.id,
+              email: email,
+              role: role,
+              first_name: firstName,
+              last_name: lastName,
+            });
+
+          // Create candidate profile if candidate
+          if (role === 'candidate') {
+            await supabase
+              .from('candidate_profiles')
+              .insert({
+                user_id: data.user.id,
+              });
+          }
+        }
+      } catch (profileError) {
+        console.error('Error creating profile:', profileError);
+        // Don't throw - user is created in auth, profile will be created on next login
+      }
     }
 
     return data;
