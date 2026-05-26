@@ -1,25 +1,28 @@
 # ACTOOS JOBS - Product Requirements Document
 
 ## Vision
-Job board SaaS nouvelle generation pour le Mali (jobs.actoos.com). Modele freemium, multilingue (FR initialement).
+Job board SaaS nouvelle generation international (jobs.actoos.com). Modele freemium, multi-tenant.
 
-**Status**: MVP COMPLET - Pret pour deploiement
+**Status**: MVP EN COURS - Stripe & CRUD en test
+**Geographie**: International (base Belgique - textes universels, EUR)
+**Contact**: +32 465743661
 
 **Stack Technique**:
 - Frontend: React 18 + Tailwind CSS v3 + Shadcn/UI
-- Backend: Supabase (Auth + PostgreSQL + Storage)
+- Backend: FastAPI (Stripe) + Supabase (Auth + PostgreSQL + Storage)
+- Paiements: Stripe (EUR)
 - Deploiement: Emergent Platform → jobs.actoos.com
 
 ---
 
-## MVP Complet (26 Mai 2026)
+## Implemente (26 Mai 2026)
 
 ### Pages Publiques
 - [x] Homepage avec offres recentes dynamiques (Supabase)
-- [x] Page Recherche d'emploi (/emplois) avec filtres
+- [x] Page Recherche d'emploi (/emplois) avec filtres EUR
 - [x] Page Detail Offre (/emplois/:id) avec candidature
 - [x] Page Entreprises (/entreprises)
-- [x] Page Tarifs (/tarifs) - 3 plans
+- [x] Page Tarifs (/tarifs) - 3 plans + Boosts avec Stripe
 - [x] Page Blog (/blog)
 - [x] Page Contact (/contact)
 - [x] Page A propos (/a-propos)
@@ -28,7 +31,7 @@ Job board SaaS nouvelle generation pour le Mali (jobs.actoos.com). Modele freemi
 ### Authentification
 - [x] Inscription candidat/entreprise (/inscription)
 - [x] Connexion (/connexion)
-- [x] Google OAuth (a configurer dans Supabase - voir GOOGLE_AUTH_SETUP.md)
+- [x] Google OAuth (configure dans Supabase)
 - [x] Routes protegees
 
 ### Espace Candidat
@@ -36,8 +39,8 @@ Job board SaaS nouvelle generation pour le Mali (jobs.actoos.com). Modele freemi
 - [x] Profil complet (/profil) avec:
   - Infos personnelles
   - Profil professionnel
-  - Upload CV
-  - Competences
+  - Upload/Remplacer/Supprimer CV
+  - Competences (CRUD)
   - Experiences (CRUD)
   - Formations (CRUD)
   - Liens sociaux
@@ -47,79 +50,93 @@ Job board SaaS nouvelle generation pour le Mali (jobs.actoos.com). Modele freemi
 - [x] Creation entreprise (/dashboard/entreprise/creer)
 - [x] Publication offre (/dashboard/entreprise/offres/nouvelle)
 - [x] Modification offre (/dashboard/entreprise/offres/:id/modifier)
-- [x] Gestion candidatures
+- [x] Gestion candidatures (Voir/Modifier/Supprimer/Pause/Publier)
 
-### Infrastructure
-- [x] Supabase configure (Auth + DB + Storage)
-- [x] Schema DB complet
-- [x] RLS Policies
-- [x] Buckets Storage (CVs, logos)
-- [x] Footer global
-- [x] Navigation responsive
+### Backend & Paiements
+- [x] FastAPI Backend (/app/actoos-jobs/backend)
+- [x] Stripe Integration (test mode)
+  - GET /api/pricing - Plans et Boosts
+  - POST /api/checkout/session - Creation session paiement
+  - GET /api/checkout/status/{session_id} - Status paiement
+  - POST /api/webhook/stripe - Webhook Stripe
 
----
-
-## Pour deployer sur jobs.actoos.com
-
-### 1. Configurer Google OAuth
-Suivre `/app/actoos-jobs/docs/GOOGLE_AUTH_SETUP.md`
-
-### 2. Executer le SQL dans Supabase
-Executer `/app/actoos-jobs/docs/MVP_P0_SETUP.sql` (deja fait)
-
-### 3. Configurer le domaine
-- Pointer jobs.actoos.com vers le serveur
-- Configurer SSL
-
-### 4. Variables d'environnement production
-```
-REACT_APP_SUPABASE_URL=https://anfamlpwootbrzswnpyp.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiI...
-```
+### Textes Universels (26 Mai 2026)
+- [x] Suppression references Mali/Bamako
+- [x] Devise EUR au lieu de FCFA/XOF
+- [x] Numero telephone Belgique (+32)
+- [x] Meta tags universels
 
 ---
 
-## Post-MVP (Backlog)
+## En Cours
+
+### P0 - Prioritaire
+- [ ] Test E2E flux complet (Inscription → Entreprise → Job → Postuler)
+- [ ] Admin Dashboard (moderation jobs, validation entreprises)
+- [ ] Activer preview Emergent
 
 ### P1 - Court terme
-- [ ] Dashboard Admin (moderation)
-- [ ] Integration Stripe (paiements)
 - [ ] Alertes email (Resend configure - cle disponible)
-- [ ] SEO URLs localisees
+- [ ] SEO URLs localisees multilinguales
+
+---
+
+## Backlog
 
 ### P2 - Moyen terme
-- [ ] Multilingue (Bambara, Anglais)
+- [ ] Multilingue (FR/EN/NL)
 - [ ] PWA
 - [ ] Matching IA
 - [ ] Chat temps reel
 
 ---
 
-## Fichiers Cles
+## Architecture
 
 ```
-/app/actoos-jobs/frontend/
-├── src/
-│   ├── pages/           (16 pages)
-│   ├── components/      (Header, Footer, ui/)
-│   ├── contexts/        (AuthContext)
-│   └── lib/             (supabase, utils)
-├── docs/
-│   ├── SCHEMA.sql
-│   ├── MVP_P0_SETUP.sql
-│   └── GOOGLE_AUTH_SETUP.md
-└── .env
+/app/actoos-jobs/
+├── backend/
+│   ├── main.py          (FastAPI - Stripe)
+│   ├── requirements.txt
+│   └── .env             (STRIPE_API_KEY)
+├── frontend/
+│   ├── src/
+│   │   ├── components/  (Header, Footer, ui/)
+│   │   ├── pages/       (17 pages)
+│   │   ├── contexts/    (AuthContext)
+│   │   └── lib/         (supabase, utils)
+│   └── .env             (SUPABASE_URL, SUPABASE_KEY, BACKEND_URL)
+└── docs/
+    ├── SCHEMA.sql
+    ├── MVP_P0_SETUP.sql
+    └── GOOGLE_AUTH_SETUP.md
 ```
 
 ---
 
-## Tests Effectues (95% succes)
-- Toutes les pages chargent correctement
-- Navigation fonctionnelle
-- Routes protegees redirect vers login
-- Supabase integration OK
-- Footer unique (corrige)
+## API Endpoints
+
+### Backend FastAPI (Port 8001)
+- `GET /api/health` - Health check
+- `GET /api/pricing` - Plans et Boosts
+- `POST /api/checkout/session` - Creer session Stripe
+- `GET /api/checkout/status/{session_id}` - Status paiement
+- `POST /api/webhook/stripe` - Webhook Stripe
+
+### Supabase
+- Auth (Email + Google OAuth)
+- PostgreSQL (candidates, companies, jobs, applications, saved_jobs)
+- Storage (cvs, logos)
 
 ---
 
-**Derniere mise a jour**: 26 Mai 2026 - MVP COMPLET
+## Tests
+
+### Iteration 5 (26 Mai 2026)
+- Backend: 100% (8/8 tests)
+- Frontend: 100%
+- Corrections: CITIES_MALI alias, country code BE
+
+---
+
+**Derniere MAJ**: 26 Mai 2026
