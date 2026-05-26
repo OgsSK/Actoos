@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
@@ -7,11 +8,12 @@ import {
 } from './ui/dropdown-menu';
 import { 
   Briefcase, Menu, X, User, Building2, ChevronDown, 
-  Search, Bell, LogOut, Settings, LayoutDashboard
+  Search, Bell, LogOut, Settings, LayoutDashboard, Shield
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const Header = ({ user, onLogout }) => {
+  const { isAdmin } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -127,12 +129,21 @@ const Header = ({ user, onLogout }) => {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/parametres')}>
                       <Settings className="w-4 h-4 mr-2" />
-                      Paramètres
+                      Parametres
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigate('/admin')} className="text-blue-600">
+                          <Shield className="w-4 h-4 mr-2" />
+                          Administration
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={onLogout} className="text-red-600">
                       <LogOut className="w-4 h-4 mr-2" />
-                      Déconnexion
+                      Deconnexion
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

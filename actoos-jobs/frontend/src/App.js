@@ -14,6 +14,7 @@ import CandidateProfilePage from './pages/CandidateProfilePage';
 import CompanyDashboard from './pages/CompanyDashboard';
 import CreateCompanyPage from './pages/CreateCompanyPage';
 import CreateJobPage from './pages/CreateJobPage';
+import AdminDashboard from './pages/AdminDashboard';
 import CGUPage from './pages/CGUPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import CookiesPage from './pages/CookiesPage';
@@ -141,6 +142,18 @@ const AppContent = () => {
           <Route path="/dashboard/entreprise/offres/:id/modifier" element={
             <ProtectedRoute>
               <CreateJobPage />
+            </ProtectedRoute>
+          } />
+          
+          {/* Admin routes */}
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/*" element={
+            <ProtectedRoute>
+              <AdminDashboard />
             </ProtectedRoute>
           } />
           
