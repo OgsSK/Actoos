@@ -161,7 +161,7 @@ INSERT INTO job_categories (name, slug, icon, is_active) VALUES
 ON CONFLICT (slug) DO NOTHING;
 
 -- ============================================
--- Cities
+-- Cities (without slug column)
 -- ============================================
 
 DO $b$
@@ -170,17 +170,32 @@ DECLARE
 BEGIN
     SELECT id INTO mali_id FROM countries WHERE code = 'ML';
     IF mali_id IS NOT NULL THEN
-        INSERT INTO cities (name, slug, country_id, region, is_active) VALUES
-            ('Bamako', 'bamako', mali_id, 'District de Bamako', true),
-            ('Sikasso', 'sikasso', mali_id, 'Sikasso', true),
-            ('Mopti', 'mopti', mali_id, 'Mopti', true),
-            ('Segou', 'segou', mali_id, 'Segou', true),
-            ('Kayes', 'kayes', mali_id, 'Kayes', true),
-            ('Koutiala', 'koutiala', mali_id, 'Sikasso', true),
-            ('Gao', 'gao', mali_id, 'Gao', true),
-            ('Kati', 'kati', mali_id, 'Koulikoro', true),
-            ('Tombouctou', 'tombouctou', mali_id, 'Tombouctou', true)
-        ON CONFLICT (slug) DO NOTHING;
+        INSERT INTO cities (name, country_id, region, is_active) 
+        SELECT 'Bamako', mali_id, 'District de Bamako', true WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'Bamako' AND country_id = mali_id);
+        
+        INSERT INTO cities (name, country_id, region, is_active) 
+        SELECT 'Sikasso', mali_id, 'Sikasso', true WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'Sikasso' AND country_id = mali_id);
+        
+        INSERT INTO cities (name, country_id, region, is_active) 
+        SELECT 'Mopti', mali_id, 'Mopti', true WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'Mopti' AND country_id = mali_id);
+        
+        INSERT INTO cities (name, country_id, region, is_active) 
+        SELECT 'Segou', mali_id, 'Segou', true WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'Segou' AND country_id = mali_id);
+        
+        INSERT INTO cities (name, country_id, region, is_active) 
+        SELECT 'Kayes', mali_id, 'Kayes', true WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'Kayes' AND country_id = mali_id);
+        
+        INSERT INTO cities (name, country_id, region, is_active) 
+        SELECT 'Koutiala', mali_id, 'Sikasso', true WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'Koutiala' AND country_id = mali_id);
+        
+        INSERT INTO cities (name, country_id, region, is_active) 
+        SELECT 'Gao', mali_id, 'Gao', true WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'Gao' AND country_id = mali_id);
+        
+        INSERT INTO cities (name, country_id, region, is_active) 
+        SELECT 'Kati', mali_id, 'Koulikoro', true WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'Kati' AND country_id = mali_id);
+        
+        INSERT INTO cities (name, country_id, region, is_active) 
+        SELECT 'Tombouctou', mali_id, 'Tombouctou', true WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'Tombouctou' AND country_id = mali_id);
     END IF;
 END $b$;
 
