@@ -620,88 +620,6 @@ const TestimonialsSection = () => {
   );
 };
 
-// Footer
-const Footer = () => {
-  return (
-    <footer className="bg-slate-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
-          {/* Brand */}
-          <div className="col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                <Briefcase className="w-6 h-6 text-white" />
-              </div>
-              <span className="font-bold text-xl">Actoos Jobs</span>
-            </div>
-            <p className="text-slate-400 text-sm mb-4">
-              La plateforme de recrutement nouvelle génération au Mali.
-            </p>
-            <div className="flex gap-3">
-              {/* Social links placeholder */}
-            </div>
-          </div>
-
-          {/* Candidats */}
-          <div>
-            <h4 className="font-semibold mb-4">Candidats</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link to="/emplois" className="hover:text-white transition-colors">Rechercher un emploi</Link></li>
-              <li><Link to="/inscription" className="hover:text-white transition-colors">Créer un compte</Link></li>
-              <li><Link to="/conseils" className="hover:text-white transition-colors">Conseils carrière</Link></li>
-              <li><Link to="/alertes" className="hover:text-white transition-colors">Alertes emploi</Link></li>
-            </ul>
-          </div>
-
-          {/* Entreprises */}
-          <div>
-            <h4 className="font-semibold mb-4">Entreprises</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link to="/entreprises/inscription" className="hover:text-white transition-colors">Publier une offre</Link></li>
-              <li><Link to="/tarifs" className="hover:text-white transition-colors">Nos tarifs</Link></li>
-              <li><Link to="/solutions" className="hover:text-white transition-colors">Solutions RH</Link></li>
-              <li><Link to="/entreprises" className="hover:text-white transition-colors">Annuaire entreprises</Link></li>
-            </ul>
-          </div>
-
-          {/* Ressources */}
-          <div>
-            <h4 className="font-semibold mb-4">Ressources</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
-              <li><Link to="/faq" className="hover:text-white transition-colors">FAQ</Link></li>
-              <li><Link to="/contact" className="hover:text-white transition-colors">Contact</Link></li>
-              <li><Link to="/a-propos" className="hover:text-white transition-colors">À propos</Link></li>
-            </ul>
-          </div>
-
-          {/* Légal */}
-          <div>
-            <h4 className="font-semibold mb-4">Légal</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link to="/mentions-legales" className="hover:text-white transition-colors">Mentions légales</Link></li>
-              <li><Link to="/cgu" className="hover:text-white transition-colors">CGU</Link></li>
-              <li><Link to="/confidentialite" className="hover:text-white transition-colors">Confidentialité</Link></li>
-              <li><Link to="/cookies" className="hover:text-white transition-colors">Cookies</Link></li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom */}
-        <div className="border-t border-slate-800 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-slate-400 text-sm">
-            © {new Date().getFullYear()} Actoos Jobs. Tous droits réservés.
-          </p>
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
-            <span>🇲🇱</span>
-            <span>Conçu au Mali avec ❤️</span>
-          </div>
-        </div>
-      </div>
-    </footer>
-  );
-};
-
 // Main Homepage Component
 const Homepage = () => {
   return (
@@ -713,7 +631,6 @@ const Homepage = () => {
       <CompanyCTASection />
       <AdvantagesSection />
       <TestimonialsSection />
-      <Footer />
     </div>
   );
 };
