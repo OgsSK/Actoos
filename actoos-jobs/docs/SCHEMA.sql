@@ -242,7 +242,6 @@ CREATE INDEX idx_jobs_country ON jobs(country_id);
 CREATE INDEX idx_jobs_city ON jobs(city_id);
 CREATE INDEX idx_jobs_contract ON jobs(contract_type);
 CREATE INDEX idx_jobs_published ON jobs(published_at DESC);
-CREATE INDEX idx_jobs_search ON jobs USING gin(to_tsvector('french', title || ' ' || COALESCE(description, '')));
 
 CREATE INDEX idx_applications_job ON applications(job_id);
 CREATE INDEX idx_applications_candidate ON applications(candidate_id);
@@ -273,12 +272,15 @@ CREATE TRIGGER update_applications_updated_at BEFORE UPDATE ON applications FOR 
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO users (id, email, role)
-    VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'role', 'candidate')::user_role);
+    INSERT INTO public.users (id, email, role)
+    VALUES (
+        NEW.id, 
+        NEW.email, 
+        COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'candidate')
+    );
     
-    -- If candidate, create candidate profile
     IF COALESCE(NEW.raw_user_meta_data->>'role', 'candidate') = 'candidate' THEN
-        INSERT INTO candidate_profiles (user_id)
+        INSERT INTO public.candidate_profiles (user_id)
         VALUES (NEW.id);
     END IF;
     
@@ -302,6 +304,14 @@ ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE saved_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE job_alerts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE countries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE job_categories ENABLE ROW LEVEL SECURITY;
+
+-- Public read access for reference tables
+CREATE POLICY "Anyone can view countries" ON countries FOR SELECT USING (true);
+CREATE POLICY "Anyone can view cities" ON cities FOR SELECT USING (true);
+CREATE POLICY "Anyone can view job categories" ON job_categories FOR SELECT USING (true);
 
 -- Users policies
 CREATE POLICY "Users can view all users" ON users FOR SELECT USING (true);
@@ -319,8 +329,17 @@ CREATE POLICY "Users can create companies" ON companies FOR INSERT WITH CHECK (a
 
 -- Jobs policies
 CREATE POLICY "Anyone can view active jobs" ON jobs FOR SELECT USING (status = 'active');
-CREATE POLICY "Company members can manage jobs" ON jobs FOR ALL USING (
+CREATE POLICY "Company members can insert jobs" ON jobs FOR INSERT WITH CHECK (
     EXISTS (SELECT 1 FROM company_members WHERE company_id = jobs.company_id AND user_id = auth.uid())
+);
+CREATE POLICY "Company members can update jobs" ON jobs FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM company_members WHERE company_id = jobs.company_id AND user_id = auth.uid())
+);
+
+-- Company members policies
+CREATE POLICY "Company members can view own memberships" ON company_members FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Company owners can manage members" ON company_members FOR ALL USING (
+    EXISTS (SELECT 1 FROM companies WHERE id = company_members.company_id AND owner_id = auth.uid())
 );
 
 -- Applications policies
@@ -352,28 +371,28 @@ INSERT INTO cities (country_id, name, region) VALUES
     ((SELECT id FROM countries WHERE code = 'ML'), 'Sikasso', 'Sikasso'),
     ((SELECT id FROM countries WHERE code = 'ML'), 'Mopti', 'Mopti'),
     ((SELECT id FROM countries WHERE code = 'ML'), 'Koutiala', 'Sikasso'),
-    ((SELECT id FROM countries WHERE code = 'ML'), 'Ségou', 'Ségou'),
+    ((SELECT id FROM countries WHERE code = 'ML'), 'Segou', 'Segou'),
     ((SELECT id FROM countries WHERE code = 'ML'), 'Kayes', 'Kayes'),
     ((SELECT id FROM countries WHERE code = 'ML'), 'Gao', 'Gao'),
     ((SELECT id FROM countries WHERE code = 'ML'), 'Kati', 'Koulikoro'),
     ((SELECT id FROM countries WHERE code = 'ML'), 'Tombouctou', 'Tombouctou'),
-    ((SELECT id FROM countries WHERE code = 'ML'), 'San', 'Ségou');
+    ((SELECT id FROM countries WHERE code = 'ML'), 'San', 'Segou');
 
 -- Insert job categories
 INSERT INTO job_categories (slug, name, icon) VALUES
-    ('tech', 'Technologie & IT', '💻'),
-    ('marketing', 'Marketing & Communication', '📢'),
-    ('finance', 'Finance & Comptabilité', '💰'),
-    ('rh', 'Ressources Humaines', '👥'),
-    ('commerce', 'Commerce & Vente', '🛒'),
-    ('sante', 'Santé & Médical', '🏥'),
-    ('education', 'Éducation & Formation', '📚'),
-    ('btp', 'BTP & Construction', '🏗️'),
-    ('transport', 'Transport & Logistique', '🚚'),
-    ('agriculture', 'Agriculture & Environnement', '🌱'),
-    ('tourisme', 'Tourisme & Hôtellerie', '✈️'),
-    ('juridique', 'Juridique & Droit', '⚖️');
+    ('tech', 'Technologie et IT', 'laptop'),
+    ('marketing', 'Marketing et Communication', 'megaphone'),
+    ('finance', 'Finance et Comptabilite', 'calculator'),
+    ('rh', 'Ressources Humaines', 'users'),
+    ('commerce', 'Commerce et Vente', 'shopping-cart'),
+    ('sante', 'Sante et Medical', 'heart'),
+    ('education', 'Education et Formation', 'book'),
+    ('btp', 'BTP et Construction', 'building'),
+    ('transport', 'Transport et Logistique', 'truck'),
+    ('agriculture', 'Agriculture et Environnement', 'leaf'),
+    ('tourisme', 'Tourisme et Hotellerie', 'plane'),
+    ('juridique', 'Juridique et Droit', 'scale');
 
 -- ============================================
--- RUN THIS SCRIPT IN SUPABASE SQL EDITOR
+-- SUCCESS! Database schema created.
 -- ============================================
