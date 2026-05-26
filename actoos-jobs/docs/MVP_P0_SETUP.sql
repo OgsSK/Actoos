@@ -42,28 +42,28 @@ CREATE OR REPLACE FUNCTION increment_job_views(job_id UUID)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $$
+AS $func$
 BEGIN
     UPDATE jobs 
     SET views_count = COALESCE(views_count, 0) + 1,
         updated_at = NOW()
     WHERE id = job_id;
 END;
-$$;
+$func$;
 
 -- Increment applications count
 CREATE OR REPLACE FUNCTION increment_applications_count(job_id UUID)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $$
+AS $func$
 BEGIN
     UPDATE jobs 
     SET applications_count = COALESCE(applications_count, 0) + 1,
         updated_at = NOW()
     WHERE id = job_id;
 END;
-$$;
+$func$;
 
 -- ============================================
 -- Storage Buckets
@@ -252,15 +252,15 @@ CREATE POLICY "Companies can update application status"
 INSERT INTO job_categories (name, slug, icon, is_active) VALUES
     ('Technologie & IT', 'technologie-it', 'laptop', true),
     ('Marketing & Communication', 'marketing-communication', 'megaphone', true),
-    ('Finance & Comptabilité', 'finance-comptabilite', 'calculator', true),
+    ('Finance & Comptabilite', 'finance-comptabilite', 'calculator', true),
     ('Ressources Humaines', 'ressources-humaines', 'users', true),
     ('Commerce & Vente', 'commerce-vente', 'shopping-cart', true),
-    ('Santé & Médical', 'sante-medical', 'heart', true),
-    ('Éducation & Formation', 'education-formation', 'book', true),
+    ('Sante & Medical', 'sante-medical', 'heart', true),
+    ('Education & Formation', 'education-formation', 'book', true),
     ('BTP & Construction', 'btp-construction', 'building', true),
     ('Transport & Logistique', 'transport-logistique', 'truck', true),
     ('Agriculture & Environnement', 'agriculture-environnement', 'leaf', true),
-    ('Tourisme & Hôtellerie', 'tourisme-hotellerie', 'plane', true),
+    ('Tourisme & Hotellerie', 'tourisme-hotellerie', 'plane', true),
     ('Juridique & Droit', 'juridique-droit', 'scale', true),
     ('Administration', 'administration', 'briefcase', true),
     ('ONG & Humanitaire', 'ong-humanitaire', 'globe', true),
@@ -271,7 +271,7 @@ ON CONFLICT (slug) DO NOTHING;
 -- Cities (only if not exist)
 -- ============================================
 
-DO $$
+DO $block$
 DECLARE
     mali_id UUID;
 BEGIN
@@ -282,7 +282,7 @@ BEGIN
             ('Bamako', 'bamako', mali_id, 'District de Bamako', true),
             ('Sikasso', 'sikasso', mali_id, 'Sikasso', true),
             ('Mopti', 'mopti', mali_id, 'Mopti', true),
-            ('Ségou', 'segou', mali_id, 'Ségou', true),
+            ('Segou', 'segou', mali_id, 'Segou', true),
             ('Kayes', 'kayes', mali_id, 'Kayes', true),
             ('Koutiala', 'koutiala', mali_id, 'Sikasso', true),
             ('Gao', 'gao', mali_id, 'Gao', true),
@@ -290,6 +290,6 @@ BEGIN
             ('Tombouctou', 'tombouctou', mali_id, 'Tombouctou', true)
         ON CONFLICT (slug) DO NOTHING;
     END IF;
-END $$;
+END $block$;
 
 SELECT 'MVP_P0_SETUP.sql v2 executed successfully!' as result;
