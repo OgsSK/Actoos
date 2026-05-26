@@ -1,20 +1,34 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import Homepage from './pages/Homepage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import JobsPage from './pages/JobsPage';
 import './index.css';
 
-// Placeholder pages - will be implemented
-const JobsPage = () => (
-  <div className="pt-20 min-h-screen bg-slate-50">
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold">Recherche d'emplois</h1>
-      <p className="text-slate-600 mt-2">Page en cours de développement...</p>
-    </div>
-  </div>
-);
+// Protected Route wrapper
+const ProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/connexion" replace />;
+  }
+  
+  return children;
+};
 
+// Placeholder pages
 const JobDetailPage = () => (
   <div className="pt-20 min-h-screen bg-slate-50">
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -51,32 +65,24 @@ const BlogPage = () => (
   </div>
 );
 
-const LoginPage = () => (
-  <div className="pt-20 min-h-screen bg-slate-50">
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold">Connexion</h1>
-      <p className="text-slate-600 mt-2">Page en cours de développement...</p>
+const DashboardPage = () => {
+  const { profile, isCandidate, isCompany } = useAuth();
+  
+  return (
+    <div className="pt-20 min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold">
+          Bienvenue, {profile?.first_name || 'Utilisateur'} !
+        </h1>
+        <p className="text-slate-600 mt-2">
+          {isCandidate && 'Votre espace candidat'}
+          {isCompany && 'Votre espace entreprise'}
+        </p>
+        <p className="text-slate-500 mt-4">Dashboard en cours de développement...</p>
+      </div>
     </div>
-  </div>
-);
-
-const RegisterPage = () => (
-  <div className="pt-20 min-h-screen bg-slate-50">
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold">Inscription</h1>
-      <p className="text-slate-600 mt-2">Page en cours de développement...</p>
-    </div>
-  </div>
-);
-
-const CompanyRegisterPage = () => (
-  <div className="pt-20 min-h-screen bg-slate-50">
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold">Inscription Entreprise</h1>
-      <p className="text-slate-600 mt-2">Page en cours de développement...</p>
-    </div>
-  </div>
-);
+  );
+};
 
 const NotFoundPage = () => (
   <div className="pt-20 min-h-screen bg-slate-50 flex items-center justify-center">
@@ -87,49 +93,80 @@ const NotFoundPage = () => (
   </div>
 );
 
-function App() {
-  const [user, setUser] = useState(null);
-
-  const handleLogout = () => {
-    setUser(null);
-    // Will add Supabase logout here
-  };
+// Main App with Auth
+const AppContent = () => {
+  const { user, signOut } = useAuth();
 
   return (
-    <Router>
-      <div className="min-h-screen">
-        <Header user={user} onLogout={handleLogout} />
+    <div className="min-h-screen">
+      <Header user={user} onLogout={signOut} />
+      
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Homepage />} />
+        <Route path="/emplois" element={<JobsPage />} />
+        <Route path="/emplois/:id" element={<JobDetailPage />} />
+        <Route path="/entreprises" element={<CompaniesPage />} />
+        <Route path="/entreprises/inscription" element={<RegisterPage />} />
+        <Route path="/tarifs" element={<PricingPage />} />
+        <Route path="/blog" element={<BlogPage />} />
         
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Homepage />} />
-          <Route path="/emplois" element={<JobsPage />} />
-          <Route path="/emplois/:id" element={<JobDetailPage />} />
-          <Route path="/entreprises" element={<CompaniesPage />} />
-          <Route path="/entreprises/inscription" element={<CompanyRegisterPage />} />
-          <Route path="/tarifs" element={<PricingPage />} />
-          <Route path="/blog" element={<BlogPage />} />
-          
-          {/* Auth routes */}
-          <Route path="/connexion" element={<LoginPage />} />
-          <Route path="/inscription" element={<RegisterPage />} />
-          
-          {/* 404 */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        {/* Auth routes */}
+        <Route path="/connexion" element={<LoginPage />} />
+        <Route path="/inscription" element={<RegisterPage />} />
+        
+        {/* Protected routes */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/profil" element={
+          <ProtectedRoute>
+            <div className="pt-20 min-h-screen bg-slate-50">
+              <div className="max-w-7xl mx-auto px-4 py-8">
+                <h1 className="text-3xl font-bold">Mon Profil</h1>
+                <p className="text-slate-600 mt-2">Page en cours de développement...</p>
+              </div>
+            </div>
+          </ProtectedRoute>
+        } />
+        
+        {/* Auth callback for OAuth */}
+        <Route path="/auth/callback" element={
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-slate-600">Connexion en cours...</p>
+            </div>
+          </div>
+        } />
+        
+        {/* 404 */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
 
-        {/* Toast notifications */}
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: '#1e293b',
-              color: '#fff',
-              border: 'none',
-            },
-          }}
-        />
-      </div>
+      {/* Toast notifications */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: '#1e293b',
+            color: '#fff',
+            border: 'none',
+          },
+        }}
+      />
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </Router>
   );
 }

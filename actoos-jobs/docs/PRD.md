@@ -1,41 +1,21 @@
 # ACTOOS JOBS - Product Requirements Document
 
 ## Vision Produit
-Plateforme de recrutement moderne et internationale - "Indeed nouvelle génération" pour le Mali.
-
----
-
-## Architecture
-
-### Stack Technique
-- **Frontend**: React 18 + Tailwind CSS 3.4 + Shadcn/UI
-- **Backend**: Supabase (Auth, PostgreSQL, Storage, Edge Functions)
-- **Paiements**: Stripe (prévu)
-- **Déploiement**: Vercel (jobs.actoos.com)
-
-### Structure du Repo
-```
-/app/actoos-jobs/
-├── frontend/              ← React Application
-│   ├── src/
-│   │   ├── components/    (Header, UI components)
-│   │   ├── pages/         (Homepage, Jobs, Auth, Dashboard)
-│   │   ├── contexts/      (Auth context - à créer)
-│   │   ├── lib/           (utils, supabase client - à créer)
-│   │   └── hooks/         (custom hooks - à créer)
-│   └── public/
-└── docs/                  ← Documentation
-```
+Plateforme de recrutement moderne et internationale - "Indeed nouvelle génération" pour le Mali 🇲🇱
 
 ---
 
 ## Configuration
 
+### Supabase
+- **URL**: https://anfamlpwootbrzswnpyp.supabase.co
+- **Anon Key**: Configuré dans .env
+
 ### Pays de lancement
-- **Mali** 🇲🇱 (Bamako, Sikasso, Mopti, Koutiala, Ségou, Kayes, Gao, etc.)
+- Mali (Bamako, Sikasso, Mopti, Koutiala, Ségou, Kayes, Gao, etc.)
 
 ### Langue
-- Français uniquement (pour l'instant)
+- Français
 
 ### Devise
 - FCFA (Franc CFA)
@@ -44,125 +24,127 @@ Plateforme de recrutement moderne et internationale - "Indeed nouvelle générat
 
 ## Fonctionnalités Implémentées
 
-### Phase 1 - MVP Frontend (EN COURS)
+### ✅ Phase 1 - MVP Frontend (FAIT - 26 Mai 2026)
 
-#### ✅ Homepage (FAIT - 23 Mai 2026)
+#### Homepage
 - [x] Hero section premium avec gradient bleu
 - [x] Moteur de recherche (mot-clé + ville)
-- [x] Recherches populaires
 - [x] Stats (offres, entreprises, candidats)
-- [x] Catégories d'emploi (12 secteurs)
-- [x] Offres récentes (mock data)
+- [x] 12 catégories d'emploi avec icônes
+- [x] Offres récentes avec badges
 - [x] Section "Comment ça marche"
 - [x] CTA Entreprises
-- [x] Section avantages
 - [x] Témoignages
 - [x] Footer complet
 
-#### ✅ Navigation/Header (FAIT)
-- [x] Logo Actoos Jobs
-- [x] Menu desktop (Emplois, Entreprises, Tarifs, Blog)
-- [x] Boutons Connexion/Inscription/Recruter
-- [x] Menu mobile responsive
-- [x] Header transparent sur homepage, solid ailleurs
-- [x] Effet scroll (header devient solid)
+#### Page Recherche d'emplois (/emplois)
+- [x] Barre de recherche sticky
+- [x] Filtres sidebar (contrat, ville, salaire, expérience, catégorie)
+- [x] Cartes offres avec badges (Mise en avant, Urgent, Télétravail)
+- [x] Infos: entreprise, ville, contrat, salaire FCFA, compétences
+- [x] Boutons favoris et voir offre
+- [x] Tri par date/salaire
+- [x] Filtres actifs avec badges
+- [x] Version mobile avec modal filtres
 
-#### 🔲 Pages Placeholders (Structure créée)
-- [ ] /emplois - Recherche d'emplois
-- [ ] /emplois/:id - Détail offre
-- [ ] /entreprises - Annuaire entreprises
-- [ ] /tarifs - Page tarifs
-- [ ] /blog - Blog/conseils
-- [ ] /connexion - Login
-- [ ] /inscription - Register candidat
-- [ ] /entreprises/inscription - Register entreprise
+#### Authentification
+- [x] Page connexion (/connexion)
+  - Bouton Google OAuth
+  - Formulaire email/mot de passe
+  - Lien mot de passe oublié
+- [x] Page inscription (/inscription)
+  - Étape 1: Choix du profil (Candidat/Entreprise)
+  - Étape 2: Formulaire complet
+  - Bouton Google OAuth
+- [x] AuthContext avec Supabase
+- [x] Routes protégées
 
 ---
 
-## À Implémenter (MVP Prioritaire)
+## À Configurer dans Supabase
 
-### Phase 2 - Auth & Profils
-- [ ] Intégration Supabase Auth
-- [ ] Connexion email/password
-- [ ] Connexion Google OAuth
-- [ ] Vérification email
-- [ ] Page inscription candidat
-- [ ] Page inscription entreprise
-- [ ] Profil candidat complet
-- [ ] Profil entreprise complet
+### IMPORTANT: Exécuter le schéma SQL
 
-### Phase 3 - Jobs & Search
-- [ ] Page recherche d'emplois avec filtres
-- [ ] Fiche offre détaillée
-- [ ] Candidature rapide
-- [ ] Sauvegarde d'offres
+Le fichier `/app/actoos-jobs/docs/SCHEMA.sql` doit être exécuté dans **Supabase SQL Editor** pour créer :
 
-### Phase 4 - Dashboards
+1. Tables:
+   - users, candidate_profiles, companies, company_members
+   - jobs, applications, saved_jobs, job_alerts
+   - countries, cities, job_categories, notifications
+
+2. Enums:
+   - user_role, job_status, application_status
+   - contract_type, experience_level, subscription_plan
+
+3. Triggers:
+   - Création automatique du profil user après inscription
+   - Création automatique du profil candidat
+
+4. Politiques RLS (Row Level Security)
+
+5. Données initiales:
+   - Mali + 10 villes
+   - 12 catégories d'emploi
+
+### Configuration Google OAuth (optionnel)
+
+1. Google Cloud Console → Créer projet
+2. APIs & Services → Credentials → OAuth 2.0
+3. Redirect URI: `https://anfamlpwootbrzswnpyp.supabase.co/auth/v1/callback`
+4. Supabase Dashboard → Authentication → Providers → Google
+5. Coller Client ID et Client Secret
+
+---
+
+## Prochaines étapes (MVP Phase 2)
+
+### En attente de création des tables Supabase:
+- [ ] Test complet de l'authentification
+- [ ] Page profil candidat avec CV upload
+- [ ] Page profil entreprise
 - [ ] Dashboard candidat
 - [ ] Dashboard entreprise
+- [ ] Publication d'offres (vraies données)
+
+### Phase 3:
+- [ ] Page détail offre
+- [ ] Système de candidature
+- [ ] Notifications
 - [ ] Dashboard admin
 
-### Phase 5 - Monétisation
-- [ ] Page tarifs
-- [ ] Intégration Stripe
-- [ ] Abonnements entreprises
+### Phase 4:
+- [ ] Abonnements Stripe
 - [ ] Boosts d'annonces
+- [ ] Alertes emploi
 
 ---
 
-## Design System
+## Structure du projet
 
-### Couleurs
-```css
---primary: #1e40af (Bleu foncé)
---primary-light: #3b82f6 (Bleu clair)
---accent: #22c55e (Vert)
---background: #ffffff
---foreground: #0f172a
---muted: #64748b
 ```
-
-### Typographie
-- **Titres**: Manrope (font-display)
-- **Corps**: Inter (font-sans)
-
-### Style
-- Moderne, premium, mobile-first
-- Cartes avec hover effects
-- Gradients subtils
-- Animations légères
-
----
-
-## Schéma Base de Données (Prévu)
-
-### Tables principales
-- users (candidats + entreprises)
-- companies
-- jobs
-- applications
-- saved_jobs
-- subscriptions
-- payments
-- notifications
-
----
-
-## Configuration Supabase
-
-**Status**: En attente des credentials utilisateur
-- URL Supabase: (à fournir)
-- Anon Key: (à fournir)
-
----
-
-## Prochaines étapes
-
-1. **Utilisateur fournit credentials Supabase**
-2. Intégrer Supabase Auth
-3. Créer pages Auth (login/register)
-4. Implémenter profils candidat/entreprise
-5. Créer page recherche d'emplois
+/app/actoos-jobs/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ui/           (Shadcn components)
+│   │   │   └── Header.jsx
+│   │   ├── contexts/
+│   │   │   └── AuthContext.jsx
+│   │   ├── lib/
+│   │   │   ├── supabase.js
+│   │   │   └── utils.js
+│   │   ├── pages/
+│   │   │   ├── Homepage.jsx
+│   │   │   ├── JobsPage.jsx
+│   │   │   ├── LoginPage.jsx
+│   │   │   └── RegisterPage.jsx
+│   │   ├── App.js
+│   │   └── index.css
+│   └── .env
+└── docs/
+    ├── PRD.md
+    └── SCHEMA.sql
+```
 
 ---
 
