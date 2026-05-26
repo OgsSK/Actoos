@@ -48,13 +48,13 @@ const AboutPage = () => (
       <h1 className="text-3xl font-bold text-slate-900 mb-6">A propos d'Actoos Jobs</h1>
       <div className="bg-white rounded-2xl shadow-sm p-8 space-y-6">
         <p className="text-slate-600 leading-relaxed">
-          Actoos Jobs est la plateforme de recrutement nouvelle generation au Mali. Notre mission est de 
+          Actoos Jobs est la plateforme de recrutement nouvelle generation. Notre mission est de 
           connecter les meilleurs talents avec les entreprises qui recrutent, en simplifiant et modernisant 
           le processus de recherche d'emploi et de recrutement.
         </p>
         <p className="text-slate-600 leading-relaxed">
-          Fondee en 2026 a Bamako, notre equipe est composee de professionnels passionnes par l'innovation 
-          et le developpement du marche de l'emploi au Mali et en Afrique de l'Ouest.
+          Fondee en 2026, notre equipe est composee de professionnels passionnes par l'innovation 
+          et le developpement du marche de l'emploi a l'international.
         </p>
         <h2 className="text-xl font-semibold text-slate-900 pt-4">Notre vision</h2>
         <p className="text-slate-600 leading-relaxed">

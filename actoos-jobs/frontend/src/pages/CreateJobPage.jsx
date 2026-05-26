@@ -182,7 +182,7 @@ const CreateJobPage = () => {
         experience_level: form.experience_level || null,
         salary_min: form.salary_min ? parseInt(form.salary_min) : null,
         salary_max: form.salary_max ? parseInt(form.salary_max) : null,
-        salary_currency: 'XOF',
+        salary_currency: 'EUR',
         is_salary_visible: form.is_salary_visible,
         city_id: form.city_id || null,
         country_id: country?.id,
@@ -561,7 +561,7 @@ const CreateJobPage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Salaire minimum (FCFA/mois)
+                    Salaire minimum (EUR/mois)
                   </label>
                   <Input
                     type="number"
@@ -573,7 +573,7 @@ const CreateJobPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Salaire maximum (FCFA/mois)
+                    Salaire maximum (EUR/mois)
                   </label>
                   <Input
                     type="number"

@@ -136,11 +136,11 @@ const CreateCompanyPage = () => {
 
     setLoading(true);
     try {
-      // Get country (Mali)
+      // Get country (Belgium)
       const { data: country } = await supabase
         .from('countries')
         .select('id')
-        .eq('code', 'ML')
+        .eq('code', 'BE')
         .single();
 
       // Create company
@@ -261,7 +261,7 @@ const CreateCompanyPage = () => {
                 <Input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Ex: Orange Mali"
+                  placeholder="Ex: Orange"
                   required
                   data-testid="company-name-input"
                 />
@@ -357,7 +357,7 @@ const CreateCompanyPage = () => {
                   <Input
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder="+223 XX XX XX XX"
+                    placeholder="+32 XXX XX XX XX"
                     data-testid="company-phone-input"
                   />
                 </div>

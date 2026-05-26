@@ -32,8 +32,8 @@ export function formatRelative(date) {
 }
 
 // Format salary
-export function formatSalary(min, max, currency = 'XOF') {
-  const formatter = new Intl.NumberFormat('fr-ML', {
+export function formatSalary(min, max, currency = 'EUR') {
+  const formatter = new Intl.NumberFormat('fr-BE', {
     style: 'currency',
     currency: currency,
     maximumFractionDigits: 0,
@@ -99,16 +99,19 @@ export const JOB_CATEGORIES = [
   { id: 'juridique', label: 'Juridique & Droit', icon: '⚖️' },
 ];
 
-// Cities in Mali
-export const CITIES_MALI = [
-  'Bamako',
-  'Sikasso',
-  'Mopti',
-  'Koutiala',
-  'Ségou',
-  'Kayes',
-  'Gao',
-  'Kati',
-  'Tombouctou',
-  'San',
+// Cities (Belgium/Luxembourg)
+export const CITIES = [
+  'Bruxelles',
+  'Anvers',
+  'Gand',
+  'Liège',
+  'Charleroi',
+  'Namur',
+  'Bruges',
+  'Leuven',
+  'Mons',
+  'Luxembourg',
 ];
+
+// Alias for backward compatibility
+export const CITIES_MALI = CITIES;

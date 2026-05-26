@@ -37,7 +37,7 @@ const CGUPage = () => {
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">3. Description des services</h2>
             <p className="text-slate-600 leading-relaxed mb-4">
-              Actoos Jobs est une plateforme de mise en relation entre employeurs et candidats au Mali. 
+              Actoos Jobs est une plateforme internationale de mise en relation entre employeurs et candidats. 
               Les services proposes incluent :
             </p>
             <ul className="list-disc list-inside text-slate-600 space-y-2 ml-4">
@@ -99,7 +99,7 @@ const CGUPage = () => {
             <h2 className="text-xl font-semibold text-slate-900 mb-4">9. Droit applicable</h2>
             <p className="text-slate-600 leading-relaxed">
               Les presentes CGU sont soumises au droit malien. Tout litige sera soumis aux tribunaux 
-              competents de Bamako, Mali.
+              competents.
             </p>
           </section>
 

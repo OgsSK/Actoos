@@ -45,7 +45,7 @@ const HeroSection = () => {
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mb-8 animate-slide-down">
             <Sparkles className="w-4 h-4 text-yellow-400" />
             <span className="text-white/90 text-sm font-medium">
-              La nouvelle plateforme d'emploi au Mali
+              La plateforme de recrutement nouvelle generation
             </span>
           </div>
 
@@ -62,7 +62,7 @@ const HeroSection = () => {
           {/* Subtitle */}
           <p className="text-lg sm:text-xl text-blue-100 mb-10 max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: '0.1s' }}>
             Des milliers d'opportunités vous attendent. Postulez en un clic et 
-            construisez votre carrière avec les meilleures entreprises du Mali.
+            construisez votre carrière avec les meilleures entreprises.
           </p>
 
           {/* Search Box */}
@@ -202,7 +202,7 @@ const RecentJobsSection = () => {
           title: job.title,
           company: job.company?.name || 'Entreprise',
           company_logo: job.company?.logo_url,
-          location: job.city?.name || 'Mali',
+          location: job.city?.name || 'Non spécifié',
           contract_type: job.contract_type,
           salary_min: job.salary_min,
           salary_max: job.salary_max,
@@ -326,7 +326,7 @@ const JobCard = ({ job }) => {
               <span className="text-slate-500">Salaire: </span>
               <span className="font-medium text-slate-700">
                 {job.salary_min && job.salary_max 
-                  ? `${(job.salary_min/1000).toFixed(0)}K - ${(job.salary_max/1000).toFixed(0)}K FCFA`
+                  ? `${(job.salary_min/1000).toFixed(0)}K - ${(job.salary_max/1000).toFixed(0)}K EUR`
                   : 'Non précisé'
                 }
               </span>
@@ -430,7 +430,7 @@ const CompanyCTASection = () => {
               Pour les entreprises
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-bold text-white font-display mb-6">
-              Recrutez les meilleurs talents du Mali
+              Recrutez les meilleurs talents
             </h2>
             <p className="text-blue-100 text-lg mb-8">
               Publiez vos offres, recevez des candidatures qualifiées et 
@@ -525,8 +525,8 @@ const AdvantagesSection = () => {
     },
     {
       icon: Heart,
-      title: 'Support local',
-      description: 'Une équipe dédiée au Mali pour vous accompagner.',
+      title: 'Support dédié',
+      description: 'Une équipe dédiée pour vous accompagner.',
     },
   ];
 
@@ -563,7 +563,7 @@ const TestimonialsSection = () => {
     {
       name: 'Aminata Diallo',
       role: 'Développeuse Web',
-      company: 'Orange Mali',
+      company: 'Orange',
       content: 'J\'ai trouvé mon emploi actuel grâce à Actoos Jobs. Le processus était simple et rapide !',
       avatar: null,
     },

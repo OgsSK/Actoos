@@ -70,7 +70,7 @@ const CompaniesPage = () => {
             Entreprises qui recrutent
           </h1>
           <p className="text-slate-600 mb-8 max-w-2xl">
-            Decouvrez les entreprises qui recrutent au Mali et consultez leurs offres d'emploi.
+            Decouvrez les entreprises qui recrutent et consultez leurs offres d'emploi.
           </p>
 
           {/* Search & Filters */}
@@ -191,7 +191,7 @@ const CompaniesPage = () => {
           </h2>
           <p className="text-blue-100 mb-6 max-w-xl mx-auto">
             Creez votre profil entreprise et publiez vos offres d'emploi pour 
-            attirer les meilleurs talents au Mali.
+            attirer les meilleurs talents.
           </p>
           <Link to="/inscription?type=entreprise">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">

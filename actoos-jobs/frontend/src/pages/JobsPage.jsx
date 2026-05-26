@@ -81,7 +81,7 @@ const JobCard = ({ job, onSave, isSaved }) => {
                 {job.salary_min && job.salary_max && (
                   <span className="flex items-center gap-1">
                     <Banknote className="w-4 h-4" />
-                    {(job.salary_min / 1000).toFixed(0)}K - {(job.salary_max / 1000).toFixed(0)}K FCFA
+                    {(job.salary_min / 1000).toFixed(0)}K - {(job.salary_max / 1000).toFixed(0)}K EUR
                   </span>
                 )}
               </div>
@@ -239,7 +239,7 @@ const FiltersSidebar = ({ filters, onChange, cities, categories, onReset }) => {
       <FilterSection id="salary" title="Salaire">
         <div className="space-y-3">
           <div>
-            <Label className="text-xs text-slate-500">Salaire minimum (FCFA)</Label>
+            <Label className="text-xs text-slate-500">Salaire minimum (EUR)</Label>
             <Select
               value={filters.salary_min?.toString() || 'any'}
               onValueChange={(value) => onChange({ ...filters, salary_min: value === 'any' ? null : parseInt(value) })}
@@ -249,12 +249,12 @@ const FiltersSidebar = ({ filters, onChange, cities, categories, onReset }) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="any">Peu importe</SelectItem>
-                <SelectItem value="200000">200 000 FCFA</SelectItem>
-                <SelectItem value="300000">300 000 FCFA</SelectItem>
-                <SelectItem value="400000">400 000 FCFA</SelectItem>
-                <SelectItem value="500000">500 000 FCFA</SelectItem>
-                <SelectItem value="750000">750 000 FCFA</SelectItem>
-                <SelectItem value="1000000">1 000 000 FCFA</SelectItem>
+                <SelectItem value="1500">1 500 EUR</SelectItem>
+                <SelectItem value="2000">2 000 EUR</SelectItem>
+                <SelectItem value="2500">2 500 EUR</SelectItem>
+                <SelectItem value="3000">3 000 EUR</SelectItem>
+                <SelectItem value="4000">4 000 EUR</SelectItem>
+                <SelectItem value="5000">5 000 EUR</SelectItem>
               </SelectContent>
             </Select>
           </div>

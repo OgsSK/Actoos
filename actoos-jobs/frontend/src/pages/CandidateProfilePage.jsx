@@ -165,7 +165,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
             <Input
               value={form.company}
               onChange={(e) => setForm({ ...form, company: e.target.value })}
-              placeholder="Ex: Orange Mali"
+              placeholder="Ex: Orange"
             />
           </div>
           <div>
@@ -173,7 +173,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
             <Input
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
-              placeholder="Ex: Bamako, Mali"
+              placeholder="Ex: Bruxelles, Belgique"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -267,7 +267,7 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null }) => {
             <Input
               value={form.school}
               onChange={(e) => setForm({ ...form, school: e.target.value })}
-              placeholder="Ex: Université de Bamako"
+              placeholder="Ex: Université Libre de Bruxelles"
             />
           </div>
           <div>
@@ -432,6 +432,35 @@ const CandidateProfilePage = () => {
     setEducation(education.filter(e => e.id !== id));
   };
 
+  // Delete CV
+  const handleDeleteCV = async () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer votre CV ?')) return;
+    
+    setUploadingCV(true);
+    try {
+      // Extract file path from URL and delete from storage
+      const cvUrl = profile?.candidate_profile?.cv_url;
+      if (cvUrl) {
+        const urlParts = cvUrl.split('/cvs/');
+        if (urlParts[1]) {
+          await supabase.storage
+            .from('cvs')
+            .remove([urlParts[1]]);
+        }
+      }
+      
+      // Update candidate profile to remove CV URL
+      await updateCandidateProfile({ cv_url: null });
+      toast.success('CV supprimé avec succès');
+      await refreshProfile();
+    } catch (error) {
+      console.error('Error deleting CV:', error);
+      toast.error('Erreur lors de la suppression du CV');
+    } finally {
+      setUploadingCV(false);
+    }
+  };
+
   // Upload CV
   const handleCVUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -557,7 +586,7 @@ const CandidateProfilePage = () => {
                   <Input
                     value={personalInfo.phone}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
-                    placeholder="+223 XX XX XX XX"
+                    placeholder="+32 XXX XX XX XX"
                     data-testid="phone-input"
                   />
                 </div>
@@ -682,14 +711,21 @@ const CandidateProfilePage = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-blue-600 hover:underline"
+                        data-testid="view-cv-link"
                       >
                         Voir mon CV
                       </a>
                     </div>
-                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadingCV}>
-                      {uploadingCV ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
-                      Remplacer le CV
-                    </Button>
+                    <div className="flex justify-center gap-2">
+                      <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadingCV} data-testid="replace-cv-btn">
+                        {uploadingCV ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
+                        Remplacer
+                      </Button>
+                      <Button variant="outline" onClick={handleDeleteCV} disabled={uploadingCV} className="text-red-600 hover:text-red-700 hover:bg-red-50" data-testid="delete-cv-btn">
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Supprimer
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -873,7 +909,7 @@ const CandidateProfilePage = () => {
               <SectionHeader
                 icon={Briefcase}
                 title="Prétentions salariales"
-                description="Fourchette de salaire souhaitée (FCFA/mois)"
+                description="Fourchette de salaire souhaitée (EUR/mois)"
               />
               
               <div className="grid sm:grid-cols-2 gap-4">

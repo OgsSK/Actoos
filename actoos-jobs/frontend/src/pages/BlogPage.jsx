@@ -57,8 +57,8 @@ const BlogPage = () => {
     },
     {
       id: 5,
-      title: 'Travailler au Mali : secteurs qui recrutent en 2026',
-      excerpt: 'Decouvrez les secteurs d\'activite les plus dynamiques et les metiers les plus recherches au Mali cette annee.',
+      title: 'Secteurs qui recrutent en 2026',
+      excerpt: 'Decouvrez les secteurs d\'activite les plus dynamiques et les metiers les plus recherches cette annee.',
       category: 'Marche emploi',
       readTime: '6 min',
       author: 'Equipe Actoos',
