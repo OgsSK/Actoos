@@ -1,6 +1,7 @@
 -- ============================================
 -- ACTOOS JOBS - Additional SQL for MVP P0
 -- Execute this in Supabase SQL Editor
+-- Version 2: With DROP IF EXISTS to avoid conflicts
 -- ============================================
 
 -- Saved Jobs Table (for favorites)
@@ -15,7 +16,11 @@ CREATE TABLE IF NOT EXISTS saved_jobs (
 -- Enable RLS
 ALTER TABLE saved_jobs ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for saved_jobs
+-- RLS Policies for saved_jobs (drop first to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own saved jobs" ON saved_jobs;
+DROP POLICY IF EXISTS "Users can save jobs" ON saved_jobs;
+DROP POLICY IF EXISTS "Users can unsave jobs" ON saved_jobs;
+
 CREATE POLICY "Users can view their own saved jobs"
     ON saved_jobs FOR SELECT
     USING (auth.uid() = user_id);
@@ -74,7 +79,14 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('cvs', 'cvs', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Storage policies for company-logos
+-- Storage policies (drop first)
+DROP POLICY IF EXISTS "Company logos are publicly accessible" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload company logos" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own company logos" ON storage.objects;
+DROP POLICY IF EXISTS "CVs are publicly accessible" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload CVs" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own CVs" ON storage.objects;
+
 CREATE POLICY "Company logos are publicly accessible"
     ON storage.objects FOR SELECT
     USING (bucket_id = 'company-logos');
@@ -87,7 +99,6 @@ CREATE POLICY "Users can update their own company logos"
     ON storage.objects FOR UPDATE
     USING (bucket_id = 'company-logos' AND auth.uid()::text = (storage.foldername(name))[1]);
 
--- Storage policies for CVs
 CREATE POLICY "CVs are publicly accessible"
     ON storage.objects FOR SELECT
     USING (bucket_id = 'cvs');
@@ -101,10 +112,13 @@ CREATE POLICY "Users can update their own CVs"
     USING (bucket_id = 'cvs' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 -- ============================================
--- Additional RLS for jobs table (for companies)
+-- RLS for jobs table (drop existing first)
 -- ============================================
 
--- Allow company members to insert jobs
+DROP POLICY IF EXISTS "Company members can insert jobs" ON jobs;
+DROP POLICY IF EXISTS "Company members can update jobs" ON jobs;
+DROP POLICY IF EXISTS "Company members can delete jobs" ON jobs;
+
 CREATE POLICY "Company members can insert jobs"
     ON jobs FOR INSERT
     WITH CHECK (
@@ -115,7 +129,6 @@ CREATE POLICY "Company members can insert jobs"
         )
     );
 
--- Allow company members to update their company's jobs
 CREATE POLICY "Company members can update jobs"
     ON jobs FOR UPDATE
     USING (
@@ -126,7 +139,6 @@ CREATE POLICY "Company members can update jobs"
         )
     );
 
--- Allow company members to delete their company's jobs
 CREATE POLICY "Company members can delete jobs"
     ON jobs FOR DELETE
     USING (
@@ -141,10 +153,11 @@ CREATE POLICY "Company members can delete jobs"
 -- RLS for company_members
 -- ============================================
 
--- Enable RLS
 ALTER TABLE company_members ENABLE ROW LEVEL SECURITY;
 
--- Users can view members of companies they belong to
+DROP POLICY IF EXISTS "View company members" ON company_members;
+DROP POLICY IF EXISTS "Company admins can add members" ON company_members;
+
 CREATE POLICY "View company members"
     ON company_members FOR SELECT
     USING (
@@ -156,7 +169,6 @@ CREATE POLICY "View company members"
         )
     );
 
--- Company admins can add members
 CREATE POLICY "Company admins can add members"
     ON company_members FOR INSERT
     WITH CHECK (
@@ -173,12 +185,13 @@ CREATE POLICY "Company admins can add members"
 -- RLS for companies
 -- ============================================
 
--- Allow authenticated users to create companies
+DROP POLICY IF EXISTS "Authenticated users can create companies" ON companies;
+DROP POLICY IF EXISTS "Company admins can update company" ON companies;
+
 CREATE POLICY "Authenticated users can create companies"
     ON companies FOR INSERT
     WITH CHECK (auth.uid() = owner_id);
 
--- Allow company owners/admins to update their company
 CREATE POLICY "Company admins can update company"
     ON companies FOR UPDATE
     USING (
@@ -195,20 +208,21 @@ CREATE POLICY "Company admins can update company"
 -- RLS for applications
 -- ============================================
 
--- Enable RLS (if not already)
 ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 
--- Candidates can view their own applications
+DROP POLICY IF EXISTS "Candidates can view own applications" ON applications;
+DROP POLICY IF EXISTS "Candidates can create applications" ON applications;
+DROP POLICY IF EXISTS "Companies can view applications for their jobs" ON applications;
+DROP POLICY IF EXISTS "Companies can update application status" ON applications;
+
 CREATE POLICY "Candidates can view own applications"
     ON applications FOR SELECT
     USING (candidate_id = auth.uid());
 
--- Candidates can create applications
 CREATE POLICY "Candidates can create applications"
     ON applications FOR INSERT
     WITH CHECK (candidate_id = auth.uid());
 
--- Company members can view applications for their jobs
 CREATE POLICY "Companies can view applications for their jobs"
     ON applications FOR SELECT
     USING (
@@ -220,7 +234,6 @@ CREATE POLICY "Companies can view applications for their jobs"
         )
     );
 
--- Company members can update application status
 CREATE POLICY "Companies can update application status"
     ON applications FOR UPDATE
     USING (
@@ -233,10 +246,9 @@ CREATE POLICY "Companies can update application status"
     );
 
 -- ============================================
--- Sample Data for Testing (Optional)
+-- Job Categories (upsert)
 -- ============================================
 
--- Insert job categories if not exists
 INSERT INTO job_categories (name, slug, icon, is_active) VALUES
     ('Technologie & IT', 'technologie-it', 'laptop', true),
     ('Marketing & Communication', 'marketing-communication', 'megaphone', true),
@@ -255,41 +267,29 @@ INSERT INTO job_categories (name, slug, icon, is_active) VALUES
     ('Autre', 'autre', 'folder', true)
 ON CONFLICT (slug) DO NOTHING;
 
--- Insert cities if not already
-INSERT INTO cities (name, slug, country_id, region, is_active) 
-SELECT 'Bamako', 'bamako', c.id, 'District de Bamako', true FROM countries c WHERE c.code = 'ML'
-ON CONFLICT (slug) DO NOTHING;
+-- ============================================
+-- Cities (only if not exist)
+-- ============================================
 
-INSERT INTO cities (name, slug, country_id, region, is_active) 
-SELECT 'Sikasso', 'sikasso', c.id, 'Sikasso', true FROM countries c WHERE c.code = 'ML'
-ON CONFLICT (slug) DO NOTHING;
+DO $$
+DECLARE
+    mali_id UUID;
+BEGIN
+    SELECT id INTO mali_id FROM countries WHERE code = 'ML';
+    
+    IF mali_id IS NOT NULL THEN
+        INSERT INTO cities (name, slug, country_id, region, is_active) VALUES
+            ('Bamako', 'bamako', mali_id, 'District de Bamako', true),
+            ('Sikasso', 'sikasso', mali_id, 'Sikasso', true),
+            ('Mopti', 'mopti', mali_id, 'Mopti', true),
+            ('Ségou', 'segou', mali_id, 'Ségou', true),
+            ('Kayes', 'kayes', mali_id, 'Kayes', true),
+            ('Koutiala', 'koutiala', mali_id, 'Sikasso', true),
+            ('Gao', 'gao', mali_id, 'Gao', true),
+            ('Kati', 'kati', mali_id, 'Koulikoro', true),
+            ('Tombouctou', 'tombouctou', mali_id, 'Tombouctou', true)
+        ON CONFLICT (slug) DO NOTHING;
+    END IF;
+END $$;
 
-INSERT INTO cities (name, slug, country_id, region, is_active) 
-SELECT 'Mopti', 'mopti', c.id, 'Mopti', true FROM countries c WHERE c.code = 'ML'
-ON CONFLICT (slug) DO NOTHING;
-
-INSERT INTO cities (name, slug, country_id, region, is_active) 
-SELECT 'Ségou', 'segou', c.id, 'Ségou', true FROM countries c WHERE c.code = 'ML'
-ON CONFLICT (slug) DO NOTHING;
-
-INSERT INTO cities (name, slug, country_id, region, is_active) 
-SELECT 'Kayes', 'kayes', c.id, 'Kayes', true FROM countries c WHERE c.code = 'ML'
-ON CONFLICT (slug) DO NOTHING;
-
-INSERT INTO cities (name, slug, country_id, region, is_active) 
-SELECT 'Koutiala', 'koutiala', c.id, 'Sikasso', true FROM countries c WHERE c.code = 'ML'
-ON CONFLICT (slug) DO NOTHING;
-
-INSERT INTO cities (name, slug, country_id, region, is_active) 
-SELECT 'Gao', 'gao', c.id, 'Gao', true FROM countries c WHERE c.code = 'ML'
-ON CONFLICT (slug) DO NOTHING;
-
-INSERT INTO cities (name, slug, country_id, region, is_active) 
-SELECT 'Kati', 'kati', c.id, 'Koulikoro', true FROM countries c WHERE c.code = 'ML'
-ON CONFLICT (slug) DO NOTHING;
-
-INSERT INTO cities (name, slug, country_id, region, is_active) 
-SELECT 'Tombouctou', 'tombouctou', c.id, 'Tombouctou', true FROM countries c WHERE c.code = 'ML'
-ON CONFLICT (slug) DO NOTHING;
-
-SELECT 'MVP_P0_SETUP.sql executed successfully' as result;
+SELECT 'MVP_P0_SETUP.sql v2 executed successfully!' as result;
