@@ -17,138 +17,6 @@ import {
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, JOB_CATEGORIES, CITIES_MALI } from '../lib/utils';
 
-// Mock jobs data (will be replaced with Supabase data)
-const MOCK_JOBS = [
-  {
-    id: '1',
-    title: 'Développeur Full Stack Senior',
-    company: { name: 'Orange Mali', logo_url: null, is_verified: true },
-    city: { name: 'Bamako' },
-    contract_type: 'cdi',
-    experience_level: 'senior',
-    salary_min: 600000,
-    salary_max: 900000,
-    is_remote: false,
-    is_urgent: true,
-    is_featured: true,
-    skills_required: ['React', 'Node.js', 'PostgreSQL'],
-    description: 'Nous recherchons un développeur Full Stack expérimenté pour rejoindre notre équipe technique...',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    title: 'Responsable Marketing Digital',
-    company: { name: 'Moov Africa', logo_url: null, is_verified: true },
-    city: { name: 'Bamako' },
-    contract_type: 'cdi',
-    experience_level: 'intermediaire',
-    salary_min: 500000,
-    salary_max: 750000,
-    is_remote: true,
-    is_urgent: false,
-    is_featured: false,
-    skills_required: ['SEO', 'Google Ads', 'Social Media'],
-    description: 'Pilotez notre stratégie marketing digital et développez notre présence en ligne...',
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: '3',
-    title: 'Comptable Senior',
-    company: { name: 'Bank of Africa', logo_url: null, is_verified: true },
-    city: { name: 'Bamako' },
-    contract_type: 'cdi',
-    experience_level: 'senior',
-    salary_min: 450000,
-    salary_max: 650000,
-    is_remote: false,
-    is_urgent: false,
-    is_featured: false,
-    skills_required: ['SYSCOHADA', 'Excel', 'SAP'],
-    description: 'Gérez la comptabilité générale et analytique de notre établissement...',
-    created_at: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
-    id: '4',
-    title: 'Ingénieur Agronome',
-    company: { name: 'CMDT', logo_url: null, is_verified: false },
-    city: { name: 'Sikasso' },
-    contract_type: 'cdd',
-    experience_level: 'intermediaire',
-    salary_min: 400000,
-    salary_max: 550000,
-    is_remote: false,
-    is_urgent: true,
-    is_featured: false,
-    skills_required: ['Agronomie', 'Gestion de projet', 'Terrain'],
-    description: 'Accompagnez nos producteurs de coton dans l\'amélioration de leurs pratiques agricoles...',
-    created_at: new Date(Date.now() - 259200000).toISOString(),
-  },
-  {
-    id: '5',
-    title: 'Chef de Projet IT',
-    company: { name: 'Afribone', logo_url: null, is_verified: true },
-    city: { name: 'Bamako' },
-    contract_type: 'cdi',
-    experience_level: 'senior',
-    salary_min: 700000,
-    salary_max: 1000000,
-    is_remote: true,
-    is_urgent: false,
-    is_featured: true,
-    skills_required: ['Scrum', 'JIRA', 'Management'],
-    description: 'Pilotez nos projets de transformation digitale et gérez une équipe de 5 développeurs...',
-    created_at: new Date(Date.now() - 345600000).toISOString(),
-  },
-  {
-    id: '6',
-    title: 'Commercial Terrain B2B',
-    company: { name: 'Société Malienne de Boissons', logo_url: null, is_verified: false },
-    city: { name: 'Bamako' },
-    contract_type: 'cdi',
-    experience_level: 'junior',
-    salary_min: 250000,
-    salary_max: 400000,
-    is_remote: false,
-    is_urgent: false,
-    is_featured: false,
-    skills_required: ['Vente', 'Négociation', 'Permis B'],
-    description: 'Développez notre portefeuille clients dans la région de Bamako...',
-    created_at: new Date(Date.now() - 432000000).toISOString(),
-  },
-  {
-    id: '7',
-    title: 'Infirmier(e) Diplômé(e) d\'État',
-    company: { name: 'Clinique Pasteur', logo_url: null, is_verified: true },
-    city: { name: 'Bamako' },
-    contract_type: 'cdi',
-    experience_level: 'junior',
-    salary_min: 200000,
-    salary_max: 350000,
-    is_remote: false,
-    is_urgent: true,
-    is_featured: false,
-    skills_required: ['Soins infirmiers', 'Urgences', 'IDE'],
-    description: 'Rejoignez notre équipe soignante dans un établissement moderne et équipé...',
-    created_at: new Date(Date.now() - 518400000).toISOString(),
-  },
-  {
-    id: '8',
-    title: 'Professeur de Mathématiques',
-    company: { name: 'Lycée Français Liberté', logo_url: null, is_verified: true },
-    city: { name: 'Bamako' },
-    contract_type: 'cdd',
-    experience_level: 'intermediaire',
-    salary_min: 350000,
-    salary_max: 500000,
-    is_remote: false,
-    is_urgent: false,
-    is_featured: false,
-    skills_required: ['Mathématiques', 'Pédagogie', 'Bac+5'],
-    description: 'Enseignez les mathématiques au niveau lycée dans un environnement international...',
-    created_at: new Date(Date.now() - 604800000).toISOString(),
-  },
-];
-
 // Job Card Component
 const JobCard = ({ job, onSave, isSaved }) => {
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -446,8 +314,8 @@ const FiltersSidebar = ({ filters, onChange, cities, categories, onReset }) => {
 // Main Jobs Page
 const JobsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [jobs, setJobs] = useState(MOCK_JOBS);
-  const [loading, setLoading] = useState(false);
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
@@ -464,6 +332,37 @@ const JobsPage = () => {
 
   // Sort state
   const [sortBy, setSortBy] = useState('recent');
+
+  // Fetch jobs from Supabase
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select(`
+            id, title, description, contract_type, experience_level,
+            salary_min, salary_max, is_remote, is_urgent, is_featured,
+            skills_required, created_at,
+            company:companies(name, logo_url, is_verified),
+            city:cities(name)
+          `)
+          .eq('status', 'active')
+          .order('is_featured', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (error) throw error;
+        setJobs(data || []);
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
 
   // Filter jobs
   const filteredJobs = useMemo(() => {

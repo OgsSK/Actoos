@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -7,7 +8,7 @@ import { Badge } from '../components/ui/badge';
 import {
   Search, MapPin, Briefcase, Building2, Users, ChevronRight,
   Star, TrendingUp, Clock, CheckCircle, ArrowRight, Sparkles,
-  Globe, Shield, Zap, Heart
+  Globe, Shield, Zap, Heart, Loader2
 } from 'lucide-react';
 import { JOB_CATEGORIES, CITIES_MALI, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
@@ -176,81 +177,49 @@ const CategoriesSection = () => {
 
 // Recent Jobs Section
 const RecentJobsSection = () => {
-  // Mock data - will be replaced with real data from Supabase
-  const jobs = [
-    {
-      id: '1',
-      title: 'Développeur Full Stack',
-      company: 'Orange Mali',
-      company_logo: null,
-      location: 'Bamako',
-      contract_type: 'cdi',
-      salary_min: 500000,
-      salary_max: 800000,
-      created_at: new Date().toISOString(),
-      urgent: true,
-    },
-    {
-      id: '2',
-      title: 'Responsable Marketing Digital',
-      company: 'Moov Africa',
-      company_logo: null,
-      location: 'Bamako',
-      contract_type: 'cdi',
-      salary_min: 600000,
-      salary_max: 900000,
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      urgent: false,
-    },
-    {
-      id: '3',
-      title: 'Comptable Senior',
-      company: 'Bank of Africa',
-      company_logo: null,
-      location: 'Bamako',
-      contract_type: 'cdi',
-      salary_min: 450000,
-      salary_max: 700000,
-      created_at: new Date(Date.now() - 172800000).toISOString(),
-      urgent: false,
-    },
-    {
-      id: '4',
-      title: 'Ingénieur Agronome',
-      company: 'CMDT',
-      company_logo: null,
-      location: 'Sikasso',
-      contract_type: 'cdd',
-      salary_min: 400000,
-      salary_max: 600000,
-      created_at: new Date(Date.now() - 259200000).toISOString(),
-      urgent: true,
-    },
-    {
-      id: '5',
-      title: 'Chef de Projet IT',
-      company: 'Afribone',
-      company_logo: null,
-      location: 'Bamako',
-      contract_type: 'cdi',
-      salary_min: 700000,
-      salary_max: 1000000,
-      created_at: new Date(Date.now() - 345600000).toISOString(),
-      urgent: false,
-    },
-    {
-      id: '6',
-      title: 'Commercial Terrain',
-      company: 'Société Malienne de Boissons',
-      company_logo: null,
-      location: 'Bamako',
-      contract_type: 'cdi',
-      salary_min: 300000,
-      salary_max: 500000,
-      created_at: new Date(Date.now() - 432000000).toISOString(),
-      urgent: false,
-    },
-  ];
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select(`
+            id, title, contract_type, salary_min, salary_max, created_at, is_urgent,
+            company:companies(name, logo_url),
+            city:cities(name)
+          `)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(6);
+
+        if (error) throw error;
+        
+        // Transform data to match expected format
+        const formattedJobs = (data || []).map(job => ({
+          id: job.id,
+          title: job.title,
+          company: job.company?.name || 'Entreprise',
+          company_logo: job.company?.logo_url,
+          location: job.city?.name || 'Mali',
+          contract_type: job.contract_type,
+          salary_min: job.salary_min,
+          salary_max: job.salary_max,
+          created_at: job.created_at,
+          urgent: job.is_urgent
+        }));
+        
+        setJobs(formattedJobs);
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
 
   return (
     <section className="py-20 bg-slate-50">
@@ -258,10 +227,10 @@ const RecentJobsSection = () => {
         <div className="flex items-center justify-between mb-12">
           <div>
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-display">
-              Offres récentes
+              Offres recentes
             </h2>
             <p className="text-slate-600 mt-2">
-              Les dernières opportunités publiées
+              Les dernieres opportunites publiees
             </p>
           </div>
           <Link to="/emplois">
@@ -272,11 +241,26 @@ const RecentJobsSection = () => {
           </Link>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {jobs.map((job) => (
-            <JobCard key={job.id} job={job} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
+        ) : jobs.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+            <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Aucune offre disponible</h3>
+            <p className="text-slate-600 mb-4">Les premieres offres arrivent bientot !</p>
+            <Link to="/inscription?type=entreprise">
+              <Button>Publiez la premiere offre</Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {jobs.map((job) => (
+              <JobCard key={job.id} job={job} />
+            ))}
+          </div>
+        )}
 
         <div className="text-center mt-10 sm:hidden">
           <Link to="/emplois">

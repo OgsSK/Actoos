@@ -18,6 +18,9 @@ import CGUPage from './pages/CGUPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import CookiesPage from './pages/CookiesPage';
 import ContactPage from './pages/ContactPage';
+import PricingPage from './pages/PricingPage';
+import CompaniesPage from './pages/CompaniesPage';
+import BlogPage from './pages/BlogPage';
 import './index.css';
 
 // Protected Route wrapper
@@ -38,34 +41,6 @@ const ProtectedRoute = ({ children }) => {
   
   return children;
 };
-
-// Placeholder pages
-const CompaniesPage = () => (
-  <div className="pt-20 min-h-screen bg-slate-50">
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold">Entreprises</h1>
-      <p className="text-slate-600 mt-2">Page en cours de développement...</p>
-    </div>
-  </div>
-);
-
-const PricingPage = () => (
-  <div className="pt-20 min-h-screen bg-slate-50">
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold">Tarifs</h1>
-      <p className="text-slate-600 mt-2">Page en cours de développement...</p>
-    </div>
-  </div>
-);
-
-const BlogPage = () => (
-  <div className="pt-20 min-h-screen bg-slate-50">
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold">Blog & Conseils</h1>
-      <p className="text-slate-600 mt-2">Page en cours de développement...</p>
-    </div>
-  </div>
-);
 
 const AboutPage = () => (
   <div className="pt-20 min-h-screen bg-slate-50">
