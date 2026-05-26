@@ -301,7 +301,7 @@ const CompanyDashboard = () => {
   };
 
   const handleDeleteJob = async (job) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer "${job.title}" ?`)) return;
+    if (!window.confirm(`Etes-vous sur de vouloir supprimer "${job.title}" ?`)) return;
     
     try {
       await supabase
