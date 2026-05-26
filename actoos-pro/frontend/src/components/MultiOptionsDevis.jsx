@@ -17,9 +17,10 @@ import { Switch } from './ui/switch';
 import { Separator } from './ui/separator';
 import {
   Plus, Trash2, Copy, Star, Check, Package, Sparkles, Crown, 
-  ChevronUp, ChevronDown, GripVertical, Calculator
+  ChevronUp, ChevronDown, GripVertical, Calculator, BookOpen
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import PricebookSelector from './PricebookSelector';
 
 // Default option templates
 const DEFAULT_OPTIONS = [
@@ -63,10 +64,16 @@ const OptionEditor = ({
   onMoveDown,
   canMoveUp,
   canMoveDown,
-  formatAmount
+  formatAmount,
+  onOpenPricebook
 }) => {
   const addLigne = () => {
     const newLignes = [...(option.lignes || []), { description: '', quantite: 1, prix_unitaire: 0, tva: 20 }];
+    onUpdate({ ...option, lignes: newLignes });
+  };
+
+  const addLignesFromPricebook = (lignes) => {
+    const newLignes = [...(option.lignes || []), ...lignes];
     onUpdate({ ...option, lignes: newLignes });
   };
 
@@ -272,15 +279,25 @@ const OptionEditor = ({
           </TableBody>
         </Table>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={addLigne}
-          className="mt-3"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Ajouter une ligne
-        </Button>
+        <div className="flex gap-2 mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={addLigne}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Ajouter une ligne
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenPricebook(addLignesFromPricebook)}
+            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Depuis le catalogue
+          </Button>
+        </div>
 
         {/* Totals */}
         <div className="mt-4 pt-4 border-t space-y-2">
@@ -399,6 +416,18 @@ const MultiOptionsDevis = ({
   mode = 'edit' // 'edit' | 'preview' | 'comparison'
 }) => {
   const [activeTab, setActiveTab] = useState(options?.[0]?.id || 'basic');
+  const [pricebookModal, setPricebookModal] = useState({ open: false, callback: null });
+
+  const handleOpenPricebook = (callback) => {
+    setPricebookModal({ open: true, callback });
+  };
+
+  const handlePricebookSelect = (lignes) => {
+    if (pricebookModal.callback) {
+      pricebookModal.callback(lignes);
+    }
+    setPricebookModal({ open: false, callback: null });
+  };
 
   const handleUpdateOption = (index, updatedOption) => {
     const newOptions = [...options];
@@ -533,6 +562,7 @@ const MultiOptionsDevis = ({
               canMoveUp={index > 0}
               canMoveDown={index < options.length - 1}
               formatAmount={formatAmount}
+              onOpenPricebook={handleOpenPricebook}
             />
           </TabsContent>
         ))}
@@ -545,6 +575,15 @@ const MultiOptionsDevis = ({
           <OptionsComparison options={options} formatAmount={formatAmount} />
         </div>
       )}
+
+      {/* Pricebook Selector Modal */}
+      <PricebookSelector
+        open={pricebookModal.open}
+        onClose={() => setPricebookModal({ open: false, callback: null })}
+        onSelect={handlePricebookSelect}
+        multiSelect={true}
+        title="Ajouter depuis le catalogue"
+      />
     </div>
   );
 };

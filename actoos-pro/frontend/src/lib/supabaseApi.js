@@ -1129,6 +1129,107 @@ export const statsApi = {
   }
 };
 
+// ==================== PRICEBOOK ====================
+export const pricebookApi = {
+  list: async (entrepriseId) => {
+    const { data, error } = await supabase
+      .from('pricebook_items')
+      .select('*')
+      .eq('entreprise_id', entrepriseId)
+      .order('nom');
+    if (error) throw error;
+    return data || [];
+  },
+
+  get: async (id) => {
+    const { data, error } = await supabase
+      .from('pricebook_items')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  create: async (item) => {
+    const { data, error } = await supabase
+      .from('pricebook_items')
+      .insert({
+        ...item,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  update: async (id, updates) => {
+    const { data, error } = await supabase
+      .from('pricebook_items')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  delete: async (id) => {
+    const { error } = await supabase
+      .from('pricebook_items')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  }
+};
+
+// ==================== PRICEBOOK CATEGORIES ====================
+export const pricebookCategoriesApi = {
+  list: async (entrepriseId) => {
+    const { data, error } = await supabase
+      .from('pricebook_categories')
+      .select('*')
+      .eq('entreprise_id', entrepriseId)
+      .order('nom');
+    if (error) throw error;
+    return data || [];
+  },
+
+  create: async (category) => {
+    const { data, error } = await supabase
+      .from('pricebook_categories')
+      .insert({
+        ...category,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  update: async (id, updates) => {
+    const { data, error } = await supabase
+      .from('pricebook_categories')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  delete: async (id) => {
+    const { error } = await supabase
+      .from('pricebook_categories')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  }
+};
+
 // Export all APIs
 export default {
   interventions: interventionsApi,
@@ -1146,5 +1247,7 @@ export default {
   offlineSync: offlineSyncApi,
   edge: edgeFunctionsApi,
   analytics: analyticsApi,
-  stats: statsApi
+  stats: statsApi,
+  pricebook: pricebookApi,
+  pricebookCategories: pricebookCategoriesApi
 };

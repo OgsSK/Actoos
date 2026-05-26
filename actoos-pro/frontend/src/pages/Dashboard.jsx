@@ -16,7 +16,7 @@ import { formatDate, getStatusLabel, formatRelative } from '../lib/utils';
 import {
   LayoutDashboard, Users, Calendar, FileText, Receipt, Settings, LogOut, Menu, X,
   Search, Bell, Plus, TrendingUp, AlertTriangle, Clock, CheckCircle, ChevronRight,
-  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code, Download, Crown, MessageCircle, Upload, KanbanSquare, MapPin
+  Building2, UserCircle, ClipboardList, Wrench, CalendarDays, BarChart3, PieChart, FileSpreadsheet, Code, Download, Crown, MessageCircle, Upload, KanbanSquare, MapPin, BookOpen
 } from 'lucide-react';
 import PlanUsageWidget from '../components/PlanUsageWidget';
 import AdminInstallPrompt from '../components/AdminInstallPrompt';
@@ -47,6 +47,7 @@ const Sidebar = ({ open, onClose, onShowInstallGuide }) => {
     { icon: Users, label: 'Clients', path: '/dashboard/clients', admin: true },
     { icon: FileText, label: 'Devis', path: '/dashboard/devis', admin: true },
     { icon: Receipt, label: 'Factures', path: '/dashboard/factures', admin: true },
+    { icon: BookOpen, label: 'Catalogue', path: '/dashboard/pricebook', admin: true },
     { icon: ClipboardList, label: 'Techniciens', path: '/dashboard/techniciens', admin: true },
     { icon: PieChart, label: 'Analytics', path: '/dashboard/analytics', admin: true },
     { icon: FileSpreadsheet, label: 'Relevés', path: '/dashboard/statements', admin: true },

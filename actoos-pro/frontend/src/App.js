@@ -45,6 +45,7 @@ import Statements from "./pages/Statements";
 import APISettings from "./pages/APISettings";
 import DispatchBoard from "./pages/DispatchBoard";
 import GPSMap from "./pages/GPSMap";
+import Pricebook from "./pages/Pricebook";
 
 // Technician App
 import { TechnicianApp } from "./pages/TechnicianApp";
@@ -296,6 +297,9 @@ function App() {
               
               {/* Data Import */}
               <Route path="import" element={<DataImport />} />
+              
+              {/* Pricebook / Catalogue */}
+              <Route path="pricebook" element={<Pricebook />} />
               
               {/* Settings */}
               <Route path="settings" element={<SettingsPage />} />
