@@ -198,9 +198,6 @@ async def stripe_webhook(request: Request):
                 payment_transactions[session.id]["payment_status"] = "paid"
                 payment_transactions[session.id]["status"] = "completed"
             
-            # La mise à jour Supabase est commentée pour l'instant
-            # (à réactiver après résolution du conflit httpx/supabase)
-            
         elif event.type == "checkout.session.expired":
             session = event.data.object
             if session.id in payment_transactions:
@@ -291,22 +288,19 @@ async def ai_agent(req: AIAgentRequest):
                     "X-Title": "Actoos Jobs AI",
                 },
                 json={
-                    "model": "google/gemini-2.0-flash-lite-preview-02-05:free",
+                    "model": "google/gemini-2.0-flash-001",
                     "messages": messages,
                     "temperature": 0.7,
                     "max_tokens": 800,
                 }
             )
             data = response.json()
+            if "choices" not in data:
+                raise Exception(f"OpenRouter response error: {data}")
             improved_text = data["choices"][0]["message"]["content"].strip()
             return {"success": True, "result": improved_text}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
-
-# La résiliation d'abonnement est temporairement désactivée (conflit httpx/supabase)
-# @app.post("/api/subscription/cancel")
-# async def cancel_subscription(req: CancelSubscriptionRequest):
-#     ...
 
 if __name__ == "__main__":
     import uvicorn
