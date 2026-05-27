@@ -625,7 +625,7 @@ const AdminDashboard = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center">
+            <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center">
               <Shield className="w-7 h-7 text-white" />
             </div>
             <div>

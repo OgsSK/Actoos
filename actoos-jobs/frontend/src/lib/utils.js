@@ -31,9 +31,9 @@ export function formatRelative(date) {
   return formatDate(date);
 }
 
-// Format salary
-export function formatSalary(min, max, currency = 'EUR') {
-  const formatter = new Intl.NumberFormat('fr-BE', {
+// Format salary in FCFA (default)
+export function formatSalary(min, max, currency = 'XOF') {
+  const formatter = new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: currency,
     maximumFractionDigits: 0,
@@ -65,7 +65,7 @@ export function slugify(text) {
     .replace(/(^-|-$)+/g, '');
 }
 
-// Contract types
+// Contract types (fixed enum)
 export const CONTRACT_TYPES = {
   cdi: { label: 'CDI', color: 'bg-green-100 text-green-700' },
   cdd: { label: 'CDD', color: 'bg-blue-100 text-blue-700' },
@@ -75,43 +75,11 @@ export const CONTRACT_TYPES = {
   interim: { label: 'Intérim', color: 'bg-yellow-100 text-yellow-700' },
 };
 
-// Experience levels
+// Experience levels (fixed enum)
 export const EXPERIENCE_LEVELS = {
   junior: { label: 'Junior (0-2 ans)', value: 'junior' },
   intermediaire: { label: 'Intermédiaire (2-5 ans)', value: 'intermediaire' },
   senior: { label: 'Senior (5-10 ans)', value: 'senior' },
   expert: { label: 'Expert (10+ ans)', value: 'expert' },
 };
-
-// Job categories
-export const JOB_CATEGORIES = [
-  { id: 'tech', label: 'Technologie & IT', icon: '💻' },
-  { id: 'marketing', label: 'Marketing & Communication', icon: '📢' },
-  { id: 'finance', label: 'Finance & Comptabilité', icon: '💰' },
-  { id: 'rh', label: 'Ressources Humaines', icon: '👥' },
-  { id: 'commerce', label: 'Commerce & Vente', icon: '🛒' },
-  { id: 'sante', label: 'Santé & Médical', icon: '🏥' },
-  { id: 'education', label: 'Éducation & Formation', icon: '📚' },
-  { id: 'btp', label: 'BTP & Construction', icon: '🏗️' },
-  { id: 'transport', label: 'Transport & Logistique', icon: '🚚' },
-  { id: 'agriculture', label: 'Agriculture & Environnement', icon: '🌱' },
-  { id: 'tourisme', label: 'Tourisme & Hôtellerie', icon: '✈️' },
-  { id: 'juridique', label: 'Juridique & Droit', icon: '⚖️' },
-];
-
-// Cities (Belgium/Luxembourg)
-export const CITIES = [
-  'Bruxelles',
-  'Anvers',
-  'Gand',
-  'Liège',
-  'Charleroi',
-  'Namur',
-  'Bruges',
-  'Leuven',
-  'Mons',
-  'Luxembourg',
-];
-
-// Alias for backward compatibility
-export const CITIES_MALI = CITIES;
+// Les listes de catégories et villes sont désormais chargées dynamiquement depuis la base de données

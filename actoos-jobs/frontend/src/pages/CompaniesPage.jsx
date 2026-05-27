@@ -14,18 +14,24 @@ const CompaniesPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('');
+  const [industries, setIndustries] = useState([]);
 
-  const industries = [
-    'Technologie',
-    'Finance & Banque',
-    'Telecommunications',
-    'Commerce & Distribution',
-    'Industrie & Manufacturing',
-    'BTP & Construction',
-    'Sante & Pharmaceutique',
-    'Education & Formation',
-    'ONG & Humanitaire',
-  ];
+  // Récupération dynamique des secteurs d'activité depuis les entreprises existantes
+  useEffect(() => {
+    const fetchIndustries = async () => {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('industry')
+        .eq('is_active', true)
+        .not('industry', 'is', null);
+      
+      if (!error && data) {
+        const unique = [...new Set(data.map(c => c.industry).filter(Boolean))].sort();
+        setIndustries(unique);
+      }
+    };
+    fetchIndustries();
+  }, []);
 
   useEffect(() => {
     fetchCompanies();
@@ -70,7 +76,7 @@ const CompaniesPage = () => {
             Entreprises qui recrutent
           </h1>
           <p className="text-slate-600 mb-8 max-w-2xl">
-            Decouvrez les entreprises qui recrutent et consultez leurs offres d'emploi.
+            Découvrez les entreprises qui recrutent et consultez leurs offres d'emploi.
           </p>
 
           {/* Search & Filters */}
@@ -108,10 +114,10 @@ const CompaniesPage = () => {
           <div className="text-center py-16">
             <Building2 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-slate-900 mb-2">
-              Aucune entreprise trouvee
+              Aucune entreprise trouvée
             </h2>
             <p className="text-slate-600">
-              Essayez de modifier vos criteres de recherche.
+              Essayez de modifier vos critères de recherche.
             </p>
           </div>
         ) : (
@@ -187,15 +193,15 @@ const CompaniesPage = () => {
         {/* CTA for companies */}
         <div className="mt-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 sm:p-12 text-white text-center">
           <h2 className="text-2xl font-bold mb-4">
-            Vous etes une entreprise ?
+            Vous êtes une entreprise ?
           </h2>
           <p className="text-blue-100 mb-6 max-w-xl mx-auto">
-            Creez votre profil entreprise et publiez vos offres d'emploi pour 
+            Créez votre profil entreprise et publiez vos offres d'emploi pour 
             attirer les meilleurs talents.
           </p>
           <Link to="/inscription?type=entreprise">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">
-              Creer mon profil entreprise
+              Créer mon profil entreprise
             </Button>
           </Link>
         </div>

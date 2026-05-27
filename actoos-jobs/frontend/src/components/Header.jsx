@@ -65,7 +65,7 @@ const Header = ({ user, onLogout }) => {
           <Link to="/" className="flex items-center gap-2">
             <div className={cn(
               'w-10 h-10 rounded-xl flex items-center justify-center transition-colors',
-              scrolled || !isHomepage ? 'bg-blue-600' : 'bg-white/20'
+              scrolled || !isHomepage ? 'bg-blue-600 text-white' : 'bg-white/20'
             )}>
               <Briefcase className={cn(
                 'w-6 h-6',
@@ -161,7 +161,7 @@ const Header = ({ user, onLogout }) => {
                 <Link to="/inscription">
                   <Button className={cn(
                     scrolled || !isHomepage 
-                      ? 'bg-blue-600 hover:bg-blue-700' 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 text-white' 
                       : 'bg-white text-blue-900 hover:bg-blue-50'
                   )}>
                     Inscription

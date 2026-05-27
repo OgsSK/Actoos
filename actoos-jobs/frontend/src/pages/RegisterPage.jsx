@@ -114,7 +114,7 @@ const RegisterPage = () => {
           {/* Logo */}
           <div className="text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-2">
-              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center">
                 <Briefcase className="w-7 h-7 text-white" />
               </div>
               <span className="text-2xl font-bold text-slate-900">Actoos Jobs</span>
@@ -192,7 +192,7 @@ const RegisterPage = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center">
               <Briefcase className="w-7 h-7 text-white" />
             </div>
             <span className="text-2xl font-bold text-slate-900">Actoos Jobs</span>
@@ -358,7 +358,7 @@ const RegisterPage = () => {
                 type="submit" 
                 className={cn(
                   'w-full h-12 text-base',
-                  role === 'candidate' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'
+                  role === 'candidate' ? 'bg-blue-600 text-white hover:bg-blue-700 text-white' : 'bg-green-600 hover:bg-green-700'
                 )}
                 disabled={loading}
                 data-testid="register-submit"

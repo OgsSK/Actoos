@@ -1,437 +1,281 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { apiFetch } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { toast } from 'sonner';
-import { 
-  Check, X, Zap, Building2, Crown, Rocket, Star, Clock, 
-  TrendingUp, Loader2, ArrowRight, Sparkles 
+import {
+  Loader2, Check, Sparkles, Zap, Crown, Building2, ArrowRight, AlertCircle, X
 } from 'lucide-react';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+import { toast } from 'sonner';
 
 const PricingPage = () => {
   const { user } = useAuth();
-  const [loadingPlan, setLoadingPlan] = useState(null);
+  const [pricing, setPricing] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(null);
 
+  useEffect(() => {
+    const loadPricing = async () => {
+      try {
+        const data = await apiFetch('/api/pricing');
+        setPricing(data);
+      } catch (err) {
+        setError(err.message);
+        toast.error('Impossible de charger les tarifs');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPricing();
+  }, []);
+
+  const handleCheckout = async (packageId) => {
+    if (!user) {
+      toast.error('Vous devez être connecté pour souscrire');
+      return;
+    }
+    setCheckoutLoading(packageId);
+    try {
+      const result = await apiFetch('/api/checkout/session', {
+        method: 'POST',
+        body: JSON.stringify({
+          package_id: packageId,
+          origin_url: window.location.origin,
+          user_email: user.email,
+          user_id: user.id,              // <-- ajouté
+        }),
+      });
+      window.location.href = result.url;
+    } catch (err) {
+      toast.error(err.message || 'Erreur lors de la création de la session de paiement');
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
+
+  const formatPrice = (amount) => {
+    return new Intl.NumberFormat('fr-FR').format(amount);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950 pt-20">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
+      </div>
+    );
+  }
+
+  if (error || !pricing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950 pt-20">
+        <Card className="bg-white/10 backdrop-blur-xl border-white/20 rounded-3xl p-8 text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <p className="text-white text-lg">Impossible de charger les tarifs pour le moment.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  const { subscriptions, boosts } = pricing;
   const plans = [
-    {
-      id: 'free',
-      name: 'Gratuit',
-      price: '0',
-      period: '',
-      description: 'Pour demarrer et tester la plateforme',
-      icon: Building2,
-      color: 'slate',
-      features: [
-        { text: '3 offres actives', included: true },
-        { text: 'Candidatures illimitees', included: true },
-        { text: 'Profil entreprise basique', included: true },
-        { text: 'Support par email', included: true },
-        { text: 'Offres mises en avant', included: false },
-        { text: 'Statistiques avancees', included: false },
-        { text: 'Export des candidatures', included: false },
-        { text: 'Support prioritaire', included: false },
-      ],
-      cta: 'Commencer gratuitement',
-      ctaLink: '/inscription?type=entreprise',
-      popular: false,
-      stripeId: null,
-    },
     {
       id: 'pro_monthly',
       name: 'Pro',
-      price: '49',
-      period: '/mois',
-      description: 'Pour les PME qui recrutent regulierement',
-      icon: Zap,
-      color: 'blue',
+      monthlyPrice: subscriptions.pro_monthly.amount,
+      annualPrice: subscriptions.pro_annual.amount,
+      monthlyPriceDisplay: formatPrice(subscriptions.pro_monthly.amount),
+      annualPriceDisplay: formatPrice(subscriptions.pro_annual.amount),
+      annualMonthlyEquivalent: Math.round(subscriptions.pro_annual.amount / 12),
       features: [
-        { text: '15 offres actives', included: true },
-        { text: 'Candidatures illimitees', included: true },
-        { text: 'Profil entreprise complet', included: true },
-        { text: '5 offres mises en avant/mois', included: true },
-        { text: 'Statistiques avancees', included: true },
-        { text: 'Export des candidatures', included: true },
-        { text: 'Support prioritaire', included: true },
-        { text: 'Logo sur les offres', included: true },
+        'Jusqu\'à 10 offres actives',
+        'Statistiques de base',
+        'Support par email',
+        'Profil entreprise vérifié',
       ],
-      cta: 'Essai gratuit 14 jours',
-      popular: true,
-      stripeId: 'pro_monthly',
+      icon: Zap,
+      color: 'from-blue-400 to-blue-600',
+      popular: false,
     },
     {
       id: 'business_monthly',
       name: 'Business',
-      price: '149',
-      period: '/mois',
-      description: 'Pour les grandes entreprises et cabinets RH',
-      icon: Crown,
-      color: 'purple',
+      monthlyPrice: subscriptions.business_monthly.amount,
+      annualPrice: subscriptions.business_annual.amount,
+      monthlyPriceDisplay: formatPrice(subscriptions.business_monthly.amount),
+      annualPriceDisplay: formatPrice(subscriptions.business_annual.amount),
+      annualMonthlyEquivalent: Math.round(subscriptions.business_annual.amount / 12),
       features: [
-        { text: 'Offres illimitees', included: true },
-        { text: 'Candidatures illimitees', included: true },
-        { text: 'Profil entreprise premium', included: true },
-        { text: 'Offres toujours en avant', included: true },
-        { text: 'Statistiques et analytics', included: true },
-        { text: 'API et integrations', included: true },
-        { text: 'Account manager dedie', included: true },
-        { text: 'Formation equipe', included: true },
+        'Offres illimitées',
+        'Statistiques avancées',
+        'Support prioritaire',
+        'Profil entreprise premium',
+        'API de recrutement',
+        'Multi-utilisateurs',
       ],
-      cta: 'Contacter les ventes',
-      ctaLink: '/contact?subject=business',
-      popular: false,
-      stripeId: 'business_monthly',
-    },
-  ];
-
-  const boosts = [
-    {
-      id: 'boost_7',
-      name: 'Boost 7 jours',
-      price: '9.99',
-      description: 'Votre offre en haut des resultats pendant 7 jours',
-      icon: Rocket,
-      color: 'green',
-      features: ['Position prioritaire', '3x plus de vues', 'Badge "Boost"'],
-    },
-    {
-      id: 'boost_14',
-      name: 'Boost 14 jours',
-      price: '17.99',
-      description: 'Visibilite maximale pendant 2 semaines',
-      icon: TrendingUp,
-      color: 'blue',
+      icon: Crown,
+      color: 'from-blue-950 to-blue-900',
       popular: true,
-      features: ['Position prioritaire', '5x plus de vues', 'Badge "Boost"', 'Notification aux candidats'],
-    },
-    {
-      id: 'boost_30',
-      name: 'Boost 30 jours',
-      price: '29.99',
-      description: 'Le meilleur rapport qualite/prix',
-      icon: Star,
-      color: 'yellow',
-      features: ['Position prioritaire', '7x plus de vues', 'Badge "Boost"', 'Notification aux candidats', 'Mise en avant homepage'],
-    },
-    {
-      id: 'featured',
-      name: 'A la une',
-      price: '49.99',
-      description: 'Visibilite maximale - Homepage + Recherche',
-      icon: Sparkles,
-      color: 'purple',
-      features: ['Toujours en premiere position', '10x plus de vues', 'Badge "A la une"', 'Notifications illimitees', 'Mise en avant partout', 'Support dedie'],
     },
   ];
 
-  const handleSubscribe = async (planId) => {
-    if (!user) {
-      toast.error('Connectez-vous pour souscrire');
-      window.location.href = '/connexion';
-      return;
-    }
-
-    setLoadingPlan(planId);
-    try {
-      const response = await fetch(`${API_URL}/api/checkout/session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          package_id: planId,
-          origin_url: window.location.origin,
-          user_email: user.email,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('Erreur lors de la creation de la session');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast.error('Erreur lors du paiement. Veuillez reessayer.');
-    } finally {
-      setLoadingPlan(null);
-    }
-  };
-
-  const handleBoost = async (boostId) => {
-    if (!user) {
-      toast.error('Connectez-vous pour booster une offre');
-      window.location.href = '/connexion';
-      return;
-    }
-
-    // TODO: Allow user to select which job to boost
-    toast.info('Selectionnez une offre a booster dans votre dashboard');
-    window.location.href = '/dashboard/entreprise';
-  };
+  const boostItems = Object.entries(boosts).map(([key, value]) => ({
+    id: key,
+    name: value.name,
+    price: value.amount,
+    priceDisplay: formatPrice(value.amount),
+    icon: Sparkles,
+  }));
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20">
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950 pt-20">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <Badge className="bg-blue-100 text-blue-700 border-0 mb-4">Tarifs</Badge>
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">
-            Des tarifs adaptes a vos besoins
-          </h1>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            Que vous soyez une startup ou une grande entreprise, nous avons le plan qu'il vous faut. 
-            Commencez gratuitement et evoluez selon vos besoins.
-          </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+        <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-blue-400/30 rounded-full px-4 py-2 mb-6">
+          <Sparkles className="w-4 h-4 text-blue-400" />
+          <span className="text-white/90 text-sm font-medium">Des tarifs adaptés à vos besoins</span>
         </div>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white font-display mb-6">
+          Plans & Tarifs
+        </h1>
+        <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+          Choisissez la formule qui correspond à votre stratégie de recrutement.
+        </p>
       </div>
 
-      {/* Subscription Plans */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <h2 className="text-2xl font-bold text-slate-900 text-center mb-12">
-          Abonnements recruteur
-        </h2>
-        
-        <div className="grid md:grid-cols-3 gap-8">
-          {plans.map((plan) => {
-            const Icon = plan.icon;
-            const isLoading = loadingPlan === plan.id;
-            
-            return (
-              <Card 
-                key={plan.id}
-                className={`relative border-2 transition-all hover:shadow-lg ${
-                  plan.popular ? 'border-blue-500 shadow-xl scale-105' : 'border-slate-200'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-blue-600 text-white border-0 px-4 py-1">
-                      Le plus populaire
-                    </Badge>
-                  </div>
-                )}
-                <CardContent className="p-8">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-                    plan.color === 'blue' ? 'bg-blue-100' : 
-                    plan.color === 'purple' ? 'bg-purple-100' : 'bg-slate-100'
-                  }`}>
-                    <Icon className={`w-6 h-6 ${
-                      plan.color === 'blue' ? 'text-blue-600' : 
-                      plan.color === 'purple' ? 'text-purple-600' : 'text-slate-600'
-                    }`} />
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">{plan.name}</h3>
-                  <p className="text-slate-600 text-sm mb-4">{plan.description}</p>
-                  
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold text-slate-900">{plan.price}</span>
-                    <span className="text-slate-600"> EUR{plan.period}</span>
-                  </div>
-
-                  {plan.stripeId ? (
-                    <Button 
-                      className={`w-full mb-6 ${plan.popular ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                      variant={plan.popular ? 'default' : 'outline'}
-                      onClick={() => handleSubscribe(plan.stripeId)}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : null}
-                      {plan.cta}
-                    </Button>
-                  ) : plan.ctaLink ? (
-                    <Link to={plan.ctaLink}>
-                      <Button 
-                        className="w-full mb-6"
-                        variant="outline"
-                      >
-                        {plan.cta}
-                      </Button>
-                    </Link>
-                  ) : null}
-
-                  <div className="space-y-3">
-                    {plan.features.map((feature, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        {feature.included ? (
-                          <Check className="w-5 h-5 text-green-500 shrink-0" />
-                        ) : (
-                          <X className="w-5 h-5 text-slate-300 shrink-0" />
-                        )}
-                        <span className={feature.included ? 'text-slate-700' : 'text-slate-400'}>
-                          {feature.text}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Boost Options */}
-      <div className="bg-white border-y border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center mb-12">
-            <Badge className="bg-yellow-100 text-yellow-700 border-0 mb-4">
-              <Rocket className="w-4 h-4 mr-1" />
-              Boosts
-            </Badge>
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">
-              Boostez vos offres d'emploi
-            </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto">
-              Augmentez la visibilite de vos offres et recevez plus de candidatures qualifiees.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {boosts.map((boost) => {
-              const Icon = boost.icon;
-              const isLoading = loadingPlan === boost.id;
-              
-              return (
-                <Card 
-                  key={boost.id}
-                  className={`relative border-2 transition-all hover:shadow-lg ${
-                    boost.popular ? 'border-blue-500' : 'border-slate-200'
-                  }`}
-                >
-                  {boost.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="bg-blue-600 text-white border-0 text-xs">
-                        Populaire
-                      </Badge>
-                    </div>
-                  )}
-                  <CardContent className="p-6">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${
-                      boost.color === 'green' ? 'bg-green-100' :
-                      boost.color === 'blue' ? 'bg-blue-100' :
-                      boost.color === 'yellow' ? 'bg-yellow-100' :
-                      'bg-purple-100'
-                    }`}>
-                      <Icon className={`w-5 h-5 ${
-                        boost.color === 'green' ? 'text-green-600' :
-                        boost.color === 'blue' ? 'text-blue-600' :
-                        boost.color === 'yellow' ? 'text-yellow-600' :
-                        'text-purple-600'
-                      }`} />
-                    </div>
-
-                    <h3 className="font-semibold text-slate-900 mb-1">{boost.name}</h3>
-                    <p className="text-sm text-slate-500 mb-4">{boost.description}</p>
-
-                    <div className="mb-4">
-                      <span className="text-2xl font-bold text-slate-900">{boost.price}</span>
-                      <span className="text-slate-500"> EUR</span>
-                    </div>
-
-                    <ul className="space-y-2 mb-6 text-sm">
-                      {boost.features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-slate-600">
-                          <Check className="w-4 h-4 text-green-500 shrink-0" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Button 
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => handleBoost(boost.id)}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : null}
-                      Booster
-                      <ArrowRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* FAQ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <h2 className="text-2xl font-bold text-slate-900 text-center mb-12">
-          Questions frequentes
-        </h2>
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <div>
-            <h3 className="font-semibold text-slate-900 mb-2">
-              Puis-je changer de plan a tout moment ?
-            </h3>
-            <p className="text-slate-600 text-sm">
-              Oui, vous pouvez upgrader ou downgrader votre plan a tout moment. 
-              Les changements prennent effet immediatement.
-            </p>
-          </div>
-          <div>
-            <h3 className="font-semibold text-slate-900 mb-2">
-              Comment fonctionne l'essai gratuit ?
-            </h3>
-            <p className="text-slate-600 text-sm">
-              L'essai gratuit de 14 jours vous donne acces a toutes les fonctionnalites 
-              du plan Pro sans engagement.
-            </p>
-          </div>
-          <div>
-            <h3 className="font-semibold text-slate-900 mb-2">
-              Quels moyens de paiement acceptez-vous ?
-            </h3>
-            <p className="text-slate-600 text-sm">
-              Nous acceptons les cartes bancaires (Visa, Mastercard, American Express) 
-              via notre partenaire Stripe securise.
-            </p>
-          </div>
-          <div>
-            <h3 className="font-semibold text-slate-900 mb-2">
-              Les boosts sont-ils cumulables ?
-            </h3>
-            <p className="text-slate-600 text-sm">
-              Oui, vous pouvez combiner plusieurs boosts sur une meme offre pour 
-              maximiser sa visibilite.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA */}
+      {/* Abonnements */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="bg-blue-600 rounded-3xl p-12 text-center text-white">
-          <h2 className="text-3xl font-bold mb-4">
-            Pret a recruter les meilleurs talents ?
-          </h2>
-          <p className="text-blue-100 mb-8 max-w-xl mx-auto">
-            Rejoignez des centaines d'entreprises qui font confiance a Actoos Jobs 
-            pour leurs recrutements.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link to="/inscription?type=entreprise">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">
-                Commencer gratuitement
-              </Button>
-            </Link>
-            <Link to="/contact">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-blue-700">
-                Contacter les ventes
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-white font-display">Abonnements entreprise</h2>
+          <p className="text-blue-200 mt-2">Économisez 20% avec l'engagement annuel</p>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          {plans.map((plan) => (
+            <Card key={plan.id} className={`relative bg-white/10 backdrop-blur-xl border-white/20 rounded-4xl overflow-hidden transition-all duration-300 hover:scale-[1.02] ${plan.popular ? 'ring-2 ring-blue-400' : ''}`}>
+              {plan.popular && (
+                <div className="absolute top-4 right-4">
+                  <Badge className="bg-blue-500 text-white rounded-full px-4 py-1">Populaire</Badge>
+                </div>
+              )}
+              <CardHeader className="text-center pt-10 pb-0">
+                <div className={`w-16 h-16 bg-gradient-to-br ${plan.color} rounded-3xl flex items-center justify-center mx-auto mb-4`}>
+                  <plan.icon className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-white">{plan.name}</CardTitle>
+                <CardDescription className="text-blue-200 mt-2">
+                  Pour les entreprises {plan.id === 'pro_monthly' ? 'en croissance' : 'établies'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="text-center mb-8">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-5xl font-bold text-white">{plan.monthlyPriceDisplay}</span>
+                    <span className="text-blue-200">FCFA</span>
+                    <span className="text-blue-200 text-lg">/mois</span>
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-blue-200">
+                      ou {plan.annualPriceDisplay} FCFA / an{' '}
+                      <Badge className="bg-green-500/20 text-green-400 border-0 rounded-full">-20%</Badge>
+                    </span>
+                    <p className="text-xs text-blue-300 mt-1">
+                      Soit {formatPrice(plan.annualMonthlyEquivalent)} FCFA / mois
+                    </p>
+                  </div>
+                </div>
+
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-3 text-blue-100">
+                      <Check className="w-5 h-5 text-blue-400 shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="space-y-3">
+                  <Button
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-2xl h-14 text-lg"
+                    onClick={() => handleCheckout(plan.id)}
+                    disabled={checkoutLoading === plan.id}
+                  >
+                    {checkoutLoading === plan.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : (
+                      <Building2 className="w-5 h-5 mr-2" />
+                    )}
+                    S'abonner (mensuel)
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full border-blue-400/30 text-white hover:bg-blue-400/10 rounded-2xl h-14 text-lg"
+                    onClick={() => handleCheckout(plan.id.replace('monthly', 'annual'))}
+                    disabled={checkoutLoading === plan.id.replace('monthly', 'annual')}
+                  >
+                    {checkoutLoading === plan.id.replace('monthly', 'annual') ? (
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : null}
+                    S'abonner (annuel -20%)
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Boosts */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-white font-display">Boostez vos annonces</h2>
+          <p className="text-blue-200 mt-2">Donnez plus de visibilité à vos offres</p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {boostItems.map((boost) => (
+            <Card key={boost.id} className="bg-white/10 backdrop-blur-xl border-white/20 rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+              <CardContent className="p-6 text-center">
+                <div className="w-14 h-14 bg-blue-400/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <boost.icon className="w-7 h-7 text-blue-400" />
+                </div>
+                <h3 className="font-semibold text-lg text-white mb-1">{boost.name}</h3>
+                <div className="flex items-center justify-center gap-1 mb-6">
+                  <span className="text-3xl font-bold text-white">{boost.priceDisplay}</span>
+                  <span className="text-blue-200 text-sm">FCFA</span>
+                </div>
+                <Button
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-2xl"
+                  onClick={() => handleCheckout(boost.id)}
+                  disabled={checkoutLoading === boost.id}
+                >
+                  {checkoutLoading === boost.id ? (
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  ) : null}
+                  Acheter
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {!user && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="bg-blue-950/90 backdrop-blur-xl border border-blue-400/30 rounded-3xl px-6 py-4 shadow-2xl text-white flex items-center gap-4">
+            <AlertCircle className="w-5 h-5 text-blue-400" />
+            <span>Connectez-vous pour souscrire à un plan</span>
+            <Link to="/connexion">
+              <Button size="sm" className="bg-blue-500 hover:bg-blue-600 rounded-2xl">
+                Se connecter
               </Button>
             </Link>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

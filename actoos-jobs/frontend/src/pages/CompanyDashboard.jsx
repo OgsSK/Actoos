@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -10,7 +11,7 @@ import { toast } from 'sonner';
 import {
   Building2, Briefcase, Users, Eye, FileText, Plus, Settings,
   ChevronRight, TrendingUp, Clock, CheckCircle, XCircle, Loader2,
-  Edit, Trash2, MoreVertical, Globe, Mail, Phone, MapPin, Calendar
+  Edit, Trash2, MoreVertical, Globe, Mail, Phone, MapPin, Calendar, AlertTriangle
 } from 'lucide-react';
 import { cn, formatRelative, formatDate, CONTRACT_TYPES } from '../lib/utils';
 
@@ -217,6 +218,7 @@ const CompanyDashboard = () => {
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
   const [stats, setStats] = useState({
     totalJobs: 0,
     activeJobs: 0,
@@ -233,7 +235,6 @@ const CompanyDashboard = () => {
   const fetchCompanyData = async () => {
     setLoading(true);
     try {
-      // Get company membership
       const { data: membership } = await supabase
         .from('company_members')
         .select(`
@@ -244,14 +245,12 @@ const CompanyDashboard = () => {
         .single();
 
       if (!membership?.company) {
-        // User doesn't have a company yet
         setLoading(false);
         return;
       }
 
       setCompany(membership.company);
 
-      // Fetch jobs
       const { data: jobsData } = await supabase
         .from('jobs')
         .select(`
@@ -264,7 +263,6 @@ const CompanyDashboard = () => {
 
       setJobs(jobsData || []);
 
-      // Fetch recent applications
       const { data: appsData } = await supabase
         .from('applications')
         .select(`
@@ -278,7 +276,6 @@ const CompanyDashboard = () => {
 
       setApplications(appsData || []);
 
-      // Calculate stats
       const activeJobs = (jobsData || []).filter(j => j.status === 'active').length;
       const newApps = (appsData || []).filter(a => a.status === 'pending').length;
 
@@ -335,6 +332,23 @@ const CompanyDashboard = () => {
     }
   };
 
+  const handleCancelSubscription = async () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir résilier votre abonnement ? Cette action est irréversible.')) return;
+    setCancelling(true);
+    try {
+      const res = await apiFetch('/api/subscription/cancel', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: user.id })
+      });
+      toast.success(res.message);
+      fetchCompanyData(); // recharge les données pour mettre à jour le plan
+    } catch (err) {
+      toast.error(err.message || 'Erreur lors de la résiliation');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen pt-20 flex items-center justify-center">
@@ -343,7 +357,6 @@ const CompanyDashboard = () => {
     );
   }
 
-  // No company yet - show setup
   if (!company) {
     return (
       <div className="min-h-screen bg-slate-50 pt-20">
@@ -358,7 +371,7 @@ const CompanyDashboard = () => {
             Pour publier des offres et recevoir des candidatures, commencez par créer le profil de votre entreprise.
           </p>
           <Link to="/dashboard/entreprise/creer">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+            <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700 text-white">
               <Plus className="w-5 h-5 mr-2" />
               Créer mon entreprise
             </Button>
@@ -394,7 +407,7 @@ const CompanyDashboard = () => {
               </Button>
             </Link>
             <Link to="/dashboard/entreprise/offres/nouvelle">
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button className="bg-blue-600 text-white hover:bg-blue-700 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Nouvelle offre
               </Button>
@@ -404,30 +417,10 @@ const CompanyDashboard = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard
-            icon={Briefcase}
-            label="Offres publiées"
-            value={stats.activeJobs}
-            color="blue"
-          />
-          <StatCard
-            icon={FileText}
-            label="Total candidatures"
-            value={stats.totalApplications}
-            color="green"
-          />
-          <StatCard
-            icon={Users}
-            label="Nouvelles candidatures"
-            value={stats.newApplications}
-            color="purple"
-          />
-          <StatCard
-            icon={Eye}
-            label="Vues totales"
-            value={jobs.reduce((sum, j) => sum + (j.views_count || 0), 0)}
-            color="orange"
-          />
+          <StatCard icon={Briefcase} label="Offres publiées" value={stats.activeJobs} color="blue" />
+          <StatCard icon={FileText} label="Total candidatures" value={stats.totalApplications} color="green" />
+          <StatCard icon={Users} label="Nouvelles candidatures" value={stats.newApplications} color="purple" />
+          <StatCard icon={Eye} label="Vues totales" value={jobs.reduce((sum, j) => sum + (j.views_count || 0), 0)} color="orange" />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -547,7 +540,7 @@ const CompanyDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Subscription */}
+            {/* Subscription Card */}
             <Card className="border-blue-200 bg-blue-50">
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-3">
@@ -555,14 +548,33 @@ const CompanyDashboard = () => {
                     {company.subscription_plan === 'free' ? 'Plan Gratuit' : company.subscription_plan}
                   </Badge>
                 </div>
-                <p className="text-sm text-blue-800 mb-4">
-                  Passez à un plan supérieur pour accéder à plus de fonctionnalités et mettre vos offres en avant.
-                </p>
-                <Link to="/tarifs">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Voir les plans
-                  </Button>
-                </Link>
+                {company.subscription_plan !== 'free' && company.stripe_subscription_id ? (
+                  <>
+                    <p className="text-sm text-blue-800 mb-4">
+                      Vous êtes actuellement sur le plan {company.subscription_plan}. Vous pouvez le résilier à tout moment.
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="w-full border-red-300 text-red-600 hover:bg-red-50"
+                      onClick={handleCancelSubscription}
+                      disabled={cancelling}
+                    >
+                      {cancelling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <AlertTriangle className="w-4 h-4 mr-2" />}
+                      Résilier l'abonnement
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-blue-800 mb-4">
+                      Passez à un plan supérieur pour accéder à plus de fonctionnalités et mettre vos offres en avant.
+                    </p>
+                    <Link to="/tarifs">
+                      <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white">
+                        Voir les plans
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

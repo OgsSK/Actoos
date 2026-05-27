@@ -6,6 +6,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import AIAssistant from '../components/AIAssistant';
 import { toast } from 'sonner';
 import {
   User, Briefcase, FileText, GraduationCap, Award,
@@ -213,6 +214,14 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
               className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               placeholder="Décrivez vos missions et réalisations..."
             />
+            <div className="mt-2">
+              <AIAssistant
+                agentId="cv-experience"
+                initialText={form.description}
+                context={`${form.title} chez ${form.company}`}
+                onApply={(newDesc) => setForm({ ...form, description: newDesc })}
+              />
+            </div>
           </div>
         </div>
         <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
@@ -438,7 +447,6 @@ const CandidateProfilePage = () => {
     
     setUploadingCV(true);
     try {
-      // Extract file path from URL and delete from storage
       const cvUrl = profile?.candidate_profile?.cv_url;
       if (cvUrl) {
         const urlParts = cvUrl.split('/cvs/');
@@ -449,7 +457,6 @@ const CandidateProfilePage = () => {
         }
       }
       
-      // Update candidate profile to remove CV URL
       await updateCandidateProfile({ cv_url: null });
       toast.success('CV supprimé avec succès');
       await refreshProfile();
@@ -466,14 +473,12 @@ const CandidateProfilePage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (!validTypes.includes(file.type)) {
       toast.error('Format non supporté. Utilisez PDF ou Word.');
       return;
     }
 
-    // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Le fichier est trop volumineux (max 5MB)');
       return;
@@ -508,10 +513,8 @@ const CandidateProfilePage = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Update user profile
       await updateProfile(personalInfo);
 
-      // Update candidate profile
       await updateCandidateProfile({
         ...candidateInfo,
         skills,
@@ -546,7 +549,7 @@ const CandidateProfilePage = () => {
               <p className="text-slate-600">Gérez vos informations professionnelles</p>
             </div>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="gap-2 bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleSave} disabled={saving} className="gap-2 bg-blue-600 text-white hover:bg-blue-700 text-white">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Enregistrer
           </Button>
@@ -586,7 +589,7 @@ const CandidateProfilePage = () => {
                   <Input
                     value={personalInfo.phone}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
-                    placeholder="+32 XXX XX XX XX"
+                    placeholder="+223 XX XX XX XX"
                     data-testid="phone-input"
                   />
                 </div>
@@ -626,6 +629,13 @@ const CandidateProfilePage = () => {
                     placeholder="Ex: Développeur Full Stack, Chef de Projet IT, Comptable..."
                     data-testid="title-input"
                   />
+                  <div className="mt-2">
+                    <AIAssistant
+                      agentId="cv-summary"
+                      initialText={candidateInfo.title}
+                      onApply={(newTitle) => setCandidateInfo({ ...candidateInfo, title: newTitle })}
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">À propos de moi</label>
@@ -637,6 +647,14 @@ const CandidateProfilePage = () => {
                     placeholder="Présentez-vous en quelques lignes : votre parcours, vos motivations, ce que vous recherchez..."
                     data-testid="bio-textarea"
                   />
+                  <div className="mt-2">
+                    <AIAssistant
+                      agentId="cv-summary"
+                      initialText={candidateInfo.bio}
+                      context={candidateInfo.title}
+                      onApply={(newBio) => setCandidateInfo({ ...candidateInfo, bio: newBio })}
+                    />
+                  </div>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
@@ -789,6 +807,25 @@ const CandidateProfilePage = () => {
                     Aucune compétence ajoutée. Commencez à ajouter vos compétences !
                   </p>
                 )}
+                <div className="mt-2">
+                  <AIAssistant
+                    agentId="cv-skills"
+                    initialText={candidateInfo.bio}
+                    onApply={(generatedSkills) => {
+                      // Parse compétences générées (séparées par des virgules ou puces)
+                      const skillsArray = generatedSkills
+                        .split(/[•,,\n-]/)
+                        .map(s => s.trim())
+                        .filter(s => s.length > 0 && !skills.includes(s));
+                      if (skillsArray.length > 0) {
+                        setSkills([...skills, ...skillsArray]);
+                        toast.success(`${skillsArray.length} compétence(s) ajoutée(s) !`);
+                      } else {
+                        toast.info('Aucune nouvelle compétence trouvée.');
+                      }
+                    }}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -909,7 +946,7 @@ const CandidateProfilePage = () => {
               <SectionHeader
                 icon={Briefcase}
                 title="Prétentions salariales"
-                description="Fourchette de salaire souhaitée (EUR/mois)"
+                description="Fourchette de salaire souhaitée (FCFA/mois)"
               />
               
               <div className="grid sm:grid-cols-2 gap-4">
@@ -939,7 +976,7 @@ const CandidateProfilePage = () => {
 
           {/* Save Button */}
           <div className="flex justify-end pt-4">
-            <Button onClick={handleSave} disabled={saving} size="lg" className="gap-2 bg-blue-600 hover:bg-blue-700" data-testid="save-profile-btn">
+            <Button onClick={handleSave} disabled={saving} size="lg" className="gap-2 bg-blue-600 text-white hover:bg-blue-700 text-white" data-testid="save-profile-btn">
               {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
               Enregistrer les modifications
             </Button>

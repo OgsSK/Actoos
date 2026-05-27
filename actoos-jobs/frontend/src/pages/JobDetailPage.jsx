@@ -142,7 +142,7 @@ const ApplyModal = ({ isOpen, onClose, job, user, onSuccess }) => {
             <Button 
               onClick={handleApply} 
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 text-white hover:bg-blue-700 text-white"
               data-testid="submit-application-btn"
             >
               {loading ? (
@@ -401,7 +401,7 @@ const JobDetailPage = () => {
               ) : (
                 <Button 
                   onClick={() => setShowApplyModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 text-white hover:bg-blue-700 text-white"
                   data-testid="apply-btn"
                 >
                   <Send className="w-4 h-4 mr-2" />

@@ -6,24 +6,25 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import AIAssistant from '../components/AIAssistant';
 import { toast } from 'sonner';
 import {
   Briefcase, MapPin, DollarSign, Calendar, Users, Clock,
   Plus, X, Save, Loader2, ChevronLeft, Eye, Send, GraduationCap
 } from 'lucide-react';
-import { slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS, JOB_CATEGORIES } from '../lib/utils';
+import { slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 
 const CreateJobPage = () => {
-  const { id } = useParams(); // For editing
+  const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [company, setCompany] = useState(null);
   const [cities, setCities] = useState([]);
   const [categories, setCategories] = useState([]);
-  
+
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -47,7 +48,7 @@ const CreateJobPage = () => {
     is_urgent: false,
     status: 'draft'
   });
-  
+
   const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
@@ -60,7 +61,6 @@ const CreateJobPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Get company
       const { data: membership } = await supabase
         .from('company_members')
         .select('company:companies(*)')
@@ -74,7 +74,6 @@ const CreateJobPage = () => {
       }
       setCompany(membership.company);
 
-      // Get cities
       const { data: citiesData } = await supabase
         .from('cities')
         .select('*')
@@ -82,7 +81,6 @@ const CreateJobPage = () => {
         .order('name');
       setCities(citiesData || []);
 
-      // Get categories
       const { data: catsData } = await supabase
         .from('job_categories')
         .select('*')
@@ -138,19 +136,13 @@ const CreateJobPage = () => {
 
   const handleAddSkill = () => {
     if (newSkill.trim() && !form.skills_required.includes(newSkill.trim())) {
-      setForm({
-        ...form,
-        skills_required: [...form.skills_required, newSkill.trim()]
-      });
+      setForm({ ...form, skills_required: [...form.skills_required, newSkill.trim()] });
       setNewSkill('');
     }
   };
 
   const handleRemoveSkill = (skill) => {
-    setForm({
-      ...form,
-      skills_required: form.skills_required.filter(s => s !== skill)
-    });
+    setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
   };
 
   const handleSave = async (publish = false) => {
@@ -161,7 +153,6 @@ const CreateJobPage = () => {
 
     setSaving(true);
     try {
-      // Get country
       const { data: country } = await supabase
         .from('countries')
         .select('id')
@@ -182,7 +173,7 @@ const CreateJobPage = () => {
         experience_level: form.experience_level || null,
         salary_min: form.salary_min ? parseInt(form.salary_min) : null,
         salary_max: form.salary_max ? parseInt(form.salary_max) : null,
-        salary_currency: 'EUR',
+        salary_currency: 'XOF',
         is_salary_visible: form.is_salary_visible,
         city_id: form.city_id || null,
         country_id: country?.id,
@@ -200,20 +191,11 @@ const CreateJobPage = () => {
       };
 
       if (id) {
-        // Update
-        const { error } = await supabase
-          .from('jobs')
-          .update(jobData)
-          .eq('id', id);
-
+        const { error } = await supabase.from('jobs').update(jobData).eq('id', id);
         if (error) throw error;
         toast.success(publish ? 'Offre publiée !' : 'Offre mise à jour');
       } else {
-        // Create
-        const { error } = await supabase
-          .from('jobs')
-          .insert(jobData);
-
+        const { error } = await supabase.from('jobs').insert(jobData);
         if (error) throw error;
         toast.success(publish ? 'Offre publiée !' : 'Brouillon enregistré');
       }
@@ -241,11 +223,7 @@ const CreateJobPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/dashboard/entreprise')} 
-              className="-ml-2"
-            >
+            <Button variant="ghost" onClick={() => navigate('/dashboard/entreprise')} className="-ml-2">
               <ChevronLeft className="w-4 h-4 mr-1" />
               Retour
             </Button>
@@ -257,20 +235,11 @@ const CreateJobPage = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => handleSave(false)}
-              disabled={saving}
-            >
+            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               Enregistrer
             </Button>
-            <Button 
-              onClick={() => handleSave(true)}
-              disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700"
-              data-testid="publish-job-btn"
-            >
+            <Button onClick={() => handleSave(true)} disabled={saving} className="bg-blue-600 text-white hover:bg-blue-700 text-white" data-testid="publish-job-btn">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               Publier
             </Button>
@@ -297,13 +266,18 @@ const CreateJobPage = () => {
                   required
                   data-testid="job-title-input"
                 />
+                <div className="mt-2">
+                  <AIAssistant
+                    agentId="job-title"
+                    initialText={form.title}
+                    onApply={(newTitle) => setForm({ ...form, title: newTitle })}
+                  />
+                </div>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Catégorie
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Catégorie</label>
                   <select
                     value={form.category_id}
                     onChange={(e) => setForm({ ...form, category_id: e.target.value })}
@@ -317,9 +291,7 @@ const CreateJobPage = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Type de contrat *
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Type de contrat *</label>
                   <select
                     value={form.contract_type}
                     onChange={(e) => setForm({ ...form, contract_type: e.target.value })}
@@ -387,9 +359,7 @@ const CreateJobPage = () => {
               <h2 className="font-semibold text-slate-900">Description du poste</h2>
               
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Description *
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description *</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -399,12 +369,18 @@ const CreateJobPage = () => {
                   required
                   data-testid="job-description-textarea"
                 />
+                <div className="mt-2">
+                  <AIAssistant
+                    agentId="job-description"
+                    initialText={form.description}
+                    context={form.title}
+                    onApply={(newDesc) => setForm({ ...form, description: newDesc })}
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Missions / Responsabilités
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Missions / Responsabilités</label>
                 <textarea
                   value={form.responsibilities}
                   onChange={(e) => setForm({ ...form, responsibilities: e.target.value })}
@@ -413,12 +389,18 @@ const CreateJobPage = () => {
                   placeholder="• Mission 1&#10;• Mission 2&#10;• Mission 3..."
                   data-testid="job-responsibilities-textarea"
                 />
+                <div className="mt-2">
+                  <AIAssistant
+                    agentId="job-missions"
+                    initialText={form.responsibilities}
+                    context={form.title}
+                    onApply={(newMissions) => setForm({ ...form, responsibilities: newMissions })}
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Profil recherché / Exigences
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Profil recherché / Exigences</label>
                 <textarea
                   value={form.requirements}
                   onChange={(e) => setForm({ ...form, requirements: e.target.value })}
@@ -427,12 +409,18 @@ const CreateJobPage = () => {
                   placeholder="• Diplôme requis&#10;• Compétences techniques&#10;• Qualités personnelles..."
                   data-testid="job-requirements-textarea"
                 />
+                <div className="mt-2">
+                  <AIAssistant
+                    agentId="job-requirements"
+                    initialText={form.requirements}
+                    context={form.title}
+                    onApply={(newReqs) => setForm({ ...form, requirements: newReqs })}
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Avantages offerts
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Avantages offerts</label>
                 <textarea
                   value={form.benefits}
                   onChange={(e) => setForm({ ...form, benefits: e.target.value })}
@@ -467,16 +455,9 @@ const CreateJobPage = () => {
               {form.skills_required.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {form.skills_required.map((skill) => (
-                    <Badge 
-                      key={skill} 
-                      className="bg-blue-50 text-blue-700 border border-blue-200 gap-1 pr-1"
-                    >
+                    <Badge key={skill} className="bg-blue-50 text-blue-700 border border-blue-200 gap-1 pr-1">
                       {skill}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSkill(skill)}
-                        className="ml-1 hover:bg-blue-200 rounded-full p-0.5 transition-colors"
-                      >
+                      <button type="button" onClick={() => handleRemoveSkill(skill)} className="ml-1 hover:bg-blue-200 rounded-full p-0.5 transition-colors">
                         <X className="w-3 h-3" />
                       </button>
                     </Badge>
@@ -496,9 +477,7 @@ const CreateJobPage = () => {
               
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Ville
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Ville</label>
                   <select
                     value={form.city_id}
                     onChange={(e) => setForm({ ...form, city_id: e.target.value })}
@@ -512,9 +491,7 @@ const CreateJobPage = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Adresse précise
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Adresse précise</label>
                   <Input
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -560,9 +537,7 @@ const CreateJobPage = () => {
               
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Salaire minimum (EUR/mois)
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Salaire minimum (FCFA/mois)</label>
                   <Input
                     type="number"
                     value={form.salary_min}
@@ -572,9 +547,7 @@ const CreateJobPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Salaire maximum (EUR/mois)
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Salaire maximum (FCFA/mois)</label>
                   <Input
                     type="number"
                     value={form.salary_max}
@@ -607,9 +580,7 @@ const CreateJobPage = () => {
               
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Date limite de candidature
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Date limite de candidature</label>
                   <Input
                     type="date"
                     value={form.application_deadline}
@@ -619,9 +590,7 @@ const CreateJobPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Date de début souhaitée
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Date de début souhaitée</label>
                   <Input
                     type="date"
                     value={form.start_date}
@@ -635,20 +604,11 @@ const CreateJobPage = () => {
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => handleSave(false)}
-              disabled={saving}
-            >
+            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               Enregistrer comme brouillon
             </Button>
-            <Button 
-              onClick={() => handleSave(true)}
-              disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700"
-              data-testid="publish-job-btn-bottom"
-            >
+            <Button onClick={() => handleSave(true)} disabled={saving} className="bg-blue-600 text-white hover:bg-blue-700 text-white" data-testid="publish-job-btn-bottom">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               Publier l'offre
             </Button>

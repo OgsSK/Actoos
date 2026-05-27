@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://actoos-jobs-api.onrender.com/api/:path*"
+    }
+  ]
+}
