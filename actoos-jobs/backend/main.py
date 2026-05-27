@@ -3,45 +3,40 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict
 import os
+import stripe
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = FastAPI(title="Actoos Jobs API")
 
-# CORS
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Stripe integration
-from emergentintegrations.payments.stripe.checkout import (
-    StripeCheckout, 
-    CheckoutSessionRequest, 
-    CheckoutSessionResponse,
-    CheckoutStatusResponse
-)
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
-# Fixed pricing packages (amounts in EUR)
 SUBSCRIPTION_PLANS = {
-    "pro_monthly": {"amount": 49.00, "name": "Plan Pro - Mensuel", "type": "subscription"},
-    "business_monthly": {"amount": 149.00, "name": "Plan Business - Mensuel", "type": "subscription"},
+    "pro_monthly": {"amount": 49000, "name": "Plan Pro - Mensuel", "type": "subscription", "interval": "month"},
+    "pro_annual": {"amount": 470400, "name": "Plan Pro - Annuel (-20%)", "type": "subscription", "interval": "year"},
+    "business_monthly": {"amount": 149000, "name": "Plan Business - Mensuel", "type": "subscription", "interval": "month"},
+    "business_annual": {"amount": 1430400, "name": "Plan Business - Annuel (-20%)", "type": "subscription", "interval": "year"},
 }
 
 BOOST_PACKAGES = {
-    "boost_7": {"amount": 9.99, "name": "Boost 7 jours", "days": 7},
-    "boost_14": {"amount": 17.99, "name": "Boost 14 jours", "days": 14},
-    "boost_30": {"amount": 29.99, "name": "Boost 30 jours", "days": 30},
-    "featured": {"amount": 49.99, "name": "A la une (30 jours)", "days": 30},
+    "boost_7": {"amount": 9990, "name": "Boost 7 jours", "days": 7},
+    "boost_14": {"amount": 17990, "name": "Boost 14 jours", "days": 14},
+    "boost_30": {"amount": 29990, "name": "Boost 30 jours", "days": 30},
+    "featured": {"amount": 49990, "name": "À la une (30 jours)", "days": 30},
 }
 
-# In-memory transaction store (in production, use Supabase)
 payment_transactions = {}
-
 
 class CheckoutRequest(BaseModel):
     package_id: str
@@ -50,31 +45,23 @@ class CheckoutRequest(BaseModel):
     user_email: Optional[str] = None
     metadata: Optional[Dict[str, str]] = None
 
-
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "service": "actoos-jobs-api"}
-
+    return {"status": "ok", "service": "actoos-jobs-api", "currency": "XOF"}
 
 @app.get("/api/pricing")
 async def get_pricing():
-    """Get all available pricing packages"""
     return {
         "subscriptions": SUBSCRIPTION_PLANS,
         "boosts": BOOST_PACKAGES,
-        "currency": "EUR"
+        "currency": "XOF"
     }
-
 
 @app.post("/api/checkout/session")
 async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
-    """Create a Stripe checkout session"""
-    
-    api_key = os.environ.get("STRIPE_API_KEY")
-    if not api_key:
+    if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
     
-    # Get package details
     package_id = checkout_request.package_id
     
     if package_id in SUBSCRIPTION_PLANS:
@@ -84,12 +71,10 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
     else:
         raise HTTPException(status_code=400, detail="Invalid package")
     
-    # Build URLs
     origin = checkout_request.origin_url
     success_url = f"{origin}/paiement/succes?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin}/paiement/annule"
     
-    # Build metadata
     metadata = {
         "package_id": package_id,
         "package_name": package["name"],
@@ -102,102 +87,104 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
     if checkout_request.metadata:
         metadata.update(checkout_request.metadata)
     
-    # Initialize Stripe
-    host_url = str(request.base_url).rstrip("/")
-    webhook_url = f"{host_url}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
-    
-    # Create checkout request
-    checkout_req = CheckoutSessionRequest(
-        amount=float(package["amount"]),
-        currency="eur",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata=metadata
-    )
-    
-    # Create session
-    session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_req)
-    
-    # Store transaction (pending)
-    payment_transactions[session.session_id] = {
-        "session_id": session.session_id,
-        "package_id": package_id,
-        "amount": package["amount"],
-        "currency": "eur",
-        "status": "pending",
-        "payment_status": "initiated",
-        "metadata": metadata
-    }
-    
-    return {
-        "url": session.url,
-        "session_id": session.session_id
-    }
-
+    try:
+        if package["type"] == "subscription":
+            mode = "subscription"
+            line_item = {
+                'price_data': {
+                    'currency': 'xof',
+                    'product_data': {'name': package["name"]},
+                    'unit_amount': int(package["amount"]),
+                    'recurring': {'interval': package["interval"]},
+                },
+                'quantity': 1,
+            }
+        else:
+            mode = "payment"
+            line_item = {
+                'price_data': {
+                    'currency': 'xof',
+                    'product_data': {'name': package["name"]},
+                    'unit_amount': int(package["amount"]),
+                },
+                'quantity': 1,
+            }
+        
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[line_item],
+            mode=mode,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata=metadata,
+        )
+        
+        payment_transactions[session.id] = {
+            "session_id": session.id,
+            "package_id": package_id,
+            "amount": package["amount"],
+            "currency": "xof",
+            "status": "pending",
+            "payment_status": "initiated",
+            "metadata": metadata
+        }
+        
+        return {"url": session.url, "session_id": session.id}
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/checkout/status/{session_id}")
 async def get_checkout_status(session_id: str):
-    """Get the status of a checkout session"""
-    
-    api_key = os.environ.get("STRIPE_API_KEY")
-    if not api_key:
+    if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
     
-    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
-    
     try:
-        status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
-        
-        # Update transaction status
+        session = stripe.checkout.Session.retrieve(session_id)
         if session_id in payment_transactions:
             tx = payment_transactions[session_id]
-            if tx["payment_status"] != "paid" and status.payment_status == "paid":
+            if tx["payment_status"] != "paid" and session.payment_status == "paid":
                 tx["payment_status"] = "paid"
                 tx["status"] = "completed"
-        
         return {
-            "status": status.status,
-            "payment_status": status.payment_status,
-            "amount_total": status.amount_total,
-            "currency": status.currency,
-            "metadata": status.metadata
+            "status": session.status,
+            "payment_status": session.payment_status,
+            "amount_total": session.amount_total,
+            "currency": session.currency,
+            "metadata": session.metadata
         }
-    except Exception as e:
+    except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 @app.post("/api/webhook/stripe")
 async def stripe_webhook(request: Request):
-    """Handle Stripe webhooks"""
-    
-    api_key = os.environ.get("STRIPE_API_KEY")
-    if not api_key:
+    if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
     
-    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
     
     try:
-        body = await request.body()
-        signature = request.headers.get("Stripe-Signature")
+        if webhook_secret and sig_header:
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        else:
+            event = stripe.Event.construct_from(request.json(), stripe.api_key)
         
-        webhook_response = await stripe_checkout.handle_webhook(body, signature)
-        
-        # Update transaction based on event
-        if webhook_response.session_id and webhook_response.session_id in payment_transactions:
-            tx = payment_transactions[webhook_response.session_id]
-            tx["payment_status"] = webhook_response.payment_status
-            
-            if webhook_response.payment_status == "paid":
-                tx["status"] = "completed"
-            elif webhook_response.event_type == "checkout.session.expired":
-                tx["status"] = "expired"
+        if event.type == "checkout.session.completed":
+            session = event.data.object
+            if session.id in payment_transactions:
+                payment_transactions[session.id]["payment_status"] = "paid"
+                payment_transactions[session.id]["status"] = "completed"
+        elif event.type == "checkout.session.expired":
+            session = event.data.object
+            if session.id in payment_transactions:
+                payment_transactions[session.id]["status"] = "expired"
         
         return {"received": True}
+    except (ValueError, stripe.error.SignatureVerificationError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         print(f"Webhook error: {e}")
         return {"received": True, "error": str(e)}
-
 
 if __name__ == "__main__":
     import uvicorn
