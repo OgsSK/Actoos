@@ -52,6 +52,14 @@ Job board SaaS nouvelle generation international (jobs.actoos.com). Modele freem
 - [x] Modification offre (/dashboard/entreprise/offres/:id/modifier)
 - [x] Gestion candidatures (Voir/Modifier/Supprimer/Pause/Publier)
 
+### Espace Admin (26 Mai 2026)
+- [x] Admin Dashboard (/admin)
+- [x] Vue d'ensemble (statistiques)
+- [x] Moderation offres (approuver/rejeter/suspendre/supprimer)
+- [x] Validation entreprises (approuver/rejeter/suspendre)
+- [x] Filtres et recherche
+- [x] Lien Admin dans Header pour utilisateurs admin
+
 ### Backend & Paiements
 - [x] FastAPI Backend (/app/actoos-jobs/backend)
 - [x] Stripe Integration (test mode)
@@ -71,9 +79,10 @@ Job board SaaS nouvelle generation international (jobs.actoos.com). Modele freem
 ## En Cours
 
 ### P0 - Prioritaire
+- [x] Admin Dashboard (moderation jobs, validation entreprises) ✅
 - [ ] Test E2E flux complet (Inscription → Entreprise → Job → Postuler)
-- [ ] Admin Dashboard (moderation jobs, validation entreprises)
 - [ ] Activer preview Emergent
+- [ ] Executer ADMIN_SETUP.sql dans Supabase
 
 ### P1 - Court terme
 - [ ] Alertes email (Resend configure - cle disponible)
