@@ -7,7 +7,6 @@ import stripe
 from dotenv import load_dotenv
 import resend
 import httpx
-from supabase import create_client, Client
 
 load_dotenv()
 
@@ -24,10 +23,6 @@ app.add_middleware(
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 resend.api_key = os.environ.get("RESEND_API_KEY")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
@@ -203,19 +198,9 @@ async def stripe_webhook(request: Request):
                 payment_transactions[session.id]["payment_status"] = "paid"
                 payment_transactions[session.id]["status"] = "completed"
             
-            if session.mode == "subscription" and session.metadata.get("user_id"):
-                user_id = session.metadata.get("user_id")
-                subscription_id = session.subscription
-                plan = session.metadata.get("package_id", "pro_monthly")
-                try:
-                    supabase.table("companies").update({
-                        "stripe_subscription_id": subscription_id,
-                        "subscription_plan": plan,
-                        "subscription_expires_at": None
-                    }).eq("owner_id", user_id).execute()
-                except Exception as e:
-                    print(f"Erreur enregistrement abonnement: {e}")
-        
+            # La mise à jour Supabase est commentée pour l'instant
+            # (à réactiver après résolution du conflit httpx/supabase)
+            
         elif event.type == "checkout.session.expired":
             session = event.data.object
             if session.id in payment_transactions:
@@ -318,30 +303,10 @@ async def ai_agent(req: AIAgentRequest):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
 
-@app.post("/api/subscription/cancel")
-async def cancel_subscription(req: CancelSubscriptionRequest):
-    if not stripe.api_key:
-        raise HTTPException(status_code=500, detail="Stripe not configured")
-    
-    try:
-        company_res = supabase.table("companies").select("id, stripe_subscription_id").eq("owner_id", req.user_id).single().execute()
-        if not company_res.data:
-            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-        company = company_res.data
-        if not company.get("stripe_subscription_id"):
-            raise HTTPException(status_code=400, detail="Aucun abonnement actif")
-        
-        stripe.Subscription.delete(company["stripe_subscription_id"])
-        
-        supabase.table("companies").update({
-            "stripe_subscription_id": None,
-            "subscription_plan": "free",
-            "subscription_expires_at": None
-        }).eq("id", company["id"]).execute()
-        
-        return {"success": True, "message": "Abonnement résilié avec succès."}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+# La résiliation d'abonnement est temporairement désactivée (conflit httpx/supabase)
+# @app.post("/api/subscription/cancel")
+# async def cancel_subscription(req: CancelSubscriptionRequest):
+#     ...
 
 if __name__ == "__main__":
     import uvicorn

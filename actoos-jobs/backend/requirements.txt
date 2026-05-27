@@ -4,5 +4,4 @@ python-dotenv==1.0.1
 pydantic>=2.10.0,<3.0
 stripe==7.10.0
 resend==1.1.0
-httpx>=0.24,<0.26
-supabase==2.3.1
+httpx>=0.24,<0.27
