@@ -13,7 +13,6 @@ load_dotenv()
 
 app = FastAPI(title="Actoos Jobs API")
 
-# CORS
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -23,22 +22,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Stripe
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
-# Supabase (service role for backend operations)
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-# Resend
 resend.api_key = os.environ.get("RESEND_API_KEY")
-
-# OpenRouter
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
-# Pricing plans
 SUBSCRIPTION_PLANS = {
     "pro_monthly": {"amount": 49000, "name": "Plan Pro - Mensuel", "type": "subscription", "interval": "month"},
     "pro_annual": {"amount": 470400, "name": "Plan Pro - Annuel (-20%)", "type": "subscription", "interval": "year"},
@@ -53,16 +46,14 @@ BOOST_PACKAGES = {
     "featured": {"amount": 49990, "name": "À la une (30 jours)", "days": 30},
 }
 
-# In-memory transaction store (temporary)
 payment_transactions = {}
 
-# ----- Models -----
 class CheckoutRequest(BaseModel):
     package_id: str
     origin_url: str
     job_id: Optional[str] = None
     user_email: Optional[str] = None
-    user_id: Optional[str] = None          # Pour lier l'abonnement à l'entreprise
+    user_id: Optional[str] = None
     metadata: Optional[Dict[str, str]] = None
 
 class ContactRequest(BaseModel):
@@ -82,7 +73,6 @@ class AIAgentRequest(BaseModel):
 class CancelSubscriptionRequest(BaseModel):
     user_id: str
 
-# ----- Health & Pricing -----
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "service": "actoos-jobs-api", "currency": "XOF"}
@@ -95,7 +85,6 @@ async def get_pricing():
         "currency": "XOF"
     }
 
-# ----- Checkout -----
 @app.post("/api/checkout/session")
 async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
     if not stripe.api_key:
@@ -194,7 +183,6 @@ async def get_checkout_status(session_id: str):
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# ----- Webhook -----
 @app.post("/api/webhook/stripe")
 async def stripe_webhook(request: Request):
     if not stripe.api_key:
@@ -211,12 +199,10 @@ async def stripe_webhook(request: Request):
         
         if event.type == "checkout.session.completed":
             session = event.data.object
-            # Update in-memory transaction
             if session.id in payment_transactions:
                 payment_transactions[session.id]["payment_status"] = "paid"
                 payment_transactions[session.id]["status"] = "completed"
             
-            # Save subscription to Supabase if mode=subscription
             if session.mode == "subscription" and session.metadata.get("user_id"):
                 user_id = session.metadata.get("user_id")
                 subscription_id = session.subscription
@@ -242,7 +228,6 @@ async def stripe_webhook(request: Request):
         print(f"Webhook error: {e}")
         return {"received": True, "error": str(e)}
 
-# ----- Contact -----
 @app.post("/api/contact")
 async def contact_form(contact: ContactRequest):
     if not resend.api_key:
@@ -265,7 +250,6 @@ async def contact_form(contact: ContactRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ----- Newsletter -----
 @app.post("/api/newsletter")
 async def newsletter_subscribe(req: NewsletterRequest):
     if not resend.api_key:
@@ -284,7 +268,6 @@ async def newsletter_subscribe(req: NewsletterRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ----- AI Agents -----
 AGENT_PROMPTS = {
     "job-description": "Tu es un expert en recrutement au Mali. Améliore le texte suivant pour une offre d'emploi. Rend-le attractif, clair, bien structuré, et inclusif. Retourne uniquement le texte amélioré, sans commentaire.",
     "job-title": "Génère 3 titres d'offre d'emploi accrocheurs (maximum 10 mots chacun) à partir de la description suivante. Retourne les titres sous forme de liste numérotée, sans commentaire.",
@@ -335,14 +318,12 @@ async def ai_agent(req: AIAgentRequest):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
 
-# ----- Cancel Subscription -----
 @app.post("/api/subscription/cancel")
 async def cancel_subscription(req: CancelSubscriptionRequest):
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
     
     try:
-        # Récupérer l'entreprise liée à l'utilisateur
         company_res = supabase.table("companies").select("id, stripe_subscription_id").eq("owner_id", req.user_id).single().execute()
         if not company_res.data:
             raise HTTPException(status_code=404, detail="Entreprise non trouvée")
@@ -350,10 +331,8 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
         if not company.get("stripe_subscription_id"):
             raise HTTPException(status_code=400, detail="Aucun abonnement actif")
         
-        # Annuler l'abonnement Stripe
         stripe.Subscription.delete(company["stripe_subscription_id"])
         
-        # Mettre à jour la base de données
         supabase.table("companies").update({
             "stripe_subscription_id": None,
             "subscription_plan": "free",
