@@ -34,7 +34,7 @@ export default function LegalPage() {
         <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">
           Mentions Légales<span className="text-[#D4AF37]">.</span>
         </h1>
-        <p className="text-slate-400 text-sm mb-12">Dernière mise à jour : Janvier 2026</p>
+        <p className="text-slate-400 text-sm mb-12">Dernière mise à jour : Mai 2025</p>
 
         <div className="prose prose-slate max-w-none">
           <section className="mb-12">
@@ -42,9 +42,8 @@ export default function LegalPage() {
             <p className="text-slate-600 leading-relaxed">
               <strong>ACTOOS Group</strong><br />
               Société par Actions Simplifiée (SAS)<br />
-              Siège social : Bruxelles, Belgique<br />
               Email : <a href="mailto:contact@actoos.com" className="text-[#D4AF37] hover:underline">contact@actoos.com</a><br />
-              Directeur de la publication : Salif KANE
+              Directeur de la publication : L'équipe Actoos
             </p>
           </section>
 
@@ -80,9 +79,6 @@ export default function LegalPage() {
             </p>
             <ul className="list-disc pl-6 text-slate-600 space-y-2 mt-4">
               <li>ACTOOS®</li>
-              <li>ACTOOS PRO®</li>
-              <li>ACTOOS ONE®</li>
-              <li>ACTOOS PAY®</li>
               <li>&quot;Empowering Action. Delivering Progress.&quot;®</li>
             </ul>
           </section>
@@ -125,8 +121,8 @@ export default function LegalPage() {
           <section className="mb-12">
             <h2 className="text-2xl font-black tracking-tight mb-4">8. Droit Applicable</h2>
             <p className="text-slate-600 leading-relaxed">
-              Le présent site et les présentes mentions légales sont soumis au droit belge 
-              et européen. En cas de litige, les tribunaux belges seront seuls compétents.
+              Le présent site et les présentes mentions légales sont soumis au droit européen. 
+              En cas de litige, les tribunaux compétents seront ceux du siège social d&apos;ACTOOS Group.
             </p>
           </section>
 
@@ -135,8 +131,7 @@ export default function LegalPage() {
             <p className="text-slate-600 leading-relaxed">
               Pour toute question concernant ces mentions légales :<br /><br />
               <strong>ACTOOS Group</strong><br />
-              Email : <a href="mailto:contact@actoos.com" className="text-[#D4AF37] hover:underline">contact@actoos.com</a><br />
-              Adresse : Bruxelles, Belgique
+              Email : <a href="mailto:contact@actoos.com" className="text-[#D4AF37] hover:underline">contact@actoos.com</a>
             </p>
           </section>
         </div>
@@ -145,10 +140,10 @@ export default function LegalPage() {
       {/* Footer */}
       <footer className="bg-slate-50 py-8 px-6 border-t border-slate-100">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
-          <p>© 2026 Actoos Group. All rights reserved.</p>
+          <p>© Actoos Group. Tous droits réservés.</p>
           <div className="flex space-x-8">
-            <a href="/privacy" className="hover:text-black transition-colors">Privacy</a>
-            <span className="text-slate-600">Legal</span>
+            <a href="/privacy" className="hover:text-black transition-colors">Confidentialité</a>
+            <span className="text-slate-600">Mentions légales</span>
           </div>
         </div>
       </footer>

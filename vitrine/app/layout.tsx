@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import CookieConsent from './components/CookieConsent';
+import { ProjectProvider } from './context/ProjectContext';
 
 export const metadata: Metadata = {
   title: 'ACTOOS - Empowering Action. Delivering Progress.',
-  description: 'Multi-Continental Software Factory. Nous bâtissons les infrastructures logicielles qui redéfinissent l\'efficacité des entreprises en Europe et la souveraineté financière des citoyens en Afrique.',
-  keywords: ['ACTOOS', 'software', 'SaaS', 'Africa', 'Europe', 'fintech', 'field service management'],
+  description: 'Créateur de solutions logicielles sur mesure. Nous concevons et développons des applications, plateformes web et logiciels personnalisés pour les entreprises.',
+  keywords: ['ACTOOS', 'logiciel sur mesure', 'développement', 'application mobile', 'plateforme web'],
   authors: [{ name: 'ACTOOS Group' }],
   creator: 'ACTOOS Group',
   publisher: 'ACTOOS Group',
@@ -16,20 +17,20 @@ export const metadata: Metadata = {
     url: 'https://actoos.com',
     siteName: 'ACTOOS',
     title: 'ACTOOS - Empowering Action. Delivering Progress.',
-    description: 'Multi-Continental Software Factory building digital infrastructure for Europe and Africa.',
+    description: 'Créateur de solutions logicielles sur mesure. Applications, plateformes web, logiciels personnalisés.',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'ACTOOS - Software Factory',
+        alt: 'ACTOOS - Créateur de solutions logicielles',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'ACTOOS - Empowering Action. Delivering Progress.',
-    description: 'Multi-Continental Software Factory',
+    description: 'Créateur de solutions logicielles sur mesure',
     images: ['/og-image.png'],
   },
   robots: {
@@ -38,11 +39,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/logo-icon.png', type: 'image/png', sizes: '192x192' },
-      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
+      { url: '/logo-icon.png', sizes: '192x192', type: 'image/png' },
     ],
     apple: '/logo-icon.png',
-    shortcut: '/logo-icon.png',
+    shortcut: '/favicon.png',
   },
 };
 
@@ -58,8 +60,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="antialiased">
-        {children}
-        <CookieConsent />
+        <ProjectProvider>
+          {children}
+          <CookieConsent />
+        </ProjectProvider>
       </body>
     </html>
   );
