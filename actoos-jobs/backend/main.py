@@ -546,40 +546,38 @@ async def send_job_alerts():
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
 
-    # Récupérer les alertes actives AVEC l'email de l'utilisateur
-    alerts_response = httpx.get(
+    # 1. Récupérer toutes les alertes actives
+    alerts_resp = httpx.get(
         f"{supabase_url}/rest/v1/job_alerts?select=*,user:users(email)&is_active=eq.true",
         headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     )
-    alerts = alerts_response.json()
-
+    alerts = alerts_resp.json()
     if not isinstance(alerts, list) or len(alerts) == 0:
-        return {"success": True, "message": "Aucune alerte active trouvée"}
+        return {"success": True, "message": "Aucune alerte active"}
 
     count_sent = 0
     for alert in alerts:
         user_email = alert.get("user", {}).get("email")
-        if not user_email:
+        user_id = alert.get("user_id")
+        if not user_email or not user_id:
             continue
 
         keywords = [k.strip() for k in alert.get("keywords", "").split(",") if k.strip()]
         if not keywords:
             continue
 
-        # Construire un filtre OR pour chaque mot-clé
-        filter_parts = []
-        for kw in keywords:
-            filter_parts.append(f"title.ilike.*{kw}*,description.ilike.*{kw}*")
-        filter_query = ",".join(filter_parts)
-
-        jobs_response = httpx.get(
-            f"{supabase_url}/rest/v1/jobs?status=eq.active&or=({filter_query})",
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-        )
-        jobs = jobs_response.json()
+        # 2. Appeler la fonction SQL qui gère les accents et exclut les offres du recruteur
+        rpc_url = f"{supabase_url}/rest/v1/rpc/search_jobs_for_alert"
+        payload = {"keywords": keywords, "user_id": user_id}
+        rpc_resp = httpx.post(rpc_url, json=payload, headers={
+            "apikey": supabase_key,
+            "Authorization": f"Bearer {supabase_key}"
+        })
+        jobs = rpc_resp.json()
         if not isinstance(jobs, list) or len(jobs) == 0:
             continue
 
+        # 3. Construire l'email
         job_links = "<br>".join(
             [f"<a href='https://jobs.actoos.com/emplois/{j['id']}'>{j['title']}</a>" for j in jobs]
         )
