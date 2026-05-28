@@ -33,7 +33,7 @@ webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 resend.api_key = os.environ.get("RESEND_API_KEY", "re_HSsCQxUj_HvzYvhZDoJzEHBciWmYDU3ZR")
 
 # OpenRouter
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "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")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 # Supabase (pour l'upload)
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -538,6 +538,10 @@ class SendJobAlertsRequest(BaseModel):
 
 @app.post("/api/send-job-alerts")
 async def send_job_alerts():
+    # Vérifier la clé secrète
+    auth_header = request.headers.get("X-Cron-Secret")
+    if not auth_header or auth_header != CRON_SECRET:
+        raise HTTPException(status_code=403, detail="Accès refusé")
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
     try:
