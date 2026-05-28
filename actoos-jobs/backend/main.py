@@ -1,5 +1,3 @@
-import base64
-import uuid
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -10,12 +8,15 @@ from dotenv import load_dotenv
 import resend
 import httpx
 import random
+import base64
+import uuid
 
 load_dotenv()
 
 app = FastAPI(title="Actoos Jobs API")
 
-ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
+# CORS
+ALLOWED_ORIGINS = ["http://localhost:3000", "https://jobs.actoos.com"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -24,11 +25,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Stripe
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
+# Resend
 resend.api_key = os.environ.get("RESEND_API_KEY")
+
+# OpenRouter
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
+
+# Supabase (pour l'upload)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 SUBSCRIPTION_PLANS = {
     "pro_monthly": {"amount": 49000, "name": "Plan Pro - Mensuel", "type": "subscription", "interval": "month"},
@@ -78,7 +87,13 @@ class SendInterviewLinkRequest(BaseModel):
     job_title: str
     meeting_link: str
 
-# ----- Endpoints basiques -----
+class UploadRequest(BaseModel):
+    bucket: str
+    folder: str
+    filename: str
+    file_data: str
+
+# ----- Health & Pricing -----
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "service": "actoos-jobs-api", "currency": "XOF"}
@@ -91,7 +106,7 @@ async def get_pricing():
         "currency": "XOF"
     }
 
-# ----- Stripe -----
+# ----- Stripe Checkout -----
 @app.post("/api/checkout/session")
 async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
     if not stripe.api_key:
@@ -221,7 +236,7 @@ async def stripe_webhook(request: Request):
         print(f"Webhook error: {e}")
         return {"received": True, "error": str(e)}
 
-# ----- Resend (emails) -----
+# ----- Contact & Newsletter -----
 @app.post("/api/contact")
 async def contact_form(contact: ContactRequest):
     if not resend.api_key:
@@ -284,89 +299,29 @@ async def send_interview_link(req: SendInterviewLinkRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ----- IA : +50 agents et fallback multi-modèles -----
-
+# ----- IA -----
 AGENT_PROMPTS = {
-    # Offres d'emploi
     "job-description": "Tu es un expert en recrutement au Mali. Améliore le texte suivant pour une offre d'emploi. Rend-le attractif, clair, bien structuré, et inclusif. Retourne uniquement le texte amélioré, sans commentaire.",
     "job-title": "Génère 3 titres d'offre d'emploi accrocheurs (maximum 10 mots chacun) à partir de la description suivante. Retourne les titres sous forme de liste numérotée, sans commentaire.",
     "job-requirements": "Reformule la section 'Profil recherché' ou 'Compétences requises' suivante de manière professionnelle, en utilisant des verbes d'action. Retourne uniquement le texte reformulé.",
     "job-missions": "Reformule la liste des missions ou responsabilités du poste ci-dessous en les rendant dynamiques et motivantes. Retourne uniquement le texte reformulé.",
-    "job-benefits": "Rédige une liste d'avantages attractifs pour les employés à partir de la description de l'entreprise. Retourne une liste à puces.",
-    "job-summary": "Résume l'offre d'emploi en un paragraphe de 3-4 phrases percutantes. Retourne uniquement le résumé.",
-    "job-keywords": "Extrais 5 à 10 mots-clés pertinents pour cette offre d'emploi. Retourne une liste séparée par des virgules.",
-    "job-salary-text": "Rédige une phrase attractive sur la rémunération à partir des chiffres fournis. Retourne uniquement la phrase.",
-    "job-company-presentation": "Rédige un court paragraphe de présentation de l'entreprise pour une offre d'emploi. Retourne uniquement le texte.",
-    "job-category-suggestion": "Suggère la catégorie d'emploi la plus appropriée pour cette offre. Retourne uniquement le nom de la catégorie.",
-
-    # CV et profil candidat
     "cv-summary": "Tu es un coach en carrière. Résume en 2-3 phrases percutantes le profil candidat ci-dessous, en mettant en avant ses compétences et sa valeur ajoutée. Retourne uniquement le résumé, sans commentaire.",
     "cv-experience": "Reformule l'expérience professionnelle suivante en utilisant des verbes d'action et en quantifiant les résultats. Garde le même sens mais rends-le plus impactant. Retourne uniquement la version reformulée.",
     "cv-skills": "À partir de la description d'expérience ou du texte suivant, extrais et suggère une liste de compétences clés pertinentes (5 à 10 compétences). Retourne la liste sous forme de puces, sans commentaire.",
-    "cv-education": "Reformule la formation ou le diplôme suivant pour le mettre en valeur. Retourne uniquement la version reformulée.",
-    "cv-hobbies": "Suggère 3-4 loisirs ou centres d'intérêt pertinents à mentionner sur un CV, en fonction du profil. Retourne une liste.",
-    "cv-linkedin-headline": "Crée un titre accrocheur pour un profil LinkedIn (maximum 120 caractères) basé sur le profil. Retourne uniquement le titre.",
-    "cv-cover-letter-intro": "Rédige une introduction percutante pour une lettre de motivation. Retourne uniquement le paragraphe d'introduction.",
-    "cv-cover-letter-body": "Rédige le corps d'une lettre de motivation mettant en avant les compétences pour le poste. Retourne uniquement le texte.",
-    "cv-cover-letter-conclusion": "Rédige une conclusion polie et motivée pour une lettre de motivation. Retourne uniquement la conclusion.",
-    "cv-full-letter": "Assemble et génère une lettre de motivation complète à partir des éléments fournis. Retourne la lettre entière.",
-
-    # Entretien
+    "cover-letter": "Rédige une lettre de motivation professionnelle et personnalisée en français, basée sur le profil du candidat et l'offre d'emploi fournis. Structure la lettre avec : introduction, motivation, compétences, conclusion. Adapte le ton à l'entreprise et au poste. Retourne uniquement la lettre.",
     "interview-questions": "Génère 5 à 7 questions d'entretien probables basées sur l'offre d'emploi et le profil du candidat. Alterne entre questions techniques, comportementales et de motivation. Retourne une liste numérotée.",
     "interview-answers": "Pour chaque question d'entretien fournie, propose une réponse type structurée et convaincante. Utilise la méthode STAR quand c'est pertinent. Retourne les questions et les réponses.",
     "interview-tips": "Donne des conseils personnalisés pour réussir l'entretien ciblant ce poste spécifique. Inclus des recommandations sur la tenue, le langage corporel, les questions à poser, et les points à mettre en avant. Maximum 5 conseils. Retourne une liste à puces.",
-    "interview-followup-email": "Rédige un email de remerciement après un entretien, personnalisé pour le candidat et l'entreprise. Retourne uniquement le texte de l'email.",
-    "interview-self-evaluation": "Aide le candidat à évaluer sa performance en entretien en posant 5 questions d'auto-évaluation. Retourne une liste.",
-    "interview-negotiation-tips": "Donne 5 conseils pour négocier son salaire ou ses avantages après une offre. Retourne une liste.",
-    "interview-body-language": "Liste 5 points clés sur le langage corporel à adopter en entretien. Retourne une liste.",
-    "interview-questions-to-ask": "Suggère 5 questions pertinentes que le candidat peut poser au recruteur. Retourne une liste.",
-    "interview-virtual-tips": "Donne 5 conseils spécifiques pour réussir un entretien en visioconférence. Retourne une liste.",
-    "interview-dress-code": "Conseille la tenue vestimentaire appropriée pour un entretien dans ce secteur. Retourne un court paragraphe.",
-
-    # Recruteur / Entreprise
-    "recruiter-screening-questions": "Génère 5 questions de présélection téléphonique pour ce poste. Retourne une liste.",
-    "recruiter-job-posting-optimization": "Optimise le texte de l'offre pour attirer plus de candidats qualifiés. Retourne le texte amélioré.",
-    "recruiter-candidate-evaluation": "Aide à évaluer un candidat en listant 5 critères objectifs basés sur l'offre. Retourne une liste.",
-    "recruiter-rejection-email": "Rédige un email de refus poli et encourageant pour un candidat. Retourne uniquement le texte de l'email.",
-    "recruiter-acceptance-email": "Rédige un email d'acceptation chaleureux pour un candidat retenu. Retourne uniquement le texte.",
-    "recruiter-onboarding-plan": "Suggère un plan d'intégration de 5 étapes pour un nouveau collaborateur. Retourne une liste.",
-    "recruiter-employer-branding": "Donne 5 idées pour améliorer la marque employeur de l'entreprise. Retourne une liste.",
-    "recruiter-diversity-tips": "Donne 5 conseils pour rédiger une offre inclusive et attirer la diversité. Retourne une liste.",
-    "recruiter-salary-benchmark": "Estime une fourchette de salaire pour ce poste au Mali. Retourne la fourchette avec une brève explication.",
-    "recruiter-job-description-template": "Crée un modèle d'offre d'emploi structuré pour ce type de poste. Retourne le modèle.",
-
-    # Carrière & développement
-    "career-advice": "Donne 3 conseils de carrière personnalisés basés sur le profil. Retourne une liste.",
-    "career-switch": "Suggère 3 pistes de reconversion professionnelle en fonction des compétences actuelles. Retourne une liste.",
-    "career-goals": "Aide à définir 3 objectifs de carrière à court/moyen terme. Retourne une liste.",
-    "career-skills-gap": "Identifie 3 compétences manquantes pour évoluer vers un poste supérieur. Retourne une liste.",
-    "career-networking": "Donne 5 conseils pour développer son réseau professionnel. Retourne une liste.",
-    "career-personal-branding": "Donne 5 astuces pour améliorer sa marque personnelle en ligne. Retourne une liste.",
-    "career-mentoring": "Explique comment trouver un mentor et 3 questions à lui poser. Retourne un court paragraphe.",
-    "career-freelance": "Donne 5 conseils pour se lancer en freelance dans ce domaine. Retourne une liste.",
-    "career-remote-work": "Donne 5 conseils pour réussir en télétravail. Retourne une liste.",
-    "career-burnout": "Donne 5 signes avant-coureurs de burnout et comment les éviter. Retourne une liste.",
-
-    # Légal / administratif
-    "legal-contract-tips": "Liste 5 points à vérifier dans un contrat de travail. Retourne une liste.",
-    "legal-nda": "Explique brièvement ce qu'est un accord de confidentialité. Retourne un court paragraphe.",
-    "legal-non-compete": "Explique les implications d'une clause de non-concurrence. Retourne un court paragraphe.",
-
-    # Général / Utilitaires
-    "translate-french": "Traduis le texte suivant en français. Retourne uniquement la traduction.",
-    "summarize": "Résume le texte suivant en 3 phrases maximum. Retourne uniquement le résumé.",
-    "improve-text": "Améliore la clarté et le style du texte suivant. Retourne uniquement le texte amélioré.",
     "cv-analysis": "Tu es un expert en recrutement et en rédaction de CV. Analyse le CV suivant et donne 3 à 5 suggestions concrètes pour l'améliorer, sans le réécrire. Mentionne les points faibles, les incohérences, et les éléments manquants. Sois constructif. Retourne uniquement les suggestions, sous forme de liste à puces.",
 }
 
-# Modèles de fallback (gratuits et fiables)
 FALLBACK_MODELS = [
     "mistralai/mistral-7b-instruct:free",
     "google/gemini-2.0-flash-lite-preview-02-05:free",
     "google/gemma-2-9b-it:free",
     "meta-llama/llama-2-13b-chat:free",
     "microsoft/phi-3-mini-128k-instruct:free",
-    "openai/gpt-3.5-turbo",   # payant mais fiable si les gratuits sont tous limités
+    "openai/gpt-3.5-turbo",
 ]
 
 @app.post("/api/ai/agent")
@@ -380,8 +335,7 @@ async def ai_agent(req: AIAgentRequest):
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Texte à améliorer :\n\n{req.text}" +
-                                      (f"\n\nContexte supplémentaire : {req.context}" if req.context else "")}
+        {"role": "user", "content": f"Texte à améliorer :\n\n{req.text}" + (f"\n\nContexte supplémentaire : {req.context}" if req.context else "")}
     ]
 
     last_error = None
@@ -403,15 +357,12 @@ async def ai_agent(req: AIAgentRequest):
                     }
                 )
                 data = response.json()
-
                 if "choices" in data and len(data["choices"]) > 0:
                     improved_text = data["choices"][0]["message"]["content"].strip()
                     return {"success": True, "result": improved_text, "model_used": model}
-
                 if data.get("error", {}).get("code") == 429:
                     print(f"Rate‑limit avec {model}, essai suivant…")
                     continue
-
                 last_error = data
         except Exception as e:
             print(f"Erreur avec {model}: {str(e)}")
@@ -419,76 +370,101 @@ async def ai_agent(req: AIAgentRequest):
 
     raise HTTPException(status_code=502, detail=f"Tous les modèles ont échoué. Dernière erreur : {last_error}")
 
-import base64
-import uuid
-
-class UploadRequest(BaseModel):
-    bucket: str
-    folder: str
-    filename: str
-    file_data: str
-
+# ----- Upload sécurisé -----
 @app.post("/api/upload")
 async def upload_file(req: UploadRequest):
-    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase storage not configured")
-    
     try:
         header, encoded = req.file_data.split(",", 1) if "," in req.file_data else ("", req.file_data)
         file_bytes = base64.b64decode(encoded)
         file_path = f"{req.folder}/{req.filename}"
-        
         headers = {
-            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
-            "apikey": SUPABASE_SERVICE_ROLE_KEY
+            "Authorization": f"Bearer {supabase_key}",
+            "apikey": supabase_key
         }
-        
-        upload_url = f"{SUPABASE_URL}/storage/v1/object/{req.bucket}/{file_path}"
+        upload_url = f"{supabase_url}/storage/v1/object/{req.bucket}/{file_path}"
         response = httpx.put(upload_url, headers=headers, content=file_bytes)
+        if response.status_code != 200:
+            raise Exception(f"Upload failed: {response.text}")
+        public_url = f"{supabase_url}/storage/v1/object/public/{req.bucket}/{file_path}"
+        return {"success": True, "url": public_url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+class UploadDocumentRequest(BaseModel):
+    file_data: str
+    filename: str
+    file_type: str = 'other'
+
+@app.post("/api/upload-document")
+async def upload_document(req: UploadDocumentRequest, request: Request):
+    # Récupérer l'utilisateur authentifié via le token
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    token = auth_header.split(" ")[1]
+    
+    # Vérifier le token auprès de Supabase pour obtenir l'user_id
+    try:
+        user_response = httpx.get(
+            f"{os.getenv('SUPABASE_URL')}/auth/v1/user",
+            headers={"Authorization": f"Bearer {token}", "apikey": os.getenv("SUPABASE_SERVICE_ROLE_KEY")}
+        )
+        user_data = user_response.json()
+        user_id = user_data.get("id")
+        if not user_id:
+            raise Exception("Utilisateur non trouvé")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Token invalide")
+    
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase storage not configured")
+    
+    try:
+        # Upload du fichier
+        header, encoded = req.file_data.split(",", 1) if "," in req.file_data else ("", req.file_data)
+        file_bytes = base64.b64decode(encoded)
+        file_path = f"{user_id}/{req.filename}"
         
+        upload_headers = {
+            "Authorization": f"Bearer {supabase_key}",
+            "apikey": supabase_key
+        }
+        upload_url = f"{supabase_url}/storage/v1/object/candidate-documents/{file_path}"
+        response = httpx.put(upload_url, headers=upload_headers, content=file_bytes)
         if response.status_code != 200:
             raise Exception(f"Upload failed: {response.text}")
         
-        public_url = f"{SUPABASE_URL}/storage/v1/object/public/{req.bucket}/{file_path}"
-        return {"success": True, "url": public_url}
+        public_url = f"{supabase_url}/storage/v1/object/public/candidate-documents/{file_path}"
+        
+        # Insérer l'enregistrement dans la table (avec la service role)
+        insert_headers = {
+            "Authorization": f"Bearer {supabase_key}",
+            "apikey": supabase_key,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+        }
+        insert_data = {
+            "user_id": user_id,
+            "name": req.filename,
+            "file_url": public_url,
+            "file_type": req.file_type
+        }
+        insert_response = httpx.post(
+            f"{supabase_url}/rest/v1/candidate_documents",
+            headers=insert_headers,
+            json=insert_data
+        )
+        if insert_response.status_code not in [200, 201]:
+            raise Exception(f"Insert failed: {insert_response.text}")
+        
+        return {"success": True, "url": public_url, "document": insert_response.json()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
-class NotifyStatusChangeRequest(BaseModel):
-    candidate_email: str
-    candidate_name: str
-    job_title: str
-    new_status: str
-
-STATUS_EMAIL_TEMPLATES = {
-    "viewed": "Votre candidature pour le poste **{job_title}** a été consultée par le recruteur.",
-    "shortlisted": "Félicitations ! Votre candidature pour le poste **{job_title}** a été présélectionnée.",
-    "interview": "Vous êtes invité à un entretien pour le poste **{job_title}**. Le recruteur vous contactera pour convenir d'une date.",
-    "accepted": "Votre candidature pour le poste **{job_title}** a été acceptée. Le recruteur va prendre contact avec vous.",
-    "rejected": "Votre candidature pour le poste **{job_title}** n'a malheureusement pas été retenue. Nous vous encourageons à continuer vos recherches."
-}
-
-@app.post("/api/notify-status-change")
-async def notify_status_change(req: NotifyStatusChangeRequest):
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Email service not configured")
-
-    message = STATUS_EMAIL_TEMPLATES.get(req.new_status, f"Votre candidature pour le poste **{req.job_title}** a été mise à jour : {req.new_status}.")
-    html = f"""
-        <h2>Bonjour {req.candidate_name},</h2>
-        <p>{message}</p>
-        <p>Consultez vos candidatures sur <a href="https://jobs.actoos.com/mes-candidatures">Actoos Jobs</a>.</p>
-    """
-
-    try:
-        resend.Emails.send({
-            "from": "Actoos Jobs <noreply@actoos.com>",
-            "to": [req.candidate_email],
-            "subject": f"Votre candidature - {req.job_title}",
-            "html": html
-        })
-        return {"success": True, "message": "Email de notification envoyé."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
