@@ -538,7 +538,6 @@ class SendJobAlertsRequest(BaseModel):
 
 @app.post("/api/send-job-alerts")
 async def send_job_alerts(request: Request):
-    auth_header = request.headers.get("X-Cron-Secret")
     if not auth_header or auth_header != os.getenv("CRON_SECRET", "changeme"):
         raise HTTPException(status_code=403, detail="Accès refusé")
     
