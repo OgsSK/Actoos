@@ -288,7 +288,7 @@ async def ai_agent(req: AIAgentRequest):
                     "X-Title": "Actoos Jobs AI",
                 },
                 json={
-                    "model": "google/gemini-2.0-flash-001",
+                    "model": "mistralai/mistral-7b-instruct:free",
                     "messages": messages,
                     "temperature": 0.7,
                     "max_tokens": 800,
@@ -307,7 +307,7 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)
 
 
-    
+
 class SendInterviewLinkRequest(BaseModel):
     email: str
     candidate_name: str
