@@ -93,6 +93,18 @@ class UploadRequest(BaseModel):
     filename: str
     file_data: str
 
+class UploadDocumentRequest(BaseModel):
+    user_id: str
+    file_data: str
+    filename: str
+    file_type: str = 'other'
+
+class NotifyNewApplicationRequest(BaseModel):
+    recruiter_email: str
+    recruiter_name: str
+    candidate_name: str
+    job_title: str
+
 # ----- Health & Pricing -----
 @app.get("/api/health")
 async def health():
@@ -393,43 +405,18 @@ async def upload_file(req: UploadRequest):
         return {"success": True, "url": public_url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-class UploadDocumentRequest(BaseModel):
-    file_data: str
-    filename: str
-    file_type: str = 'other'
 
 @app.post("/api/upload-document")
-async def upload_document(req: UploadDocumentRequest, request: Request):
-    # Récupérer l'utilisateur authentifié via le token
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Non authentifié")
-    token = auth_header.split(" ")[1]
-    
-    # Vérifier le token auprès de Supabase pour obtenir l'user_id
-    try:
-        user_response = httpx.get(
-            f"{os.getenv('SUPABASE_URL')}/auth/v1/user",
-            headers={"Authorization": f"Bearer {token}", "apikey": os.getenv("SUPABASE_SERVICE_ROLE_KEY")}
-        )
-        user_data = user_response.json()
-        user_id = user_data.get("id")
-        if not user_id:
-            raise Exception("Utilisateur non trouvé")
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="Token invalide")
-    
+async def upload_document(req: UploadDocumentRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase storage not configured")
-    
     try:
-        # Upload du fichier
         header, encoded = req.file_data.split(",", 1) if "," in req.file_data else ("", req.file_data)
         file_bytes = base64.b64decode(encoded)
-        file_path = f"{user_id}/{req.filename}"
-        
+        file_path = f"{req.user_id}/{req.filename}"
+
         upload_headers = {
             "Authorization": f"Bearer {supabase_key}",
             "apikey": supabase_key
@@ -438,10 +425,9 @@ async def upload_document(req: UploadDocumentRequest, request: Request):
         response = httpx.put(upload_url, headers=upload_headers, content=file_bytes)
         if response.status_code != 200:
             raise Exception(f"Upload failed: {response.text}")
-        
+
         public_url = f"{supabase_url}/storage/v1/object/public/candidate-documents/{file_path}"
-        
-        # Insérer l'enregistrement dans la table (avec la service role)
+
         insert_headers = {
             "Authorization": f"Bearer {supabase_key}",
             "apikey": supabase_key,
@@ -449,7 +435,7 @@ async def upload_document(req: UploadDocumentRequest, request: Request):
             "Prefer": "return=representation"
         }
         insert_data = {
-            "user_id": user_id,
+            "user_id": req.user_id,
             "name": req.filename,
             "file_url": public_url,
             "file_type": req.file_type
@@ -461,10 +447,65 @@ async def upload_document(req: UploadDocumentRequest, request: Request):
         )
         if insert_response.status_code not in [200, 201]:
             raise Exception(f"Insert failed: {insert_response.text}")
-        
+
         return {"success": True, "url": public_url, "document": insert_response.json()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ----- Notifications par email -----
+@app.post("/api/notify-new-application")
+async def notify_new_application(req: NotifyNewApplicationRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        r = resend.Emails.send({
+            "from": "Actoos Jobs <noreply@actoos.com>",
+            "to": [req.recruiter_email],
+            "subject": f"Nouvelle candidature pour {req.job_title}",
+            "html": f"""
+                <h2>Bonjour {req.recruiter_name},</h2>
+                <p><strong>{req.candidate_name}</strong> vient de postuler à votre offre <strong>{req.job_title}</strong>.</p>
+                <p>Consultez la candidature sur <a href="https://jobs.actoos.com/dashboard/entreprise/candidatures">Actoos Jobs</a>.</p>
+            """
+        })
+        return {"success": True, "message": "Email envoyé au recruteur."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+class NotifyStatusChangeRequest(BaseModel):
+    candidate_email: str
+    candidate_name: str
+    job_title: str
+    new_status: str
+
+STATUS_EMAIL_TEMPLATES = {
+    "viewed": "Votre candidature pour le poste **{job_title}** a été consultée par le recruteur.",
+    "shortlisted": "Félicitations ! Votre candidature pour le poste **{job_title}** a été présélectionnée.",
+    "interview": "Vous êtes invité à un entretien pour le poste **{job_title}**. Le recruteur vous contactera pour convenir d'une date.",
+    "accepted": "Votre candidature pour le poste **{job_title}** a été acceptée. Le recruteur va prendre contact avec vous.",
+    "rejected": "Votre candidature pour le poste **{job_title}** n'a malheureusement pas été retenue. Nous vous encourageons à continuer vos recherches."
+}
+
+@app.post("/api/notify-status-change")
+async def notify_status_change(req: NotifyStatusChangeRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    message = STATUS_EMAIL_TEMPLATES.get(req.new_status, f"Votre candidature pour le poste **{req.job_title}** a été mise à jour : {req.new_status}.")
+    html = f"""
+        <h2>Bonjour {req.candidate_name},</h2>
+        <p>{message}</p>
+        <p>Consultez vos candidatures sur <a href="https://jobs.actoos.com/mes-candidatures">Actoos Jobs</a>.</p>
+    """
+    try:
+        resend.Emails.send({
+            "from": "Actoos Jobs <noreply@actoos.com>",
+            "to": [req.candidate_email],
+            "subject": f"Votre candidature - {req.job_title}",
+            "html": html
+        })
+        return {"success": True, "message": "Email envoyé au candidat."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
