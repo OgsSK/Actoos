@@ -30,7 +30,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
 # Resend
-resend.api_key = os.environ.get("RESEND_API_KEY")
+resend.api_key = os.environ.get("RESEND_API_KEY", "re_HSsCQxUj_HvzYvhZDoJzEHBciWmYDU3ZR")
 
 # OpenRouter
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
@@ -104,6 +104,12 @@ class NotifyNewApplicationRequest(BaseModel):
     recruiter_name: str
     candidate_name: str
     job_title: str
+
+class NotifyStatusChangeRequest(BaseModel):
+    candidate_email: str
+    candidate_name: str
+    job_title: str
+    new_status: str
 
 # ----- Health & Pricing -----
 @app.get("/api/health")
@@ -471,11 +477,6 @@ async def notify_new_application(req: NotifyNewApplicationRequest):
         return {"success": True, "message": "Email envoyé au recruteur."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-class NotifyStatusChangeRequest(BaseModel):
-    candidate_email: str
-    candidate_name: str
-    job_title: str
-    new_status: str
 
 STATUS_EMAIL_TEMPLATES = {
     "viewed": "Votre candidature pour le poste **{job_title}** a été consultée par le recruteur.",
@@ -489,7 +490,9 @@ STATUS_EMAIL_TEMPLATES = {
 async def notify_status_change(req: NotifyStatusChangeRequest):
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
-    message = STATUS_EMAIL_TEMPLATES.get(req.new_status, f"Votre candidature pour le poste **{req.job_title}** a été mise à jour : {req.new_status}.")
+    template = STATUS_EMAIL_TEMPLATES.get(req.new_status, "Votre candidature pour le poste **{job_title}** a été mise à jour : {new_status}.")
+    message = template.replace("{job_title}", req.job_title).replace("{new_status}", req.new_status)
+
     html = f"""
         <h2>Bonjour {req.candidate_name},</h2>
         <p>{message}</p>
