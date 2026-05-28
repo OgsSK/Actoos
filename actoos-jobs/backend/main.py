@@ -33,7 +33,7 @@ webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 resend.api_key = os.environ.get("RESEND_API_KEY", "re_HSsCQxUj_HvzYvhZDoJzEHBciWmYDU3ZR")
 
 # OpenRouter
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "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")
 
 # Supabase (pour l'upload)
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -86,6 +86,7 @@ class SendInterviewLinkRequest(BaseModel):
     candidate_name: str
     job_title: str
     meeting_link: str
+    company_name: Optional[str] = ""
 
 class UploadRequest(BaseModel):
     bucket: str
@@ -104,12 +105,22 @@ class NotifyNewApplicationRequest(BaseModel):
     recruiter_name: str
     candidate_name: str
     job_title: str
+    company_name: Optional[str] = ""
 
 class NotifyStatusChangeRequest(BaseModel):
     candidate_email: str
     candidate_name: str
     job_title: str
     new_status: str
+    company_name: Optional[str] = ""
+    reason: Optional[str] = None
+
+# ----- Utilitaire de nettoyage des sujets -----
+def clean_subject(text: str, max_length: int = 50) -> str:
+    cleaned = text.replace('\n', ' ').replace('\r', ' ')
+    if len(cleaned) > max_length:
+        cleaned = cleaned[:max_length-3] + '...'
+    return cleaned
 
 # ----- Health & Pricing -----
 @app.get("/api/health")
@@ -295,18 +306,21 @@ async def newsletter_subscribe(req: NewsletterRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ----- Send Interview Link -----
 @app.post("/api/send-interview-link")
 async def send_interview_link(req: SendInterviewLinkRequest):
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
     try:
+        safe_job_title = clean_subject(req.job_title)
+        company_info = f" chez {req.company_name}" if req.company_name else ""
         r = resend.Emails.send({
             "from": "Actoos Jobs <noreply@actoos.com>",
             "to": [req.email],
-            "subject": f"Entretien pour le poste : {req.job_title}",
+            "subject": f"Entretien pour le poste : {safe_job_title}",
             "html": f"""
                 <h2>Bonjour {req.candidate_name},</h2>
-                <p>Vous êtes invité à un entretien pour le poste <strong>{req.job_title}</strong>.</p>
+                <p>Vous êtes invité à un entretien pour le poste <strong>{req.job_title}</strong>{company_info}.</p>
                 <p>Voici le lien de visioconférence :</p>
                 <p><a href="{req.meeting_link}">{req.meeting_link}</a></p>
                 <p>À bientôt,</p>
@@ -464,10 +478,11 @@ async def notify_new_application(req: NotifyNewApplicationRequest):
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
     try:
+        safe_job_title = clean_subject(req.job_title)
         r = resend.Emails.send({
             "from": "Actoos Jobs <noreply@actoos.com>",
             "to": [req.recruiter_email],
-            "subject": f"Nouvelle candidature pour {req.job_title}",
+            "subject": f"Nouvelle candidature pour {safe_job_title}",
             "html": f"""
                 <h2>Bonjour {req.recruiter_name},</h2>
                 <p><strong>{req.candidate_name}</strong> vient de postuler à votre offre <strong>{req.job_title}</strong>.</p>
@@ -479,20 +494,30 @@ async def notify_new_application(req: NotifyNewApplicationRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 STATUS_EMAIL_TEMPLATES = {
-    "viewed": "Votre candidature pour le poste **{job_title}** a été consultée par le recruteur.",
-    "shortlisted": "Félicitations ! Votre candidature pour le poste **{job_title}** a été présélectionnée.",
-    "interview": "Vous êtes invité à un entretien pour le poste **{job_title}**. Le recruteur vous contactera pour convenir d'une date.",
-    "accepted": "Votre candidature pour le poste **{job_title}** a été acceptée. Le recruteur va prendre contact avec vous.",
-    "rejected": "Votre candidature pour le poste **{job_title}** n'a malheureusement pas été retenue. Nous vous encourageons à continuer vos recherches."
+    "viewed": "Votre candidature pour le poste **{job_title}**{company_info} a été consultée par le recruteur.",
+    "shortlisted": "Félicitations ! Votre candidature pour le poste **{job_title}**{company_info} a été présélectionnée.",
+    "interview": "Vous êtes invité à un entretien pour le poste **{job_title}**{company_info}. Le recruteur vous contactera pour convenir d'une date.",
+    "accepted": "Votre candidature pour le poste **{job_title}**{company_info} a été acceptée. Le recruteur va prendre contact avec vous.",
+    "rejected": "Votre candidature pour le poste **{job_title}**{company_info} n'a malheureusement pas été retenue."
 }
 
 @app.post("/api/notify-status-change")
 async def notify_status_change(req: NotifyStatusChangeRequest):
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
-    template = STATUS_EMAIL_TEMPLATES.get(req.new_status, "Votre candidature pour le poste **{job_title}** a été mise à jour : {new_status}.")
-    message = template.replace("{job_title}", req.job_title).replace("{new_status}", req.new_status)
-
+    
+    safe_job_title = clean_subject(req.job_title)
+    company_info = f" chez {req.company_name}" if req.company_name else ""
+    
+    if req.new_status == "rejected" and req.reason:
+        reason_text = f" Raison : {req.reason}"
+    else:
+        reason_text = ""
+    
+    template = STATUS_EMAIL_TEMPLATES.get(req.new_status, "Votre candidature pour le poste **{job_title}**{company_info} a été mise à jour : {new_status}.")
+    message = template.replace("{job_title}", req.job_title).replace("{company_info}", company_info).replace("{new_status}", req.new_status)
+    message += reason_text
+    
     html = f"""
         <h2>Bonjour {req.candidate_name},</h2>
         <p>{message}</p>
@@ -502,10 +527,76 @@ async def notify_status_change(req: NotifyStatusChangeRequest):
         resend.Emails.send({
             "from": "Actoos Jobs <noreply@actoos.com>",
             "to": [req.candidate_email],
-            "subject": f"Votre candidature - {req.job_title}",
+            "subject": f"Votre candidature - {safe_job_title}",
             "html": html
         })
         return {"success": True, "message": "Email envoyé au candidat."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+class SendJobAlertsRequest(BaseModel):
+    pass  # pas de paramètre, tout est géré automatiquement
+
+@app.post("/api/send-job-alerts")
+async def send_job_alerts():
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        # Récupérer toutes les alertes actives
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        headers = {"Authorization": f"Bearer {supabase_key}", "apikey": supabase_key}
+        
+        # Récupérer les alertes
+        alerts_response = httpx.get(
+            f"{supabase_url}/rest/v1/job_alerts?select=*&is_active=eq.true",
+            headers=headers
+        )
+        alerts = alerts_response.json()
+        
+        sent_count = 0
+        for alert in alerts:
+            # Chercher les offres correspondant aux mots-clés (publiées depuis la dernière alerte)
+            keywords = alert.get("keywords", "")
+            last_sent = alert.get("last_sent_at")
+            if not last_sent:
+                last_sent = "1970-01-01T00:00:00Z"
+            
+            # Requête simplifiée : chercher les offres actives dont le titre contient les mots-clés
+            filter_query = f"status=eq.active&created_at=gte.{last_sent}"
+            if keywords:
+                # Pour chaque mot-clé, on fait un ilike
+                for kw in keywords.split(","):
+                    filter_query += f"&title=ilike.*{kw.strip()}*"
+            
+            jobs_response = httpx.get(
+                f"{supabase_url}/rest/v1/jobs?select=title,company:companies(name)&{filter_query}&limit=5",
+                headers=headers
+            )
+            jobs = jobs_response.json()
+            
+            if jobs and len(jobs) > 0:
+                # Envoyer l'email
+                job_list = "".join([f"<li><strong>{j.get('title')}</strong> chez {j.get('company', {}).get('name', 'Entreprise')}</li>" for j in jobs])
+                resend.Emails.send({
+                    "from": "Actoos Jobs <noreply@actoos.com>",
+                    "to": [alert.get("email")],
+                    "subject": f"Nouvelles offres correspondant à : {keywords}",
+                    "html": f"""
+                        <h2>Offres correspondant à vos critères</h2>
+                        <ul>{job_list}</ul>
+                        <p>Consultez toutes les offres sur <a href="https://jobs.actoos.com/emplois">Actoos Jobs</a>.</p>
+                    """
+                })
+                sent_count += 1
+                
+                # Mettre à jour last_sent_at
+                httpx.patch(
+                    f"{supabase_url}/rest/v1/job_alerts?id=eq.{alert['id']}",
+                    json={"last_sent_at": "now()"},
+                    headers=headers
+                )
+        
+        return {"success": True, "message": f"Emails envoyés pour {sent_count} alerte(s)."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
