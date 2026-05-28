@@ -540,74 +540,66 @@ class SendJobAlertsRequest(BaseModel):
 async def send_job_alerts():
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
-    
+
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    headers = {
-        "Authorization": f"Bearer {supabase_key}",
-        "apikey": supabase_key
-    }
-    
-    # Récupérer toutes les alertes actives
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    # Récupérer les alertes actives AVEC l'email de l'utilisateur
     alerts_response = httpx.get(
         f"{supabase_url}/rest/v1/job_alerts?select=*,user:users(email)&is_active=eq.true",
-        headers=headers
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     )
     alerts = alerts_response.json()
-    
-    sent_count = 0
+
+    if not isinstance(alerts, list) or len(alerts) == 0:
+        return {"success": True, "message": "Aucune alerte active trouvée"}
+
+    count_sent = 0
     for alert in alerts:
-        keywords = alert.get("keywords", "")
-        email = alert.get("user", {}).get("email", "")
-        last_sent = alert.get("last_sent_at")
-        
-        # Si jamais envoyé, prendre toutes les offres depuis 7 jours
-        if not last_sent:
-            import datetime
-            last_sent = (datetime.datetime.utcnow() - datetime.timedelta(days=7)).isoformat()
-        
-        # Construire la requête de recherche d'offres
-        jobs_url = f"{supabase_url}/rest/v1/jobs?select=title,company:companies(name)&status=eq.active&created_at=gte.{last_sent}&limit=5"
-        
-        # Ajouter les filtres de mots-clés
-        for kw in keywords.split(","):
-            kw_stripped = kw.strip()
-            if kw_stripped:
-                jobs_url += f"&title=ilike.*{kw_stripped}*"
-        
-        jobs_response = httpx.get(jobs_url, headers=headers)
-        jobs = jobs_response.json() if isinstance(jobs_response.json(), list) else []
-        
-        if len(jobs) > 0:
-            # Construire la liste HTML des offres
-            job_list = ""
-            for j in jobs:
-                title = j.get("title", "Offre")
-                company = j.get("company", {}) or {}
-                company_name = company.get("name", "Entreprise")
-                job_list += f"<li><strong>{title}</strong> chez {company_name}</li>"
-            
-            # Envoyer l'email
+        user_email = alert.get("user", {}).get("email")
+        if not user_email:
+            continue
+
+        keywords = [k.strip() for k in alert.get("keywords", "").split(",") if k.strip()]
+        if not keywords:
+            continue
+
+        # Construire un filtre OR pour chaque mot-clé
+        filter_parts = []
+        for kw in keywords:
+            filter_parts.append(f"title.ilike.*{kw}*,description.ilike.*{kw}*")
+        filter_query = ",".join(filter_parts)
+
+        jobs_response = httpx.get(
+            f"{supabase_url}/rest/v1/jobs?status=eq.active&or=({filter_query})",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        jobs = jobs_response.json()
+        if not isinstance(jobs, list) or len(jobs) == 0:
+            continue
+
+        job_links = "<br>".join(
+            [f"<a href='https://jobs.actoos.com/emplois/{j['id']}'>{j['title']}</a>" for j in jobs]
+        )
+        try:
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
-                "to": [email],
-                "subject": f"Nouvelles offres correspondant à : {keywords}",
+                "to": [user_email],
+                "subject": f"Alerte emploi : {', '.join(keywords)}",
                 "html": f"""
-                    <h2>Offres correspondant à vos critères</h2>
-                    <ul>{job_list}</ul>
-                    <p>Consultez toutes les offres sur <a href="https://jobs.actoos.com/emplois">Actoos Jobs</a>.</p>
+                    <h2>Nouvelles offres correspondant à votre alerte</h2>
+                    <p>Voici les offres trouvées pour vos mots-clés :</p>
+                    {job_links}
+                    <p>Bonne recherche !</p>
                 """
             })
-            sent_count += 1
-            
-            # Mettre à jour last_sent_at
-            httpx.patch(
-                f"{supabase_url}/rest/v1/job_alerts?id=eq.{alert['id']}",
-                json={"last_sent_at": "now()"},
-                headers=headers
-            )
-    
-    return {"success": True, "message": f"Emails envoyés pour {sent_count} alerte(s)."}
+            count_sent += 1
+        except Exception as e:
+            print(f"Erreur envoi alerte {alert.get('id')}: {e}")
+
+    return {"success": True, "message": f"Emails envoyés pour {count_sent} alerte(s)."}
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
