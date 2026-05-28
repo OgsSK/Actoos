@@ -305,3 +305,33 @@ async def ai_agent(req: AIAgentRequest):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
+
+
+    
+class SendInterviewLinkRequest(BaseModel):
+    email: str
+    candidate_name: str
+    job_title: str
+    meeting_link: str
+
+@app.post("/api/send-interview-link")
+async def send_interview_link(req: SendInterviewLinkRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        r = resend.Emails.send({
+            "from": "Actoos Jobs <noreply@actoos.com>",
+            "to": [req.email],
+            "subject": f"Entretien pour le poste : {req.job_title}",
+            "html": f"""
+                <h2>Bonjour {req.candidate_name},</h2>
+                <p>Vous êtes invité à un entretien pour le poste <strong>{req.job_title}</strong>.</p>
+                <p>Voici le lien de visioconférence :</p>
+                <p><a href="{req.meeting_link}">{req.meeting_link}</a></p>
+                <p>À bientôt,</p>
+                <p>L'équipe Actoos Jobs</p>
+            """
+        })
+        return {"success": True, "message": "Email envoyé avec succès."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
