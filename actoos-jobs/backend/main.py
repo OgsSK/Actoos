@@ -288,7 +288,7 @@ async def ai_agent(req: AIAgentRequest):
                     "X-Title": "Actoos Jobs AI",
                 },
                 json={
-                    "model": "mistralai/mistral-7b-instruct:free",
+                    "model": "openai/gpt-3.5-turbo",
                     "messages": messages,
                     "temperature": 0.7,
                     "max_tokens": 800,
