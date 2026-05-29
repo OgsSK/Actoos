@@ -67,12 +67,16 @@ export function slugify(text) {
 
 // Contract types (fixed enum)
 export const CONTRACT_TYPES = {
-  cdi: { label: 'CDI', color: 'bg-green-100 text-green-700' },
-  cdd: { label: 'CDD', color: 'bg-blue-100 text-blue-700' },
-  stage: { label: 'Stage', color: 'bg-purple-100 text-purple-700' },
-  alternance: { label: 'Alternance', color: 'bg-orange-100 text-orange-700' },
-  freelance: { label: 'Freelance', color: 'bg-cyan-100 text-cyan-700' },
-  interim: { label: 'Intérim', color: 'bg-yellow-100 text-yellow-700' },
+  cdi:             { label: 'CDI',              color: 'bg-green-100 text-green-700' },
+  cdd:             { label: 'CDD',              color: 'bg-blue-100 text-blue-700' },
+  stage:           { label: 'Stage',            color: 'bg-purple-100 text-purple-700' },
+  alternance:      { label: 'Alternance',       color: 'bg-orange-100 text-orange-700' },
+  freelance:       { label: 'Freelance',        color: 'bg-cyan-100 text-cyan-700' },
+  interim:         { label: 'Intérim',          color: 'bg-yellow-100 text-yellow-700' },
+  'job-etudiant':  { label: 'Job étudiant',     color: 'bg-teal-100 text-teal-700' },
+  extra:           { label: 'Extra',             color: 'bg-pink-100 text-pink-700' },
+  saisonnier:      { label: 'Saisonnier',       color: 'bg-lime-100 text-lime-700' },
+  benevolat:       { label: 'Bénévolat',        color: 'bg-indigo-100 text-indigo-700' },
 };
 
 // Experience levels (fixed enum)

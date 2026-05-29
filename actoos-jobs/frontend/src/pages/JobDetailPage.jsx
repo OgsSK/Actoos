@@ -21,6 +21,7 @@ const JobDetailPage = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [matchScore, setMatchScore] = useState(null);
 
   useEffect(() => {
     fetchJob();
@@ -30,6 +31,10 @@ const JobDetailPage = () => {
     if (user && job) {
       checkExistingApplication();
       checkIfSaved();
+      // Récupérer le score uniquement pour un candidat (non propriétaire)
+      if (!isOwner && user?.app_metadata?.role !== 'company') {
+        fetchMatchScore();
+      }
     }
   }, [user, job]);
 
@@ -71,7 +76,17 @@ const JobDetailPage = () => {
     setIsSaved(!!data);
   };
 
-  // Fonction helper de redirection si non connecté
+  const fetchMatchScore = async () => {
+    try {
+      const res = await apiFetch(`/api/jobs/${job.id}/match-score?user_id=${user.id}`);
+      if (res && res.score !== undefined) {
+        setMatchScore(res.score);
+      }
+    } catch (err) {
+      console.error('Erreur chargement score de matching:', err);
+    }
+  };
+
   const requireAuth = () => {
     if (!user) {
       toast.error('Veuillez vous connecter pour effectuer cette action');
@@ -96,7 +111,6 @@ const JobDetailPage = () => {
       if (error) throw error;
       setHasApplied(true);
       toast.success('Candidature envoyée avec succès !');
-      // Incrémenter le compteur de candidatures de l'offre (optionnel)
       await supabase.rpc('increment_applications_count', { row_id: job.id });
     } catch (err) {
       toast.error('Erreur lors de l\'envoi de la candidature');
@@ -160,7 +174,14 @@ const JobDetailPage = () => {
                 {job.company?.logo_url ? <img src={job.company.logo_url} alt={job.company.name} className="w-16 h-16 object-contain" /> : <Building2 className="w-10 h-10 text-slate-400" />}
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">{job.title}</h1>
+                <div className="flex items-center flex-wrap gap-2 mb-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{job.title}</h1>
+                  {matchScore !== null && (
+                    <Badge className="bg-blue-100 text-blue-700 text-sm px-3 py-1">
+                      🎯 {matchScore}% de correspondance
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-lg text-slate-600">{job.company?.name}</p>
                 <div className="flex flex-wrap gap-3 mt-4">
                   <Badge className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.city?.name}</Badge>
@@ -170,7 +191,7 @@ const JobDetailPage = () => {
                   )}
                 </div>
               </div>
-              {/* Actions - responsive : en colonne sur mobile, en ligne sur desktop */}
+              {/* Actions - responsive */}
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 {!isOwner ? (
                   <>

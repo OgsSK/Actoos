@@ -823,7 +823,70 @@ async def ban_user(req: AdminBanUserRequest):
         return {"success": True, "message": "Utilisateur banni"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@app.get("/api/admin/cancellations")
+async def get_cancellations():
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        resp = httpx.get(
+            f"{supabase_url}/rest/v1/companies?select=id,name,cancellation_reason,subscription_plan,updated_at&cancellation_reason=not.is.null&order=updated_at.desc",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        companies = resp.json()
+        return {"success": True, "cancellations": companies}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+def compute_match_score(job: dict, candidate_profile: dict) -> int:
+    score = 0
+    # Compétences (60 points)
+    job_skills = job.get("skills_required") or []
+    cand_skills = candidate_profile.get("skills") or []
+    if job_skills:
+        common = set(job_skills) & set(cand_skills)
+        score += (len(common) / len(job_skills)) * 60
 
+    # Niveau d'expérience (20 points)
+    exp_levels = ["junior", "intermediaire", "senior", "expert"]
+    job_lvl = job.get("experience_level")
+    cand_lvl = candidate_profile.get("experience_level")
+    if job_lvl and cand_lvl and job_lvl in exp_levels and cand_lvl in exp_levels:
+        diff = abs(exp_levels.index(job_lvl) - exp_levels.index(cand_lvl))
+        if diff == 0:
+            score += 20
+        elif diff == 1:
+            score += 10
+        else:
+            score += 5
+
+    # Prétentions salariales (20 points)
+    j_min, j_max = job.get("salary_min"), job.get("salary_max")
+    c_min, c_max = candidate_profile.get("desired_salary_min"), candidate_profile.get("desired_salary_max")
+    if j_min and j_max and c_min and c_max:
+        if c_min <= j_max and c_max >= j_min:
+            score += 20
+        elif c_min <= j_max or c_max >= j_min:
+            score += 10
+
+    return min(score, 100)
+
+@app.get("/api/jobs/{job_id}/match-score")
+async def get_match_score(job_id: str, user_id: str = Query(...)):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    job_resp = httpx.get(f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=*", headers=headers)
+    jobs = job_resp.json()
+    if not jobs:
+        raise HTTPException(status_code=404, detail="Offre non trouvée")
+    job = jobs[0]
+
+    cand_resp = httpx.get(f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{user_id}&select=*", headers=headers)
+    cand = cand_resp.json()
+    cand = cand[0] if cand else {}
+    score = compute_match_score(job, cand)
+    return {"score": score}    
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
