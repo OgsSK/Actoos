@@ -52,7 +52,6 @@ export default function HomePage() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-slate-100 px-6 py-4 space-y-4">
             <a href="/produits" className="block text-sm font-bold text-slate-600 hover:text-black">Produits</a>
-            <a href="https://jobs.actoos.com" className="hover:text-black transition-colors">Actoos Jobs</a>
             <a href="/expertise" className="block text-sm font-bold text-slate-600 hover:text-black">Expertise</a>
             <a href="/a-propos" className="block text-sm font-bold text-slate-600 hover:text-black">À propos</a>
             <a href="/philosophie" className="block text-sm font-bold text-slate-600 hover:text-black">Philosophie</a>
@@ -73,6 +72,7 @@ export default function HomePage() {
           
           <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tighter leading-[0.9] mb-8 md:mb-12 text-slate-950">
             Vos idées<br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#F5D78E] to-[#D4AF37] italic">
                prennent forme.
             </span>
           </h1>
@@ -294,7 +294,6 @@ export default function HomePage() {
               </h5>
               <ul className="space-y-3 md:space-y-4 text-sm font-bold text-slate-500">
                 <li>
-            <a href="https://jobs.actoos.com" className="hover:text-black transition-colors">Actoos Jobs</a>
                   <a href="/expertise" className="hover:text-black transition-colors">
                     Expertise
                   </a>
