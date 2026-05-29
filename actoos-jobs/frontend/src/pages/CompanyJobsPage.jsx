@@ -13,16 +13,30 @@ import {
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
 const statusConfig = {
-  draft: { label: 'Brouillon', color: 'bg-slate-100 text-slate-700', icon: FileText },
-  active: { label: 'Publiée', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-  paused: { label: 'En pause', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-  closed: { label: 'Fermée', color: 'bg-red-100 text-red-700', icon: XCircle },
-  expired: { label: 'Expirée', color: 'bg-slate-100 text-slate-700', icon: Clock },
+  draft: {
+    label: 'Brouillon',
+    color: 'bg-slate-100 text-slate-700'
+  },
+  active: {
+    label: 'Publiée',
+    color: 'bg-green-100 text-green-700'
+  },
+  paused: {
+    label: 'En pause',
+    color: 'bg-yellow-100 text-yellow-700'
+  },
+  closed: {
+    label: 'Fermée',
+    color: 'bg-red-100 text-red-700'
+  },
+  expired: {
+    label: 'Expirée',
+    color: 'bg-slate-100 text-slate-700'
+  },
   pending: {
-  label: 'En validation',
-  color: 'bg-yellow-100 text-yellow-700',
-  icon: Clock
-},
+    label: 'En validation',
+    color: 'bg-yellow-100 text-yellow-700'
+  }
 };
 
 const JobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
@@ -53,7 +67,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
         </div>
       </div>
       
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <span className="text-xs text-slate-400 hidden sm:block">{formatRelative(job.created_at)}</span>
         <div className="relative">
           <Button variant="ghost" size="icon" onClick={() => setShowMenu(!showMenu)}>

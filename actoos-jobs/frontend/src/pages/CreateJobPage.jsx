@@ -156,128 +156,91 @@ const CreateJobPage = () => {
   };
 
   const handleSave = async (publish = false) => {
-    const newErrors = {};
-    if (!form.title.trim()) newErrors.title = true;
-    if (!form.description.trim()) newErrors.description = true;
-    if (!form.contract_type) newErrors.contract_type = true;
-    if (!form.category_id) newErrors.category_id = true;
+  const newErrors = {};
+  if (!form.title) newErrors.title = true;
+  if (!form.description) newErrors.description = true;
+  if (!form.contract_type) newErrors.contract_type = true;
 
-    setErrors(newErrors);
+  setErrors(newErrors);
 
-    if (Object.keys(newErrors).length > 0) {
-      toast.error('Veuillez remplir les champs obligatoires');
-      return;
+  if (Object.keys(newErrors).length > 0) {
+    toast.error('Veuillez remplir tous les champs obligatoires');
+    return;
+  }
+
+  setSaving(true);
+  try {
+    const { data: country } = await supabase
+      .from('countries')
+      .select('id')
+      .eq('code', 'ML')
+      .single();
+
+    let finalStatus = form.status || 'draft';
+    let published_at = null;
+    let expires_at = null;
+
+    if (publish) {
+      if (!company.is_verified) {
+        toast.error("Votre entreprise est en attente de validation. L'offre a été enregistrée comme brouillon.");
+        finalStatus = 'draft';
+      } else {
+        finalStatus = 'pending';
+        published_at = new Date().toISOString();
+        expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        toast.success('Offre soumise pour validation. Elle sera publiée après approbation.');
+      }
+    } else {
+      toast.success('Brouillon enregistré');
     }
 
-    setSaving(true);
-    try {
-      const safeTitle = (form.title || '').substring(0, 200);
+    const jobData = {
+      company_id: company.id,
+      posted_by: user.id,
+      title: form.title.substring(0, 200),
+      slug: slugify(form.title) + '-' + Date.now(),
+      description: form.description,
+      requirements: form.requirements || null,
+      responsibilities: form.responsibilities || null,
+      benefits: form.benefits || null,
+      category_id: form.category_id || null,
+      contract_type: form.contract_type,
+      experience_level: form.experience_level || null,
+      salary_min: form.salary_min ? parseInt(form.salary_min) : null,
+      salary_max: form.salary_max ? parseInt(form.salary_max) : null,
+      salary_currency: 'XOF',
+      is_salary_visible: form.is_salary_visible,
+      city_id: form.city_id || null,
+      country_id: country?.id,
+      address: form.address || null,
+      is_remote: form.is_remote,
+      remote_type: form.is_remote ? form.remote_type : null,
+      positions_count: parseInt(form.positions_count) || 1,
+      skills_required: form.skills_required.length > 0 ? form.skills_required : null,
+      application_deadline: form.application_deadline || null,
+      start_date: form.start_date || null,
+      is_urgent: form.is_urgent,
+      status: finalStatus,
+      published_at,
+      expires_at
+    };
 
-      const { data: country } = await supabase
-        .from('countries')
-        .select('id')
-        .eq('code', 'ML')
-        .single();
-
-      let finalStatus = form.status;
-
-      if (publish) {
-        if (!company?.is_verified) {
-          toast.error('Votre entreprise est en attente de validation. Vous pouvez enregistrer en brouillon.');
-          finalStatus = 'draft';
-        } else {
-          finalStatus = 'pending';
-        }
-      }
-
-      const { data: companyPlan } = await supabase
-        .from('companies')
-        .select('subscription_plan')
-        .eq('id', company.id)
-        .single();
-
-      const currentPlan = companyPlan?.subscription_plan || 'free';
-      const planLimits = { free: 3, pro: 10, business: Infinity };
-      const maxActiveJobs = planLimits[currentPlan] ?? 0;
-
-      if (publish && finalStatus === 'active') {
-        let activeCountQuery = supabase
-          .from('jobs')
-          .select('id', { count: 'exact', head: true })
-          .eq('company_id', company.id)
-          .eq('status', 'active');
-
-        if (id) activeCountQuery = activeCountQuery.neq('id', id);
-
-        const { count: activeJobs } = await activeCountQuery;
-
-        if (activeJobs >= maxActiveJobs) {
-          setLimitInfo({ currentPlan, maxActiveJobs, activeJobs });
-          setShowLimitModal(true);
-          setSaving(false);
-          return;
-        }
-      }
-
-      const jobData = {
-        company_id: company.id,
-        posted_by: user.id,
-        title: safeTitle,
-        slug: slugify(safeTitle) + '-' + Date.now(),
-        description: form.description,
-        requirements: form.requirements || null,
-        responsibilities: form.responsibilities || null,
-        benefits: form.benefits || null,
-        category_id: form.category_id,
-        contract_type: form.contract_type,
-        experience_level: form.experience_level || null,
-        salary_min: form.salary_min ? parseInt(form.salary_min) : null,
-        salary_max: form.salary_max ? parseInt(form.salary_max) : null,
-        salary_currency: 'XOF',
-        is_salary_visible: form.is_salary_visible,
-        city_id: form.city_id || null,
-        country_id: country?.id,
-        address: form.address || null,
-        is_remote: form.is_remote,
-        remote_type: form.is_remote ? form.remote_type : null,
-        positions_count: parseInt(form.positions_count) || 1,
-        skills_required: form.skills_required.length > 0 ? form.skills_required : null,
-        application_deadline: form.application_deadline || null,
-        start_date: form.start_date || null,
-        is_urgent: form.is_urgent,
-        status: finalStatus,
-        published_at: publish && finalStatus !== 'draft' ? new Date().toISOString() : null,
-        expires_at: publish && finalStatus !== 'draft'
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-          : null
-      };
-
-      if (id) {
-        const { error } = await supabase.from('jobs').update(jobData).eq('id', id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('jobs').insert(jobData);
-        if (error) throw error;
-      }
-
-      if (publish) {
-        if (finalStatus === 'pending') {
-          toast.success('Offre soumise pour validation');
-        } else {
-          toast.success('Brouillon enregistré');
-        }
-      } else {
-        toast.success('Brouillon enregistré');
-      }
-
-      window.location.href = '/dashboard/entreprise';
-    } catch (error) {
-      console.error('Error saving job:', error);
-      toast.error("Erreur lors de l'enregistrement");
-    } finally {
-      setSaving(false);
+    if (id) {
+      const { error } = await supabase.from('jobs').update(jobData).eq('id', id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('jobs').insert(jobData);
+      if (error) throw error;
     }
-  };
+
+    window.location.href = '/dashboard/entreprise';
+  } catch (error) {
+    console.error('Error saving job:', error);
+    toast.error("Erreur lors de l'enregistrement");
+  } finally {
+    setSaving(false);
+  }
+};
 
   const inputErrorClass = (key) => cn(errors[key] && 'border-red-500 focus-visible:ring-red-500');
 
@@ -292,7 +255,7 @@ const CreateJobPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-20" data-testid="create-job-page">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/dashboard/entreprise')} className="-ml-2" type="button">
               <ChevronLeft className="w-4 h-4 mr-1" />
@@ -305,22 +268,22 @@ const CreateJobPage = () => {
               <p className="text-slate-600">{company?.name}</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-              Enregistrer
-            </Button>
-            <Button
-              onClick={() => handleSave(true)}
-              disabled={saving}
-              className="bg-blue-600 text-white hover:bg-blue-700"
-              data-testid="publish-job-btn"
-              type="button"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              Publier
-            </Button>
-          </div>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+  <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button" className="w-full sm:w-auto">
+    {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+    Enregistrer
+  </Button>
+  <Button
+    onClick={() => handleSave(true)}
+    disabled={saving}
+    className="w-full sm:w-auto bg-blue-600 text-white hover:bg-blue-700"
+    data-testid="publish-job-btn"
+    type="button"
+  >
+    {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+    Publier
+  </Button>
+</div>
         </div>
 
         <div className="space-y-6">
