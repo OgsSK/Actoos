@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head><title>Test Déconnexion</title></head>
+<body>
+  <h1>Test Déconnexion</h1>
+  <button id="logout-btn">Se déconnecter</button>
+  <p id="status"></p>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabase = createClient(
+      'https://anfamlpwootbrzswnpyp.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuZmFtbHB3b290YnJ6c3ducHlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3ODg3MjEsImV4cCI6MjA5NTM2NDcyMX0.43Ih1XL1dG2PWinpbLJ7mgV_6rrhhkFZ8TxmNK9EDtc'
+    );
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = 'Déconnexion en cours...';
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        statusEl.textContent = 'Déconnecté avec succès !';
+      } catch (err) {
+        statusEl.textContent = 'Erreur: ' + err.message;
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>

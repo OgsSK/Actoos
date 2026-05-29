@@ -1,18 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Loader2, Sparkles, Briefcase, User, Lightbulb, Target, ArrowRight } from 'lucide-react';
+import { Loader2, Sparkles, Briefcase, User, Lightbulb, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '../lib/api';
 
 const InterviewPrep = () => {
+  const [searchParams] = useSearchParams();
+  const jobId = searchParams.get('job_id');
+
   const [jobDescription, setJobDescription] = useState('');
   const [candidateProfile, setCandidateProfile] = useState('');
   const [questions, setQuestions] = useState('');
   const [answers, setAnswers] = useState('');
   const [tips, setTips] = useState('');
   const [loading, setLoading] = useState({ questions: false, answers: false, tips: false });
+
+  useEffect(() => {
+    if (jobId) {
+      supabase.from('jobs').select('description').eq('id', jobId).single()
+        .then(({ data }) => { if (data) setJobDescription(data.description); });
+    }
+  }, [jobId]);
 
   const handleGenerate = async (agentId, setter) => {
     if (!jobDescription.trim()) {
@@ -51,7 +63,6 @@ const InterviewPrep = () => {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
-          {/* Inputs */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-lg flex items-center gap-2">
@@ -80,9 +91,7 @@ const InterviewPrep = () => {
             </CardContent>
           </Card>
 
-          {/* Results */}
           <div className="space-y-6">
-            {/* Questions */}
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -108,7 +117,6 @@ const InterviewPrep = () => {
               </CardContent>
             </Card>
 
-            {/* Answers */}
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -134,7 +142,6 @@ const InterviewPrep = () => {
               </CardContent>
             </Card>
 
-            {/* Tips */}
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">

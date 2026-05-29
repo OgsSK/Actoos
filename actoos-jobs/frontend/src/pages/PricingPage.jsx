@@ -6,26 +6,71 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import {
-  Loader2, Check, Sparkles, Zap, Crown, Building2, ArrowRight, AlertCircle, X
+  Loader2, Check, Sparkles, Zap, Crown, Building2, ArrowRight, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Tarifs de secours si l'API ne répond pas
+const FALLBACK_PRICING = {
+  subscriptions: {
+    pro_monthly: { amount: 49000, name: "Plan Pro - Mensuel", type: "subscription", interval: "month" },
+    pro_annual: { amount: 470400, name: "Plan Pro - Annuel (-20%)", type: "subscription", interval: "year" },
+    business_monthly: { amount: 149000, name: "Plan Business - Mensuel", type: "subscription", interval: "month" },
+    business_annual: { amount: 1430400, name: "Plan Business - Annuel (-20%)", type: "subscription", interval: "year" },
+  },
+  boosts: {
+    boost_7: { amount: 9990, name: "Boost 7 jours", days: 7 },
+    boost_14: { amount: 17990, name: "Boost 14 jours", days: 14 },
+    boost_30: { amount: 29990, name: "Boost 30 jours", days: 30 },
+    featured: { amount: 49990, name: "À la une (30 jours)", days: 30 },
+  },
+  currency: "XOF"
+};
+
+const PRICING_CACHE_KEY = 'actoos_jobs_pricing_cache';
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 const PricingPage = () => {
   const { user } = useAuth();
   const [pricing, setPricing] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [checkoutLoading, setCheckoutLoading] = useState(null);
 
   useEffect(() => {
     const loadPricing = async () => {
+      // Essayer le cache d'abord pour un affichage instantané
+      const cached = localStorage.getItem(PRICING_CACHE_KEY);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed.timestamp && (Date.now() - parsed.timestamp) < CACHE_DURATION) {
+            setPricing(parsed.data);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {}
+      }
+
+      let fallbackTimer;
       try {
-        const data = await apiFetch('/api/pricing');
+        const data = await Promise.race([
+          apiFetch('/api/pricing'),
+          new Promise((_, reject) => fallbackTimer = setTimeout(() => reject(new Error('timeout')), 3000))
+        ]);
+        clearTimeout(fallbackTimer);
         setPricing(data);
+        // Mettre en cache
+        localStorage.setItem(PRICING_CACHE_KEY, JSON.stringify({
+          timestamp: Date.now(),
+          data
+        }));
       } catch (err) {
-        setError(err.message);
-        toast.error('Impossible de charger les tarifs');
+        console.warn('Pricing API error, using fallback', err);
+        // Utiliser les tarifs de secours
+        setPricing(FALLBACK_PRICING);
+        // Ne pas cacher le fallback, on réessaiera au prochain chargement
       } finally {
+        clearTimeout(fallbackTimer);
         setLoading(false);
       }
     };
@@ -45,7 +90,7 @@ const PricingPage = () => {
           package_id: packageId,
           origin_url: window.location.origin,
           user_email: user.email,
-          user_id: user.id,              // <-- ajouté
+          user_id: user.id,
         }),
       });
       window.location.href = result.url;
@@ -64,17 +109,6 @@ const PricingPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950 pt-20">
         <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
-      </div>
-    );
-  }
-
-  if (error || !pricing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950 pt-20">
-        <Card className="bg-white/10 backdrop-blur-xl border-white/20 rounded-3xl p-8 text-center">
-          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <p className="text-white text-lg">Impossible de charger les tarifs pour le moment.</p>
-        </Card>
       </div>
     );
   }
@@ -131,7 +165,6 @@ const PricingPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950 pt-20">
-      {/* Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
         <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-blue-400/30 rounded-full px-4 py-2 mb-6">
           <Sparkles className="w-4 h-4 text-blue-400" />

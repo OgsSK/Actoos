@@ -11,6 +11,7 @@ import {
   Upload, Loader2, ChevronLeft, Save, Image
 } from 'lucide-react';
 import { slugify } from '../lib/utils';
+import { apiFetch } from '../lib/api';
 
 const COMPANY_SIZES = [
   '1-10',
@@ -42,11 +43,11 @@ const CreateCompanyPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const logoInputRef = useRef(null);
-  
+
   const [loading, setLoading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [cities, setCities] = useState([]);
-  
+
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -63,7 +64,6 @@ const CreateCompanyPage = () => {
 
   useEffect(() => {
     fetchCities();
-    checkExistingCompany();
   }, []);
 
   const fetchCities = async () => {
@@ -75,29 +75,16 @@ const CreateCompanyPage = () => {
     setCities(data || []);
   };
 
-  const checkExistingCompany = async () => {
-    const { data } = await supabase
-      .from('company_members')
-      .select('company_id')
-      .eq('user_id', user?.id)
-      .single();
-    
-    if (data?.company_id) {
-      navigate('/dashboard/entreprise');
-    }
-  };
-
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate
     if (!file.type.startsWith('image/')) {
       toast.error('Veuillez sélectionner une image');
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      toast.error('L\'image ne doit pas dépasser 2MB');
+      toast.error("L'image ne doit pas dépasser 2MB");
       return;
     }
 
@@ -128,28 +115,26 @@ const CreateCompanyPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!form.name) {
-      toast.error('Le nom de l\'entreprise est requis');
+      toast.error("Le nom de l'entreprise est requis");
       return;
     }
 
     setLoading(true);
     try {
-      // Get country (Belgium)
       const { data: country } = await supabase
         .from('countries')
         .select('id')
-        .eq('code', 'BE')
+        .eq('code', 'ML')
         .single();
 
-      // Create company
       const { data: company, error: companyError } = await supabase
         .from('companies')
         .insert({
           owner_id: user.id,
           name: form.name,
-          slug: slugify(form.name),
+          slug: slugify(form.name) + '-' + Date.now(),
           description: form.description || null,
           industry: form.industry || null,
           size: form.size || null,
@@ -169,7 +154,6 @@ const CreateCompanyPage = () => {
 
       if (companyError) throw companyError;
 
-      // Add user as admin member
       await supabase
         .from('company_members')
         .insert({
@@ -179,17 +163,35 @@ const CreateCompanyPage = () => {
           is_admin: true
         });
 
-      // Update user role if needed
       await supabase
         .from('users')
         .update({ role: 'company' })
         .eq('id', user.id);
 
-      toast.success('Entreprise créée avec succès !');
-      navigate('/dashboard/entreprise');
+      await supabase.auth.updateUser({
+        data: { role: 'company' }
+      });
+
+      toast.success('Entreprise créée avec succès ! Redirection...');
+
+      // Notification à l'administrateur
+      try {
+        await apiFetch('/api/notify-admin-new-company', {
+          method: 'POST',
+          body: JSON.stringify({
+            company_name: form.name,
+            owner_email: user.email,
+            owner_name: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`
+          })
+        });
+      } catch (e) {
+        console.error('Erreur notification admin:', e);
+      }
+
+      window.location.href = '/dashboard/entreprise';
     } catch (error) {
       console.error('Error creating company:', error);
-      toast.error('Erreur lors de la création');
+      toast.error(error.message || 'Erreur lors de la création');
     } finally {
       setLoading(false);
     }
@@ -198,12 +200,7 @@ const CreateCompanyPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-20" data-testid="create-company-page">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(-1)} 
-          className="mb-6 -ml-2"
-        >
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 -ml-2">
           <ChevronLeft className="w-4 h-4 mr-1" />
           Retour
         </Button>
@@ -223,7 +220,7 @@ const CreateCompanyPage = () => {
             <CardContent className="p-6 space-y-6">
               {/* Logo */}
               <div className="text-center">
-                <div 
+                <div
                   className="w-24 h-24 bg-slate-100 rounded-xl mx-auto mb-3 flex items-center justify-center border-2 border-dashed border-slate-300 cursor-pointer hover:border-blue-400 transition-colors overflow-hidden"
                   onClick={() => logoInputRef.current?.click()}
                 >
@@ -235,9 +232,9 @@ const CreateCompanyPage = () => {
                     <Image className="w-8 h-8 text-slate-400" />
                   )}
                 </div>
-                <Button 
+                <Button
                   type="button"
-                  variant="outline" 
+                  variant="outline"
                   size="sm"
                   onClick={() => logoInputRef.current?.click()}
                   disabled={uploadingLogo}
@@ -255,9 +252,7 @@ const CreateCompanyPage = () => {
 
               {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Nom de l'entreprise *
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nom de l'entreprise *</label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -269,9 +264,7 @@ const CreateCompanyPage = () => {
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -285,9 +278,7 @@ const CreateCompanyPage = () => {
               {/* Industry & Size */}
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Secteur d'activité
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Secteur d'activité</label>
                   <select
                     value={form.industry}
                     onChange={(e) => setForm({ ...form, industry: e.target.value })}
@@ -301,9 +292,7 @@ const CreateCompanyPage = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Taille de l'entreprise
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Taille de l'entreprise</label>
                   <select
                     value={form.size}
                     onChange={(e) => setForm({ ...form, size: e.target.value })}
@@ -322,8 +311,7 @@ const CreateCompanyPage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Globe className="w-4 h-4 inline mr-1" />
-                    Site web
+                    <Globe className="w-4 h-4 inline mr-1" />Site web
                   </label>
                   <Input
                     value={form.website}
@@ -335,8 +323,7 @@ const CreateCompanyPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Mail className="w-4 h-4 inline mr-1" />
-                    Email de contact
+                    <Mail className="w-4 h-4 inline mr-1" />Email de contact
                   </label>
                   <Input
                     value={form.email}
@@ -351,20 +338,18 @@ const CreateCompanyPage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Phone className="w-4 h-4 inline mr-1" />
-                    Téléphone
+                    <Phone className="w-4 h-4 inline mr-1" />Téléphone
                   </label>
                   <Input
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder="+32 XXX XX XX XX"
+                    placeholder="+223 XX XX XX XX"
                     data-testid="company-phone-input"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Calendar className="w-4 h-4 inline mr-1" />
-                    Année de création
+                    <Calendar className="w-4 h-4 inline mr-1" />Année de création
                   </label>
                   <Input
                     value={form.founded_year}
@@ -382,8 +367,7 @@ const CreateCompanyPage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <MapPin className="w-4 h-4 inline mr-1" />
-                    Ville
+                    <MapPin className="w-4 h-4 inline mr-1" />Ville
                   </label>
                   <select
                     value={form.city_id}
@@ -398,9 +382,7 @@ const CreateCompanyPage = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Adresse
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Adresse</label>
                   <Input
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -411,8 +393,8 @@ const CreateCompanyPage = () => {
               </div>
 
               {/* Submit */}
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white"
                 disabled={loading}
                 data-testid="create-company-btn"

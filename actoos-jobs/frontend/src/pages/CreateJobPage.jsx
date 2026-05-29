@@ -59,21 +59,28 @@ const CreateJobPage = () => {
   }, [id]);
 
   const fetchData = async () => {
+    if (!user?.id) {
+      toast.error('Utilisateur non identifié');
+      navigate('/connexion');
+      return;
+    }
     setLoading(true);
     try {
-      const { data: membership } = await supabase
-        .from('company_members')
-        .select('company:companies(*)')
-        .eq('user_id', user?.id)
+      // Récupérer l'entreprise directement par owner_id
+      const { data: ownedCompany, error: companyError } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('owner_id', user.id)
         .single();
 
-      if (!membership?.company) {
+      if (companyError || !ownedCompany) {
         toast.error('Vous devez créer une entreprise d\'abord');
         navigate('/dashboard/entreprise/creer');
         return;
       }
-      setCompany(membership.company);
+      setCompany(ownedCompany);
 
+      // Charger les villes
       const { data: citiesData } = await supabase
         .from('cities')
         .select('*')
@@ -81,6 +88,7 @@ const CreateJobPage = () => {
         .order('name');
       setCities(citiesData || []);
 
+      // Charger les catégories
       const { data: catsData } = await supabase
         .from('job_categories')
         .select('*')
@@ -145,78 +153,85 @@ const CreateJobPage = () => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
   };
 
-  const handleSave = async (publish = false) => {
-    if (!form.title || !form.description || !form.contract_type) {
-      toast.error('Veuillez remplir les champs obligatoires');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const { data: country } = await supabase
-        .from('countries')
-        .select('id')
-        .eq('code', 'ML')
-        .single();
-
-      const jobData = {
-        company_id: company.id,
-        posted_by: user.id,
-        title: form.title,
-        slug: slugify(form.title) + '-' + Date.now(),
-        description: form.description,
-        requirements: form.requirements || null,
-        responsibilities: form.responsibilities || null,
-        benefits: form.benefits || null,
-        category_id: form.category_id || null,
-        contract_type: form.contract_type,
-        experience_level: form.experience_level || null,
-        salary_min: form.salary_min ? parseInt(form.salary_min) : null,
-        salary_max: form.salary_max ? parseInt(form.salary_max) : null,
-        salary_currency: 'XOF',
-        is_salary_visible: form.is_salary_visible,
-        city_id: form.city_id || null,
-        country_id: country?.id,
-        address: form.address || null,
-        is_remote: form.is_remote,
-        remote_type: form.is_remote ? form.remote_type : null,
-        positions_count: parseInt(form.positions_count) || 1,
-        skills_required: form.skills_required.length > 0 ? form.skills_required : null,
-        application_deadline: form.application_deadline || null,
-        start_date: form.start_date || null,
-        is_urgent: form.is_urgent,
-        status: publish ? 'active' : form.status,
-        published_at: publish ? new Date().toISOString() : null,
-        expires_at: publish ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null
-      };
-
-      if (id) {
-        const { error } = await supabase.from('jobs').update(jobData).eq('id', id);
-        if (error) throw error;
-        toast.success(publish ? 'Offre publiée !' : 'Offre mise à jour');
-      } else {
-        const { error } = await supabase.from('jobs').insert(jobData);
-        if (error) throw error;
-        toast.success(publish ? 'Offre publiée !' : 'Brouillon enregistré');
-      }
-
-      navigate('/dashboard/entreprise');
-    } catch (error) {
-      console.error('Error saving job:', error);
-      toast.error('Erreur lors de l\'enregistrement');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen pt-20 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
+   const handleSave = async (publish = false) => {
+  // Vérification des champs obligatoires
+  if (!form.title || !form.description || !form.contract_type) {
+    toast.error('Veuillez remplir les champs obligatoires');
+    return;
+  }
+  // Catégorie maintenant obligatoire
+  if (!form.category_id) {
+    toast.error('Veuillez sélectionner une catégorie');
+    return;
   }
 
+  setSaving(true);
+  try {
+    const safeTitle = (form.title || '').substring(0, 200);
+
+    const { data: country } = await supabase
+      .from('countries')
+      .select('id')
+      .eq('code', 'ML')
+      .single();
+
+    // Déterminer le statut final :
+    // - Si l'entreprise est vérifiée et qu'on publie → 'active'
+    // - Si l'entreprise n'est pas vérifiée et qu'on publie → 'pending' (en attente de validation admin)
+    let finalStatus = form.status;
+    if (publish) {
+      finalStatus = company?.is_verified ? 'active' : 'pending';
+    }
+
+    const jobData = {
+      company_id: company.id,
+      posted_by: user.id,
+      title: safeTitle,
+      slug: slugify(safeTitle) + '-' + Date.now(),
+      description: form.description,
+      requirements: form.requirements || null,
+      responsibilities: form.responsibilities || null,
+      benefits: form.benefits || null,
+      category_id: form.category_id,   // maintenant obligatoire
+      contract_type: form.contract_type,
+      experience_level: form.experience_level || null,
+      salary_min: form.salary_min ? parseInt(form.salary_min) : null,
+      salary_max: form.salary_max ? parseInt(form.salary_max) : null,
+      salary_currency: 'XOF',
+      is_salary_visible: form.is_salary_visible,
+      city_id: form.city_id || null,
+      country_id: country?.id,
+      address: form.address || null,
+      is_remote: form.is_remote,
+      remote_type: form.is_remote ? form.remote_type : null,
+      positions_count: parseInt(form.positions_count) || 1,
+      skills_required: form.skills_required.length > 0 ? form.skills_required : null,
+      application_deadline: form.application_deadline || null,
+      start_date: form.start_date || null,
+      is_urgent: form.is_urgent,
+      status: finalStatus,
+      published_at: publish ? new Date().toISOString() : null,
+      expires_at: publish ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null
+    };
+
+    if (id) {
+      const { error } = await supabase.from('jobs').update(jobData).eq('id', id);
+      if (error) throw error;
+      toast.success(publish ? (finalStatus === 'active' ? 'Offre publiée !' : 'Offre soumise pour validation') : 'Offre mise à jour');
+    } else {
+      const { error } = await supabase.from('jobs').insert(jobData);
+      if (error) throw error;
+      toast.success(publish ? (finalStatus === 'active' ? 'Offre publiée !' : 'Offre soumise pour validation') : 'Brouillon enregistré');
+    }
+
+    window.location.href = '/dashboard/entreprise';
+  } catch (error) {
+    console.error('Error saving job:', error);
+    toast.error('Erreur lors de l\'enregistrement');
+  } finally {
+    setSaving(false);
+  }
+};
   return (
     <div className="min-h-screen bg-slate-50 pt-20" data-testid="create-job-page">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">

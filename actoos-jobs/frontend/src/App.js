@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -26,24 +26,51 @@ import BlogPage from './pages/BlogPage';
 import BlogArticlePage from './pages/BlogArticlePage';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancel from './pages/PaymentCancel';
-import './index.css';
 import InterviewPrep from './pages/InterviewPrep';
 import CoverLetter from './pages/CoverLetter';
 import ScheduleInterview from './pages/ScheduleInterview';
-// Scroll to top on every route change
+import SettingsPage from './pages/SettingsPage';
+import MyApplicationsPage from './pages/MyApplicationsPage';
+import SavedJobsPage from './pages/SavedJobsPage';
+import JobAlertsPage from './pages/JobAlertsPage';
+import CompanyProfilePage from './pages/CompanyProfilePage';
+import CompanyJobsPage from './pages/CompanyJobsPage';
+import CompanyApplicationsPage from './pages/CompanyApplicationsPage';
+import CompanyDetailPage from './pages/CompanyDetailPage';
+import ApplicationDetailPage from './pages/ApplicationDetailPage';
+import CandidatePublicProfilePage from './pages/CandidatePublicProfilePage';
+import ApplicationDetailCandidatePage from './pages/ApplicationDetailCandidatePage';
+import './index.css';
+import NotificationsPage from './pages/NotificationsPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+
+// ---------- Scroll to top on route change ----------
 const ScrollToTop = () => {
   const { pathname } = useLocation();
-  React.useEffect(() => {
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
   return null;
 };
 
-// Protected Route wrapper
+// ---------- Protected Route wrapper ----------
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const [forceShow, setForceShow] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => setForceShow(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  if (!user && !loading) {
+    return <Navigate to="/connexion" replace />;
+  }
+
+  if (loading && !forceShow) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -51,13 +78,21 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/connexion" replace />;
-  }
-
   return children;
 };
 
+// ---------- Dashboard router based on role ----------
+const DashboardRouter = () => {
+  const { isCompany, isCandidate, isAdmin } = useAuth();
+
+  if (isAdmin) return <Navigate to="/admin" replace />;
+  if (isCompany) return <Navigate to="/dashboard/entreprise" replace />;
+  if (isCandidate) return <Navigate to="/dashboard/candidat" replace />;
+
+  return <Navigate to="/dashboard/candidat" replace />;
+};
+
+// ---------- Pages statiques ----------
 const AboutPage = () => (
   <div className="pt-20 min-h-screen bg-slate-50">
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -87,6 +122,7 @@ const NotFoundPage = () => (
   </div>
 );
 
+// ---------- Main App Content ----------
 const AppContent = () => {
   const { user, signOut } = useAuth();
 
@@ -96,7 +132,7 @@ const AppContent = () => {
       <ScrollToTop />
       <main className="flex-1">
         <Routes>
-          {/* Public routes */}
+          {/* ---------- Public routes ---------- */}
           <Route path="/" element={<Homepage />} />
           <Route path="/emplois" element={<JobsPage />} />
           <Route path="/emplois/:id" element={<JobDetailPage />} />
@@ -107,39 +143,55 @@ const AppContent = () => {
           <Route path="/paiement/annule" element={<PaymentCancel />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:id" element={<BlogArticlePage />} />
-          <Route path="/preparation-interview" element={<InterviewPrep />} />
+          <Route path="/preparation-entretien" element={<InterviewPrep />} />
           <Route path="/lettre-motivation" element={<CoverLetter />} />
           <Route path="/planifier-entretien" element={<ScheduleInterview />} />
-          {/* Legal pages */}
+          <Route path="/entreprises/:id" element={<CompanyDetailPage />} />
+          <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+          <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
+<Route path="/reset-password" element={<ResetPasswordPage />} />
+          {/* ---------- Legal pages ---------- */}
           <Route path="/cgu" element={<CGUPage />} />
           <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
           <Route path="/cookies" element={<CookiesPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/a-propos" element={<AboutPage />} />
 
-          {/* Auth routes */}
+          {/* ---------- Auth routes ---------- */}
           <Route path="/connexion" element={<LoginPage />} />
           <Route path="/inscription" element={<RegisterPage />} />
 
-          {/* Protected routes - Candidat */}
-          <Route path="/dashboard" element={<ProtectedRoute><CandidateDashboard /></ProtectedRoute>} />
+          {/* ---------- Protected routes - Candidat ---------- */}
+          <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
           <Route path="/dashboard/candidat" element={<ProtectedRoute><CandidateDashboard /></ProtectedRoute>} />
           <Route path="/profil" element={<ProtectedRoute><CandidateProfilePage /></ProtectedRoute>} />
+          <Route path="/parametres" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/mes-candidatures" element={<ProtectedRoute><MyApplicationsPage /></ProtectedRoute>} />
+          <Route path="/mes-candidatures/:id" element={<ProtectedRoute><ApplicationDetailCandidatePage /></ProtectedRoute>} />
+          <Route path="/offres-sauvegardees" element={<ProtectedRoute><SavedJobsPage /></ProtectedRoute>} />
+          <Route path="/alertes" element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
 
-          {/* Protected routes - Entreprise */}
+          {/* ---------- Protected routes - Entreprise ---------- */}
           <Route path="/dashboard/entreprise" element={<ProtectedRoute><CompanyDashboard /></ProtectedRoute>} />
           <Route path="/dashboard/entreprise/creer" element={<ProtectedRoute><CreateCompanyPage /></ProtectedRoute>} />
           <Route path="/dashboard/entreprise/offres/nouvelle" element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>} />
           <Route path="/dashboard/entreprise/offres/:id/modifier" element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>} />
+          <Route path="/dashboard/entreprise/profil" element={<ProtectedRoute><CompanyProfilePage /></ProtectedRoute>} />
+          <Route path="/dashboard/entreprise/offres" element={<ProtectedRoute><CompanyJobsPage /></ProtectedRoute>} />
+          <Route path="/dashboard/entreprise/candidatures" element={<ProtectedRoute><CompanyApplicationsPage /></ProtectedRoute>} />
+          <Route path="/dashboard/entreprise/candidatures/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
 
-          {/* Admin routes */}
+          {/* ---------- Protected route - Voir profil candidat (recruteur) ---------- */}
+          <Route path="/candidat/:id" element={<ProtectedRoute><CandidatePublicProfilePage /></ProtectedRoute>} />
+
+          {/* ---------- Admin routes ---------- */}
           <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
 
-          {/* Auth callback */}
+          {/* ---------- Auth callback ---------- */}
           <Route path="/auth/callback" element={<AuthCallback />} />
 
-          {/* 404 */}
+          {/* ---------- 404 ---------- */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

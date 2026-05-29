@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Loader2, Sparkles, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,6 +9,11 @@ const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
   const [improved, setImproved] = useState('');
   const [loading, setLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
+
+  // Synchronise l'état local avec la prop chaque fois qu'elle change
+  useEffect(() => {
+    setText(initialText);
+  }, [initialText]);
 
   const handleImprove = async () => {
     if (!text.trim()) {

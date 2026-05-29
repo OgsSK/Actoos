@@ -8,15 +8,17 @@ import { Badge } from '../components/ui/badge';
 import {
   Building2, MapPin, Users, Globe, Search, Briefcase, CheckCircle, Loader2
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const CompaniesPage = () => {
+  const { isCompany } = useAuth(); // <-- pour masquer le CTA si déjà entreprise
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [industries, setIndustries] = useState([]);
 
-  // Récupération dynamique des secteurs d'activité depuis les entreprises existantes
+  // Récupération dynamique des secteurs d'activité
   useEffect(() => {
     const fetchIndustries = async () => {
       const { data, error } = await supabase
@@ -48,6 +50,7 @@ const CompaniesPage = () => {
           jobs:jobs(count)
         `)
         .eq('is_active', true)
+        .eq('is_verified', true) 
         .order('created_at', { ascending: false });
 
       if (searchQuery) {
@@ -190,21 +193,23 @@ const CompaniesPage = () => {
           </div>
         )}
 
-        {/* CTA for companies */}
-        <div className="mt-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 sm:p-12 text-white text-center">
-          <h2 className="text-2xl font-bold mb-4">
-            Vous êtes une entreprise ?
-          </h2>
-          <p className="text-blue-100 mb-6 max-w-xl mx-auto">
-            Créez votre profil entreprise et publiez vos offres d'emploi pour 
-            attirer les meilleurs talents.
-          </p>
-          <Link to="/inscription?type=entreprise">
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">
-              Créer mon profil entreprise
-            </Button>
-          </Link>
-        </div>
+        {/* CTA pour les entreprises – masqué si l'utilisateur est déjà une entreprise */}
+        {!isCompany && (
+          <div className="mt-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 sm:p-12 text-white text-center">
+            <h2 className="text-2xl font-bold mb-4">
+              Vous êtes une entreprise ?
+            </h2>
+            <p className="text-blue-100 mb-6 max-w-xl mx-auto">
+              Créez votre profil entreprise et publiez vos offres d'emploi pour 
+              attirer les meilleurs talents.
+            </p>
+            <Link to="/inscription?type=entreprise">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">
+                Créer mon profil entreprise
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
