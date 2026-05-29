@@ -96,17 +96,17 @@ export default function ProductsPage() {
 
         {/* Actoos Jobs */}
         <div className="bg-[#0F172A] rounded-[48px] p-8 md:p-16 mb-16 relative overflow-hidden shadow-2xl">
-          <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] bg-[#3B82F6]/10 blur-[120px] rounded-full" />
-          <div className="absolute bottom-[-50px] left-[-50px] w-[300px] h-[300px] bg-[#8B5CF6]/5 blur-[100px] rounded-full" />
+          <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] bg-[#2563EB]/10 blur-[120px] rounded-full" />
+          <div className="absolute bottom-[-50px] left-[-50px] w-[300px] h-[300px] bg-[#7C3AED]/5 blur-[100px] rounded-full" />
 
           <div className="relative z-10">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#2563EB] to-[#7C3AED] rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                 <Briefcase size={24} className="text-white" />
               </div>
               <div>
                 <h2 className="text-2xl md:text-3xl font-black text-white">Actoos Jobs</h2>
-                <p className="text-[#3B82F6] text-sm font-bold">Recrutement flexible</p>
+                <p className="text-[#2563EB] text-sm font-bold">Recrutement flexible</p>
               </div>
             </div>
 
@@ -129,7 +129,7 @@ export default function ProductsPage() {
                 'Boost de visibilité',
               ].map((feature, i) => (
                 <div key={i} className="flex items-center space-x-2 text-white/80">
-                  <CheckCircle2 size={16} className="text-[#3B82F6] flex-shrink-0" />
+                  <CheckCircle2 size={16} className="text-[#2563EB] flex-shrink-0" />
                   <span className="text-sm">{feature}</span>
                 </div>
               ))}
@@ -138,7 +138,7 @@ export default function ProductsPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <a
                 href="https://jobs.actoos.com"
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] text-white px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:from-blue-500 hover:to-purple-500 transition-all shadow-xl hover:shadow-blue-500/30"
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#2563EB] to-[#7C3AED] text-white px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:from-blue-500 hover:to-purple-500 transition-all shadow-xl hover:shadow-blue-500/30"
               >
                 <span>Accéder à Actoos Jobs</span>
                 <ArrowRight size={16} />
