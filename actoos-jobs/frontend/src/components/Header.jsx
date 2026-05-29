@@ -91,10 +91,8 @@ const Header = ({ user, onLogout }) => {
 
     const lastName = user.user_metadata?.last_name || '';
 
-    return (
-      (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() ||
-      firstName.slice(0, 2).toUpperCase()
-    );
+    const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+    return initials || firstName.slice(0, 2).toUpperCase() || '?';
   };
 
   const displayEmail = user?.email || '';
@@ -159,10 +157,12 @@ const Header = ({ user, onLogout }) => {
                       : 'hover:bg-slate-100'
                   )}
                 >
-                  <div className="relative w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                    {getInitials()}
+                  <div className="relative inline-flex shrink-0">
+                    <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                      {getInitials()}
+                    </div>
 
-                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                    <span className="absolute bottom-0 right-0 block w-3 h-3 rounded-full bg-green-500 ring-2 ring-white translate-x-1/4 translate-y-1/4" />
                   </div>
 
                   <div className="flex flex-col items-start">
