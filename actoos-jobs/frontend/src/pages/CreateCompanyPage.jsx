@@ -47,7 +47,7 @@ const CreateCompanyPage = () => {
   const [loading, setLoading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [cities, setCities] = useState([]);
-
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -103,7 +103,7 @@ const CreateCompanyPage = () => {
         .from('company-logos')
         .getPublicUrl(fileName);
 
-      setForm({ ...form, logo_url: urlData.publicUrl });
+      setForm(prev => ({ ...prev, logo_url: urlData.publicUrl }));
       toast.success('Logo téléchargé');
     } catch (error) {
       console.error('Error uploading logo:', error);
@@ -116,8 +116,12 @@ const CreateCompanyPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.name) {
-      toast.error("Le nom de l'entreprise est requis");
+    const newErrors = {};
+    if (!form.name) newErrors.name = true;
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      toast.error('Veuillez remplir les champs obligatoires');
       return;
     }
 
@@ -138,7 +142,9 @@ const CreateCompanyPage = () => {
           description: form.description || null,
           industry: form.industry || null,
           size: form.size || null,
-          website: form.website || null,
+          website: form.website
+            ? (form.website.startsWith('http') ? form.website : `https://${form.website}`)
+            : null,
           email: form.email || user.email,
           phone: form.phone || null,
           city_id: form.city_id || null,
@@ -174,7 +180,6 @@ const CreateCompanyPage = () => {
 
       toast.success('Entreprise créée avec succès ! Redirection...');
 
-      // Notification à l'administrateur
       try {
         await apiFetch('/api/notify-admin-new-company', {
           method: 'POST',
@@ -252,12 +257,20 @@ const CreateCompanyPage = () => {
 
               {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nom de l'entreprise *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Nom de l'entreprise *
+                </label>
                 <Input
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, name: e.target.value });
+                    if (errors.name) {
+                      setErrors(prev => ({ ...prev, name: false }));
+                    }
+                  }}
                   placeholder="Ex: Orange"
                   required
+                  className={errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}
                   data-testid="company-name-input"
                 />
               </div>
@@ -395,7 +408,7 @@ const CreateCompanyPage = () => {
               {/* Submit */}
               <Button
                 type="submit"
-                className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white "
+                className="w-full bg-blue-600 text-white hover:bg-blue-700"
                 disabled={loading}
                 data-testid="create-company-btn"
               >

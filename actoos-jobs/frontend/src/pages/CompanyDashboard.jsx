@@ -48,6 +48,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
     paused: { label: 'En pause', color: 'bg-yellow-100 text-yellow-700' },
     closed: { label: 'Fermée', color: 'bg-red-100 text-red-700' },
     expired: { label: 'Expirée', color: 'bg-slate-100 text-slate-700' },
+    pending: { label: 'En validation', color: 'bg-yellow-100 text-yellow-700' },
   };
   const status = statusConfig[job.status] || statusConfig.draft;
 
@@ -72,7 +73,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
+              <div className="absolute right-0 bottom-full mb-1 w-48 sm:top-full sm:mt-1 sm:bottom-auto sm:mb-0 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
                 <button onClick={() => { onEdit(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"><Edit className="w-4 h-4" />Modifier</button>
                 <Link to={`/dashboard/entreprise/offres/${job.id}/candidatures`} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"><Users className="w-4 h-4" />Voir les candidatures</Link>
                 {job.status === 'active' ? (
@@ -286,6 +287,11 @@ const CompanyDashboard = () => {
               {company.logo_url ? <img src={company.logo_url} alt={company.name} className="w-12 h-12 object-contain" /> : <Building2 className="w-8 h-8 text-slate-400" />}
             </div>
             <div><h1 className="text-2xl font-bold text-slate-900">{company.name}</h1><p className="text-slate-600">Espace recruteur</p></div>
+            {!company.is_verified && (
+  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">
+    ⏳ Votre entreprise est en attente de validation par notre équipe. Vous pouvez préparer vos offres en brouillon.
+  </div>
+)}
           </div>
           <div className="flex gap-3">
             <Link to="/dashboard/entreprise/profil"><Button variant="outline"><Settings className="w-4 h-4 mr-2" />Profil entreprise</Button></Link>

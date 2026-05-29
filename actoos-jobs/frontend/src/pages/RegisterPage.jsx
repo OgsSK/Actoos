@@ -6,19 +6,19 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Label } from '../components/ui/label';
 import { Separator } from '../components/ui/separator';
-import { 
-  Briefcase, Mail, Lock, Eye, EyeOff, Loader2, User, Building2, Check
+import {
+  Briefcase, Mail, Lock, Eye, EyeOff, Loader2, User, Building2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 
 // Google Icon SVG
 const GoogleIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 24 24">
-    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+  <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
   </svg>
 );
 
@@ -26,7 +26,7 @@ const RegisterPage = () => {
   const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(1); // 1: role selection, 2: form
+  const [step, setStep] = useState(1);
   const [role, setRole] = useState('candidate');
   const [formData, setFormData] = useState({
     firstName: '',
@@ -36,22 +36,40 @@ const RegisterPage = () => {
     confirmPassword: '',
     companyName: '',
   });
+  const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
+
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: false
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+    const newErrors = {};
+    if (!formData.firstName.trim()) newErrors.firstName = true;
+    if (!formData.lastName.trim()) newErrors.lastName = true;
+    if (!formData.email.trim()) newErrors.email = true;
+    if (!formData.password.trim()) newErrors.password = true;
+    if (!formData.confirmPassword.trim()) newErrors.confirmPassword = true;
+    if (role === 'company' && !formData.companyName.trim()) newErrors.companyName = true;
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
       toast.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -63,11 +81,6 @@ const RegisterPage = () => {
 
     if (formData.password !== formData.confirmPassword) {
       toast.error('Les mots de passe ne correspondent pas');
-      return;
-    }
-
-    if (role === 'company' && !formData.companyName) {
-      toast.error('Veuillez entrer le nom de votre entreprise');
       return;
     }
 
@@ -85,10 +98,10 @@ const RegisterPage = () => {
       navigate('/connexion');
     } catch (error) {
       console.error('Signup error:', error);
-      if (error.message.includes('already registered')) {
+      if (error.message?.includes('already registered')) {
         toast.error('Cet email est déjà utilisé');
       } else {
-        toast.error(error.message || 'Erreur lors de l\'inscription');
+        toast.error(error.message || "Erreur lors de l'inscription");
       }
     } finally {
       setLoading(false);
@@ -106,15 +119,13 @@ const RegisterPage = () => {
     }
   };
 
-  // Role selection step
   if (step === 1) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4 pt-20">
         <div className="w-full max-w-lg">
-          {/* Logo */}
           <div className="text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-2">
-              <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center text-white justify-center">
+              <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center">
                 <Briefcase className="w-7 h-7 text-white" />
               </div>
               <span className="text-2xl font-bold text-slate-900">Actoos Jobs</span>
@@ -124,14 +135,12 @@ const RegisterPage = () => {
           <Card className="shadow-xl border-0">
             <CardHeader className="text-center pb-2">
               <CardTitle className="text-2xl">Créer un compte</CardTitle>
-              <CardDescription>
-                Choisissez votre type de profil
-              </CardDescription>
+              <CardDescription>Choisissez votre type de profil</CardDescription>
             </CardHeader>
-            
+
             <CardContent className="pt-4 space-y-4">
-              {/* Role cards */}
               <button
+                type="button"
                 onClick={() => { setRole('candidate'); setStep(2); }}
                 className={cn(
                   'w-full p-6 rounded-xl border-2 text-left transition-all hover:shadow-lg',
@@ -152,6 +161,7 @@ const RegisterPage = () => {
               </button>
 
               <button
+                type="button"
                 onClick={() => { setRole('company'); setStep(2); }}
                 className={cn(
                   'w-full p-6 rounded-xl border-2 text-left transition-all hover:shadow-lg',
@@ -171,7 +181,6 @@ const RegisterPage = () => {
                 </div>
               </button>
 
-              {/* Login link */}
               <p className="text-center text-sm text-slate-600 pt-4">
                 Déjà inscrit ?{' '}
                 <Link to="/connexion" className="text-blue-600 hover:text-blue-700 font-medium">
@@ -185,14 +194,12 @@ const RegisterPage = () => {
     );
   }
 
-  // Registration form step
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4 pt-20">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center text-white justify-center">
+            <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center">
               <Briefcase className="w-7 h-7 text-white" />
             </div>
             <span className="text-2xl font-bold text-slate-900">Actoos Jobs</span>
@@ -217,17 +224,17 @@ const RegisterPage = () => {
               {role === 'candidate' ? 'Inscription Candidat' : 'Inscription Entreprise'}
             </CardTitle>
             <CardDescription>
-              <button 
-                onClick={() => setStep(1)} 
+              <button
+                type="button"
+                onClick={() => setStep(1)}
                 className="text-blue-600 hover:underline"
               >
                 ← Changer de profil
               </button>
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="pt-4">
-            {/* Google Signup */}
             <Button
               type="button"
               variant="outline"
@@ -250,7 +257,6 @@ const RegisterPage = () => {
               </span>
             </div>
 
-            {/* Registration Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -261,7 +267,10 @@ const RegisterPage = () => {
                     placeholder="Jean"
                     value={formData.firstName}
                     onChange={handleChange}
-                    className="h-12"
+                    className={cn(
+                      'h-12',
+                      errors.firstName && 'border-red-500 focus-visible:ring-red-500'
+                    )}
                     data-testid="register-firstname"
                   />
                 </div>
@@ -273,7 +282,10 @@ const RegisterPage = () => {
                     placeholder="Dupont"
                     value={formData.lastName}
                     onChange={handleChange}
-                    className="h-12"
+                    className={cn(
+                      'h-12',
+                      errors.lastName && 'border-red-500 focus-visible:ring-red-500'
+                    )}
                     data-testid="register-lastname"
                   />
                 </div>
@@ -290,7 +302,10 @@ const RegisterPage = () => {
                       placeholder="Ma Société SARL"
                       value={formData.companyName}
                       onChange={handleChange}
-                      className="pl-10 h-12"
+                      className={cn(
+                        'pl-10 h-12',
+                        errors.companyName && 'border-red-500 focus-visible:ring-red-500'
+                      )}
                     />
                   </div>
                 </div>
@@ -307,7 +322,10 @@ const RegisterPage = () => {
                     placeholder="votre@email.com"
                     value={formData.email}
                     onChange={handleChange}
-                    className="pl-10 h-12"
+                    className={cn(
+                      'pl-10 h-12',
+                      errors.email && 'border-red-500 focus-visible:ring-red-500'
+                    )}
                     data-testid="register-email"
                   />
                 </div>
@@ -324,7 +342,10 @@ const RegisterPage = () => {
                     placeholder="Min. 8 caractères"
                     value={formData.password}
                     onChange={handleChange}
-                    className="pl-10 pr-10 h-12"
+                    className={cn(
+                      'pl-10 pr-10 h-12',
+                      errors.password && 'border-red-500 focus-visible:ring-red-500'
+                    )}
                     data-testid="register-password"
                   />
                   <button
@@ -348,17 +369,22 @@ const RegisterPage = () => {
                     placeholder="Confirmez votre mot de passe"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="pl-10 h-12"
+                    className={cn(
+                      'pl-10 h-12',
+                      errors.confirmPassword && 'border-red-500 focus-visible:ring-red-500'
+                    )}
                     data-testid="register-confirm-password"
                   />
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className={cn(
                   'w-full h-12 text-base',
-                  role === 'candidate' ? 'bg-blue-600 text-white hover:bg-blue-700 text-white' : 'bg-green-600 text-white hover:bg-green-700'
+                  role === 'candidate'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-green-600 text-white hover:bg-green-700'
                 )}
                 disabled={loading}
                 data-testid="register-submit"
@@ -370,7 +396,6 @@ const RegisterPage = () => {
               </Button>
             </form>
 
-            {/* Login link */}
             <p className="text-center text-sm text-slate-600 mt-6">
               Déjà inscrit ?{' '}
               <Link to="/connexion" className="text-blue-600 hover:text-blue-700 font-medium">
@@ -380,12 +405,13 @@ const RegisterPage = () => {
           </CardContent>
         </Card>
 
-        {/* Footer links */}
         <p className="text-center text-xs text-slate-500 mt-6">
           En créant un compte, vous acceptez nos{' '}
           <Link to="/cgu" className="text-blue-600 hover:underline">CGU</Link>
           {' '}et notre{' '}
-          <Link to="/confidentialite" className="text-blue-600 hover:underline">Politique de confidentialité</Link>
+          <Link to="/confidentialite" className="text-blue-600 hover:underline">
+            Politique de confidentialité
+          </Link>
         </p>
       </div>
     </div>

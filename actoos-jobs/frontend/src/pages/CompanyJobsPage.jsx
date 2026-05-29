@@ -18,6 +18,11 @@ const statusConfig = {
   paused: { label: 'En pause', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
   closed: { label: 'Fermée', color: 'bg-red-100 text-red-700', icon: XCircle },
   expired: { label: 'Expirée', color: 'bg-slate-100 text-slate-700', icon: Clock },
+  pending: {
+  label: 'En validation',
+  color: 'bg-yellow-100 text-yellow-700',
+  icon: Clock
+},
 };
 
 const JobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
@@ -29,7 +34,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
   return (
     <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Link to={`/emplois/${job.id}`} className="font-medium text-slate-900 hover:text-blue-600 line-clamp-1">
             {job.title}
           </Link>
@@ -38,7 +43,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
             {status.label}
           </Badge>
         </div>
-        <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
+        <div className="flex flex-col sm:flex-row gap-3 mt-1 text-sm text-slate-500">
           {job.city && (
             <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.city.name}</span>
           )}
@@ -57,7 +62,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
+              <div className="absolute right-0 bottom-full mb-1 w-48 sm:top-full sm:mt-1 sm:bottom-auto sm:mb-0 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
                 <button
                   onClick={() => { onEdit(job); setShowMenu(false); }}
                   className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"

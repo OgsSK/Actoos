@@ -84,7 +84,7 @@ const ProfileCompletionWidget = ({ completion }) => (
   <Card className="border-slate-200">
     <CardHeader className="pb-2"><CardTitle className="text-base">Complétude du profil</CardTitle></CardHeader>
     <CardContent>
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative w-20 h-20">
           <svg className="w-20 h-20 transform -rotate-90">
             <circle cx="40" cy="40" r="35" stroke="#e2e8f0" strokeWidth="6" fill="none" />

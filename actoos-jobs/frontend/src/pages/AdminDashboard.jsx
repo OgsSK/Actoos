@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import {
-  Shield, Building2, Briefcase, Users, Eye, FileText, 
+  Shield, Building2, Briefcase, Users, Eye, FileText,
   CheckCircle, XCircle, Clock, AlertTriangle, Search,
   MoreVertical, Trash2, Ban, Check, RefreshCw, Loader2,
   TrendingUp, ChevronRight, Filter, Calendar, MapPin, Mail,
@@ -19,7 +19,7 @@ import { cn, formatRelative, formatDate, CONTRACT_TYPES } from '../lib/utils';
 
 // ---------- Stats Card ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) => (
-  <Card 
+  <Card
     className={cn(
       "border-slate-200 transition-all",
       onClick && "cursor-pointer hover:shadow-lg hover:border-blue-300"
@@ -103,7 +103,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
           <Briefcase className="w-6 h-6 text-slate-400" />
         )}
       </div>
-      
+
       <div className="flex-1 min-w-0 w-full sm:w-auto">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="font-medium text-slate-900 truncate">{job.title}</h3>
@@ -130,7 +130,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+      <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto justify-end">
         {job.status === 'pending' && (
           <>
             <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => onApprove(job)}>
@@ -154,7 +154,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
         <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleActionWithReason('delete')}>
           <Trash2 className="w-4 h-4 mr-1" /> Supprimer
         </Button>
-        
+
         <div className="relative">
           <Button variant="ghost" size="icon" onClick={() => setShowMenu(!showMenu)}>
             <MoreVertical className="w-4 h-4" />
@@ -162,7 +162,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
+              <div className="absolute right-0 bottom-full mb-1 w-48 sm:top-full sm:mt-1 sm:bottom-auto sm:mb-0 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
                 <Link to={`/emplois/${job.id}`} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                   <Eye className="w-4 h-4" /> Voir l'offre
                 </Link>
@@ -182,7 +182,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
             <textarea className="w-full border rounded-lg p-2 mb-4" rows="3" value={reason} onChange={(e) => setReason(e.target.value)} />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setActionType(null)}>Annuler</Button>
-              <Button className="bg-red-600 text-white hover:bg-red-700 text-white" onClick={confirmAction}>Confirmer</Button>
+              <Button className="bg-red-600 text-white hover:bg-red-700" onClick={confirmAction}>Confirmer</Button>
             </div>
           </div>
         </div>
@@ -228,7 +228,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend }) => {
           <Building2 className="w-7 h-7 text-slate-400" />
         )}
       </div>
-      
+
       <div className="flex-1 min-w-0 w-full sm:w-auto">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="font-medium text-slate-900">{company.name}</h3>
@@ -252,7 +252,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend }) => {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+      <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto justify-end">
         {!company.is_verified ? (
           <>
             <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => onApprove(company)}>
@@ -267,7 +267,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend }) => {
             <Ban className="w-4 h-4 mr-1" /> Suspendre
           </Button>
         )}
-        
+
         <div className="relative">
           <Button variant="ghost" size="icon" onClick={() => setShowMenu(!showMenu)}>
             <MoreVertical className="w-4 h-4" />
@@ -300,7 +300,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend }) => {
             <textarea className="w-full border rounded-lg p-2 mb-4" rows="3" value={reason} onChange={(e) => setReason(e.target.value)} />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setActionType(null)}>Annuler</Button>
-              <Button className="bg-red-600 text-white hover:bg-red-700 text-white" onClick={confirmAction}>Confirmer</Button>
+              <Button className="bg-red-600 text-white hover:bg-red-700" onClick={confirmAction}>Confirmer</Button>
             </div>
           </div>
         </div>
@@ -315,8 +315,8 @@ const TabButton = ({ active, onClick, children, count }) => (
     onClick={onClick}
     className={cn(
       "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2",
-      active 
-        ? "bg-blue-100 text-blue-700" 
+      active
+        ? "bg-blue-100 text-blue-700"
         : "text-slate-600 hover:bg-slate-100"
     )}
   >
@@ -336,12 +336,12 @@ const TabButton = ({ active, onClick, children, count }) => (
 const AdminDashboard = () => {
   const { user, profile, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  
+
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const [stats, setStats] = useState({
     pendingJobs: 0, activeJobs: 0,
     pendingCompanies: 0, verifiedCompanies: 0,
@@ -353,7 +353,7 @@ const AdminDashboard = () => {
   const [reports, setReports] = useState([]);
   const [cancellations, setCancellations] = useState([]);
   const [loadingCancellations, setLoadingCancellations] = useState(true);
-  
+
   const [jobFilter, setJobFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
 
@@ -428,7 +428,6 @@ const AdminDashboard = () => {
 
   const handleRefresh = async () => { setRefreshing(true); await fetchData(); setRefreshing(false); toast.success('Donnees actualisees'); };
 
-  // Job actions
   const handleApproveJob = async (job) => {
     try {
       await supabase.from('jobs').update({ status: 'active', published_at: new Date().toISOString(), expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() }).eq('id', job.id);
@@ -466,7 +465,6 @@ const AdminDashboard = () => {
     } catch (error) { toast.error('Erreur'); }
   };
 
-  // Company actions
   const handleApproveCompany = async (company) => {
     try {
       await apiFetch('/api/admin/verify-company', { method: 'POST', body: JSON.stringify({ id: company.id }) });
@@ -494,7 +492,6 @@ const AdminDashboard = () => {
     } catch (error) { toast.error('Erreur'); }
   };
 
-  // User management
   const handleToggleUserRole = async (userId, newRole) => {
     try {
       await supabase.from('users').update({ role: newRole }).eq('id', userId);
@@ -520,7 +517,6 @@ const AdminDashboard = () => {
     } catch (error) { toast.error('Erreur'); }
   };
 
-  // Report handling
   const handleUpdateReportStatus = async (reportId, newStatus) => {
     try {
       await apiFetch(`/api/admin/reports/${reportId}?status=${newStatus}`, { method: 'PATCH' });
@@ -529,7 +525,6 @@ const AdminDashboard = () => {
     } catch (error) { toast.error('Erreur'); }
   };
 
-  // Newsletter
   const handleSendNewsletter = async () => {
     if (!newsletter.subject || !newsletter.content) { toast.error('Veuillez remplir le sujet et le contenu.'); return; }
     setSendingNewsletter(true);
@@ -561,16 +556,21 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-20" data-testid="admin-dashboard">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center text-white justify-center"><Shield className="w-7 h-7 text-white" /></div>
-            <div><h1 className="text-2xl font-bold text-slate-900">Administration</h1><p className="text-slate-600">Gerez les offres, entreprises et utilisateurs</p></div>
+            <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center">
+              <Shield className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Administration</h1>
+              <p className="text-slate-600">Gerez les offres, entreprises et utilisateurs</p>
+            </div>
           </div>
-          <Button variant="outline" onClick={handleRefresh} disabled={refreshing} className="gap-2"><RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin")} /> Actualiser</Button>
+          <Button variant="outline" onClick={handleRefresh} disabled={refreshing} className="gap-2">
+            <RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin")} /> Actualiser
+          </Button>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
           <StatCard icon={Clock} label="Offres en attente" value={stats.pendingJobs} color="yellow" onClick={() => { setActiveTab('jobs'); setJobFilter('pending'); }} />
           <StatCard icon={Briefcase} label="Offres actives" value={stats.activeJobs} color="green" />
@@ -580,7 +580,6 @@ const AdminDashboard = () => {
           <StatCard icon={FileText} label="Candidatures" value={stats.totalApplications} color="purple" />
         </div>
 
-        {/* Tabs */}
         <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
           <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>Vue d'ensemble</TabButton>
           <TabButton active={activeTab === 'jobs'} onClick={() => setActiveTab('jobs')} count={stats.pendingJobs}>Modération offres</TabButton>
@@ -595,7 +594,6 @@ const AdminDashboard = () => {
           <TabButton active={activeTab === 'newsletter'} onClick={() => setActiveTab('newsletter')}><Mail className="w-4 h-4" /> Newsletter</TabButton>
         </div>
 
-        {/* Vue d'ensemble */}
         {activeTab === 'overview' && (
           <div className="grid lg:grid-cols-2 gap-6">
             <Card>
@@ -625,13 +623,12 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Jobs */}
         {activeTab === 'jobs' && (
           <Card>
             <CardHeader className="pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex-1 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" /><Input placeholder="Rechercher une offre..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" /></div>
-                <div className="flex items-center gap-2"><Filter className="w-4 h-4 text-slate-400" /><select value={jobFilter} onChange={(e) => setJobFilter(e.target.value)} className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white"><option value="all">Tous les statuts</option><option value="pending">En attente</option><option value="draft">Brouillon</option><option value="active">Active</option><option value="suspended">Suspendue</option><option value="rejected">Rejetee</option></select></div>
+                <div className="flex flex-col sm:flex-row gap-2"><Filter className="w-4 h-4 text-slate-400" /><select value={jobFilter} onChange={(e) => setJobFilter(e.target.value)} className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white"><option value="all">Tous les statuts</option><option value="pending">En attente</option><option value="draft">Brouillon</option><option value="active">Active</option><option value="suspended">Suspendue</option><option value="rejected">Rejetee</option></select></div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -640,13 +637,12 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {/* Companies */}
         {activeTab === 'companies' && (
           <Card>
             <CardHeader className="pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex-1 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" /><Input placeholder="Rechercher une entreprise..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" /></div>
-                <div className="flex items-center gap-2"><Filter className="w-4 h-4 text-slate-400" /><select value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)} className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white"><option value="all">Tous les statuts</option><option value="unverified">Non vérifiée</option><option value="verified">Vérifiée</option></select></div>
+                <div className="flex flex-col sm:flex-row gap-2"><Filter className="w-4 h-4 text-slate-400" /><select value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)} className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white"><option value="all">Tous les statuts</option><option value="unverified">Non vérifiée</option><option value="verified">Vérifiée</option></select></div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -655,7 +651,6 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {/* Users */}
         {activeTab === 'users' && (
           <Card>
             <CardHeader><CardTitle>Gestion des utilisateurs</CardTitle></CardHeader>
@@ -667,7 +662,7 @@ const AdminDashboard = () => {
                       <p className="font-medium">{u.first_name} {u.last_name}</p>
                       <p className="text-sm text-slate-500">{u.email} • {u.role} {u.is_banned ? '(Banni)' : u.is_active ? '' : '(Suspendu)'}</p>
                     </div>
-                    <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto justify-end">
                       <select value={u.role} onChange={(e) => handleToggleUserRole(u.id, e.target.value)} className="border rounded px-2 py-1 text-sm">
                         <option value="candidate">Candidat</option>
                         <option value="company">Entreprise</option>
@@ -690,7 +685,6 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {/* Reports */}
         {activeTab === 'reports' && (
           <Card>
             <CardHeader><CardTitle>Signalements</CardTitle></CardHeader>
@@ -722,7 +716,6 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {/* Résiliations */}
         {activeTab === 'cancellations' && (
           <Card>
             <CardHeader>
@@ -762,7 +755,6 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {/* Newsletter */}
         {activeTab === 'newsletter' && (
           <Card>
             <CardHeader>
@@ -772,7 +764,9 @@ const AdminDashboard = () => {
             <CardContent className="space-y-4">
               <div><label className="block text-sm font-medium mb-1">Sujet</label><Input value={newsletter.subject} onChange={(e) => setNewsletter({ ...newsletter, subject: e.target.value })} placeholder="Sujet de l'email" /></div>
               <div><label className="block text-sm font-medium mb-1">Contenu (HTML)</label><textarea rows={10} className="w-full border border-slate-200 rounded-lg p-3 text-sm" value={newsletter.content} onChange={(e) => setNewsletter({ ...newsletter, content: e.target.value })} placeholder="<h1>Titre</h1><p>Votre message...</p>" /></div>
-              <Button onClick={handleSendNewsletter} disabled={sendingNewsletter} className="bg-blue-600 text-white hover:bg-blue-700 text-white ">{sendingNewsletter ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}Envoyer la newsletter</Button>
+              <Button onClick={handleSendNewsletter} disabled={sendingNewsletter} className="bg-blue-600 text-white hover:bg-blue-700">
+                {sendingNewsletter ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}Envoyer la newsletter
+              </Button>
             </CardContent>
           </Card>
         )}

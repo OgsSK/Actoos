@@ -9,11 +9,11 @@ import { Badge } from '../components/ui/badge';
 import AIAssistant from '../components/AIAssistant';
 import { toast } from 'sonner';
 import {
-  Briefcase, MapPin, DollarSign, Calendar, Users, Clock,
-  Plus, X, Save, Loader2, ChevronLeft, Eye, Send, GraduationCap, ArrowRight 
+  Briefcase, MapPin, DollarSign, Calendar, Users,
+  Plus, X, Save, Loader2, ChevronLeft, Send,
+  GraduationCap, ArrowRight
 } from 'lucide-react';
-import { slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
-
+import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 
 const CreateJobPage = () => {
   const { id } = useParams();
@@ -27,6 +27,7 @@ const CreateJobPage = () => {
   const [categories, setCategories] = useState([]);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [limitInfo, setLimitInfo] = useState({ currentPlan: '', maxActiveJobs: 0, activeJobs: 0 });
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -66,9 +67,9 @@ const CreateJobPage = () => {
       navigate('/connexion');
       return;
     }
+
     setLoading(true);
     try {
-      // Récupérer l'entreprise directement par owner_id
       const { data: ownedCompany, error: companyError } = await supabase
         .from('companies')
         .select('*')
@@ -76,13 +77,13 @@ const CreateJobPage = () => {
         .single();
 
       if (companyError || !ownedCompany) {
-        toast.error('Vous devez créer une entreprise d\'abord');
+        toast.error("Vous devez créer une entreprise d'abord");
         navigate('/dashboard/entreprise/creer');
         return;
       }
+
       setCompany(ownedCompany);
 
-      // Charger les villes
       const { data: citiesData } = await supabase
         .from('cities')
         .select('*')
@@ -90,7 +91,6 @@ const CreateJobPage = () => {
         .order('name');
       setCities(citiesData || []);
 
-      // Charger les catégories
       const { data: catsData } = await supabase
         .from('job_categories')
         .select('*')
@@ -155,136 +155,168 @@ const CreateJobPage = () => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
   };
 
-   const handleSave = async (publish = false) => {
-  // Vérification des champs obligatoires
-  if (!form.title || !form.description || !form.contract_type) {
-    toast.error('Veuillez remplir les champs obligatoires');
-    return;
-  }
-  if (!form.category_id) {
-    toast.error('Veuillez sélectionner une catégorie');
-    return;
-  }
+  const handleSave = async (publish = false) => {
+    const newErrors = {};
+    if (!form.title.trim()) newErrors.title = true;
+    if (!form.description.trim()) newErrors.description = true;
+    if (!form.contract_type) newErrors.contract_type = true;
+    if (!form.category_id) newErrors.category_id = true;
 
-  setSaving(true);
-  try {
-    const safeTitle = (form.title || '').substring(0, 200);
+    setErrors(newErrors);
 
-    const { data: country } = await supabase
-      .from('countries')
-      .select('id')
-      .eq('code', 'ML')
-      .single();
-
-    // Déterminer le statut final
-    let finalStatus = form.status;
-    if (publish) {
-      finalStatus = company?.is_verified ? 'active' : 'pending';
+    if (Object.keys(newErrors).length > 0) {
+      toast.error('Veuillez remplir les champs obligatoires');
+      return;
     }
 
-    // ✅ VÉRIFICATION DE LA LIMITE D’OFFRES ACTIVES SELON LE PLAN
-    const { data: companyPlan } = await supabase
-      .from('companies')
-      .select('subscription_plan')
-      .eq('id', company.id)
-      .single();
+    setSaving(true);
+    try {
+      const safeTitle = (form.title || '').substring(0, 200);
 
-    const currentPlan = companyPlan?.subscription_plan || 'free';
-    const planLimits = { free: 3, pro: 10, business: Infinity };
-    const maxActiveJobs = planLimits[currentPlan] ?? 0;
+      const { data: country } = await supabase
+        .from('countries')
+        .select('id')
+        .eq('code', 'ML')
+        .single();
 
-    if (publish && finalStatus === 'active') {
-      let activeCountQuery = supabase
-        .from('jobs')
-        .select('id', { count: 'exact', head: true })
-        .eq('company_id', company.id)
-        .eq('status', 'active');
+      let finalStatus = form.status;
 
-      // Si on modifie une offre existante, on ne la compte pas
-      if (id) activeCountQuery = activeCountQuery.neq('id', id);
-
-      const { count: activeJobs } = await activeCountQuery;
-      if (activeJobs >= maxActiveJobs) {
-       setLimitInfo({ currentPlan, maxActiveJobs, activeJobs });
-  setShowLimitModal(true);
-  setSaving(false);
-  return;
+      if (publish) {
+        if (!company?.is_verified) {
+          toast.error('Votre entreprise est en attente de validation. Vous pouvez enregistrer en brouillon.');
+          finalStatus = 'draft';
+        } else {
+          finalStatus = 'pending';
+        }
       }
+
+      const { data: companyPlan } = await supabase
+        .from('companies')
+        .select('subscription_plan')
+        .eq('id', company.id)
+        .single();
+
+      const currentPlan = companyPlan?.subscription_plan || 'free';
+      const planLimits = { free: 3, pro: 10, business: Infinity };
+      const maxActiveJobs = planLimits[currentPlan] ?? 0;
+
+      if (publish && finalStatus === 'active') {
+        let activeCountQuery = supabase
+          .from('jobs')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', company.id)
+          .eq('status', 'active');
+
+        if (id) activeCountQuery = activeCountQuery.neq('id', id);
+
+        const { count: activeJobs } = await activeCountQuery;
+
+        if (activeJobs >= maxActiveJobs) {
+          setLimitInfo({ currentPlan, maxActiveJobs, activeJobs });
+          setShowLimitModal(true);
+          setSaving(false);
+          return;
+        }
+      }
+
+      const jobData = {
+        company_id: company.id,
+        posted_by: user.id,
+        title: safeTitle,
+        slug: slugify(safeTitle) + '-' + Date.now(),
+        description: form.description,
+        requirements: form.requirements || null,
+        responsibilities: form.responsibilities || null,
+        benefits: form.benefits || null,
+        category_id: form.category_id,
+        contract_type: form.contract_type,
+        experience_level: form.experience_level || null,
+        salary_min: form.salary_min ? parseInt(form.salary_min) : null,
+        salary_max: form.salary_max ? parseInt(form.salary_max) : null,
+        salary_currency: 'XOF',
+        is_salary_visible: form.is_salary_visible,
+        city_id: form.city_id || null,
+        country_id: country?.id,
+        address: form.address || null,
+        is_remote: form.is_remote,
+        remote_type: form.is_remote ? form.remote_type : null,
+        positions_count: parseInt(form.positions_count) || 1,
+        skills_required: form.skills_required.length > 0 ? form.skills_required : null,
+        application_deadline: form.application_deadline || null,
+        start_date: form.start_date || null,
+        is_urgent: form.is_urgent,
+        status: finalStatus,
+        published_at: publish && finalStatus !== 'draft' ? new Date().toISOString() : null,
+        expires_at: publish && finalStatus !== 'draft'
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          : null
+      };
+
+      if (id) {
+        const { error } = await supabase.from('jobs').update(jobData).eq('id', id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('jobs').insert(jobData);
+        if (error) throw error;
+      }
+
+      if (publish) {
+        if (finalStatus === 'pending') {
+          toast.success('Offre soumise pour validation');
+        } else {
+          toast.success('Brouillon enregistré');
+        }
+      } else {
+        toast.success('Brouillon enregistré');
+      }
+
+      window.location.href = '/dashboard/entreprise';
+    } catch (error) {
+      console.error('Error saving job:', error);
+      toast.error("Erreur lors de l'enregistrement");
+    } finally {
+      setSaving(false);
     }
+  };
 
-    const jobData = {
-      company_id: company.id,
-      posted_by: user.id,
-      title: safeTitle,
-      slug: slugify(safeTitle) + '-' + Date.now(),
-      description: form.description,
-      requirements: form.requirements || null,
-      responsibilities: form.responsibilities || null,
-      benefits: form.benefits || null,
-      category_id: form.category_id,
-      contract_type: form.contract_type,
-      experience_level: form.experience_level || null,
-      salary_min: form.salary_min ? parseInt(form.salary_min) : null,
-      salary_max: form.salary_max ? parseInt(form.salary_max) : null,
-      salary_currency: 'XOF',
-      is_salary_visible: form.is_salary_visible,
-      city_id: form.city_id || null,
-      country_id: country?.id,
-      address: form.address || null,
-      is_remote: form.is_remote,
-      remote_type: form.is_remote ? form.remote_type : null,
-      positions_count: parseInt(form.positions_count) || 1,
-      skills_required: form.skills_required.length > 0 ? form.skills_required : null,
-      application_deadline: form.application_deadline || null,
-      start_date: form.start_date || null,
-      is_urgent: form.is_urgent,
-      status: finalStatus,
-      published_at: publish ? new Date().toISOString() : null,
-      expires_at: publish ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null
-    };
+  const inputErrorClass = (key) => cn(errors[key] && 'border-red-500 focus-visible:ring-red-500');
 
-    if (id) {
-      const { error } = await supabase.from('jobs').update(jobData).eq('id', id);
-      if (error) throw error;
-      toast.success(publish ? (finalStatus === 'active' ? 'Offre publiée !' : 'Offre soumise pour validation') : 'Offre mise à jour');
-    } else {
-      const { error } = await supabase.from('jobs').insert(jobData);
-      if (error) throw error;
-      toast.success(publish ? (finalStatus === 'active' ? 'Offre publiée !' : 'Offre soumise pour validation') : 'Brouillon enregistré');
-    }
-
-    window.location.href = '/dashboard/entreprise';
-  } catch (error) {
-    console.error('Error saving job:', error);
-    toast.error('Erreur lors de l\'enregistrement');
-  } finally {
-    setSaving(false);
-  }
-};
+  const selectErrorClass = (key, base = '') =>
+    cn(
+      base,
+      errors[key]
+        ? 'border-red-500 focus:ring-red-500'
+        : 'border-slate-200 focus:ring-blue-500'
+    );
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20" data-testid="create-job-page">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/dashboard/entreprise')} className="-ml-2">
+            <Button variant="ghost" onClick={() => navigate('/dashboard/entreprise')} className="-ml-2" type="button">
               <ChevronLeft className="w-4 h-4 mr-1" />
               Retour
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">
-                {id ? 'Modifier l\'offre' : 'Nouvelle offre d\'emploi'}
+                {id ? "Modifier l'offre" : "Nouvelle offre d'emploi"}
               </h1>
               <p className="text-slate-600">{company?.name}</p>
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
+            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               Enregistrer
             </Button>
-            <Button onClick={() => handleSave(true)} disabled={saving} className="bg-blue-600 text-white hover:bg-blue-700 text-white " data-testid="publish-job-btn">
+            <Button
+              onClick={() => handleSave(true)}
+              disabled={saving}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+              data-testid="publish-job-btn"
+              type="button"
+            >
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               Publier
             </Button>
@@ -292,41 +324,47 @@ const CreateJobPage = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Basic Info */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-blue-600" />
                 Informations de base
               </h2>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Titre du poste *
                 </label>
                 <Input
                   value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, title: e.target.value });
+                    if (errors.title) setErrors(prev => ({ ...prev, title: false }));
+                  }}
                   placeholder="Ex: Développeur Full Stack, Comptable Senior..."
                   required
+                  className={inputErrorClass('title')}
                   data-testid="job-title-input"
                 />
                 <div className="mt-2">
                   <AIAssistant
                     agentId="job-title"
                     initialText={form.title}
-                    onApply={(newTitle) => setForm({ ...form, title: newTitle })}
+                    onApply={(newTitle) => setForm({ ...form, title: newTitle.substring(0, 200) })}
                   />
                 </div>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Catégorie</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Catégorie *</label>
                   <select
                     value={form.category_id}
-                    onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                    className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    onChange={(e) => {
+                      setForm({ ...form, category_id: e.target.value });
+                      if (errors.category_id) setErrors(prev => ({ ...prev, category_id: false }));
+                    }}
+                    className={selectErrorClass('category_id', 'w-full h-10 px-3 py-2 border rounded-md bg-white')}
                     data-testid="job-category-select"
                   >
                     <option value="">Sélectionner</option>
@@ -339,11 +377,15 @@ const CreateJobPage = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">Type de contrat *</label>
                   <select
                     value={form.contract_type}
-                    onChange={(e) => setForm({ ...form, contract_type: e.target.value })}
-                    className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    onChange={(e) => {
+                      setForm({ ...form, contract_type: e.target.value });
+                      if (errors.contract_type) setErrors(prev => ({ ...prev, contract_type: false }));
+                    }}
+                    className={selectErrorClass('contract_type', 'w-full h-10 px-3 py-2 border rounded-md bg-white')}
                     required
                     data-testid="job-contract-select"
                   >
+                    <option value="">Sélectionner</option>
                     {Object.entries(CONTRACT_TYPES).map(([key, val]) => (
                       <option key={key} value={key}>{val.label}</option>
                     ))}
@@ -398,18 +440,25 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Description */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">Description du poste</h2>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Description *</label>
                 <textarea
                   value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, description: e.target.value });
+                    if (errors.description) setErrors(prev => ({ ...prev, description: false }));
+                  }}
                   rows={6}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className={cn(
+                    'w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 resize-none',
+                    errors.description
+                      ? 'border border-red-500 focus:ring-red-500'
+                      : 'border border-slate-200 focus:ring-blue-500'
+                  )}
                   placeholder="Décrivez le poste, le contexte, l'équipe..."
                   required
                   data-testid="job-description-textarea"
@@ -478,11 +527,10 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Skills */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">Compétences requises</h2>
-              
+
               <div className="flex gap-2">
                 <Input
                   value={newSkill}
@@ -496,13 +544,17 @@ const CreateJobPage = () => {
                   Ajouter
                 </Button>
               </div>
-              
+
               {form.skills_required.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {form.skills_required.map((skill) => (
                     <Badge key={skill} className="bg-blue-50 text-blue-700 border border-blue-200 gap-1 pr-1">
                       {skill}
-                      <button type="button" onClick={() => handleRemoveSkill(skill)} className="ml-1 hover:bg-blue-200 rounded-full p-0.5 transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="ml-1 hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                      >
                         <X className="w-3 h-3" />
                       </button>
                     </Badge>
@@ -512,14 +564,13 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Location */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-blue-600" />
                 Localisation
               </h2>
-              
+
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Ville</label>
@@ -555,7 +606,7 @@ const CreateJobPage = () => {
                   />
                   <span className="text-sm text-slate-600">Télétravail possible</span>
                 </label>
-                
+
                 {form.is_remote && (
                   <select
                     value={form.remote_type}
@@ -572,14 +623,13 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Salary */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-blue-600" />
                 Rémunération
               </h2>
-              
+
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Salaire minimum (FCFA/mois)</label>
@@ -615,14 +665,13 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Dates */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-600" />
                 Dates
               </h2>
-              
+
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Date limite de candidature</label>
@@ -647,54 +696,60 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Actions */}
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
+            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               Enregistrer comme brouillon
             </Button>
-            <Button onClick={() => handleSave(true)} disabled={saving} className="bg-blue-600 text-white hover:bg-blue-700 text-white " data-testid="publish-job-btn-bottom">
+            <Button
+              onClick={() => handleSave(true)}
+              disabled={saving}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+              data-testid="publish-job-btn-bottom"
+              type="button"
+            >
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               Publier l'offre
             </Button>
           </div>
         </div>
       </div>
-      {/* Modale Limite atteinte */}
-{showLimitModal && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-    <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 text-center">
-      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-        <Briefcase className="w-8 h-8 text-blue-600" />
-      </div>
-      <h2 className="text-xl font-bold text-slate-900 mb-4">
-        Limite d'offres atteinte
-      </h2>
-      <p className="text-slate-600 mb-6">
-        Votre plan <strong>{limitInfo.currentPlan === 'free' ? 'Gratuit' : limitInfo.currentPlan}</strong> vous permet de publier <strong>{limitInfo.maxActiveJobs} offre{limitInfo.maxActiveJobs > 1 ? 's' : ''}</strong> active{limitInfo.maxActiveJobs > 1 ? 's' : ''}.<br />
-        Vous avez déjà <strong>{limitInfo.activeJobs}</strong> offre{limitInfo.activeJobs > 1 ? 's' : ''} active{limitInfo.activeJobs > 1 ? 's' : ''}.
-      </p>
-      <p className="text-sm text-slate-500 mb-8">
-        Pour publier davantage d'offres, passez à un plan supérieur.
-      </p>
-      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <Button
-          variant="outline"
-          className="rounded-2xl"
-          onClick={() => setShowLimitModal(false)}
-        >
-          Plus tard
-        </Button>
-        <Link to="/tarifs" onClick={() => setShowLimitModal(false)}>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl">
-            Voir les plans
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-        </Link>
-      </div>
-    </div>
-  </div>
-)}
+
+      {showLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 text-center">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Briefcase className="w-8 h-8 text-blue-600" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">
+              Limite d'offres atteinte
+            </h2>
+            <p className="text-slate-600 mb-6">
+              Votre plan <strong>{limitInfo.currentPlan === 'free' ? 'Gratuit' : limitInfo.currentPlan}</strong> vous permet de publier <strong>{limitInfo.maxActiveJobs} offre{limitInfo.maxActiveJobs > 1 ? 's' : ''}</strong> active{limitInfo.maxActiveJobs > 1 ? 's' : ''}.<br />
+              Vous avez déjà <strong>{limitInfo.activeJobs}</strong> offre{limitInfo.activeJobs > 1 ? 's' : ''} active{limitInfo.activeJobs > 1 ? 's' : ''}.
+            </p>
+            <p className="text-sm text-slate-500 mb-8">
+              Pour publier davantage d'offres, passez à un plan supérieur.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                variant="outline"
+                className="rounded-2xl"
+                onClick={() => setShowLimitModal(false)}
+                type="button"
+              >
+                Plus tard
+              </Button>
+              <Link to="/tarifs" onClick={() => setShowLimitModal(false)}>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl" type="button">
+                  Voir les plans
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

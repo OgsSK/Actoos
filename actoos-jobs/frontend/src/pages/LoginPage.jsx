@@ -6,18 +6,19 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Label } from '../components/ui/label';
 import { Separator } from '../components/ui/separator';
-import { 
-  Briefcase, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, CheckCircle
+import {
+  Briefcase, Mail, Lock, Eye, EyeOff, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '../lib/utils';
 
 // Google Icon SVG
 const GoogleIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 24 24">
-    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+  <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
   </svg>
 );
 
@@ -29,14 +30,21 @@ const LoginPage = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!email || !password) {
+
+    const newErrors = {};
+    if (!email.trim()) newErrors.email = true;
+    if (!password.trim()) newErrors.password = true;
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
       toast.error('Veuillez remplir tous les champs');
       return;
     }
@@ -48,7 +56,7 @@ const LoginPage = () => {
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Login error:', error);
-      if (error.message.includes('Invalid login')) {
+      if (error.message?.includes('Invalid login')) {
         toast.error('Email ou mot de passe incorrect');
       } else {
         toast.error(error.message || 'Erreur de connexion');
@@ -72,10 +80,9 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4 pt-20">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center text-white justify-center">
+            <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center">
               <Briefcase className="w-7 h-7 text-white" />
             </div>
             <span className="text-2xl font-bold text-slate-900">Actoos Jobs</span>
@@ -89,9 +96,8 @@ const LoginPage = () => {
               Accédez à votre espace personnel
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="pt-4">
-            {/* Google Login */}
             <Button
               type="button"
               variant="outline"
@@ -114,10 +120,9 @@ const LoginPage = () => {
               </span>
             </div>
 
-            {/* Email/Password Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Adresse email</Label>
+                <Label htmlFor="email">Adresse email *</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <Input
@@ -125,8 +130,14 @@ const LoginPage = () => {
                     type="email"
                     placeholder="votre@email.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12"
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errors.email) setErrors(prev => ({ ...prev, email: false }));
+                    }}
+                    className={cn(
+                      'pl-10 h-12',
+                      errors.email && 'border-red-500 focus-visible:ring-red-500'
+                    )}
                     data-testid="login-email"
                   />
                 </div>
@@ -134,9 +145,9 @@ const LoginPage = () => {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Mot de passe</Label>
-                  <Link 
-                    to="/mot-de-passe-oublie" 
+                  <Label htmlFor="password">Mot de passe *</Label>
+                  <Link
+                    to="/mot-de-passe-oublie"
                     className="text-sm text-blue-600 hover:text-blue-700"
                   >
                     Mot de passe oublié ?
@@ -149,8 +160,14 @@ const LoginPage = () => {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-12"
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errors.password) setErrors(prev => ({ ...prev, password: false }));
+                    }}
+                    className={cn(
+                      'pl-10 pr-10 h-12',
+                      errors.password && 'border-red-500 focus-visible:ring-red-500'
+                    )}
                     data-testid="login-password"
                   />
                   <button
@@ -163,9 +180,9 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full h-12 text-base bg-blue-600 text-white hover:bg-blue-700 text-white "
+              <Button
+                type="submit"
+                className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700"
                 disabled={loading}
                 data-testid="login-submit"
               >
@@ -176,7 +193,6 @@ const LoginPage = () => {
               </Button>
             </form>
 
-            {/* Register link */}
             <p className="text-center text-sm text-slate-600 mt-6">
               Pas encore de compte ?{' '}
               <Link to="/inscription" className="text-blue-600 hover:text-blue-700 font-medium">
@@ -186,12 +202,13 @@ const LoginPage = () => {
           </CardContent>
         </Card>
 
-        {/* Footer links */}
         <p className="text-center text-xs text-slate-500 mt-6">
           En vous connectant, vous acceptez nos{' '}
           <Link to="/cgu" className="text-blue-600 hover:underline">CGU</Link>
           {' '}et notre{' '}
-          <Link to="/confidentialite" className="text-blue-600 hover:underline">Politique de confidentialité</Link>
+          <Link to="/confidentialite" className="text-blue-600 hover:underline">
+            Politique de confidentialité
+          </Link>
         </p>
       </div>
     </div>
