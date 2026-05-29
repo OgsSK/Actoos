@@ -52,7 +52,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
   const status = statusConfig[job.status] || statusConfig.draft;
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <Link to={`/emplois/${job.id}`} className="font-medium text-slate-900 hover:text-blue-600 line-clamp-1">{job.title}</Link>
@@ -74,7 +74,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
               <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
                 <button onClick={() => { onEdit(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"><Edit className="w-4 h-4" />Modifier</button>
-                <Link to={`/dashboard/entreprise/offres/${job.id}/candidatures`} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"><Users className="w-4 h-4" />Voir les candidatures</Link>
+                <Link to={`/dashboard/entreprise/offres/${job.id}/candidatures`} className="w-full flex flex-col sm:flex-row items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"><Users className="w-4 h-4" />Voir les candidatures</Link>
                 {job.status === 'active' ? (
                   <button onClick={() => { onToggleStatus(job, 'paused'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-yellow-600 hover:bg-slate-50"><Clock className="w-4 h-4" />Mettre en pause</button>
                 ) : job.status === 'paused' ? (

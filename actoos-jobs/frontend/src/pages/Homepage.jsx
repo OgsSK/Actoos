@@ -13,7 +13,7 @@ import {
   Globe, Shield, Zap, Heart, Loader2
 } from 'lucide-react';
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
-
+import { toast } from 'sonner';
 // ---------- HeroSection (recherche intelligente) ----------
 const HeroSection = ({ stats, popularSearches = [] }) => {
   const navigate = useNavigate();
@@ -23,6 +23,7 @@ const HeroSection = ({ stats, popularSearches = [] }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
 
   useEffect(() => {
     const loadCities = async () => {
@@ -223,7 +224,6 @@ const CategoriesSection = () => {
     </section>
   );
 };
-
 // ---------- Recent Jobs Section ----------
 const RecentJobsSection = () => {
   const { user } = useAuth();
@@ -310,11 +310,23 @@ const RecentJobsSection = () => {
   );
 };
 
-// ---------- Job Card ----------
+// ---------- Job Card (corrigée) ----------
 const JobCard = ({ job, user }) => {
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   const isOwner = user?.id && job.owner_id === user.id;
   const isCompany = user?.app_metadata?.role === 'company';
+
+  const handleSaveClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      toast.error('Connectez-vous pour sauvegarder');
+      window.location.href = '/connexion';
+      return;
+    }
+    // Logique de sauvegarde à implémenter plus tard
+    toast.info('Offre sauvegardée (bientôt disponible)');
+  };
 
   return (
     <Link to={`/emplois/${job.id}`} className="block group">
@@ -357,13 +369,13 @@ const JobCard = ({ job, user }) => {
 
         {isOwner && (
           <div className="absolute top-2 left-2">
-            <Badge className="bg-blue-600 text-white text-white text-xs">Votre offre</Badge>
+            <Badge className="bg-blue-600 text-white text-xs">Votre offre</Badge>
           </div>
         )}
 
         {!isOwner && !isCompany && (
           <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onClick={handleSaveClick}
             className="absolute top-2 right-2 p-1.5 rounded-xl bg-white/90 hover:bg-red-50 transition-colors"
           >
             <Heart className="w-5 h-5 text-slate-400 hover:text-red-500" />
@@ -416,27 +428,24 @@ const CompanyCTASection = ({ stats }) => {
 
   return (
     <section className="py-20 bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950 relative overflow-hidden">
-      {/* Background effects */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-400/5 rounded-full blur-3xl" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-
-          {/* LEFT CONTENT */}
-          <div>
+          {/* Contenu gauche (toujours visible) */}
+          <div className="text-center lg:text-left">
             <Badge className="bg-white/10 text-white border border-blue-400/30 mb-6 rounded-full px-4 py-2">
               Pour les entreprises
             </Badge>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white font-display mb-6 leading-tight">
               Recrutez les meilleurs talents
             </h2>
-            <p className="text-blue-100 text-lg leading-relaxed mb-8 max-w-xl">
+            <p className="text-blue-100 text-lg leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0">
               Publiez vos offres, recevez des candidatures qualifiées et trouvez votre prochain collaborateur en quelques jours.
             </p>
 
-            {/* Features */}
-            <div className="space-y-4 mb-10">
+            <div className="space-y-4 mb-10 text-left max-w-xs mx-auto lg:mx-0">
               {[
                 "Publication d'offres illimitées",
                 "Accès à une base de candidats qualifiés",
@@ -452,8 +461,7 @@ const CompanyCTASection = ({ stats }) => {
               ))}
             </div>
 
-            {/* Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link to="/entreprises/inscription">
                 <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-8 h-14 text-base shadow-lg">
                   Créer un compte entreprise
@@ -468,11 +476,10 @@ const CompanyCTASection = ({ stats }) => {
             </div>
           </div>
 
-          {/* RIGHT VISUAL avec stats dynamiques */}
+          {/* Partie droite avec cartes flottantes – masquée sur mobile */}
           <div className="hidden lg:flex justify-center">
             <div className="relative w-[420px] h-[420px]">
-
-              {/* Top floating card - Offres actives */}
+              {/* Offres actives */}
               <div className="absolute top-0 left-0 z-20 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl px-5 py-4 border border-white/20">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center">
@@ -487,7 +494,7 @@ const CompanyCTASection = ({ stats }) => {
                 </div>
               </div>
 
-              {/* Bottom floating card - Candidats */}
+              {/* Candidats */}
               <div className="absolute bottom-0 right-0 z-20 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl px-5 py-4 border border-white/20">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center">
@@ -502,7 +509,7 @@ const CompanyCTASection = ({ stats }) => {
                 </div>
               </div>
 
-              {/* Middle left card - Entreprises */}
+              {/* Entreprises */}
               <div className="absolute top-1/2 left-0 -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl px-5 py-4 border border-white/20">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center">
@@ -517,7 +524,7 @@ const CompanyCTASection = ({ stats }) => {
                 </div>
               </div>
 
-              {/* Main card (reste inchangée) */}
+              {/* Carte centrale décorative */}
               <div className="absolute inset-12 z-10 rounded-[32px] border border-white/20 bg-white/10 backdrop-blur-md shadow-2xl flex items-center justify-center">
                 <div className="absolute top-10 right-10 w-24 h-24 bg-blue-400/10 rounded-full blur-2xl" />
                 <div className="absolute bottom-10 left-10 w-20 h-20 bg-blue-300/10 rounded-full blur-2xl" />
@@ -527,13 +534,11 @@ const CompanyCTASection = ({ stats }) => {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </section>
   );
 };
-
 // ---------- Why Choose Section ----------
 const WhyChooseSection = () => {
   const reasons = [

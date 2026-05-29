@@ -48,7 +48,7 @@ const ApplicationCard = ({ application }) => {
   const StatusIcon = status.icon;
 
   return (
-    <Link to={`/mes-candidatures/${application.id}`} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+    <Link to={`/mes-candidatures/${application.id}`} className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
       <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-slate-200"><Briefcase className="w-6 h-6 text-slate-400" /></div>
       <div className="flex-1 min-w-0">
         <p className="font-medium text-slate-900 line-clamp-1">{application.job?.title || 'Offre d\'emploi'}</p>

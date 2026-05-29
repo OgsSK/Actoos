@@ -108,3 +108,31 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+/* Empêcher les textes de déborder */
+* {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Empêcher les cartes de dépasser de leur conteneur */
+.card, [class*="rounded-"] {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Sur mobile (max 640px), forcer les flex row en colonne */
+@media (max-width: 640px) {
+  .flex-mobile-col {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .w-mobile-full {
+    width: 100% !important;
+  }
+  .hide-mobile {
+    display: none !important;
+  }
+  .text-mobile-sm {
+    font-size: 0.875rem !important; /* 14px */
+  }
+}
