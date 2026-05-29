@@ -75,6 +75,7 @@ class AIAgentRequest(BaseModel):
 
 class CancelSubscriptionRequest(BaseModel):
     user_id: str
+    reason: Optional[str] = None  # ajout de la raison
 
 class SendInterviewLinkRequest(BaseModel):
     email: str
@@ -141,6 +142,7 @@ def clean_subject(text: str, max_length: int = 50) -> str:
         cleaned = cleaned[:max_length-3] + '...'
     return cleaned
 
+# ----- Endpoints -----
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "service": "actoos-jobs-api", "currency": "XOF"}
@@ -153,6 +155,7 @@ async def get_pricing():
         "currency": "XOF"
     }
 
+# ----- Stripe Checkout -----
 @app.post("/api/checkout/session")
 async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
     if not stripe.api_key:
@@ -282,6 +285,51 @@ async def stripe_webhook(request: Request):
         print(f"Webhook error: {e}")
         return {"received": True, "error": str(e)}
 
+# ----- Résiliation avec raison -----
+@app.post("/api/subscription/cancel")
+async def cancel_subscription(req: CancelSubscriptionRequest):
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    try:
+        # Récupérer l'entreprise
+        company_resp = httpx.get(
+            f"{supabase_url}/rest/v1/companies?owner_id=eq.{req.user_id}&select=id,stripe_subscription_id",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        companies = company_resp.json()
+        if not isinstance(companies, list) or len(companies) == 0:
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+        company = companies[0]
+        subscription_id = company.get("stripe_subscription_id")
+        if not subscription_id:
+            raise HTTPException(status_code=400, detail="Aucun abonnement actif")
+        
+        # Annuler l'abonnement Stripe
+        stripe.Subscription.delete(subscription_id)
+        
+        # Mettre à jour la base : plan gratuit + raison
+        httpx.patch(
+            f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
+            json={
+                "stripe_subscription_id": None,
+                "subscription_plan": "free",
+                "subscription_expires_at": None,
+                "cancellation_reason": req.reason or None
+            },
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        
+        return {"success": True, "message": "Abonnement résilié avec succès."}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ----- Contact & Newsletter -----
 @app.post("/api/contact")
 async def contact_form(contact: ContactRequest):
     if not resend.api_key:
@@ -321,6 +369,7 @@ async def newsletter_subscribe(req: NewsletterRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ----- Admin Newsletter -----
 @app.post("/api/admin/send-newsletter")
 async def admin_send_newsletter(req: AdminNewsletterRequest):
     if not resend.api_key:
@@ -351,6 +400,7 @@ async def admin_send_newsletter(req: AdminNewsletterRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ----- Send Interview Link -----
 @app.post("/api/send-interview-link")
 async def send_interview_link(req: SendInterviewLinkRequest):
     if not resend.api_key:
@@ -368,6 +418,7 @@ async def send_interview_link(req: SendInterviewLinkRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ----- IA Agents -----
 AGENT_PROMPTS = {
     "job-description": "Tu es un expert en recrutement au Mali. Améliore le texte suivant pour une offre d'emploi. Rend-le attractif, clair, bien structuré, et inclusif. Retourne uniquement le texte amélioré, sans commentaire.",
     "job-title": "Génère 3 titres d'offre d'emploi accrocheurs (maximum 10 mots chacun) à partir de la description suivante. Retourne les titres sous forme de liste numérotée, sans commentaire.",
@@ -424,6 +475,7 @@ async def ai_agent(req: AIAgentRequest):
             continue
     raise HTTPException(status_code=502, detail=f"Tous les modèles ont échoué. Dernière erreur : {last_error}")
 
+# ----- Uploads -----
 @app.post("/api/upload")
 async def upload_file(req: UploadRequest):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -469,6 +521,7 @@ async def upload_document(req: UploadDocumentRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ----- Notifications -----
 @app.post("/api/notify-new-application")
 async def notify_new_application(req: NotifyNewApplicationRequest):
     if not resend.api_key:
@@ -543,7 +596,7 @@ async def send_job_alerts():
             print(f"Erreur envoi alerte {alert.get('id')}: {e}")
     return {"success": True, "message": f"Emails envoyés pour {count_sent} alerte(s)."}
 
-# ----- Admin Endpoints -----
+# ----- Admin -----
 @app.post("/api/admin/verify-company")
 async def admin_verify_company(req: AdminVerifyCompanyRequest):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -560,14 +613,12 @@ async def admin_verify_company(req: AdminVerifyCompanyRequest):
             raise HTTPException(status_code=404, detail="Entreprise non trouvée")
         company = companies[0]
         
-        # Mettre à jour is_verified = true
         httpx.patch(
             f"{supabase_url}/rest/v1/companies?id=eq.{req.id}",
             json={"is_verified": True},
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         
-        # Email de validation
         owner = company.get("owner", {})
         owner_email = owner.get("email")
         owner_first_name = owner.get("first_name") or "Cher recruteur"
@@ -586,6 +637,7 @@ async def admin_verify_company(req: AdminVerifyCompanyRequest):
         return {"success": True, "message": "Entreprise validée et email envoyé"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 class NewCompanyNotificationRequest(BaseModel):
     company_name: str
     owner_email: str
@@ -598,7 +650,7 @@ async def notify_admin_new_company(req: NewCompanyNotificationRequest):
     try:
         resend.Emails.send({
             "from": "Actoos Jobs <noreply@actoos.com>",
-            "to": ["contact@actoos.com"],  # Email de l'admin
+            "to": ["contact@actoos.com"],
             "subject": f"Nouvelle entreprise à valider : {req.company_name}",
             "html": f"""
                 <h2>Nouvelle entreprise en attente de validation</h2>
@@ -610,6 +662,7 @@ async def notify_admin_new_company(req: NewCompanyNotificationRequest):
         return {"success": True, "message": "Notification envoyée à l'administrateur"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/admin/reject-company")
 async def admin_reject_company(req: AdminActionRequest):
     supabase_url = os.getenv("SUPABASE_URL")
