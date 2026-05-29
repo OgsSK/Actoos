@@ -34,7 +34,6 @@ export default function HomePage() {
           
           <div className="hidden md:flex items-center space-x-10 text-[11px] font-black uppercase tracking-widest text-slate-400">
             <a href="/produits" className="hover:text-black transition-colors">Produits</a>
-            <a href="https://jobs.actoos.com" className="hover:text-black transition-colors">Actoos Jobs</a>
             <a href="/expertise" className="hover:text-black transition-colors">Expertise</a>
             <a href="/a-propos" className="hover:text-black transition-colors">À propos</a>
             <a href="/philosophie" className="hover:text-black transition-colors">Philosophie</a>
@@ -74,7 +73,6 @@ export default function HomePage() {
           
           <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tighter leading-[0.9] mb-8 md:mb-12 text-slate-950">
             Vos idées<br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#F5D78E] to-[#D4AF37] italic">
                prennent forme.
             </span>
           </h1>
