@@ -195,7 +195,7 @@ const CompaniesPage = () => {
 
         {/* CTA pour les entreprises – masqué si l'utilisateur est déjà une entreprise */}
         {!isCompany && (
-          <div className="mt-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 sm:p-12 text-white text-center">
+          <div className="mt-16 bg-gradient-to-r from-blue-600 text-white to-blue-700 text-white rounded-2xl p-8 sm:p-12 text-white text-center">
             <h2 className="text-2xl font-bold mb-4">
               Vous êtes une entreprise ?
             </h2>

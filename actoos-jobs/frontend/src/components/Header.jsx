@@ -11,17 +11,17 @@ import {
   Bell, LogOut, Settings, LayoutDashboard, Shield
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { Badge } from './ui/badge';
 
 const Header = ({ user, onLogout }) => {
-  const { isAdmin, isCompany } = useAuth();
+  const { isAdmin, isCompany, isCandidate, profile } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  
 
   const isHomepage = location.pathname === '/';
-
-  // ← ajout de location.pathname
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -80,7 +80,7 @@ const Header = ({ user, onLogout }) => {
           <Link to="/" className="flex items-center gap-2">
             <div className={cn(
               'w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300',
-              isTransparent ? 'bg-white/20 backdrop-blur-sm' : 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+              isTransparent ? 'bg-white/20 backdrop-blur-sm' : 'bg-blue-600 text-white shadow-sm'
             )}>
               <Briefcase className="w-6 h-6 text-white" />
             </div>
@@ -98,14 +98,14 @@ const Header = ({ user, onLogout }) => {
           <div className="hidden lg:flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-1">
-                {/* Bouton Notifications avec badge */}
+                {/* Notifications */}
                 <Button
-  variant="ghost"
-  size="icon"
-  className={cn('relative', isTransparent ? 'text-white hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100')}
->
-  <Bell className="w-5 h-5" />
-</Button>
+                  variant="ghost"
+                  size="icon"
+                  className={cn('relative', isTransparent ? 'text-white hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100')}
+                >
+                  <Bell className="w-5 h-5" />
+                </Button>
 
                 {/* Zone cliquable vers le profil */}
                 <button
@@ -129,7 +129,7 @@ const Header = ({ user, onLogout }) => {
                   </div>
                 </button>
 
-                {/* Chevron dropdown */}
+                {/* Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -147,6 +147,11 @@ const Header = ({ user, onLogout }) => {
                     <DropdownMenuItem onClick={() => navigate(profileLink)}>
                       <User className="w-4 h-4 mr-3" /> Mon profil
                     </DropdownMenuItem>
+                    {isCandidate && (
+                      <DropdownMenuItem onClick={() => navigate('/alertes')}>
+                        <Bell className="w-4 h-4 mr-3" /> Créer une alerte
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={() => navigate('/parametres')}>
                       <Settings className="w-4 h-4 mr-3" /> Paramètres
                     </DropdownMenuItem>
@@ -158,6 +163,11 @@ const Header = ({ user, onLogout }) => {
                         </DropdownMenuItem>
                       </>
                     )}
+                    <DropdownMenuItem disabled className="opacity-100 !cursor-default">
+  <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">
+    Plan : {profile?.role === 'company' ? (profile?.subscription_plan || 'free') : '—'}
+  </Badge>
+</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                       <LogOut className="w-4 h-4 mr-3" /> Déconnexion
@@ -168,7 +178,7 @@ const Header = ({ user, onLogout }) => {
             ) : (
               <>
                 <Link to="/connexion"><Button variant="ghost" className={isTransparent ? 'text-white hover:bg-white/10' : ''}>Connexion</Button></Link>
-                <Link to="/inscription"><Button className={isTransparent ? 'bg-white text-blue-900 hover:bg-blue-50' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'}>Inscription</Button></Link>
+                <Link to="/inscription"><Button className={isTransparent ? 'bg-white text-blue-900 hover:bg-blue-50' : 'bg-blue-600 text-white hover:bg-blue-700 text-white shadow-sm'}>Inscription</Button></Link>
                 <Link to="/entreprises/inscription"><Button variant="outline" className={cn('gap-2', isTransparent ? 'border-white/30 text-white hover:bg-white/10' : 'border-blue-600 text-blue-600 hover:bg-blue-50')}><Building2 className="w-4 h-4" /> Recruter</Button></Link>
               </>
             )}
@@ -184,7 +194,7 @@ const Header = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* Mobile menu – animation douce */}
+      {/* Mobile menu */}
       <div
         className={cn(
           'lg:hidden fixed inset-0 z-[9999] transition-all duration-300',
@@ -215,11 +225,9 @@ const Header = ({ user, onLogout }) => {
           </div>
 
           <div className="px-6 py-6 space-y-4 pt-20 overflow-y-auto h-full">
+            {/* Info utilisateur (non cliquable) */}
             {user && (
-              <button
-                onClick={() => { setMobileMenuOpen(false); navigate(profileLink); }}
-                className="flex items-center gap-3 pb-4 border-b border-slate-100 w-full text-left"
-              >
+              <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
                 <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                   {getInitials()}
                 </div>
@@ -229,10 +237,10 @@ const Header = ({ user, onLogout }) => {
                   </p>
                   <p className="text-xs text-slate-500 truncate">{displayEmail}</p>
                 </div>
-              </button>
+              </div>
             )}
-          
 
+            {/* Navigation principale */}
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -244,12 +252,30 @@ const Header = ({ user, onLogout }) => {
               </Link>
             ))}
 
+            {/* Actions */}
             <div className="pt-4 border-t border-slate-100 space-y-2">
               {user ? (
                 <>
                   <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                     <Button className="w-full" variant="default">
                       <LayoutDashboard className="w-4 h-4 mr-2" /> Tableau de bord
+                    </Button>
+                  </Link>
+                  <Link to={profileLink} onClick={() => setMobileMenuOpen(false)}>
+                    <Button className="w-full" variant="outline">
+                      <User className="w-4 h-4 mr-2" /> Mon profil
+                    </Button>
+                  </Link>
+                  {isCandidate && (
+                    <Link to="/alertes" onClick={() => setMobileMenuOpen(false)}>
+                      <Button className="w-full" variant="outline">
+                        <Bell className="w-4 h-4 mr-2" /> Créer une alerte
+                      </Button>
+                    </Link>
+                  )}
+                  <Link to="/parametres" onClick={() => setMobileMenuOpen(false)}>
+                    <Button className="w-full" variant="outline">
+                      <Settings className="w-4 h-4 mr-2" /> Paramètres
                     </Button>
                   </Link>
                   <Button

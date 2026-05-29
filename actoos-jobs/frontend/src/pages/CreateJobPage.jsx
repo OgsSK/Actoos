@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
@@ -10,9 +10,10 @@ import AIAssistant from '../components/AIAssistant';
 import { toast } from 'sonner';
 import {
   Briefcase, MapPin, DollarSign, Calendar, Users, Clock,
-  Plus, X, Save, Loader2, ChevronLeft, Eye, Send, GraduationCap
+  Plus, X, Save, Loader2, ChevronLeft, Eye, Send, GraduationCap, ArrowRight 
 } from 'lucide-react';
 import { slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
+
 
 const CreateJobPage = () => {
   const { id } = useParams();
@@ -24,7 +25,8 @@ const CreateJobPage = () => {
   const [company, setCompany] = useState(null);
   const [cities, setCities] = useState([]);
   const [categories, setCategories] = useState([]);
-
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitInfo, setLimitInfo] = useState({ currentPlan: '', maxActiveJobs: 0, activeJobs: 0 });
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -159,7 +161,6 @@ const CreateJobPage = () => {
     toast.error('Veuillez remplir les champs obligatoires');
     return;
   }
-  // Catégorie maintenant obligatoire
   if (!form.category_id) {
     toast.error('Veuillez sélectionner une catégorie');
     return;
@@ -175,12 +176,40 @@ const CreateJobPage = () => {
       .eq('code', 'ML')
       .single();
 
-    // Déterminer le statut final :
-    // - Si l'entreprise est vérifiée et qu'on publie → 'active'
-    // - Si l'entreprise n'est pas vérifiée et qu'on publie → 'pending' (en attente de validation admin)
+    // Déterminer le statut final
     let finalStatus = form.status;
     if (publish) {
       finalStatus = company?.is_verified ? 'active' : 'pending';
+    }
+
+    // ✅ VÉRIFICATION DE LA LIMITE D’OFFRES ACTIVES SELON LE PLAN
+    const { data: companyPlan } = await supabase
+      .from('companies')
+      .select('subscription_plan')
+      .eq('id', company.id)
+      .single();
+
+    const currentPlan = companyPlan?.subscription_plan || 'free';
+    const planLimits = { free: 3, pro: 10, business: Infinity };
+    const maxActiveJobs = planLimits[currentPlan] ?? 0;
+
+    if (publish && finalStatus === 'active') {
+      let activeCountQuery = supabase
+        .from('jobs')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', company.id)
+        .eq('status', 'active');
+
+      // Si on modifie une offre existante, on ne la compte pas
+      if (id) activeCountQuery = activeCountQuery.neq('id', id);
+
+      const { count: activeJobs } = await activeCountQuery;
+      if (activeJobs >= maxActiveJobs) {
+       setLimitInfo({ currentPlan, maxActiveJobs, activeJobs });
+  setShowLimitModal(true);
+  setSaving(false);
+  return;
+      }
     }
 
     const jobData = {
@@ -192,7 +221,7 @@ const CreateJobPage = () => {
       requirements: form.requirements || null,
       responsibilities: form.responsibilities || null,
       benefits: form.benefits || null,
-      category_id: form.category_id,   // maintenant obligatoire
+      category_id: form.category_id,
       contract_type: form.contract_type,
       experience_level: form.experience_level || null,
       salary_min: form.salary_min ? parseInt(form.salary_min) : null,
@@ -232,6 +261,7 @@ const CreateJobPage = () => {
     setSaving(false);
   }
 };
+
   return (
     <div className="min-h-screen bg-slate-50 pt-20" data-testid="create-job-page">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
@@ -254,7 +284,7 @@ const CreateJobPage = () => {
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               Enregistrer
             </Button>
-            <Button onClick={() => handleSave(true)} disabled={saving} className="bg-blue-600 text-white hover:bg-blue-700 text-white" data-testid="publish-job-btn">
+            <Button onClick={() => handleSave(true)} disabled={saving} className="bg-blue-600 text-white hover:bg-blue-700 text-white " data-testid="publish-job-btn">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               Publier
             </Button>
@@ -623,13 +653,48 @@ const CreateJobPage = () => {
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               Enregistrer comme brouillon
             </Button>
-            <Button onClick={() => handleSave(true)} disabled={saving} className="bg-blue-600 text-white hover:bg-blue-700 text-white" data-testid="publish-job-btn-bottom">
+            <Button onClick={() => handleSave(true)} disabled={saving} className="bg-blue-600 text-white hover:bg-blue-700 text-white " data-testid="publish-job-btn-bottom">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               Publier l'offre
             </Button>
           </div>
         </div>
       </div>
+      {/* Modale Limite atteinte */}
+{showLimitModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+    <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 text-center">
+      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <Briefcase className="w-8 h-8 text-blue-600" />
+      </div>
+      <h2 className="text-xl font-bold text-slate-900 mb-4">
+        Limite d'offres atteinte
+      </h2>
+      <p className="text-slate-600 mb-6">
+        Votre plan <strong>{limitInfo.currentPlan === 'free' ? 'Gratuit' : limitInfo.currentPlan}</strong> vous permet de publier <strong>{limitInfo.maxActiveJobs} offre{limitInfo.maxActiveJobs > 1 ? 's' : ''}</strong> active{limitInfo.maxActiveJobs > 1 ? 's' : ''}.<br />
+        Vous avez déjà <strong>{limitInfo.activeJobs}</strong> offre{limitInfo.activeJobs > 1 ? 's' : ''} active{limitInfo.activeJobs > 1 ? 's' : ''}.
+      </p>
+      <p className="text-sm text-slate-500 mb-8">
+        Pour publier davantage d'offres, passez à un plan supérieur.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <Button
+          variant="outline"
+          className="rounded-2xl"
+          onClick={() => setShowLimitModal(false)}
+        >
+          Plus tard
+        </Button>
+        <Link to="/tarifs" onClick={() => setShowLimitModal(false)}>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl">
+            Voir les plans
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

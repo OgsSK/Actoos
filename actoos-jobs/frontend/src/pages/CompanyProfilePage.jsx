@@ -183,7 +183,7 @@ const CompanyProfilePage = () => {
                 </div>
                 <div><label className="block text-sm font-medium text-slate-700 mb-1">Adresse</label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
               </div>
-              <Button type="submit" disabled={loading} className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white">
+              <Button type="submit" disabled={loading} className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white ">
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
                 Enregistrer les modifications
               </Button>

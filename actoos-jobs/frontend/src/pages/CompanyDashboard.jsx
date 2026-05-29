@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import {
   Building2, Briefcase, Users, Eye, FileText, Plus, Settings,
   ChevronRight, TrendingUp, Clock, CheckCircle, XCircle, Loader2,
-  Edit, Trash2, MoreVertical, Globe, Mail, Phone, MapPin, Calendar, AlertTriangle
+  Edit, Trash2, MoreVertical, Globe, Mail, Phone, MapPin, Calendar, AlertTriangle, X
 } from 'lucide-react';
 import { cn, formatRelative, formatDate, CONTRACT_TYPES } from '../lib/utils';
 
@@ -90,7 +90,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
   );
 };
 
-// ---------- Application Card (liée vers le détail) ----------
+// ---------- Application Card ----------
 const ApplicationCard = ({ application }) => {
   const statusConfig = {
     pending: { label: 'Nouvelle', color: 'bg-blue-100 text-blue-700', icon: Clock },
@@ -104,10 +104,7 @@ const ApplicationCard = ({ application }) => {
   const StatusIcon = status.icon;
 
   return (
-    <Link
-      to={`/dashboard/entreprise/candidatures/${application.id}`}
-      className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
-    >
+    <Link to={`/dashboard/entreprise/candidatures/${application.id}`} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
       <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-slate-200"><Users className="w-6 h-6 text-slate-400" /></div>
       <div className="flex-1 min-w-0">
         <p className="font-medium text-slate-900">{application.candidate?.first_name} {application.candidate?.last_name}</p>
@@ -116,6 +113,76 @@ const ApplicationCard = ({ application }) => {
       <Badge className={cn(status.color, 'gap-1 border-0')}><StatusIcon className="w-3 h-3" />{status.label}</Badge>
       <span className="text-xs text-slate-400 hidden sm:block">{formatRelative(application.created_at)}</span>
     </Link>
+  );
+};
+
+// ---------- Modale de résiliation ----------
+const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => {
+  const [reason, setReason] = useState('');
+
+  const handleConfirm = () => {
+    onConfirm(reason);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <Card className="max-w-md w-full rounded-2xl bg-white shadow-xl">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" /> Résilier l'abonnement
+            </h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Vous êtes sur le point de résilier votre abonnement. Cette action est irréversible.
+            </p>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Raison de la résiliation (optionnel)
+              </label>
+              <textarea
+                rows={3}
+                className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none"
+                placeholder="Dites-nous pourquoi vous partez..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </div>
+
+            <div className="bg-red-50 rounded-xl p-4 text-sm text-red-700">
+              <p className="font-medium mb-1">⚠️ Conséquences :</p>
+              <ul className="list-disc list-inside space-y-1 text-red-600">
+                <li>Votre plan sera rétrogradé en plan Gratuit</li>
+                <li>Les fonctionnalités premium seront désactivées</li>
+                <li>Cette action est immédiate</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <Button variant="outline" className="flex-1" onClick={onClose}>
+              Annuler
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleConfirm}
+              disabled={cancelling}
+            >
+              {cancelling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Confirmer la résiliation
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
@@ -129,6 +196,7 @@ const CompanyDashboard = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [stats, setStats] = useState({ totalJobs: 0, activeJobs: 0, totalApplications: 0, newApplications: 0 });
 
   useEffect(() => { if (user) fetchCompanyData(); }, [user]);
@@ -171,7 +239,23 @@ const CompanyDashboard = () => {
       toast.success(newStatus === 'active' ? 'Offre publiée' : 'Statut mis à jour');
     } catch (err) { toast.error('Erreur'); }
   };
-  const handleCancelSubscription = async () => { /* ... (inchangée) */ };
+
+  const handleCancelSubscription = async (reason) => {
+    setCancelling(true);
+    try {
+      await apiFetch('/api/subscription/cancel', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: user.id, reason })
+      });
+      toast.success('Abonnement résilié avec succès');
+      setShowCancelModal(false);
+      fetchCompanyData();
+    } catch (err) {
+      toast.error(err.message || 'Erreur lors de la résiliation');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
   if (!company) return (
@@ -180,7 +264,7 @@ const CompanyDashboard = () => {
         <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6"><Building2 className="w-10 h-10 text-blue-600" /></div>
         <h1 className="text-2xl font-bold text-slate-900 mb-4">Créez votre profil entreprise</h1>
         <p className="text-slate-600 mb-8">Pour publier des offres et recevoir des candidatures, commencez par créer le profil de votre entreprise.</p>
-        <Link to="/dashboard/entreprise/creer"><Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700 text-white"><Plus className="w-5 h-5 mr-2" />Créer mon entreprise</Button></Link>
+        <Link to="/dashboard/entreprise/creer"><Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700 text-white "><Plus className="w-5 h-5 mr-2" />Créer mon entreprise</Button></Link>
       </div>
     </div>
   );
@@ -198,7 +282,7 @@ const CompanyDashboard = () => {
           </div>
           <div className="flex gap-3">
             <Link to="/dashboard/entreprise/profil"><Button variant="outline"><Settings className="w-4 h-4 mr-2" />Profil entreprise</Button></Link>
-            <Link to="/dashboard/entreprise/offres/nouvelle"><Button className="bg-blue-600 text-white hover:bg-blue-700 text-white"><Plus className="w-4 h-4 mr-2" />Nouvelle offre</Button></Link>
+            <Link to="/dashboard/entreprise/offres/nouvelle"><Button className="bg-blue-600 text-white hover:bg-blue-700 text-white "><Plus className="w-4 h-4 mr-2" />Nouvelle offre</Button></Link>
           </div>
         </div>
 
@@ -262,26 +346,51 @@ const CompanyDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Subscription */}
+            {/* Subscription Card */}
             <Card className="border-blue-200 bg-blue-50">
               <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-3"><Badge className="bg-blue-100 text-blue-700 border-0">{company.subscription_plan === 'free' ? 'Plan Gratuit' : company.subscription_plan}</Badge></div>
+                <div className="flex items-center justify-between mb-3">
+                  <Badge className="bg-blue-100 text-blue-700 border-0 text-sm px-3 py-1">
+                    Plan actuel : {company.subscription_plan === 'free' ? 'Gratuit' : company.subscription_plan}
+                  </Badge>
+                  <Link to="/tarifs">
+                    <Button variant="ghost" size="sm" className="text-blue-600 hover:bg-blue-100">
+                      Changer de plan
+                    </Button>
+                  </Link>
+                </div>
                 {company.subscription_plan !== 'free' && company.stripe_subscription_id ? (
                   <>
-                    <p className="text-sm text-blue-800 mb-4">Vous êtes sur le plan {company.subscription_plan}. Résiliez à tout moment.</p>
-                    <Button variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50" onClick={handleCancelSubscription} disabled={cancelling}><AlertTriangle className="w-4 h-4 mr-2" />Résilier l'abonnement</Button>
+                    <p className="text-sm text-blue-800 mb-4">
+                      Vous êtes actuellement sur le plan {company.subscription_plan}. Vous pouvez le résilier à tout moment.
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="w-full border-red-300 text-red-600 hover:bg-red-50"
+                      onClick={() => setShowCancelModal(true)}
+                    >
+                      <AlertTriangle className="w-4 h-4 mr-2" />
+                      Résilier l'abonnement
+                    </Button>
                   </>
                 ) : (
-                  <>
-                    <p className="text-sm text-blue-800 mb-4">Passez à un plan supérieur pour plus de fonctionnalités.</p>
-                    <Link to="/tarifs"><Button className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white">Voir les plans</Button></Link>
-                  </>
+                  <p className="text-sm text-blue-800">
+                    Passez à un plan supérieur pour publier plus d'offres et accéder à des fonctionnalités avancées.
+                  </p>
                 )}
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Modale de résiliation */}
+      <CancelSubscriptionModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleCancelSubscription}
+        cancelling={cancelling}
+      />
     </div>
   );
 };

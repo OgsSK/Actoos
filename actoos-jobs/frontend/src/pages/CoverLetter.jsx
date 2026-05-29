@@ -84,7 +84,7 @@ const CoverLetter = () => {
               <Button
                 onClick={handleGenerate}
                 disabled={loading}
-                className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white"
+                className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white "
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Sparkles className="w-5 h-5 mr-2" />}
                 Générer la lettre

@@ -468,7 +468,7 @@ const handleDeleteDocument = async (doc) => {
             <Button variant="ghost" onClick={() => navigate('/dashboard')} className="gap-2"><ChevronLeft className="w-4 h-4" />Retour</Button>
             <div><h1 className="text-2xl font-bold text-slate-900">Mon Profil</h1><p className="text-slate-600">Gérez vos informations professionnelles</p></div>
           </div>
-          <Button onClick={handleSave} disabled={saving} className="gap-2 bg-blue-600 text-white hover:bg-blue-700 text-white">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Enregistrer</Button>
+          <Button onClick={handleSave} disabled={saving} className="gap-2 bg-blue-600 text-white hover:bg-blue-700 text-white ">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Enregistrer</Button>
         </div>
 
         <div className="space-y-6">
@@ -476,7 +476,7 @@ const handleDeleteDocument = async (doc) => {
           <Card><CardContent className="p-6 flex items-center gap-6">
             <div className="relative w-24 h-24">
               {personalInfo.avatar_url ? <img src={personalInfo.avatar_url} alt="Avatar" className="w-24 h-24 rounded-full object-cover border-4 border-white shadow" /> : <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center"><User className="w-12 h-12 text-blue-600" /></div>}
-              <button onClick={() => photoInputRef.current?.click()} className="absolute bottom-0 right-0 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow hover:bg-blue-700"><Camera className="w-4 h-4" /></button>
+              <button onClick={() => photoInputRef.current?.click()} className="absolute bottom-0 right-0 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow text-white hover:bg-blue-700"><Camera className="w-4 h-4" /></button>
             </div>
             <div className="flex-1"><h3 className="font-semibold text-slate-900">Photo de profil</h3><p className="text-sm text-slate-500">JPG, PNG (max 2Mo)</p><div className="flex gap-2 mt-2"><Button variant="outline" size="sm" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto}><Upload className="w-4 h-4 mr-2" /> Changer</Button>{personalInfo.avatar_url && <Button variant="outline" size="sm" onClick={handleDeletePhoto} className="text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4 mr-2" /> Supprimer</Button>}</div></div>
             <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
@@ -630,7 +630,7 @@ const handleDeleteDocument = async (doc) => {
           </CardContent></Card>
 
           <div className="flex justify-end pt-4">
-            <Button onClick={handleSave} disabled={saving} size="lg" className="gap-2 bg-blue-600 text-white hover:bg-blue-700 text-white">{saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} Enregistrer les modifications</Button>
+            <Button onClick={handleSave} disabled={saving} size="lg" className="gap-2 bg-blue-600 text-white hover:bg-blue-700 text-white ">{saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} Enregistrer les modifications</Button>
           </div>
         </div>
       </div>

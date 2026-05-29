@@ -78,7 +78,7 @@ const NotificationsPage = () => {
                 <CardContent className="p-4 flex items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      {!notif.is_read && <span className="w-2 h-2 bg-blue-600 rounded-full"></span>}
+                      {!notif.is_read && <span className="w-2 h-2 bg-blue-600 text-white rounded-full"></span>}
                       <h3 className="font-medium text-slate-900">{notif.title}</h3>
                     </div>
                     <p className="text-sm text-slate-600">{notif.message}</p>

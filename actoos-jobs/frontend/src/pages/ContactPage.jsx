@@ -84,7 +84,7 @@ const ContactPage = () => {
                   placeholder="Écrivez votre message ici..."
                 />
               </div>
-              <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white" disabled={loading}>
+              <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white " disabled={loading}>
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
                 Envoyer le message
               </Button>

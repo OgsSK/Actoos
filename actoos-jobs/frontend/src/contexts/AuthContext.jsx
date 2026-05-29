@@ -14,7 +14,6 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Profil de base depuis les métadonnées (toujours disponible, 0 délai)
   const buildBaseProfile = useCallback((authUser) => {
     if (!authUser) return null;
     return {
@@ -23,12 +22,12 @@ export const AuthProvider = ({ children }) => {
       role: authUser.user_metadata?.role || 'candidate',
       first_name: authUser.user_metadata?.first_name || '',
       last_name: authUser.user_metadata?.last_name || '',
-      avatar_url: null,            // sera enrichi plus tard
+      avatar_url: null,
       candidate_profile: null,
+      subscription_plan: 'free',
     };
   }, []);
 
-  // Enrichit le profil avec les données de la base (appelé en arrière‑plan)
   const enrichProfile = useCallback(async (authUser) => {
     if (!authUser) return;
     try {
@@ -44,11 +43,22 @@ export const AuthProvider = ({ children }) => {
         .eq('user_id', authUser.id)
         .maybeSingle();
 
-      // Fusionner avec les métadonnées de base (les métadonnées priment pour les noms)
+      let subscriptionPlan = 'free';
+      const { data: companyData } = await supabase
+        .from('companies')
+        .select('subscription_plan')
+        .eq('owner_id', authUser.id)
+        .maybeSingle();
+
+      if (companyData) {
+        subscriptionPlan = companyData.subscription_plan || 'free';
+      }
+
       const merged = {
         ...buildBaseProfile(authUser),
         ...(userData || {}),
         candidate_profile: candidateData || null,
+        subscription_plan: subscriptionPlan,
       };
       setProfile(merged);
     } catch (err) {
@@ -59,21 +69,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Initialisation rapide
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         if (!mounted) return;
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         setProfile(buildBaseProfile(currentUser));
-        setLoading(false);                     // ✅ fin du chargement immédiat
-        if (currentUser) enrichProfile(currentUser);   // enrichissement silencieux
+        setLoading(false);
+        if (currentUser) enrichProfile(currentUser);
       })
       .catch(() => {
         if (mounted) setLoading(false);
       });
 
-    // Écouter les changements d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (!mounted) return;
@@ -92,32 +100,31 @@ export const AuthProvider = ({ children }) => {
   }, [buildBaseProfile, enrichProfile]);
 
   const signUp = async ({ email, password, role = 'candidate', firstName, lastName }) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { role, first_name: firstName, last_name: lastName },
-    },
-  });
-  if (error) throw error;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { role, first_name: firstName, last_name: lastName } },
+    });
+    if (error) throw error;
 
-  if (data.user) {
-    const { error: insertError } = await supabase
-      .from('users')
-      .insert({
-        id: data.user.id,
-        email: email,
-        role: role,
-        first_name: firstName,
-        last_name: lastName,
-      });
-    if (insertError) {
-      console.error('Erreur insertion users:', insertError);
+    if (data.user) {
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          email: email,
+          role: role,
+          first_name: firstName,
+          last_name: lastName,
+        });
+      if (insertError) {
+        console.error('Erreur insertion users:', insertError);
+      }
     }
-  }
 
-  return data;
-};
+    return data;
+  };
+
   const signIn = async ({ email, password }) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
@@ -149,14 +156,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateProfile = async (updates) => {
-  if (!user) throw new Error('Not authenticated');
-  const { error } = await supabase
-    .from('users')
-    .update(updates)
-    .eq('id', user.id);
-  if (error) throw error;
-  await enrichProfile(user);
-};
+    if (!user) throw new Error('Not authenticated');
+    const { error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', user.id);
+    if (error) throw error;
+    await enrichProfile(user);
+  };
 
   const value = {
     user, profile, loading,

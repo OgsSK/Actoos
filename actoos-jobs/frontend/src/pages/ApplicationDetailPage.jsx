@@ -227,7 +227,7 @@ const ApplicationDetailPage = () => {
                 <div className="mb-5">
                   <div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span><h4 className="text-sm font-medium text-slate-800">Choisissez un créneau</h4></div>
                   <div className="ml-8 flex flex-wrap gap-2">
-                    <a href="https://calendly.com/actoos/entretien" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700"><Calendar className="w-4 h-4" /> Ouvrir Calendly</a>
+                    <a href="https://calendly.com/actoos/entretien" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm text-white hover:bg-blue-700"><Calendar className="w-4 h-4" /> Ouvrir Calendly</a>
                     <Button variant="outline" size="sm" onClick={() => handleSendEmail('calendly')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" /> Envoyer par email</Button>
                   </div>
                 </div>

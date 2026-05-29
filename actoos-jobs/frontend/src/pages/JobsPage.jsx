@@ -66,14 +66,14 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved }) => {
     )}>
       {isOwner && (
         <div className="absolute top-2 left-2 z-10">
-          <Badge className="bg-blue-600 text-white text-xs">Votre offre</Badge>
+          <Badge className="bg-blue-600 text-white text-white text-xs">Votre offre</Badge>
         </div>
       )}
 
       <Link to={`/emplois/${job.id}`} className="block">
         <CardContent className="p-0">
           <div className="flex gap-2 p-3 pb-0">
-            {job.is_featured && <Badge className="bg-blue-600 text-white rounded-full">⭐ Mise en avant</Badge>}
+            {job.is_featured && <Badge className="bg-blue-600 text-white text-white rounded-full">⭐ Mise en avant</Badge>}
             {job.is_urgent && <Badge className="bg-red-500 text-white rounded-full">🔥 Urgent</Badge>}
             {job.is_remote && <Badge variant="outline" className="border-green-500 text-green-600 rounded-full">🏠 Télétravail</Badge>}
           </div>
@@ -420,7 +420,7 @@ const JobsPage = () => {
               <div className="flex-1 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /><Input type="text" placeholder="Poste, compétences..." value={filters.keyword} onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))} className="pl-10 h-12 rounded-xl" /></div>
               <div className="w-48 relative hidden sm:block"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10" /><Select value={filters.city || 'all'} onValueChange={(value) => setFilters(prev => ({ ...prev, city: value === 'all' ? null : value }))}><SelectTrigger className="pl-10 h-12 rounded-xl"><SelectValue placeholder="Ville" /></SelectTrigger><SelectContent><SelectItem value="all">Toutes les villes</SelectItem>{cities.map(city => <SelectItem key={city.name} value={city.name}>{city.name}</SelectItem>)}</SelectContent></Select></div>
             </div>
-            <Button variant="outline" className="lg:hidden rounded-xl" onClick={() => setShowMobileFilters(true)}><Filter className="w-4 h-4 mr-2" /> Filtres {activeFiltersCount > 0 && <Badge className="ml-2 bg-blue-600 rounded-full">{activeFiltersCount}</Badge>}</Button>
+            <Button variant="outline" className="lg:hidden rounded-xl" onClick={() => setShowMobileFilters(true)}><Filter className="w-4 h-4 mr-2" /> Filtres {activeFiltersCount > 0 && <Badge className="ml-2 bg-blue-600 text-white rounded-full">{activeFiltersCount}</Badge>}</Button>
           </div>
         </div>
       </div>
@@ -479,7 +479,7 @@ const JobsPage = () => {
           <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-xl overflow-y-auto">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white"><h2 className="font-semibold text-lg">Filtres</h2><button onClick={() => setShowMobileFilters(false)}><X className="w-6 h-6" /></button></div>
             <div className="p-4"><FiltersSidebar filters={filters} onChange={setFilters} cities={cities} categories={categories} contractTypes={availableContractTypes} experienceLevels={availableExperienceLevels} onReset={resetFilters} /></div>
-            <div className="p-4 border-t border-slate-200 sticky bottom-0 bg-white"><Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl" onClick={() => setShowMobileFilters(false)}>Voir {filteredJobs.length} résultat{filteredJobs.length > 1 ? 's' : ''}</Button></div>
+            <div className="p-4 border-t border-slate-200 sticky bottom-0 bg-white"><Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl" onClick={() => setShowMobileFilters(false)}>Voir {filteredJobs.length} résultat{filteredJobs.length > 1 ? 's' : ''}</Button></div>
           </div>
         </div>
       )}

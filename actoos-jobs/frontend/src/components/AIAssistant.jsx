@@ -76,7 +76,7 @@ const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
           </div>
           <div className="text-slate-700 whitespace-pre-wrap">{improved}</div>
           <div className="flex gap-2 mt-4">
-            <Button size="sm" onClick={handleApply} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button size="sm" onClick={handleApply} className="bg-blue-600 hover:bg-blue-700 text-white ">
               <Check className="w-4 h-4 mr-2" />
               Appliquer
             </Button>

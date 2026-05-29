@@ -118,7 +118,7 @@ const JobAlertsPage = () => {
                   required
                 />
               </div>
-              <Button type="submit" disabled={loading} className="bg-blue-600 text-white hover:bg-blue-700 text-white">
+              <Button type="submit" disabled={loading} className="bg-blue-600 text-white hover:bg-blue-700 text-white ">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Bell className="w-4 h-4 mr-2" />}
                 Créer l'alerte
               </Button>

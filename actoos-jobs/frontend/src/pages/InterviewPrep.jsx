@@ -103,7 +103,7 @@ const InterviewPrep = () => {
                     size="sm"
                     onClick={() => handleGenerate('interview-questions', setQuestions)}
                     disabled={loading['interview-questions']}
-                    className="bg-blue-600 text-white hover:bg-blue-700 text-white"
+                    className="bg-blue-600 text-white hover:bg-blue-700 text-white "
                   >
                     {loading['interview-questions'] ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
                     Générer
@@ -128,7 +128,7 @@ const InterviewPrep = () => {
                     size="sm"
                     onClick={() => handleGenerate('interview-answers', setAnswers)}
                     disabled={loading['interview-answers'] || !questions}
-                    className="bg-blue-600 text-white hover:bg-blue-700 text-white"
+                    className="bg-blue-600 text-white hover:bg-blue-700 text-white "
                   >
                     {loading['interview-answers'] ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
                     Générer
@@ -153,7 +153,7 @@ const InterviewPrep = () => {
                     size="sm"
                     onClick={() => handleGenerate('interview-tips', setTips)}
                     disabled={loading['interview-tips']}
-                    className="bg-blue-600 text-white hover:bg-blue-700 text-white"
+                    className="bg-blue-600 text-white hover:bg-blue-700 text-white "
                   >
                     {loading['interview-tips'] ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
                     Générer

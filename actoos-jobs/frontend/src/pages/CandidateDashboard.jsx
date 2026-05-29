@@ -194,7 +194,7 @@ const CandidateDashboard = () => {
           </div>
           <div className="flex gap-3">
             <Link to="/profil"><Button variant="outline"><User className="w-4 h-4 mr-2" />Mon profil</Button></Link>
-            <Link to="/emplois"><Button className="bg-blue-600 text-white hover:bg-blue-700 text-white"><Briefcase className="w-4 h-4 mr-2" />Rechercher</Button></Link>
+            <Link to="/emplois"><Button className="bg-blue-600 text-white hover:bg-blue-700 text-white "><Briefcase className="w-4 h-4 mr-2" />Rechercher</Button></Link>
           </div>
         </div>
 

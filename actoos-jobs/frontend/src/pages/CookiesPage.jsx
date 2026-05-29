@@ -14,55 +14,55 @@ const CookiesPage = () => {
         <h1 className="text-3xl font-bold text-slate-900 mb-8">Politique de Cookies</h1>
         
         <div className="bg-white rounded-2xl shadow-sm p-8 space-y-8">
-          <p className="text-sm text-slate-500">Derniere mise a jour : 26 Mai 2026</p>
+          <p className="text-sm text-slate-500">Dernière mise à jour : Mai 2026</p>
 
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">1. Qu'est-ce qu'un cookie ?</h2>
             <p className="text-slate-600 leading-relaxed">
-              Un cookie est un petit fichier texte stocke sur votre appareil (ordinateur, telephone, tablette) 
-              lorsque vous visitez un site web. Les cookies permettent au site de reconnaitre votre appareil 
-              et de memoriser certaines informations sur vos preferences ou actions passees.
+              Un cookie est un petit fichier texte stocké sur votre appareil (ordinateur, téléphone, tablette) 
+              lorsque vous visitez un site web. Les cookies permettent au site de reconnaître votre appareil 
+              et de mémoriser certaines informations sur vos préférences ou actions passées.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">2. Types de cookies utilises</h2>
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">2. Types de cookies utilisés</h2>
             
             <div className="space-y-4">
               <div className="p-4 bg-slate-50 rounded-lg">
                 <h3 className="font-medium text-slate-900 mb-2">Cookies essentiels</h3>
                 <p className="text-slate-600 text-sm">
-                  Necessaires au fonctionnement de la Plateforme. Ils permettent d'utiliser les fonctionnalites 
-                  de base comme la connexion securisee et la navigation entre les pages.
+                  Nécessaires au fonctionnement de la Plateforme. Ils permettent d'utiliser les fonctionnalités 
+                  de base comme la connexion sécurisée et la navigation entre les pages.
                 </p>
-                <p className="text-xs text-slate-500 mt-2">Duree : Session</p>
+                <p className="text-xs text-slate-500 mt-2">Durée : Session</p>
               </div>
 
               <div className="p-4 bg-slate-50 rounded-lg">
-                <h3 className="font-medium text-slate-900 mb-2">Cookies de preference</h3>
+                <h3 className="font-medium text-slate-900 mb-2">Cookies de préférence</h3>
                 <p className="text-slate-600 text-sm">
-                  Permettent de memoriser vos preferences (langue, region, parametres d'affichage) pour 
-                  personnaliser votre experience.
+                  Permettent de mémoriser vos préférences (langue, région, paramètres d'affichage) pour 
+                  personnaliser votre expérience.
                 </p>
-                <p className="text-xs text-slate-500 mt-2">Duree : 1 an</p>
+                <p className="text-xs text-slate-500 mt-2">Durée : 1 an</p>
               </div>
 
               <div className="p-4 bg-slate-50 rounded-lg">
                 <h3 className="font-medium text-slate-900 mb-2">Cookies analytiques</h3>
                 <p className="text-slate-600 text-sm">
-                  Nous aident a comprendre comment les visiteurs interagissent avec notre site en collectant 
-                  des informations anonymes sur les pages visitees et le temps passe.
+                  Nous aident à comprendre comment les visiteurs interagissent avec notre site en collectant 
+                  des informations anonymes sur les pages visitées et le temps passé.
                 </p>
-                <p className="text-xs text-slate-500 mt-2">Duree : 2 ans</p>
+                <p className="text-xs text-slate-500 mt-2">Durée : 2 ans</p>
               </div>
 
               <div className="p-4 bg-slate-50 rounded-lg">
                 <h3 className="font-medium text-slate-900 mb-2">Cookies marketing</h3>
                 <p className="text-slate-600 text-sm">
-                  Utilises pour suivre les visiteurs sur les sites web et afficher des publicites pertinentes 
-                  et interessantes pour l'utilisateur.
+                  Utilisés pour suivre les visiteurs sur les sites web et afficher des publicités pertinentes 
+                  et intéressantes pour l'utilisateur.
                 </p>
-                <p className="text-xs text-slate-500 mt-2">Duree : 6 mois</p>
+                <p className="text-xs text-slate-500 mt-2">Durée : 6 mois</p>
               </div>
             </div>
           </section>
@@ -70,7 +70,7 @@ const CookiesPage = () => {
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">3. Cookies tiers</h2>
             <p className="text-slate-600 leading-relaxed mb-4">
-              Nous utilisons des services tiers qui peuvent deposer des cookies :
+              Nous utilisons des services tiers qui peuvent déposer des cookies :
             </p>
             <ul className="list-disc list-inside text-slate-600 space-y-2 ml-4">
               <li><strong>Google Analytics</strong> - Analyse du trafic</li>
@@ -82,35 +82,35 @@ const CookiesPage = () => {
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">4. Gestion des cookies</h2>
             <p className="text-slate-600 leading-relaxed mb-4">
-              Vous pouvez controler et/ou supprimer les cookies comme vous le souhaitez :
+              Vous pouvez contrôler et/ou supprimer les cookies comme vous le souhaitez :
             </p>
             <ul className="list-disc list-inside text-slate-600 space-y-2 ml-4">
-              <li>Via les parametres de votre navigateur</li>
+              <li>Via les paramètres de votre navigateur</li>
               <li>En utilisant notre bandeau de consentement aux cookies</li>
               <li>En installant des extensions de blocage de cookies</li>
             </ul>
             <p className="text-slate-600 leading-relaxed mt-4">
-              Note : La desactivation de certains cookies peut affecter votre experience sur la Plateforme.
+              Note : La désactivation de certains cookies peut affecter votre expérience sur la Plateforme.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">5. Parametres du navigateur</h2>
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">5. Paramètres du navigateur</h2>
             <p className="text-slate-600 leading-relaxed mb-4">
-              Voici comment gerer les cookies dans les principaux navigateurs :
+              Voici comment gérer les cookies dans les principaux navigateurs :
             </p>
             <ul className="list-none text-slate-600 space-y-2 ml-4">
               <li>
-                <strong>Chrome</strong> : Parametres &gt; Confidentialite et securite &gt; Cookies
+                <strong>Chrome</strong> : Paramètres &gt; Confidentialité et sécurité &gt; Cookies
               </li>
               <li>
-                <strong>Firefox</strong> : Options &gt; Vie privee et securite &gt; Cookies
+                <strong>Firefox</strong> : Options &gt; Vie privée et sécurité &gt; Cookies
               </li>
               <li>
-                <strong>Safari</strong> : Preferences &gt; Confidentialite &gt; Cookies
+                <strong>Safari</strong> : Préférences &gt; Confidentialité &gt; Cookies
               </li>
               <li>
-                <strong>Edge</strong> : Parametres &gt; Confidentialite &gt; Cookies
+                <strong>Edge</strong> : Paramètres &gt; Confidentialité &gt; Cookies
               </li>
             </ul>
           </section>
@@ -118,15 +118,15 @@ const CookiesPage = () => {
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">6. Modifications</h2>
             <p className="text-slate-600 leading-relaxed">
-              Nous pouvons mettre a jour cette politique de cookies pour refleter les changements dans 
-              nos pratiques ou pour d'autres raisons operationnelles, legales ou reglementaires.
+              Nous pouvons mettre à jour cette politique de cookies pour refléter les changements dans 
+              nos pratiques ou pour d'autres raisons opérationnelles, légales ou réglementaires.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">7. Contact</h2>
             <p className="text-slate-600 leading-relaxed">
-              Pour toute question concernant notre utilisation des cookies, contactez-nous a : 
+              Pour toute question concernant notre utilisation des cookies, contactez-nous à : 
               <a href="mailto:contact@actoos.com" className="text-blue-600 hover:underline ml-1">
                 contact@actoos.com
               </a>

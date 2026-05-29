@@ -64,7 +64,7 @@ const NewsletterSection = () => {
             onChange={(e) => setEmail(e.target.value)}
             className="flex-1 h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <Button type="submit" disabled={loading} className="bg-blue-600 text-white hover:bg-blue-700 text-white">
+          <Button type="submit" disabled={loading} className="bg-blue-600 text-white hover:bg-blue-700 text-white ">
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "S'inscrire"}
           </Button>
         </form>

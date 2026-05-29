@@ -11,26 +11,26 @@ const CGUPage = () => {
           Retour
         </Link>
 
-        <h1 className="text-3xl font-bold text-slate-900 mb-8">Conditions Generales d'Utilisation</h1>
+        <h1 className="text-3xl font-bold text-slate-900 mb-8">Conditions Générales d'Utilisation</h1>
         
         <div className="bg-white rounded-2xl shadow-sm p-8 space-y-8">
-          <p className="text-sm text-slate-500">Derniere mise a jour : 26 Mai 2026</p>
+          <p className="text-sm text-slate-500">Dernière mise à jour : Mai 2026</p>
 
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">1. Objet</h2>
             <p className="text-slate-600 leading-relaxed">
-              Les presentes Conditions Generales d'Utilisation (CGU) ont pour objet de definir les modalites 
-              et conditions d'utilisation des services proposes par Actoos Jobs (ci-apres "la Plateforme"), 
-              ainsi que de definir les droits et obligations des parties dans ce cadre.
+              Les présentes Conditions Générales d'Utilisation (CGU) ont pour objet de définir les modalités 
+              et conditions d'utilisation des services proposés par Actoos Jobs (ci-après "la Plateforme"), 
+              ainsi que de définir les droits et obligations des parties dans ce cadre.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">2. Acceptation des CGU</h2>
             <p className="text-slate-600 leading-relaxed">
-              L'utilisation de la Plateforme implique l'acceptation pleine et entiere des presentes CGU. 
-              En vous inscrivant sur Actoos Jobs, vous reconnaissez avoir lu, compris et accepte les presentes 
-              conditions sans reserve.
+              L'utilisation de la Plateforme implique l'acceptation pleine et entière des présentes CGU. 
+              En vous inscrivant sur Actoos Jobs, vous reconnaissez avoir lu, compris et accepté les présentes 
+              conditions sans réserve.
             </p>
           </section>
 
@@ -38,51 +38,51 @@ const CGUPage = () => {
             <h2 className="text-xl font-semibold text-slate-900 mb-4">3. Description des services</h2>
             <p className="text-slate-600 leading-relaxed mb-4">
               Actoos Jobs est une plateforme internationale de mise en relation entre employeurs et candidats. 
-              Les services proposes incluent :
+              Les services proposés incluent :
             </p>
             <ul className="list-disc list-inside text-slate-600 space-y-2 ml-4">
               <li>Publication et consultation d'offres d'emploi</li>
-              <li>Creation et gestion de profils candidat et entreprise</li>
-              <li>Systeme de candidature en ligne</li>
+              <li>Création et gestion de profils candidat et entreprise</li>
+              <li>Système de candidature en ligne</li>
               <li>Outils de gestion des candidatures pour les employeurs</li>
-              <li>Alertes emploi personnalisees</li>
+              <li>Alertes emploi personnalisées</li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">4. Inscription et compte utilisateur</h2>
             <p className="text-slate-600 leading-relaxed">
-              Pour acceder a certains services, l'utilisateur doit creer un compte. Il s'engage a fournir 
-              des informations exactes et a les maintenir a jour. L'utilisateur est responsable de la 
-              confidentialite de ses identifiants de connexion.
+              Pour accéder à certains services, l'utilisateur doit créer un compte. Il s'engage à fournir 
+              des informations exactes et à les maintenir à jour. L'utilisateur est responsable de la 
+              confidentialité de ses identifiants de connexion.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">5. Obligations des utilisateurs</h2>
-            <p className="text-slate-600 leading-relaxed mb-4">Les utilisateurs s'engagent a :</p>
+            <p className="text-slate-600 leading-relaxed mb-4">Les utilisateurs s'engagent à :</p>
             <ul className="list-disc list-inside text-slate-600 space-y-2 ml-4">
-              <li>Ne pas publier de contenu illegal, diffamatoire ou discriminatoire</li>
-              <li>Ne pas usurper l'identite d'un tiers</li>
-              <li>Ne pas utiliser la Plateforme a des fins frauduleuses</li>
-              <li>Respecter les droits de propriete intellectuelle</li>
+              <li>Ne pas publier de contenu illégal, diffamatoire ou discriminatoire</li>
+              <li>Ne pas usurper l'identité d'un tiers</li>
+              <li>Ne pas utiliser la Plateforme à des fins frauduleuses</li>
+              <li>Respecter les droits de propriété intellectuelle</li>
               <li>Ne pas perturber le fonctionnement de la Plateforme</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">6. Propriete intellectuelle</h2>
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">6. Propriété intellectuelle</h2>
             <p className="text-slate-600 leading-relaxed">
-              Tous les elements de la Plateforme (textes, images, logos, etc.) sont proteges par le droit 
-              de la propriete intellectuelle. Toute reproduction ou utilisation non autorisee est interdite.
+              Tous les éléments de la Plateforme (textes, images, logos, etc.) sont protégés par le droit 
+              de la propriété intellectuelle. Toute reproduction ou utilisation non autorisée est interdite.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">7. Responsabilite</h2>
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">7. Responsabilité</h2>
             <p className="text-slate-600 leading-relaxed">
-              Actoos Jobs ne peut etre tenu responsable du contenu publie par les utilisateurs, ni de 
-              l'issue des mises en relation effectuees via la Plateforme. Les utilisateurs restent seuls 
+              Actoos Jobs ne peut être tenu responsable du contenu publié par les utilisateurs, ni de 
+              l'issue des mises en relation effectuées via la Plateforme. Les utilisateurs restent seuls 
               responsables de leurs interactions.
             </p>
           </section>
@@ -90,23 +90,23 @@ const CGUPage = () => {
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">8. Modification des CGU</h2>
             <p className="text-slate-600 leading-relaxed">
-              Actoos Jobs se reserve le droit de modifier les presentes CGU a tout moment. Les utilisateurs 
-              seront informes des modifications par email ou notification sur la Plateforme.
+              Actoos Jobs se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs 
+              seront informés des modifications par email ou notification sur la Plateforme.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">9. Droit applicable</h2>
             <p className="text-slate-600 leading-relaxed">
-              Les presentes CGU sont soumises au droit malien. Tout litige sera soumis aux tribunaux 
-              competents.
+              Les présentes CGU sont soumises au droit en vigueur. Tout litige sera soumis aux tribunaux 
+              compétents.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-4">10. Contact</h2>
             <p className="text-slate-600 leading-relaxed">
-              Pour toute question concernant les presentes CGU, vous pouvez nous contacter a : 
+              Pour toute question concernant les présentes CGU, vous pouvez nous contacter à : 
               <a href="mailto:contact@actoos.com" className="text-blue-600 hover:underline ml-1">
                 contact@actoos.com
               </a>

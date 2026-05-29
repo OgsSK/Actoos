@@ -90,7 +90,7 @@ const ApplicationDetailCandidatePage = () => {
                 )}
                 <Link
                   to={`/preparation-entretien?job_id=${application.job_id}`}
-                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 text-sm font-medium"
+                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 text-sm text-white font-medium"
                 >
                   <Target className="w-4 h-4" /> Préparer l'entretien
                 </Link>

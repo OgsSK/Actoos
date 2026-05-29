@@ -395,7 +395,7 @@ const CreateCompanyPage = () => {
               {/* Submit */}
               <Button
                 type="submit"
-                className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white"
+                className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white "
                 disabled={loading}
                 data-testid="create-company-btn"
               >

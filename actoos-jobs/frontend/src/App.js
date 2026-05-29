@@ -44,7 +44,10 @@ import './index.css';
 import NotificationsPage from './pages/NotificationsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-
+import { Card, CardContent } from './components/ui/card';
+import { Target, Eye, Shield, Zap, Heart, TrendingUp } from 'lucide-react';
+import CookieBanner from './components/CookieBanner';
+import AboutPage from './pages/AboutPage';
 // ---------- Scroll to top on route change ----------
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -92,26 +95,6 @@ const DashboardRouter = () => {
   return <Navigate to="/dashboard/candidat" replace />;
 };
 
-// ---------- Pages statiques ----------
-const AboutPage = () => (
-  <div className="pt-20 min-h-screen bg-slate-50">
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold text-slate-900 mb-6">À propos d'Actoos Jobs</h1>
-      <div className="bg-white rounded-2xl shadow-sm p-8 space-y-6">
-        <p className="text-slate-600 leading-relaxed">
-          Actoos Jobs est la plateforme de recrutement nouvelle génération. Notre mission est de connecter les meilleurs talents avec les entreprises qui recrutent, en simplifiant et modernisant le processus de recherche d'emploi et de recrutement.
-        </p>
-        <p className="text-slate-600 leading-relaxed">
-          Fondée en 2026, notre équipe est composée de professionnels passionnés par l'innovation et le développement du marché de l'emploi à l'international.
-        </p>
-        <h2 className="text-xl font-semibold text-slate-900 pt-4">Notre vision</h2>
-        <p className="text-slate-600 leading-relaxed">
-          Devenir la référence en matière de recrutement en Afrique francophone, en offrant une expérience utilisateur exceptionnelle et des outils innovants pour les candidats et les entreprises.
-        </p>
-      </div>
-    </div>
-  </div>
-);
 
 const NotFoundPage = () => (
   <div className="pt-20 min-h-screen bg-slate-50 flex items-center justify-center">
@@ -150,6 +133,7 @@ const AppContent = () => {
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
 <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/a-propos" element={<AboutPage />} />
           {/* ---------- Legal pages ---------- */}
           <Route path="/cgu" element={<CGUPage />} />
           <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
@@ -195,7 +179,7 @@ const AppContent = () => {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
-
+      <CookieBanner />
       <Footer />
 
       <Toaster

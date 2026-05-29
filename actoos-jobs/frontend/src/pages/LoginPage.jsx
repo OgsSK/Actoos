@@ -75,7 +75,7 @@ const LoginPage = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center text-white justify-center">
               <Briefcase className="w-7 h-7 text-white" />
             </div>
             <span className="text-2xl font-bold text-slate-900">Actoos Jobs</span>
@@ -165,7 +165,7 @@ const LoginPage = () => {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 text-base bg-blue-600 text-white hover:bg-blue-700 text-white"
+                className="w-full h-12 text-base bg-blue-600 text-white hover:bg-blue-700 text-white "
                 disabled={loading}
                 data-testid="login-submit"
               >

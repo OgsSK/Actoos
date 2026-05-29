@@ -65,7 +65,7 @@ const HeroSection = ({ stats, popularSearches = [] }) => {
 
   return (
     <section className="relative min-h-[85vh] flex items-center overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-950 via-blue-900 text-white to-blue-950">
         <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-3xl" />
@@ -143,7 +143,7 @@ const HeroSection = ({ stats, popularSearches = [] }) => {
                 </select>
               </div>
 
-              <Button type="submit" size="lg" className="h-14 px-8 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-2xl">
+              <Button type="submit" size="lg" className="h-14 px-8 text-lg bg-blue-600 hover:bg-blue-700 text-white text-white rounded-2xl">
                 <Search className="w-5 h-5 mr-2" /> Rechercher
               </Button>
             </div>
@@ -292,7 +292,7 @@ const RecentJobsSection = () => {
             <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">Aucune offre disponible</h3>
             <p className="text-slate-600 mb-4">Les premières offres arrivent bientôt !</p>
-            <Link to="/inscription?type=entreprise"><Button className="bg-blue-600 hover:bg-blue-700">Publiez la première offre</Button></Link>
+            <Link to="/inscription?type=entreprise"><Button className="bg-blue-600 text-white hover:bg-blue-700">Publiez la première offre</Button></Link>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -303,7 +303,7 @@ const RecentJobsSection = () => {
         )}
 
         <div className="text-center mt-10 sm:hidden">
-          <Link to="/emplois"><Button className="bg-blue-600 hover:bg-blue-700">Voir toutes les offres <ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
+          <Link to="/emplois"><Button className="bg-blue-600 text-white hover:bg-blue-700">Voir toutes les offres <ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
         </div>
       </div>
     </section>
@@ -357,7 +357,7 @@ const JobCard = ({ job, user }) => {
 
         {isOwner && (
           <div className="absolute top-2 left-2">
-            <Badge className="bg-blue-600 text-white text-xs">Votre offre</Badge>
+            <Badge className="bg-blue-600 text-white text-white text-xs">Votre offre</Badge>
           </div>
         )}
 
@@ -378,9 +378,9 @@ const JobCard = ({ job, user }) => {
 const HowItWorksSection = () => {
   const steps = [
     { icon: Users, title: 'Créez votre profil', description: 'Inscrivez-vous gratuitement et complétez votre profil en quelques minutes.', color: 'bg-blue-500' },
-    { icon: Search, title: 'Recherchez des offres', description: 'Parcourez des centaines d\'offres et utilisez nos filtres avancés.', color: 'bg-blue-600' },
-    { icon: Briefcase, title: 'Postulez en un clic', description: 'Envoyez votre candidature directement aux recruteurs.', color: 'bg-blue-700' },
-    { icon: CheckCircle, title: 'Décrochez le job', description: 'Suivez vos candidatures et préparez vos entretiens.', color: 'bg-blue-800' },
+    { icon: Search, title: 'Recherchez des offres', description: 'Parcourez des centaines d\'offres et utilisez nos filtres avancés.', color: 'bg-blue-600 text-white' },
+    { icon: Briefcase, title: 'Postulez en un clic', description: 'Envoyez votre candidature directement aux recruteurs.', color: 'bg-blue-700 text-white' },
+    { icon: CheckCircle, title: 'Décrochez le job', description: 'Suivez vos candidatures et préparez vos entretiens.', color: 'bg-blue-800 text-white' },
   ];
 
   return (
@@ -412,7 +412,7 @@ const HowItWorksSection = () => {
 
 // ---------- CTA Section ----------
 const CompanyCTASection = () => (
-  <section className="py-20 bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950 relative overflow-hidden">
+  <section className="py-20 bg-gradient-to-br from-blue-950 via-blue-900 text-white to-blue-950 relative overflow-hidden">
     <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
     <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-400/5 rounded-full blur-3xl" />
     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -427,7 +427,7 @@ const CompanyCTASection = () => (
             ))}
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/entreprises/inscription"><Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white">Créer un compte entreprise <ArrowRight className="w-4 h-4 ml-2" /></Button></Link>
+            <Link to="/entreprises/inscription"><Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white ">Créer un compte entreprise <ArrowRight className="w-4 h-4 ml-2" /></Button></Link>
             <Link to="/tarifs"><Button size="lg" variant="outline" className="border-blue-400/30 text-white hover:bg-white/10 rounded-2xl">Voir nos tarifs</Button></Link>
           </div>
         </div>
@@ -452,9 +452,9 @@ const WhyChooseSection = () => {
   const reasons = [
     { icon: Globe, title: '100 % gratuit pour les candidats', description: 'Créez votre profil, postulez et soyez recruté sans rien payer.' },
     { icon: Building2, title: 'Visibilité immédiate pour les entreprises', description: 'Publiez vos offres et touchez des milliers de candidats qualifiés.' },
-    { icon: Shield, title: 'Données sécurisées et locales', description: 'Vos informations sont hébergées de manière sécurisée et restent au Mali.' },
+    { icon: Shield, title: 'Données sécurisées et locales', description: 'Vos informations sont hébergées de manière sécurisée et restent confidentielles.' },
     { icon: Zap, title: 'Moteur de recherche intelligent', description: 'Trouvez l\'offre idéale grâce à une recherche rapide et des filtres précis.' },
-    { icon: Heart, title: 'Support local réactif', description: 'Une équipe basée au Mali, à votre écoute pour vous accompagner.' },
+    { icon: Heart, title: 'Support local réactif', description: 'Une équipe réactive, à votre écoute pour vous accompagner.' },
     { icon: TrendingUp, title: 'Statistiques en temps réel', description: 'Suivez vos candidatures et la performance de vos offres en direct.' },
   ];
 
@@ -463,7 +463,7 @@ const WhyChooseSection = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-display">Pourquoi choisir Actoos Jobs ?</h2>
-          <p className="text-slate-600 mt-3 max-w-2xl mx-auto">La plateforme de recrutement pensée pour le Mali, par des ingénieurs passionnés.</p>
+          <p className="text-slate-600 mt-3 max-w-2xl mx-auto">La plateforme de recrutement nouvelle génération, créée par des ingénieurs passionnés.</p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {reasons.map((reason) => (
@@ -477,7 +477,7 @@ const WhyChooseSection = () => {
           ))}
         </div>
         <div className="text-center mt-12">
-          <Link to="/inscription"><Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl">Créer un compte gratuit <ArrowRight className="w-4 h-4 ml-2" /></Button></Link>
+          <Link to="/inscription"><Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white text-white rounded-2xl">Créer un compte gratuit <ArrowRight className="w-4 h-4 ml-2" /></Button></Link>
         </div>
       </div>
     </section>

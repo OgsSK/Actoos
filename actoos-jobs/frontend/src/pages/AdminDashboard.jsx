@@ -351,6 +351,8 @@ const AdminDashboard = () => {
   const [companies, setCompanies] = useState([]);
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
+  const [cancellations, setCancellations] = useState([]);
+  const [loadingCancellations, setLoadingCancellations] = useState(true);
   
   const [jobFilter, setJobFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
@@ -367,6 +369,22 @@ const AdminDashboard = () => {
     if (user && isAdmin) fetchData();
   }, [user, isAdmin, authLoading]);
 
+  useEffect(() => {
+    const fetchCancellations = async () => {
+      try {
+        const res = await apiFetch('/api/admin/cancellations');
+        if (res.success && Array.isArray(res.cancellations)) {
+          setCancellations(res.cancellations);
+        }
+      } catch (err) {
+        console.error('Erreur chargement résiliations:', err);
+      } finally {
+        setLoadingCancellations(false);
+      }
+    };
+    if (isAdmin) fetchCancellations();
+  }, [isAdmin]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -380,19 +398,17 @@ const AdminDashboard = () => {
       const { data: usersData } = await supabase.from('users').select('*').order('created_at', { ascending: false }).limit(100);
       setUsers(usersData || []);
 
-      // Remplacer le bloc try/catch des reports par :
-try {
-  const reportsRes = await apiFetch('/api/admin/reports');
-  if (reportsRes.success && Array.isArray(reportsRes.reports)) {
-    setReports(reportsRes.reports);
-  } else {
-    // Si la réponse n'est pas un tableau, on initialise à vide
-    setReports([]);
-  }
-} catch (e) {
-  console.error(e);
-  setReports([]);
-}
+      try {
+        const reportsRes = await apiFetch('/api/admin/reports');
+        if (reportsRes.success && Array.isArray(reportsRes.reports)) {
+          setReports(reportsRes.reports);
+        } else {
+          setReports([]);
+        }
+      } catch (e) {
+        console.error(e);
+        setReports([]);
+      }
 
       const pendingJobs = (jobsData || []).filter(j => j.status === 'pending' || j.status === 'draft').length;
       const activeJobs = (jobsData || []).filter(j => j.status === 'active').length;
@@ -548,7 +564,7 @@ try {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center"><Shield className="w-7 h-7 text-white" /></div>
+            <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center text-white justify-center"><Shield className="w-7 h-7 text-white" /></div>
             <div><h1 className="text-2xl font-bold text-slate-900">Administration</h1><p className="text-slate-600">Gerez les offres, entreprises et utilisateurs</p></div>
           </div>
           <Button variant="outline" onClick={handleRefresh} disabled={refreshing} className="gap-2"><RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin")} /> Actualiser</Button>
@@ -572,6 +588,9 @@ try {
           <TabButton active={activeTab === 'users'} onClick={() => setActiveTab('users')}>Utilisateurs</TabButton>
           <TabButton active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} count={reports.filter(r => r.status === 'pending').length}>
             <Flag className="w-4 h-4" /> Signalements
+          </TabButton>
+          <TabButton active={activeTab === 'cancellations'} onClick={() => setActiveTab('cancellations')}>
+            <AlertTriangle className="w-4 h-4" /> Résiliations
           </TabButton>
           <TabButton active={activeTab === 'newsletter'} onClick={() => setActiveTab('newsletter')}><Mail className="w-4 h-4" /> Newsletter</TabButton>
         </div>
@@ -703,6 +722,46 @@ try {
           </Card>
         )}
 
+        {/* Résiliations */}
+        {activeTab === 'cancellations' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Résiliations d'abonnement</CardTitle>
+              <CardDescription>Entreprises ayant résilié leur plan payant</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingCancellations ? (
+                <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin text-blue-600" /></div>
+              ) : cancellations.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-4">Aucune résiliation enregistrée.</p>
+              ) : (
+                <div className="space-y-3">
+                  {cancellations.map((c) => (
+                    <div key={c.id} className="p-3 bg-slate-50 rounded-xl">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-slate-900">{c.name}</p>
+                          <p className="text-sm text-slate-600">
+                            Plan : <Badge className="bg-slate-200 text-slate-700">{c.subscription_plan}</Badge>
+                          </p>
+                        </div>
+                        <span className="text-xs text-slate-400">
+                          {new Date(c.updated_at).toLocaleDateString('fr-FR')}
+                        </span>
+                      </div>
+                      {c.cancellation_reason && (
+                        <div className="mt-2 text-sm text-slate-600 italic">
+                          « {c.cancellation_reason} »
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Newsletter */}
         {activeTab === 'newsletter' && (
           <Card>
@@ -713,7 +772,7 @@ try {
             <CardContent className="space-y-4">
               <div><label className="block text-sm font-medium mb-1">Sujet</label><Input value={newsletter.subject} onChange={(e) => setNewsletter({ ...newsletter, subject: e.target.value })} placeholder="Sujet de l'email" /></div>
               <div><label className="block text-sm font-medium mb-1">Contenu (HTML)</label><textarea rows={10} className="w-full border border-slate-200 rounded-lg p-3 text-sm" value={newsletter.content} onChange={(e) => setNewsletter({ ...newsletter, content: e.target.value })} placeholder="<h1>Titre</h1><p>Votre message...</p>" /></div>
-              <Button onClick={handleSendNewsletter} disabled={sendingNewsletter} className="bg-blue-600 text-white hover:bg-blue-700 text-white">{sendingNewsletter ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}Envoyer la newsletter</Button>
+              <Button onClick={handleSendNewsletter} disabled={sendingNewsletter} className="bg-blue-600 text-white hover:bg-blue-700 text-white ">{sendingNewsletter ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}Envoyer la newsletter</Button>
             </CardContent>
           </Card>
         )}

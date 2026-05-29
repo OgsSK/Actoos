@@ -171,7 +171,7 @@ const CompanyJobsPage = () => {
             <h1 className="text-2xl font-bold text-slate-900">Toutes mes offres</h1>
           </div>
           <Link to="/dashboard/entreprise/offres/nouvelle">
-            <Button className="bg-blue-600 text-white hover:bg-blue-700 text-white">
+            <Button className="bg-blue-600 text-white hover:bg-blue-700 text-white ">
               <Plus className="w-4 h-4 mr-2" />Nouvelle offre
             </Button>
           </Link>

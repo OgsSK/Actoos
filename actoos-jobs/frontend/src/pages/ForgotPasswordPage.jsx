@@ -35,7 +35,7 @@ const ForgotPasswordPage = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center text-white justify-center">
               <Mail className="w-7 h-7 text-white" />
             </div>
             <span className="text-2xl font-bold text-slate-900">Actoos Jobs</span>
@@ -82,7 +82,7 @@ const ForgotPasswordPage = () => {
                     />
                   </div>
                 </div>
-                <Button type="submit" disabled={loading} className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700">
+                <Button type="submit" disabled={loading} className="w-full h-12 text-base bg-blue-600 text-white hover:bg-blue-700">
                   {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
                   Envoyer le lien
                 </Button>

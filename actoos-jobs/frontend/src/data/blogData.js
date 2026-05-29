@@ -101,7 +101,7 @@ export const blogArticles = [
         <li>Énergies renouvelables</li>
         <li>Logistique et e-commerce</li>
       </ul>
-      <p>Ces secteurs offrent de nombreuses opportunités au Mali et à l'international.</p>
+      <p>Ces secteurs offrent de nombreuses opportunités partout dans le monde.</p>
     `,
     category: 'Marché emploi',
     readTime: '6 min',

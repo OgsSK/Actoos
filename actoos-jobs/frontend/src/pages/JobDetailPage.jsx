@@ -172,7 +172,7 @@ const JobDetailPage = () => {
                     {hasApplied ? (
                       <Badge className="bg-green-100 text-green-700 text-sm px-4 py-2">✅ Déjà postulé</Badge>
                     ) : (
-                      <Button onClick={handleApply} className="bg-blue-600 hover:bg-blue-700">Postuler</Button>
+                      <Button onClick={handleApply} className="bg-blue-600 text-white hover:bg-blue-700">Postuler</Button>
                     )}
                     <Button variant="outline" size="icon" onClick={handleToggleSave}>
                       <Heart className={`w-5 h-5 ${isSaved ? 'fill-current text-red-500' : ''}`} />
