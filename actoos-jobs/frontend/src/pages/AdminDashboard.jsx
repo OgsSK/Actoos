@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { cn, formatRelative, formatDate, CONTRACT_TYPES } from '../lib/utils';
 
-// Stats Card
+// ---------- Stats Card ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) => (
   <Card 
     className={cn(
@@ -63,7 +63,7 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) 
   </Card>
 );
 
-// Job Moderation Card (avec modale de raison)
+// ---------- Job Moderation Card (responsive) ----------
 const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [reason, setReason] = useState('');
@@ -95,7 +95,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-200 transition-colors" data-testid={`job-card-${job.id}`}>
+    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-200 transition-colors" data-testid={`job-card-${job.id}`}>
       <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
         {job.company?.logo_url ? (
           <img src={job.company.logo_url} alt={job.company.name} className="w-8 h-8 object-contain" />
@@ -104,7 +104,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
         )}
       </div>
       
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 w-full sm:w-auto">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="font-medium text-slate-900 truncate">{job.title}</h3>
           <Badge className={cn(status.color, 'border-0 text-xs gap-1')}>
@@ -112,7 +112,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
             {status.label}
           </Badge>
         </div>
-        <div className="flex items-center gap-3 text-sm text-slate-500">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
           <span className="flex items-center gap-1">
             <Building2 className="w-3 h-3" />
             {job.company?.name || 'Entreprise'}
@@ -130,7 +130,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
         </p>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
         {job.status === 'pending' && (
           <>
             <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => onApprove(job)}>
@@ -191,7 +191,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
   );
 };
 
-// Company Validation Card (avec modale de raison)
+// ---------- Company Validation Card (responsive) ----------
 const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [reason, setReason] = useState('');
@@ -220,7 +220,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend }) => {
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-200 transition-colors" data-testid={`company-card-${company.id}`}>
+    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-200 transition-colors" data-testid={`company-card-${company.id}`}>
       <div className="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
         {company.logo_url ? (
           <img src={company.logo_url} alt={company.name} className="w-10 h-10 object-contain rounded" />
@@ -229,7 +229,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend }) => {
         )}
       </div>
       
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 w-full sm:w-auto">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="font-medium text-slate-900">{company.name}</h3>
           <Badge className={cn(status.color, 'border-0 text-xs gap-1')}>
@@ -237,7 +237,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend }) => {
             {status.label}
           </Badge>
         </div>
-        <div className="flex items-center gap-3 text-sm text-slate-500">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
           {company.industry && <span>{company.industry}</span>}
           {company.size && <span>• {company.size} employes</span>}
           {company.city?.name && (
@@ -252,7 +252,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend }) => {
         </p>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
         {!company.is_verified ? (
           <>
             <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50 hover:text-green-700" onClick={() => onApprove(company)}>
@@ -309,7 +309,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend }) => {
   );
 };
 
-// Tabs Component
+// ---------- Tabs Component ----------
 const TabButton = ({ active, onClick, children, count }) => (
   <button
     onClick={onClick}
@@ -332,7 +332,7 @@ const TabButton = ({ active, onClick, children, count }) => (
   </button>
 );
 
-// Main Admin Dashboard
+// ---------- Main Admin Dashboard ----------
 const AdminDashboard = () => {
   const { user, profile, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -662,12 +662,12 @@ const AdminDashboard = () => {
             <CardContent>
               <div className="space-y-3">
                 {users.map(u => (
-                  <div key={u.id} className="flex items-center justify-between p-3 bg-white border rounded-xl">
+                  <div key={u.id} className="flex flex-col sm:flex-row items-center justify-between p-3 bg-white border rounded-xl gap-3">
                     <div>
                       <p className="font-medium">{u.first_name} {u.last_name}</p>
                       <p className="text-sm text-slate-500">{u.email} • {u.role} {u.is_banned ? '(Banni)' : u.is_active ? '' : '(Suspendu)'}</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
                       <select value={u.role} onChange={(e) => handleToggleUserRole(u.id, e.target.value)} className="border rounded px-2 py-1 text-sm">
                         <option value="candidate">Candidat</option>
                         <option value="company">Entreprise</option>
@@ -700,7 +700,7 @@ const AdminDashboard = () => {
                   <p className="text-center text-slate-500 py-8">Aucun signalement</p>
                 ) : (
                   reports.map(report => (
-                    <div key={report.id} className="flex items-center justify-between p-3 bg-white border rounded-xl">
+                    <div key={report.id} className="flex flex-col sm:flex-row items-center justify-between p-3 bg-white border rounded-xl gap-3">
                       <div>
                         <p className="font-medium">{report.reporter?.email || 'Anonyme'}</p>
                         <p className="text-sm text-slate-500">
@@ -710,7 +710,7 @@ const AdminDashboard = () => {
                           {report.status}
                         </Badge>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
                         <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'reviewed')}>Marquer vu</Button>
                         <Button size="sm" variant="outline" onClick={() => handleUpdateReportStatus(report.id, 'resolved')}>Résolu</Button>
                       </div>

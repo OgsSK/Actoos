@@ -37,7 +37,7 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => (
   </Card>
 );
 
-// ---------- Company Job Card ----------
+// ---------- Company Job Card (responsive) ----------
 const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   const [showMenu, setShowMenu] = useState(false);
@@ -52,21 +52,21 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
   const status = statusConfig[job.status] || statusConfig.draft;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-      <div className="flex-1 min-w-0">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+      <div className="flex-1 min-w-0 w-full">
         <div className="flex items-center gap-2">
           <Link to={`/emplois/${job.id}`} className="font-medium text-slate-900 hover:text-blue-600 line-clamp-1">{job.title}</Link>
           <Badge className={cn(status.color, 'border-0 text-xs')}>{status.label}</Badge>
         </div>
-        <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
+        <div className="flex flex-wrap items-center gap-4 mt-1 text-sm text-slate-500">
           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.city?.name || 'Non spécifié'}</span>
           <Badge className={cn(contractInfo.color, 'border-0 text-xs')}>{contractInfo.label}</Badge>
           <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{job.views_count || 0} vues</span>
           <span className="flex items-center gap-1"><FileText className="w-3 h-3" />{job.applications_count || 0} candidatures</span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-400 hidden sm:block">{formatRelative(job.created_at)}</span>
+      <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+        <span className="text-xs text-slate-400">{formatRelative(job.created_at)}</span>
         <div className="relative">
           <Button variant="ghost" size="icon" onClick={() => setShowMenu(!showMenu)}><MoreVertical className="w-4 h-4" /></Button>
           {showMenu && (
@@ -74,7 +74,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
               <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
                 <button onClick={() => { onEdit(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"><Edit className="w-4 h-4" />Modifier</button>
-                <Link to={`/dashboard/entreprise/offres/${job.id}/candidatures`} className="w-full flex flex-col sm:flex-row items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"><Users className="w-4 h-4" />Voir les candidatures</Link>
+                <Link to={`/dashboard/entreprise/offres/${job.id}/candidatures`} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"><Users className="w-4 h-4" />Voir les candidatures</Link>
                 {job.status === 'active' ? (
                   <button onClick={() => { onToggleStatus(job, 'paused'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-yellow-600 hover:bg-slate-50"><Clock className="w-4 h-4" />Mettre en pause</button>
                 ) : job.status === 'paused' ? (
@@ -90,7 +90,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
   );
 };
 
-// ---------- Application Card ----------
+// ---------- Application Card (responsive, cliquable) ----------
 const ApplicationCard = ({ application }) => {
   const statusConfig = {
     pending: { label: 'Nouvelle', color: 'bg-blue-100 text-blue-700', icon: Clock },
@@ -104,14 +104,21 @@ const ApplicationCard = ({ application }) => {
   const StatusIcon = status.icon;
 
   return (
-    <Link to={`/dashboard/entreprise/candidatures/${application.id}`} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-      <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-slate-200"><Users className="w-6 h-6 text-slate-400" /></div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-slate-900">{application.candidate?.first_name} {application.candidate?.last_name}</p>
-        <p className="text-sm text-slate-500 line-clamp-1">{application.job?.title}</p>
+    <Link
+      to={`/dashboard/entreprise/candidatures/${application.id}`}
+      className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
+    >
+      <div className="flex items-center gap-3 w-full">
+        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-200 shrink-0">
+          <Users className="w-5 h-5 text-slate-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-slate-900">{application.candidate?.first_name} {application.candidate?.last_name}</p>
+          <p className="text-sm text-slate-500 line-clamp-1">{application.job?.title}</p>
+        </div>
+        <Badge className={cn(status.color, 'gap-1 border-0 shrink-0')}><StatusIcon className="w-3 h-3" />{status.label}</Badge>
       </div>
-      <Badge className={cn(status.color, 'gap-1 border-0')}><StatusIcon className="w-3 h-3" />{status.label}</Badge>
-      <span className="text-xs text-slate-400 hidden sm:block">{formatRelative(application.created_at)}</span>
+      <span className="text-xs text-slate-400 w-full text-right sm:text-left sm:w-auto">{formatRelative(application.created_at)}</span>
     </Link>
   );
 };
@@ -373,6 +380,11 @@ const CompanyDashboard = () => {
                       Résilier l'abonnement
                     </Button>
                   </>
+                ) : company.subscription_plan === 'free' && company.cancellation_reason ? (
+                  <div className="text-sm text-slate-700 mt-2">
+                    <p className="font-medium">Raison de la dernière résiliation :</p>
+                    <p className="italic mt-1">« {company.cancellation_reason} »</p>
+                  </div>
                 ) : (
                   <p className="text-sm text-blue-800">
                     Passez à un plan supérieur pour publier plus d'offres et accéder à des fonctionnalités avancées.
