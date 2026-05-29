@@ -34,6 +34,7 @@ export default function HomePage() {
           
           <div className="hidden md:flex items-center space-x-10 text-[11px] font-black uppercase tracking-widest text-slate-400">
             <a href="/produits" className="hover:text-black transition-colors">Produits</a>
+            <a href="https://jobs.actoos.com" class="hover:text-black transition-colors">Actoos Jobs</a>
             <a href="/expertise" className="hover:text-black transition-colors">Expertise</a>
             <a href="/a-propos" className="hover:text-black transition-colors">À propos</a>
             <a href="/philosophie" className="hover:text-black transition-colors">Philosophie</a>
@@ -52,6 +53,7 @@ export default function HomePage() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-slate-100 px-6 py-4 space-y-4">
             <a href="/produits" className="block text-sm font-bold text-slate-600 hover:text-black">Produits</a>
+            <a href="https://jobs.actoos.com" class="hover:text-black transition-colors">Actoos Jobs</a>
             <a href="/expertise" className="block text-sm font-bold text-slate-600 hover:text-black">Expertise</a>
             <a href="/a-propos" className="block text-sm font-bold text-slate-600 hover:text-black">À propos</a>
             <a href="/philosophie" className="block text-sm font-bold text-slate-600 hover:text-black">Philosophie</a>
@@ -294,6 +296,7 @@ export default function HomePage() {
               </h5>
               <ul className="space-y-3 md:space-y-4 text-sm font-bold text-slate-500">
                 <li>
+            <a href="https://jobs.actoos.com" class="hover:text-black transition-colors">Actoos Jobs</a>
                   <a href="/expertise" className="hover:text-black transition-colors">
                     Expertise
                   </a>
