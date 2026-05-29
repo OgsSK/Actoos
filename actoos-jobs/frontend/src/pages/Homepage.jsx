@@ -411,41 +411,128 @@ const HowItWorksSection = () => {
 };
 
 // ---------- CTA Section ----------
-const CompanyCTASection = () => (
-  <section className="py-20 bg-gradient-to-br from-blue-950 via-blue-900 text-white to-blue-950 relative overflow-hidden">
-    <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
-    <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-400/5 rounded-full blur-3xl" />
-    <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="grid lg:grid-cols-2 gap-12 items-center">
-        <div>
-          <Badge className="bg-white/10 text-white border-blue-400/30 mb-6 rounded-full">Pour les entreprises</Badge>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white font-display mb-6">Recrutez les meilleurs talents</h2>
-          <p className="text-blue-100 text-lg mb-8">Publiez vos offres, recevez des candidatures qualifiées et trouvez votre prochain collaborateur en quelques jours.</p>
-          <div className="space-y-4 mb-8">
-            {['Publication d\'offres illimitées', 'Accès à une base de candidats qualifiés', 'Outils de gestion des candidatures', 'Visibilité premium sur la plateforme'].map((feature) => (
-              <div key={feature} className="flex items-center gap-3 text-white"><CheckCircle className="w-5 h-5 text-blue-400" /><span>{feature}</span></div>
-            ))}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/entreprises/inscription"><Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white ">Créer un compte entreprise <ArrowRight className="w-4 h-4 ml-2" /></Button></Link>
-            <Link to="/tarifs"><Button size="lg" variant="outline" className="border-blue-400/30 text-white hover:bg-white/10 rounded-2xl">Voir nos tarifs</Button></Link>
-          </div>
-        </div>
-        <div className="hidden lg:flex justify-center">
-          <div className="relative">
-            <div className="absolute -top-10 -left-10 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-4">
-              <div className="flex items-center gap-3"><div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center"><TrendingUp className="w-5 h-5 text-blue-600" /></div><div><p className="font-semibold text-slate-900">+45%</p><p className="text-xs text-slate-500">Candidatures reçues</p></div></div>
+const CompanyCTASection = ({ stats }) => {
+  const { activeJobs, companies, candidates } = stats || {};
+
+  return (
+    <section className="py-20 bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950 relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-400/5 rounded-full blur-3xl" />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+
+          {/* LEFT CONTENT */}
+          <div>
+            <Badge className="bg-white/10 text-white border border-blue-400/30 mb-6 rounded-full px-4 py-2">
+              Pour les entreprises
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white font-display mb-6 leading-tight">
+              Recrutez les meilleurs talents
+            </h2>
+            <p className="text-blue-100 text-lg leading-relaxed mb-8 max-w-xl">
+              Publiez vos offres, recevez des candidatures qualifiées et trouvez votre prochain collaborateur en quelques jours.
+            </p>
+
+            {/* Features */}
+            <div className="space-y-4 mb-10">
+              {[
+                "Publication d'offres illimitées",
+                "Accès à une base de candidats qualifiés",
+                "Outils de gestion des candidatures",
+                "Visibilité premium sur la plateforme",
+              ].map((feature) => (
+                <div key={feature} className="flex items-center gap-3 text-white">
+                  <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+                    <CheckCircle className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <span className="text-base">{feature}</span>
+                </div>
+              ))}
             </div>
-            <div className="absolute -bottom-5 -right-5 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-4">
-              <div className="flex items-center gap-3"><div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center"><Users className="w-5 h-5 text-blue-600" /></div><div><p className="font-semibold text-slate-900">10K+</p><p className="text-xs text-slate-500">Candidats actifs</p></div></div>
+
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link to="/entreprises/inscription">
+                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-8 h-14 text-base shadow-lg">
+                  Créer un compte entreprise
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+              <Link to="/tarifs">
+                <Button size="lg" variant="outline" className="border border-white/20 bg-white/5 text-white hover:bg-white/10 rounded-2xl px-8 h-14 text-base">
+                  Voir nos tarifs
+                </Button>
+              </Link>
             </div>
-            <div className="w-80 h-80 bg-white/10 backdrop-blur-sm rounded-4xl border border-white/20 flex items-center justify-center"><Building2 className="w-32 h-32 text-white/40" /></div>
           </div>
+
+          {/* RIGHT VISUAL avec stats dynamiques */}
+          <div className="hidden lg:flex justify-center">
+            <div className="relative w-[420px] h-[420px]">
+
+              {/* Top floating card - Offres actives */}
+              <div className="absolute top-0 left-0 z-20 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl px-5 py-4 border border-white/20">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center">
+                    <Briefcase className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {activeJobs !== null ? `${activeJobs}+` : '...'}
+                    </p>
+                    <p className="text-sm text-slate-500">Offres actives</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom floating card - Candidats */}
+              <div className="absolute bottom-0 right-0 z-20 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl px-5 py-4 border border-white/20">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center">
+                    <Users className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {candidates !== null ? `${candidates}+` : '...'}
+                    </p>
+                    <p className="text-sm text-slate-500">Candidats</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Middle left card - Entreprises */}
+              <div className="absolute top-1/2 left-0 -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl px-5 py-4 border border-white/20">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center">
+                    <Building2 className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">
+                      {companies !== null ? `${companies}+` : '...'}
+                    </p>
+                    <p className="text-sm text-slate-500">Entreprises</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main card (reste inchangée) */}
+              <div className="absolute inset-12 z-10 rounded-[32px] border border-white/20 bg-white/10 backdrop-blur-md shadow-2xl flex items-center justify-center">
+                <div className="absolute top-10 right-10 w-24 h-24 bg-blue-400/10 rounded-full blur-2xl" />
+                <div className="absolute bottom-10 left-10 w-20 h-20 bg-blue-300/10 rounded-full blur-2xl" />
+                <div className="relative w-36 h-36 rounded-[32px] bg-white/10 border border-white/10 flex items-center justify-center">
+                  <Building2 className="w-20 h-20 text-white/50" />
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 // ---------- Why Choose Section ----------
 const WhyChooseSection = () => {
@@ -521,7 +608,7 @@ const Homepage = () => {
       <CategoriesSection />
       <RecentJobsSection />
       <HowItWorksSection />
-      <CompanyCTASection />
+      <CompanyCTASection stats={stats} />
       <WhyChooseSection />
     </div>
   );
