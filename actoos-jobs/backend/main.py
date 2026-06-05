@@ -755,10 +755,10 @@ async def create_report(req: ReportRequest):
         response = httpx.post(
             rpc_url,
             json={
-                "reporter_id": req.reporter_id,
-                "reported_item_type": req.reported_item_type,
-                "reported_item_id": req.reported_item_id,
-                "reason": req.reason
+                "_reporter_id": req.reporter_id,
+                "_reported_item_type": req.reported_item_type,
+                "_reported_item_id": req.reported_item_id,
+                "_reason": req.reason
             },
             headers={
                 "apikey": supabase_key,
