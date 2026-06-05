@@ -747,13 +747,27 @@ async def admin_delete_job(req: AdminActionRequest):
 @app.post("/api/report")
 async def create_report(req: ReportRequest):
     supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    supabase_key = os.getenv("SUPABASE_ANON_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
-        response = httpx.post(f"{supabase_url}/rest/v1/reports", json={"reporter_id": req.reporter_id, "reported_item_type": req.reported_item_type, "reported_item_id": req.reported_item_id, "reason": req.reason, "status": "pending"}, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
-        if response.status_code != 201:
-            raise Exception(f"Report creation failed: {response.text}")
+        rpc_url = f"{supabase_url}/rest/v1/rpc/create_report"
+        response = httpx.post(
+            rpc_url,
+            json={
+                "reporter_id": req.reporter_id,
+                "reported_item_type": req.reported_item_type,
+                "reported_item_id": req.reported_item_id,
+                "reason": req.reason
+            },
+            headers={
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json"
+            }
+        )
+        if response.status_code != 200:
+            raise Exception(f"RPC failed: {response.text}")
         return {"success": True, "message": "Signalement envoyé"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

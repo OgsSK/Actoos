@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/actoos-jobs/src/i18n/routing.ts"],"sourcesContent":["import {defineRouting} from 'next-intl/routing';\r\n \r\nexport const routing = defineRouting({\r\n  locales: ['fr', 'en'],\r\n  defaultLocale: 'fr'\r\n});\r\n"],"names":["routing","locales","defaultLocale"],"mappings":";;;;AAAA;;AAEO,MAAMA,UAAU,IAAA,6QAAa,EAAC;IACnCC,SAAS;QAAC;QAAM;KAAK;IACrBC,eAAe;AACjB"}}]
+}
