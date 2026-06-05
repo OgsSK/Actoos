@@ -11,7 +11,12 @@ import random
 import base64
 import uuid
 
-load_dotenv()
+from pathlib import Path
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path)
+print(f"✅ Chargement du .env depuis : {env_path}")
+print(f"   STRIPE_SECRET_KEY présente : {'oui' if os.getenv('STRIPE_SECRET_KEY') else 'non'}")
+print(f"   RESEND_API_KEY présente : {'oui' if os.getenv('RESEND_API_KEY') else 'non'}")
 
 app = FastAPI(title="Actoos Jobs API")
 
@@ -751,8 +756,23 @@ async def create_report(req: ReportRequest):
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
-        response = httpx.post(f"{supabase_url}/rest/v1/reports", json={"reporter_id": req.reporter_id, "reported_item_type": req.reported_item_type, "reported_item_id": req.reported_item_id, "reason": req.reason, "status": "pending"}, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
-        if response.status_code != 201:
+        response = httpx.post(
+            f"{supabase_url}/rest/v1/reports",
+            json={
+                "reporter_id": req.reporter_id,
+                "reported_item_type": req.reported_item_type,
+                "reported_item_id": req.reported_item_id,
+                "reason": req.reason,
+                "status": "pending"
+            },
+            headers={
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal"
+            }
+        )
+        if response.status_code not in (200, 201):
             raise Exception(f"Report creation failed: {response.text}")
         return {"success": True, "message": "Signalement envoyé"}
     except Exception as e:
