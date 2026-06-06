@@ -7,16 +7,16 @@ import stripe
 from dotenv import load_dotenv
 import resend
 import httpx
-import random
 import base64
-import uuid
-
 from pathlib import Path
+
 env_path = Path(__file__).parent / '.env'
 load_dotenv(dotenv_path=env_path)
 print(f"✅ Chargement du .env depuis : {env_path}")
 print(f"   STRIPE_SECRET_KEY présente : {'oui' if os.getenv('STRIPE_SECRET_KEY') else 'non'}")
 print(f"   RESEND_API_KEY présente : {'oui' if os.getenv('RESEND_API_KEY') else 'non'}")
+print(f"   SUPABASE_URL présente : {'oui' if os.getenv('SUPABASE_URL') else 'non'}")
+print(f"   SUPABASE_SERVICE_ROLE_KEY présente : {'oui' if os.getenv('SUPABASE_SERVICE_ROLE_KEY') else 'non'}")
 
 app = FastAPI(title="Actoos Jobs API")
 
@@ -80,7 +80,7 @@ class AIAgentRequest(BaseModel):
 
 class CancelSubscriptionRequest(BaseModel):
     user_id: str
-    reason: Optional[str] = None  # ajout de la raison
+    reason: Optional[str] = None
 
 class SendInterviewLinkRequest(BaseModel):
     email: str
@@ -140,6 +140,26 @@ class AdminToggleUserStatusRequest(BaseModel):
 class AdminBanUserRequest(BaseModel):
     user_id: str
     reason: Optional[str] = ""
+
+class BlogPostCreate(BaseModel):
+    title: str
+    slug: Optional[str] = None
+    excerpt: Optional[str] = None
+    content: Optional[str] = None
+    category: Optional[str] = None
+    audience: Optional[str] = "candidate"
+    read_time: Optional[str] = None
+    author: Optional[str] = None
+    author_avatar: Optional[str] = None
+    image_url: Optional[str] = None
+    icon: Optional[str] = "FileText"
+    color: Optional[str] = "blue"
+    is_published: Optional[bool] = False
+
+class NewCompanyNotificationRequest(BaseModel):
+    company_name: str
+    owner_email: str
+    owner_name: str
 
 def clean_subject(text: str, max_length: int = 50) -> str:
     cleaned = text.replace('\n', ' ').replace('\r', ' ')
@@ -302,7 +322,6 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
         raise HTTPException(status_code=500, detail="Supabase not configured")
     
     try:
-        # Récupérer l'entreprise
         company_resp = httpx.get(
             f"{supabase_url}/rest/v1/companies?owner_id=eq.{req.user_id}&select=id,stripe_subscription_id",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -315,10 +334,8 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
         if not subscription_id:
             raise HTTPException(status_code=400, detail="Aucun abonnement actif")
         
-        # Annuler l'abonnement Stripe
         stripe.Subscription.delete(subscription_id)
         
-        # Mettre à jour la base : plan gratuit + raison
         httpx.patch(
             f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
             json={
@@ -374,6 +391,30 @@ async def newsletter_subscribe(req: NewsletterRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ----- Désabonnement newsletter -----
+@app.get("/api/newsletter/unsubscribe")
+async def newsletter_unsubscribe(email: str = Query(...)):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        resp = httpx.get(
+            f"{supabase_url}/rest/v1/newsletter_subscribers?email=eq.{email}&is_active=eq.true",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        if resp.status_code != 200 or not resp.json():
+            return {"success": False, "message": "Adresse non trouvée ou déjà désabonnée."}
+
+        httpx.patch(
+            f"{supabase_url}/rest/v1/newsletter_subscribers?email=eq.{email}",
+            json={"is_active": False, "unsubscribed_at": "now()"},
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        return {"success": True, "message": "Vous avez été désabonné avec succès."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ----- Admin Newsletter -----
 @app.post("/api/admin/send-newsletter")
 async def admin_send_newsletter(req: AdminNewsletterRequest):
@@ -391,17 +432,26 @@ async def admin_send_newsletter(req: AdminNewsletterRequest):
         subscribers = subscribers_resp.json()
         if not isinstance(subscribers, list) or len(subscribers) == 0:
             return {"success": True, "message": "Aucun abonné trouvé."}
-        emails = [s["email"] for s in subscribers]
-        batch_size = 50
-        for i in range(0, len(emails), batch_size):
-            batch = emails[i:i+batch_size]
-            resend.Emails.send({
-                "from": "Actoos Jobs <noreply@actoos.com>",
-                "to": batch,
-                "subject": req.subject,
-                "html": req.content
-            })
-        return {"success": True, "message": f"Newsletter envoyée à {len(emails)} abonnés."}
+
+        success_count = 0
+        for sub in subscribers:
+            email = sub["email"]
+            unsubscribe_link = f"https://jobs.actoos.com/desabonnement?email={email}"
+            footer = f'<br><br><small style="color:#888;">Vous recevez cet email car vous êtes inscrit à la newsletter Actoos Jobs. <a href="{unsubscribe_link}">Se désabonner</a></small>'
+            html_personalized = req.content + footer
+
+            try:
+                resend.Emails.send({
+                    "from": "Actoos Jobs <noreply@actoos.com>",
+                    "to": [email],
+                    "subject": req.subject,
+                    "html": html_personalized
+                })
+                success_count += 1
+            except Exception as e:
+                print(f"Erreur envoi à {email}: {e}")
+
+        return {"success": True, "message": f"Newsletter envoyée à {success_count}/{len(subscribers)} abonnés."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -643,11 +693,6 @@ async def admin_verify_company(req: AdminVerifyCompanyRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-class NewCompanyNotificationRequest(BaseModel):
-    company_name: str
-    owner_email: str
-    owner_name: str
-
 @app.post("/api/notify-admin-new-company")
 async def notify_admin_new_company(req: NewCompanyNotificationRequest):
     if not resend.api_key:
@@ -843,6 +888,7 @@ async def ban_user(req: AdminBanUserRequest):
         return {"success": True, "message": "Utilisateur banni"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/admin/cancellations")
 async def get_cancellations():
     supabase_url = os.getenv("SUPABASE_URL")
@@ -858,38 +904,180 @@ async def get_cancellations():
         return {"success": True, "cancellations": companies}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-def compute_match_score(job: dict, candidate_profile: dict) -> int:
-    score = 0
-    # Compétences (60 points)
-    job_skills = job.get("skills_required") or []
-    cand_skills = candidate_profile.get("skills") or []
-    if job_skills:
-        common = set(job_skills) & set(cand_skills)
-        score += (len(common) / len(job_skills)) * 60
 
-    # Niveau d'expérience (20 points)
+# ----- Blog (public) -----
+@app.get("/api/blog/posts")
+async def get_blog_posts(audience: Optional[str] = None):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        query = f"{supabase_url}/rest/v1/blog_posts?is_published=eq.true&order=published_at.desc"
+        if audience and audience != "all":
+            query += f"&audience=eq.{audience}"
+        resp = httpx.get(query, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
+        if resp.status_code != 200:
+            raise HTTPException(status_code=500, detail="Erreur récupération articles")
+        return resp.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/blog/posts/{slug}")
+async def get_blog_post(slug: str):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        resp = httpx.get(
+            f"{supabase_url}/rest/v1/blog_posts?slug=eq.{slug}&is_published=eq.true&limit=1",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=500, detail="Erreur")
+        data = resp.json()
+        if not data:
+            raise HTTPException(status_code=404, detail="Article introuvable")
+        return data[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ----- Admin Blog CRUD -----
+@app.post("/api/admin/blog")
+async def create_blog_post(req: BlogPostCreate):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        payload = req.dict()
+        if not payload.get("slug"):
+            payload["slug"] = payload["title"].lower().replace(" ", "-")
+        if payload.get("is_published"):
+            payload["published_at"] = "now()"
+        resp = httpx.post(
+            f"{supabase_url}/rest/v1/blog_posts",
+            json=payload,
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}", "Prefer": "return=representation"}
+        )
+        if resp.status_code not in (200, 201):
+            raise HTTPException(status_code=500, detail=f"Erreur création: {resp.text}")
+        return resp.json()[0] if isinstance(resp.json(), list) else resp.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/admin/blog/{post_id}")
+async def update_blog_post(post_id: str, req: BlogPostCreate):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        payload = req.dict()
+        if payload.get("is_published") and not payload.get("published_at"):
+            payload["published_at"] = "now()"
+        resp = httpx.patch(
+            f"{supabase_url}/rest/v1/blog_posts?id=eq.{post_id}",
+            json=payload,
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}", "Prefer": "return=representation"}
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=500, detail=f"Erreur mise à jour: {resp.text}")
+        return resp.json()[0] if isinstance(resp.json(), list) else resp.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/admin/blog/{post_id}")
+async def delete_blog_post(post_id: str):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        resp = httpx.delete(
+            f"{supabase_url}/rest/v1/blog_posts?id=eq.{post_id}",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=500, detail="Erreur suppression")
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ----- Matching Score (avancé) -----
+def compute_match_score(job: dict, candidate_profile: dict) -> int:
+    score = 0.0
+
+    # 1. Compétences (35 points)
+    job_skills = set(skill.lower().strip() for skill in (job.get("skills_required") or []))
+    cand_skills = set(skill.lower().strip() for skill in (candidate_profile.get("skills") or []))
+    if job_skills:
+        common = job_skills & cand_skills
+        score += (len(common) / len(job_skills)) * 35
+
+    # 2. Niveau d'expérience (15 points)
     exp_levels = ["junior", "intermediaire", "senior", "expert"]
     job_lvl = job.get("experience_level")
     cand_lvl = candidate_profile.get("experience_level")
     if job_lvl and cand_lvl and job_lvl in exp_levels and cand_lvl in exp_levels:
         diff = abs(exp_levels.index(job_lvl) - exp_levels.index(cand_lvl))
         if diff == 0:
-            score += 20
+            score += 15
         elif diff == 1:
             score += 10
         else:
             score += 5
 
-    # Prétentions salariales (20 points)
-    j_min, j_max = job.get("salary_min"), job.get("salary_max")
-    c_min, c_max = candidate_profile.get("desired_salary_min"), candidate_profile.get("desired_salary_max")
+    # 3. Salaire (15 points)
+    j_min = job.get("salary_min")
+    j_max = job.get("salary_max")
+    c_min = candidate_profile.get("desired_salary_min")
+    c_max = candidate_profile.get("desired_salary_max")
     if j_min and j_max and c_min and c_max:
         if c_min <= j_max and c_max >= j_min:
-            score += 20
+            overlap = min(j_max, c_max) - max(j_min, c_min)
+            range_job = j_max - j_min
+            if range_job > 0:
+                score += (overlap / range_job) * 15
+            else:
+                score += 15
         elif c_min <= j_max or c_max >= j_min:
-            score += 10
+            score += 5
 
-    return min(score, 100)
+    # 4. Localisation (15 points)
+    job_city = job.get("city_id")
+    cand_city = candidate_profile.get("city_id")
+    is_remote = job.get("is_remote", False)
+    cand_remote = candidate_profile.get("is_open_to_remote", False)
+
+    if job_city and cand_city and str(job_city) == str(cand_city):
+        score += 15
+    elif is_remote and cand_remote:
+        score += 10
+    else:
+        job_country = job.get("country_id")
+        cand_country = candidate_profile.get("country_id")
+        if job_country and cand_country and str(job_country) == str(cand_country):
+            score += 5
+
+    # 5. Type de contrat (10 points)
+    job_contract = job.get("contract_type")
+    cand_contracts = candidate_profile.get("preferred_contract_types") or []
+    if isinstance(cand_contracts, list) and job_contract in cand_contracts:
+        score += 10
+
+    # 6. Formation / diplômes (10 points)
+    job_req = (job.get("requirements") or "").lower()
+    education = candidate_profile.get("education") or []
+    if isinstance(education, list) and education and job_req:
+        edu_text = " ".join([e.get("title", "") + " " + e.get("description", "") for e in education]).lower()
+        keywords = ["bac", "licence", "master", "doctorat", "ingénieur", "bts", "dut"]
+        matches = sum(1 for kw in keywords if kw in job_req and kw in edu_text)
+        if matches:
+            score += min(10, matches * 3)
+
+    return min(100, int(score))
 
 @app.get("/api/jobs/{job_id}/match-score")
 async def get_match_score(job_id: str, user_id: str = Query(...)):
@@ -906,7 +1094,8 @@ async def get_match_score(job_id: str, user_id: str = Query(...)):
     cand = cand_resp.json()
     cand = cand[0] if cand else {}
     score = compute_match_score(job, cand)
-    return {"score": score}    
+    return {"score": score}
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)# force redeploy
+    uvicorn.run(app, host="0.0.0.0", port=8001)
