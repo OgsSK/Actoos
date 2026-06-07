@@ -10,15 +10,37 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import {
-  Shield, Building2, Briefcase, Users, Eye, FileText,
-  CheckCircle, XCircle, Clock, AlertTriangle, Search,
-  MoreVertical, Trash2, Ban, Check, RefreshCw, Loader2,
-  TrendingUp, ChevronRight, Filter, MapPin, Mail,
-  UserX, UserCheck, Flag, UserCog, Layers, LayoutDashboard,
+  Shield,
+  Building2,
+  Briefcase,
+  Users,
+  Eye,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  Search,
+  MoreVertical,
+  Trash2,
+  Ban,
+  Check,
+  RefreshCw,
+  Loader2,
+  TrendingUp,
+  ChevronRight,
+  Filter,
+  MapPin,
+  Mail,
+  UserX,
+  UserCheck,
+  Flag,
+  UserCog,
+  Layers,
+  LayoutDashboard,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 
-// ---------- Stats Card ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) => (
   <Card
     className={cn(
@@ -71,7 +93,6 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) 
   </Card>
 );
 
-// ---------- Job Moderation Card ----------
 const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) => {
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -194,7 +215,6 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
             <Briefcase className="w-6 h-6 text-slate-400" />
           )}
         </div>
-
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <h3
@@ -213,7 +233,6 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
               {status.label}
             </Badge>
           </div>
-
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-slate-500">
             <span className="flex items-center gap-1">
               <Building2 className="w-3 h-3" />
@@ -227,12 +246,10 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
               {contractInfo.label}
             </Badge>
           </div>
-
           <p className="text-xs text-slate-400 mt-1">
             Publié {formatRelative(job.created_at)} par {job.posted_by_user?.email}
           </p>
         </div>
-
         <div className="shrink-0">
           <Button variant="ghost" size="icon" onClick={openMenu} ref={menuButtonRef} className="h-9 w-9">
             <MoreVertical className="w-4 h-4" />
@@ -240,7 +257,6 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
         </div>
       </div>
 
-      {/* Bouton Détails */}
       <div className="flex justify-start">
         <Button
           variant="ghost"
@@ -253,7 +269,6 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
         </Button>
       </div>
 
-      {/* Section détails dépliée */}
       {showDetails && jobDetails && (
         <div className="mt-2 p-4 bg-slate-50 rounded-xl text-sm space-y-3 border border-slate-100">
           <div>
@@ -430,7 +445,6 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
   );
 };
 
-// ---------- Company Validation Card (avec suppression) ----------
 const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDelete, onViewJobs }) => {
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -542,7 +556,6 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDele
             <Building2 className="w-7 h-7 text-slate-400" />
           )}
         </div>
-
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <h3 className="font-semibold text-slate-900 text-sm sm:text-base">{company.name}</h3>
@@ -551,7 +564,6 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDele
               {status.label}
             </Badge>
           </div>
-
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-slate-500">
             {company.industry && <span>{company.industry}</span>}
             {company.size && <span>• {company.size} employés</span>}
@@ -562,12 +574,10 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDele
               </span>
             )}
           </div>
-
           <p className="text-xs text-slate-400 mt-1">
             Créée {formatRelative(company.created_at)} • {company.jobs_count || 0} offres
           </p>
         </div>
-
         <div className="shrink-0">
           <Button variant="ghost" size="icon" onClick={openMenu} ref={menuButtonRef} className="h-9 w-9">
             <MoreVertical className="w-4 h-4" />
@@ -658,7 +668,6 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDele
   );
 };
 
-// ---------- Tabs ----------
 const TabButton = ({ active, onClick, children, count }) => (
   <button
     onClick={onClick}
@@ -681,7 +690,6 @@ const TabButton = ({ active, onClick, children, count }) => (
   </button>
 );
 
-// ---------- Main Admin Dashboard ----------
 const AdminDashboard = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -712,6 +720,8 @@ const AdminDashboard = () => {
 
   const [newsletter, setNewsletter] = useState({ subject: '', content: '' });
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
+  const [subscribers, setSubscribers] = useState([]);
+  const [loadingSubscribers, setLoadingSubscribers] = useState(true);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -719,7 +729,10 @@ const AdminDashboard = () => {
       navigate('/');
       return;
     }
-    if (user && isAdmin) fetchData();
+    if (user && isAdmin) {
+      fetchData();
+      fetchSubscribers();
+    }
   }, [user, isAdmin, authLoading, navigate]);
 
   useEffect(() => {
@@ -810,6 +823,16 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchSubscribers = async () => {
+    setLoadingSubscribers(true);
+    const { data, error } = await supabase
+      .from('newsletter_subscribers')
+      .select('*')
+      .order('subscribed_at', { ascending: false });
+    if (!error) setSubscribers(data || []);
+    setLoadingSubscribers(false);
   };
 
   const handleRefresh = async () => {
@@ -933,18 +956,17 @@ const AdminDashboard = () => {
     }
   };
 
-  // Nouvelle fonction : supprimer une entreprise
   const handleDeleteCompany = async (company) => {
-  if (!window.confirm(`Supprimer définitivement l'entreprise "${company.name}" ?`)) return;
-  try {
-    await apiFetch(`/api/admin/delete-company/${company.id}`, { method: 'DELETE' });
-    setCompanies((prev) => prev.filter((c) => c.id !== company.id));
-    toast.success('Entreprise supprimée');
-  } catch (error) {
-    console.error('Delete company error:', error);
-    toast.error(error.message || 'Erreur');
-  }
-};
+    if (!window.confirm(`Supprimer définitivement l'entreprise "${company.name}" ?`)) return;
+    try {
+      await apiFetch(`/api/admin/delete-company/${company.id}`, { method: 'DELETE' });
+      setCompanies((prev) => prev.filter((c) => c.id !== company.id));
+      toast.success('Entreprise supprimée');
+    } catch (error) {
+      console.error('Delete company error:', error);
+      toast.error(error.message || 'Erreur');
+    }
+  };
 
   const handleViewCompanyJobs = (company) => {
     setActiveTab('jobs');
@@ -952,17 +974,17 @@ const AdminDashboard = () => {
     setSearchQuery(company.name);
   };
 
- const handleToggleUserRole = async (userId, newRole) => {
-  try {
-    const { error } = await supabase.from('users').update({ role: newRole }).eq('id', userId);
-    if (error) throw error;
-    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-    toast.success('Rôle mis à jour. L\'utilisateur doit se reconnecter pour voir son nouvel espace.');
-  } catch (error) {
-    console.error('Erreur changement de rôle:', error);
-    toast.error(error.message || 'Erreur lors du changement de rôle');
-  }
-};
+  const handleToggleUserRole = async (userId, newRole) => {
+    try {
+      const { error } = await supabase.from('users').update({ role: newRole }).eq('id', userId);
+      if (error) throw error;
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
+      toast.success("Rôle mis à jour. L'utilisateur doit se reconnecter pour voir son nouvel espace.");
+    } catch (error) {
+      console.error('Erreur changement de rôle:', error);
+      toast.error(error.message || 'Erreur lors du changement de rôle');
+    }
+  };
 
   const handleToggleUserActive = async (userId, currentStatus) => {
     try {
@@ -991,14 +1013,13 @@ const AdminDashboard = () => {
     }
   };
 
-  // Nouvelle fonction : supprimer un utilisateur
   const handleDeleteUser = async (userId) => {
     if (!window.confirm('Supprimer définitivement cet utilisateur ? Cette action est irréversible.')) return;
     try {
       await apiFetch(`/api/admin/delete-user/${userId}`, { method: 'DELETE' });
       setUsers((prev) => prev.filter((u) => u.id !== userId));
       toast.success('Utilisateur supprimé définitivement');
-      fetchData(); // rafraîchir les stats
+      fetchData();
     } catch (error) {
       toast.error('Erreur lors de la suppression');
     }
@@ -1011,6 +1032,89 @@ const AdminDashboard = () => {
       toast.success('Signalement mis à jour');
     } catch (error) {
       toast.error('Erreur');
+    }
+  };
+
+  const handleSuspendReportedItem = async (report) => {
+    const reason = window.prompt('Raison de la suspension (optionnelle) :');
+    if (reason === null) return;
+
+    try {
+      if (report.reported_item_type === 'job') {
+        await apiFetch('/api/admin/suspend-job', {
+          method: 'POST',
+          body: JSON.stringify({ id: report.reported_item_id, reason }),
+        });
+        toast.success('Offre suspendue et email envoyé');
+      } else {
+        await apiFetch('/api/admin/suspend-company', {
+          method: 'POST',
+          body: JSON.stringify({ id: report.reported_item_id, reason }),
+        });
+        toast.success('Entreprise suspendue et email envoyé');
+      }
+      fetchData();
+    } catch (error) {
+      toast.error(error.message || 'Erreur');
+    }
+  };
+
+  const handleDeleteReportedItem = async (report) => {
+    const itemLabel = report.reported_item_type === 'job' ? "l'offre" : "l'entreprise";
+    if (!window.confirm(`Supprimer définitivement ${itemLabel} ?`)) return;
+
+    try {
+      if (report.reported_item_type === 'job') {
+        await apiFetch('/api/admin/delete-job', {
+          method: 'POST',
+          body: JSON.stringify({ id: report.reported_item_id, reason: 'Signalement traité' }),
+        });
+        toast.success('Offre supprimée et email envoyé');
+      } else {
+        await apiFetch(`/api/admin/delete-company/${report.reported_item_id}`, { method: 'DELETE' });
+        toast.success('Entreprise supprimée et email envoyé');
+      }
+      fetchData();
+    } catch (error) {
+      toast.error(error.message || 'Erreur');
+    }
+  };
+
+  const handleBanReportedUser = async (report) => {
+    let userIdToBan = null;
+
+    if (report.reported_item_type === 'job') {
+      const { data: job } = await supabase
+        .from('jobs')
+        .select('posted_by')
+        .eq('id', report.reported_item_id)
+        .single();
+      userIdToBan = job?.posted_by;
+    } else if (report.reported_item_type === 'company') {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('owner_id')
+        .eq('id', report.reported_item_id)
+        .single();
+      userIdToBan = company?.owner_id;
+    }
+
+    if (!userIdToBan) {
+      toast.error("Impossible de trouver l'utilisateur à bannir");
+      return;
+    }
+
+    if (!window.confirm('Bannir définitivement cet utilisateur ?')) return;
+
+    try {
+      await apiFetch('/api/admin/ban-user', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userIdToBan, reason: 'Signalement traité' }),
+      });
+      toast.success('Utilisateur banni et email envoyé');
+      fetchData();
+    } catch (error) {
+      toast.error(error.message || 'Erreur');
     }
   };
 
@@ -1390,7 +1494,266 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {/* ... (reste des onglets reports, cancellations, newsletter inchangé) */}
+        {activeTab === 'reports' && (
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Flag className="w-5 h-5" />
+                Signalements
+              </CardTitle>
+              <CardDescription>Examinez et traitez les signalements</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {reports.length === 0 ? (
+                  <p className="text-center text-slate-500 py-8">Aucun signalement</p>
+                ) : (
+                  reports.map((report) => {
+                    const isJobReport = report.reported_item_type === 'job';
+                    const itemLabel = isJobReport ? 'Offre' : 'Entreprise';
+
+                    return (
+                      <div
+                        key={report.id}
+                        className="flex flex-col gap-4 p-4 bg-white border border-slate-200 rounded-2xl"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900 truncate">
+                            Signalé par {report.reporter?.email || 'Anonyme'}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            Type : {itemLabel} • Raison : {report.reason}
+                          </p>
+                          <Badge
+                            className={cn(
+                              'mt-2',
+                              report.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : report.status === 'reviewed'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-green-100 text-green-700'
+                            )}
+                          >
+                            {report.status === 'pending' ? 'En attente' : report.status === 'reviewed' ? 'Vu' : 'Résolu'}
+                          </Badge>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="min-h-[44px]"
+                            onClick={() => handleUpdateReportStatus(report.id, 'reviewed')}
+                            disabled={report.status !== 'pending'}
+                          >
+                            Marquer vu
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="min-h-[44px]"
+                            onClick={() => handleUpdateReportStatus(report.id, 'resolved')}
+                            disabled={report.status === 'resolved'}
+                          >
+                            Résolu
+                          </Button>
+
+                          {isJobReport ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-yellow-600 hover:bg-yellow-50 min-h-[44px]"
+                                onClick={() => handleSuspendReportedItem(report)}
+                              >
+                                <Ban className="w-4 h-4 mr-1" />
+                                Suspendre l'offre
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:bg-red-50 min-h-[44px]"
+                                onClick={() => handleDeleteReportedItem(report)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Supprimer l'offre
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-yellow-600 hover:bg-yellow-50 min-h-[44px]"
+                                onClick={() => handleSuspendReportedItem(report)}
+                              >
+                                <Ban className="w-4 h-4 mr-1" />
+                                Suspendre l'entreprise
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:bg-red-50 min-h-[44px]"
+                                onClick={() => handleDeleteReportedItem(report)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Supprimer l'entreprise
+                              </Button>
+                            </>
+                          )}
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 hover:bg-red-50 min-h-[44px]"
+                            onClick={() => handleBanReportedUser(report)}
+                          >
+                            <UserX className="w-4 h-4 mr-1" />
+                            Bannir l'utilisateur
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'cancellations' && (
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                Résiliations d'abonnement
+              </CardTitle>
+              <CardDescription>Entreprises ayant résilié leur plan payant</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingCancellations ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                </div>
+              ) : cancellations.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-4">Aucune résiliation enregistrée.</p>
+              ) : (
+                <div className="space-y-3">
+                  {cancellations.map((c) => (
+                    <div key={c.id} className="p-4 bg-slate-50 rounded-2xl">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+                        <div>
+                          <p className="font-semibold text-slate-900">{c.name}</p>
+                          <p className="text-sm text-slate-600">
+                            Plan : <Badge className="bg-slate-200 text-slate-700">{c.subscription_plan}</Badge>
+                          </p>
+                        </div>
+                        <span className="text-xs text-slate-400">
+                          {new Date(c.updated_at).toLocaleDateString('fr-FR')}
+                        </span>
+                      </div>
+                      {c.cancellation_reason && (
+                        <div className="mt-2 text-sm text-slate-600 italic">
+                          « {c.cancellation_reason} »
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'newsletter' && (
+          <div className="space-y-6">
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="w-5 h-5" />
+                  Envoyer une newsletter
+                </CardTitle>
+                <CardDescription>Envoyez un email à tous les abonnés</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Sujet</label>
+                  <Input
+                    value={newsletter.subject}
+                    onChange={(e) => setNewsletter({ ...newsletter, subject: e.target.value })}
+                    placeholder="Sujet de l'email"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Contenu (HTML)</label>
+                  <textarea
+                    rows={10}
+                    className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newsletter.content}
+                    onChange={(e) => setNewsletter({ ...newsletter, content: e.target.value })}
+                    placeholder="<h1>Titre</h1><p>Votre message...</p>"
+                  />
+                </div>
+                <Button
+                  onClick={handleSendNewsletter}
+                  disabled={sendingNewsletter}
+                  className="bg-blue-600 text-white hover:bg-blue-700 min-h-[44px] w-full sm:w-auto"
+                >
+                  {sendingNewsletter ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Mail className="w-4 h-4 mr-2" />
+                  )}
+                  Envoyer la newsletter
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Abonnés ({subscribers.length})
+                </CardTitle>
+                <CardDescription>Liste des inscrits à la newsletter</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingSubscribers ? (
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                ) : subscribers.length === 0 ? (
+                  <p className="text-center text-slate-500 py-4">Aucun abonné pour le moment.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="border-b">
+                        <tr>
+                          <th className="text-left py-2 font-medium">Email</th>
+                          <th className="text-left py-2 font-medium">Statut</th>
+                          <th className="text-left py-2 font-medium">Inscription</th>
+                          <th className="text-left py-2 font-medium">Désabonnement</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subscribers.map((sub) => (
+                          <tr key={sub.id} className="border-b last:border-0">
+                            <td className="py-2">{sub.email}</td>
+                            <td className="py-2">
+                              <Badge className={sub.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                                {sub.is_active ? 'Actif' : 'Désabonné'}
+                              </Badge>
+                            </td>
+                            <td className="py-2">{new Date(sub.subscribed_at).toLocaleDateString()}</td>
+                            <td className="py-2">{sub.unsubscribed_at ? new Date(sub.unsubscribed_at).toLocaleDateString() : '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

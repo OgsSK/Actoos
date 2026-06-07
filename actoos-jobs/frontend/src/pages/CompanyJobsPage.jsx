@@ -249,35 +249,28 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
 };
 
 const CompanyJobsPage = () => {
-  const { user } = useAuth();
+  const { user, activeCompanyId } = useAuth();
   const navigate = useNavigate();
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) fetchJobs();
-  }, [user]);
+    if (user && activeCompanyId) fetchJobs();
+  }, [user, activeCompanyId]);
 
   const fetchJobs = async () => {
-    setLoading(true);
-
-    const { data: company } = await supabase
-      .from('companies')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
-
-    if (!company) {
+    if (!activeCompanyId) {
       setJobs([]);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     const { data } = await supabase
       .from('jobs')
       .select('*, city:cities(name)')
-      .eq('company_id', company.id)
+      .eq('company_id', activeCompanyId)
       .order('created_at', { ascending: false });
 
     setJobs(data || []);

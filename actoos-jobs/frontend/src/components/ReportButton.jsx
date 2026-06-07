@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Flag, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
-import { apiFetch } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
 const REPORT_REASONS = {
@@ -37,27 +37,30 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
     setLoading(true);
     try {
       const fullReason = `${reason}${details ? ' - ' + details : ''}`;
-      await apiFetch('/api/report', {
-        method: 'POST',
-        body: JSON.stringify({
-          reporter_id: reporterId,
-          reported_item_type: itemType,
-          reported_item_id: itemId,
-          reason: fullReason,
-        }),
+      // Insertion directe dans Supabase
+      const { error } = await supabase.from('reports').insert({
+        reporter_id: reporterId,
+        reported_item_type: itemType,
+        reported_item_id: itemId,
+        reason: fullReason,
+        status: 'pending',
       });
+
+      if (error) throw error;
+
       toast.success('Signalement envoyé. Merci de votre vigilance.');
       setShowModal(false);
       setReason('');
       setDetails('');
     } catch (err) {
+      console.error('Erreur signalement:', err);
       toast.error('Erreur lors du signalement');
     } finally {
       setLoading(false);
     }
   };
 
-  if (!reporterId) return null; // pas connecté
+  if (!reporterId) return null;
 
   return (
     <>

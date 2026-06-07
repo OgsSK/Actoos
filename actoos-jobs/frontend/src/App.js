@@ -50,6 +50,7 @@ import { Card, CardContent } from './components/ui/card';
 import { Target, Eye, Shield, Zap, Heart, TrendingUp } from 'lucide-react';
 import './index.css';
 import FAQPage from './pages/FAQPage';
+import CompanyTeamPage from './pages/CompanyTeamPage';
 // ---------- Scroll to top on route change ----------
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -136,7 +137,7 @@ const AppContent = () => {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/a-propos" element={<AboutPage />} />
           <Route path="/faq" element={<FAQPage />} />
-
+          <Route path="/dashboard/entreprise/equipe" element={<ProtectedRoute><CompanyTeamPage /></ProtectedRoute>} />
           {/* ---------- Legal pages ---------- */}
           <Route path="/cgu" element={<CGUPage />} />
           <Route path="/confidentialite" element={<PrivacyPolicyPage />} />

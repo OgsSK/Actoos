@@ -5,8 +5,9 @@ import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Loader2, ChevronLeft, Users } from 'lucide-react';
+import { Loader2, ChevronLeft, Users, Trash2 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
+import { toast } from 'sonner';
 
 const statusConfig = {
   pending: { label: 'Nouvelle', color: 'bg-blue-100 text-blue-700' },
@@ -18,32 +19,27 @@ const statusConfig = {
 };
 
 const CompanyApplicationsPage = () => {
-  const { user } = useAuth();
+  const { user, activeCompanyId } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) fetchApplications();
-  }, [user]);
+    if (user && activeCompanyId) fetchApplications();
+  }, [user, activeCompanyId]);
 
   const fetchApplications = async () => {
-    setLoading(true);
-    const { data: company } = await supabase
-      .from('companies')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
-
-    if (!company) {
+    if (!activeCompanyId) {
       setApplications([]);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
+
     const { data: jobs } = await supabase
       .from('jobs')
       .select('id')
-      .eq('company_id', company.id);
+      .eq('company_id', activeCompanyId);
 
     if (!jobs?.length) {
       setApplications([]);
@@ -61,6 +57,25 @@ const CompanyApplicationsPage = () => {
 
     setApplications(data || []);
     setLoading(false);
+  };
+
+  const handleDeleteApplication = async (appId) => {
+    if (!window.confirm('Supprimer définitivement cette candidature ?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .delete()
+        .eq('id', appId);
+
+      if (error) throw error;
+
+      toast.success('Candidature supprimée');
+      setApplications((prev) => prev.filter((app) => app.id !== appId));
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Erreur lors de la suppression');
+    }
   };
 
   if (loading) {
@@ -96,13 +111,12 @@ const CompanyApplicationsPage = () => {
             {applications.map((app) => {
               const status = statusConfig[app.status] || statusConfig.pending;
               return (
-                <Link
-                  key={app.id}
-                  to={`/dashboard/entreprise/candidatures/${app.id}`}
-                  className="block"
-                >
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="p-4 flex items-center gap-4">
+                <Card key={app.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <Link
+                      to={`/dashboard/entreprise/candidatures/${app.id}`}
+                      className="flex-1 min-w-0 flex items-center gap-4"
+                    >
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-slate-900">
                           {app.candidate?.first_name} {app.candidate?.last_name}
@@ -115,9 +129,21 @@ const CompanyApplicationsPage = () => {
                       <span className="text-xs text-slate-400 hidden sm:block">
                         {formatRelative(app.created_at)}
                       </span>
-                    </CardContent>
-                  </Card>
-                </Link>
+                    </Link>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 hover:bg-red-50 shrink-0"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDeleteApplication(app.id);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Supprimer
+                    </Button>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>

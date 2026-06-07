@@ -18,7 +18,7 @@ import { apiFetch } from '../lib/api';
 
 const CreateJobPage = () => {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, activeCompanyId } = useAuth();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
@@ -60,7 +60,7 @@ const CreateJobPage = () => {
     if (id) {
       fetchJob();
     }
-  }, [id]);
+  }, [id, activeCompanyId]);
 
   const fetchData = async () => {
     if (!user?.id) {
@@ -69,21 +69,27 @@ const CreateJobPage = () => {
       return;
     }
 
+    if (!activeCompanyId) {
+      toast.error('Aucune entreprise sélectionnée');
+      navigate('/dashboard/entreprise');
+      return;
+    }
+
     setLoading(true);
     try {
-      const { data: ownedCompany, error: companyError } = await supabase
+      const { data: comp, error: companyError } = await supabase
         .from('companies')
         .select('*')
-        .eq('owner_id', user.id)
+        .eq('id', activeCompanyId)
         .single();
 
-      if (companyError || !ownedCompany) {
-        toast.error("Vous devez créer une entreprise d'abord");
-        navigate('/dashboard/entreprise/creer');
+      if (companyError || !comp) {
+        toast.error('Entreprise introuvable');
+        navigate('/dashboard/entreprise');
         return;
       }
 
-      setCompany(ownedCompany);
+      setCompany(comp);
 
       const { data: citiesData } = await supabase
         .from('cities')
@@ -156,12 +162,11 @@ const CreateJobPage = () => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
   };
 
-  // ---- Limites ----
   const getPlanLimit = () => {
     const plan = company?.subscription_plan || 'free';
     if (plan === 'business' || plan === 'enterprise') return Infinity;
     if (plan === 'pro') return 5;
-    return 1; // gratuit
+    return 1;
   };
 
   const countActiveJobs = async () => {
@@ -207,8 +212,7 @@ const CreateJobPage = () => {
           return;
         }
 
-        // Vérification de la limite d'offres actives
-        if (!id) { // nouvelle offre
+        if (!id) {
           const active = await countActiveJobs();
           const limit = getPlanLimit();
           if (active >= limit) {
@@ -219,9 +223,9 @@ const CreateJobPage = () => {
         }
 
         if (id && (form.status === 'active' || form.status === 'paused')) {
-          finalStatus = form.status; // On conserve le statut actif ou pause
+          finalStatus = form.status;
         } else {
-          finalStatus = 'pending'; // Soumission pour validation
+          finalStatus = 'pending';
         }
       }
 
@@ -271,43 +275,37 @@ const CreateJobPage = () => {
       }
 
       if (publish) {
-  if (finalStatus === 'pending') {
-    toast.success('Offre soumise pour validation ! Elle sera visible après approbation.');
-    
-    // Envoyer les alertes aux candidats (optionnel, ne pas bloquer en cas d'échec)
-    try {
-      await apiFetch('/api/send-job-alerts', { method: 'POST' });
-    } catch (err) {
-      console.error('Erreur envoi alertes emploi:', err);
-    }
+        if (finalStatus === 'pending') {
+          toast.success('Offre soumise pour validation ! Elle sera visible après approbation.');
+          try {
+            await apiFetch('/api/send-job-alerts', { method: 'POST' });
+          } catch (err) {
+            console.error('Erreur envoi alertes emploi:', err);
+          }
+          try {
+            await apiFetch('/api/notify-admin-new-job', {
+              method: 'POST',
+              body: JSON.stringify({
+                job_title: form.title,
+                company_name: company.name,
+                company_email: company.email || user.email
+              })
+            });
+          } catch (err) {
+            console.error('Erreur notification admin job:', err);
+          }
+        } else if (finalStatus === 'active') {
+          toast.success('Offre mise à jour avec succès.');
+        }
+      } else {
+        toast.success('Brouillon enregistré');
+      }
 
-    // Notification à l'administrateur : une nouvelle offre est en attente de validation
-    try {
-      await apiFetch('/api/notify-admin-new-job', {
-        method: 'POST',
-        body: JSON.stringify({
-          job_title: form.title,
-          company_name: company.name,
-          company_email: company.email || user.email
-        })
-      });
-    } catch (err) {
-      console.error('Erreur notification admin job:', err);
-    }
-
-  } else if (finalStatus === 'active') {
-    toast.success('Offre mise à jour avec succès.');
-  }
-} else {
-  toast.success('Brouillon enregistré');
-}
-
-navigate('/dashboard/entreprise');
+      navigate('/dashboard/entreprise');
     } catch (error) {
-  console.error('Error saving job:', error);
-  // Affiche le message d'erreur réel de Supabase
-  toast.error(error?.message || error?.details || "Erreur lors de l'enregistrement");
-} finally {
+      console.error('Error saving job:', error);
+      toast.error(error?.message || error?.details || "Erreur lors de l'enregistrement");
+    } finally {
       setSaving(false);
     }
   };

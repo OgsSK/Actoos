@@ -21,8 +21,29 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import { toast } from 'sonner';
 
+// ---------- Animated Counter ----------
+const AnimatedCounter = ({ value, duration = 1000 }) => {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    if (!value) return;
+    let start = 0;
+    const step = Math.ceil(value / (duration / 20));
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= value) {
+        setDisplay(value);
+        clearInterval(timer);
+      } else {
+        setDisplay(start);
+      }
+    }, 20);
+    return () => clearInterval(timer);
+  }, [value, duration]);
+  return <>{display}+</>;
+};
+
 // ---------- HeroSection ----------
-const HeroSection = ({ stats, popularSearches = [] }) => {
+const HeroSection = ({ stats }) => {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState('');
   const [location, setLocation] = useState('');
@@ -32,11 +53,7 @@ const HeroSection = ({ stats, popularSearches = [] }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
-    const loadCities = async () => {
-      const data = await fetchCities();
-      setCities(data || []);
-    };
-    loadCities();
+    fetchCities().then(setCities);
   }, []);
 
   useEffect(() => {
@@ -47,10 +64,17 @@ const HeroSection = ({ stats, popularSearches = [] }) => {
     }
     const timer = setTimeout(async () => {
       setLoadingSuggestions(true);
-      const { data, error } = await supabase.rpc('search_jobs', { keyword: keyword.trim() });
-      if (!error && data) {
-        setSuggestions(data);
-        setShowSuggestions(true);
+      const { data } = await supabase
+        .from('jobs')
+        .select('title')
+        .eq('status', 'active')
+        .ilike('title', `%${keyword}%`)
+        .limit(5)
+        .order('created_at', { ascending: false });
+      if (data) {
+        const unique = [...new Set(data.map(j => j.title))];
+        setSuggestions(unique);
+        setShowSuggestions(unique.length > 0);
       }
       setLoadingSuggestions(false);
     }, 300);
@@ -94,14 +118,36 @@ const HeroSection = ({ stats, popularSearches = [] }) => {
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 relative">
                 <Search className="absolute left-4 top-4 w-5 h-5 text-slate-400" />
-                <Input type="text" placeholder="Poste, compétences ou entreprise..." value={keyword} onChange={(e) => setKeyword(e.target.value)} onFocus={() => suggestions.length > 0 && setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} className="pl-12 h-14 border-0 bg-slate-50 text-lg rounded-2xl focus:ring-2 focus:ring-blue-500" />
+                <Input
+                  type="text"
+                  placeholder="Poste, compétences ou entreprise..."
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  className="pl-12 h-14 border-0 bg-slate-50 text-lg rounded-2xl focus:ring-2 focus:ring-blue-500"
+                />
                 {showSuggestions && suggestions.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-2xl shadow-lg border border-slate-200 z-20 overflow-hidden">
-                    {loadingSuggestions && <div className="px-4 py-3 text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Recherche...</div>}
-                    {suggestions.map((s) => (
-                      <button key={s.id} type="button" className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 flex items-center gap-2" onMouseDown={(e) => { e.preventDefault(); setKeyword(s.title); setShowSuggestions(false); navigate(`/emplois?q=${encodeURIComponent(s.title)}`); }}>
+                    {loadingSuggestions && (
+                      <div className="px-4 py-3 text-sm text-slate-500 flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Recherche...
+                      </div>
+                    )}
+                    {suggestions.map((s, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 flex items-center gap-2"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setKeyword(s);
+                          setShowSuggestions(false);
+                          navigate(`/emplois?q=${encodeURIComponent(s)}`);
+                        }}
+                      >
                         <Search className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm text-slate-700">{s.title}</span>
+                        <span className="text-sm text-slate-700">{s}</span>
                       </button>
                     ))}
                   </div>
@@ -109,30 +155,52 @@ const HeroSection = ({ stats, popularSearches = [] }) => {
               </div>
               <div className="flex-1 relative">
                 <MapPin className="absolute left-4 top-4 w-5 h-5 text-slate-400 z-10" />
-                <select value={location} onChange={(e) => setLocation(e.target.value)} className="pl-12 h-14 border-0 bg-slate-50 text-lg rounded-2xl focus:ring-2 focus:ring-blue-500 w-full appearance-none text-slate-900">
+                <select
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="pl-12 h-14 border-0 bg-slate-50 text-lg rounded-2xl focus:ring-2 focus:ring-blue-500 w-full appearance-none text-slate-900"
+                >
                   <option value="">Toutes les villes</option>
-                  {cities.map((city) => (<option key={city.id} value={city.name}>{city.name}</option>))}
+                  {cities.map((city) => (
+                    <option key={city.id} value={city.name}>{city.name}</option>
+                  ))}
                 </select>
               </div>
-              <Button type="submit" size="lg" className="h-14 px-8 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-2xl"><Search className="w-5 h-5 mr-2" /> Rechercher</Button>
+              <Button type="submit" size="lg" className="h-14 px-8 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-2xl">
+                <Search className="w-5 h-5 mr-2" /> Rechercher
+              </Button>
             </div>
           </form>
-          {popularSearches.length > 0 && (
-            <div className="mt-8 flex flex-wrap justify-center gap-2">
-              <span className="text-blue-200 text-sm">Recherches populaires :</span>
-              {popularSearches.map((term) => (<Link key={term} to={`/emplois?q=${encodeURIComponent(term)}`} className="text-white/80 hover:text-blue-400 text-sm bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full transition-all">{term}</Link>))}
-            </div>
-          )}
+
           {stats && (
             <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
-              <div className="text-center"><p className="text-3xl sm:text-4xl font-bold text-white">{activeJobs !== null ? `${activeJobs}+` : <Loader2 className="w-6 h-6 animate-spin inline" />}</p><p className="text-blue-200 text-sm mt-1">Offres actives</p></div>
-              <div className="text-center"><p className="text-3xl sm:text-4xl font-bold text-white">{companies !== null ? `${companies}+` : <Loader2 className="w-6 h-6 animate-spin inline" />}</p><p className="text-blue-200 text-sm mt-1">Entreprises</p></div>
-              <div className="text-center"><p className="text-3xl sm:text-4xl font-bold text-white">{candidates !== null ? `${candidates}+` : <Loader2 className="w-6 h-6 animate-spin inline" />}</p><p className="text-blue-200 text-sm mt-1">Candidats</p></div>
+              <div className="text-center">
+                <p className="text-3xl sm:text-4xl font-bold text-white">
+                  {activeJobs !== null ? <AnimatedCounter value={activeJobs} /> : <Loader2 className="w-6 h-6 animate-spin inline" />}
+                </p>
+                <p className="text-blue-200 text-sm mt-1">Offres actives</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl sm:text-4xl font-bold text-white">
+                  {companies !== null ? <AnimatedCounter value={companies} /> : <Loader2 className="w-6 h-6 animate-spin inline" />}
+                </p>
+                <p className="text-blue-200 text-sm mt-1">Entreprises</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl sm:text-4xl font-bold text-white">
+                  {candidates !== null ? <AnimatedCounter value={candidates} /> : <Loader2 className="w-6 h-6 animate-spin inline" />}
+                </p>
+                <p className="text-blue-200 text-sm mt-1">Candidats</p>
+              </div>
             </div>
           )}
         </div>
       </div>
-      <div className="absolute bottom-0 left-0 right-0"><svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white" /></svg></div>
+      <div className="absolute bottom-0 left-0 right-0">
+        <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white" />
+        </svg>
+      </div>
     </section>
   );
 };
@@ -153,7 +221,7 @@ const CategoriesSection = () => {
 
 // ---------- Recent Jobs Section ----------
 const RecentJobsSection = () => {
-  const { user, isCompany } = useAuth();
+  const { user, isCompany, isCandidate } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
@@ -164,7 +232,7 @@ const RecentJobsSection = () => {
   }, [user]);
 
   const handleSaveJob = async (jobId) => {
-    if (!user) { toast.error('Connectez-vous pour sauvegarder cette offre'); window.location.href = '/connexion'; return; }
+    if (!user) { toast.error('Connectez-vous pour sauvegarder cette offre'); return; }
     if (isCompany) { toast.error('Les entreprises ne peuvent pas ajouter des offres en favoris'); return; }
     if (savedJobs.includes(jobId)) {
       await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', jobId);
@@ -204,6 +272,10 @@ const RecentJobsSection = () => {
                 <Plus className="w-4 h-4" />
                 Publier une offre
               </Link>
+            ) : user && isCandidate ? (
+              <Link to="/emplois" className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 text-sm font-medium">
+                Voir les offres
+              </Link>
             ) : (
               <Link to="/inscription?type=entreprise" className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 text-sm font-medium">
                 Publiez la première offre
@@ -229,7 +301,7 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
 
   const handleSaveClick = (e) => {
     e.preventDefault(); e.stopPropagation();
-    if (!user) { toast.error('Connectez-vous pour sauvegarder cette offre'); window.location.href = '/connexion'; return; }
+    if (!user) { toast.error('Connectez-vous pour sauvegarder cette offre'); return; }
     if (isCompany) { toast.error('Les entreprises ne peuvent pas ajouter des offres en favoris'); return; }
     if (onSave) onSave(job.id);
   };
@@ -254,6 +326,42 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
   );
 };
 
+// ---------- Companies Section ----------
+const CompaniesSection = () => {
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      const { data } = await supabase.from('companies').select('id, name, logo_url, industry').eq('is_verified', true).limit(8);
+      setCompanies(data || []);
+      setLoading(false);
+    };
+    fetchCompanies();
+  }, []);
+  if (loading || companies.length === 0) return null;
+  return (
+    <section className="py-16 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-display">Entreprises qui recrutent</h2>
+          <p className="text-slate-600 mt-3">Faites confiance aux meilleures entreprises</p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+          {companies.map((c) => (
+            <Link key={c.id} to={`/entreprises/${c.id}`} className="flex flex-col items-center p-6 bg-slate-50 rounded-2xl hover:bg-blue-50 transition-colors">
+              <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-3">
+                {c.logo_url ? <img src={c.logo_url} alt={c.name} className="w-10 h-10 object-contain" /> : <Building2 className="w-8 h-8 text-slate-400" />}
+              </div>
+              <h3 className="font-medium text-slate-900 text-center">{c.name}</h3>
+              {c.industry && <p className="text-xs text-slate-500 mt-1">{c.industry}</p>}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // ---------- How It Works Section ----------
 const HowItWorksSection = () => {
   const steps = [
@@ -263,7 +371,33 @@ const HowItWorksSection = () => {
     { icon: CheckCircle, title: 'Décrochez le job', description: 'Suivez vos candidatures et préparez vos entretiens.', color: 'bg-blue-800 text-white' },
   ];
   return (
-    <section className="py-20 bg-white"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="text-center mb-16"><h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-display">Comment ça marche ?</h2><p className="text-slate-600 mt-3 max-w-2xl mx-auto">Trouvez votre emploi idéal en 4 étapes simples</p></div><div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">{steps.map((step, index) => (<div key={step.title} className="relative text-center">{index < steps.length - 1 && <div className="hidden lg:block absolute top-10 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-slate-200 to-slate-100" />}<div className="relative inline-flex"><div className={`w-20 h-20 ${step.color} rounded-3xl flex items-center justify-center shadow-lg`}><step.icon className="w-10 h-10 text-white" /></div><span className="absolute -top-2 -right-2 w-8 h-8 bg-white border-2 border-slate-200 rounded-full flex items-center justify-center font-bold text-slate-700">{index + 1}</span></div><h3 className="font-semibold text-slate-900 text-lg mt-6 mb-2">{step.title}</h3><p className="text-slate-600 text-sm">{step.description}</p></div>))}</div></div></section>
+    <section className="py-20 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-display">Comment ça marche ?</h2>
+          <p className="text-slate-600 mt-3 max-w-2xl mx-auto">Trouvez votre emploi idéal en 4 étapes simples</p>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {steps.map((step, index) => (
+            <div key={step.title} className="relative text-center">
+              {index < steps.length - 1 && (
+                <div className="hidden lg:block absolute top-10 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-slate-200 to-slate-100" />
+              )}
+              <div className="relative inline-flex">
+                <div className={`w-20 h-20 ${step.color} rounded-3xl flex items-center justify-center shadow-lg`}>
+                  <step.icon className="w-10 h-10 text-white" />
+                </div>
+                <span className="absolute -top-2 -right-2 w-8 h-8 bg-white border-2 border-slate-200 rounded-full flex items-center justify-center font-bold text-slate-700">
+                  {index + 1}
+                </span>
+              </div>
+              <h3 className="font-semibold text-slate-900 text-lg mt-6 mb-2">{step.title}</h3>
+              <p className="text-slate-600 text-sm">{step.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 };
 
@@ -364,7 +498,6 @@ const Homepage = () => {
   const [activeJobs, setActiveJobs] = useState(null);
   const [companies, setCompanies] = useState(null);
   const [candidates, setCandidates] = useState(null);
-  const [popularSearches, setPopularSearches] = useState([]);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -374,21 +507,14 @@ const Homepage = () => {
     loadStats();
   }, []);
 
-  useEffect(() => {
-    const fetchPopular = async () => {
-      const { data } = await supabase.from('jobs').select('title').eq('status', 'active').order('created_at', { ascending: false }).limit(4);
-      if (data) setPopularSearches(data.map((j) => j.title));
-    };
-    fetchPopular();
-  }, []);
-
   const stats = { activeJobs, companies, candidates };
 
   return (
     <div className="min-h-screen">
-      <HeroSection stats={stats} popularSearches={popularSearches} />
+      <HeroSection stats={stats} />
       <CategoriesSection />
       <RecentJobsSection />
+      <CompaniesSection />
       <HowItWorksSection />
       <CompanyCTASection stats={stats} />
       <WhyChooseSection />

@@ -35,10 +35,10 @@ import {
   Send,
   Undo2,
   CreditCard,
+  Layers,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
-// ---------- Stats Card ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => (
   <Card className="border-slate-200 overflow-hidden">
     <CardContent className="p-4 sm:p-5">
@@ -59,7 +59,6 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => (
             </p>
           )}
         </div>
-
         <div
           className={cn(
             'w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0',
@@ -84,7 +83,6 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => (
   </Card>
 );
 
-// ---------- Company Job Card ----------
 const CompanyJobCard = ({
   job,
   onEdit,
@@ -323,7 +321,6 @@ const CompanyJobCard = ({
   );
 };
 
-// ---------- Application Card ----------
 const ApplicationCard = ({ application }) => {
   const statusConfig = {
     pending: { label: 'Nouvelle', color: 'bg-blue-100 text-blue-700', icon: Clock },
@@ -365,7 +362,6 @@ const ApplicationCard = ({ application }) => {
   );
 };
 
-// ---------- Modale de résiliation ----------
 const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => {
   const [reason, setReason] = useState('');
 
@@ -436,11 +432,11 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
   );
 };
 
-// ---------- Main Dashboard ----------
 const CompanyDashboard = () => {
-  const { user } = useAuth();
+  const { user, activeCompanyId, setActiveCompanyId } = useAuth();
   const navigate = useNavigate();
 
+  const [companies, setCompanies] = useState([]);
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
@@ -455,67 +451,58 @@ const CompanyDashboard = () => {
     newApplications: 0,
   });
 
-  useEffect(() => {
-    if (user) fetchCompanyData();
-  }, [user]);
+  const fetchUserCompanies = async () => {
+    if (!user) return [];
+    const { data: owned } = await supabase.from('companies').select('*').eq('owner_id', user.id);
+    const { data: memberships } = await supabase
+      .from('company_members')
+      .select('company:companies(*)')
+      .eq('user_id', user.id);
+    const memberCompanies = (memberships || []).map(m => m.company).filter(Boolean);
+    const all = [...(owned || []), ...memberCompanies];
+    const unique = all.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+    return unique;
+  };
 
-  const fetchCompanyData = async () => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
+  const handleSwitchCompany = (companyId) => {
+    setActiveCompanyId(companyId);
+  };
 
+  const fetchCompanyData = async (companyId) => {
+    if (!companyId) return;
     setLoading(true);
     try {
-      const { data: ownedCompany } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('owner_id', user.id)
-        .maybeSingle();
+      const { data: comp } = await supabase.from('companies').select('*').eq('id', companyId).single();
+      if (!comp) return;
+      setCompany(comp);
 
-      if (ownedCompany) {
-        setCompany(ownedCompany);
+      const { data: jobsData } = await supabase
+        .from('jobs')
+        .select('*, city:cities(name)')
+        .eq('company_id', comp.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      setJobs(jobsData || []);
 
-        const { data: jobsData } = await supabase
-          .from('jobs')
-          .select('*, city:cities(name)')
-          .eq('company_id', ownedCompany.id)
+      let appsData = [];
+      if (jobsData?.length) {
+        const { data } = await supabase
+          .from('applications')
+          .select(`*, candidate:users(first_name, last_name, email), job:jobs(title)`)
+          .in('job_id', jobsData.map(j => j.id))
           .order('created_at', { ascending: false })
           .limit(10);
-
-        setJobs(jobsData || []);
-
-        let appsData = [];
-        if (jobsData?.length) {
-          const { data } = await supabase
-            .from('applications')
-            .select(`
-              *,
-              candidate:users(first_name, last_name, email),
-              job:jobs(title)
-            `)
-            .in('job_id', jobsData.map((j) => j.id))
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-          appsData = data || [];
-        }
-
-        setApplications(appsData);
-
-        const activeJobs = (jobsData || []).filter((j) => j.status === 'active').length;
-        const totalApplications = appsData.length;
-        const newApplications = appsData.filter((app) => app.status === 'pending').length;
-
-        setStats({
-          totalJobs: (jobsData || []).length,
-          activeJobs,
-          totalApplications,
-          newApplications,
-        });
-      } else {
-        setCompany(null);
+        appsData = data || [];
       }
+      setApplications(appsData);
+
+      const activeJobs = (jobsData || []).filter(j => j.status === 'active').length;
+      setStats({
+        totalJobs: (jobsData || []).length,
+        activeJobs,
+        totalApplications: appsData.length,
+        newApplications: appsData.filter(app => app.status === 'pending').length,
+      });
     } catch (err) {
       console.error(err);
       toast.error('Erreur de chargement du dashboard');
@@ -523,6 +510,29 @@ const CompanyDashboard = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const load = async () => {
+      const userCompanies = await fetchUserCompanies();
+      setCompanies(userCompanies);
+      if (userCompanies.length === 0) {
+        setCompany(null);
+        setLoading(false);
+        return;
+      }
+      const savedId = activeCompanyId;
+      const found = userCompanies.find(c => c.id === savedId) || userCompanies[0];
+      setActiveCompanyId(found.id);
+      await fetchCompanyData(found.id);
+    };
+    if (user) load();
+  }, [user]);
+
+  useEffect(() => {
+    if (activeCompanyId && companies.length > 0) {
+      fetchCompanyData(activeCompanyId);
+    }
+  }, [activeCompanyId]);
 
   const handleEditJob = (job) => navigate(`/dashboard/entreprise/offres/${job.id}/modifier`);
 
@@ -558,6 +568,18 @@ const CompanyDashboard = () => {
       await supabase.from('jobs').update({ status: 'pending' }).eq('id', job.id);
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'pending' } : j)));
       toast.success('Offre soumise pour validation');
+      try {
+        await apiFetch('/api/notify-admin-new-job', {
+          method: 'POST',
+          body: JSON.stringify({
+            job_title: job.title,
+            company_name: company.name,
+            company_email: company.email || user.email
+          })
+        });
+      } catch (err) {
+        console.error('Erreur notification admin job:', err);
+      }
     } catch (err) {
       toast.error("Erreur lors de la soumission");
     }
@@ -582,7 +604,7 @@ const CompanyDashboard = () => {
       });
       toast.success('Abonnement résilié avec succès');
       setShowCancelModal(false);
-      fetchCompanyData();
+      fetchCompanyData(activeCompanyId);
     } catch (err) {
       toast.error(err.message || 'Erreur lors de la résiliation');
     } finally {
@@ -605,12 +627,11 @@ const CompanyDashboard = () => {
     }
   };
 
-  // Fonctions de limites
   const getPlanLimit = () => {
     const plan = company?.subscription_plan || 'free';
     if (plan === 'business' || plan === 'enterprise') return Infinity;
     if (plan === 'pro') return 5;
-    return 1; // gratuit
+    return 1;
   };
 
   const activeJobsCount = jobs.filter((j) => j.status === 'active').length;
@@ -627,14 +648,14 @@ const CompanyDashboard = () => {
     );
   }
 
-  if (!company) {
+  if (companies.length === 0) {
     return (
       <div className="min-h-screen bg-slate-50 pt-20">
         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
           <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Building2 className="w-10 h-10 text-blue-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-4">Créez votre profil entreprise</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-4">Créez votre première entreprise</h1>
           <p className="text-slate-600 mb-8">
             Pour publier des offres et recevoir des candidatures, commencez par créer le profil de votre entreprise.
           </p>
@@ -652,30 +673,51 @@ const CompanyDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20" data-testid="company-dashboard">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="flex items-center gap-3 mb-6">
+          <Layers className="w-5 h-5 text-slate-600" />
+          <select
+            value={activeCompanyId || ''}
+            onChange={(e) => handleSwitchCompany(e.target.value)}
+            className="border border-slate-200 bg-white rounded-xl px-4 py-2 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-500"
+          >
+            {companies.map(c => (
+              <option key={c.id} value={c.id}>
+                {c.name} {c.owner_id === user.id ? '(propriétaire)' : '(membre)'}
+              </option>
+            ))}
+          </select>
+          <Link to="/dashboard/entreprise/creer" className="ml-auto">
+            <Button variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" /> Nouvelle entreprise</Button>
+          </Link>
+        </div>
+
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
             <div className="w-16 h-16 shrink-0 bg-white rounded-xl flex items-center justify-center border border-slate-200">
-              {company.logo_url ? (
+              {company?.logo_url ? (
                 <img src={company.logo_url} alt={company.name} className="w-12 h-12 object-contain" />
               ) : (
                 <Building2 className="w-8 h-8 text-slate-400" />
               )}
             </div>
-
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-slate-900 truncate">{company.name}</h1>
+              <h1 className="text-2xl font-bold text-slate-900 truncate">{company?.name}</h1>
               <p className="text-slate-600">Espace recruteur</p>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto">
             <Link to="/dashboard/entreprise/profil" className="w-full">
               <Button variant="outline" className="w-full min-h-[44px]">
                 <Settings className="w-4 h-4 mr-2" />
                 Profil entreprise
               </Button>
             </Link>
-
+            <Link to="/dashboard/entreprise/equipe" className="w-full">
+              <Button variant="outline" className="w-full min-h-[44px]">
+                <Users className="w-4 h-4 mr-2" />
+                Équipe
+              </Button>
+            </Link>
             <Link to="/dashboard/entreprise/offres/nouvelle" className="w-full">
               <Button className="w-full min-h-[44px] bg-blue-600 text-white hover:bg-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
@@ -705,7 +747,6 @@ const CompanyDashboard = () => {
                   <h2 className="text-lg font-semibold text-slate-900">Mes offres d'emploi</h2>
                   <p className="text-sm text-slate-500">{stats.totalJobs} offres au total</p>
                 </div>
-
                 <Link to="/dashboard/entreprise/offres" className="w-full sm:w-auto">
                   <Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">
                     Voir tout
@@ -713,7 +754,6 @@ const CompanyDashboard = () => {
                   </Button>
                 </Link>
               </div>
-
               <CardContent className="p-4 sm:p-6">
                 {jobs.length === 0 ? (
                   <div className="text-center py-8">
@@ -750,7 +790,6 @@ const CompanyDashboard = () => {
                   <h2 className="text-lg font-semibold text-slate-900">Candidatures récentes</h2>
                   <p className="text-sm text-slate-500">{stats.newApplications} nouvelles</p>
                 </div>
-
                 <Link to="/dashboard/entreprise/candidatures" className="w-full sm:w-auto">
                   <Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">
                     Voir tout
@@ -758,7 +797,6 @@ const CompanyDashboard = () => {
                   </Button>
                 </Link>
               </div>
-
               <CardContent className="p-4">
                 {applications.length === 0 ? (
                   <div className="text-center py-6">
@@ -779,7 +817,7 @@ const CompanyDashboard = () => {
               <CardContent className="p-4 sm:p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">Profil entreprise</h3>
 
-                {!company.is_verified && (
+                {!company?.is_verified && (
                   <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">
                     ⏳ Votre entreprise est en attente de validation. Vous pouvez préparer vos offres en brouillon.
                     Une fois validée, vous pourrez les soumettre pour publication.
@@ -787,21 +825,19 @@ const CompanyDashboard = () => {
                 )}
 
                 <div className="space-y-3 text-sm">
-                  {company.industry && (
+                  {company?.industry && (
                     <p className="flex items-center gap-2 text-slate-600">
                       <Building2 className="w-4 h-4 text-slate-400" />
                       {company.industry}
                     </p>
                   )}
-
-                  {company.size && (
+                  {company?.size && (
                     <p className="flex items-center gap-2 text-slate-600">
                       <Users className="w-4 h-4 text-slate-400" />
                       {company.size} employés
                     </p>
                   )}
-
-                  {company.website && (
+                  {company?.website && (
                     <a
                       href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
                       target="_blank"
@@ -812,35 +848,25 @@ const CompanyDashboard = () => {
                       {company.website}
                     </a>
                   )}
-
-                  {company.email && (
-                    <a
-                      href={`mailto:${company.email}`}
-                      className="flex items-center gap-2 text-blue-600 hover:underline break-all"
-                    >
+                  {company?.email && (
+                    <a href={`mailto:${company.email}`} className="flex items-center gap-2 text-blue-600 hover:underline break-all">
                       <Mail className="w-4 h-4 shrink-0" />
                       {company.email}
                     </a>
                   )}
-
-                  {company.phone && (
-                    <a
-                      href={`tel:${company.phone}`}
-                      className="flex items-center gap-2 text-slate-600 hover:text-blue-600 break-all"
-                    >
+                  {company?.phone && (
+                    <a href={`tel:${company.phone}`} className="flex items-center gap-2 text-slate-600 hover:text-blue-600 break-all">
                       <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                       {company.phone}
                     </a>
                   )}
-
-                  {company.founded_year && (
+                  {company?.founded_year && (
                     <p className="flex items-center gap-2 text-slate-600">
                       <Calendar className="w-4 h-4 text-slate-400" />
                       Créée en {company.founded_year}
                     </p>
                   )}
-
-                  {company.address && (
+                  {company?.address && (
                     <p className="flex items-center gap-2 text-slate-600">
                       <MapPin className="w-4 h-4 text-slate-400" />
                       {company.address}
@@ -862,19 +888,13 @@ const CompanyDashboard = () => {
                   <Badge className="bg-blue-100 text-blue-700 border-0 text-sm px-3 py-1">
                     Plan actuel : {planLabel}
                   </Badge>
-
                   <Link to="/tarifs" className="w-full sm:w-auto">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full sm:w-auto text-blue-600 hover:bg-blue-100 min-h-[44px]"
-                    >
+                    <Button variant="ghost" size="sm" className="w-full sm:w-auto text-blue-600 hover:bg-blue-100 min-h-[44px]">
                       Changer de plan
                     </Button>
                   </Link>
                 </div>
 
-                {/* Jauge d'offres */}
                 <div className="mb-4">
                   <div className="flex justify-between text-sm text-slate-600 mb-1">
                     <span>Offres actives</span>
@@ -888,7 +908,7 @@ const CompanyDashboard = () => {
                   </div>
                 </div>
 
-                {company.subscription_plan !== 'free' && company.stripe_subscription_id ? (
+                {company?.subscription_plan !== 'free' && company?.stripe_subscription_id ? (
                   <>
                     <p className="text-sm text-blue-800 mb-4">
                       Vous êtes actuellement sur le plan {company.subscription_plan}. Vous pouvez gérer votre abonnement ou le résilier.
@@ -913,7 +933,7 @@ const CompanyDashboard = () => {
                       </Button>
                     </div>
                   </>
-                ) : company.subscription_plan === 'free' && company.cancellation_reason ? (
+                ) : company?.subscription_plan === 'free' && company?.cancellation_reason ? (
                   <div className="text-sm text-slate-700 mt-2">
                     <p className="font-medium">Raison de la dernière résiliation :</p>
                     <p className="italic mt-1">« {company.cancellation_reason} »</p>

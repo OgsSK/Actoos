@@ -314,6 +314,44 @@ async def contact_form(contact: ContactRequest):
 
 @app.post("/api/newsletter")
 async def newsletter_subscribe(req: NewsletterRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    # 1. Insérer dans Supabase
+    try:
+        resp = httpx.post(
+    f"{supabase_url}/rest/v1/newsletter_subscribers",
+    json={"email": req.email, "is_active": True},
+    headers={
+        "apikey": supabase_key,
+        "Authorization": f"Bearer {supabase_key}",
+        "Prefer": "return=minimal"
+    }
+)
+        if resp.status_code == 409:  # Email déjà existant
+            return {"success": True, "message": "Vous êtes déjà inscrit."}
+        elif resp.status_code not in (200, 201):
+            raise Exception(f"Erreur Supabase: {resp.text}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # 2. Envoyer l'email de bienvenue (seulement si l'insertion a réussi)
+    try:
+        resend.Emails.send({
+            "from": "Actoos Jobs <noreply@actoos.com>",
+            "to": [req.email],
+            "subject": "Bienvenue à la newsletter Actoos Jobs",
+            "html": "<h1>Merci de vous être inscrit !</h1><p>Vous recevrez nos derniers conseils et offres d'emploi.</p>"
+        })
+    except Exception as e:
+        print(f"Erreur envoi email bienvenue: {e}")
+        # On ne lève pas d'erreur pour l'utilisateur, l'inscription est déjà enregistrée
+
+    return {"success": True, "message": "Inscription réussie."}
     if not resend.api_key: raise HTTPException(status_code=500, detail="Email service not configured")
     try:
         supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
@@ -496,6 +534,58 @@ async def send_job_alerts():
     return {"success": True, "message": f"Emails envoyés pour {count_sent} alerte(s)."}
 
 # ----- Admin -----
+
+@app.delete("/api/applications/{application_id}")
+async def delete_application(application_id: str, request: Request):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    # Vérifier que l'utilisateur est bien un membre de l'entreprise qui a reçu la candidature
+    auth_header = request.headers.get("authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    token = auth_header.replace("Bearer ", "")
+    user_resp = httpx.get(f"{supabase_url}/auth/v1/user", headers={"Authorization": f"Bearer {token}"})
+    if user_resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Token invalide")
+    user_id = user_resp.json().get("id")
+
+    # Récupérer l'application
+    app_resp = httpx.get(
+        f"{supabase_url}/rest/v1/applications?id=eq.{application_id}&select=job_id",
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    )
+    apps = app_resp.json()
+    if not apps:
+        raise HTTPException(status_code=404, detail="Candidature non trouvée")
+    job_id = apps[0]["job_id"]
+
+    # Vérifier que l'utilisateur est bien membre de l'entreprise de l'offre
+    member_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_members?user_id=eq.{user_id}&select=company_id",
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    )
+    members = member_resp.json()
+    company_ids = [m["company_id"] for m in members]
+
+    job_resp = httpx.get(
+        f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=company_id",
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    )
+    jobs = job_resp.json()
+    if not jobs or jobs[0]["company_id"] not in company_ids:
+        raise HTTPException(status_code=403, detail="Vous n'êtes pas autorisé à supprimer cette candidature")
+
+    # Supprimer
+    httpx.delete(
+        f"{supabase_url}/rest/v1/applications?id=eq.{application_id}",
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    )
+    return {"success": True, "message": "Candidature supprimée"}
+
+
 @app.post("/api/admin/verify-company")
 async def admin_verify_company(req: AdminVerifyCompanyRequest):
     supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
@@ -619,16 +709,81 @@ async def admin_delete_job(req: AdminActionRequest):
 # ----- Reports -----
 @app.post("/api/report")
 async def create_report(req: ReportRequest):
-    supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key: raise HTTPException(status_code=500, detail="Supabase not configured")
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
     try:
-        response = httpx.post(f"{supabase_url}/rest/v1/reports", json={"reporter_id": req.reporter_id, "reported_item_type": req.reported_item_type, "reported_item_id": req.reported_item_id, "reason": req.reason, "status": "pending"}, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}", "Content-Type": "application/json", "Prefer": "return=minimal"})
-        if response.status_code not in (200, 201): raise Exception(f"Report creation failed: {response.text}")
+        response = httpx.post(
+            f"{supabase_url}/rest/v1/reports",
+            json={
+                "reporter_id": req.reporter_id,
+                "reported_item_type": req.reported_item_type,
+                "reported_item_id": req.reported_item_id,
+                "reason": req.reason,
+                "status": "pending"
+            },
+            headers={
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal"
+            }
+        )
+        if response.status_code not in (200, 201):
+            error_detail = response.text
+            print(f"❌ Erreur Supabase report: {error_detail}")
+            raise Exception(f"Report creation failed: {error_detail}")
         return {"success": True, "message": "Signalement envoyé"}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        print(f"❌ Exception report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        response = httpx.post(
+            f"{supabase_url}/rest/v1/reports",
+            json={
+                "reporter_id": req.reporter_id,
+                "reported_item_type": req.reported_item_type,
+                "reported_item_id": req.reported_item_id,
+                "reason": req.reason,
+                "status": "pending"
+            },
+            headers={
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal"
+            }
+        )
+        if response.status_code not in (200, 201):
+            error_detail = response.text
+            print(f"❌ Erreur Supabase report: {error_detail}")
+            raise Exception(f"Report creation failed: {error_detail}")
+        return {"success": True, "message": "Signalement envoyé"}
+    except Exception as e:
+        print(f"❌ Exception report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/reports")
 async def get_reports():
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        response = httpx.get(
+            f"{supabase_url}/rest/v1/reports?select=*,reporter:users(email,first_name,last_name)&order=created_at.desc",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        reports = response.json()
+        return {"success": True, "reports": reports}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key: raise HTTPException(status_code=500, detail="Supabase not configured")
     try:

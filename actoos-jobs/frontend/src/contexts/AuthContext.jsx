@@ -13,6 +13,18 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeCompanyId, setActiveCompanyId] = useState(() => {
+    return localStorage.getItem('actoosActiveCompanyId') || null;
+  });
+
+  // Persister l'ID actif dans localStorage
+  useEffect(() => {
+    if (activeCompanyId) {
+      localStorage.setItem('actoosActiveCompanyId', activeCompanyId);
+    } else {
+      localStorage.removeItem('actoosActiveCompanyId');
+    }
+  }, [activeCompanyId]);
 
   const buildBaseProfile = useCallback((authUser) => {
     if (!authUser) return null;
@@ -31,19 +43,15 @@ export const AuthProvider = ({ children }) => {
   const enrichProfile = useCallback(async (authUser, currentProfile) => {
     if (!authUser) return currentProfile;
     try {
-      const { data: userData, error: userError } = await supabase
+      const { data: userData } = await supabase
         .from('users')
         .select('*')
         .eq('id', authUser.id)
         .maybeSingle();
-
       const roleFromDb = userData?.role;
 
-      // Mettre à jour les métadonnées du token avec le rôle de la base
       if (roleFromDb && roleFromDb !== authUser.user_metadata?.role) {
-        await supabase.auth.updateUser({
-          data: { role: roleFromDb }
-        });
+        await supabase.auth.updateUser({ data: { role: roleFromDb } });
       }
 
       const { data: candidateData } = await supabase
@@ -58,10 +66,7 @@ export const AuthProvider = ({ children }) => {
         .select('subscription_plan')
         .eq('owner_id', authUser.id)
         .maybeSingle();
-
-      if (companyData) {
-        subscriptionPlan = companyData.subscription_plan || 'free';
-      }
+      if (companyData) subscriptionPlan = companyData.subscription_plan || 'free';
 
       const merged = {
         ...currentProfile,
@@ -72,7 +77,7 @@ export const AuthProvider = ({ children }) => {
       };
       return merged;
     } catch (err) {
-      console.warn('Enrichissement profil échoué, on garde le profil de base:', err);
+      console.warn('Enrichissement profil échoué:', err);
       return currentProfile;
     }
   }, []);
@@ -84,11 +89,9 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return;
     }
-
     const baseProfile = buildBaseProfile(authUser);
     setUser(authUser);
     setProfile(baseProfile);
-
     const enriched = await enrichProfile(authUser, baseProfile);
     setProfile(enriched);
     setLoading(false);
@@ -96,20 +99,15 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     let mounted = true;
-
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         if (mounted) handleSession(session?.user ?? null);
       })
-      .catch(() => {
-        if (mounted) setLoading(false);
-      });
+      .catch(() => { if (mounted) setLoading(false); });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (mounted) handleSession(session?.user ?? null);
-      }
-    );
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (mounted) handleSession(session?.user ?? null);
+    });
 
     return () => {
       mounted = false;
@@ -119,27 +117,16 @@ export const AuthProvider = ({ children }) => {
 
   const signUp = async ({ email, password, role = 'candidate', firstName, lastName }) => {
     const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
+      email, password,
       options: { data: { role, first_name: firstName, last_name: lastName } },
     });
     if (error) throw error;
-
     if (data.user) {
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert({
-          id: data.user.id,
-          email: email,
-          role: role,
-          first_name: firstName,
-          last_name: lastName,
-        });
-      if (insertError) {
-        console.error('Erreur insertion users:', insertError);
-      }
+      await supabase.from('users').insert({
+        id: data.user.id, email, role,
+        first_name: firstName, last_name: lastName,
+      });
     }
-
     return data;
   };
 
@@ -159,6 +146,7 @@ export const AuthProvider = ({ children }) => {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    setActiveCompanyId(null);
   };
 
   const resetPassword = async (email) => {
@@ -175,10 +163,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (updates) => {
     if (!user) throw new Error('Not authenticated');
-    const { error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', user.id);
+    const { error } = await supabase.from('users').update(updates).eq('id', user.id);
     if (error) throw error;
     const enriched = await enrichProfile(user, profile);
     setProfile(enriched);
@@ -186,7 +171,6 @@ export const AuthProvider = ({ children }) => {
 
   const refreshProfile = async () => {
     if (user) {
-      // Rafraîchir d'abord la session Supabase pour avoir le dernier token
       await supabase.auth.refreshSession();
       const { data: { session } } = await supabase.auth.getSession();
       const currentUser = session?.user;
@@ -200,14 +184,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = {
-    user, profile, loading,
+    user, profile, loading, activeCompanyId, setActiveCompanyId,
     isCandidate: profile?.role === 'candidate',
     isCompany: profile?.role === 'company',
     isAdmin: profile?.role === 'admin',
     signUp, signIn, signInWithGoogle, signOut,
     resetPassword, updatePassword,
-    updateProfile,
-    refreshProfile,
+    updateProfile, refreshProfile,
   };
 
   return (
