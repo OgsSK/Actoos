@@ -14,6 +14,7 @@ import {
   GraduationCap, ArrowRight
 } from 'lucide-react';
 import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
+import { apiFetch } from '../lib/api';
 
 const CreateJobPage = () => {
   const { id } = useParams();
@@ -155,6 +156,24 @@ const CreateJobPage = () => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
   };
 
+  // ---- Limites ----
+  const getPlanLimit = () => {
+    const plan = company?.subscription_plan || 'free';
+    if (plan === 'business' || plan === 'enterprise') return Infinity;
+    if (plan === 'pro') return 5;
+    return 1; // gratuit
+  };
+
+  const countActiveJobs = async () => {
+    const { count, error } = await supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', company.id)
+      .eq('status', 'active');
+    if (error) return 0;
+    return count || 0;
+  };
+
   const handleSave = async (publish = false) => {
     const newErrors = {};
     if (!form.title.trim()) newErrors.title = true;
@@ -183,39 +202,26 @@ const CreateJobPage = () => {
 
       if (publish) {
         if (!company?.is_verified) {
-          toast.error('Votre entreprise est en attente de validation. Vous pouvez enregistrer en brouillon.');
-          finalStatus = 'draft';
-        } else {
-          finalStatus = 'pending';
-        }
-      }
-
-      const { data: companyPlan } = await supabase
-        .from('companies')
-        .select('subscription_plan')
-        .eq('id', company.id)
-        .single();
-
-      const currentPlan = companyPlan?.subscription_plan || 'free';
-      const planLimits = { free: 3, pro: 10, business: Infinity };
-      const maxActiveJobs = planLimits[currentPlan] ?? 0;
-
-      if (publish && finalStatus === 'active') {
-        let activeCountQuery = supabase
-          .from('jobs')
-          .select('id', { count: 'exact', head: true })
-          .eq('company_id', company.id)
-          .eq('status', 'active');
-
-        if (id) activeCountQuery = activeCountQuery.neq('id', id);
-
-        const { count: activeJobs } = await activeCountQuery;
-
-        if (activeJobs >= maxActiveJobs) {
-          setLimitInfo({ currentPlan, maxActiveJobs, activeJobs });
-          setShowLimitModal(true);
+          toast.error("Votre entreprise n'est pas encore vérifiée. Vous ne pouvez pas soumettre d'offre.");
           setSaving(false);
           return;
+        }
+
+        // Vérification de la limite d'offres actives
+        if (!id) { // nouvelle offre
+          const active = await countActiveJobs();
+          const limit = getPlanLimit();
+          if (active >= limit) {
+            toast.error(`Vous avez atteint la limite de ${limit} offre(s) active(s). Passez à un plan supérieur ou archivez une offre.`);
+            setSaving(false);
+            return;
+          }
+        }
+
+        if (id && (form.status === 'active' || form.status === 'paused')) {
+          finalStatus = form.status; // On conserve le statut actif ou pause
+        } else {
+          finalStatus = 'pending'; // Soumission pour validation
         }
       }
 
@@ -245,32 +251,41 @@ const CreateJobPage = () => {
         application_deadline: form.application_deadline || null,
         start_date: form.start_date || null,
         is_urgent: form.is_urgent,
-        status: finalStatus,
-        published_at: publish && finalStatus !== 'draft' ? new Date().toISOString() : null,
-        expires_at: publish && finalStatus !== 'draft'
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-          : null
+        status: finalStatus
       };
 
       if (id) {
+        if (finalStatus === 'active' && form.status !== 'active') {
+          jobData.published_at = new Date().toISOString();
+          jobData.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        }
         const { error } = await supabase.from('jobs').update(jobData).eq('id', id);
         if (error) throw error;
       } else {
+        if (finalStatus === 'active') {
+          jobData.published_at = new Date().toISOString();
+          jobData.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        }
         const { error } = await supabase.from('jobs').insert(jobData);
         if (error) throw error;
       }
 
       if (publish) {
         if (finalStatus === 'pending') {
-          toast.success('Offre soumise pour validation');
-        } else {
-          toast.success('Brouillon enregistré');
+          toast.success('Offre soumise pour validation ! Elle sera visible après approbation.');
+          try {
+            await apiFetch('/api/send-job-alerts', { method: 'POST' });
+          } catch (err) {
+            console.error('Erreur envoi alertes emploi:', err);
+          }
+        } else if (finalStatus === 'active') {
+          toast.success('Offre mise à jour avec succès.');
         }
       } else {
         toast.success('Brouillon enregistré');
       }
 
-      window.location.href = '/dashboard/entreprise';
+      navigate('/dashboard/entreprise');
     } catch (error) {
       console.error('Error saving job:', error);
       toast.error("Erreur lors de l'enregistrement");
@@ -289,9 +304,40 @@ const CreateJobPage = () => {
         : 'border-slate-200 focus:ring-blue-500'
     );
 
+  const isUnverified = company && !company.is_verified;
+
+  const getPublishButtonText = () => {
+    if (id && (form.status === 'active' || form.status === 'paused')) {
+      return "Mettre à jour l'offre";
+    }
+    if (isUnverified) {
+      return 'Validation entreprise requise';
+    }
+    return 'Soumettre pour validation';
+  };
+
+  const isPublishDisabled = () => {
+    if (isUnverified) return true;
+    return saving;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 pt-20" data-testid="create-job-page">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        {isUnverified && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
+            <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-amber-800 font-medium">Entreprise en attente de validation</p>
+              <p className="text-amber-600 text-sm">Votre entreprise n'est pas encore vérifiée. Vous pouvez enregistrer vos offres en brouillon, mais elles ne seront pas publiées tant que l'administrateur n'aura pas validé votre compte.</p>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/dashboard/entreprise')} className="-ml-2" type="button">
@@ -312,13 +358,13 @@ const CreateJobPage = () => {
             </Button>
             <Button
               onClick={() => handleSave(true)}
-              disabled={saving}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              disabled={isPublishDisabled()}
+              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
               data-testid="publish-job-btn"
               type="button"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              Publier
+              {getPublishButtonText()}
             </Button>
           </div>
         </div>
@@ -703,15 +749,20 @@ const CreateJobPage = () => {
             </Button>
             <Button
               onClick={() => handleSave(true)}
-              disabled={saving}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              disabled={isPublishDisabled()}
+              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
               data-testid="publish-job-btn-bottom"
               type="button"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              Publier l'offre
+              {getPublishButtonText()}
             </Button>
           </div>
+          {isUnverified && (
+            <p className="text-center text-xs text-amber-600 mt-1">
+              Votre entreprise doit être validée avant de pouvoir soumettre une offre.
+            </p>
+          )}
         </div>
       </div>
 

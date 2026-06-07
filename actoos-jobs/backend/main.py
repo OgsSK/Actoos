@@ -9,6 +9,8 @@ import resend
 import httpx
 import base64
 from pathlib import Path
+import json
+from datetime import datetime
 
 env_path = Path(__file__).parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -141,31 +143,52 @@ class AdminBanUserRequest(BaseModel):
     user_id: str
     reason: Optional[str] = ""
 
-class BlogPostCreate(BaseModel):
-    title: str
-    slug: Optional[str] = None
-    excerpt: Optional[str] = None
-    content: Optional[str] = None
-    category: Optional[str] = None
-    audience: Optional[str] = "candidate"
-    read_time: Optional[str] = None
-    author: Optional[str] = None
-    author_avatar: Optional[str] = None
-    image_url: Optional[str] = None
-    icon: Optional[str] = "FileText"
-    color: Optional[str] = "blue"
-    is_published: Optional[bool] = False
-
 class NewCompanyNotificationRequest(BaseModel):
     company_name: str
     owner_email: str
     owner_name: str
+
+# --- Blog models ---
+class BlogGenerateRequest(BaseModel):
+    title: str
+    keywords: Optional[str] = ""
+    audience: Optional[str] = "all"
+    category: Optional[str] = "Carrière"
+    read_time: Optional[str] = "5 min"
+    author: Optional[str] = "Équipe Actoos"
+    icon: Optional[str] = "FileText"
+    color: Optional[str] = "blue"
+
+class BlogUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    excerpt: Optional[str] = None
+    content: Optional[str] = None
+    category: Optional[str] = None
+    audience: Optional[str] = None
+    read_time: Optional[str] = None
+    author: Optional[str] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
 
 def clean_subject(text: str, max_length: int = 50) -> str:
     cleaned = text.replace('\n', ' ').replace('\r', ' ')
     if len(cleaned) > max_length:
         cleaned = cleaned[:max_length-3] + '...'
     return cleaned
+
+# ----- Fichier blog -----
+BLOG_FILE = Path(__file__).parent / 'data' / 'blog.json'
+
+def load_blog_posts():
+    if not BLOG_FILE.exists():
+        return []
+    with open(BLOG_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def save_blog_posts(posts):
+    BLOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(BLOG_FILE, 'w', encoding='utf-8') as f:
+        json.dump(posts, f, indent=2, ensure_ascii=False, default=str)
 
 # ----- Endpoints -----
 @app.get("/api/health")
@@ -298,6 +321,38 @@ async def stripe_webhook(request: Request):
             if session.id in payment_transactions:
                 payment_transactions[session.id]["payment_status"] = "paid"
                 payment_transactions[session.id]["status"] = "completed"
+            
+            # Mise à jour de l'entreprise abonnée
+            supabase_url = os.getenv("SUPABASE_URL")
+            supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            if supabase_url and supabase_key and session.metadata:
+                user_id = session.metadata.get("user_id")
+                package_id = session.metadata.get("package_id")
+                if user_id and package_id:
+                    # Récupérer l'entreprise du propriétaire
+                    company_resp = httpx.get(
+                        f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
+                        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+                    )
+                    companies = company_resp.json()
+                    if companies and len(companies) > 0:
+                        company = companies[0]
+                        plan_name = "free"
+                        if "pro" in package_id:
+                            plan_name = "pro"
+                        elif "business" in package_id:
+                            plan_name = "business"
+                        update_data = {
+                            "subscription_plan": plan_name,
+                            "stripe_subscription_id": session.subscription,
+                            "stripe_customer_id": session.customer,
+                            "subscription_expires_at": None  # Stripe gère l'abonnement
+                        }
+                        httpx.patch(
+                            f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
+                            json=update_data,
+                            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+                        )
         elif event.type == "checkout.session.expired":
             session = event.data.object
             if session.id in payment_transactions:
@@ -349,6 +404,38 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
         
         return {"success": True, "message": "Abonnement résilié avec succès."}
     except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ----- Portail client Stripe (gestion d'abonnement) -----
+@app.post("/api/stripe/portal")
+async def stripe_portal(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="ID utilisateur requis")
+    
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    # Récupérer le stripe_customer_id
+    company_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=stripe_customer_id",
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    )
+    companies = company_resp.json()
+    if not companies or len(companies) == 0 or not companies[0].get("stripe_customer_id"):
+        raise HTTPException(status_code=404, detail="Aucun abonnement Stripe trouvé pour cette entreprise")
+    
+    customer_id = companies[0]["stripe_customer_id"]
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url="https://jobs.actoos.com/dashboard/entreprise",
+        )
+        return {"url": session.url}
+    except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 # ----- Contact & Newsletter -----
@@ -487,6 +574,7 @@ AGENT_PROMPTS = {
     "interview-answers": "Pour chaque question d'entretien fournie, propose une réponse type structurée et convaincante. Utilise la méthode STAR quand c'est pertinent. Retourne les questions et les réponses.",
     "interview-tips": "Donne des conseils personnalisés pour réussir l'entretien ciblant ce poste spécifique. Inclus des recommandations sur la tenue, le langage corporel, les questions à poser, et les points à mettre en avant. Maximum 5 conseils. Retourne une liste à puces.",
     "cv-analysis": "Tu es un expert en recrutement et en rédaction de CV. Analyse le CV suivant et donne 3 à 5 suggestions concrètes pour l'améliorer, sans le réécrire. Mentionne les points faibles, les incohérences, et les éléments manquants. Sois constructif. Retourne uniquement les suggestions, sous forme de liste à puces.",
+    "blog-post": "Tu es un rédacteur professionnel spécialisé en emploi et recrutement en Afrique. Rédige un article de blog complet sur le sujet donné. Structure la réponse en HTML avec des titres <h2>, des paragraphes <p>, des listes <ul>. Fournis également un extrait (2 phrases) et une catégorie pertinente. Format de réponse JSON : {\"title\":\"...\", \"excerpt\":\"...\", \"content\":\"...\", \"category\":\"...\"}",
 }
 
 FALLBACK_MODELS = [
@@ -905,107 +993,106 @@ async def get_cancellations():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ----- Blog (public) -----
+# ============================
+#  BLOG (Fichier JSON + IA)
+# ============================
+
 @app.get("/api/blog/posts")
 async def get_blog_posts(audience: Optional[str] = None):
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    try:
-        query = f"{supabase_url}/rest/v1/blog_posts?is_published=eq.true&order=published_at.desc"
-        if audience and audience != "all":
-            query += f"&audience=eq.{audience}"
-        resp = httpx.get(query, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
-        if resp.status_code != 200:
-            raise HTTPException(status_code=500, detail="Erreur récupération articles")
-        return resp.json()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    posts = load_blog_posts()
+    if audience and audience != "all":
+        posts = [p for p in posts if p.get("audience") == audience or p.get("audience") == "all"]
+    return posts
 
 @app.get("/api/blog/posts/{slug}")
 async def get_blog_post(slug: str):
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    try:
-        resp = httpx.get(
-            f"{supabase_url}/rest/v1/blog_posts?slug=eq.{slug}&is_published=eq.true&limit=1",
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-        )
-        if resp.status_code != 200:
-            raise HTTPException(status_code=500, detail="Erreur")
-        data = resp.json()
-        if not data:
-            raise HTTPException(status_code=404, detail="Article introuvable")
-        return data[0]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    posts = load_blog_posts()
+    for post in posts:
+        if post.get("slug") == slug:
+            return post
+    raise HTTPException(status_code=404, detail="Article introuvable")
 
-# ----- Admin Blog CRUD -----
-@app.post("/api/admin/blog")
-async def create_blog_post(req: BlogPostCreate):
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    try:
-        payload = req.dict()
-        if not payload.get("slug"):
-            payload["slug"] = payload["title"].lower().replace(" ", "-")
-        if payload.get("is_published"):
-            payload["published_at"] = "now()"
-        resp = httpx.post(
-            f"{supabase_url}/rest/v1/blog_posts",
-            json=payload,
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}", "Prefer": "return=representation"}
-        )
-        if resp.status_code not in (200, 201):
-            raise HTTPException(status_code=500, detail=f"Erreur création: {resp.text}")
-        return resp.json()[0] if isinstance(resp.json(), list) else resp.json()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@app.post("/api/admin/blog/generate")
+async def generate_blog_post(req: BlogGenerateRequest):
+    if not OPENROUTER_API_KEY:
+        raise HTTPException(status_code=500, detail="OpenRouter API key not configured")
+    prompt = f"Titre : {req.title}\n"
+    if req.keywords:
+        prompt += f"Mots-clés : {req.keywords}\n"
+    prompt += f"Audience : {req.audience}\n"
+    messages = [
+        {"role": "system", "content": AGENT_PROMPTS["blog-post"]},
+        {"role": "user", "content": prompt}
+    ]
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        for model in FALLBACK_MODELS:
+            try:
+                response = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "HTTP-Referer": "https://jobs.actoos.com", "X-Title": "Actoos Jobs AI"},
+                    json={"model": model, "messages": messages, "temperature": 0.8, "max_tokens": 1500}
+                )
+                data = response.json()
+                if "choices" in data and len(data["choices"]) > 0:
+                    text = data["choices"][0]["message"]["content"].strip()
+                    try:
+                        article = json.loads(text)
+                    except:
+                        article = {
+                            "title": req.title,
+                            "excerpt": req.keywords or "Article généré automatiquement",
+                            "content": f"<p>{text}</p>",
+                            "category": req.category
+                        }
+                    slug = req.title.lower().replace(" ", "-")[:80]
+                    posts = load_blog_posts()
+                    new_id = max([p.get("id", 0) for p in posts], default=0) + 1
+                    new_post = {
+                        "id": new_id,
+                        "title": article.get("title", req.title),
+                        "slug": slug,
+                        "excerpt": article.get("excerpt", ""),
+                        "content": article.get("content", ""),
+                        "category": article.get("category", req.category),
+                        "audience": req.audience,
+                        "read_time": req.read_time,
+                        "author": req.author,
+                        "icon": req.icon,
+                        "color": req.color,
+                        "published_at": datetime.utcnow().isoformat()
+                    }
+                    posts.append(new_post)
+                    save_blog_posts(posts)
+                    return new_post
+            except Exception as e:
+                print(f"Erreur modèle {model}: {e}")
+                continue
+    raise HTTPException(status_code=502, detail="Échec de la génération par IA")
 
-@app.put("/api/admin/blog/{post_id}")
-async def update_blog_post(post_id: str, req: BlogPostCreate):
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    try:
-        payload = req.dict()
-        if payload.get("is_published") and not payload.get("published_at"):
-            payload["published_at"] = "now()"
-        resp = httpx.patch(
-            f"{supabase_url}/rest/v1/blog_posts?id=eq.{post_id}",
-            json=payload,
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}", "Prefer": "return=representation"}
-        )
-        if resp.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"Erreur mise à jour: {resp.text}")
-        return resp.json()[0] if isinstance(resp.json(), list) else resp.json()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@app.put("/api/admin/blog/{slug}")
+async def update_blog_post(slug: str, req: BlogUpdateRequest):
+    posts = load_blog_posts()
+    for i, post in enumerate(posts):
+        if post.get("slug") == slug:
+            updates = req.dict(exclude_unset=True)
+            posts[i].update(updates)
+            save_blog_posts(posts)
+            return posts[i]
+    raise HTTPException(status_code=404, detail="Article non trouvé")
 
-@app.delete("/api/admin/blog/{post_id}")
-async def delete_blog_post(post_id: str):
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    try:
-        resp = httpx.delete(
-            f"{supabase_url}/rest/v1/blog_posts?id=eq.{post_id}",
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-        )
-        if resp.status_code != 200:
-            raise HTTPException(status_code=500, detail="Erreur suppression")
-        return {"success": True}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@app.delete("/api/admin/blog/{slug}")
+async def delete_blog_post(slug: str):
+    posts = load_blog_posts()
+    initial_len = len(posts)
+    posts = [p for p in posts if p.get("slug") != slug]
+    if len(posts) == initial_len:
+        raise HTTPException(status_code=404, detail="Article non trouvé")
+    save_blog_posts(posts)
+    return {"success": True}
 
-# ----- Matching Score (avancé) -----
+# ============================
+#  MATCHING SCORE (avancé)
+# ============================
 def compute_match_score(job: dict, candidate_profile: dict) -> int:
     score = 0.0
 

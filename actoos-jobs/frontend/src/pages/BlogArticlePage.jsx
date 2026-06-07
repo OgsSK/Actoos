@@ -1,19 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getArticleById } from '../data/blogData';
+import { apiFetch } from '../lib/api';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, Clock, User, FileText, Target, TrendingUp, Lightbulb, Briefcase, Users } from 'lucide-react';
-// Mapping des icônes (car on ne peut pas stocker des composants dans le JSON)
-const iconMap = {
-  FileText: FileText,
-  Target: Target,
-  TrendingUp: TrendingUp,
-  Lightbulb: Lightbulb,
-  Briefcase: Briefcase,
-  Users: Users,
-};
+import { ArrowLeft, Clock, User, FileText, Target, TrendingUp, Lightbulb, Briefcase, Users, Loader2 } from 'lucide-react';
 
+const iconMap = { FileText, Target, TrendingUp, Lightbulb, Briefcase, Users };
 const colorClasses = {
   blue: 'bg-blue-100 text-blue-600',
   red: 'bg-red-100 text-red-600',
@@ -24,8 +16,31 @@ const colorClasses = {
 };
 
 const BlogArticlePage = () => {
-  const { id } = useParams();
-  const article = getArticleById(parseInt(id));
+  const { id } = useParams(); // id = slug
+  const [article, setArticle] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchArticle = async () => {
+      try {
+        const data = await apiFetch(`/api/blog/posts/${id}`);
+        setArticle(data);
+      } catch (err) {
+        setArticle(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchArticle();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   if (!article) {
     return (
@@ -41,7 +56,7 @@ const BlogArticlePage = () => {
     );
   }
 
-  const Icon = iconMap[article.icon];
+  const Icon = iconMap[article.icon] || FileText;
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -56,22 +71,21 @@ const BlogArticlePage = () => {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[article.color]}`}>
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[article.color] || 'bg-blue-100 text-blue-600'}`}>
                 <Icon className="w-6 h-6" />
               </div>
               <div>
                 <Badge variant="outline">{article.category}</Badge>
                 <div className="flex items-center gap-4 text-sm text-slate-500 mt-1">
-                  <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {article.readTime}</span>
+                  <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {article.read_time}</span>
                   <span className="flex items-center gap-1"><User className="w-4 h-4" /> {article.author}</span>
-                  <span>{article.date}</span>
+                  <span>{new Date(article.published_at).toLocaleDateString('fr-FR')}</span>
                 </div>
               </div>
             </div>
 
             <h1 className="text-3xl font-bold text-slate-900 mb-6">{article.title}</h1>
 
-            {/* Contenu riche */}
             <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: article.content }} />
           </div>
         </div>

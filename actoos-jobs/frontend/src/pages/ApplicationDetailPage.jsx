@@ -8,7 +8,8 @@ import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import {
   Loader2, ChevronLeft, Mail, Phone, MapPin, Calendar, Briefcase, User, FileText,
-  ExternalLink, Video, Sparkles, RefreshCw, Trash2
+  ExternalLink, Video, Sparkles, RefreshCw, Trash2, Save, MessageSquare, Lightbulb,
+  Edit, Eye
 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 
@@ -21,6 +22,61 @@ const statusConfig = {
   rejected: { label: 'Refusé', color: 'bg-red-100 text-red-700' },
 };
 
+// ---------- InterviewBlock component ----------
+const InterviewBlock = ({ title, icon: Icon, content, onChange, onGenerate, generating, disabled, emptyMessage }) => {
+  const [editing, setEditing] = useState(false);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-sm font-medium text-slate-700 flex items-center gap-1">
+          <Icon className="w-4 h-4" /> {title}
+        </h4>
+        <div className="flex gap-1">
+          {content && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditing(!editing)}
+              title={editing ? "Passer en lecture" : "Modifier"}
+            >
+              {editing ? <Eye className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onGenerate}
+            disabled={generating || disabled}
+          >
+            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Générer'}
+          </Button>
+        </div>
+      </div>
+      {content ? (
+        editing ? (
+          <textarea
+            className="w-full text-sm border border-slate-200 rounded-xl p-3 min-h-[120px] max-h-[200px] overflow-y-scroll resize-y"
+            value={content}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        ) : (
+          <div className="w-full text-sm border border-slate-200 rounded-xl p-3 min-h-[120px] max-h-[200px] overflow-y-scroll bg-white whitespace-pre-wrap">
+            {content}
+          </div>
+        )
+      ) : (
+        <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl">
+          {emptyMessage}
+        </p>
+      )}
+      {content && !editing && (
+        <p className="text-xs text-slate-400 mt-1">✏️ Cliquez sur le crayon pour modifier.</p>
+      )}
+    </div>
+  );
+};
+
 const ApplicationDetailPage = () => {
   const { id } = useParams();
   const [application, setApplication] = useState(null);
@@ -29,7 +85,12 @@ const ApplicationDetailPage = () => {
   const [updating, setUpdating] = useState(false);
   const [customRoomName, setCustomRoomName] = useState('');
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [generatingAnswers, setGeneratingAnswers] = useState(false);
+  const [generatingTips, setGeneratingTips] = useState(false);
   const [interviewQuestions, setInterviewQuestions] = useState('');
+  const [interviewAnswers, setInterviewAnswers] = useState('');
+  const [interviewTips, setInterviewTips] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
@@ -50,53 +111,51 @@ const ApplicationDetailPage = () => {
   }, [id]);
 
   const handleStatusChange = async (newStatus) => {
-  setUpdating(true);
-  let reason = null;
-  
-  if (newStatus === 'rejected') {
-    reason = window.prompt('Veuillez indiquer la raison du refus (facultatif) :');
-    if (reason === null) { // annulé
-      setUpdating(false);
-      return;
-    }
-  }
-
-  try {
-    const updates = { status: newStatus };
-    if (newStatus === 'interview' && !application.meeting_link) {
-      updates.meeting_link = `https://meet.jit.si/actoos-interview-${application.id}`;
-    }
-    const { error } = await supabase.from('applications').update(updates).eq('id', id);
-    if (error) throw error;
-    setApplication(prev => ({ ...prev, ...updates }));
-    toast.success('Statut mis à jour');
-
-    if (newStatus !== 'pending') {
-      // Email
-      const cleanJobTitle = (application.job.title || '').replace(/\n/g, ' ').substring(0, 60);
-      const companyName = application.job.company?.name || '';
-      try {
-        await apiFetch('/api/notify-status-change', {
-          method: 'POST',
-          body: JSON.stringify({
-            candidate_email: application.candidate.email,
-            candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
-            job_title: cleanJobTitle,
-            new_status: newStatus,
-            company_name: companyName,
-            reason: reason
-          })
-        });
-      } catch (notifErr) {
-        console.error("Échec de l'envoi de l'email :", notifErr);
+    setUpdating(true);
+    let reason = null;
+    if (newStatus === 'rejected') {
+      reason = window.prompt('Veuillez indiquer la raison du refus (facultatif) :');
+      if (reason === null) {
+        setUpdating(false);
+        return;
       }
     }
-  } catch (err) {
-    toast.error('Erreur lors de la mise à jour');
-  } finally {
-    setUpdating(false);
-  }
-};
+    try {
+      const updates = { status: newStatus };
+      if (newStatus === 'interview' && !application.meeting_link) {
+        updates.meeting_link = `https://meet.jit.si/actoos-interview-${application.id}`;
+      }
+      const { error } = await supabase.from('applications').update(updates).eq('id', id);
+      if (error) throw error;
+      setApplication(prev => ({ ...prev, ...updates }));
+      toast.success('Statut mis à jour');
+
+      if (newStatus !== 'pending') {
+        const cleanJobTitle = (application.job.title || '').replace(/\n/g, ' ').substring(0, 60);
+        const companyName = application.job.company?.name || '';
+        try {
+          await apiFetch('/api/notify-status-change', {
+            method: 'POST',
+            body: JSON.stringify({
+              candidate_email: application.candidate.email,
+              candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
+              job_title: cleanJobTitle,
+              new_status: newStatus,
+              company_name: companyName,
+              reason: reason
+            })
+          });
+        } catch (notifErr) {
+          console.error("Échec de l'envoi de l'email :", notifErr);
+        }
+      }
+    } catch (err) {
+      toast.error('Erreur lors de la mise à jour');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const handleCreateMeeting = async () => {
     const room = customRoomName.trim() || `actoos-interview-${application.id}`;
     const meetingLink = `https://meet.jit.si/${room}`;
@@ -122,40 +181,118 @@ const ApplicationDetailPage = () => {
     finally { setUpdating(false); }
   };
 
+  // Construit un contexte riche pour l'IA
+  const buildInterviewContext = () => {
+    const job = application?.job;
+    const profile = candidateProfile;
+    if (!job) return '';
+    return `
+Poste : ${job.title || ''}
+Description du poste : ${job.description || ''}
+Exigences : ${job.requirements || ''}
+Missions : ${job.responsibilities || ''}
+Avantages : ${job.benefits || ''}
+Compétences requises : ${(job.skills_required || []).join(', ')}
+
+Profil du candidat :
+- Titre : ${profile?.title || ''}
+- Compétences : ${(profile?.skills || []).join(', ')}
+- Expérience : ${(profile?.experience || []).map(e => `${e.title} chez ${e.company}`).join('; ') || 'Non spécifiée'}
+- Formation : ${(profile?.education || []).map(e => e.title).join(', ') || 'Non spécifiée'}
+- Bio : ${profile?.bio || ''}
+    `.trim();
+  };
+
   const handleGenerateQuestions = async () => {
     setGeneratingQuestions(true);
+    const context = buildInterviewContext();
     try {
-      const res = await apiFetch('/api/ai/agent', { method: 'POST', body: JSON.stringify({ agent_id: 'interview-questions', text: application?.job?.description || '', context: candidateProfile?.title || '' }) });
+      const res = await apiFetch('/api/ai/agent', {
+        method: 'POST',
+        body: JSON.stringify({
+          agent_id: 'interview-questions',
+          text: context,
+          context: ''
+        })
+      });
       setInterviewQuestions(res.result);
       toast.success('Questions générées !');
     } catch (err) { toast.error(err.message || 'Erreur IA'); }
     finally { setGeneratingQuestions(false); }
   };
 
+  const handleGenerateAnswers = async () => {
+    if (!interviewQuestions) {
+      toast.error('Générez d\'abord des questions');
+      return;
+    }
+    setGeneratingAnswers(true);
+    try {
+      const res = await apiFetch('/api/ai/agent', {
+        method: 'POST',
+        body: JSON.stringify({
+          agent_id: 'interview-answers',
+          text: interviewQuestions
+        })
+      });
+      setInterviewAnswers(res.result);
+      toast.success('Réponses types générées !');
+    } catch (err) { toast.error(err.message || 'Erreur IA'); }
+    finally { setGeneratingAnswers(false); }
+  };
+
+  const handleGenerateTips = async () => {
+    setGeneratingTips(true);
+    const context = buildInterviewContext();
+    try {
+      const res = await apiFetch('/api/ai/agent', {
+        method: 'POST',
+        body: JSON.stringify({
+          agent_id: 'interview-tips',
+          text: context
+        })
+      });
+      setInterviewTips(res.result);
+      toast.success('Conseils générés !');
+    } catch (err) { toast.error(err.message || 'Erreur IA'); }
+    finally { setGeneratingTips(false); }
+  };
+
+  const handleSaveNotes = async () => {
+    const notes = `Questions :\n${interviewQuestions}\n\nRéponses :\n${interviewAnswers}\n\nConseils :\n${interviewTips}`;
+    setSavingNotes(true);
+    try {
+      const { error } = await supabase.from('applications').update({ notes }).eq('id', id);
+      if (error) throw error;
+      toast.success('Notes sauvegardées');
+    } catch (err) { toast.error('Erreur lors de la sauvegarde'); }
+    finally { setSavingNotes(false); }
+  };
+
   const handleSendEmail = async (type) => {
-  let link = '';
-  if (type === 'jitsi') link = application?.meeting_link;
-  else if (type === 'calendly') link = 'https://calendly.com/actoos/entretien';
-  if (!link) return;
-  setSendingEmail(true);
-  try {
-    const res = await apiFetch('/api/send-interview-link', {
-      method: 'POST',
-      body: JSON.stringify({
-        email: application.candidate.email,
-        candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
-        job_title: application.job.title,
-        meeting_link: link,
-        company_name: application.job.company?.name || ''   // ← ajouté
-      })
-    });
-    toast.success(res.message);
-  } catch (err) {
-    toast.error(err.message || "Erreur lors de l'envoi de l'email");
-  } finally {
-    setSendingEmail(false);
-  }
-};
+    let link = '';
+    if (type === 'jitsi') link = application?.meeting_link;
+    else if (type === 'calendly') link = 'https://calendly.com/actoos/entretien';
+    if (!link) return;
+    setSendingEmail(true);
+    try {
+      const res = await apiFetch('/api/send-interview-link', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: application.candidate.email,
+          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
+          job_title: application.job.title,
+          meeting_link: link,
+          company_name: application.job.company?.name || ''
+        })
+      });
+      toast.success(res.message);
+    } catch (err) {
+      toast.error(err.message || "Erreur lors de l'envoi de l'email");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
   if (!application) return <div className="pt-20 text-center">Candidature introuvable.</div>;
@@ -257,19 +394,59 @@ const ApplicationDetailPage = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Section Préparer l'entretien améliorée */}
             <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><Sparkles className="w-5 h-5 text-blue-600" /> Questions d'entretien</h3>
-                {interviewQuestions ? (
-                  <div className="space-y-3">
-                    <textarea className="w-full text-sm border border-slate-200 rounded-xl p-3 min-h-[150px] resize-y" value={interviewQuestions} onChange={(e) => setInterviewQuestions(e.target.value)} />
-                    <Button variant="ghost" size="sm" onClick={() => setInterviewQuestions('')}>Effacer</Button>
-                  </div>
-                ) : (
-                  <Button variant="outline" className="w-full" onClick={handleGenerateQuestions} disabled={generatingQuestions}>
-                    {generatingQuestions ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />} Générer des questions
-                  </Button>
-                )}
+              <CardContent className="p-6 space-y-5">
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-blue-600" />
+                  Préparer l'entretien
+                </h3>
+
+                <InterviewBlock
+                  title="Questions"
+                  icon={MessageSquare}
+                  content={interviewQuestions}
+                  onChange={setInterviewQuestions}
+                  onGenerate={handleGenerateQuestions}
+                  generating={generatingQuestions}
+                  emptyMessage="Cliquez sur Générer pour obtenir des questions personnalisées."
+                />
+
+                <InterviewBlock
+                  title="Réponses types"
+                  icon={Sparkles}
+                  content={interviewAnswers}
+                  onChange={setInterviewAnswers}
+                  onGenerate={handleGenerateAnswers}
+                  generating={generatingAnswers}
+                  disabled={!interviewQuestions}
+                  emptyMessage="Générez d'abord des questions, puis obtenez des réponses types pour évaluer le candidat."
+                />
+
+                <InterviewBlock
+                  title="Conseils"
+                  icon={Lightbulb}
+                  content={interviewTips}
+                  onChange={setInterviewTips}
+                  onGenerate={handleGenerateTips}
+                  generating={generatingTips}
+                  emptyMessage="Obtenez des conseils pour mener un entretien structuré et pertinent."
+                />
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleSaveNotes}
+                  disabled={!interviewQuestions && !interviewAnswers && !interviewTips || savingNotes}
+                >
+                  {savingNotes ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Sauvegarder dans les notes
+                </Button>
               </CardContent>
             </Card>
           </div>

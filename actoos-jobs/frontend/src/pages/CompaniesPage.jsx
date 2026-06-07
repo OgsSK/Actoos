@@ -11,7 +11,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 
 const CompaniesPage = () => {
-  const { isCompany } = useAuth(); // <-- pour masquer le CTA si déjà entreprise
+  const { isCompany } = useAuth();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,15 +42,15 @@ const CompaniesPage = () => {
   const fetchCompanies = async () => {
     setLoading(true);
     try {
+      // 1. Récupérer les entreprises vérifiées
       let query = supabase
         .from('companies')
         .select(`
           *,
-          city:cities(name),
-          jobs:jobs(count)
+          city:cities(name)
         `)
         .eq('is_active', true)
-        .eq('is_verified', true) 
+        .eq('is_verified', true)
         .order('created_at', { ascending: false });
 
       if (searchQuery) {
@@ -62,7 +62,30 @@ const CompaniesPage = () => {
 
       const { data, error } = await query.limit(20);
       if (error) throw error;
-      setCompanies(data || []);
+
+      if (data && data.length > 0) {
+        // 2. Compter les offres **actives** pour chaque entreprise
+        const companyIds = data.map(c => c.id);
+        const { data: activeJobs } = await supabase
+          .from('jobs')
+          .select('company_id')
+          .in('company_id', companyIds)
+          .eq('status', 'active');
+
+        const countMap = {};
+        (activeJobs || []).forEach(row => {
+          countMap[row.company_id] = (countMap[row.company_id] || 0) + 1;
+        });
+
+        // 3. Fusionner les comptages avec les entreprises
+        const enriched = data.map(company => ({
+          ...company,
+          activeJobsCount: countMap[company.id] || 0,
+        }));
+        setCompanies(enriched);
+      } else {
+        setCompanies([]);
+      }
     } catch (error) {
       console.error('Error fetching companies:', error);
     } finally {
@@ -179,7 +202,7 @@ const CompaniesPage = () => {
                   <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
                     <Badge className="bg-blue-50 text-blue-700 border-0">
                       <Briefcase className="w-3 h-3 mr-1" />
-                      {company.jobs?.[0]?.count || 0} offres
+                      {company.activeJobsCount || 0} offres
                     </Badge>
                     <Link to={`/entreprises/${company.id}`}>
                       <Button variant="ghost" size="sm">
@@ -195,7 +218,7 @@ const CompaniesPage = () => {
 
         {/* CTA pour les entreprises – masqué si l'utilisateur est déjà une entreprise */}
         {!isCompany && (
-          <div className="mt-16 bg-gradient-to-r from-blue-600 text-white to-blue-700 text-white rounded-2xl p-8 sm:p-12 text-white text-center">
+          <div className="mt-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 sm:p-12 text-white text-center">
             <h2 className="text-2xl font-bold mb-4">
               Vous êtes une entreprise ?
             </h2>

@@ -40,14 +40,16 @@ import CompanyDetailPage from './pages/CompanyDetailPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
 import CandidatePublicProfilePage from './pages/CandidatePublicProfilePage';
 import ApplicationDetailCandidatePage from './pages/ApplicationDetailCandidatePage';
-import './index.css';
 import NotificationsPage from './pages/NotificationsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import AboutPage from './pages/AboutPage';
+import UnsubscribePage from './pages/UnsubscribePage'; // <-- AJOUTÉ
+import CookieBanner from './components/CookieBanner';
 import { Card, CardContent } from './components/ui/card';
 import { Target, Eye, Shield, Zap, Heart, TrendingUp } from 'lucide-react';
-import CookieBanner from './components/CookieBanner';
-import AboutPage from './pages/AboutPage';
+import './index.css';
+import FAQPage from './pages/FAQPage';
 // ---------- Scroll to top on route change ----------
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -95,7 +97,6 @@ const DashboardRouter = () => {
   return <Navigate to="/dashboard/candidat" replace />;
 };
 
-
 const NotFoundPage = () => (
   <div className="pt-20 min-h-screen bg-slate-50 flex items-center justify-center">
     <div className="text-center">
@@ -132,18 +133,22 @@ const AppContent = () => {
           <Route path="/entreprises/:id" element={<CompanyDetailPage />} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
-<Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/a-propos" element={<AboutPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+
           {/* ---------- Legal pages ---------- */}
           <Route path="/cgu" element={<CGUPage />} />
           <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
           <Route path="/cookies" element={<CookiesPage />} />
           <Route path="/contact" element={<ContactPage />} />
-          <Route path="/a-propos" element={<AboutPage />} />
 
           {/* ---------- Auth routes ---------- */}
           <Route path="/connexion" element={<LoginPage />} />
           <Route path="/inscription" element={<RegisterPage />} />
+
+          {/* ---------- Unsubscribe page (newsletter) ---------- */}
+          <Route path="/desabonnement" element={<UnsubscribePage />} /> {/* <-- AJOUTÉ */}
 
           {/* ---------- Protected routes - Candidat ---------- */}
           <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
