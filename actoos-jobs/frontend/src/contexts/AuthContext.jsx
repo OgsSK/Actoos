@@ -28,14 +28,23 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const enrichProfile = useCallback(async (authUser) => {
-    if (!authUser) return;
+  const enrichProfile = useCallback(async (authUser, currentProfile) => {
+    if (!authUser) return currentProfile;
     try {
-      const { data: userData } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', authUser.id)
         .maybeSingle();
+
+      const roleFromDb = userData?.role;
+
+      // Mettre à jour les métadonnées du token avec le rôle de la base
+      if (roleFromDb && roleFromDb !== authUser.user_metadata?.role) {
+        await supabase.auth.updateUser({
+          data: { role: roleFromDb }
+        });
+      }
 
       const { data: candidateData } = await supabase
         .from('candidate_profiles')
@@ -55,28 +64,42 @@ export const AuthProvider = ({ children }) => {
       }
 
       const merged = {
-        ...buildBaseProfile(authUser),
+        ...currentProfile,
         ...(userData || {}),
+        role: roleFromDb || currentProfile.role,
         candidate_profile: candidateData || null,
         subscription_plan: subscriptionPlan,
       };
-      setProfile(merged);
+      return merged;
     } catch (err) {
-      console.warn('Enrichissement profil échoué, on garde les métadonnées:', err);
+      console.warn('Enrichissement profil échoué, on garde le profil de base:', err);
+      return currentProfile;
     }
-  }, [buildBaseProfile]);
+  }, []);
+
+  const handleSession = useCallback(async (authUser) => {
+    if (!authUser) {
+      setUser(null);
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
+    const baseProfile = buildBaseProfile(authUser);
+    setUser(authUser);
+    setProfile(baseProfile);
+
+    const enriched = await enrichProfile(authUser, baseProfile);
+    setProfile(enriched);
+    setLoading(false);
+  }, [buildBaseProfile, enrichProfile]);
 
   useEffect(() => {
     let mounted = true;
 
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
-        if (!mounted) return;
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        setProfile(buildBaseProfile(currentUser));
-        setLoading(false);
-        if (currentUser) enrichProfile(currentUser);
+        if (mounted) handleSession(session?.user ?? null);
       })
       .catch(() => {
         if (mounted) setLoading(false);
@@ -84,12 +107,7 @@ export const AuthProvider = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        if (!mounted) return;
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        setProfile(buildBaseProfile(currentUser));
-        setLoading(false);
-        if (currentUser) enrichProfile(currentUser);
+        if (mounted) handleSession(session?.user ?? null);
       }
     );
 
@@ -97,7 +115,7 @@ export const AuthProvider = ({ children }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [buildBaseProfile, enrichProfile]);
+  }, [handleSession]);
 
   const signUp = async ({ email, password, role = 'candidate', firstName, lastName }) => {
     const { data, error } = await supabase.auth.signUp({
@@ -162,7 +180,23 @@ export const AuthProvider = ({ children }) => {
       .update(updates)
       .eq('id', user.id);
     if (error) throw error;
-    await enrichProfile(user);
+    const enriched = await enrichProfile(user, profile);
+    setProfile(enriched);
+  };
+
+  const refreshProfile = async () => {
+    if (user) {
+      // Rafraîchir d'abord la session Supabase pour avoir le dernier token
+      await supabase.auth.refreshSession();
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUser = session?.user;
+      if (currentUser) {
+        const baseProfile = buildBaseProfile(currentUser);
+        const enriched = await enrichProfile(currentUser, baseProfile);
+        setProfile(enriched);
+        setUser(currentUser);
+      }
+    }
   };
 
   const value = {
@@ -173,7 +207,7 @@ export const AuthProvider = ({ children }) => {
     signUp, signIn, signInWithGoogle, signOut,
     resetPassword, updatePassword,
     updateProfile,
-    refreshProfile: () => user && enrichProfile(user),
+    refreshProfile,
   };
 
   return (

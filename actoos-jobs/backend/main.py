@@ -170,6 +170,10 @@ class BlogUpdateRequest(BaseModel):
     icon: Optional[str] = None
     color: Optional[str] = None
 
+class AdminUpdateUserRoleRequest(BaseModel):
+    user_id: str
+    role: str
+
 def clean_subject(text: str, max_length: int = 50) -> str:
     cleaned = text.replace('\n', ' ').replace('\r', ' ')
     if len(cleaned) > max_length:
@@ -329,7 +333,6 @@ async def stripe_webhook(request: Request):
                 user_id = session.metadata.get("user_id")
                 package_id = session.metadata.get("package_id")
                 if user_id and package_id:
-                    # Récupérer l'entreprise du propriétaire
                     company_resp = httpx.get(
                         f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
                         headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -780,6 +783,86 @@ async def admin_verify_company(req: AdminVerifyCompanyRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# Supprimer une entreprise (admin)
+@app.delete("/api/admin/delete-company/{company_id}")
+async def admin_delete_company(company_id: str):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        company_resp = httpx.get(
+            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=id,name",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        if not company_resp.json():
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+        httpx.delete(
+            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        return {"success": True, "message": "Entreprise supprimée définitivement"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Supprimer un utilisateur (admin)
+@app.delete("/api/admin/delete-user/{user_id}")
+async def admin_delete_user(user_id: str):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        user_resp = httpx.get(
+            f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=id,email",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        if not user_resp.json():
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        httpx.delete(
+            f"{supabase_url}/rest/v1/users?id=eq.{user_id}",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        httpx.delete(
+            f"{supabase_url}/auth/v1/admin/users/{user_id}",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        return {"success": True, "message": "Utilisateur supprimé définitivement"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ═══════════════════════════════════════════════════════════
+#  ✅ UNIQUE ENDPOINT DE CHANGEMENT DE RÔLE (via RPC sync_user_role)
+# ═══════════════════════════════════════════════════════════
+@app.put("/api/admin/update-user-role")
+async def admin_update_user_role(req: AdminUpdateUserRoleRequest):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    valid_roles = ["candidate", "company", "recruiter", "admin", "moderator"]
+    if req.role not in valid_roles:
+        raise HTTPException(status_code=400, detail="Rôle invalide")
+
+    try:
+        response = httpx.post(
+            f"{supabase_url}/rest/v1/rpc/sync_user_role",
+            json={"p_user_id": req.user_id, "p_new_role": req.role},
+            headers={
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json"
+            }
+        )
+        if response.status_code not in (200, 201, 204):
+            raise Exception(f"RPC failed: {response.text}")
+        return {"success": True, "message": "Rôle mis à jour et synchronisé avec le JWT"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ----- Suite de l'Admin -----
 @app.post("/api/notify-admin-new-company")
 async def notify_admin_new_company(req: NewCompanyNotificationRequest):
     if not resend.api_key:
@@ -1095,14 +1178,12 @@ async def delete_blog_post(slug: str):
 def compute_match_score(job: dict, candidate_profile: dict) -> int:
     score = 0.0
 
-    # 1. Compétences (35 points)
     job_skills = set(skill.lower().strip() for skill in (job.get("skills_required") or []))
     cand_skills = set(skill.lower().strip() for skill in (candidate_profile.get("skills") or []))
     if job_skills:
         common = job_skills & cand_skills
         score += (len(common) / len(job_skills)) * 35
 
-    # 2. Niveau d'expérience (15 points)
     exp_levels = ["junior", "intermediaire", "senior", "expert"]
     job_lvl = job.get("experience_level")
     cand_lvl = candidate_profile.get("experience_level")
@@ -1115,7 +1196,6 @@ def compute_match_score(job: dict, candidate_profile: dict) -> int:
         else:
             score += 5
 
-    # 3. Salaire (15 points)
     j_min = job.get("salary_min")
     j_max = job.get("salary_max")
     c_min = candidate_profile.get("desired_salary_min")
@@ -1131,7 +1211,6 @@ def compute_match_score(job: dict, candidate_profile: dict) -> int:
         elif c_min <= j_max or c_max >= j_min:
             score += 5
 
-    # 4. Localisation (15 points)
     job_city = job.get("city_id")
     cand_city = candidate_profile.get("city_id")
     is_remote = job.get("is_remote", False)
@@ -1147,13 +1226,11 @@ def compute_match_score(job: dict, candidate_profile: dict) -> int:
         if job_country and cand_country and str(job_country) == str(cand_country):
             score += 5
 
-    # 5. Type de contrat (10 points)
     job_contract = job.get("contract_type")
     cand_contracts = candidate_profile.get("preferred_contract_types") or []
     if isinstance(cand_contracts, list) and job_contract in cand_contracts:
         score += 10
 
-    # 6. Formation / diplômes (10 points)
     job_req = (job.get("requirements") or "").lower()
     education = candidate_profile.get("education") or []
     if isinstance(education, list) and education and job_req:

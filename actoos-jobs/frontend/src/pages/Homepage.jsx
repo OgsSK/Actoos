@@ -16,6 +16,7 @@ import { Badge } from '../components/ui/badge';
 import {
   Search, MapPin, Briefcase, Building2, Users, ChevronRight,
   TrendingUp, CheckCircle, ArrowRight, Sparkles, Globe, Shield, Zap, Heart, Loader2, Clock,
+  Plus,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import { toast } from 'sonner';
@@ -152,7 +153,7 @@ const CategoriesSection = () => {
 
 // ---------- Recent Jobs Section ----------
 const RecentJobsSection = () => {
-  const { user } = useAuth();
+  const { user, isCompany } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
@@ -164,6 +165,7 @@ const RecentJobsSection = () => {
 
   const handleSaveJob = async (jobId) => {
     if (!user) { toast.error('Connectez-vous pour sauvegarder cette offre'); window.location.href = '/connexion'; return; }
+    if (isCompany) { toast.error('Les entreprises ne peuvent pas ajouter des offres en favoris'); return; }
     if (savedJobs.includes(jobId)) {
       await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', jobId);
       setSavedJobs((prev) => prev.filter((id) => id !== jobId));
@@ -192,7 +194,27 @@ const RecentJobsSection = () => {
     <section className="py-20 bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-12"><div><h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-display">Offres récentes</h2><p className="text-slate-600 mt-2">Les dernières opportunités publiées</p></div><Link to="/emplois"><Button variant="outline" className="hidden sm:flex border-blue-600 text-blue-600 hover:bg-blue-50">Voir toutes les offres <ChevronRight className="w-4 h-4 ml-1" /></Button></Link></div>
-        {loading ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div> : jobs.length === 0 ? <div className="text-center py-12 bg-white rounded-3xl border border-slate-200"><Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-4" /><h3 className="text-lg font-semibold text-slate-900 mb-2">Aucune offre disponible</h3><p className="text-slate-600 mb-4">Les premières offres arrivent bientôt !</p><Link to="/inscription?type=entreprise"><Button className="bg-blue-600 text-white hover:bg-blue-700">Publiez la première offre</Button></Link></div> : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">{jobs.map((job) => (<JobCard key={job.id} job={job} user={user} onSave={handleSaveJob} isSaved={savedJobs.includes(job.id)} />))}</div>}
+        {loading ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div> : jobs.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-3xl border border-slate-200">
+            <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Aucune offre disponible</h3>
+            <p className="text-slate-600 mb-4">Les premières offres arrivent bientôt !</p>
+            {user && isCompany ? (
+              <Link to="/dashboard/entreprise/offres/nouvelle" className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 text-sm font-medium">
+                <Plus className="w-4 h-4" />
+                Publier une offre
+              </Link>
+            ) : (
+              <Link to="/inscription?type=entreprise" className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 text-sm font-medium">
+                Publiez la première offre
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {jobs.map((job) => (<JobCard key={job.id} job={job} user={user} onSave={handleSaveJob} isSaved={savedJobs.includes(job.id)} />))}
+          </div>
+        )}
         <div className="text-center mt-10 sm:hidden"><Link to="/emplois"><Button className="bg-blue-600 text-white hover:bg-blue-700">Voir toutes les offres <ChevronRight className="w-4 h-4 ml-1" /></Button></Link></div>
       </div>
     </section>
@@ -247,7 +269,7 @@ const HowItWorksSection = () => {
 
 // ---------- CTA Section ----------
 const CompanyCTASection = ({ stats }) => {
-  const { isCompany } = useAuth();   // ✅ Correction : on récupère isCompany
+  const { isCompany } = useAuth();
   const { activeJobs, companies, candidates } = stats || {};
 
   return (
@@ -269,10 +291,19 @@ const CompanyCTASection = ({ stats }) => {
               ))}
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link to="/entreprises/inscription">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-8 h-14 text-base shadow-lg">Créer un compte entreprise<ArrowRight className="w-4 h-4 ml-2" /></Button>
-              </Link>
-              {/* ✅ Correction : bouton "Voir nos tarifs" uniquement pour les entreprises connectées */}
+              {isCompany ? (
+                <Link to="/dashboard/entreprise/offres/nouvelle">
+                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-8 h-14 text-base shadow-lg">
+                    <Plus className="w-4 h-4 mr-2" /> Publier une offre
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/inscription?type=entreprise">
+                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-8 h-14 text-base shadow-lg">
+                    Créer un compte entreprise <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              )}
               {isCompany && (
                 <Link to="/tarifs">
                   <Button size="lg" variant="outline" className="border border-white/20 bg-white/5 text-white hover:bg-white/10 rounded-2xl px-8 h-14 text-base">Voir nos tarifs</Button>
