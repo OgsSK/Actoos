@@ -902,7 +902,7 @@ const CompanyDashboard = () => {
                   </div>
                   <div className="w-full bg-blue-100 rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all"
+                      className="bg-blue-600 h-2 rounded-full transition-all text-white"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>

@@ -182,7 +182,7 @@ const LoginPage = () => {
 
               <Button
                 type="submit"
-                className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700"
+                className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700 text-white"
                 disabled={loading}
                 data-testid="login-submit"
               >

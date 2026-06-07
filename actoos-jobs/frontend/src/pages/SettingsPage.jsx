@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { apiFetch } from '../lib/api'; // ← ajout
+import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -21,7 +21,7 @@ const SettingsPage = () => {
   const [loading, setLoading] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
-  const [deleting, setDeleting] = useState(false); // ← ajout
+  const [deleting, setDeleting] = useState(false);
 
   // Changement de mot de passe
   const handleChangePassword = async (e) => {
@@ -79,15 +79,15 @@ const SettingsPage = () => {
     }
   };
 
-  // Déconnexion
+  // Déconnexion robuste
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await signOut();
-      navigate('/');
+      await signOut(); // Appelle la fonction du contexte (qui fait supabase.auth.signOut())
+      // Redirection avec rechargement complet pour nettoyer tous les états
+      window.location.href = '/';
     } catch (err) {
       toast.error(err.message || 'Erreur de déconnexion');
-    } finally {
       setLoggingOut(false);
     }
   };
@@ -114,11 +114,10 @@ const SettingsPage = () => {
         },
       });
       await signOut();
-      navigate('/');
+      window.location.href = '/';
       toast.success('Compte supprimé définitivement');
     } catch (err) {
       toast.error(err.message || 'Erreur lors de la suppression');
-    } finally {
       setDeleting(false);
     }
   };
@@ -256,7 +255,7 @@ const SettingsPage = () => {
           {/* Déconnexion */}
           <Card>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="font-semibold text-slate-900">Se déconnecter</h3>
                   <p className="text-sm text-slate-500">Vous serez redirigé vers la page d'accueil</p>
@@ -265,7 +264,7 @@ const SettingsPage = () => {
                   variant="outline"
                   onClick={handleLogout}
                   disabled={loggingOut}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
+                  className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50"
                 >
                   {loggingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <LogOut className="w-4 h-4 mr-2" />}
                   Déconnexion
@@ -274,35 +273,35 @@ const SettingsPage = () => {
             </CardContent>
           </Card>
 
-          {/* ⚠️ Supprimer le compte – responsive */}
-<Card className="border-red-200 bg-red-50">
-  <CardContent className="p-6">
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h3 className="font-semibold text-red-800 flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 shrink-0" />
-          Zone dangereuse
-        </h3>
-        <p className="text-sm text-red-600 mt-1">
-          Supprimez votre compte et toutes vos données. Cette action est irréversible.
-        </p>
-      </div>
-      <Button
-        variant="outline"
-        onClick={handleDeleteAccount}
-        disabled={deleting}
-        className="w-full sm:w-auto border-red-300 text-red-700 hover:bg-red-100 hover:border-red-400 shrink-0"
-      >
-        {deleting ? (
-          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-        ) : (
-          <Trash2 className="w-4 h-4 mr-2" />
-        )}
-        Supprimer mon compte
-      </Button>
-    </div>
-  </CardContent>
-</Card>
+          {/* Supprimer le compte */}
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold text-red-800 flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 shrink-0" />
+                    Zone dangereuse
+                  </h3>
+                  <p className="text-sm text-red-600 mt-1">
+                    Supprimez votre compte et toutes vos données. Cette action est irréversible.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="w-full sm:w-auto border-red-300 text-red-700 hover:bg-red-100 hover:border-red-400 shrink-0"
+                >
+                  {deleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Trash2 className="w-4 h-4 mr-2" />
+                  )}
+                  Supprimer mon compte
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

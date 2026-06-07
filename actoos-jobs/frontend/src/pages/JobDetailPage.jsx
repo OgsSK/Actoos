@@ -287,7 +287,7 @@ const JobDetailPage = () => {
                         ✅ Déjà postulé
                       </Badge>
                     ) : (
-                      <Button onClick={handleApply} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
+                      <Button onClick={handleApply} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto text-white">
                         Postuler
                       </Button>
                     )}
