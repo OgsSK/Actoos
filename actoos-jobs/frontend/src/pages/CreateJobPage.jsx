@@ -271,25 +271,43 @@ const CreateJobPage = () => {
       }
 
       if (publish) {
-        if (finalStatus === 'pending') {
-          toast.success('Offre soumise pour validation ! Elle sera visible après approbation.');
-          try {
-            await apiFetch('/api/send-job-alerts', { method: 'POST' });
-          } catch (err) {
-            console.error('Erreur envoi alertes emploi:', err);
-          }
-        } else if (finalStatus === 'active') {
-          toast.success('Offre mise à jour avec succès.');
-        }
-      } else {
-        toast.success('Brouillon enregistré');
-      }
+  if (finalStatus === 'pending') {
+    toast.success('Offre soumise pour validation ! Elle sera visible après approbation.');
+    
+    // Envoyer les alertes aux candidats (optionnel, ne pas bloquer en cas d'échec)
+    try {
+      await apiFetch('/api/send-job-alerts', { method: 'POST' });
+    } catch (err) {
+      console.error('Erreur envoi alertes emploi:', err);
+    }
 
-      navigate('/dashboard/entreprise');
+    // Notification à l'administrateur : une nouvelle offre est en attente de validation
+    try {
+      await apiFetch('/api/notify-admin-new-job', {
+        method: 'POST',
+        body: JSON.stringify({
+          job_title: form.title,
+          company_name: company.name,
+          company_email: company.email || user.email
+        })
+      });
+    } catch (err) {
+      console.error('Erreur notification admin job:', err);
+    }
+
+  } else if (finalStatus === 'active') {
+    toast.success('Offre mise à jour avec succès.');
+  }
+} else {
+  toast.success('Brouillon enregistré');
+}
+
+navigate('/dashboard/entreprise');
     } catch (error) {
-      console.error('Error saving job:', error);
-      toast.error("Erreur lors de l'enregistrement");
-    } finally {
+  console.error('Error saving job:', error);
+  // Affiche le message d'erreur réel de Supabase
+  toast.error(error?.message || error?.details || "Erreur lors de l'enregistrement");
+} finally {
       setSaving(false);
     }
   };

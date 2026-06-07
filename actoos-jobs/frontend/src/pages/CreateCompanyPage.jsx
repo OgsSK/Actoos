@@ -327,12 +327,11 @@ const CreateCompanyPage = () => {
                     <Globe className="w-4 h-4 inline mr-1" />Site web
                   </label>
                   <Input
-                    value={form.website}
-                    onChange={(e) => setForm({ ...form, website: e.target.value })}
-                    placeholder="https://www.example.com"
-                    type="url"
-                    data-testid="company-website-input"
-                  />
+  value={form.website}
+  onChange={(e) => setForm({ ...form, website: e.target.value })}
+  placeholder="example.com"
+  data-testid="company-website-input"
+/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">

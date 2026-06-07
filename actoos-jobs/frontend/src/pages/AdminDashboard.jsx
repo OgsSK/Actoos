@@ -935,16 +935,16 @@ const AdminDashboard = () => {
 
   // Nouvelle fonction : supprimer une entreprise
   const handleDeleteCompany = async (company) => {
-    if (!window.confirm(`Supprimer définitivement l'entreprise "${company.name}" et toutes ses offres ?`)) return;
-    try {
-      await apiFetch(`/api/admin/delete-company/${company.id}`, { method: 'DELETE' });
-      setCompanies((prev) => prev.filter((c) => c.id !== company.id));
-      toast.success('Entreprise supprimée définitivement');
-      fetchData(); // rafraîchir les stats
-    } catch (error) {
-      toast.error('Erreur lors de la suppression');
-    }
-  };
+  if (!window.confirm(`Supprimer définitivement l'entreprise "${company.name}" ?`)) return;
+  try {
+    await apiFetch(`/api/admin/delete-company/${company.id}`, { method: 'DELETE' });
+    setCompanies((prev) => prev.filter((c) => c.id !== company.id));
+    toast.success('Entreprise supprimée');
+  } catch (error) {
+    console.error('Delete company error:', error);
+    toast.error(error.message || 'Erreur');
+  }
+};
 
   const handleViewCompanyJobs = (company) => {
     setActiveTab('jobs');

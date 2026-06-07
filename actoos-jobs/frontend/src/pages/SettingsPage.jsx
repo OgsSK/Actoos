@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { apiFetch } from '../lib/api'; // ← ajout
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { toast } from 'sonner';
-import { User, Lock, Loader2, ChevronLeft, Save, LogOut, Mail } from 'lucide-react';
+import {
+  User, Lock, Loader2, ChevronLeft, Save, LogOut, Mail,
+  Trash2, AlertTriangle
+} from 'lucide-react';
 
 const SettingsPage = () => {
   const { user, signOut, updatePassword, isCompany } = useAuth();
@@ -17,6 +21,7 @@ const SettingsPage = () => {
   const [loading, setLoading] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false); // ← ajout
 
   // Changement de mot de passe
   const handleChangePassword = async (e) => {
@@ -50,7 +55,6 @@ const SettingsPage = () => {
     }
     setEmailLoading(true);
     try {
-      // Vérifier d'abord le mot de passe
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.email,
         password: currentPassword,
@@ -60,7 +64,6 @@ const SettingsPage = () => {
         return;
       }
 
-      // Demander la mise à jour de l'email (envoie un lien de confirmation)
       const { error } = await supabase.auth.updateUser({ email: newEmail });
       if (error) throw error;
 
@@ -86,6 +89,37 @@ const SettingsPage = () => {
       toast.error(err.message || 'Erreur de déconnexion');
     } finally {
       setLoggingOut(false);
+    }
+  };
+
+  // Suppression du compte (RGPD)
+  const handleDeleteAccount = async () => {
+    if (
+      !window.confirm(
+        'Supprimer définitivement votre compte ? Cette action est irréversible, toutes vos données seront effacées.'
+      )
+    )
+      return;
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Impossible de vous authentifier');
+        return;
+      }
+      await apiFetch('/api/user/delete-account', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      await signOut();
+      navigate('/');
+      toast.success('Compte supprimé définitivement');
+    } catch (err) {
+      toast.error(err.message || 'Erreur lors de la suppression');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -239,6 +273,36 @@ const SettingsPage = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* ⚠️ Supprimer le compte – responsive */}
+<Card className="border-red-200 bg-red-50">
+  <CardContent className="p-6">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h3 className="font-semibold text-red-800 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          Zone dangereuse
+        </h3>
+        <p className="text-sm text-red-600 mt-1">
+          Supprimez votre compte et toutes vos données. Cette action est irréversible.
+        </p>
+      </div>
+      <Button
+        variant="outline"
+        onClick={handleDeleteAccount}
+        disabled={deleting}
+        className="w-full sm:w-auto border-red-300 text-red-700 hover:bg-red-100 hover:border-red-400 shrink-0"
+      >
+        {deleting ? (
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        ) : (
+          <Trash2 className="w-4 h-4 mr-2" />
+        )}
+        Supprimer mon compte
+      </Button>
+    </div>
+  </CardContent>
+</Card>
         </div>
       </div>
     </div>
