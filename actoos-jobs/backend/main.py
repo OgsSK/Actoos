@@ -7,11 +7,18 @@ import stripe
 from dotenv import load_dotenv
 import resend
 import httpx
-import random
 import base64
-import uuid
+from pathlib import Path
+import json
+from datetime import datetime
 
-load_dotenv()
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path)
+print(f"✅ Chargement du .env depuis : {env_path}")
+print(f"   STRIPE_SECRET_KEY présente : {'oui' if os.getenv('STRIPE_SECRET_KEY') else 'non'}")
+print(f"   RESEND_API_KEY présente : {'oui' if os.getenv('RESEND_API_KEY') else 'non'}")
+print(f"   SUPABASE_URL présente : {'oui' if os.getenv('SUPABASE_URL') else 'non'}")
+print(f"   SUPABASE_SERVICE_ROLE_KEY présente : {'oui' if os.getenv('SUPABASE_SERVICE_ROLE_KEY') else 'non'}")
 
 app = FastAPI(title="Actoos Jobs API")
 
@@ -75,7 +82,7 @@ class AIAgentRequest(BaseModel):
 
 class CancelSubscriptionRequest(BaseModel):
     user_id: str
-    reason: Optional[str] = None  # ajout de la raison
+    reason: Optional[str] = None
 
 class SendInterviewLinkRequest(BaseModel):
     email: str
@@ -136,11 +143,52 @@ class AdminBanUserRequest(BaseModel):
     user_id: str
     reason: Optional[str] = ""
 
+class NewCompanyNotificationRequest(BaseModel):
+    company_name: str
+    owner_email: str
+    owner_name: str
+
+# --- Blog models ---
+class BlogGenerateRequest(BaseModel):
+    title: str
+    keywords: Optional[str] = ""
+    audience: Optional[str] = "all"
+    category: Optional[str] = "Carrière"
+    read_time: Optional[str] = "5 min"
+    author: Optional[str] = "Équipe Actoos"
+    icon: Optional[str] = "FileText"
+    color: Optional[str] = "blue"
+
+class BlogUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    excerpt: Optional[str] = None
+    content: Optional[str] = None
+    category: Optional[str] = None
+    audience: Optional[str] = None
+    read_time: Optional[str] = None
+    author: Optional[str] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
+
 def clean_subject(text: str, max_length: int = 50) -> str:
     cleaned = text.replace('\n', ' ').replace('\r', ' ')
     if len(cleaned) > max_length:
         cleaned = cleaned[:max_length-3] + '...'
     return cleaned
+
+# ----- Fichier blog -----
+BLOG_FILE = Path(__file__).parent / 'data' / 'blog.json'
+
+def load_blog_posts():
+    if not BLOG_FILE.exists():
+        return []
+    with open(BLOG_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def save_blog_posts(posts):
+    BLOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(BLOG_FILE, 'w', encoding='utf-8') as f:
+        json.dump(posts, f, indent=2, ensure_ascii=False, default=str)
 
 # ----- Endpoints -----
 @app.get("/api/health")
@@ -273,6 +321,38 @@ async def stripe_webhook(request: Request):
             if session.id in payment_transactions:
                 payment_transactions[session.id]["payment_status"] = "paid"
                 payment_transactions[session.id]["status"] = "completed"
+            
+            # Mise à jour de l'entreprise abonnée
+            supabase_url = os.getenv("SUPABASE_URL")
+            supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            if supabase_url and supabase_key and session.metadata:
+                user_id = session.metadata.get("user_id")
+                package_id = session.metadata.get("package_id")
+                if user_id and package_id:
+                    # Récupérer l'entreprise du propriétaire
+                    company_resp = httpx.get(
+                        f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
+                        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+                    )
+                    companies = company_resp.json()
+                    if companies and len(companies) > 0:
+                        company = companies[0]
+                        plan_name = "free"
+                        if "pro" in package_id:
+                            plan_name = "pro"
+                        elif "business" in package_id:
+                            plan_name = "business"
+                        update_data = {
+                            "subscription_plan": plan_name,
+                            "stripe_subscription_id": session.subscription,
+                            "stripe_customer_id": session.customer,
+                            "subscription_expires_at": None
+                        }
+                        httpx.patch(
+                            f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
+                            json=update_data,
+                            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+                        )
         elif event.type == "checkout.session.expired":
             session = event.data.object
             if session.id in payment_transactions:
@@ -297,7 +377,6 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
         raise HTTPException(status_code=500, detail="Supabase not configured")
     
     try:
-        # Récupérer l'entreprise
         company_resp = httpx.get(
             f"{supabase_url}/rest/v1/companies?owner_id=eq.{req.user_id}&select=id,stripe_subscription_id",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -310,10 +389,8 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
         if not subscription_id:
             raise HTTPException(status_code=400, detail="Aucun abonnement actif")
         
-        # Annuler l'abonnement Stripe
         stripe.Subscription.delete(subscription_id)
         
-        # Mettre à jour la base : plan gratuit + raison
         httpx.patch(
             f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
             json={
@@ -327,6 +404,37 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
         
         return {"success": True, "message": "Abonnement résilié avec succès."}
     except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ----- Portail client Stripe -----
+@app.post("/api/stripe/portal")
+async def stripe_portal(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="ID utilisateur requis")
+    
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    company_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=stripe_customer_id",
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    )
+    companies = company_resp.json()
+    if not companies or len(companies) == 0 or not companies[0].get("stripe_customer_id"):
+        raise HTTPException(status_code=404, detail="Aucun abonnement Stripe trouvé pour cette entreprise")
+    
+    customer_id = companies[0]["stripe_customer_id"]
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url="https://jobs.actoos.com/dashboard/entreprise",
+        )
+        return {"url": session.url}
+    except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 # ----- Contact & Newsletter -----
@@ -369,6 +477,30 @@ async def newsletter_subscribe(req: NewsletterRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ----- Désabonnement newsletter -----
+@app.get("/api/newsletter/unsubscribe")
+async def newsletter_unsubscribe(email: str = Query(...)):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        resp = httpx.get(
+            f"{supabase_url}/rest/v1/newsletter_subscribers?email=eq.{email}&is_active=eq.true",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        if resp.status_code != 200 or not resp.json():
+            return {"success": False, "message": "Adresse non trouvée ou déjà désabonnée."}
+
+        httpx.patch(
+            f"{supabase_url}/rest/v1/newsletter_subscribers?email=eq.{email}",
+            json={"is_active": False, "unsubscribed_at": "now()"},
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        return {"success": True, "message": "Vous avez été désabonné avec succès."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ----- Admin Newsletter -----
 @app.post("/api/admin/send-newsletter")
 async def admin_send_newsletter(req: AdminNewsletterRequest):
@@ -386,17 +518,26 @@ async def admin_send_newsletter(req: AdminNewsletterRequest):
         subscribers = subscribers_resp.json()
         if not isinstance(subscribers, list) or len(subscribers) == 0:
             return {"success": True, "message": "Aucun abonné trouvé."}
-        emails = [s["email"] for s in subscribers]
-        batch_size = 50
-        for i in range(0, len(emails), batch_size):
-            batch = emails[i:i+batch_size]
-            resend.Emails.send({
-                "from": "Actoos Jobs <noreply@actoos.com>",
-                "to": batch,
-                "subject": req.subject,
-                "html": req.content
-            })
-        return {"success": True, "message": f"Newsletter envoyée à {len(emails)} abonnés."}
+
+        success_count = 0
+        for sub in subscribers:
+            email = sub["email"]
+            unsubscribe_link = f"https://jobs.actoos.com/desabonnement?email={email}"
+            footer = f'<br><br><small style="color:#888;">Vous recevez cet email car vous êtes inscrit à la newsletter Actoos Jobs. <a href="{unsubscribe_link}">Se désabonner</a></small>'
+            html_personalized = req.content + footer
+
+            try:
+                resend.Emails.send({
+                    "from": "Actoos Jobs <noreply@actoos.com>",
+                    "to": [email],
+                    "subject": req.subject,
+                    "html": html_personalized
+                })
+                success_count += 1
+            except Exception as e:
+                print(f"Erreur envoi à {email}: {e}")
+
+        return {"success": True, "message": f"Newsletter envoyée à {success_count}/{len(subscribers)} abonnés."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -432,6 +573,7 @@ AGENT_PROMPTS = {
     "interview-answers": "Pour chaque question d'entretien fournie, propose une réponse type structurée et convaincante. Utilise la méthode STAR quand c'est pertinent. Retourne les questions et les réponses.",
     "interview-tips": "Donne des conseils personnalisés pour réussir l'entretien ciblant ce poste spécifique. Inclus des recommandations sur la tenue, le langage corporel, les questions à poser, et les points à mettre en avant. Maximum 5 conseils. Retourne une liste à puces.",
     "cv-analysis": "Tu es un expert en recrutement et en rédaction de CV. Analyse le CV suivant et donne 3 à 5 suggestions concrètes pour l'améliorer, sans le réécrire. Mentionne les points faibles, les incohérences, et les éléments manquants. Sois constructif. Retourne uniquement les suggestions, sous forme de liste à puces.",
+    "blog-post": "Tu es un rédacteur professionnel spécialisé en emploi et recrutement en Afrique. Rédige un article de blog complet sur le sujet donné. Structure la réponse en HTML avec des titres <h2>, des paragraphes <p>, des listes <ul>. Fournis également un extrait (2 phrases) et une catégorie pertinente. Format de réponse JSON : {\"title\":\"...\", \"excerpt\":\"...\", \"content\":\"...\", \"category\":\"...\"}",
 }
 
 FALLBACK_MODELS = [
@@ -638,11 +780,6 @@ async def admin_verify_company(req: AdminVerifyCompanyRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-class NewCompanyNotificationRequest(BaseModel):
-    company_name: str
-    owner_email: str
-    owner_name: str
-
 @app.post("/api/notify-admin-new-company")
 async def notify_admin_new_company(req: NewCompanyNotificationRequest):
     if not resend.api_key:
@@ -747,27 +884,28 @@ async def admin_delete_job(req: AdminActionRequest):
 @app.post("/api/report")
 async def create_report(req: ReportRequest):
     supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
-        rpc_url = f"{supabase_url}/rest/v1/rpc/create_report"
         response = httpx.post(
-            rpc_url,
+            f"{supabase_url}/rest/v1/reports",
             json={
-                "_reporter_id": req.reporter_id,
-                "_reported_item_type": req.reported_item_type,
-                "_reported_item_id": req.reported_item_id,
-                "_reason": req.reason
+                "reporter_id": req.reporter_id,
+                "reported_item_type": req.reported_item_type,
+                "reported_item_id": req.reported_item_id,
+                "reason": req.reason,
+                "status": "pending"
             },
             headers={
                 "apikey": supabase_key,
                 "Authorization": f"Bearer {supabase_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal"
             }
         )
-        if response.status_code != 200:
-            raise Exception(f"RPC failed: {response.text}")
+        if response.status_code not in (200, 201):
+            raise Exception(f"Report creation failed: {response.text}")
         return {"success": True, "message": "Signalement envoyé"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -837,6 +975,7 @@ async def ban_user(req: AdminBanUserRequest):
         return {"success": True, "message": "Utilisateur banni"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/admin/cancellations")
 async def get_cancellations():
     supabase_url = os.getenv("SUPABASE_URL")
@@ -852,38 +991,179 @@ async def get_cancellations():
         return {"success": True, "cancellations": companies}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-def compute_match_score(job: dict, candidate_profile: dict) -> int:
-    score = 0
-    # Compétences (60 points)
-    job_skills = job.get("skills_required") or []
-    cand_skills = candidate_profile.get("skills") or []
-    if job_skills:
-        common = set(job_skills) & set(cand_skills)
-        score += (len(common) / len(job_skills)) * 60
 
-    # Niveau d'expérience (20 points)
+# ============================
+#  BLOG (Fichier JSON + IA)
+# ============================
+
+@app.get("/api/blog/posts")
+async def get_blog_posts(audience: Optional[str] = None):
+    posts = load_blog_posts()
+    if audience and audience != "all":
+        posts = [p for p in posts if p.get("audience") == audience or p.get("audience") == "all"]
+    return posts
+
+@app.get("/api/blog/posts/{slug}")
+async def get_blog_post(slug: str):
+    posts = load_blog_posts()
+    for post in posts:
+        if post.get("slug") == slug:
+            return post
+    raise HTTPException(status_code=404, detail="Article introuvable")
+
+@app.post("/api/admin/blog/generate")
+async def generate_blog_post(req: BlogGenerateRequest):
+    if not OPENROUTER_API_KEY:
+        raise HTTPException(status_code=500, detail="OpenRouter API key not configured")
+    prompt = f"Titre : {req.title}\n"
+    if req.keywords:
+        prompt += f"Mots-clés : {req.keywords}\n"
+    prompt += f"Audience : {req.audience}\n"
+    messages = [
+        {"role": "system", "content": AGENT_PROMPTS["blog-post"]},
+        {"role": "user", "content": prompt}
+    ]
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        for model in FALLBACK_MODELS:
+            try:
+                response = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "HTTP-Referer": "https://jobs.actoos.com", "X-Title": "Actoos Jobs AI"},
+                    json={"model": model, "messages": messages, "temperature": 0.8, "max_tokens": 1500}
+                )
+                data = response.json()
+                if "choices" in data and len(data["choices"]) > 0:
+                    text = data["choices"][0]["message"]["content"].strip()
+                    try:
+                        article = json.loads(text)
+                    except:
+                        article = {
+                            "title": req.title,
+                            "excerpt": req.keywords or "Article généré automatiquement",
+                            "content": f"<p>{text}</p>",
+                            "category": req.category
+                        }
+                    slug = req.title.lower().replace(" ", "-")[:80]
+                    posts = load_blog_posts()
+                    new_id = max([p.get("id", 0) for p in posts], default=0) + 1
+                    new_post = {
+                        "id": new_id,
+                        "title": article.get("title", req.title),
+                        "slug": slug,
+                        "excerpt": article.get("excerpt", ""),
+                        "content": article.get("content", ""),
+                        "category": article.get("category", req.category),
+                        "audience": req.audience,
+                        "read_time": req.read_time,
+                        "author": req.author,
+                        "icon": req.icon,
+                        "color": req.color,
+                        "published_at": datetime.utcnow().isoformat()
+                    }
+                    posts.append(new_post)
+                    save_blog_posts(posts)
+                    return new_post
+            except Exception as e:
+                print(f"Erreur modèle {model}: {e}")
+                continue
+    raise HTTPException(status_code=502, detail="Échec de la génération par IA")
+
+@app.put("/api/admin/blog/{slug}")
+async def update_blog_post(slug: str, req: BlogUpdateRequest):
+    posts = load_blog_posts()
+    for i, post in enumerate(posts):
+        if post.get("slug") == slug:
+            updates = req.dict(exclude_unset=True)
+            posts[i].update(updates)
+            save_blog_posts(posts)
+            return posts[i]
+    raise HTTPException(status_code=404, detail="Article non trouvé")
+
+@app.delete("/api/admin/blog/{slug}")
+async def delete_blog_post(slug: str):
+    posts = load_blog_posts()
+    initial_len = len(posts)
+    posts = [p for p in posts if p.get("slug") != slug]
+    if len(posts) == initial_len:
+        raise HTTPException(status_code=404, detail="Article non trouvé")
+    save_blog_posts(posts)
+    return {"success": True}
+
+# ============================
+#  MATCHING SCORE (avancé)
+# ============================
+def compute_match_score(job: dict, candidate_profile: dict) -> int:
+    score = 0.0
+
+    # 1. Compétences (35 points)
+    job_skills = set(skill.lower().strip() for skill in (job.get("skills_required") or []))
+    cand_skills = set(skill.lower().strip() for skill in (candidate_profile.get("skills") or []))
+    if job_skills:
+        common = job_skills & cand_skills
+        score += (len(common) / len(job_skills)) * 35
+
+    # 2. Niveau d'expérience (15 points)
     exp_levels = ["junior", "intermediaire", "senior", "expert"]
     job_lvl = job.get("experience_level")
     cand_lvl = candidate_profile.get("experience_level")
     if job_lvl and cand_lvl and job_lvl in exp_levels and cand_lvl in exp_levels:
         diff = abs(exp_levels.index(job_lvl) - exp_levels.index(cand_lvl))
         if diff == 0:
-            score += 20
+            score += 15
         elif diff == 1:
             score += 10
         else:
             score += 5
 
-    # Prétentions salariales (20 points)
-    j_min, j_max = job.get("salary_min"), job.get("salary_max")
-    c_min, c_max = candidate_profile.get("desired_salary_min"), candidate_profile.get("desired_salary_max")
+    # 3. Salaire (15 points)
+    j_min = job.get("salary_min")
+    j_max = job.get("salary_max")
+    c_min = candidate_profile.get("desired_salary_min")
+    c_max = candidate_profile.get("desired_salary_max")
     if j_min and j_max and c_min and c_max:
         if c_min <= j_max and c_max >= j_min:
-            score += 20
+            overlap = min(j_max, c_max) - max(j_min, c_min)
+            range_job = j_max - j_min
+            if range_job > 0:
+                score += (overlap / range_job) * 15
+            else:
+                score += 15
         elif c_min <= j_max or c_max >= j_min:
-            score += 10
+            score += 5
 
-    return min(score, 100)
+    # 4. Localisation (15 points)
+    job_city = job.get("city_id")
+    cand_city = candidate_profile.get("city_id")
+    is_remote = job.get("is_remote", False)
+    cand_remote = candidate_profile.get("is_open_to_remote", False)
+
+    if job_city and cand_city and str(job_city) == str(cand_city):
+        score += 15
+    elif is_remote and cand_remote:
+        score += 10
+    else:
+        job_country = job.get("country_id")
+        cand_country = candidate_profile.get("country_id")
+        if job_country and cand_country and str(job_country) == str(cand_country):
+            score += 5
+
+    # 5. Type de contrat (10 points)
+    job_contract = job.get("contract_type")
+    cand_contracts = candidate_profile.get("preferred_contract_types") or []
+    if isinstance(cand_contracts, list) and job_contract in cand_contracts:
+        score += 10
+
+    # 6. Formation / diplômes (10 points)
+    job_req = (job.get("requirements") or "").lower()
+    education = candidate_profile.get("education") or []
+    if isinstance(education, list) and education and job_req:
+        edu_text = " ".join([e.get("title", "") + " " + e.get("description", "") for e in education]).lower()
+        keywords = ["bac", "licence", "master", "doctorat", "ingénieur", "bts", "dut"]
+        matches = sum(1 for kw in keywords if kw in job_req and kw in edu_text)
+        if matches:
+            score += min(10, matches * 3)
+
+    return min(100, int(score))
 
 @app.get("/api/jobs/{job_id}/match-score")
 async def get_match_score(job_id: str, user_id: str = Query(...)):
@@ -900,7 +1180,8 @@ async def get_match_score(job_id: str, user_id: str = Query(...)):
     cand = cand_resp.json()
     cand = cand[0] if cand else {}
     score = compute_match_score(job, cand)
-    return {"score": score}    
+    return {"score": score}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)

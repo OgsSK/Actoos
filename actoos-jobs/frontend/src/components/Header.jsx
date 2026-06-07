@@ -14,16 +14,8 @@ import {
 } from './ui/dropdown-menu';
 
 import {
-  Briefcase,
-  Menu,
-  X,
-  User,
-  Building2,
-  ChevronDown,
-  LogOut,
-  Settings,
-  LayoutDashboard,
-  Shield
+  Briefcase, Menu, X, User, Building2, ChevronDown,
+  LogOut, Settings, LayoutDashboard, Shield, Bell
 } from 'lucide-react';
 
 import { cn } from '../lib/utils';
@@ -54,7 +46,8 @@ const Header = ({ user, onLogout }) => {
   const navLinks = [
     { label: 'Emplois', href: '/emplois' },
     { label: 'Entreprises', href: '/entreprises' },
-    { label: 'Tarifs', href: '/tarifs' },
+    // ✅ Tarifs uniquement pour les entreprises connectées
+    ...(isCompany ? [{ label: 'Tarifs', href: '/tarifs' }] : []),
     { label: 'Blog', href: '/blog' },
   ];
 
@@ -233,6 +226,7 @@ const Header = ({ user, onLogout }) => {
                         onClick={() => navigate('/alertes')}
                         className="cursor-pointer rounded-xl px-3 py-2 focus:bg-slate-100 focus:text-slate-900"
                       >
+                        <Bell className="w-4 h-4 mr-3" />
                         Créer une alerte
                       </DropdownMenuItem>
                     )}
@@ -259,18 +253,16 @@ const Header = ({ user, onLogout }) => {
                       </>
                     )}
 
-                    <DropdownMenuItem
-                      disabled
-                      className="mt-1 opacity-100 !cursor-default rounded-xl px-3 py-2"
-                    >
-                      <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">
-                        Plan : {
-                          profile?.role === 'company'
-                            ? (profile?.subscription_plan || 'free')
-                            : '—'
-                        }
-                      </Badge>
-                    </DropdownMenuItem>
+                    {isCompany && (
+                      <DropdownMenuItem
+                        disabled
+                        className="mt-1 opacity-100 !cursor-default rounded-xl px-3 py-2"
+                      >
+                        <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">
+                          Plan : {profile?.subscription_plan || 'free'}
+                        </Badge>
+                      </DropdownMenuItem>
+                    )}
 
                     <DropdownMenuSeparator className="my-2" />
 

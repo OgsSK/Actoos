@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -8,41 +9,75 @@ import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import {
-  Building2, Briefcase, Users, Eye, FileText, Plus, Settings,
-  ChevronRight, TrendingUp, Clock, CheckCircle, XCircle, Loader2,
-  Edit, Trash2, MoreVertical, Globe, Mail, Phone, MapPin, Calendar, AlertTriangle, X
+  Building2,
+  Briefcase,
+  Users,
+  Eye,
+  FileText,
+  Plus,
+  Settings,
+  ChevronRight,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Edit,
+  Trash2,
+  MoreVertical,
+  Globe,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  AlertTriangle,
+  X,
+  Send,
+  Undo2,
+  CreditCard,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
 // ---------- Stats Card ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => (
-  <Card className="border-slate-200">
-    <CardContent className="p-5">
+  <Card className="border-slate-200 overflow-hidden">
+    <CardContent className="p-4 sm:p-5">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-slate-500 truncate">{label}</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+          <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{value}</p>
           {trend !== undefined && (
-            <p className={cn('text-xs mt-1 flex items-center gap-1', trend > 0 ? 'text-green-600' : 'text-slate-500')}>
+            <p
+              className={cn(
+                'text-xs mt-1 flex items-center gap-1',
+                trend > 0 ? 'text-green-600' : 'text-slate-500'
+              )}
+            >
               <TrendingUp className="w-3 h-3" />
-              {trend > 0 ? '+' : ''}{trend}% ce mois
+              {trend > 0 ? '+' : ''}
+              {trend}% ce mois
             </p>
           )}
         </div>
-        <div className={cn(
-          'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
-          color === 'blue' && 'bg-blue-100',
-          color === 'green' && 'bg-green-100',
-          color === 'purple' && 'bg-purple-100',
-          color === 'orange' && 'bg-orange-100'
-        )}>
-          <Icon className={cn(
-            'w-6 h-6',
-            color === 'blue' && 'text-blue-600',
-            color === 'green' && 'text-green-600',
-            color === 'purple' && 'text-purple-600',
-            color === 'orange' && 'text-orange-600'
-          )} />
+
+        <div
+          className={cn(
+            'w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0',
+            color === 'blue' && 'bg-blue-100',
+            color === 'green' && 'bg-green-100',
+            color === 'purple' && 'bg-purple-100',
+            color === 'orange' && 'bg-orange-100'
+          )}
+        >
+          <Icon
+            className={cn(
+              'w-5 h-5 sm:w-6 sm:h-6',
+              color === 'blue' && 'text-blue-600',
+              color === 'green' && 'text-green-600',
+              color === 'purple' && 'text-purple-600',
+              color === 'orange' && 'text-orange-600'
+            )}
+          />
         </div>
       </div>
     </CardContent>
@@ -50,108 +85,240 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => (
 );
 
 // ---------- Company Job Card ----------
-const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
+const CompanyJobCard = ({
+  job,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+  onSubmitForReview,
+  onCancelSubmission,
+  isCompanyVerified,
+}) => {
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
+  const buttonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
 
   const statusConfig = {
     draft: { label: 'Brouillon', color: 'bg-slate-100 text-slate-700' },
+    pending: { label: 'En validation', color: 'bg-yellow-100 text-yellow-700' },
     active: { label: 'Publiée', color: 'bg-green-100 text-green-700' },
     paused: { label: 'En pause', color: 'bg-yellow-100 text-yellow-700' },
     closed: { label: 'Fermée', color: 'bg-red-100 text-red-700' },
     expired: { label: 'Expirée', color: 'bg-slate-100 text-slate-700' },
-    pending: { label: 'En validation', color: 'bg-yellow-100 text-yellow-700' },
+    rejected: { label: 'Refusée', color: 'bg-red-100 text-red-700' },
   };
+
   const status = statusConfig[job.status] || statusConfig.draft;
 
+  const updateMenuPosition = () => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const menuWidth = 240;
+    const estimatedMenuHeight = 280;
+    const gap = 8;
+    const viewportPadding = 12;
+    const left = Math.max(
+      viewportPadding,
+      Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - viewportPadding)
+    );
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const top =
+      spaceBelow >= estimatedMenuHeight || spaceBelow >= spaceAbove
+        ? rect.bottom + gap
+        : Math.max(viewportPadding, rect.top - estimatedMenuHeight - gap);
+    setMenuPos({ top, left });
+  };
+
+  const openMenu = () => {
+    if (!showMenu) updateMenuPosition();
+    setShowMenu((prev) => !prev);
+  };
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const close = () => setShowMenu(false);
+    const reposition = () => updateMenuPosition();
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', close, true);
+    return () => {
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [showMenu]);
+
+  const menu = showMenu
+    ? createPortal(
+        <>
+          <div className="fixed inset-0 z-[9998]" onClick={() => setShowMenu(false)} />
+          <div
+            className="fixed z-[9999] w-[240px] max-w-[calc(100vw-24px)] bg-white rounded-xl shadow-2xl border border-slate-200 py-1"
+            style={{ top: menuPos.top, left: menuPos.left }}
+          >
+            {(job.status === 'draft' || job.status === 'rejected') && (
+              <button
+                onClick={() => {
+                  onEdit(job);
+                  setShowMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <Edit className="w-4 h-4" />
+                Modifier
+              </button>
+            )}
+
+            <Link
+              to="/dashboard/entreprise/candidatures"
+              onClick={() => setShowMenu(false)}
+              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              <Users className="w-4 h-4" />
+              Voir les candidatures
+            </Link>
+
+            {job.status === 'draft' && (
+              <button
+                onClick={() => {
+                  if (!isCompanyVerified) {
+                    toast.error("Votre entreprise n'est pas encore vérifiée.");
+                    setShowMenu(false);
+                    return;
+                  }
+                  onSubmitForReview(job);
+                  setShowMenu(false);
+                }}
+                disabled={!isCompanyVerified}
+                className={cn(
+                  'w-full flex items-center gap-2 px-4 py-3 text-sm',
+                  isCompanyVerified ? 'text-blue-600 hover:bg-slate-50' : 'text-slate-400 cursor-not-allowed'
+                )}
+              >
+                <Send className="w-4 h-4" />
+                {isCompanyVerified ? 'Soumettre pour validation' : 'Validation entreprise requise'}
+              </button>
+            )}
+
+            {job.status === 'pending' && (
+              <button
+                onClick={() => {
+                  onCancelSubmission(job);
+                  setShowMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-amber-600 hover:bg-slate-50"
+              >
+                <Undo2 className="w-4 h-4" />
+                Annuler la soumission
+              </button>
+            )}
+
+            {job.status === 'active' && (
+              <button
+                onClick={() => {
+                  onToggleStatus(job, 'paused');
+                  setShowMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-yellow-600 hover:bg-slate-50"
+              >
+                <Clock className="w-4 h-4" />
+                Mettre en pause
+              </button>
+            )}
+
+            {job.status === 'paused' && (
+              <button
+                onClick={() => {
+                  onToggleStatus(job, 'active');
+                  setShowMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Republier
+              </button>
+            )}
+
+            {job.status !== 'pending' && (
+              <button
+                onClick={() => {
+                  onDelete(job);
+                  setShowMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                Supprimer
+              </button>
+            )}
+          </div>
+        </>,
+        document.body
+      )
+    : null;
+
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-      <div className="flex-1 min-w-0 w-full">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link to={`/emplois/${job.id}`} className="font-medium text-slate-900 hover:text-blue-600 line-clamp-1">
-            {job.title}
-          </Link>
-          <Badge className={cn(status.color, 'border-0 text-xs w-fit')}>
-            {status.label}
-          </Badge>
+    <div className="flex flex-col gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <Link
+              to={`/emplois/${job.id}`}
+              className="font-semibold text-slate-900 hover:text-blue-600 text-sm sm:text-base"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {job.title}
+            </Link>
+
+            <Badge className={cn(status.color, 'border-0 text-xs w-fit')}>
+              {status.label}
+            </Badge>
+          </div>
+
+          <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-slate-500">
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              {job.city?.name || 'Non spécifié'}
+            </span>
+
+            <Badge className={cn(contractInfo.color, 'border-0 text-xs')}>
+              {contractInfo.label}
+            </Badge>
+
+            <span className="flex items-center gap-1">
+              <Eye className="w-3 h-3" />
+              {job.views_count || 0} vues
+            </span>
+
+            <span className="flex items-center gap-1">
+              <FileText className="w-3 h-3" />
+              {job.applications_count || 0} candidatures
+            </span>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 mt-1 text-sm text-slate-500">
-          <span className="flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
-            {job.city?.name || 'Non spécifié'}
-          </span>
-          <Badge className={cn(contractInfo.color, 'border-0 text-xs')}>
-            {contractInfo.label}
-          </Badge>
-          <span className="flex items-center gap-1">
-            <Eye className="w-3 h-3" />
-            {job.views_count || 0} vues
-          </span>
-          <span className="flex items-center gap-1">
-            <FileText className="w-3 h-3" />
-            {job.applications_count || 0} candidatures
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-        <span className="text-xs text-slate-400">{formatRelative(job.created_at)}</span>
-        <div className="relative">
-          <Button variant="ghost" size="icon" onClick={() => setShowMenu(!showMenu)}>
+        <div className="shrink-0">
+          <Button
+            ref={buttonRef}
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={openMenu}
+            className="h-9 w-9"
+          >
             <MoreVertical className="w-4 h-4" />
           </Button>
-
-          {showMenu && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 bottom-full mb-1 w-48 sm:top-full sm:mt-1 sm:bottom-auto sm:mb-0 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
-                <button
-                  onClick={() => { onEdit(job); setShowMenu(false); }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  <Edit className="w-4 h-4" />
-                  Modifier
-                </button>
-
-                <Link
-                  to={`/dashboard/entreprise/offres/${job.id}/candidatures`}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  <Users className="w-4 h-4" />
-                  Voir les candidatures
-                </Link>
-
-                {job.status === 'active' ? (
-                  <button
-                    onClick={() => { onToggleStatus(job, 'paused'); setShowMenu(false); }}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-yellow-600 hover:bg-slate-50"
-                  >
-                    <Clock className="w-4 h-4" />
-                    Mettre en pause
-                  </button>
-                ) : job.status === 'paused' ? (
-                  <button
-                    onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-slate-50"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Republier
-                  </button>
-                ) : null}
-
-                <button
-                  onClick={() => { onDelete(job); setShowMenu(false); }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-slate-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Supprimer
-                </button>
-              </div>
-            </>
-          )}
         </div>
       </div>
+
+      <div className="text-xs text-slate-400">{formatRelative(job.created_at)}</div>
+
+      {menu}
     </div>
   );
 };
@@ -166,21 +333,22 @@ const ApplicationCard = ({ application }) => {
     accepted: { label: 'Accepté', color: 'bg-green-100 text-green-700', icon: CheckCircle },
     rejected: { label: 'Refusé', color: 'bg-red-100 text-red-700', icon: XCircle },
   };
+
   const status = statusConfig[application.status] || statusConfig.pending;
   const StatusIcon = status.icon;
 
   return (
     <Link
       to={`/dashboard/entreprise/candidatures/${application.id}`}
-      className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
+      className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors"
     >
-      <div className="flex items-start sm:items-center gap-3 w-full min-w-0">
+      <div className="flex items-start gap-3 w-full min-w-0">
         <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-200 shrink-0">
           <Users className="w-5 h-5 text-slate-400" />
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-slate-900 truncate">
+          <p className="font-medium text-slate-900 line-clamp-2">
             {application.candidate?.first_name} {application.candidate?.last_name}
           </p>
           <p className="text-sm text-slate-500 line-clamp-1">{application.job?.title}</p>
@@ -192,9 +360,7 @@ const ApplicationCard = ({ application }) => {
         </Badge>
       </div>
 
-      <span className="text-xs text-slate-400 w-full text-right sm:text-left sm:w-auto">
-        {formatRelative(application.created_at)}
-      </span>
+      <span className="text-xs text-slate-400">{formatRelative(application.created_at)}</span>
     </Link>
   );
 };
@@ -211,7 +377,7 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <Card className="max-w-md w-full rounded-2xl bg-white shadow-xl">
+      <Card className="max-w-md w-full rounded-2xl bg-white shadow-xl overflow-hidden">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4 gap-3">
             <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2 min-w-0">
@@ -234,7 +400,7 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
               </label>
               <textarea
                 rows={3}
-                className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none"
+                className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Dites-nous pourquoi vous partez..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
@@ -252,11 +418,11 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 mt-6">
-            <Button variant="outline" className="flex-1" onClick={onClose}>
+            <Button variant="outline" className="flex-1 min-h-[44px]" onClick={onClose}>
               Annuler
             </Button>
             <Button
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              className="flex-1 min-h-[44px] bg-red-600 hover:bg-red-700 text-white"
               onClick={handleConfirm}
               disabled={cancelling}
             >
@@ -281,11 +447,12 @@ const CompanyDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
   const [stats, setStats] = useState({
     totalJobs: 0,
     activeJobs: 0,
     totalApplications: 0,
-    newApplications: 0
+    newApplications: 0,
   });
 
   useEffect(() => {
@@ -319,7 +486,6 @@ const CompanyDashboard = () => {
         setJobs(jobsData || []);
 
         let appsData = [];
-
         if (jobsData?.length) {
           const { data } = await supabase
             .from('applications')
@@ -328,7 +494,7 @@ const CompanyDashboard = () => {
               candidate:users(first_name, last_name, email),
               job:jobs(title)
             `)
-            .in('job_id', jobsData.map(j => j.id))
+            .in('job_id', jobsData.map((j) => j.id))
             .order('created_at', { ascending: false })
             .limit(10);
 
@@ -337,22 +503,22 @@ const CompanyDashboard = () => {
 
         setApplications(appsData);
 
-        const activeJobs = (jobsData || []).filter(j => j.status === 'active').length;
+        const activeJobs = (jobsData || []).filter((j) => j.status === 'active').length;
         const totalApplications = appsData.length;
-        const newApplications = appsData.filter(app => app.status === 'pending').length;
+        const newApplications = appsData.filter((app) => app.status === 'pending').length;
 
         setStats({
           totalJobs: (jobsData || []).length,
           activeJobs,
           totalApplications,
-          newApplications
+          newApplications,
         });
       } else {
         setCompany(null);
       }
     } catch (err) {
       console.error(err);
-      toast.error("Erreur de chargement du dashboard");
+      toast.error('Erreur de chargement du dashboard');
     } finally {
       setLoading(false);
     }
@@ -363,22 +529,45 @@ const CompanyDashboard = () => {
   const handleDeleteJob = async (job) => {
     if (!window.confirm(`Supprimer "${job.title}" ?`)) return;
     await supabase.from('jobs').delete().eq('id', job.id);
-    setJobs(prev => prev.filter(j => j.id !== job.id));
+    setJobs((prev) => prev.filter((j) => j.id !== job.id));
     toast.success('Offre supprimée');
   };
 
   const handleToggleJobStatus = async (job, newStatus) => {
     try {
       const updates = { status: newStatus };
-
       if (newStatus === 'active' && !job.published_at) {
         updates.published_at = new Date().toISOString();
         updates.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       }
-
       await supabase.from('jobs').update(updates).eq('id', job.id);
-      setJobs(prev => prev.map(j => j.id === job.id ? { ...j, ...updates } : j));
+      setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, ...updates } : j)));
       toast.success(newStatus === 'active' ? 'Offre publiée' : 'Statut mis à jour');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erreur');
+    }
+  };
+
+  const handleSubmitForReview = async (job) => {
+    if (!company?.is_verified) {
+      toast.error("Votre entreprise n'est pas encore vérifiée. Vous ne pouvez pas soumettre d'offre pour le moment.");
+      return;
+    }
+    try {
+      await supabase.from('jobs').update({ status: 'pending' }).eq('id', job.id);
+      setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'pending' } : j)));
+      toast.success('Offre soumise pour validation');
+    } catch (err) {
+      toast.error("Erreur lors de la soumission");
+    }
+  };
+
+  const handleCancelSubmission = async (job) => {
+    try {
+      await supabase.from('jobs').update({ status: 'draft' }).eq('id', job.id);
+      setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'draft' } : j)));
+      toast.success('Soumission annulée, offre remise en brouillon');
     } catch (err) {
       toast.error('Erreur');
     }
@@ -389,7 +578,7 @@ const CompanyDashboard = () => {
     try {
       await apiFetch('/api/subscription/cancel', {
         method: 'POST',
-        body: JSON.stringify({ user_id: user.id, reason })
+        body: JSON.stringify({ user_id: user.id, reason }),
       });
       toast.success('Abonnement résilié avec succès');
       setShowCancelModal(false);
@@ -401,9 +590,38 @@ const CompanyDashboard = () => {
     }
   };
 
+  const handleOpenPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const res = await apiFetch('/api/stripe/portal', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      window.location.href = res.url;
+    } catch (err) {
+      toast.error(err.message || "Impossible d'ouvrir le portail de gestion");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  // Fonctions de limites
+  const getPlanLimit = () => {
+    const plan = company?.subscription_plan || 'free';
+    if (plan === 'business' || plan === 'enterprise') return Infinity;
+    if (plan === 'pro') return 5;
+    return 1; // gratuit
+  };
+
+  const activeJobsCount = jobs.filter((j) => j.status === 'active').length;
+  const planLimit = getPlanLimit();
+  const progressPercent = planLimit === Infinity ? 0 : Math.min(100, (activeJobsCount / planLimit) * 100);
+  const planLabel = company?.subscription_plan === 'free' ? 'Gratuit' : company?.subscription_plan?.charAt(0).toUpperCase() + company?.subscription_plan?.slice(1);
+  const limitDisplay = planLimit === Infinity ? 'Illimité' : planLimit;
+
   if (loading) {
     return (
-      <div className="pt-20 flex justify-center">
+      <div className="min-h-screen bg-slate-50 pt-20 flex justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
@@ -421,7 +639,7 @@ const CompanyDashboard = () => {
             Pour publier des offres et recevoir des candidatures, commencez par créer le profil de votre entreprise.
           </p>
           <Link to="/dashboard/entreprise/creer">
-            <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700">
+            <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700 min-h-[44px]">
               <Plus className="w-5 h-5 mr-2" />
               Créer mon entreprise
             </Button>
@@ -432,9 +650,9 @@ const CompanyDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20" data-testid="company-dashboard">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+    <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20" data-testid="company-dashboard">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
             <div className="w-16 h-16 shrink-0 bg-white rounded-xl flex items-center justify-center border border-slate-200">
               {company.logo_url ? (
@@ -450,15 +668,16 @@ const CompanyDashboard = () => {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <Link to="/dashboard/entreprise/profil" className="w-full sm:w-auto">
-              <Button variant="outline" className="w-full sm:w-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
+            <Link to="/dashboard/entreprise/profil" className="w-full">
+              <Button variant="outline" className="w-full min-h-[44px]">
                 <Settings className="w-4 h-4 mr-2" />
                 Profil entreprise
               </Button>
             </Link>
-            <Link to="/dashboard/entreprise/offres/nouvelle" className="w-full sm:w-auto">
-              <Button className="w-full sm:w-auto bg-blue-600 text-white hover:bg-blue-700">
+
+            <Link to="/dashboard/entreprise/offres/nouvelle" className="w-full">
+              <Button className="w-full min-h-[44px] bg-blue-600 text-white hover:bg-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
                 Nouvelle offre
               </Button>
@@ -466,46 +685,56 @@ const CompanyDashboard = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <StatCard icon={Briefcase} label="Offres publiées" value={stats.activeJobs} color="blue" />
           <StatCard icon={FileText} label="Total candidatures" value={stats.totalApplications} color="green" />
           <StatCard icon={Users} label="Nouvelles candidatures" value={stats.newApplications} color="purple" />
-          <StatCard icon={Eye} label="Vues totales" value={jobs.reduce((s, j) => s + (j.views_count || 0), 0)} color="orange" />
+          <StatCard
+            icon={Eye}
+            label="Vues totales"
+            value={jobs.reduce((s, j) => s + (j.views_count || 0), 0)}
+            color="orange"
+          />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Card className="border-slate-200">
-              <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2">
+            <Card className="border-slate-200 overflow-visible">
+              <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">Mes offres d'emploi</h2>
                   <p className="text-sm text-slate-500">{stats.totalJobs} offres au total</p>
                 </div>
+
                 <Link to="/dashboard/entreprise/offres" className="w-full sm:w-auto">
-                  <Button variant="ghost" size="sm" className="w-full sm:w-auto">
-                    Voir tout<ChevronRight className="w-4 h-4 ml-1" />
+                  <Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">
+                    Voir tout
+                    <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
               </div>
 
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 {jobs.length === 0 ? (
                   <div className="text-center py-8">
                     <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                     <p className="text-slate-600 mb-4">Aucune offre publiée</p>
                     <Link to="/dashboard/entreprise/offres/nouvelle">
-                      <Button>Publier une offre</Button>
+                      <Button className="min-h-[44px]">Publier une offre</Button>
                     </Link>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {jobs.map(job => (
+                    {jobs.map((job) => (
                       <CompanyJobCard
                         key={job.id}
                         job={job}
                         onEdit={handleEditJob}
                         onDelete={handleDeleteJob}
                         onToggleStatus={handleToggleJobStatus}
+                        onSubmitForReview={handleSubmitForReview}
+                        onCancelSubmission={handleCancelSubmission}
+                        isCompanyVerified={company?.is_verified ?? false}
                       />
                     ))}
                   </div>
@@ -515,15 +744,17 @@ const CompanyDashboard = () => {
           </div>
 
           <div className="space-y-6">
-            <Card className="border-slate-200">
-              <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <Card className="border-slate-200 overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">Candidatures récentes</h2>
                   <p className="text-sm text-slate-500">{stats.newApplications} nouvelles</p>
                 </div>
+
                 <Link to="/dashboard/entreprise/candidatures" className="w-full sm:w-auto">
-                  <Button variant="ghost" size="sm" className="w-full sm:w-auto">
-                    Voir tout<ChevronRight className="w-4 h-4 ml-1" />
+                  <Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">
+                    Voir tout
+                    <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
               </div>
@@ -536,7 +767,7 @@ const CompanyDashboard = () => {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {applications.slice(0, 5).map(app => (
+                    {applications.slice(0, 5).map((app) => (
                       <ApplicationCard key={app.id} application={app} />
                     ))}
                   </div>
@@ -544,19 +775,32 @@ const CompanyDashboard = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-slate-200">
-              <CardContent className="p-6">
+            <Card className="border-slate-200 overflow-hidden">
+              <CardContent className="p-4 sm:p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">Profil entreprise</h3>
 
                 {!company.is_verified && (
                   <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">
-                    ⏳ Votre entreprise est en attente de validation. Vous pouvez préparer vos offres en brouillon. Une fois validée, vous pourrez les soumettre pour publication.
+                    ⏳ Votre entreprise est en attente de validation. Vous pouvez préparer vos offres en brouillon.
+                    Une fois validée, vous pourrez les soumettre pour publication.
                   </div>
                 )}
 
                 <div className="space-y-3 text-sm">
-                  {company.industry && <p className="flex items-center gap-2 text-slate-600"><Building2 className="w-4 h-4 text-slate-400" />{company.industry}</p>}
-                  {company.size && <p className="flex items-center gap-2 text-slate-600"><Users className="w-4 h-4 text-slate-400" />{company.size} employés</p>}
+                  {company.industry && (
+                    <p className="flex items-center gap-2 text-slate-600">
+                      <Building2 className="w-4 h-4 text-slate-400" />
+                      {company.industry}
+                    </p>
+                  )}
+
+                  {company.size && (
+                    <p className="flex items-center gap-2 text-slate-600">
+                      <Users className="w-4 h-4 text-slate-400" />
+                      {company.size} employés
+                    </p>
+                  )}
+
                   {company.website && (
                     <a
                       href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
@@ -568,54 +812,106 @@ const CompanyDashboard = () => {
                       {company.website}
                     </a>
                   )}
+
                   {company.email && (
-                    <a href={`mailto:${company.email}`} className="flex items-center gap-2 text-blue-600 hover:underline break-all">
+                    <a
+                      href={`mailto:${company.email}`}
+                      className="flex items-center gap-2 text-blue-600 hover:underline break-all"
+                    >
                       <Mail className="w-4 h-4 shrink-0" />
                       {company.email}
                     </a>
                   )}
+
                   {company.phone && (
-                    <a href={`tel:${company.phone}`} className="flex items-center gap-2 text-slate-600 hover:text-blue-600 break-all">
+                    <a
+                      href={`tel:${company.phone}`}
+                      className="flex items-center gap-2 text-slate-600 hover:text-blue-600 break-all"
+                    >
                       <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                       {company.phone}
                     </a>
                   )}
-                  {company.founded_year && <p className="flex items-center gap-2 text-slate-600"><Calendar className="w-4 h-4 text-slate-400" />Créée en {company.founded_year}</p>}
-                  {company.address && <p className="flex items-center gap-2 text-slate-600"><MapPin className="w-4 h-4 text-slate-400" />{company.address}</p>}
+
+                  {company.founded_year && (
+                    <p className="flex items-center gap-2 text-slate-600">
+                      <Calendar className="w-4 h-4 text-slate-400" />
+                      Créée en {company.founded_year}
+                    </p>
+                  )}
+
+                  {company.address && (
+                    <p className="flex items-center gap-2 text-slate-600">
+                      <MapPin className="w-4 h-4 text-slate-400" />
+                      {company.address}
+                    </p>
+                  )}
                 </div>
 
                 <Link to="/dashboard/entreprise/profil">
-                  <Button variant="outline" className="w-full mt-4">Modifier le profil</Button>
+                  <Button variant="outline" className="w-full mt-4 min-h-[44px]">
+                    Modifier le profil
+                  </Button>
                 </Link>
               </CardContent>
             </Card>
 
-            <Card className="border-blue-200 bg-blue-50">
-              <CardContent className="p-6">
+            <Card className="border-blue-200 bg-blue-50 overflow-hidden">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
                   <Badge className="bg-blue-100 text-blue-700 border-0 text-sm px-3 py-1">
-                    Plan actuel : {company.subscription_plan === 'free' ? 'Gratuit' : company.subscription_plan}
+                    Plan actuel : {planLabel}
                   </Badge>
+
                   <Link to="/tarifs" className="w-full sm:w-auto">
-                    <Button variant="ghost" size="sm" className="w-full sm:w-auto text-blue-600 hover:bg-blue-100">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full sm:w-auto text-blue-600 hover:bg-blue-100 min-h-[44px]"
+                    >
                       Changer de plan
                     </Button>
                   </Link>
                 </div>
 
+                {/* Jauge d'offres */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm text-slate-600 mb-1">
+                    <span>Offres actives</span>
+                    <span>{activeJobsCount} / {limitDisplay}</span>
+                  </div>
+                  <div className="w-full bg-blue-100 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+
                 {company.subscription_plan !== 'free' && company.stripe_subscription_id ? (
                   <>
                     <p className="text-sm text-blue-800 mb-4">
-                      Vous êtes actuellement sur le plan {company.subscription_plan}. Vous pouvez le résilier à tout moment.
+                      Vous êtes actuellement sur le plan {company.subscription_plan}. Vous pouvez gérer votre abonnement ou le résilier.
                     </p>
-                    <Button
-                      variant="outline"
-                      className="w-full border-red-300 text-red-600 hover:bg-red-50"
-                      onClick={() => setShowCancelModal(true)}
-                    >
-                      <AlertTriangle className="w-4 h-4 mr-2" />
-                      Résilier l'abonnement
-                    </Button>
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        className="w-full border-blue-300 text-blue-700 hover:bg-blue-100 min-h-[44px]"
+                        onClick={handleOpenPortal}
+                        disabled={portalLoading}
+                      >
+                        {portalLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                        Gérer mon abonnement
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full border-red-300 text-red-600 hover:bg-red-50 min-h-[44px]"
+                        onClick={() => setShowCancelModal(true)}
+                      >
+                        <AlertTriangle className="w-4 h-4 mr-2" />
+                        Résilier l'abonnement
+                      </Button>
+                    </div>
                   </>
                 ) : company.subscription_plan === 'free' && company.cancellation_reason ? (
                   <div className="text-sm text-slate-700 mt-2">

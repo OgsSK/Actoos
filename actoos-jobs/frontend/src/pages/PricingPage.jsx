@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import {
   Loader2, Check, Sparkles, Zap, Crown, Building2, ArrowRight, AlertCircle,
   HelpCircle, ChevronDown, ChevronUp, X, Shield, Users, Briefcase, BarChart3,
-  Headphones, Globe, Lock, ZapOff
+  Headphones, Globe, Lock, CreditCard,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,6 +39,9 @@ const PricingPage = () => {
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(null);
   const [faqOpen, setFaqOpen] = useState(null);
+  const [annual, setAnnual] = useState(false);
+  const [company, setCompany] = useState(null);
+  const [companyLoading, setCompanyLoading] = useState(true);
 
   useEffect(() => {
     const loadPricing = async () => {
@@ -73,6 +77,26 @@ const PricingPage = () => {
     loadPricing();
   }, []);
 
+  useEffect(() => {
+    const fetchCompany = async () => {
+      if (!user) {
+        setCompany(null);
+        setCompanyLoading(false);
+        return;
+      }
+      setCompanyLoading(true);
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+      if (!error && data) setCompany(data);
+      else setCompany(null);
+      setCompanyLoading(false);
+    };
+    fetchCompany();
+  }, [user]);
+
   const handleCheckout = async (packageId) => {
     if (!user) {
       toast.error('Vous devez être connecté pour souscrire');
@@ -97,11 +121,27 @@ const PricingPage = () => {
     }
   };
 
+  const handlePortal = async () => {
+    if (!user) return;
+    setCheckoutLoading('portal');
+    try {
+      const res = await apiFetch('/api/stripe/portal', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      window.location.href = res.url;
+    } catch (err) {
+      toast.error(err.message || "Impossible d'ouvrir le portail de gestion");
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
+
   const formatPrice = (amount) => {
     return new Intl.NumberFormat('fr-FR').format(amount);
   };
 
-  if (loading) {
+  if (loading || companyLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white pt-20">
         <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
@@ -111,7 +151,29 @@ const PricingPage = () => {
 
   const { subscriptions, boosts } = pricing;
 
+  // Définition des plans avec limites
   const plans = [
+    {
+      id: 'free',
+      name: 'Gratuit',
+      monthlyPrice: 0,
+      annualPrice: 0,
+      monthlyPriceDisplay: '0',
+      annualPriceDisplay: '0',
+      annualMonthlyEquivalent: 0,
+      description: 'Pour découvrir la plateforme.',
+      features: [
+        { icon: Briefcase, text: '1 offre active' },
+        { icon: Users, text: 'Candidatures illimitées' },
+        { icon: Shield, text: 'Profil entreprise' },
+        { icon: Headphones, text: 'Support par email' },
+      ],
+      limitations: ['Pas de statistiques', 'Pas de mise en avant', "Pas d'API"],
+      icon: Building2,
+      borderColor: 'border-slate-200',
+      badge: null,
+      planKey: 'free',
+    },
     {
       id: 'pro_monthly',
       name: 'Pro',
@@ -122,16 +184,17 @@ const PricingPage = () => {
       annualMonthlyEquivalent: Math.round(subscriptions.pro_annual.amount / 12),
       description: 'Pour les PME et les recruteurs indépendants.',
       features: [
-        { icon: Briefcase, text: 'Jusqu\'à 10 offres actives' },
+        { icon: Briefcase, text: '5 offres actives' },
         { icon: Users, text: '1 utilisateur (admin)' },
         { icon: BarChart3, text: 'Statistiques de base' },
-        { icon: Headphones, text: 'Support par email' },
+        { icon: Headphones, text: 'Support prioritaire' },
         { icon: Shield, text: 'Profil entreprise vérifié' },
       ],
-      limitations: ['Pas de mise en avant', 'Pas d\'API', 'Pas d\'export'],
+      limitations: ['Pas de mise en avant', "Pas d'API", "Pas d'export"],
       icon: Zap,
       borderColor: 'border-blue-200',
       badge: null,
+      planKey: 'pro',
     },
     {
       id: 'business_monthly',
@@ -146,7 +209,7 @@ const PricingPage = () => {
         { icon: Briefcase, text: 'Offres actives illimitées' },
         { icon: Users, text: "Jusqu'à 5 utilisateurs" },
         { icon: BarChart3, text: 'Statistiques avancées' },
-        { icon: Headphones, text: 'Support prioritaire' },
+        { icon: Headphones, text: 'Support dédié' },
         { icon: Globe, text: 'API de recrutement' },
         { icon: Lock, text: 'Export des candidatures' },
         { icon: Sparkles, text: '1 mise en avant offerte/mois' },
@@ -156,8 +219,12 @@ const PricingPage = () => {
       icon: Crown,
       borderColor: 'border-blue-600',
       badge: { text: 'Recommandé', color: 'bg-blue-600' },
+      planKey: 'business',
     },
   ];
+
+  const currentPlan = company?.subscription_plan || 'free';
+  const activeJobsCount = 0; // On pourrait le récupérer, mais on va l'afficher simplement
 
   const boostItems = Object.entries(boosts).map(([key, value]) => ({
     id: key,
@@ -168,8 +235,8 @@ const PricingPage = () => {
     icon: Sparkles,
   }));
 
-  // FAQ détaillée
   const faqItems = [
+    // ... (inchangé, déjà complet)
     {
       q: "Comment fonctionne l'abonnement ?",
       a: "Vous choisissez un plan (Pro ou Business) avec une facturation mensuelle ou annuelle. L'abonnement est automatiquement renouvelé chaque période. Vous pouvez résilier à tout moment depuis votre espace entreprise, sans frais."
@@ -204,7 +271,7 @@ const PricingPage = () => {
     },
     {
       q: "Puis-je utiliser le plan gratuit indéfiniment ?",
-      a: "Le plan gratuit vous permet de tester la plateforme avec 3 offres actives. Il n'a pas de limite de temps. Vous pouvez passer à un plan payant lorsque vous avez besoin de plus de fonctionnalités."
+      a: "Le plan gratuit vous permet de tester la plateforme avec 1 offre active. Il n'a pas de limite de temps. Vous pouvez passer à un plan payant lorsque vous avez besoin de plus de fonctionnalités."
     },
     {
       q: "Que se passe-t-il si je dépasse ma limite d'offres ?",
@@ -220,6 +287,21 @@ const PricingPage = () => {
     }
   ];
 
+  const handleFreePlan = () => {
+    if (!user) {
+      toast.error('Vous devez être connecté pour commencer');
+      return;
+    }
+    // Si déjà sur gratuit, ne rien faire
+    if (currentPlan === 'free') {
+      toast.info('Vous êtes déjà sur le plan Gratuit');
+      return;
+    }
+    // Sinon, downgrade : normalement il faut résilier l'abonnement payant, mais ici on pourrait rediriger vers le dashboard avec un message.
+    // Comme il n'y a pas de downgrade direct, on informe l'utilisateur.
+    toast.info('Pour revenir au plan Gratuit, veuillez résilier votre abonnement depuis votre espace entreprise.');
+  };
+
   return (
     <div className="min-h-screen bg-white pt-20">
       {/* Header */}
@@ -233,89 +315,173 @@ const PricingPage = () => {
         </p>
       </div>
 
+      {/* Switch Annuel/Mensuel (boutons radios) */}
+      <div className="flex justify-center items-center gap-3 mb-10">
+        <span className={`text-sm ${!annual ? 'text-slate-900 font-semibold' : 'text-slate-400'}`}>
+          Mensuel
+        </span>
+        <button
+          onClick={() => setAnnual(!annual)}
+          className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none ${annual ? 'bg-blue-600' : 'bg-slate-300'}`}
+        >
+          <span
+            className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${annual ? 'translate-x-7' : 'translate-x-1'}`}
+          />
+        </button>
+        <span className={`text-sm ${annual ? 'text-slate-900 font-semibold' : 'text-slate-400'}`}>
+          Annuel (-20%)
+        </span>
+      </div>
+
       {/* Plans */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {plans.map((plan) => (
-            <Card key={plan.id} className={`relative bg-white border-2 ${plan.borderColor} rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-xl ${plan.badge ? 'scale-105' : ''}`}>
-              {plan.badge && (
-                <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-semibold px-4 py-1 rounded-bl-2xl uppercase tracking-wide">
-                  {plan.badge.text}
-                </div>
-              )}
-              <CardHeader className="text-center pt-10 pb-0">
-                <div className={`w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4`}>
-                  <plan.icon className="w-7 h-7 text-blue-600" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-slate-900">{plan.name}</CardTitle>
-                <CardDescription className="text-slate-500 mt-2">{plan.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-8">
-                <div className="text-center mb-8">
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-5xl font-bold text-slate-900">{plan.monthlyPriceDisplay}</span>
-                    <span className="text-slate-500 text-lg">FCFA</span>
-                    <span className="text-slate-400">/mois</span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-center gap-2">
-                    <span className="text-sm text-slate-500">
-                      {plan.annualPriceDisplay} FCFA / an
-                    </span>
-                    <Badge className="bg-green-50 text-green-700 border-0 rounded-full text-xs">-20%</Badge>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Soit {formatPrice(plan.annualMonthlyEquivalent)} FCFA / mois
-                  </p>
-                </div>
+        <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {plans.map((plan) => {
+            const isCurrentPlan = company && currentPlan === plan.planKey;
+            const isUpgrade = company && (plan.planKey === 'pro' && currentPlan === 'free') || (plan.planKey === 'business' && (currentPlan === 'free' || currentPlan === 'pro'));
+            const isDowngrade = company && (plan.planKey === 'free' && currentPlan !== 'free') || (plan.planKey === 'pro' && currentPlan === 'business');
 
-                <ul className="space-y-4 mb-8">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3 text-slate-700">
-                      <feature.icon className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                      <span>{feature.text}</span>
-                    </li>
-                  ))}
-                  {plan.limitations.map((lim, i) => (
-                    <li key={i} className="flex items-start gap-3 text-slate-400 line-through">
-                      <X className="w-5 h-5 text-slate-300 shrink-0 mt-0.5" />
-                      <span>{lim}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="space-y-3">
-                  <Button
-                    className={`w-full h-14 text-lg font-semibold rounded-2xl ${
-                      plan.badge
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                        : 'bg-blue-50 hover:bg-blue-100 text-blue-700'
-                    }`}
-                    onClick={() => handleCheckout(plan.id)}
-                    disabled={checkoutLoading === plan.id}
-                  >
-                    {checkoutLoading === plan.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+            return (
+              <Card key={plan.id} className={`relative bg-white border-2 ${plan.borderColor} rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-xl ${plan.badge ? 'scale-105' : ''}`}>
+                {plan.badge && (
+                  <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-semibold px-4 py-1 rounded-bl-2xl uppercase tracking-wide">
+                    {plan.badge.text}
+                  </div>
+                )}
+                {isCurrentPlan && (
+                  <div className="absolute top-4 left-4 bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
+                    Plan actuel
+                  </div>
+                )}
+                <CardHeader className="text-center pt-10 pb-0">
+                  <div className={`w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+                    <plan.icon className="w-7 h-7 text-blue-600" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-slate-900">{plan.name}</CardTitle>
+                  <CardDescription className="text-slate-500 mt-2">{plan.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="p-8">
+                  <div className="text-center mb-8">
+                    {plan.id === 'free' ? (
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-5xl font-bold text-slate-900">0</span>
+                        <span className="text-slate-500 text-lg">FCFA</span>
+                        <span className="text-slate-400">/mois</span>
+                      </div>
                     ) : (
-                      <Building2 className="w-5 h-5 mr-2" />
+                      <>
+                        <div className="flex items-baseline justify-center gap-1">
+                          <span className="text-5xl font-bold text-slate-900">
+                            {annual ? formatPrice(plan.annualMonthlyEquivalent) : plan.monthlyPriceDisplay}
+                          </span>
+                          <span className="text-slate-500 text-lg">FCFA</span>
+                          <span className="text-slate-400">/mois</span>
+                        </div>
+                        {annual && (
+                          <div className="mt-1 text-sm text-slate-500">
+                            {plan.annualPriceDisplay} FCFA facturés annuellement
+                          </div>
+                        )}
+                        {!annual && (
+                          <div className="mt-1 text-sm text-slate-500">
+                            {plan.monthlyPriceDisplay} FCFA facturés mensuellement
+                          </div>
+                        )}
+                        <div className="mt-2 flex items-center justify-center gap-2">
+                          <span className="text-sm text-slate-500">
+                            {annual ? plan.annualPriceDisplay + ' FCFA / an' : plan.monthlyPriceDisplay + ' FCFA / mois'}
+                          </span>
+                          {annual && (
+                            <Badge className="bg-green-50 text-green-700 border-0 rounded-full text-xs">-20%</Badge>
+                          )}
+                        </div>
+                      </>
                     )}
-                    S'abonner (mensuel)
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full h-14 text-lg rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50"
-                    onClick={() => handleCheckout(plan.id.replace('monthly', 'annual'))}
-                    disabled={checkoutLoading === plan.id.replace('monthly', 'annual')}
-                  >
-                    {checkoutLoading === plan.id.replace('monthly', 'annual') ? (
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    ) : null}
-                    S'abonner (annuel -20%)
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  </div>
+
+                  <ul className="space-y-4 mb-8">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-3 text-slate-700">
+                        <feature.icon className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                        <span>{feature.text}</span>
+                      </li>
+                    ))}
+                    {plan.limitations.map((lim, i) => (
+                      <li key={i} className="flex items-start gap-3 text-slate-400 line-through">
+                        <X className="w-5 h-5 text-slate-300 shrink-0 mt-0.5" />
+                        <span>{lim}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="space-y-3">
+                    {plan.id === 'free' ? (
+                      <Button
+                        className={`w-full h-14 text-lg font-semibold rounded-2xl ${
+                          isCurrentPlan ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                        }`}
+                        onClick={handleFreePlan}
+                        disabled={isCurrentPlan}
+                      >
+                        {isCurrentPlan ? 'Plan actuel' : 'Revenir au plan Gratuit'}
+                      </Button>
+                    ) : isCurrentPlan ? (
+                      <>
+                        <Button
+                          className="w-full h-14 text-lg font-semibold rounded-2xl bg-slate-100 text-slate-500 cursor-not-allowed"
+                          disabled
+                        >
+                          Plan actuel
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full h-14 text-lg rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50"
+                          onClick={handlePortal}
+                          disabled={checkoutLoading === 'portal'}
+                        >
+                          {checkoutLoading === 'portal' ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <CreditCard className="w-5 h-5 mr-2" />}
+                          Gérer mon abonnement
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          className={`w-full h-14 text-lg font-semibold rounded-2xl ${
+                            plan.badge
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                              : 'bg-blue-50 hover:bg-blue-100 text-blue-700'
+                          }`}
+                          onClick={() => handleCheckout(annual ? plan.id.replace('monthly', 'annual') : plan.id)}
+                          disabled={checkoutLoading === plan.id}
+                        >
+                          {checkoutLoading === plan.id ? (
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                          ) : (
+                            <Building2 className="w-5 h-5 mr-2" />
+                          )}
+                          {isUpgrade ? `Passer à ${plan.name}` : `S'abonner (${annual ? 'annuel' : 'mensuel'})`}
+                          <ArrowRight className="w-5 h-5 ml-2" />
+                        </Button>
+                        {!annual && (
+                          <Button
+                            variant="outline"
+                            className="w-full h-14 text-lg rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50"
+                            onClick={() => handleCheckout(plan.id.replace('monthly', 'annual'))}
+                            disabled={checkoutLoading === plan.id.replace('monthly', 'annual')}
+                          >
+                            {checkoutLoading === plan.id.replace('monthly', 'annual') ? (
+                              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                            ) : null}
+                            S'abonner (annuel -20%)
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
 
@@ -330,23 +496,25 @@ const PricingPage = () => {
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
                 <th className="text-left py-4 px-6 text-slate-600 font-medium">Fonctionnalité</th>
+                <th className="py-4 px-6 text-slate-900 font-bold">Gratuit</th>
                 <th className="py-4 px-6 text-slate-900 font-bold">Pro</th>
                 <th className="py-4 px-6 text-blue-600 font-bold">Business</th>
               </tr>
             </thead>
             <tbody>
               {[
-                ['Offres actives', '10', 'Illimitées'],
-                ['Utilisateurs', '1', "Jusqu'à 5"],
-                ['Statistiques', 'Basiques', 'Avancées'],
-                ['Support', 'Email', 'Prioritaire (email & chat)'],
-                ['API', 'Non', 'Oui'],
-                ['Export données', 'Non', 'Oui'],
-                ['Mise en avant offerte', 'Non', '1/mois'],
-                ['Profil entreprise vérifié', 'Standard', 'Premium'],
-              ].map(([feature, pro, business], i) => (
+                ['Offres actives', '1', '5', 'Illimitées'],
+                ['Utilisateurs', '1', '1', "Jusqu'à 5"],
+                ['Statistiques', '-', 'Basiques', 'Avancées'],
+                ['Support', 'Email', 'Prioritaire', 'Dédié'],
+                ['API', '-', '-', 'Oui'],
+                ['Export données', '-', '-', 'Oui'],
+                ['Mise en avant offerte', '-', '-', '1/mois'],
+                ['Profil entreprise vérifié', '-', 'Standard', 'Premium'],
+              ].map(([feature, free, pro, business], i) => (
                 <tr key={i} className="border-b border-slate-100 last:border-0">
                   <td className="py-4 px-6 text-slate-700">{feature}</td>
+                  <td className="py-4 px-6 text-slate-600">{free}</td>
                   <td className="py-4 px-6 text-slate-600">{pro}</td>
                   <td className="py-4 px-6 text-blue-600 font-medium">{business}</td>
                 </tr>

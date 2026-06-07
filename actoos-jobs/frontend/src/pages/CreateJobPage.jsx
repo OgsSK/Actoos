@@ -14,6 +14,7 @@ import {
   GraduationCap, ArrowRight
 } from 'lucide-react';
 import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
+import { apiFetch } from '../lib/api';
 
 const CreateJobPage = () => {
   const { id } = useParams();
@@ -155,92 +156,143 @@ const CreateJobPage = () => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
   };
 
+  // ---- Limites ----
+  const getPlanLimit = () => {
+    const plan = company?.subscription_plan || 'free';
+    if (plan === 'business' || plan === 'enterprise') return Infinity;
+    if (plan === 'pro') return 5;
+    return 1; // gratuit
+  };
+
+  const countActiveJobs = async () => {
+    const { count, error } = await supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', company.id)
+      .eq('status', 'active');
+    if (error) return 0;
+    return count || 0;
+  };
+
   const handleSave = async (publish = false) => {
-  const newErrors = {};
-  if (!form.title) newErrors.title = true;
-  if (!form.description) newErrors.description = true;
-  if (!form.contract_type) newErrors.contract_type = true;
+    const newErrors = {};
+    if (!form.title.trim()) newErrors.title = true;
+    if (!form.description.trim()) newErrors.description = true;
+    if (!form.contract_type) newErrors.contract_type = true;
+    if (!form.category_id) newErrors.category_id = true;
 
-  setErrors(newErrors);
+    setErrors(newErrors);
 
-  if (Object.keys(newErrors).length > 0) {
-    toast.error('Veuillez remplir tous les champs obligatoires');
-    return;
-  }
+    if (Object.keys(newErrors).length > 0) {
+      toast.error('Veuillez remplir les champs obligatoires');
+      return;
+    }
 
-  setSaving(true);
-  try {
-    const { data: country } = await supabase
-      .from('countries')
-      .select('id')
-      .eq('code', 'ML')
-      .single();
+    setSaving(true);
+    try {
+      const safeTitle = (form.title || '').substring(0, 200);
 
-    let finalStatus = form.status || 'draft';
-    let published_at = null;
-    let expires_at = null;
+      const { data: country } = await supabase
+        .from('countries')
+        .select('id')
+        .eq('code', 'ML')
+        .single();
 
-    if (publish) {
-      if (!company.is_verified) {
-        toast.error("Votre entreprise est en attente de validation. L'offre a été enregistrée comme brouillon.");
-        finalStatus = 'draft';
-      } else {
-        finalStatus = 'pending';
-        published_at = new Date().toISOString();
-        expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        toast.success('Offre soumise pour validation. Elle sera publiée après approbation.');
+      let finalStatus = form.status;
+
+      if (publish) {
+        if (!company?.is_verified) {
+          toast.error("Votre entreprise n'est pas encore vérifiée. Vous ne pouvez pas soumettre d'offre.");
+          setSaving(false);
+          return;
+        }
+
+        // Vérification de la limite d'offres actives
+        if (!id) { // nouvelle offre
+          const active = await countActiveJobs();
+          const limit = getPlanLimit();
+          if (active >= limit) {
+            toast.error(`Vous avez atteint la limite de ${limit} offre(s) active(s). Passez à un plan supérieur ou archivez une offre.`);
+            setSaving(false);
+            return;
+          }
+        }
+
+        if (id && (form.status === 'active' || form.status === 'paused')) {
+          finalStatus = form.status; // On conserve le statut actif ou pause
+        } else {
+          finalStatus = 'pending'; // Soumission pour validation
+        }
       }
-    } else {
-      toast.success('Brouillon enregistré');
+
+      const jobData = {
+        company_id: company.id,
+        posted_by: user.id,
+        title: safeTitle,
+        slug: slugify(safeTitle) + '-' + Date.now(),
+        description: form.description,
+        requirements: form.requirements || null,
+        responsibilities: form.responsibilities || null,
+        benefits: form.benefits || null,
+        category_id: form.category_id,
+        contract_type: form.contract_type,
+        experience_level: form.experience_level || null,
+        salary_min: form.salary_min ? parseInt(form.salary_min) : null,
+        salary_max: form.salary_max ? parseInt(form.salary_max) : null,
+        salary_currency: 'XOF',
+        is_salary_visible: form.is_salary_visible,
+        city_id: form.city_id || null,
+        country_id: country?.id,
+        address: form.address || null,
+        is_remote: form.is_remote,
+        remote_type: form.is_remote ? form.remote_type : null,
+        positions_count: parseInt(form.positions_count) || 1,
+        skills_required: form.skills_required.length > 0 ? form.skills_required : null,
+        application_deadline: form.application_deadline || null,
+        start_date: form.start_date || null,
+        is_urgent: form.is_urgent,
+        status: finalStatus
+      };
+
+      if (id) {
+        if (finalStatus === 'active' && form.status !== 'active') {
+          jobData.published_at = new Date().toISOString();
+          jobData.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        }
+        const { error } = await supabase.from('jobs').update(jobData).eq('id', id);
+        if (error) throw error;
+      } else {
+        if (finalStatus === 'active') {
+          jobData.published_at = new Date().toISOString();
+          jobData.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        }
+        const { error } = await supabase.from('jobs').insert(jobData);
+        if (error) throw error;
+      }
+
+      if (publish) {
+        if (finalStatus === 'pending') {
+          toast.success('Offre soumise pour validation ! Elle sera visible après approbation.');
+          try {
+            await apiFetch('/api/send-job-alerts', { method: 'POST' });
+          } catch (err) {
+            console.error('Erreur envoi alertes emploi:', err);
+          }
+        } else if (finalStatus === 'active') {
+          toast.success('Offre mise à jour avec succès.');
+        }
+      } else {
+        toast.success('Brouillon enregistré');
+      }
+
+      navigate('/dashboard/entreprise');
+    } catch (error) {
+      console.error('Error saving job:', error);
+      toast.error("Erreur lors de l'enregistrement");
+    } finally {
+      setSaving(false);
     }
-
-    const jobData = {
-      company_id: company.id,
-      posted_by: user.id,
-      title: form.title.substring(0, 200),
-      slug: slugify(form.title) + '-' + Date.now(),
-      description: form.description,
-      requirements: form.requirements || null,
-      responsibilities: form.responsibilities || null,
-      benefits: form.benefits || null,
-      category_id: form.category_id || null,
-      contract_type: form.contract_type,
-      experience_level: form.experience_level || null,
-      salary_min: form.salary_min ? parseInt(form.salary_min) : null,
-      salary_max: form.salary_max ? parseInt(form.salary_max) : null,
-      salary_currency: 'XOF',
-      is_salary_visible: form.is_salary_visible,
-      city_id: form.city_id || null,
-      country_id: country?.id,
-      address: form.address || null,
-      is_remote: form.is_remote,
-      remote_type: form.is_remote ? form.remote_type : null,
-      positions_count: parseInt(form.positions_count) || 1,
-      skills_required: form.skills_required.length > 0 ? form.skills_required : null,
-      application_deadline: form.application_deadline || null,
-      start_date: form.start_date || null,
-      is_urgent: form.is_urgent,
-      status: finalStatus,
-      published_at,
-      expires_at
-    };
-
-    if (id) {
-      const { error } = await supabase.from('jobs').update(jobData).eq('id', id);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.from('jobs').insert(jobData);
-      if (error) throw error;
-    }
-
-    window.location.href = '/dashboard/entreprise';
-  } catch (error) {
-    console.error('Error saving job:', error);
-    toast.error("Erreur lors de l'enregistrement");
-  } finally {
-    setSaving(false);
-  }
-};
+  };
 
   const inputErrorClass = (key) => cn(errors[key] && 'border-red-500 focus-visible:ring-red-500');
 
@@ -252,10 +304,41 @@ const CreateJobPage = () => {
         : 'border-slate-200 focus:ring-blue-500'
     );
 
+  const isUnverified = company && !company.is_verified;
+
+  const getPublishButtonText = () => {
+    if (id && (form.status === 'active' || form.status === 'paused')) {
+      return "Mettre à jour l'offre";
+    }
+    if (isUnverified) {
+      return 'Validation entreprise requise';
+    }
+    return 'Soumettre pour validation';
+  };
+
+  const isPublishDisabled = () => {
+    if (isUnverified) return true;
+    return saving;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 pt-20" data-testid="create-job-page">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        {isUnverified && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
+            <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-amber-800 font-medium">Entreprise en attente de validation</p>
+              <p className="text-amber-600 text-sm">Votre entreprise n'est pas encore vérifiée. Vous pouvez enregistrer vos offres en brouillon, mais elles ne seront pas publiées tant que l'administrateur n'aura pas validé votre compte.</p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/dashboard/entreprise')} className="-ml-2" type="button">
               <ChevronLeft className="w-4 h-4 mr-1" />
@@ -268,22 +351,22 @@ const CreateJobPage = () => {
               <p className="text-slate-600">{company?.name}</p>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-  <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button" className="w-full sm:w-auto">
-    {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-    Enregistrer
-  </Button>
-  <Button
-    onClick={() => handleSave(true)}
-    disabled={saving}
-    className="w-full sm:w-auto bg-blue-600 text-white hover:bg-blue-700"
-    data-testid="publish-job-btn"
-    type="button"
-  >
-    {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-    Publier
-  </Button>
-</div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+              Enregistrer
+            </Button>
+            <Button
+              onClick={() => handleSave(true)}
+              disabled={isPublishDisabled()}
+              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              data-testid="publish-job-btn"
+              type="button"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+              {getPublishButtonText()}
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -666,15 +749,20 @@ const CreateJobPage = () => {
             </Button>
             <Button
               onClick={() => handleSave(true)}
-              disabled={saving}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              disabled={isPublishDisabled()}
+              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
               data-testid="publish-job-btn-bottom"
               type="button"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              Publier l'offre
+              {getPublishButtonText()}
             </Button>
           </div>
+          {isUnverified && (
+            <p className="text-center text-xs text-amber-600 mt-1">
+              Votre entreprise doit être validée avant de pouvoir soumettre une offre.
+            </p>
+          )}
         </div>
       </div>
 

@@ -1,89 +1,277 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { apiFetch } from '../lib/api';
+
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Loader2, MapPin, Globe, Mail, Users, Briefcase, ChevronLeft, Building2, Flag } from 'lucide-react';
+import ReportButton from '../components/ReportButton'; // <-- ajouté
+
+import {
+  Loader2,
+  MapPin,
+  Globe,
+  Mail,
+  Users,
+  ChevronLeft,
+  Building2,
+  Briefcase,
+  Clock,
+  Banknote,
+} from 'lucide-react'; // Flag retiré car plus nécessaire
+
 import { toast } from 'sonner';
+import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
 const CompanyDetailPage = () => {
   const { id } = useParams();
   const { user } = useAuth();
+  const { isAdmin } = useAuth();
+
   const [company, setCompany] = useState(null);
+  const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [reporting, setReporting] = useState(false);
+  const [jobsLoading, setJobsLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from('companies')
-      .select('*, city:cities(name)')
-      .eq('id', id)
-      .single()
-      .then(({ data }) => {
+    const fetchCompany = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .select(`
+            *,
+            city:cities(name)
+          `)
+          .eq('id', id)
+          .single();
+
+        if (error) throw error;
         setCompany(data);
+      } catch (err) {
+        console.error(err);
+        toast.error('Entreprise introuvable');
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    const fetchJobs = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select(`
+            id,
+            title,
+            contract_type,
+            salary_min,
+            salary_max,
+            created_at,
+            city:cities(name)
+          `)
+          .eq('company_id', id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setJobs(data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setJobsLoading(false);
+      }
+    };
+
+    fetchCompany();
+    fetchJobs();
   }, [id]);
 
-  const handleReport = async () => {
-    if (!user) {
-      toast.error('Veuillez vous connecter pour signaler');
-      return;
-    }
-    const reason = window.prompt('Pourquoi signalez-vous cette entreprise ?');
-    if (!reason) return;
-    setReporting(true);
-    try {
-      await apiFetch('/api/report', {
-        method: 'POST',
-        body: JSON.stringify({
-          reporter_id: user.id,
-          reported_item_type: 'company',
-          reported_item_id: company.id,
-          reason: reason
-        }),
-      });
-      toast.success('Signalement envoyé. Merci !');
-    } catch (err) {
-      toast.error("Erreur lors de l'envoi du signalement");
-    } finally {
-      setReporting(false);
-    }
-  };
+  const isOwner = user?.id && company?.owner_id === user.id;
 
-  if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
-  if (!company) return <div className="pt-20 text-center text-slate-500">Entreprise introuvable.</div>;
+  if (loading) {
+    return (
+      <div className="pt-20 flex justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (!company) {
+    return (
+      <div className="pt-20 text-center text-slate-500">
+        Entreprise introuvable.
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <Link to="/entreprises"><Button variant="ghost" className="mb-6"><ChevronLeft className="w-4 h-4 mr-2" />Retour</Button></Link>
-        <div className="bg-white rounded-2xl shadow-sm p-8">
-          <div className="flex items-start gap-6 mb-8">
-            <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center">
-              {company.logo_url ? <img src={company.logo_url} alt={company.name} className="w-20 h-20 object-contain" /> : <Building2 className="w-12 h-12 text-slate-400" />}
-            </div>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-slate-900">{company.name}</h1>
-              {company.industry && <Badge className="mt-2">{company.industry}</Badge>}
-              <div className="flex flex-wrap gap-4 mt-4 text-sm text-slate-600">
-                {company.city && <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{company.city.name}</span>}
-                {company.size && <span className="flex items-center gap-1"><Users className="w-4 h-4" />{company.size} employés</span>}
-                {company.website && <a href={company.website} target="_blank" className="flex items-center gap-1 text-blue-600 hover:underline"><Globe className="w-4 h-4" />Site web</a>}
-                {company.email && <a href={`mailto:${company.email}`} className="flex items-center gap-1 text-blue-600 hover:underline"><Mail className="w-4 h-4" />Email</a>}
+        {/* RETOUR */}
+        <Link to="/entreprises">
+          <Button variant="ghost" className="mb-6">
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Retour
+          </Button>
+        </Link>
+
+        {/* CARD ENTREPRISE */}
+        <Card className="rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <CardContent className="p-6 sm:p-8">
+            {/* HEADER */}
+            <div className="flex flex-col sm:flex-row items-start gap-6 mb-8">
+              {/* LOGO */}
+              <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center shrink-0">
+                {company.logo_url ? (
+                  <img
+                    src={company.logo_url}
+                    alt={company.name}
+                    className="w-20 h-20 object-contain"
+                  />
+                ) : (
+                  <Building2 className="w-12 h-12 text-slate-400" />
+                )}
               </div>
-              {/* Bouton Signaler */}
-              <div className="mt-4">
-                <Button variant="outline" size="sm" onClick={handleReport} disabled={reporting}>
-                  <Flag className="w-4 h-4 mr-2" /> Signaler cette entreprise
-                </Button>
+
+              {/* INFOS */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-3xl font-bold text-slate-900 break-words">
+                  {company.name}
+                </h1>
+
+                {company.industry && (
+                  <Badge className="mt-3">{company.industry}</Badge>
+                )}
+
+                {/* META */}
+                <div className="flex flex-wrap gap-4 mt-5 text-sm text-slate-600">
+                  {company.city && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      {company.city.name}
+                    </span>
+                  )}
+
+                  {company.size && (
+                    <span className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      {company.size} employés
+                    </span>
+                  )}
+
+                  {company.website && (
+                    <a
+                      href={company.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-blue-600 hover:underline"
+                    >
+                      <Globe className="w-4 h-4" />
+                      Site web
+                    </a>
+                  )}
+
+                  {company.email && (
+                    <a
+                      href={`mailto:${company.email}`}
+                      className="flex items-center gap-1 text-blue-600 hover:underline"
+                    >
+                      <Mail className="w-4 h-4" />
+                      Email
+                    </a>
+                  )}
+                </div>
+
+                {/* SIGNALEMENT ou BADGE PROPRIO */}
+                <div className="mt-6">
+                  {!isOwner && user && !isAdmin ? (   // ← ajout de && !isAdmin
+  <ReportButton
+    itemType="company"
+    itemId={company.id}
+    reporterId={user.id}
+  />
+) : isOwner ? (
+  <Badge variant="outline" className="text-sm">
+    Votre entreprise
+  </Badge>
+) : null}
+                </div>
               </div>
             </div>
-          </div>
-          {company.description && <p className="text-slate-600 leading-relaxed">{company.description}</p>}
+
+            {/* DESCRIPTION */}
+            {company.description && (
+              <div className="border-t border-slate-100 pt-6">
+                <h2 className="text-xl font-semibold text-slate-900 mb-4">
+                  À propos
+                </h2>
+                <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+                  {company.description}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* OFFRES DE L'ENTREPRISE */}
+        <div className="mt-10">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">
+            Offres d'emploi {jobs.length > 0 && `(${jobs.length})`}
+          </h2>
+
+          {jobsLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          ) : jobs.length === 0 ? (
+            <Card className="border border-slate-200">
+              <CardContent className="p-8 text-center text-slate-500">
+                <Briefcase className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                <p>Aucune offre active pour le moment.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {jobs.map((job) => {
+                const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
+                return (
+                  <Link key={job.id} to={`/emplois/${job.id}`}>
+                    <Card className="hover:shadow-md transition-shadow cursor-pointer border border-slate-200">
+                      <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-slate-900 hover:text-blue-600 line-clamp-1">
+                            {job.title}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-slate-500">
+                            {job.city && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-4 h-4" />
+                                {job.city.name}
+                              </span>
+                            )}
+                            <Badge className={`${contractInfo.color} border-0`}>
+                              {contractInfo.label}
+                            </Badge>
+                            {job.salary_min && job.salary_max && (
+                              <span className="flex items-center gap-1">
+                                <Banknote className="w-4 h-4" />
+                                {job.salary_min.toLocaleString('fr-FR')} - {job.salary_max.toLocaleString('fr-FR')} FCFA
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-400 shrink-0">
+                          <Clock className="w-3 h-3" />
+                          {formatRelative(job.created_at)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
