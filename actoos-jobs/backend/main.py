@@ -163,6 +163,9 @@ class BlogUpdateRequest(BaseModel):
     icon: Optional[str] = None
     color: Optional[str] = None
 
+class UpdatePlanFromSessionRequest(BaseModel):
+    session_id: str
+
 def clean_subject(text: str, max_length: int = 50) -> str:
     cleaned = text.replace('\n', ' ').replace('\r', ' ')
     if len(cleaned) > max_length:
@@ -275,29 +278,25 @@ async def stripe_webhook(request: Request):
 async def cancel_subscription(req: CancelSubscriptionRequest):
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
-
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
-
     try:
         company_resp = httpx.get(
             f"{supabase_url}/rest/v1/companies?owner_id=eq.{req.user_id}&select=id,stripe_subscription_id",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         companies = company_resp.json()
-        if not isinstance(companies, list) or len(companies) == 0:
+        if not companies or len(companies) == 0:
             raise HTTPException(status_code=404, detail="Entreprise non trouvée")
         company = companies[0]
         subscription_id = company.get("stripe_subscription_id")
-
-        if subscription_id:
+        if subscription_id and not subscription_id.startswith("sub_test"):
             try:
                 stripe.Subscription.delete(subscription_id)
             except stripe.error.InvalidRequestError as e:
                 print(f"Stripe subscription already deleted or invalid: {e}")
-
         httpx.patch(
             f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
             json={
@@ -308,66 +307,9 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
             },
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
-
         return {"success": True, "message": "Abonnement résilié avec succès."}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-    if not stripe.api_key:
-        raise HTTPException(status_code=500, detail="Stripe not configured")
-
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-
-    try:
-        # Récupérer l'entreprise
-        company_resp = httpx.get(
-            f"{supabase_url}/rest/v1/companies?owner_id=eq.{req.user_id}&select=id,stripe_subscription_id",
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-        )
-        companies = company_resp.json()
-        if not isinstance(companies, list) or len(companies) == 0:
-            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-        company = companies[0]
-        subscription_id = company.get("stripe_subscription_id")
-
-        # Si un abonnement Stripe existe, on tente de le résilier
-        if subscription_id:
-            try:
-                stripe.Subscription.delete(subscription_id)
-            except stripe.error.InvalidRequestError as e:
-                # L'abonnement n'existe pas (ou a déjà été supprimé), on continue
-                print(f"Stripe subscription already deleted or invalid: {e}")
-
-        # Dans tous les cas, on repasse le plan en free
-        httpx.patch(
-            f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
-            json={
-                "stripe_subscription_id": None,
-                "subscription_plan": "free",
-                "subscription_expires_at": None,
-                "cancellation_reason": req.reason or None
-            },
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-        )
-
-        return {"success": True, "message": "Abonnement résilié avec succès."}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    if not stripe.api_key: raise HTTPException(status_code=500, detail="Stripe not configured")
-    supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key: raise HTTPException(status_code=500, detail="Supabase not configured")
-    try:
-        company_resp = httpx.get(f"{supabase_url}/rest/v1/companies?owner_id=eq.{req.user_id}&select=id,stripe_subscription_id", headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
-        companies = company_resp.json()
-        if not isinstance(companies, list) or len(companies) == 0: raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-        company = companies[0]; subscription_id = company.get("stripe_subscription_id")
-        if not subscription_id: raise HTTPException(status_code=400, detail="Aucun abonnement actif")
-        stripe.Subscription.delete(subscription_id)
-        httpx.patch(f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}", json={"stripe_subscription_id": None, "subscription_plan": "free", "subscription_expires_at": None, "cancellation_reason": req.reason or None}, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
-        return {"success": True, "message": "Abonnement résilié avec succès."}
-    except Exception as e: raise HTTPException(status_code=400, detail=str(e))
 
 # ----- Portail client Stripe -----
 @app.post("/api/stripe/portal")
@@ -376,24 +318,20 @@ async def stripe_portal(request: Request):
     user_id = data.get("user_id")
     if not user_id:
         raise HTTPException(status_code=400, detail="ID utilisateur requis")
-
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
-
     company_resp = httpx.get(
         f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=stripe_customer_id",
         headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     )
     companies = company_resp.json()
     if not companies or len(companies) == 0:
-        raise HTTPException(status_code=404, detail="Aucune entreprise trouvée pour cet utilisateur")
-
+        raise HTTPException(status_code=404, detail="Aucune entreprise trouvée")
     customer_id = companies[0].get("stripe_customer_id")
-    if not customer_id:
+    if not customer_id or customer_id.startswith("cus_test"):
         return {"url": "https://jobs.actoos.com/tarifs"}
-
     try:
         session = stripe.billing_portal.Session.create(
             customer=customer_id,
@@ -402,18 +340,6 @@ async def stripe_portal(request: Request):
         return {"url": session.url}
     except stripe.error.InvalidRequestError as e:
         return {"url": "https://jobs.actoos.com/tarifs"}
-    data = await request.json(); user_id = data.get("user_id")
-    if not user_id: raise HTTPException(status_code=400, detail="ID utilisateur requis")
-    supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key: raise HTTPException(status_code=500, detail="Supabase not configured")
-    company_resp = httpx.get(f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=stripe_customer_id", headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
-    companies = company_resp.json()
-    if not companies or len(companies) == 0 or not companies[0].get("stripe_customer_id"): raise HTTPException(status_code=404, detail="Aucun abonnement Stripe trouvé pour cette entreprise")
-    customer_id = companies[0]["stripe_customer_id"]
-    try:
-        session = stripe.billing_portal.Session.create(customer=customer_id, return_url="https://jobs.actoos.com/dashboard/entreprise")
-        return {"url": session.url}
-    except stripe.error.StripeError as e: raise HTTPException(status_code=400, detail=str(e))
 
 # ----- Contact & Newsletter -----
 @app.post("/api/contact")
@@ -426,51 +352,20 @@ async def contact_form(contact: ContactRequest):
 
 @app.post("/api/newsletter")
 async def newsletter_subscribe(req: NewsletterRequest):
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Email service not configured")
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-
-    # 1. Insérer dans Supabase
+    if not resend.api_key: raise HTTPException(status_code=500, detail="Email service not configured")
+    supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if supabase_url and supabase_key:
+        try:
+            resp = httpx.post(f"{supabase_url}/rest/v1/newsletter_subscribers", json={"email": req.email, "is_active": True}, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}", "Prefer": "return=minimal"})
+            if resp.status_code == 409:
+                return {"success": True, "message": "Vous êtes déjà inscrit."}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
     try:
-        resp = httpx.post(
-    f"{supabase_url}/rest/v1/newsletter_subscribers",
-    json={"email": req.email, "is_active": True},
-    headers={
-        "apikey": supabase_key,
-        "Authorization": f"Bearer {supabase_key}",
-        "Prefer": "return=minimal"
-    }
-)
-        if resp.status_code == 409:  # Email déjà existant
-            return {"success": True, "message": "Vous êtes déjà inscrit."}
-        elif resp.status_code not in (200, 201):
-            raise Exception(f"Erreur Supabase: {resp.text}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    # 2. Envoyer l'email de bienvenue (seulement si l'insertion a réussi)
-    try:
-        resend.Emails.send({
-            "from": "Actoos Jobs <noreply@actoos.com>",
-            "to": [req.email],
-            "subject": "Bienvenue à la newsletter Actoos Jobs",
-            "html": "<h1>Merci de vous être inscrit !</h1><p>Vous recevrez nos derniers conseils et offres d'emploi.</p>"
-        })
+        resend.Emails.send({"from": "Actoos Jobs <noreply@actoos.com>", "to": [req.email], "subject": "Bienvenue à la newsletter Actoos Jobs", "html": "<h1>Merci de vous être inscrit !</h1><p>Vous recevrez nos derniers conseils et offres d'emploi.</p>"})
     except Exception as e:
         print(f"Erreur envoi email bienvenue: {e}")
-        # On ne lève pas d'erreur pour l'utilisateur, l'inscription est déjà enregistrée
-
     return {"success": True, "message": "Inscription réussie."}
-    if not resend.api_key: raise HTTPException(status_code=500, detail="Email service not configured")
-    try:
-        supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        if supabase_url and supabase_key: httpx.post(f"{supabase_url}/rest/v1/newsletter_subscribers", json={"email": req.email}, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
-        resend.Emails.send({"from": "Actoos Jobs <noreply@actoos.com>", "to": [req.email], "subject": "Bienvenue à la newsletter Actoos Jobs", "html": "<h1>Merci de vous être inscrit !</h1><p>Vous recevrez nos derniers conseils et offres d'emploi.</p>"})
-        return {"success": True, "message": "Inscription réussie."}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/newsletter/unsubscribe")
 async def newsletter_unsubscribe(email: str = Query(...)):
@@ -653,8 +548,6 @@ async def delete_application(application_id: str, request: Request):
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
-
-    # Vérifier que l'utilisateur est bien un membre de l'entreprise qui a reçu la candidature
     auth_header = request.headers.get("authorization")
     if not auth_header:
         raise HTTPException(status_code=401, detail="Non authentifié")
@@ -663,40 +556,20 @@ async def delete_application(application_id: str, request: Request):
     if user_resp.status_code != 200:
         raise HTTPException(status_code=401, detail="Token invalide")
     user_id = user_resp.json().get("id")
-
-    # Récupérer l'application
-    app_resp = httpx.get(
-        f"{supabase_url}/rest/v1/applications?id=eq.{application_id}&select=job_id",
-        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    )
+    app_resp = httpx.get(f"{supabase_url}/rest/v1/applications?id=eq.{application_id}&select=job_id", headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
     apps = app_resp.json()
     if not apps:
         raise HTTPException(status_code=404, detail="Candidature non trouvée")
     job_id = apps[0]["job_id"]
-
-    # Vérifier que l'utilisateur est bien membre de l'entreprise de l'offre
-    member_resp = httpx.get(
-        f"{supabase_url}/rest/v1/company_members?user_id=eq.{user_id}&select=company_id",
-        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    )
+    member_resp = httpx.get(f"{supabase_url}/rest/v1/company_members?user_id=eq.{user_id}&select=company_id", headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
     members = member_resp.json()
     company_ids = [m["company_id"] for m in members]
-
-    job_resp = httpx.get(
-        f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=company_id",
-        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    )
+    job_resp = httpx.get(f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=company_id", headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
     jobs = job_resp.json()
     if not jobs or jobs[0]["company_id"] not in company_ids:
         raise HTTPException(status_code=403, detail="Vous n'êtes pas autorisé à supprimer cette candidature")
-
-    # Supprimer
-    httpx.delete(
-        f"{supabase_url}/rest/v1/applications?id=eq.{application_id}",
-        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    )
+    httpx.delete(f"{supabase_url}/rest/v1/applications?id=eq.{application_id}", headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
     return {"success": True, "message": "Candidature supprimée"}
-
 
 @app.post("/api/admin/verify-company")
 async def admin_verify_company(req: AdminVerifyCompanyRequest):
@@ -821,87 +694,21 @@ async def admin_delete_job(req: AdminActionRequest):
 # ----- Reports -----
 @app.post("/api/report")
 async def create_report(req: ReportRequest):
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-
+    supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key: raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
-        response = httpx.post(
-            f"{supabase_url}/rest/v1/reports",
-            json={
-                "reporter_id": req.reporter_id,
-                "reported_item_type": req.reported_item_type,
-                "reported_item_id": req.reported_item_id,
-                "reason": req.reason,
-                "status": "pending"
-            },
-            headers={
-                "apikey": supabase_key,
-                "Authorization": f"Bearer {supabase_key}",
-                "Content-Type": "application/json",
-                "Prefer": "return=minimal"
-            }
-        )
-        if response.status_code not in (200, 201):
-            error_detail = response.text
-            print(f"❌ Erreur Supabase report: {error_detail}")
-            raise Exception(f"Report creation failed: {error_detail}")
+        response = httpx.post(f"{supabase_url}/rest/v1/reports", json={"reporter_id": req.reporter_id, "reported_item_type": req.reported_item_type, "reported_item_id": req.reported_item_id, "reason": req.reason, "status": "pending"}, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}", "Content-Type": "application/json", "Prefer": "return=minimal"})
+        if response.status_code not in (200, 201): raise Exception(f"Report creation failed: {response.text}")
         return {"success": True, "message": "Signalement envoyé"}
-    except Exception as e:
-        print(f"❌ Exception report: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    try:
-        response = httpx.post(
-            f"{supabase_url}/rest/v1/reports",
-            json={
-                "reporter_id": req.reporter_id,
-                "reported_item_type": req.reported_item_type,
-                "reported_item_id": req.reported_item_id,
-                "reason": req.reason,
-                "status": "pending"
-            },
-            headers={
-                "apikey": supabase_key,
-                "Authorization": f"Bearer {supabase_key}",
-                "Content-Type": "application/json",
-                "Prefer": "return=minimal"
-            }
-        )
-        if response.status_code not in (200, 201):
-            error_detail = response.text
-            print(f"❌ Erreur Supabase report: {error_detail}")
-            raise Exception(f"Report creation failed: {error_detail}")
-        return {"success": True, "message": "Signalement envoyé"}
-    except Exception as e:
-        print(f"❌ Exception report: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/reports")
 async def get_reports():
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    try:
-        response = httpx.get(
-            f"{supabase_url}/rest/v1/reports?select=*,reporter:users(email,first_name,last_name)&order=created_at.desc",
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-        )
-        reports = response.json()
-        return {"success": True, "reports": reports}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
     supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key: raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
         response = httpx.get(f"{supabase_url}/rest/v1/reports?select=*,reporter:users(email,first_name,last_name)&order=created_at.desc", headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
-        reports = response.json()
-        return {"success": True, "reports": reports}
+        return {"success": True, "reports": response.json()}
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 @app.patch("/api/admin/reports/{report_id}")
@@ -950,8 +757,7 @@ async def get_cancellations():
     if not supabase_url or not supabase_key: raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
         resp = httpx.get(f"{supabase_url}/rest/v1/companies?select=id,name,cancellation_reason,subscription_plan,updated_at&cancellation_reason=not.is.null&order=updated_at.desc", headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
-        companies = resp.json()
-        return {"success": True, "cancellations": companies}
+        return {"success": True, "cancellations": resp.json()}
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 # ----- Blog -----
@@ -1097,12 +903,6 @@ async def delete_own_account(request: Request):
         return {"success": True, "message": "Compte supprimé définitivement"}
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
-
-from pydantic import BaseModel
-
-class UpdatePlanFromSessionRequest(BaseModel):
-    session_id: str
-
 @app.post("/api/update-plan-from-session")
 async def update_plan_from_session(req: UpdatePlanFromSessionRequest):
     if not stripe.api_key:
@@ -1111,47 +911,22 @@ async def update_plan_from_session(req: UpdatePlanFromSessionRequest):
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
-
     try:
-        # Récupérer la session Stripe
         session = stripe.checkout.Session.retrieve(req.session_id)
         if session.payment_status != "paid":
             raise HTTPException(status_code=400, detail="Le paiement n'est pas confirmé")
-
         metadata = session.metadata or {}
         user_id = metadata.get("user_id")
         package_id = metadata.get("package_id")
-
         if not user_id or not package_id:
             raise HTTPException(status_code=400, detail="Métadonnées manquantes")
-
-        # Déterminer le plan
         plan_name = "free"
-        if "pro" in package_id:
-            plan_name = "pro"
-        elif "business" in package_id:
-            plan_name = "business"
-
-        # Mettre à jour l'entreprise
-        company_resp = httpx.get(
-            f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-        )
+        if "pro" in package_id: plan_name = "pro"
+        elif "business" in package_id: plan_name = "business"
+        company_resp = httpx.get(f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id", headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
         companies = company_resp.json()
-        if not companies:
-            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-
-        httpx.patch(
-            f"{supabase_url}/rest/v1/companies?id=eq.{companies[0]['id']}",
-            json={
-                "subscription_plan": plan_name,
-                "stripe_subscription_id": session.subscription,
-                "stripe_customer_id": session.customer,
-                "subscription_expires_at": None
-            },
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-        )
-
+        if not companies: raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+        httpx.patch(f"{supabase_url}/rest/v1/companies?id=eq.{companies[0]['id']}", json={"subscription_plan": plan_name, "stripe_subscription_id": session.subscription, "stripe_customer_id": session.customer, "subscription_expires_at": None}, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
         return {"success": True, "message": f"Plan {plan_name} activé"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
