@@ -1,5 +1,11 @@
 {
+  "buildCommand": "npm install && npx react-scripts build",
+  "outputDirectory": "build",
+  "framework": "create-react-app",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://actoos-jobs-api.onrender.com/api/:path*"
+    }
   ]
 }
