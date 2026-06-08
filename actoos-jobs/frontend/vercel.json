@@ -1,6 +1,7 @@
 {
   "buildCommand": "npm install && npx react-scripts build",
   "outputDirectory": "build",
+  "framework": "create-react-app",
   "rewrites": [
     {
       "source": "/api/:path*",
