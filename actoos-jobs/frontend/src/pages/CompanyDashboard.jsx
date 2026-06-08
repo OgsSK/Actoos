@@ -443,7 +443,6 @@ const CompanyDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [portalLoading, setPortalLoading] = useState(false);
   const [stats, setStats] = useState({
     totalJobs: 0,
     activeJobs: 0,
@@ -598,13 +597,21 @@ const CompanyDashboard = () => {
   const handleCancelSubscription = async (reason) => {
     setCancelling(true);
     try {
-      await apiFetch('/api/subscription/cancel', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: user.id, reason }),
-      });
+      const { error } = await supabase
+        .from('companies')
+        .update({
+          subscription_plan: 'free',
+          stripe_subscription_id: null,
+          subscription_expires_at: null,
+          cancellation_reason: reason || null
+        })
+        .eq('id', company.id);
+
+      if (error) throw error;
+
       toast.success('Abonnement résilié avec succès');
       setShowCancelModal(false);
-      fetchCompanyData(activeCompanyId);
+      fetchCompanyData(company.id);
     } catch (err) {
       toast.error(err.message || 'Erreur lors de la résiliation');
     } finally {
@@ -612,19 +619,8 @@ const CompanyDashboard = () => {
     }
   };
 
-  const handleOpenPortal = async () => {
-    setPortalLoading(true);
-    try {
-      const res = await apiFetch('/api/stripe/portal', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: user.id }),
-      });
-      window.location.href = res.url;
-    } catch (err) {
-      toast.error(err.message || "Impossible d'ouvrir le portail de gestion");
-    } finally {
-      setPortalLoading(false);
-    }
+  const handleOpenPortal = () => {
+    window.location.href = '/tarifs';
   };
 
   const getPlanLimit = () => {
@@ -902,7 +898,7 @@ const CompanyDashboard = () => {
                   </div>
                   <div className="w-full bg-blue-100 rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all text-white"
+                      className="bg-blue-600 h-2 rounded-full transition-all"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
@@ -918,9 +914,8 @@ const CompanyDashboard = () => {
                         variant="outline"
                         className="w-full border-blue-300 text-blue-700 hover:bg-blue-100 min-h-[44px]"
                         onClick={handleOpenPortal}
-                        disabled={portalLoading}
                       >
-                        {portalLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                        <CreditCard className="w-4 h-4 mr-2" />
                         Gérer mon abonnement
                       </Button>
                       <Button

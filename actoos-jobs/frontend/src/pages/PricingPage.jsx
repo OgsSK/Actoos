@@ -121,21 +121,9 @@ const PricingPage = () => {
     }
   };
 
-  const handlePortal = async () => {
-    if (!user) return;
-    setCheckoutLoading('portal');
-    try {
-      const res = await apiFetch('/api/stripe/portal', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: user.id }),
-      });
-      window.location.href = res.url;
-    } catch (err) {
-      toast.error(err.message || "Impossible d'ouvrir le portail de gestion");
-    } finally {
-      setCheckoutLoading(null);
-    }
-  };
+  const handlePortal = () => {
+  window.location.href = '/dashboard/entreprise';
+};
 
   const formatPrice = (amount) => {
     return new Intl.NumberFormat('fr-FR').format(amount);
@@ -434,14 +422,13 @@ const PricingPage = () => {
                           Plan actuel
                         </Button>
                         <Button
-                          variant="outline"
-                          className="w-full h-14 text-lg rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50"
-                          onClick={handlePortal}
-                          disabled={checkoutLoading === 'portal'}
-                        >
-                          {checkoutLoading === 'portal' ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <CreditCard className="w-5 h-5 mr-2" />}
-                          Gérer mon abonnement
-                        </Button>
+  variant="outline"
+  className="w-full h-14 text-lg rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50"
+  onClick={handlePortal}
+>
+  <CreditCard className="w-5 h-5 mr-2" />
+  Gérer mon abonnement
+</Button>
                       </>
                     ) : (
                       <>

@@ -38,6 +38,7 @@ import {
   UserCog,
   Layers,
   LayoutDashboard,
+  CreditCard,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 
@@ -1245,6 +1246,10 @@ const AdminDashboard = () => {
             <Mail className="w-4 h-4" />
             Newsletter
           </TabButton>
+          <TabButton active={activeTab === 'subscriptions'} onClick={() => setActiveTab('subscriptions')}>
+  <CreditCard className="w-4 h-4" />
+  Abonnements
+</TabButton>
         </div>
 
         {activeTab === 'overview' && (
@@ -1754,6 +1759,63 @@ const AdminDashboard = () => {
             </Card>
           </div>
         )}
+        {activeTab === 'subscriptions' && (
+  <Card className="overflow-hidden">
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <CreditCard className="w-5 h-5" />
+        Abonnements
+      </CardTitle>
+      <CardDescription>Détails des abonnements de toutes les entreprises</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-200">
+              <th className="text-left py-3 px-4">Entreprise</th>
+              <th className="text-left py-3 px-4">Plan</th>
+              <th className="text-left py-3 px-4">Stripe Sub ID</th>
+              <th className="text-left py-3 px-4">Expire le</th>
+              <th className="text-left py-3 px-4">Raison résiliation</th>
+            </tr>
+          </thead>
+          <tbody>
+            {companies.map((c) => (
+              <tr key={c.id} className="border-b border-slate-100">
+                <td className="py-3 px-4">{c.name}</td>
+                <td className="py-3 px-4">
+                  <Badge
+                    className={
+                      c.subscription_plan === 'pro'
+                        ? 'bg-blue-100 text-blue-700'
+                        : c.subscription_plan === 'business'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-slate-100 text-slate-700'
+                    }
+                  >
+                    {c.subscription_plan || 'free'}
+                  </Badge>
+                </td>
+                <td className="py-3 px-4 text-xs text-slate-500">
+                  {c.stripe_subscription_id || '-'}
+                </td>
+                <td className="py-3 px-4">
+                  {c.subscription_expires_at
+                    ? new Date(c.subscription_expires_at).toLocaleDateString('fr-FR')
+                    : '-'}
+                </td>
+                <td className="py-3 px-4 text-xs text-slate-500">
+                  {c.cancellation_reason || '-'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </CardContent>
+  </Card>
+)}
       </div>
     </div>
   );

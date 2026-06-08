@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -7,7 +8,7 @@ import { Button } from '../components/ui/button';
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
-  const [status, setStatus] = useState('loading'); // 'loading' | 'success' | 'error'
+  const [status, setStatus] = useState('loading');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -19,28 +20,65 @@ const PaymentSuccess = () => {
 
     (async () => {
       try {
-        // Vérifier d'abord le statut de la session Stripe
+        // 1. Vérifier le statut de la session Stripe (API existante qui fonctionne)
         const checkoutStatus = await apiFetch(`/api/checkout/status/${sessionId}`);
-        if (checkoutStatus.payment_status === 'paid') {
-          // Mise à jour forcée du plan via notre nouvel endpoint
-          const updateRes = await apiFetch('/api/update-plan-from-session', {
-            method: 'POST',
-            body: JSON.stringify({ session_id: sessionId }),
-          });
-          if (updateRes.success) {
-            setStatus('success');
-            setMessage('Votre abonnement est activé ! Vous allez être redirigé vers votre tableau de bord.');
-            setTimeout(() => {
-              window.location.href = '/dashboard/entreprise';
-            }, 3000);
-          } else {
-            setStatus('error');
-            setMessage(updateRes.message || 'Erreur lors de l\'activation de l\'abonnement.');
-          }
-        } else {
+        if (checkoutStatus.payment_status !== 'paid') {
           setStatus('error');
-          setMessage('Le paiement n\'a pas encore été confirmé. Veuillez patienter ou réessayer.');
+          setMessage("Le paiement n'a pas encore été confirmé.");
+          return;
         }
+
+        // 2. Récupérer les métadonnées du package
+        const packageId = checkoutStatus.metadata?.package_id;
+        if (!packageId) {
+          setStatus('error');
+          setMessage("Impossible de déterminer le plan souscrit.");
+          return;
+        }
+
+        // 3. Déterminer le plan
+        let plan = 'free';
+        if (packageId.includes('pro')) plan = 'pro';
+        else if (packageId.includes('business')) plan = 'business';
+
+        // 4. Récupérer la session utilisateur
+        const { data: { session: authSession } } = await supabase.auth.getSession();
+        if (!authSession) {
+          setStatus('error');
+          setMessage("Vous devez être connecté pour finaliser l'abonnement.");
+          return;
+        }
+
+        // 5. Trouver l'entreprise liée à l'utilisateur
+        const { data: companies, error: companyError } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('owner_id', authSession.user.id);
+
+        if (companyError || !companies || companies.length === 0) {
+          setStatus('error');
+          setMessage("Aucune entreprise trouvée pour votre compte.");
+          return;
+        }
+
+        // 6. Mettre à jour le plan directement dans Supabase
+        const { error: updateError } = await supabase
+          .from('companies')
+          .update({
+            subscription_plan: plan,
+            stripe_subscription_id: checkoutStatus.subscription || null,
+            stripe_customer_id: checkoutStatus.customer || null,
+            subscription_expires_at: null
+          })
+          .eq('id', companies[0].id);
+
+        if (updateError) throw updateError;
+
+        setStatus('success');
+        setMessage('Votre abonnement est activé ! Redirection...');
+        setTimeout(() => {
+          window.location.href = '/dashboard/entreprise';
+        }, 2000);
       } catch (err) {
         setStatus('error');
         setMessage(err.message || 'Une erreur est survenue.');
