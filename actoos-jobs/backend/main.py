@@ -963,6 +963,44 @@ async def update_plan_from_session(req: UpdatePlanFromSessionRequest):
         plan_name = "free"
         if "pro" in package_id: plan_name = "pro"
         elif "business" in package_id: plan_name = "business"
+        company_resp = httpx.get(
+            f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        companies = company_resp.json()
+        if not companies:
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+        httpx.patch(
+            f"{supabase_url}/rest/v1/companies?id=eq.{companies[0]['id']}",
+            json={
+                "subscription_plan": plan_name,
+                "stripe_subscription_id": session.subscription,
+                "stripe_customer_id": session.customer,
+                "subscription_expires_at": None
+            },
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        return {"success": True, "message": f"Plan {plan_name} activé"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        session = stripe.checkout.Session.retrieve(req.session_id)
+        if session.payment_status != "paid":
+            raise HTTPException(status_code=400, detail="Le paiement n'est pas confirmé")
+        metadata = session.metadata or {}
+        user_id = metadata.get("user_id")
+        package_id = metadata.get("package_id")
+        if not user_id or not package_id:
+            raise HTTPException(status_code=400, detail="Métadonnées manquantes")
+        plan_name = "free"
+        if "pro" in package_id: plan_name = "pro"
+        elif "business" in package_id: plan_name = "business"
         company_resp = httpx.get(f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id", headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
         companies = company_resp.json()
         if not companies: raise HTTPException(status_code=404, detail="Entreprise non trouvée")
