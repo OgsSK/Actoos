@@ -35,11 +35,11 @@ interface ProjectBrief {
   architecture: string;
   stack?: string[];
   priority?: string;
+  [key: string]: any;
 }
 
 // ----- Rendu des URLs cliquables -----
 function renderMessageContent(text: string) {
-  // Si le texte contient déjà un lien HTML, on le rend tel quel
   if (text.includes('<a href=')) {
     return <span dangerouslySetInnerHTML={{ __html: text }} />;
   }
@@ -48,28 +48,21 @@ function renderMessageContent(text: string) {
   const parts = text.split(urlRegex);
   const matches = text.match(urlRegex) || [];
 
-  return (
-    <>
-      {parts.map((part, i) => {
-        if (i < matches.length) {
-          return (
-            <span key={i}>
-              {part}
-              <a
-                href={matches[i]}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 underline hover:text-blue-700 break-all"
-              >
-                {matches[i]}
-              </a>
-            </span>
-          );
-        }
-        return <span key={i}>{part}</span>;
-      })}
-    </>
-  );
+  if (matches.length === 0) return <span>{text}</span>;
+
+  const elements: React.ReactNode[] = [];
+  parts.forEach((part, i) => {
+    if (part) elements.push(<span key={`t-${i}`}>{part}</span>);
+    if (i < matches.length) {
+      elements.push(
+        <a key={`l-${i}`} href={matches[i]} target="_blank" rel="noopener noreferrer"
+           className="text-blue-500 underline hover:text-blue-700 break-all">
+          {matches[i]}
+        </a>
+      );
+    }
+  });
+  return <>{elements}</>;
 }
 
 // ----- Persistance intelligente -----
@@ -78,9 +71,7 @@ const STORAGE_KEY = 'actoos-chat-messages';
 const isReload = () => {
   if (typeof window === 'undefined') return false;
   const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-  if (navEntries.length > 0) {
-    return navEntries[0].type === 'reload';
-  }
+  if (navEntries.length > 0) return navEntries[0].type === 'reload';
   return (performance as any).navigation?.type === 1;
 };
 
@@ -211,40 +202,32 @@ export default function ProjectChatBot() {
   }, [messages]);
 
   const briefSummary = useMemo(() => {
-    if (!currentBrief) return [] as Array<{ label: string; value: string | JSX.Element }>;
-    return [
-      { label: 'Secteur', value: currentBrief.sector || 'Non spécifié' },
-      { label: 'Type', value: currentBrief.type },
-      { label: 'Objectif', value: currentBrief.objective || 'À définir' },
-      { label: 'Public cible', value: currentBrief.targetUsers || 'À définir' },
-      { label: 'Modules', value: currentBrief.modules?.join(', ') || 'À définir' },
-      { label: 'Pages', value: currentBrief.pages.join(', ') },
-      { label: 'Stack', value: currentBrief.stack?.join(', ') || 'À définir' },
-      { label: 'Complexité', value: currentBrief.complexity },
-      { label: 'Priorité', value: currentBrief.priority || 'Standard' },
-      { 
-        label: 'Maturité', 
-        value: currentBrief.maturityScore ? (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-2 bg-slate-200 rounded-full">
-              <div className="h-2 bg-[#D4AF37] rounded-full" style={{ width: `${(currentBrief.maturityScore / 10) * 100}%` }} />
+    if (!currentBrief) return [];
+    const entries: Array<{ label: string; value: string | JSX.Element }> = [];
+    const ignoreKeys = new Set(['projectName', 'features', 'pages', 'roles', 'modules', 'integrations', 'constraints', 'stack']);
+
+    for (const [key, val] of Object.entries(currentBrief)) {
+      if (ignoreKeys.has(key)) continue;
+      if (val === undefined || val === null) continue;
+      if (key === 'maturityScore' || key === 'priorityScore') {
+        entries.push({
+          label: key === 'maturityScore' ? 'Maturité' : 'Urgence',
+          value: (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-2 bg-slate-200 rounded-full">
+                <div className="h-2 bg-[#D4AF37] rounded-full" style={{ width: `${(Number(val) / 10) * 100}%` }} />
+              </div>
+              <span className="text-xs font-bold">{String(val)}/10</span>
             </div>
-            <span className="text-xs font-bold">{currentBrief.maturityScore}/10</span>
-          </div>
-        ) : 'N/A'
-      },
-      { 
-        label: 'Urgence', 
-        value: currentBrief.priorityScore ? (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-2 bg-slate-200 rounded-full">
-              <div className="h-2 bg-[#D4AF37] rounded-full" style={{ width: `${(currentBrief.priorityScore / 10) * 100}%` }} />
-            </div>
-            <span className="text-xs font-bold">{currentBrief.priorityScore}/10</span>
-          </div>
-        ) : 'N/A'
-      },
-    ];
+          ),
+        });
+      } else if (typeof val === 'string' || typeof val === 'number') {
+        entries.push({ label: key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()), value: String(val) });
+      } else if (Array.isArray(val)) {
+        entries.push({ label: key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()), value: val.join(', ') || '–' });
+      }
+    }
+    return entries;
   }, [currentBrief]);
 
   // ----- Envoi / discussion -----
@@ -277,7 +260,6 @@ export default function ProjectChatBot() {
         return;
       }
 
-      // Extraction robuste du briefing (JSON) même entouré de texte ou markdown
       const tryParseBriefing = (text: string) => {
         if (!text) return null;
         try {
@@ -583,7 +565,7 @@ export default function ProjectChatBot() {
     <p>Nous avons bien reçu votre projet <strong>${currentBrief?.projectName || 'votre projet'}</strong>.</p>
     <p>Notre équipe l'étudie avec attention et reviendra vers vous sous <strong>24h ouvrées</strong>.</p>
     <p>🔗 Suivez l'avancement de votre projet ici :<br>
-      <a href="${window.location.origin}/client/${clientToken}" style="color: #D4AF37; font-weight: bold;">${window.location.origin}/client/${clientToken}</a>
+     <a href="https://actoos.com/client/${clientToken}" style="color: #D4AF37; font-weight: bold;">https://actoos.com/client/${clientToken}</a>
     </p>
     <p>En attendant, vous pouvez nous contacter à tout moment :</p>
     <p>📧 <a href="mailto:contact@actoos.com" style="color: #D4AF37;">contact@actoos.com</a></p>
@@ -601,7 +583,7 @@ export default function ProjectChatBot() {
           {
             id: generateId(),
             role: 'assistant',
-            content: `✅ Votre projet a été transmis à l'équipe Actoos. Vous recevrez une réponse sous 24h.\n\n🔗 Suivez l'avancement ici : ${window.location.origin}/client/${clientToken}`,
+            content: `✅ Votre projet a été transmis à l'équipe Actoos. Vous recevrez une réponse sous 24h.<br/><br/>🔗 <a href="https://actoos.com/client/${clientToken}" target="_blank" class="text-blue-500 underline">Suivez l'avancement ici</a>`,
           },
         ]);
         setStep('soumettre');
@@ -924,34 +906,6 @@ export default function ProjectChatBot() {
                   </div>
                 ))}
               </div>
-              <button
-                onClick={async () => {
-                  setLoading(true);
-                  try {
-                    const res = await fetch('/api/generate-proposal', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        action: 'innovation',
-                        messages: messages.map(m => ({ role: m.role, content: m.content })),
-                      }),
-                    });
-                    const data = await res.json();
-                    if (data.response) {
-                      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: data.response }]);
-                    }
-                  } catch {
-                    setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading}
-                className="w-full mt-3 px-4 py-2.5 bg-purple-50 text-purple-700 rounded-3xl font-medium text-sm hover:bg-purple-100 transition-colors flex items-center justify-center gap-2"
-              >
-                <Lightbulb size={16} />
-                Améliorer le projet
-              </button>
 
               <div className="rounded-3xl bg-[#D4AF37]/10 p-4 text-sm text-slate-700 leading-relaxed">
                 Le brief reste modifiable pendant l'échange. Sur mobile, il se replie pour laisser la place au chat.

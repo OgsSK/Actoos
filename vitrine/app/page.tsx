@@ -37,7 +37,7 @@ export default function HomePage() {
             <a href="/expertise" className="hover:text-black transition-colors">Expertise</a>
             <a href="/a-propos" className="hover:text-black transition-colors">À propos</a>
             <a href="/philosophie" className="hover:text-black transition-colors">Philosophie</a>
-            <a href="#chatbot" className="hover:text-black transition-colors">Contact</a>
+            <a href="#chatbot" className="hover:text-black transition-colors">Concevoir votre projet</a>
           </div>
 
           <button 
@@ -55,7 +55,7 @@ export default function HomePage() {
             <a href="/expertise" className="block text-sm font-bold text-slate-600 hover:text-black">Expertise</a>
             <a href="/a-propos" className="block text-sm font-bold text-slate-600 hover:text-black">À propos</a>
             <a href="/philosophie" className="block text-sm font-bold text-slate-600 hover:text-black">Philosophie</a>
-            <a href="#chatbot" className="block text-sm font-bold text-slate-600 hover:text-black">Contact</a>
+            <a href="#chatbot" className="block text-sm font-bold text-slate-600 hover:text-black">Concevoir votre projet</a>
           </div>
         )}
       </nav>
@@ -258,8 +258,8 @@ export default function HomePage() {
               Discutons de vos besoins et voyons comment Actoos peut vous aider à concrétiser votre vision.
             </p>
             <a 
-              href="#chatbot"
-              className="inline-flex items-center space-x-3 bg-slate-950 text-white px-10 py-5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-[#D4AF37] transition-all shadow-2xl"
+             href="/contact"
+            className="inline-flex items-center space-x-3 bg-slate-950 text-white px-10 py-5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-[#D4AF37] transition-all shadow-2xl"
             >
               <span>Nous contacter</span>
               <ArrowRight size={18} />
@@ -304,7 +304,7 @@ export default function HomePage() {
                   </a>
                 </li>
                 <li>
-                  <a href="#chatbot" className="hover:text-black transition-colors">
+                  <a href="/contact" className="hover:text-black transition-colors">
                     Contact
                   </a>
                 </li>
