@@ -1,4 +1,5 @@
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
+const API_URL = 'https://actoos-jobs-api.onrender.com';
+
 export async function apiFetch(endpoint, options = {}) {
   const url = `${API_URL}${endpoint}`;
   const response = await fetch(url, {
