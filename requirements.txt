@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+stripe
+httpx
+python-dotenv
+resend
+pydantic
