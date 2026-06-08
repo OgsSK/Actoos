@@ -282,6 +282,45 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
         raise HTTPException(status_code=500, detail="Supabase not configured")
 
     try:
+        company_resp = httpx.get(
+            f"{supabase_url}/rest/v1/companies?owner_id=eq.{req.user_id}&select=id,stripe_subscription_id",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        companies = company_resp.json()
+        if not isinstance(companies, list) or len(companies) == 0:
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+        company = companies[0]
+        subscription_id = company.get("stripe_subscription_id")
+
+        if subscription_id:
+            try:
+                stripe.Subscription.delete(subscription_id)
+            except stripe.error.InvalidRequestError as e:
+                print(f"Stripe subscription already deleted or invalid: {e}")
+
+        httpx.patch(
+            f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
+            json={
+                "stripe_subscription_id": None,
+                "subscription_plan": "free",
+                "subscription_expires_at": None,
+                "cancellation_reason": req.reason or None
+            },
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+
+        return {"success": True, "message": "Abonnement résilié avec succès."}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    try:
         # Récupérer l'entreprise
         company_resp = httpx.get(
             f"{supabase_url}/rest/v1/companies?owner_id=eq.{req.user_id}&select=id,stripe_subscription_id",
@@ -333,6 +372,36 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
 # ----- Portail client Stripe -----
 @app.post("/api/stripe/portal")
 async def stripe_portal(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="ID utilisateur requis")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    company_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=stripe_customer_id",
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    )
+    companies = company_resp.json()
+    if not companies or len(companies) == 0:
+        raise HTTPException(status_code=404, detail="Aucune entreprise trouvée pour cet utilisateur")
+
+    customer_id = companies[0].get("stripe_customer_id")
+    if not customer_id:
+        return {"url": "https://jobs.actoos.com/tarifs"}
+
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url="https://jobs.actoos.com/dashboard/entreprise",
+        )
+        return {"url": session.url}
+    except stripe.error.InvalidRequestError as e:
+        return {"url": "https://jobs.actoos.com/tarifs"}
     data = await request.json(); user_id = data.get("user_id")
     if not user_id: raise HTTPException(status_code=400, detail="ID utilisateur requis")
     supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
