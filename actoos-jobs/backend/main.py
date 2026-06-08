@@ -273,6 +273,49 @@ async def stripe_webhook(request: Request):
 # ----- Résiliation avec raison -----
 @app.post("/api/subscription/cancel")
 async def cancel_subscription(req: CancelSubscriptionRequest):
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    try:
+        # Récupérer l'entreprise
+        company_resp = httpx.get(
+            f"{supabase_url}/rest/v1/companies?owner_id=eq.{req.user_id}&select=id,stripe_subscription_id",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        companies = company_resp.json()
+        if not isinstance(companies, list) or len(companies) == 0:
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+        company = companies[0]
+        subscription_id = company.get("stripe_subscription_id")
+
+        # Si un abonnement Stripe existe, on tente de le résilier
+        if subscription_id:
+            try:
+                stripe.Subscription.delete(subscription_id)
+            except stripe.error.InvalidRequestError as e:
+                # L'abonnement n'existe pas (ou a déjà été supprimé), on continue
+                print(f"Stripe subscription already deleted or invalid: {e}")
+
+        # Dans tous les cas, on repasse le plan en free
+        httpx.patch(
+            f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
+            json={
+                "stripe_subscription_id": None,
+                "subscription_plan": "free",
+                "subscription_expires_at": None,
+                "cancellation_reason": req.reason or None
+            },
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+
+        return {"success": True, "message": "Abonnement résilié avec succès."}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if not stripe.api_key: raise HTTPException(status_code=500, detail="Stripe not configured")
     supabase_url = os.getenv("SUPABASE_URL"); supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key: raise HTTPException(status_code=500, detail="Supabase not configured")
