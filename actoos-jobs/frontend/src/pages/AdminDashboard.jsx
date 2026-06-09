@@ -39,10 +39,12 @@ import {
   Layers,
   LayoutDashboard,
   CreditCard,
+  Sparkles,
+  Edit,
+  Save,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 
-// ---------- Stats Card ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) => (
   <Card
     className={cn(
@@ -95,7 +97,6 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) 
   </Card>
 );
 
-// ---------- Job Moderation Card ----------
 const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) => {
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -448,7 +449,6 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
   );
 };
 
-// ---------- Company Validation Card ----------
 const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDelete, onViewJobs }) => {
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -672,7 +672,6 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDele
   );
 };
 
-// ---------- Tabs ----------
 const TabButton = ({ active, onClick, children, count }) => (
   <button
     onClick={onClick}
@@ -695,7 +694,6 @@ const TabButton = ({ active, onClick, children, count }) => (
   </button>
 );
 
-// ---------- Main Admin Dashboard ----------
 const AdminDashboard = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -728,6 +726,21 @@ const AdminDashboard = () => {
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
   const [subscribers, setSubscribers] = useState([]);
   const [loadingSubscribers, setLoadingSubscribers] = useState(true);
+
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [loadingBlog, setLoadingBlog] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [blogForm, setBlogForm] = useState({
+    title: '',
+    keywords: '',
+    audience: 'all',
+    category: 'Carrière',
+    read_time: '5 min',
+    author: 'Équipe Actoos',
+    icon: 'FileText',
+    color: 'blue'
+  });
+  const [editingSlug, setEditingSlug] = useState(null);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -840,6 +853,25 @@ const AdminDashboard = () => {
     if (!error) setSubscribers(data || []);
     setLoadingSubscribers(false);
   };
+
+  const fetchBlogPosts = async () => {
+    setLoadingBlog(true);
+    try {
+      const res = await apiFetch('/api/blog/posts');
+      setBlogPosts(Array.isArray(res) ? res : []);
+    } catch (err) {
+      console.error(err);
+      setBlogPosts([]);
+    } finally {
+      setLoadingBlog(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAdmin && activeTab === 'blog') {
+      fetchBlogPosts();
+    }
+  }, [isAdmin, activeTab]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -1148,6 +1180,61 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleGenerateBlog = async () => {
+    if (!blogForm.title.trim()) {
+      toast.error('Le titre est requis pour générer un article');
+      return;
+    }
+    setGenerating(true);
+    try {
+      await apiFetch('/api/admin/blog/generate', {
+        method: 'POST',
+        body: JSON.stringify(blogForm),
+      });
+      toast.success('Article généré avec succès');
+      setBlogForm({
+        title: '',
+        keywords: '',
+        audience: 'all',
+        category: 'Carrière',
+        read_time: '5 min',
+        author: 'Équipe Actoos',
+        icon: 'FileText',
+        color: 'blue'
+      });
+      fetchBlogPosts();
+    } catch (err) {
+      toast.error(err.message || 'Erreur lors de la génération');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleUpdateBlog = async (slug, updates) => {
+    try {
+      await apiFetch(`/api/admin/blog/${slug}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      toast.success('Article mis à jour');
+      setEditingSlug(null);
+      fetchBlogPosts();
+    } catch (err) {
+      toast.error(err.message || 'Erreur');
+    }
+  };
+
+  const handleDeleteBlog = async (slug) => {
+    if (!window.confirm('Supprimer cet article ?')) return;
+    try {
+      await apiFetch(`/api/admin/blog/${slug}`, { method: 'DELETE' });
+      toast.success('Article supprimé');
+      fetchBlogPosts();
+    } catch (err) {
+      toast.error(err.message || 'Erreur');
+    }
+  };
+
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
       searchQuery === '' ||
@@ -1250,6 +1337,10 @@ const AdminDashboard = () => {
           <TabButton active={activeTab === 'newsletter'} onClick={() => setActiveTab('newsletter')}>
             <Mail className="w-4 h-4" />
             Newsletter
+          </TabButton>
+          <TabButton active={activeTab === 'blog'} onClick={() => setActiveTab('blog')}>
+            <FileText className="w-4 h-4" />
+            Blog
           </TabButton>
         </div>
 
@@ -1825,6 +1916,181 @@ const AdminDashboard = () => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'blog' && (
+          <div className="space-y-6">
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Générer un article avec l'IA
+                </CardTitle>
+                <CardDescription>Créez du contenu optimisé pour votre audience</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Titre *</label>
+                    <Input
+                      value={blogForm.title}
+                      onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
+                      placeholder="Ex: Comment réussir son entretien d'embauche"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Mots-clés</label>
+                    <Input
+                      value={blogForm.keywords}
+                      onChange={(e) => setBlogForm({ ...blogForm, keywords: e.target.value })}
+                      placeholder="Ex: recrutement, carrière, conseils"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Audience</label>
+                    <select
+                      value={blogForm.audience}
+                      onChange={(e) => setBlogForm({ ...blogForm, audience: e.target.value })}
+                      className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md bg-white"
+                    >
+                      <option value="all">Tous</option>
+                      <option value="candidate">Candidats</option>
+                      <option value="recruiter">Recruteurs</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Catégorie</label>
+                    <select
+                      value={blogForm.category}
+                      onChange={(e) => setBlogForm({ ...blogForm, category: e.target.value })}
+                      className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md bg-white"
+                    >
+                      <option value="Carrière">Carrière</option>
+                      <option value="Recrutement">Recrutement</option>
+                      <option value="Technologie">Technologie</option>
+                      <option value="Entrepreneuriat">Entrepreneuriat</option>
+                      <option value="Conseils">Conseils</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Auteur</label>
+                    <Input
+                      value={blogForm.author}
+                      onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })}
+                      placeholder="Équipe Actoos"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Temps de lecture</label>
+                    <Input
+                      value={blogForm.read_time}
+                      onChange={(e) => setBlogForm({ ...blogForm, read_time: e.target.value })}
+                      placeholder="5 min"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={handleGenerateBlog}
+                  disabled={generating || !blogForm.title.trim()}
+                  className="bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                  Générer l'article
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="w-5 h-5" />
+                  Articles ({blogPosts.length})
+                </CardTitle>
+                <CardDescription>Gérez les articles du blog</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingBlog ? (
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                ) : blogPosts.length === 0 ? (
+                  <p className="text-center text-slate-500 py-8">Aucun article pour le moment.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {blogPosts.map((post) => (
+                      <div key={post.id} className="p-4 bg-slate-50 rounded-2xl">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h3 className="font-semibold text-slate-900">{post.title}</h3>
+                            <p className="text-sm text-slate-500">
+                              {post.category} • {post.audience === 'candidate' ? 'Candidats' : post.audience === 'recruiter' ? 'Recruteurs' : 'Tous'} • {post.author}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1">{post.excerpt}</p>
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingSlug(post.slug);
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => handleDeleteBlog(post.slug)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {editingSlug === post.slug && (
+                          <div className="mt-4 space-y-3 border-t pt-4">
+                            <Input
+                              value={post.title}
+                              onChange={(e) => {
+                                const updated = blogPosts.map(p => p.slug === post.slug ? { ...p, title: e.target.value } : p);
+                                setBlogPosts(updated);
+                              }}
+                              placeholder="Titre"
+                            />
+                            <textarea
+                              className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none"
+                              rows="4"
+                              value={post.content}
+                              onChange={(e) => {
+                                const updated = blogPosts.map(p => p.slug === post.slug ? { ...p, content: e.target.value } : p);
+                                setBlogPosts(updated);
+                              }}
+                              placeholder="Contenu HTML"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleUpdateBlog(post.slug, { title: post.title, content: post.content })}
+                                className="bg-blue-600 text-white hover:bg-blue-700"
+                              >
+                                <Save className="w-4 h-4 mr-1" /> Enregistrer
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingSlug(null)}
+                              >
+                                Annuler
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
