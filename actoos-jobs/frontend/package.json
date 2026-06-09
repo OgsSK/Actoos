@@ -46,6 +46,7 @@
       "react-app/jest"
     ]
   },
+  "proxy": "http://localhost:8001",
   "browserslist": {
     "production": [
       ">0.2%",
@@ -58,4 +59,5 @@
       "last 1 safari version"
     ]
   }
+  
 }
