@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Tarifs de secours si l'API ne répond pas
 const FALLBACK_PRICING = {
   subscriptions: {
     pro_monthly: { amount: 49000, name: "Plan Pro - Mensuel", type: "subscription", interval: "month" },
@@ -21,17 +20,12 @@ const FALLBACK_PRICING = {
     business_monthly: { amount: 149000, name: "Plan Business - Mensuel", type: "subscription", interval: "month" },
     business_annual: { amount: 1430400, name: "Plan Business - Annuel (-20%)", type: "subscription", interval: "year" },
   },
-  boosts: {
-    boost_7: { amount: 9990, name: "Boost 7 jours", days: 7 },
-    boost_14: { amount: 17990, name: "Boost 14 jours", days: 14 },
-    boost_30: { amount: 29990, name: "Boost 30 jours", days: 30 },
-    featured: { amount: 49990, name: "À la une (30 jours)", days: 30 },
-  },
+  boosts: {},
   currency: "XOF"
 };
 
 const PRICING_CACHE_KEY = 'actoos_jobs_pricing_cache';
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const CACHE_DURATION = 30 * 60 * 1000;
 
 const PricingPage = () => {
   const { user } = useAuth();
@@ -102,6 +96,13 @@ const PricingPage = () => {
       toast.error('Vous devez être connecté pour souscrire');
       return;
     }
+
+    // Boosts non disponibles
+    if (packageId.startsWith('boost_') || packageId === 'featured') {
+      toast.info('Les boosts seront bientôt disponibles');
+      return;
+    }
+
     setCheckoutLoading(packageId);
     try {
       const result = await apiFetch('/api/checkout/session', {
@@ -122,8 +123,8 @@ const PricingPage = () => {
   };
 
   const handlePortal = () => {
-  window.location.href = '/dashboard/entreprise';
-};
+    window.location.href = '/dashboard/entreprise';
+  };
 
   const formatPrice = (amount) => {
     return new Intl.NumberFormat('fr-FR').format(amount);
@@ -137,9 +138,8 @@ const PricingPage = () => {
     );
   }
 
-  const { subscriptions, boosts } = pricing;
+  const { subscriptions } = pricing;
 
-  // Définition des plans avec limites
   const plans = [
     {
       id: 'free',
@@ -165,11 +165,11 @@ const PricingPage = () => {
     {
       id: 'pro_monthly',
       name: 'Pro',
-      monthlyPrice: subscriptions.pro_monthly.amount,
-      annualPrice: subscriptions.pro_annual.amount,
-      monthlyPriceDisplay: formatPrice(subscriptions.pro_monthly.amount),
-      annualPriceDisplay: formatPrice(subscriptions.pro_annual.amount),
-      annualMonthlyEquivalent: Math.round(subscriptions.pro_annual.amount / 12),
+      monthlyPrice: subscriptions.pro_monthly?.amount || 49000,
+      annualPrice: subscriptions.pro_annual?.amount || 470400,
+      monthlyPriceDisplay: formatPrice(subscriptions.pro_monthly?.amount || 49000),
+      annualPriceDisplay: formatPrice(subscriptions.pro_annual?.amount || 470400),
+      annualMonthlyEquivalent: Math.round((subscriptions.pro_annual?.amount || 470400) / 12),
       description: 'Pour les PME et les recruteurs indépendants.',
       features: [
         { icon: Briefcase, text: '5 offres actives' },
@@ -187,20 +187,18 @@ const PricingPage = () => {
     {
       id: 'business_monthly',
       name: 'Business',
-      monthlyPrice: subscriptions.business_monthly.amount,
-      annualPrice: subscriptions.business_annual.amount,
-      monthlyPriceDisplay: formatPrice(subscriptions.business_monthly.amount),
-      annualPriceDisplay: formatPrice(subscriptions.business_annual.amount),
-      annualMonthlyEquivalent: Math.round(subscriptions.business_annual.amount / 12),
+      monthlyPrice: subscriptions.business_monthly?.amount || 149000,
+      annualPrice: subscriptions.business_annual?.amount || 1430400,
+      monthlyPriceDisplay: formatPrice(subscriptions.business_monthly?.amount || 149000),
+      annualPriceDisplay: formatPrice(subscriptions.business_annual?.amount || 1430400),
+      annualMonthlyEquivalent: Math.round((subscriptions.business_annual?.amount || 1430400) / 12),
       description: 'Pour les entreprises qui recrutent activement.',
       features: [
         { icon: Briefcase, text: 'Offres actives illimitées' },
         { icon: Users, text: "Jusqu'à 5 utilisateurs" },
         { icon: BarChart3, text: 'Statistiques avancées' },
         { icon: Headphones, text: 'Support dédié' },
-        { icon: Globe, text: 'API de recrutement' },
-        { icon: Lock, text: 'Export des candidatures' },
-        { icon: Sparkles, text: '1 mise en avant offerte/mois' },
+        { icon: Zap, text: '1 boost de 7 jours/mois offert' },
         { icon: Shield, text: 'Profil entreprise premium' },
       ],
       limitations: [],
@@ -212,19 +210,8 @@ const PricingPage = () => {
   ];
 
   const currentPlan = company?.subscription_plan || 'free';
-  const activeJobsCount = 0; // On pourrait le récupérer, mais on va l'afficher simplement
-
-  const boostItems = Object.entries(boosts).map(([key, value]) => ({
-    id: key,
-    name: value.name,
-    price: value.amount,
-    priceDisplay: formatPrice(value.amount),
-    description: value.days ? `Visibilité prioritaire pendant ${value.days} jours` : 'Vitrine premium',
-    icon: Sparkles,
-  }));
 
   const faqItems = [
-    // ... (inchangé, déjà complet)
     {
       q: "Comment fonctionne l'abonnement ?",
       a: "Vous choisissez un plan (Pro ou Business) avec une facturation mensuelle ou annuelle. L'abonnement est automatiquement renouvelé chaque période. Vous pouvez résilier à tout moment depuis votre espace entreprise, sans frais."
@@ -266,12 +253,8 @@ const PricingPage = () => {
       a: "Si vous atteignez la limite de votre plan, vous ne pourrez pas publier de nouvelles offres. Vous pouvez soit archiver d'anciennes offres, soit passer au plan supérieur pour augmenter votre quota."
     },
     {
-      q: "Comment fonctionnent les boosts d'annonce ?",
-      a: "Un boost est un achat ponctuel qui met votre offre en avant pendant une durée déterminée (7, 14 ou 30 jours). L'offre apparaît en priorité dans les résultats de recherche et sur la page d'accueil. Vous pouvez booster plusieurs offres simultanément."
-    },
-    {
       q: "Puis-je obtenir un remboursement ?",
-      a: "Nous offrons une garantie de 14 jours pour les nouveaux abonnés. Si vous n'êtes pas satisfait, contactez-nous pour un remboursement complet. Pour les boosts, ils ne sont pas remboursables une fois activés."
+      a: "Nous offrons une garantie de 14 jours pour les nouveaux abonnés. Si vous n'êtes pas satisfait, contactez-nous pour un remboursement complet."
     }
   ];
 
@@ -280,19 +263,15 @@ const PricingPage = () => {
       toast.error('Vous devez être connecté pour commencer');
       return;
     }
-    // Si déjà sur gratuit, ne rien faire
     if (currentPlan === 'free') {
       toast.info('Vous êtes déjà sur le plan Gratuit');
       return;
     }
-    // Sinon, downgrade : normalement il faut résilier l'abonnement payant, mais ici on pourrait rediriger vers le dashboard avec un message.
-    // Comme il n'y a pas de downgrade direct, on informe l'utilisateur.
     toast.info('Pour revenir au plan Gratuit, veuillez résilier votre abonnement depuis votre espace entreprise.');
   };
 
   return (
     <div className="min-h-screen bg-white pt-20">
-      {/* Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
         <Badge className="bg-blue-50 text-blue-700 border-0 mb-4">Tarifs</Badge>
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 font-display mb-6">
@@ -303,7 +282,6 @@ const PricingPage = () => {
         </p>
       </div>
 
-      {/* Switch Annuel/Mensuel (boutons radios) */}
       <div className="flex justify-center items-center gap-3 mb-10">
         <span className={`text-sm ${!annual ? 'text-slate-900 font-semibold' : 'text-slate-400'}`}>
           Mensuel
@@ -321,13 +299,12 @@ const PricingPage = () => {
         </span>
       </div>
 
-      {/* Plans */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan) => {
             const isCurrentPlan = company && currentPlan === plan.planKey;
-            const isUpgrade = company && (plan.planKey === 'pro' && currentPlan === 'free') || (plan.planKey === 'business' && (currentPlan === 'free' || currentPlan === 'pro'));
-            const isDowngrade = company && (plan.planKey === 'free' && currentPlan !== 'free') || (plan.planKey === 'pro' && currentPlan === 'business');
+            const isUpgrade = company && ((plan.planKey === 'pro' && currentPlan === 'free') || (plan.planKey === 'business' && (currentPlan === 'free' || currentPlan === 'pro')));
+            const isDowngrade = company && !isCurrentPlan && !isUpgrade && plan.planKey !== 'free' && currentPlan !== 'free';
 
             return (
               <Card key={plan.id} className={`relative bg-white border-2 ${plan.borderColor} rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-xl ${plan.badge ? 'scale-105' : ''}`}>
@@ -422,13 +399,13 @@ const PricingPage = () => {
                           Plan actuel
                         </Button>
                         <Button
-  variant="outline"
-  className="w-full h-14 text-lg rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50"
-  onClick={handlePortal}
->
-  <CreditCard className="w-5 h-5 mr-2" />
-  Gérer mon abonnement
-</Button>
+                          variant="outline"
+                          className="w-full h-14 text-lg rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50"
+                          onClick={handlePortal}
+                        >
+                          <CreditCard className="w-5 h-5 mr-2" />
+                          Gérer mon abonnement
+                        </Button>
                       </>
                     ) : (
                       <>
@@ -446,7 +423,11 @@ const PricingPage = () => {
                           ) : (
                             <Building2 className="w-5 h-5 mr-2" />
                           )}
-                          {isUpgrade ? `Passer à ${plan.name}` : `S'abonner (${annual ? 'annuel' : 'mensuel'})`}
+                          {isUpgrade
+                            ? `Passer à ${plan.name}`
+                            : isDowngrade
+                            ? `Rétrograder vers ${plan.name}`
+                            : `S'abonner (${annual ? 'annuel' : 'mensuel'})`}
                           <ArrowRight className="w-5 h-5 ml-2" />
                         </Button>
                         {!annual && (
@@ -472,7 +453,7 @@ const PricingPage = () => {
         </div>
       </div>
 
-      {/* Tableau comparatif */}
+      {/* Tableau comparatif réaliste */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-slate-900 font-display">Comparaison détaillée</h2>
@@ -490,14 +471,12 @@ const PricingPage = () => {
             </thead>
             <tbody>
               {[
-                ['Offres actives', '1', '5', 'Illimitées'],
-                ['Utilisateurs', '1', '1', "Jusqu'à 5"],
-                ['Statistiques', '-', 'Basiques', 'Avancées'],
-                ['Support', 'Email', 'Prioritaire', 'Dédié'],
-                ['API', '-', '-', 'Oui'],
-                ['Export données', '-', '-', 'Oui'],
-                ['Mise en avant offerte', '-', '-', '1/mois'],
-                ['Profil entreprise vérifié', '-', 'Standard', 'Premium'],
+                ['Offres actives simultanées', '1', '5', 'Illimitées'],
+                ['Candidatures reçues', 'Illimitées', 'Illimitées', 'Illimitées'],
+                ['Profil entreprise vérifié', '-', '✓', '✓'],
+                ['Statistiques (vues, candidatures)', '✓', '✓', '✓'],
+                ['Support email', '✓', '✓', '✓'],
+                ['Boost mensuel offert', '-', '-', '1 boost de 7 jours / mois'],
               ].map(([feature, free, pro, business], i) => (
                 <tr key={i} className="border-b border-slate-100 last:border-0">
                   <td className="py-4 px-6 text-slate-700">{feature}</td>
@@ -511,43 +490,7 @@ const PricingPage = () => {
         </div>
       </div>
 
-      {/* Boosts */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-slate-900 font-display">Boostez votre visibilité</h2>
-          <p className="text-slate-600 mt-2">Donnez un coup de projecteur à vos offres d'emploi</p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {boostItems.map((boost) => (
-            <Card key={boost.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-lg">
-              <CardContent className="p-6 text-center">
-                <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <boost.icon className="w-7 h-7 text-blue-600" />
-                </div>
-                <h3 className="font-semibold text-lg text-slate-900 mb-1">{boost.name}</h3>
-                <p className="text-xs text-slate-500 mb-4">{boost.description}</p>
-                <div className="flex items-center justify-center gap-1 mb-6">
-                  <span className="text-3xl font-bold text-slate-900">{boost.priceDisplay}</span>
-                  <span className="text-slate-500 text-sm">FCFA</span>
-                </div>
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl"
-                  onClick={() => handleCheckout(boost.id)}
-                  disabled={checkoutLoading === boost.id}
-                >
-                  {checkoutLoading === boost.id ? (
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  ) : null}
-                  Acheter
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* FAQ détaillée */}
+      {/* FAQ */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-slate-900 font-display">Questions fréquentes</h2>
@@ -590,7 +533,6 @@ const PricingPage = () => {
         </div>
       </div>
 
-      {/* Message non connecté */}
       {!user && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <div className="bg-slate-900 text-white rounded-2xl px-6 py-4 shadow-xl flex items-center gap-4">

@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 
+// ---------- Stats Card ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) => (
   <Card
     className={cn(
@@ -94,6 +95,7 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) 
   </Card>
 );
 
+// ---------- Job Moderation Card ----------
 const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) => {
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -446,6 +448,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
   );
 };
 
+// ---------- Company Validation Card ----------
 const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDelete, onViewJobs }) => {
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -669,6 +672,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDele
   );
 };
 
+// ---------- Tabs ----------
 const TabButton = ({ active, onClick, children, count }) => (
   <button
     onClick={onClick}
@@ -691,6 +695,7 @@ const TabButton = ({ active, onClick, children, count }) => (
   </button>
 );
 
+// ---------- Main Admin Dashboard ----------
 const AdminDashboard = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -1238,18 +1243,14 @@ const AdminDashboard = () => {
             <Flag className="w-4 h-4" />
             Signalements
           </TabButton>
-          <TabButton active={activeTab === 'cancellations'} onClick={() => setActiveTab('cancellations')}>
-            <AlertTriangle className="w-4 h-4" />
-            Résiliations
+          <TabButton active={activeTab === 'subscriptions'} onClick={() => setActiveTab('subscriptions')}>
+            <CreditCard className="w-4 h-4" />
+            Abonnements
           </TabButton>
           <TabButton active={activeTab === 'newsletter'} onClick={() => setActiveTab('newsletter')}>
             <Mail className="w-4 h-4" />
             Newsletter
           </TabButton>
-          <TabButton active={activeTab === 'subscriptions'} onClick={() => setActiveTab('subscriptions')}>
-  <CreditCard className="w-4 h-4" />
-  Abonnements
-</TabButton>
         </div>
 
         {activeTab === 'overview' && (
@@ -1626,48 +1627,119 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {activeTab === 'cancellations' && (
-          <Card className="overflow-hidden">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
-                Résiliations d'abonnement
-              </CardTitle>
-              <CardDescription>Entreprises ayant résilié leur plan payant</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loadingCancellations ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        {activeTab === 'subscriptions' && (
+          <div className="space-y-6">
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  Abonnements actifs / résiliés
+                </CardTitle>
+                <CardDescription>
+                  Vue d'ensemble de tous les abonnements entreprise
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="border-b bg-slate-50">
+                      <tr>
+                        <th className="text-left py-3 px-4 font-medium">Entreprise</th>
+                        <th className="text-left py-3 px-4 font-medium">Plan</th>
+                        <th className="text-left py-3 px-4 font-medium">Ancien plan</th>
+                        <th className="text-left py-3 px-4 font-medium">Stripe Sub ID</th>
+                        <th className="text-left py-3 px-4 font-medium">Expiration</th>
+                        <th className="text-left py-3 px-4 font-medium">Raison résiliation</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {companies.map((c) => (
+                        <tr key={c.id} className="border-b border-slate-100">
+                          <td className="py-3 px-4 font-medium">{c.name}</td>
+                          <td className="py-3 px-4">
+                            <Badge
+                              className={
+                                c.subscription_plan === 'pro'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : c.subscription_plan === 'business'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : 'bg-slate-100 text-slate-700'
+                              }
+                            >
+                              {c.subscription_plan || 'free'}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-xs text-slate-500">
+                            {c.previous_subscription_plan ? (
+                              <Badge className="bg-amber-100 text-amber-700">{c.previous_subscription_plan}</Badge>
+                            ) : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-xs text-slate-500">
+                            {c.stripe_subscription_id || '-'}
+                          </td>
+                          <td className="py-3 px-4">
+                            {c.subscription_expires_at
+                              ? new Date(c.subscription_expires_at).toLocaleDateString('fr-FR')
+                              : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-xs text-slate-500 max-w-[200px] truncate" title={c.cancellation_reason}>
+                            {c.cancellation_reason || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              ) : cancellations.length === 0 ? (
-                <p className="text-sm text-slate-500 text-center py-4">Aucune résiliation enregistrée.</p>
-              ) : (
-                <div className="space-y-3">
-                  {cancellations.map((c) => (
-                    <div key={c.id} className="p-4 bg-slate-50 rounded-2xl">
-                      <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
-                        <div>
-                          <p className="font-semibold text-slate-900">{c.name}</p>
-                          <p className="text-sm text-slate-600">
-                            Plan : <Badge className="bg-slate-200 text-slate-700">{c.subscription_plan}</Badge>
-                          </p>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  Dernières résiliations
+                </CardTitle>
+                <CardDescription>Entreprises ayant résilié leur plan payant</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingCancellations ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                  </div>
+                ) : cancellations.length === 0 ? (
+                  <p className="text-sm text-slate-500 text-center py-4">Aucune résiliation enregistrée.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {cancellations.map((c) => (
+                      <div key={c.id} className="p-4 bg-slate-50 rounded-2xl">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+                          <div>
+                            <p className="font-semibold text-slate-900">{c.name}</p>
+                            <p className="text-sm text-slate-600">
+                              Plan après résiliation : <Badge className="bg-slate-200 text-slate-700">{c.subscription_plan}</Badge>
+                              {c.previous_subscription_plan && (
+                                <>
+                                  {' '}← depuis <Badge className="bg-amber-100 text-amber-700">{c.previous_subscription_plan}</Badge>
+                                </>
+                              )}
+                            </p>
+                          </div>
+                          <span className="text-xs text-slate-400">
+                            {new Date(c.updated_at).toLocaleDateString('fr-FR')}
+                          </span>
                         </div>
-                        <span className="text-xs text-slate-400">
-                          {new Date(c.updated_at).toLocaleDateString('fr-FR')}
-                        </span>
+                        {c.cancellation_reason && (
+                          <div className="mt-2 text-sm text-slate-600 italic">
+                            « {c.cancellation_reason} »
+                          </div>
+                        )}
                       </div>
-                      {c.cancellation_reason && (
-                        <div className="mt-2 text-sm text-slate-600 italic">
-                          « {c.cancellation_reason} »
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {activeTab === 'newsletter' && (
@@ -1759,63 +1831,6 @@ const AdminDashboard = () => {
             </Card>
           </div>
         )}
-        {activeTab === 'subscriptions' && (
-  <Card className="overflow-hidden">
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <CreditCard className="w-5 h-5" />
-        Abonnements
-      </CardTitle>
-      <CardDescription>Détails des abonnements de toutes les entreprises</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-left py-3 px-4">Entreprise</th>
-              <th className="text-left py-3 px-4">Plan</th>
-              <th className="text-left py-3 px-4">Stripe Sub ID</th>
-              <th className="text-left py-3 px-4">Expire le</th>
-              <th className="text-left py-3 px-4">Raison résiliation</th>
-            </tr>
-          </thead>
-          <tbody>
-            {companies.map((c) => (
-              <tr key={c.id} className="border-b border-slate-100">
-                <td className="py-3 px-4">{c.name}</td>
-                <td className="py-3 px-4">
-                  <Badge
-                    className={
-                      c.subscription_plan === 'pro'
-                        ? 'bg-blue-100 text-blue-700'
-                        : c.subscription_plan === 'business'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-slate-100 text-slate-700'
-                    }
-                  >
-                    {c.subscription_plan || 'free'}
-                  </Badge>
-                </td>
-                <td className="py-3 px-4 text-xs text-slate-500">
-                  {c.stripe_subscription_id || '-'}
-                </td>
-                <td className="py-3 px-4">
-                  {c.subscription_expires_at
-                    ? new Date(c.subscription_expires_at).toLocaleDateString('fr-FR')
-                    : '-'}
-                </td>
-                <td className="py-3 px-4 text-xs text-slate-500">
-                  {c.cancellation_reason || '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </CardContent>
-  </Card>
-)}
       </div>
     </div>
   );

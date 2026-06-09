@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -22,6 +23,7 @@ import {
   CheckCircle,
   Send,
   XCircle,
+  Zap,
 } from 'lucide-react';
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
@@ -34,7 +36,7 @@ const statusConfig = {
   pending: { label: 'En validation', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
 };
 
-const JobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
+const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusinessPlan }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const menuButtonRef = useRef(null);
@@ -47,7 +49,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
     if (!menuButtonRef.current) return;
     const rect = menuButtonRef.current.getBoundingClientRect();
     const menuWidth = 240;
-    const menuHeight = 260;
+    const menuHeight = isBusinessPlan ? 310 : 260; // plus haut si le bouton boost est présent
     const padding = 12;
     const gap = 8;
     const left = Math.max(
@@ -100,16 +102,30 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus }) => {
             </button>
 
             {job.status === 'active' && (
-              <button
-                onClick={() => {
-                  onToggleStatus(job, 'paused');
-                  setShowMenu(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-yellow-600 hover:bg-slate-50"
-              >
-                <Clock className="w-4 h-4" />
-                Mettre en pause
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    onToggleStatus(job, 'paused');
+                    setShowMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-yellow-600 hover:bg-slate-50"
+                >
+                  <Clock className="w-4 h-4" />
+                  Mettre en pause
+                </button>
+                {isBusinessPlan && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onFreeBoost(job);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-600 hover:bg-slate-50"
+                  >
+                    <Zap className="w-4 h-4" />
+                    Utiliser mon boost mensuel
+                  </button>
+                )}
+              </>
             )}
 
             {job.status === 'paused' && (
@@ -254,10 +270,24 @@ const CompanyJobsPage = () => {
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [company, setCompany] = useState(null);
 
   useEffect(() => {
     if (user && activeCompanyId) fetchJobs();
   }, [user, activeCompanyId]);
+
+  useEffect(() => {
+    if (activeCompanyId) {
+      supabase
+        .from('companies')
+        .select('subscription_plan')
+        .eq('id', activeCompanyId)
+        .single()
+        .then(({ data }) => {
+          setCompany(data);
+        });
+    }
+  }, [activeCompanyId]);
 
   const fetchJobs = async () => {
     if (!activeCompanyId) {
@@ -311,6 +341,75 @@ const CompanyJobsPage = () => {
       toast.error('Erreur lors de la mise à jour');
     }
   };
+
+  const handleFreeBoost = async (job) => {
+  try {
+    // 1. Récupérer les informations de l'entreprise
+    const { data: companyData, error: companyError } = await supabase
+      .from('companies')
+      .select('id, subscription_plan, last_free_boost_at')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (companyError || !companyData) throw new Error('Entreprise introuvable');
+
+    // 2. Vérifier le plan
+    if (companyData.subscription_plan !== 'business') {
+      toast.error('Cette fonctionnalité est réservée au plan Business');
+      return;
+    }
+
+    // 3. Vérifier le délai d'un mois
+    const now = new Date();
+    if (companyData.last_free_boost_at) {
+      const lastBoost = new Date(companyData.last_free_boost_at);
+      const diffDays = (now - lastBoost) / (1000 * 60 * 60 * 24);
+      if (diffDays < 30) {
+        const daysLeft = Math.ceil(30 - diffDays);
+        toast.error(`Boost déjà utilisé ce mois. Réessayez dans ${daysLeft} jour(s).`);
+        return;
+      }
+    }
+
+    // 4. Vérifier que l'offre est bien active et appartient à cette entreprise
+    const { data: jobData, error: jobError } = await supabase
+      .from('jobs')
+      .select('id, status, company_id')
+      .eq('id', job.id)
+      .single();
+
+    if (jobError || !jobData || jobData.status !== 'active' || jobData.company_id !== companyData.id) {
+      toast.error("L'offre n'est pas éligible");
+      return;
+    }
+
+    // 5. Appliquer le boost (7 jours)
+    const boostedUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { error: updateJobError } = await supabase
+      .from('jobs')
+      .update({ boosted_until: boostedUntil })
+      .eq('id', job.id);
+
+    if (updateJobError) throw updateJobError;
+
+    // 6. Mettre à jour la date de dernier boost
+    const { error: updateCompanyError } = await supabase
+      .from('companies')
+      .update({ last_free_boost_at: now.toISOString() })
+      .eq('id', companyData.id);
+
+    if (updateCompanyError) throw updateCompanyError;
+
+    toast.success('Boost gratuit activé pour 7 jours !');
+    fetchJobs(); // rafraîchir la liste des offres
+  } catch (err) {
+    console.error('Erreur boost gratuit:', err);
+    toast.error(err.message || 'Erreur lors de l\'activation du boost');
+  }
+};
+
+  const isBusinessPlan = company?.subscription_plan === 'business';
 
   if (loading) {
     return (
@@ -368,6 +467,8 @@ const CompanyJobsPage = () => {
                 onEdit={handleEditJob}
                 onDelete={handleDeleteJob}
                 onToggleStatus={handleToggleJobStatus}
+                onFreeBoost={handleFreeBoost}
+                isBusinessPlan={isBusinessPlan}
               />
             ))}
           </div>
