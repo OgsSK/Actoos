@@ -96,7 +96,8 @@ const Header = ({ user, onLogout }) => {
 
   const handleLogout = () => {
     setMobileMenuOpen(false);
-    onLogout();
+    onLogout();                         // déconnexion Supabase
+    navigate('/connexion');            // redirection immédiate
   };
 
   return (
@@ -431,6 +432,19 @@ const Header = ({ user, onLogout }) => {
                       Mon profil
                     </Button>
                   </Link>
+
+                  {/* 🔔 Alerte pour les candidats dans le menu mobile */}
+                  {isCandidate && (
+                    <Link
+                      to="/alertes"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Button variant="outline" className="w-full">
+                        <Bell className="w-4 h-4 mr-2" />
+                        Alertes emploi
+                      </Button>
+                    </Link>
+                  )}
 
                   <Link
                     to="/parametres"

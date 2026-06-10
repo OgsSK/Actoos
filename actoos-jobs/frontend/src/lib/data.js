@@ -45,15 +45,12 @@ export async function fetchActiveJobsCount() {
 }
 
 export async function fetchVerifiedCompaniesCount() {
-  // Compte toutes les entreprises actives (mieux que is_verified)
   const { count, error } = await supabase
     .from('companies')
     .select('*', { count: 'exact', head: true })
-    .eq('is_active', true);
-  if (error) {
-    console.error('fetchVerifiedCompaniesCount error:', error);
-    return 0;
-  }
+    .eq('is_active', true)
+    .eq('is_verified', true);
+  if (error) { console.error(error); return 0; }
   return count || 0;
 }
 

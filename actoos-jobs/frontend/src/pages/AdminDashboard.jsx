@@ -452,7 +452,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
 };
 
 // ---------- Company Validation Card ----------
-const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDelete, onViewJobs }) => {
+const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJobs, onSuspendWithDuration }) => {
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
   const [reason, setReason] = useState('');
@@ -507,8 +507,6 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDele
   const confirmAction = async () => {
     if (actionType === 'reject') {
       await onReject(company, reason);
-    } else if (actionType === 'suspend') {
-      await onSuspend(company, reason);
     } else if (actionType === 'delete') {
       await onDelete(company);
     }
@@ -619,7 +617,8 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDele
             size="sm"
             variant="outline"
             className="w-full sm:w-auto text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 min-h-[44px]"
-            onClick={() => setActionType('suspend')}
+            onClick={() => onSuspendWithDuration(company)}
+            disabled={!company.is_active}
           >
             <Ban className="w-4 h-4 mr-1" />
             Suspendre
@@ -640,9 +639,9 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDele
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-xl">
             <h3 className="text-lg font-semibold mb-4">
-              {actionType === 'reject' ? "Rejeter l'entreprise" : actionType === 'suspend' ? "Suspendre l'entreprise" : "Supprimer l'entreprise"}
+              {actionType === 'reject' ? "Rejeter l'entreprise" : "Supprimer l'entreprise"}
             </h3>
-            {actionType !== 'delete' && (
+            {actionType === 'reject' && (
               <>
                 <label className="block text-sm font-medium mb-2">Raison (optionnelle)</label>
                 <textarea
@@ -746,6 +745,16 @@ const AdminDashboard = () => {
     color: 'blue'
   });
   const [editingSlug, setEditingSlug] = useState(null);
+
+  // États pour la suspension temporaire des utilisateurs
+  const [suspendModal, setSuspendModal] = useState({ open: false, userId: null });
+  const [suspendDuration, setSuspendDuration] = useState(0);
+  const [suspendReason, setSuspendReason] = useState('');
+
+  // États pour la suspension temporaire des entreprises
+  const [companySuspendModal, setCompanySuspendModal] = useState({ open: false, companyId: null });
+  const [companySuspendDuration, setCompanySuspendDuration] = useState(0);
+  const [companySuspendReason, setCompanySuspendReason] = useState('');
 
   // Helper to get plan limit
   const getPlanLimit = (plan) => {
@@ -1010,22 +1019,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleSuspendCompany = async (company, reason = '') => {
-    try {
-      await apiFetch('/api/admin/suspend-company', {
-        method: 'POST',
-        body: JSON.stringify({ id: company.id, reason }),
-      });
-      setCompanies((prev) =>
-        prev.map((c) => (c.id === company.id ? { ...c, is_active: false, is_verified: false } : c))
-      );
-      setStats((s) => ({ ...s, verifiedCompanies: Math.max(0, s.verifiedCompanies - 1) }));
-      toast.success('Entreprise suspendue et email envoyé');
-    } catch (error) {
-      toast.error('Erreur');
-    }
-  };
-
   const handleDeleteCompany = async (company) => {
     if (!window.confirm(`Supprimer définitivement l'entreprise "${company.name}" ?`)) return;
     try {
@@ -1095,21 +1088,66 @@ const AdminDashboard = () => {
     }
   };
 
-const handleUpdateReportStatus = async (reportId, newStatus) => {
-  const { error } = await supabase.rpc('update_report_status', {
-    report_id: reportId,
-    new_status: newStatus
-  });
+  // ---- Suspension temporaire d'un utilisateur ----
+  const handleSuspendUser = async () => {
+    if (!suspendModal.userId) return;
+    try {
+      const res = await apiFetch('/api/admin/suspend-user', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: suspendModal.userId,
+          duration_days: suspendDuration === 0 ? null : suspendDuration,
+          reason: suspendReason || null,
+        }),
+      });
+      if (res.success) {
+        setUsers(prev => prev.map(u => u.id === suspendModal.userId ? { ...u, is_active: false } : u));
+        toast.success(`Utilisateur suspendu ${suspendDuration ? `pour ${suspendDuration} jour(s)` : 'définitivement'}`);
+      } else {
+        toast.error(res.message || 'Erreur');
+      }
+      setSuspendModal({ open: false, userId: null });
+    } catch (error) {
+      toast.error(error.message || 'Erreur réseau');
+    }
+  };
 
-  if (error) {
-    toast.error(error.message);
-  } else {
-    setReports(prev =>
-      prev.map(r => (r.id === reportId ? { ...r, status: newStatus } : r))
-    );
-    toast.success('Signalement mis à jour');
-  }
-};
+  // ---- Suspension temporaire d'une entreprise ----
+  const handleSuspendCompanyWithDuration = async () => {
+    if (!companySuspendModal.companyId) return;
+    try {
+      const res = await apiFetch('/api/admin/suspend-company', {
+        method: 'POST',
+        body: JSON.stringify({
+          id: companySuspendModal.companyId,
+          reason: companySuspendReason || null,
+          duration_days: companySuspendDuration === 0 ? null : companySuspendDuration,
+        }),
+      });
+      if (res.success) {
+        setCompanies(prev => prev.map(c => c.id === companySuspendModal.companyId ? { ...c, is_active: false } : c));
+        toast.success(`Entreprise suspendue ${companySuspendDuration ? `pour ${companySuspendDuration} jour(s)` : 'définitivement'}`);
+      } else {
+        toast.error(res.message || 'Erreur');
+      }
+      setCompanySuspendModal({ open: false, companyId: null });
+    } catch (error) {
+      toast.error(error.message || 'Erreur réseau');
+    }
+  };
+
+  const handleUpdateReportStatus = async (reportId, newStatus) => {
+    const { error } = await supabase.rpc('update_report_status', {
+      report_id: reportId,
+      new_status: newStatus,
+    });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setReports(prev => prev.map(r => (r.id === reportId ? { ...r, status: newStatus } : r)));
+      toast.success('Signalement mis à jour');
+    }
+  };
 
   const handleSuspendReportedItem = async (report) => {
     const reason = window.prompt('Raison de la suspension (optionnelle) :');
@@ -1197,20 +1235,19 @@ const handleUpdateReportStatus = async (reportId, newStatus) => {
   };
 
   const handleToggleSubscriber = async (sub) => {
-  const { error } = await supabase.rpc('toggle_subscriber_active', {
-    sub_id: sub.id,
-    activate: !sub.is_active
-  });
-
-  if (error) {
-    toast.error(error.message);
-  } else {
-    setSubscribers(prev =>
-      prev.map(s => (s.id === sub.id ? { ...s, is_active: !sub.is_active, unsubscribed_at: !sub.is_active ? null : new Date().toISOString() } : s))
-    );
-    toast.success(sub.is_active ? 'Désactivé' : 'Réactivé');
-  }
-};
+    const { error } = await supabase.rpc('toggle_subscriber_active', {
+      sub_id: sub.id,
+      activate: !sub.is_active,
+    });
+    if (!error) {
+      setSubscribers(prev =>
+        prev.map(s => (s.id === sub.id ? { ...s, is_active: !sub.is_active } : s))
+      );
+      toast.success(sub.is_active ? 'Désactivé' : 'Réactivé');
+    } else {
+      toast.error(error.message);
+    }
+  };
 
   const handleSendNewsletter = async () => {
     if (!newsletter.subject || !newsletter.content) {
@@ -1448,9 +1485,9 @@ const handleUpdateReportStatus = async (reportId, newStatus) => {
                     company={company}
                     onApprove={handleApproveCompany}
                     onReject={handleRejectCompany}
-                    onSuspend={handleSuspendCompany}
                     onDelete={handleDeleteCompany}
                     onViewJobs={handleViewCompanyJobs}
+                    onSuspendWithDuration={(company) => setCompanySuspendModal({ open: true, companyId: company.id })}
                   />
                 ))}
                 {companies.filter((c) => c.is_verified !== true).length === 0 && (
@@ -1547,9 +1584,9 @@ const handleUpdateReportStatus = async (reportId, newStatus) => {
                     company={company}
                     onApprove={handleApproveCompany}
                     onReject={handleRejectCompany}
-                    onSuspend={handleSuspendCompany}
                     onDelete={handleDeleteCompany}
                     onViewJobs={handleViewCompanyJobs}
+                    onSuspendWithDuration={(company) => setCompanySuspendModal({ open: true, companyId: company.id })}
                   />
                 ))
               ) : (
@@ -1604,15 +1641,30 @@ const handleUpdateReportStatus = async (reportId, newStatus) => {
                           <option value="admin">Admin</option>
                         </select>
 
+                        {/* Bouton Suspendre qui ouvre la modale */}
                         <Button
                           size="sm"
                           variant="outline"
                           className="w-full sm:w-auto min-h-[44px]"
-                          onClick={() => handleToggleUserActive(u.id, u.is_active)}
+                          onClick={() => setSuspendModal({ open: true, userId: u.id })}
+                          disabled={!u.is_active}
                         >
-                          {u.is_active ? <UserX className="w-4 h-4 mr-1" /> : <UserCheck className="w-4 h-4 mr-1" />}
-                          {u.is_active ? 'Suspendre' : 'Réactiver'}
+                          <UserX className="w-4 h-4 mr-1" />
+                          Suspendre
                         </Button>
+
+                        {/* Bouton Réactiver (seulement si inactif) */}
+                        {!u.is_active && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full sm:w-auto min-h-[44px]"
+                            onClick={() => handleToggleUserActive(u.id, u.is_active)}
+                          >
+                            <UserCheck className="w-4 h-4 mr-1" />
+                            Réactiver
+                          </Button>
+                        )}
 
                         {!u.is_banned && (
                           <Button
@@ -1665,8 +1717,6 @@ const handleUpdateReportStatus = async (reportId, newStatus) => {
                     const isJobReport = report.reported_item_type === 'job';
                     const isCompanyReport = report.reported_item_type === 'company';
                     const isCandidateReport = report.reported_item_type === 'candidate';
-
-                    const itemLabel = isJobReport ? 'Offre' : isCompanyReport ? 'Entreprise' : 'Candidat';
 
                     return (
                       <div
@@ -2146,6 +2196,83 @@ const handleUpdateReportStatus = async (reportId, newStatus) => {
                 )}
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Modale de suspension utilisateur */}
+        {suspendModal.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+              <h3 className="text-lg font-semibold mb-4">Suspendre le compte</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Durée de suspension</label>
+                  <select
+                    value={suspendDuration}
+                    onChange={(e) => setSuspendDuration(Number(e.target.value))}
+                    className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-white"
+                  >
+                    <option value={0}>Indéfinie</option>
+                    <option value={1}>1 jour</option>
+                    <option value={7}>7 jours</option>
+                    <option value={30}>30 jours</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Raison (optionnelle)</label>
+                  <textarea
+                    className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none"
+                    rows={2}
+                    value={suspendReason}
+                    onChange={(e) => setSuspendReason(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <Button variant="outline" onClick={() => setSuspendModal({ open: false, userId: null })}>Annuler</Button>
+                <Button className="bg-red-600 text-white hover:bg-red-700" onClick={handleSuspendUser}>Suspendre</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modale de suspension entreprise */}
+        {companySuspendModal.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+              <h3 className="text-lg font-semibold mb-4">Suspendre l'entreprise</h3>
+              <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg mb-4">
+                ⚠️ La suspension rendra l'entreprise invisible publiquement et empêchera la publication d'offres.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Durée de suspension</label>
+                  <select
+                    value={companySuspendDuration}
+                    onChange={(e) => setCompanySuspendDuration(Number(e.target.value))}
+                    className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-white"
+                  >
+                    <option value={0}>Indéfinie</option>
+                    <option value={1}>1 jour</option>
+                    <option value={7}>7 jours</option>
+                    <option value={30}>30 jours</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Raison (optionnelle)</label>
+                  <textarea
+                    className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none"
+                    rows={2}
+                    value={companySuspendReason}
+                    onChange={(e) => setCompanySuspendReason(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <Button variant="outline" onClick={() => setCompanySuspendModal({ open: false, companyId: null })}>Annuler</Button>
+                <Button className="bg-red-600 text-white hover:bg-red-700" onClick={handleSuspendCompanyWithDuration}>Suspendre</Button>
+              </div>
+            </div>
           </div>
         )}
       </div>

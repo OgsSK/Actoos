@@ -166,6 +166,11 @@ class BlogUpdateRequest(BaseModel):
 class UpdatePlanFromSessionRequest(BaseModel):
     session_id: str
 
+class AdminSuspendUserRequest(BaseModel):
+    user_id: str
+    duration_days: Optional[int] = None
+    reason: Optional[str] = None
+
 def clean_subject(text: str, max_length: int = 50) -> str:
     cleaned = text.replace('\n', ' ').replace('\r', ' ')
     if len(cleaned) > max_length:
@@ -1055,8 +1060,57 @@ async def admin_reject_company(req: AdminActionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class AdminSuspendCompanyRequest(BaseModel):
+    id: str
+    reason: Optional[str] = ""
+    duration_days: Optional[int] = None   # null = indéfini
+
 @app.post("/api/admin/suspend-company")
-async def admin_suspend_company(req: AdminActionRequest):
+async def admin_suspend_company(req: AdminSuspendCompanyRequest):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        # Récupérer l'entreprise et son propriétaire
+        company_resp = httpx.get(
+            f"{supabase_url}/rest/v1/companies?id=eq.{req.id}&select=*,owner:users(email,first_name,last_name)",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        companies = company_resp.json()
+        if not companies:
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+        company = companies[0]
+
+        update_data = {"is_active": False, "is_verified": False}
+        if req.duration_days:
+            suspended_until = datetime.utcnow() + timedelta(days=req.duration_days)
+            update_data["suspended_until"] = suspended_until.isoformat()
+        else:
+            update_data["suspended_until"] = None
+
+        httpx.patch(
+            f"{supabase_url}/rest/v1/companies?id=eq.{req.id}",
+            json=update_data,
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+
+        # Email
+        owner_email = company.get("owner", {}).get("email")
+        owner_first_name = company.get("owner", {}).get("first_name") or "Propriétaire"
+        if owner_email and resend.api_key:
+            duration_text = f" pour {req.duration_days} jour(s)" if req.duration_days else " définitivement"
+            reason_text = f" Raison : {req.reason}" if req.reason else ""
+            resend.Emails.send({
+                "from": "Actoos Jobs <noreply@actoos.com>",
+                "to": [owner_email],
+                "subject": "Votre entreprise a été suspendue",
+                "html": f"<h2>Information importante</h2><p>Votre entreprise <strong>{company['name']}</strong> a été suspendue{duration_text}.{reason_text}</p>"
+            })
+
+        return {"success": True, "message": "Entreprise suspendue"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
@@ -1195,60 +1249,52 @@ async def get_reports():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-class UpdateReportStatusRequest(BaseModel):
-    status: str
-
-@app.patch("/api/admin/reports/{report_id}")
-async def update_report_status(report_id: str, req: UpdateReportStatusRequest):
+# ----- Suspension temporaire -----
+@app.post("/api/admin/suspend-user")
+async def admin_suspend_user(req: AdminSuspendUserRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
-    
-    if req.status not in ("reviewed", "resolved"):
-        raise HTTPException(status_code=400, detail="Statut invalide")
-    
+
     try:
-        # Appel de la fonction SECURITY DEFINER qui ignore les RLS
-        response = httpx.post(
-            f"{supabase_url}/rest/v1/rpc/update_report_status",
-            json={"report_id": report_id, "new_status": req.status},
-            headers={
-                "apikey": supabase_key,
-                "Authorization": f"Bearer {supabase_key}",
-                "Content-Type": "application/json"
-            }
+        user_resp = httpx.get(
+            f"{supabase_url}/rest/v1/users?id=eq.{req.user_id}&select=email,first_name,last_name",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
-        if response.status_code not in (200, 201, 204):
-            raise Exception(f"RPC failed: {response.text}")
-        return {"success": True, "message": "Statut mis à jour"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    
-    if req.status not in ("reviewed", "resolved"):
-        raise HTTPException(status_code=400, detail="Statut invalide")
-    
-    try:
-        response = httpx.patch(
-            f"{supabase_url}/rest/v1/reports?id=eq.{report_id}",
-            json={"status": req.status},
-            headers={
-                "apikey": supabase_key,
-                "Authorization": f"Bearer {supabase_key}",
-                "Content-Type": "application/json",
-                "Prefer": "return=minimal"
-            }
+        users = user_resp.json()
+        if not users:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        user = users[0]
+
+        update_data = {"is_active": False}
+        if req.duration_days:
+            suspended_until = datetime.utcnow() + timedelta(days=req.duration_days)
+            update_data["suspended_until"] = suspended_until.isoformat()
+        else:
+            update_data["suspended_until"] = None
+
+        httpx.patch(
+            f"{supabase_url}/rest/v1/users?id=eq.{req.user_id}",
+            json=update_data,
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
-        if response.status_code != 200:
-            raise Exception(f"Supabase error: {response.text}")
-        return {"success": True, "message": "Statut mis à jour"}
+
+        if resend.api_key:
+            duration_text = f" pour {req.duration_days} jour(s)" if req.duration_days else " définitivement"
+            reason_text = f"\nRaison : {req.reason}" if req.reason else ""
+            resend.Emails.send({
+                "from": "Actoos Jobs <noreply@actoos.com>",
+                "to": [user["email"]],
+                "subject": "Votre compte a été suspendu",
+                "html": f"<h2>Bonjour {user['first_name']},</h2><p>Votre compte sur Actoos Jobs a été suspendu{duration_text}.{reason_text}</p><p>Si vous avez des questions, contactez-nous.</p>"
+            })
+
+        return {"success": True, "message": "Utilisateur suspendu"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Réactivation / suspension simple (toggle)
 @app.post("/api/admin/toggle-user-status")
 async def toggle_user_status(req: AdminToggleUserStatusRequest):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -1266,7 +1312,7 @@ async def toggle_user_status(req: AdminToggleUserStatusRequest):
         user = users[0]
         httpx.patch(
             f"{supabase_url}/rest/v1/users?id=eq.{req.user_id}",
-            json={"is_active": req.is_active},
+            json={"is_active": req.is_active, "suspended_until": None},
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         if resend.api_key:
@@ -1550,6 +1596,45 @@ async def get_match_score(job_id: str, user_id: str = Query(...)):
 # ----- Suppression de compte utilisateur (RGPD) -----
 @app.delete("/api/user/delete-account")
 async def delete_own_account(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="ID utilisateur requis")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    try:
+        # Supprimer les données liées (les requêtes DELETE avec filtre nécessitent le format approprié)
+        # Applications
+        httpx.delete(f"{supabase_url}/rest/v1/applications?candidate_id=eq.{user_id}", headers=headers)
+        # Saved jobs
+        httpx.delete(f"{supabase_url}/rest/v1/saved_jobs?user_id=eq.{user_id}", headers=headers)
+        # Job alerts
+        httpx.delete(f"{supabase_url}/rest/v1/job_alerts?user_id=eq.{user_id}", headers=headers)
+        # Notifications
+        httpx.delete(f"{supabase_url}/rest/v1/notifications?user_id=eq.{user_id}", headers=headers)
+        # Candidate documents
+        httpx.delete(f"{supabase_url}/rest/v1/candidate_documents?user_id=eq.{user_id}", headers=headers)
+        # Candidate profiles
+        httpx.delete(f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{user_id}", headers=headers)
+        # Entreprises (cascade)
+        companies_resp = httpx.get(f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id", headers=headers)
+        companies = companies_resp.json()
+        for company in companies:
+            httpx.delete(f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}", headers=headers)
+        # Utilisateur public
+        httpx.delete(f"{supabase_url}/rest/v1/users?id=eq.{user_id}", headers=headers)
+        # Utilisateur auth
+        httpx.delete(f"{supabase_url}/auth/v1/admin/users/{user_id}", headers=headers)
+
+        return {"success": True, "message": "Compte supprimé définitivement"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     auth_header = request.headers.get("authorization")
     if not auth_header:
         raise HTTPException(status_code=401, detail="Non authentifié")

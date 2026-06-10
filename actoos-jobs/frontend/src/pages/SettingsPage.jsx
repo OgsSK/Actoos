@@ -83,8 +83,7 @@ const SettingsPage = () => {
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await signOut(); // Appelle la fonction du contexte (qui fait supabase.auth.signOut())
-      // Redirection avec rechargement complet pour nettoyer tous les états
+      await signOut();
       window.location.href = '/';
     } catch (err) {
       toast.error(err.message || 'Erreur de déconnexion');
@@ -92,35 +91,38 @@ const SettingsPage = () => {
     }
   };
 
-  // Suppression du compte (RGPD)
-  const handleDeleteAccount = async () => {
-    if (
-      !window.confirm(
-        'Supprimer définitivement votre compte ? Cette action est irréversible, toutes vos données seront effacées.'
-      )
+  // Suppression du compte (RGPD) – corrigée et améliorée
+ const handleDeleteAccount = async () => {
+  if (
+    !window.confirm(
+      'Supprimer définitivement votre compte ? Cette action est irréversible, toutes vos données seront effacées.'
     )
-      return;
-    setDeleting(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error('Impossible de vous authentifier');
-        return;
-      }
-      await apiFetch('/api/user/delete-account', {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-      await signOut();
-      window.location.href = '/';
-      toast.success('Compte supprimé définitivement');
-    } catch (err) {
-      toast.error(err.message || 'Erreur lors de la suppression');
-      setDeleting(false);
+  )
+    return;
+
+  setDeleting(true);
+  try {
+    const res = await apiFetch('/api/user/delete-account', {
+      method: 'DELETE',
+      body: JSON.stringify({ user_id: user.id }),
+    });
+
+    if (res.success) {
+      toast.success('Votre compte a été supprimé définitivement.');
+      await supabase.auth.signOut();
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+    } else {
+      toast.error(res.message || 'Erreur lors de la suppression.');
     }
-  };
+  } catch (err) {
+    console.error('Delete account error:', err);
+    toast.error(err.message || 'Erreur réseau lors de la suppression.');
+  } finally {
+    setDeleting(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
