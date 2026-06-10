@@ -169,12 +169,18 @@ const CreateJobPage = () => {
     return 1;
   };
 
-  const countActiveJobs = async () => {
-    const { count, error } = await supabase
+  const countActiveJobs = async (excludeId = null) => {
+    let query = supabase
       .from('jobs')
       .select('id', { count: 'exact', head: true })
       .eq('company_id', company.id)
       .eq('status', 'active');
+
+    if (excludeId) {
+      query = query.neq('id', excludeId);
+    }
+
+    const { count, error } = await query;
     if (error) return 0;
     return count || 0;
   };
@@ -212,20 +218,32 @@ const CreateJobPage = () => {
           return;
         }
 
-        if (!id) {
-          const active = await countActiveJobs();
-          const limit = getPlanLimit();
-          if (active >= limit) {
-            toast.error(`Vous avez atteint la limite de ${limit} offre(s) active(s). Passez à un plan supérieur ou archivez une offre.`);
-            setSaving(false);
-            return;
-          }
-        }
+        // Vérification de la limite d'offres actives uniquement si l'offre n'est pas déjà active
+       // Vérification de la limite (active + pending)
+if (!id) { // nouvelle offre
+  const { count: activeCount } = await supabase
+    .from('jobs')
+    .select('id', { count: 'exact', head: true })
+    .eq('company_id', company.id)
+    .eq('status', 'active');
+  const { count: pendingCount } = await supabase
+    .from('jobs')
+    .select('id', { count: 'exact', head: true })
+    .eq('company_id', company.id)
+    .eq('status', 'pending');
+  const totalActiveAndPending = (activeCount || 0) + (pendingCount || 0);
+  const limit = getPlanLimit();
+  if (totalActiveAndPending >= limit) {
+    toast.error(`Vous avez déjà ${totalActiveAndPending} offre(s) active(s) ou en attente. Limite de votre plan : ${limit}.`);
+    setSaving(false);
+    return;
+  }
+}
 
         if (id && (form.status === 'active' || form.status === 'paused')) {
-          finalStatus = form.status;
+          finalStatus = form.status; // On conserve le statut actif ou pause
         } else {
-          finalStatus = 'pending';
+          finalStatus = 'pending'; // Soumission pour validation
         }
       }
 

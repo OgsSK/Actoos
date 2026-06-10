@@ -672,6 +672,68 @@ STATUS_EMAIL_TEMPLATES = {
     "rejected": "Votre candidature pour le poste **{job_title}**{company_info} n'a malheureusement pas été retenue."
 }
 
+@app.get("/api/candidate/{candidate_id}")
+async def get_candidate_public_profile(candidate_id: str):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    try:
+        user_resp = httpx.get(
+            f"{supabase_url}/rest/v1/users?id=eq.{candidate_id}&select=id,email,first_name,last_name,avatar_url",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        users = user_resp.json()
+        if not users:
+            raise HTTPException(status_code=404, detail="Candidat introuvable")
+        user = users[0]
+
+        profile_resp = httpx.get(
+            f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{candidate_id}&select=*",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        profiles = profile_resp.json()
+        profile = profiles[0] if profiles else {}
+
+        city = None
+        if profile.get("city_id"):
+            city_resp = httpx.get(
+                f"{supabase_url}/rest/v1/cities?id=eq.{profile['city_id']}&select=name",
+                headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+            )
+            cities = city_resp.json()
+            if cities:
+                city = cities[0]["name"]
+
+        return {
+            "id": user["id"],
+            "email": user.get("email"),
+            "first_name": user.get("first_name") or "",
+            "last_name": user.get("last_name") or "",
+            "avatar_url": user.get("avatar_url"),
+            "title": profile.get("title"),
+            "bio": profile.get("bio"),
+            "skills": profile.get("skills") or [],
+            "experience_level": profile.get("experience_level"),
+            "experience": profile.get("experience") or [],
+            "education": profile.get("education") or [],
+            "languages": profile.get("languages") or [],
+            "certifications": profile.get("certifications") or [],
+            "linkedin_url": profile.get("linkedin_url"),
+            "portfolio_url": profile.get("portfolio_url"),
+            "cv_url": profile.get("cv_url"),
+            "city": city,
+            "desired_salary_min": profile.get("desired_salary_min"),
+            "desired_salary_max": profile.get("desired_salary_max"),
+            "preferred_contract_types": profile.get("preferred_contract_types") or [],
+            "is_available": profile.get("is_available", True),
+            "is_open_to_remote": profile.get("is_open_to_remote", False),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/notify-status-change")
 async def notify_status_change(req: NotifyStatusChangeRequest):
     if not resend.api_key:
@@ -696,6 +758,7 @@ async def notify_status_change(req: NotifyStatusChangeRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ----- Alertes emploi avec filtre de fréquence -----
 @app.post("/api/send-job-alerts")
 async def send_job_alerts():
     if not resend.api_key:
@@ -704,43 +767,90 @@ async def send_job_alerts():
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     alerts_resp = httpx.get(
         f"{supabase_url}/rest/v1/job_alerts?select=*,user:users(email)&is_active=eq.true",
-        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        headers=headers
     )
     alerts = alerts_resp.json()
     if not isinstance(alerts, list) or len(alerts) == 0:
         return {"success": True, "message": "Aucune alerte active"}
+
     count_sent = 0
     for alert in alerts:
         user_email = alert.get("user", {}).get("email")
         user_id = alert.get("user_id")
         if not user_email or not user_id:
             continue
-        keywords = [k.strip() for k in alert.get("keywords", "").split(",") if k.strip()]
-        if not keywords:
+
+        last_sent = alert.get("last_sent_at")
+        now = datetime.utcnow()
+        freq = alert.get("frequency", "daily")
+
+        if last_sent:
+            last_sent_dt = datetime.fromisoformat(last_sent.replace("Z", "+00:00"))
+            if freq == "instant" and now - last_sent_dt < timedelta(hours=1):
+                continue
+            elif freq == "daily" and now - last_sent_dt < timedelta(days=1):
+                continue
+            elif freq == "weekly" and now - last_sent_dt < timedelta(weeks=1):
+                continue
+
+        keywords = alert.get("keywords", "")
+        category_id = alert.get("category_id")
+        city_id = alert.get("city_id")
+        contract_types = alert.get("contract_types")
+        salary_min = alert.get("salary_min")
+
+        rpc_payload = {
+            "p_keywords": keywords if keywords else None,
+            "p_user_id": user_id,
+            "p_category_id": category_id,
+            "p_city_id": city_id,
+            "p_contract_types": contract_types,
+            "p_salary_min": salary_min
+        }
+
+        try:
+            rpc_resp = httpx.post(
+                f"{supabase_url}/rest/v1/rpc/search_jobs_for_alert",
+                json=rpc_payload,
+                headers=headers
+            )
+            jobs = rpc_resp.json()
+        except Exception as e:
+            print(f"Erreur RPC alerte {alert.get('id')}: {e}")
             continue
-        rpc_url = f"{supabase_url}/rest/v1/rpc/search_jobs_for_alert"
-        payload = {"keywords": keywords, "user_id": user_id}
-        rpc_resp = httpx.post(rpc_url, json=payload, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
-        jobs = rpc_resp.json()
+
         if not isinstance(jobs, list) or len(jobs) == 0:
             continue
-        job_links = "<br>".join([f"<a href='https://jobs.actoos.com/emplois/{j['id']}'>{j['title']}</a>" for j in jobs])
+
+        job_links = "<br>".join([
+            f"<a href='https://jobs.actoos.com/emplois/{j['id']}'>{j['title']}</a>" for j in jobs
+        ])
         try:
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [user_email],
-                "subject": f"Alerte emploi : {', '.join(keywords)}",
-                "html": f"<h2>Nouvelles offres correspondant à votre alerte</h2><p>Voici les offres trouvées pour vos mots-clés :</p>{job_links}<p>Bonne recherche !</p>"
+                "subject": f"Alerte emploi : {keywords or 'Nouvelles offres'}",
+                "html": f"<h2>Nouvelles offres correspondant à votre alerte</h2>"
+                        f"<p>Voici les offres trouvées pour vos critères :</p>{job_links}"
+                        f"<p>Bonne recherche !</p>"
             })
+
+            httpx.patch(
+                f"{supabase_url}/rest/v1/job_alerts?id=eq.{alert['id']}",
+                json={"last_sent_at": now.isoformat()},
+                headers=headers
+            )
             count_sent += 1
         except Exception as e:
             print(f"Erreur envoi alerte {alert.get('id')}: {e}")
-    return {"success": True, "message": f"Emails envoyés pour {count_sent} alerte(s)."}
+
+    return {"success": True, "message": f"Emails envoyés pour {count_sent}/{len(alerts)} alerte(s)."}
 
 # ----- Admin -----
-
 @app.delete("/api/applications/{application_id}")
 async def delete_application(application_id: str, request: Request):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -1085,21 +1195,57 @@ async def get_reports():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class UpdateReportStatusRequest(BaseModel):
+    status: str
+
 @app.patch("/api/admin/reports/{report_id}")
-async def update_report_status(report_id: str, status: str = "reviewed"):
+async def update_report_status(report_id: str, req: UpdateReportStatusRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    if req.status not in ("reviewed", "resolved"):
+        raise HTTPException(status_code=400, detail="Statut invalide")
+    
+    try:
+        # Appel de la fonction SECURITY DEFINER qui ignore les RLS
+        response = httpx.post(
+            f"{supabase_url}/rest/v1/rpc/update_report_status",
+            json={"report_id": report_id, "new_status": req.status},
+            headers={
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json"
+            }
+        )
+        if response.status_code not in (200, 201, 204):
+            raise Exception(f"RPC failed: {response.text}")
+        return {"success": True, "message": "Statut mis à jour"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    if req.status not in ("reviewed", "resolved"):
+        raise HTTPException(status_code=400, detail="Statut invalide")
+    
     try:
         response = httpx.patch(
             f"{supabase_url}/rest/v1/reports?id=eq.{report_id}",
-            json={"status": status},
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+            json={"status": req.status},
+            headers={
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal"
+            }
         )
         if response.status_code != 200:
-            raise Exception(f"Report update failed: {response.text}")
-        return {"success": True, "message": "Statut du signalement mis à jour"}
+            raise Exception(f"Supabase error: {response.text}")
+        return {"success": True, "message": "Statut mis à jour"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1194,7 +1340,6 @@ async def activate_free_boost(request: Request):
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
 
-    # 1. Récupérer l'entreprise du propriétaire
     company_resp = httpx.get(
         f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id,subscription_plan,last_free_boost_at",
         headers=headers
@@ -1207,7 +1352,6 @@ async def activate_free_boost(request: Request):
     if company["subscription_plan"] != "business":
         raise HTTPException(status_code=403, detail="Réservé au plan Business")
 
-    # 2. Vérifier le délai d'un mois
     now = datetime.utcnow()
     last_boost = company.get("last_free_boost_at")
     if last_boost:
@@ -1215,7 +1359,6 @@ async def activate_free_boost(request: Request):
         if now - last_boost_dt < timedelta(days=30):
             raise HTTPException(status_code=400, detail="Boost déjà utilisé ce mois")
 
-    # 3. Vérifier que l'offre est active et appartient à cette entreprise
     job_resp = httpx.get(
         f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=id,status,company_id",
         headers=headers
@@ -1224,7 +1367,6 @@ async def activate_free_boost(request: Request):
     if not jobs or jobs[0]["status"] != "active" or jobs[0]["company_id"] != company["id"]:
         raise HTTPException(status_code=404, detail="Offre non trouvée ou non active")
 
-    # 4. Appliquer le boost (7 jours)
     boosted_until = now + timedelta(days=7)
     httpx.patch(
         f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}",
@@ -1232,7 +1374,6 @@ async def activate_free_boost(request: Request):
         headers=headers
     )
 
-    # 5. Enregistrer la date de dernière utilisation
     httpx.patch(
         f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
         json={"last_free_boost_at": now.isoformat()},
@@ -1457,7 +1598,6 @@ async def checkout_complete(request: Request):
     currency = session.currency.upper()
 
     plan_name = None
-    # Ne mettre à jour le plan que si c'est un abonnement
     if package_id in SUBSCRIPTION_PLANS:
         user_id = metadata.get("user_id")
         if not user_id:
@@ -1492,7 +1632,6 @@ async def checkout_complete(request: Request):
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
 
-    # Préparer la réponse pour le frontend
     package_name = metadata.get("package_name") or "Achat"
     is_boost = package_id in BOOST_PACKAGES if package_id else False
 

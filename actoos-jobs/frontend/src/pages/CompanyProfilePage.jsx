@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -13,7 +12,7 @@ import {
 } from 'lucide-react';
 
 const CompanyProfilePage = () => {
-  const { user } = useAuth();
+  const { activeCompanyId } = useAuth();
   const navigate = useNavigate();
   const logoInputRef = useRef(null);
 
@@ -37,9 +36,11 @@ const CompanyProfilePage = () => {
   });
 
   useEffect(() => {
-    fetchCities();
-    fetchCompany();
-  }, []);
+    if (activeCompanyId) {
+      fetchCities();
+      fetchCompany();
+    }
+  }, [activeCompanyId]);
 
   const fetchCities = async () => {
     const { data } = await supabase
@@ -51,12 +52,12 @@ const CompanyProfilePage = () => {
   };
 
   const fetchCompany = async () => {
-    if (!user?.id) return;
+    if (!activeCompanyId) return;
     const { data, error } = await supabase
       .from('companies')
       .select('*')
-      .eq('owner_id', user.id)
-      .maybeSingle();
+      .eq('id', activeCompanyId)
+      .single();
 
     if (!error && data) {
       setCompany(data);
@@ -73,6 +74,8 @@ const CompanyProfilePage = () => {
         founded_year: data.founded_year ? String(data.founded_year) : '',
         logo_url: data.logo_url || '',
       });
+    } else {
+      toast.error('Entreprise introuvable');
     }
   };
 
@@ -84,7 +87,6 @@ const CompanyProfilePage = () => {
       toast.error('Veuillez sélectionner une image');
       return;
     }
-
     if (file.size > 2 * 1024 * 1024) {
       toast.error("L'image ne doit pas dépasser 2MB");
       return;
@@ -92,37 +94,27 @@ const CompanyProfilePage = () => {
 
     setUploadingLogo(true);
     try {
-      const reader = new FileReader();
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${activeCompanyId}/logo-${Date.now()}.${fileExt}`;
 
-      reader.onloadend = async () => {
-        try {
-          const base64Data = reader.result;
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(fileName, file, { upsert: true });
 
-          const res = await apiFetch('/api/upload', {
-            method: 'POST',
-            body: JSON.stringify({
-              bucket: 'company-logos',
-              folder: user.id,
-              filename: `logo-${Date.now()}.${file.name.split('.').pop()}`,
-              file_data: base64Data
-            })
-          });
+      if (uploadError) throw uploadError;
 
-          await supabase.from('companies').update({ logo_url: res.url }).eq('id', company.id);
-          setForm(prev => ({ ...prev, logo_url: res.url }));
-          toast.success('Logo mis à jour');
-        } catch (error) {
-          console.error('Erreur upload logo:', error);
-          toast.error('Erreur lors du téléchargement du logo');
-        } finally {
-          setUploadingLogo(false);
-        }
-      };
+      const { data: urlData } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(fileName);
 
-      reader.readAsDataURL(file);
+      const newLogoUrl = urlData.publicUrl;
+      await supabase.from('companies').update({ logo_url: newLogoUrl }).eq('id', activeCompanyId);
+      setForm(prev => ({ ...prev, logo_url: newLogoUrl }));
+      toast.success('Logo mis à jour');
     } catch (error) {
-      console.error('Erreur lecture fichier:', error);
+      console.error('Erreur upload logo:', error);
       toast.error('Erreur lors du téléchargement du logo');
+    } finally {
       setUploadingLogo(false);
     }
   };
@@ -138,7 +130,7 @@ const CompanyProfilePage = () => {
         }
       }
 
-      await supabase.from('companies').update({ logo_url: null }).eq('id', company.id);
+      await supabase.from('companies').update({ logo_url: null }).eq('id', activeCompanyId);
       setForm(prev => ({ ...prev, logo_url: '' }));
       toast.success('Logo supprimé');
     } catch (err) {
@@ -180,7 +172,7 @@ const CompanyProfilePage = () => {
       const { error } = await supabase
         .from('companies')
         .update(updates)
-        .eq('id', company.id);
+        .eq('id', activeCompanyId);
 
       if (error) throw error;
 
@@ -377,7 +369,7 @@ const CompanyProfilePage = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white"
+                className="w-full bg-blue-600 text-white hover:bg-blue-700"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin mr-2" />

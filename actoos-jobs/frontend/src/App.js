@@ -44,13 +44,13 @@ import NotificationsPage from './pages/NotificationsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import AboutPage from './pages/AboutPage';
-import UnsubscribePage from './pages/UnsubscribePage'; // <-- AJOUTÉ
+import UnsubscribePage from './pages/UnsubscribePage';
 import CookieBanner from './components/CookieBanner';
 import { Card, CardContent } from './components/ui/card';
 import { Target, Eye, Shield, Zap, Heart, TrendingUp } from 'lucide-react';
 import './index.css';
 import FAQPage from './pages/FAQPage';
-import CompanyTeamPage from './pages/CompanyTeamPage';
+
 // ---------- Scroll to top on route change ----------
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -137,7 +137,7 @@ const AppContent = () => {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/a-propos" element={<AboutPage />} />
           <Route path="/faq" element={<FAQPage />} />
-          <Route path="/dashboard/entreprise/equipe" element={<ProtectedRoute><CompanyTeamPage /></ProtectedRoute>} />
+
           {/* ---------- Legal pages ---------- */}
           <Route path="/cgu" element={<CGUPage />} />
           <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
@@ -149,7 +149,7 @@ const AppContent = () => {
           <Route path="/inscription" element={<RegisterPage />} />
 
           {/* ---------- Unsubscribe page (newsletter) ---------- */}
-          <Route path="/desabonnement" element={<UnsubscribePage />} /> {/* <-- AJOUTÉ */}
+          <Route path="/desabonnement" element={<UnsubscribePage />} />
 
           {/* ---------- Protected routes - Candidat ---------- */}
           <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />

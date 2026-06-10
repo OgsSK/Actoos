@@ -543,6 +543,20 @@ const CompanyDashboard = () => {
   };
 
   const handleToggleJobStatus = async (job, newStatus) => {
+    // Vérification de limite avant de passer une offre en active
+    if (newStatus === 'active') {
+      const { count: activeCount } = await supabase
+        .from('jobs')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', company.id)
+        .eq('status', 'active');
+      const limit = getPlanLimit();
+      if (activeCount >= limit) {
+        toast.error(`Limite atteinte (${limit} offre(s) max).`);
+        return;
+      }
+    }
+
     try {
       const updates = { status: newStatus };
       if (newStatus === 'active' && !job.published_at) {
@@ -563,6 +577,24 @@ const CompanyDashboard = () => {
       toast.error("Votre entreprise n'est pas encore vérifiée. Vous ne pouvez pas soumettre d'offre pour le moment.");
       return;
     }
+
+    // Vérification de la limite (active + pending)
+    const { count: activeCount } = await supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', company.id)
+      .eq('status', 'active');
+    const { count: pendingCount } = await supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', company.id)
+      .eq('status', 'pending');
+    const limit = getPlanLimit();
+    if ((activeCount || 0) + (pendingCount || 0) >= limit) {
+      toast.error(`Limite atteinte (${limit} offre(s) max). Vous avez déjà ${(activeCount || 0) + (pendingCount || 0)} offre(s) active(s) ou en attente.`);
+      return;
+    }
+
     try {
       await supabase.from('jobs').update({ status: 'pending' }).eq('id', job.id);
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'pending' } : j)));
@@ -701,17 +733,11 @@ const CompanyDashboard = () => {
               <p className="text-slate-600">Espace recruteur</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
             <Link to="/dashboard/entreprise/profil" className="w-full">
               <Button variant="outline" className="w-full min-h-[44px]">
                 <Settings className="w-4 h-4 mr-2" />
                 Profil entreprise
-              </Button>
-            </Link>
-            <Link to="/dashboard/entreprise/equipe" className="w-full">
-              <Button variant="outline" className="w-full min-h-[44px]">
-                <Users className="w-4 h-4 mr-2" />
-                Équipe
               </Button>
             </Link>
             <Link to="/dashboard/entreprise/offres/nouvelle" className="w-full">

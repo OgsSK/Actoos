@@ -46,7 +46,7 @@ const Header = ({ user, onLogout }) => {
   const navLinks = [
     { label: 'Emplois', href: '/emplois' },
     { label: 'Entreprises', href: '/entreprises' },
-    // ✅ Tarifs uniquement pour les entreprises connectées
+    // Tarifs uniquement pour les entreprises connectées
     ...(isCompany ? [{ label: 'Tarifs', href: '/tarifs' }] : []),
     { label: 'Blog', href: '/blog' },
   ];
@@ -303,7 +303,8 @@ const Header = ({ user, onLogout }) => {
                   </Button>
                 </Link>
 
-                <Link to="/entreprises/inscription">
+                {/* Bouton Espace Entreprise remplace Recruter */}
+                <Link to="/inscription?type=entreprise">
                   <Button
                     variant="outline"
                     className={cn(
@@ -314,7 +315,7 @@ const Header = ({ user, onLogout }) => {
                     )}
                   >
                     <Building2 className="w-4 h-4" />
-                    Recruter
+                    Espace Entreprise
                   </Button>
                 </Link>
               </>
@@ -477,7 +478,7 @@ const Header = ({ user, onLogout }) => {
                   </Link>
 
                   <Link
-                    to="/entreprises/inscription"
+                    to="/inscription?type=entreprise"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <Button

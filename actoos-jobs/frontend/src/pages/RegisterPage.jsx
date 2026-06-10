@@ -154,7 +154,7 @@ const RegisterPage = () => {
                   <div>
                     <h3 className="font-semibold text-lg text-slate-900">Je cherche un emploi</h3>
                     <p className="text-slate-600 text-sm mt-1">
-                      Créez votre profil, postulez aux offres et trouvez votre prochain emploi.
+                      Créez votre profil, postulez aux offres et suivez vos candidatures.
                     </p>
                   </div>
                 </div>
@@ -175,7 +175,7 @@ const RegisterPage = () => {
                   <div>
                     <h3 className="font-semibold text-lg text-slate-900">Je recrute</h3>
                     <p className="text-slate-600 text-sm mt-1">
-                      Publiez des offres, gérez les candidatures et trouvez les meilleurs talents.
+                      Publiez des offres, gérez les candidatures et collaborez en équipe.
                     </p>
                   </div>
                 </div>

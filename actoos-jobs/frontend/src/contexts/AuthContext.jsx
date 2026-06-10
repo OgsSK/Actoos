@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }) => {
       avatar_url: null,
       candidate_profile: null,
       subscription_plan: 'free',
+      hasCompanies: false,
     };
   }, []);
 
@@ -68,12 +69,26 @@ export const AuthProvider = ({ children }) => {
         .maybeSingle();
       if (companyData) subscriptionPlan = companyData.subscription_plan || 'free';
 
+      // Vérifier si l'utilisateur possède ou est membre d'au moins une entreprise
+      const { count: ownedCount } = await supabase
+        .from('companies')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', authUser.id);
+
+      const { count: memberCount } = await supabase
+        .from('company_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', authUser.id);
+
+      const hasCompanies = (ownedCount || 0) + (memberCount || 0) > 0;
+
       const merged = {
         ...currentProfile,
         ...(userData || {}),
         role: roleFromDb || currentProfile.role,
         candidate_profile: candidateData || null,
         subscription_plan: subscriptionPlan,
+        hasCompanies,
       };
       return merged;
     } catch (err) {
@@ -185,8 +200,8 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user, profile, loading, activeCompanyId, setActiveCompanyId,
-    isCandidate: profile?.role === 'candidate',
-    isCompany: profile?.role === 'company',
+    isCandidate: profile?.role === 'candidate' && !profile?.hasCompanies,
+    isCompany: profile?.role === 'company' || profile?.hasCompanies,
     isAdmin: profile?.role === 'admin',
     signUp, signIn, signInWithGoogle, signOut,
     resetPassword, updatePassword,

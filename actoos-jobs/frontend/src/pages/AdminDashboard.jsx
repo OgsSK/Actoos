@@ -45,6 +45,7 @@ import {
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 
+// ---------- Stats Card ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) => (
   <Card
     className={cn(
@@ -97,6 +98,7 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) 
   </Card>
 );
 
+// ---------- Job Moderation Card ----------
 const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) => {
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -449,6 +451,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
   );
 };
 
+// ---------- Company Validation Card ----------
 const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDelete, onViewJobs }) => {
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -672,6 +675,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onSuspend, onDele
   );
 };
 
+// ---------- Tabs ----------
 const TabButton = ({ active, onClick, children, count }) => (
   <button
     onClick={onClick}
@@ -694,6 +698,7 @@ const TabButton = ({ active, onClick, children, count }) => (
   </button>
 );
 
+// ---------- Main Admin Dashboard ----------
 const AdminDashboard = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -742,6 +747,13 @@ const AdminDashboard = () => {
   });
   const [editingSlug, setEditingSlug] = useState(null);
 
+  // Helper to get plan limit
+  const getPlanLimit = (plan) => {
+    if (plan === 'business' || plan === 'enterprise') return Infinity;
+    if (plan === 'pro') return 5;
+    return 1; // free
+  };
+
   useEffect(() => {
     if (!authLoading && !isAdmin) {
       toast.error('Accès non autorisé');
@@ -776,7 +788,7 @@ const AdminDashboard = () => {
     try {
       const { data: jobsData } = await supabase
         .from('jobs')
-        .select(`*, company:companies(id, name, logo_url, is_verified), city:cities(name), posted_by_user:users!jobs_posted_by_fkey(email)`)
+        .select(`*, company:companies(id, name, logo_url, is_verified, subscription_plan), city:cities(name), posted_by_user:users!jobs_posted_by_fkey(email)`)
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -886,6 +898,20 @@ const AdminDashboard = () => {
       return;
     }
 
+    // Vérifier la limite d'offres actives de l'entreprise
+    const plan = job.company?.subscription_plan || 'free';
+    const limit = getPlanLimit(plan);
+    const { count: activeCount } = await supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', job.company_id)
+      .eq('status', 'active');
+
+    if (activeCount >= limit) {
+      toast.error(`Cette entreprise a déjà atteint sa limite de ${limit} offre(s) active(s).`);
+      return;
+    }
+
     try {
       await supabase
         .from('jobs')
@@ -895,6 +921,12 @@ const AdminDashboard = () => {
           expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .eq('id', job.id);
+
+      try {
+        await apiFetch('/api/send-job-alerts', { method: 'POST' });
+      } catch (err) {
+        console.error('Erreur envoi alertes emploi:', err);
+      }
 
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'active' } : j)));
       setStats((s) => ({ ...s, pendingJobs: Math.max(0, s.pendingJobs - 1), activeJobs: s.activeJobs + 1 }));
@@ -1063,15 +1095,21 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleUpdateReportStatus = async (reportId, newStatus) => {
-    try {
-      await apiFetch(`/api/admin/reports/${reportId}?status=${newStatus}`, { method: 'PATCH' });
-      setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, status: newStatus } : r)));
-      toast.success('Signalement mis à jour');
-    } catch (error) {
-      toast.error('Erreur');
-    }
-  };
+const handleUpdateReportStatus = async (reportId, newStatus) => {
+  const { error } = await supabase.rpc('update_report_status', {
+    report_id: reportId,
+    new_status: newStatus
+  });
+
+  if (error) {
+    toast.error(error.message);
+  } else {
+    setReports(prev =>
+      prev.map(r => (r.id === reportId ? { ...r, status: newStatus } : r))
+    );
+    toast.success('Signalement mis à jour');
+  }
+};
 
   const handleSuspendReportedItem = async (report) => {
     const reason = window.prompt('Raison de la suspension (optionnelle) :');
@@ -1135,6 +1173,8 @@ const AdminDashboard = () => {
         .eq('id', report.reported_item_id)
         .single();
       userIdToBan = company?.owner_id;
+    } else if (report.reported_item_type === 'candidate') {
+      userIdToBan = report.reported_item_id;
     }
 
     if (!userIdToBan) {
@@ -1155,6 +1195,22 @@ const AdminDashboard = () => {
       toast.error(error.message || 'Erreur');
     }
   };
+
+  const handleToggleSubscriber = async (sub) => {
+  const { error } = await supabase.rpc('toggle_subscriber_active', {
+    sub_id: sub.id,
+    activate: !sub.is_active
+  });
+
+  if (error) {
+    toast.error(error.message);
+  } else {
+    setSubscribers(prev =>
+      prev.map(s => (s.id === sub.id ? { ...s, is_active: !sub.is_active, unsubscribed_at: !sub.is_active ? null : new Date().toISOString() } : s))
+    );
+    toast.success(sub.is_active ? 'Désactivé' : 'Réactivé');
+  }
+};
 
   const handleSendNewsletter = async () => {
     if (!newsletter.subject || !newsletter.content) {
@@ -1607,7 +1663,10 @@ const AdminDashboard = () => {
                 ) : (
                   reports.map((report) => {
                     const isJobReport = report.reported_item_type === 'job';
-                    const itemLabel = isJobReport ? 'Offre' : 'Entreprise';
+                    const isCompanyReport = report.reported_item_type === 'company';
+                    const isCandidateReport = report.reported_item_type === 'candidate';
+
+                    const itemLabel = isJobReport ? 'Offre' : isCompanyReport ? 'Entreprise' : 'Candidat';
 
                     return (
                       <div
@@ -1615,12 +1674,19 @@ const AdminDashboard = () => {
                         className="flex flex-col gap-4 p-4 bg-white border border-slate-200 rounded-2xl"
                       >
                         <div className="min-w-0">
-                          <p className="font-semibold text-slate-900 truncate">
-                            Signalé par {report.reporter?.email || 'Anonyme'}
-                          </p>
-                          <p className="text-sm text-slate-500">
-                            Type : {itemLabel} • Raison : {report.reason}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <Badge className={
+                              isJobReport ? 'bg-blue-100 text-blue-700' :
+                              isCompanyReport ? 'bg-purple-100 text-purple-700' :
+                              'bg-yellow-100 text-yellow-700'
+                            }>
+                              {isJobReport ? '📋 Offre' : isCompanyReport ? '🏢 Entreprise' : '👤 Candidat'}
+                            </Badge>
+                            <p className="font-semibold text-slate-900 truncate">
+                              Signalé par {report.reporter?.email || 'Anonyme'}
+                            </p>
+                          </div>
+                          <p className="text-sm text-slate-500 mt-1">Raison : {report.reason}</p>
                           <Badge
                             className={cn(
                               'mt-2',
@@ -1655,7 +1721,7 @@ const AdminDashboard = () => {
                             Résolu
                           </Button>
 
-                          {isJobReport ? (
+                          {!isCandidateReport && (
                             <>
                               <Button
                                 size="sm"
@@ -1664,7 +1730,7 @@ const AdminDashboard = () => {
                                 onClick={() => handleSuspendReportedItem(report)}
                               >
                                 <Ban className="w-4 h-4 mr-1" />
-                                Suspendre l'offre
+                                Suspendre {isJobReport ? "l'offre" : "l'entreprise"}
                               </Button>
                               <Button
                                 size="sm"
@@ -1673,28 +1739,7 @@ const AdminDashboard = () => {
                                 onClick={() => handleDeleteReportedItem(report)}
                               >
                                 <Trash2 className="w-4 h-4 mr-1" />
-                                Supprimer l'offre
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-yellow-600 hover:bg-yellow-50 min-h-[44px]"
-                                onClick={() => handleSuspendReportedItem(report)}
-                              >
-                                <Ban className="w-4 h-4 mr-1" />
-                                Suspendre l'entreprise
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-red-600 hover:bg-red-50 min-h-[44px]"
-                                onClick={() => handleDeleteReportedItem(report)}
-                              >
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                Supprimer l'entreprise
+                                Supprimer {isJobReport ? "l'offre" : "l'entreprise"}
                               </Button>
                             </>
                           )}
@@ -1897,6 +1942,7 @@ const AdminDashboard = () => {
                         <tr>
                           <th className="text-left py-2 font-medium">Email</th>
                           <th className="text-left py-2 font-medium">Statut</th>
+                          <th className="text-left py-2 font-medium">Actions</th>
                           <th className="text-left py-2 font-medium">Inscription</th>
                           <th className="text-left py-2 font-medium">Désabonnement</th>
                         </tr>
@@ -1909,6 +1955,11 @@ const AdminDashboard = () => {
                               <Badge className={sub.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
                                 {sub.is_active ? 'Actif' : 'Désabonné'}
                               </Badge>
+                            </td>
+                            <td className="py-2">
+                              <Button size="sm" variant="outline" onClick={() => handleToggleSubscriber(sub)}>
+                                {sub.is_active ? 'Désactiver' : 'Réactiver'}
+                              </Button>
                             </td>
                             <td className="py-2">{new Date(sub.subscribed_at).toLocaleDateString()}</td>
                             <td className="py-2">{sub.unsubscribed_at ? new Date(sub.unsubscribed_at).toLocaleDateString() : '-'}</td>

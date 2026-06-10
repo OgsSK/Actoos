@@ -16,11 +16,7 @@ import {
   Eye,
   MapPin,
   Briefcase,
-  CheckCircle,
-  XCircle,
   Clock,
-  Settings,
-  RotateCw,
 } from 'lucide-react';
 import { cn, CONTRACT_TYPES } from '../lib/utils';
 
@@ -40,7 +36,6 @@ const JobAlertsPage = () => {
   const [categories, setCategories] = useState([]);
   const [cities, setCities] = useState([]);
 
-  // Formulaire de création/modification
   const [form, setForm] = useState({
     name: '',
     keywords: '',
@@ -64,7 +59,6 @@ const JobAlertsPage = () => {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-
     if (!error) setAlerts(data || []);
     else toast.error('Erreur lors du chargement des alertes');
     setLoading(false);
@@ -128,10 +122,7 @@ const JobAlertsPage = () => {
       };
 
       if (editingAlert) {
-        const { error } = await supabase
-          .from('job_alerts')
-          .update(payload)
-          .eq('id', editingAlert.id);
+        const { error } = await supabase.from('job_alerts').update(payload).eq('id', editingAlert.id);
         if (error) throw error;
         toast.success('Alerte modifiée');
       } else {
@@ -198,7 +189,6 @@ const JobAlertsPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Alertes emploi</h1>
@@ -216,7 +206,6 @@ const JobAlertsPage = () => {
           </Button>
         </div>
 
-        {/* FORMULAIRE DE CRÉATION/MODIFICATION */}
         {showCreate && (
           <Card className="mb-8 border-blue-200 shadow-md">
             <CardHeader>
@@ -246,6 +235,9 @@ const JobAlertsPage = () => {
                     placeholder="Ex: développeur, comptable, Bamako"
                     required={!form.category_id && !form.city_id}
                   />
+                  <p className="text-xs text-slate-400 mt-1">
+                    Séparez les mots par des espaces. Ex: "dev Bamako"
+                  </p>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -324,21 +316,12 @@ const JobAlertsPage = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-                  <Button
-                    variant="outline"
-                    type="button"
-                    onClick={resetForm}
-                    className="min-h-[44px]"
-                  >
+                  <Button variant="outline" type="button" onClick={resetForm} className="min-h-[44px]">
                     Annuler
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={saving}
-                    className="bg-blue-600 hover:bg-blue-700 text-white min-h-[44px]"
-                  >
+                  <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white min-h-[44px]">
                     {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    {editingAlert ? 'Modifier' : 'Créer l\'alerte'}
+                    {editingAlert ? 'Modifier' : "Créer l'alerte"}
                   </Button>
                 </div>
               </form>
@@ -346,7 +329,6 @@ const JobAlertsPage = () => {
           </Card>
         )}
 
-        {/* LISTE DES ALERTES */}
         <div>
           <h2 className="text-xl font-semibold text-slate-900 mb-4">Mes alertes ({alerts.length})</h2>
           {alerts.length === 0 ? (

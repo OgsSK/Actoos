@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
@@ -9,32 +8,38 @@ import { Badge } from '../components/ui/badge';
 import { Loader2, ChevronLeft, User, Mail, Phone, MapPin, Briefcase, GraduationCap, Award, FileText, Flag, Globe, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
+const normalizeUrl = (url) => {
+  if (!url) return '';
+  let trimmed = url.trim();
+  if (!/^https?:\/\//i.test(trimmed)) {
+    trimmed = 'https://' + trimmed;
+  }
+  return trimmed;
+};
+
 const CandidatePublicProfilePage = () => {
   const { id } = useParams();
   const { user: currentUser } = useAuth();
-  const [candidate, setCandidate] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
-    const fetchCandidate = async () => {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('*, city:cities(name)')
-        .eq('id', id)
-        .single();
-      const { data: cp } = await supabase
-        .from('candidate_profiles')
-        .select('*')
-        .eq('user_id', id)
-        .maybeSingle();
-      setCandidate(userData);
-      setProfile(cp || {});
-      setLoading(false);
-    };
-    fetchCandidate();
+    console.log('Candidate ID:', id);
+    if (id) fetchProfile();
   }, [id]);
+
+  const fetchProfile = async () => {
+  try {
+    const data = await apiFetch(`/api/candidate/${id}`);
+    setProfile(data);
+  } catch (err) {
+    console.error('Erreur chargement profil candidat:', err);
+    toast.error('Candidat introuvable');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleReport = async () => {
     if (!currentUser) {
@@ -50,7 +55,7 @@ const CandidatePublicProfilePage = () => {
         body: JSON.stringify({
           reporter_id: currentUser.id,
           reported_item_type: 'candidate',
-          reported_item_id: candidate.id,
+          reported_item_id: id,
           reason: reason
         }),
       });
@@ -63,7 +68,7 @@ const CandidatePublicProfilePage = () => {
   };
 
   if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
-  if (!candidate) return <div className="pt-20 text-center">Candidat introuvable.</div>;
+  if (!profile) return <div className="pt-20 text-center">Candidat introuvable.</div>;
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -76,33 +81,31 @@ const CandidatePublicProfilePage = () => {
               <CardContent className="p-6 sm:p-8">
                 <div className="flex flex-col sm:flex-row items-start gap-6 mb-6">
                   <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden shrink-0">
-                    {candidate?.avatar_url ? (
-                      <img src={candidate.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    {profile.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
                       <User className="w-10 h-10 text-blue-600" />
                     )}
                   </div>
                   <div className="flex-1">
-                    <h1 className="text-2xl font-bold text-slate-900">{candidate.first_name} {candidate.last_name}</h1>
-                    <p className="text-slate-600 flex items-center gap-2 mt-1"><Mail className="w-4 h-4" /> {candidate.email}</p>
-                    {candidate.phone && <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {candidate.phone}</p>}
-                    {candidate.city && <p className="text-slate-600 flex items-center gap-2 mt-1"><MapPin className="w-4 h-4" /> {candidate.city.name}</p>}
+                    <h1 className="text-2xl font-bold text-slate-900">{profile.first_name} {profile.last_name}</h1>
+                    <p className="text-slate-600 flex items-center gap-2 mt-1"><Mail className="w-4 h-4" /> {profile.email}</p>
+                    {profile.phone && <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {profile.phone}</p>}
+                    {profile.city && <p className="text-slate-600 flex items-center gap-2 mt-1"><MapPin className="w-4 h-4" /> {profile.city}</p>}
                     
-                    {/* Liens (cliquables) */}
                     <div className="flex flex-wrap gap-3 mt-3">
                       {profile.linkedin_url && (
-                        <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
+                        <a href={normalizeUrl(profile.linkedin_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
                           <Globe className="w-4 h-4" /> LinkedIn
                         </a>
                       )}
                       {profile.portfolio_url && (
-                        <a href={profile.portfolio_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
+                        <a href={normalizeUrl(profile.portfolio_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
                           <ExternalLink className="w-4 h-4" /> Portfolio
                         </a>
                       )}
                     </div>
 
-                    {/* Bouton Signaler */}
                     <div className="mt-4">
                       <Button variant="outline" size="sm" onClick={handleReport} disabled={reporting}>
                         <Flag className="w-4 h-4 mr-2" /> Signaler ce candidat

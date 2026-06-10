@@ -1,148 +1,286 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
-import { Users, UserPlus, Loader2, Trash2, Shield } from 'lucide-react';
+import { Users, UserPlus, Loader2, Trash2 } from 'lucide-react';
 
 const CompanyTeamPage = () => {
   const { activeCompanyId } = useAuth();
+
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('recruiter');
   const [sending, setSending] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState(null);
 
+  const searchTimeout = useRef(null);
+  const inputRef = useRef(null);
+
+  // ---------- FETCH MEMBERS (direct Supabase) ----------
   const fetchMembers = async () => {
     if (!activeCompanyId) return;
+    setLoading(true);
     const { data, error } = await supabase
       .from('company_members')
       .select('*, user:users(email, first_name, last_name)')
       .eq('company_id', activeCompanyId);
-    if (!error) setMembers(data || []);
+    if (error) {
+      console.error(error);
+      toast.error('Erreur lors du chargement des membres');
+      setMembers([]);
+    } else {
+      setMembers(data || []);
+    }
     setLoading(false);
   };
 
-  useEffect(() => { fetchMembers(); }, [activeCompanyId]);
+  useEffect(() => {
+    fetchMembers();
+  }, [activeCompanyId]);
 
+  // ---------- SEARCH (via API) ----------
+  const updateDropdownPosition = () => {
+    if (!inputRef.current) return;
+    const rect = inputRef.current.getBoundingClientRect();
+    setDropdownPos({
+      top: rect.bottom + window.scrollY,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+    });
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setInviteEmail(value);
+    if (value.trim().length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    updateDropdownPosition();
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(async () => {
+      try {
+        const res = await apiFetch(`/api/admin/search-users?q=${encodeURIComponent(value)}`);
+        setSuggestions(res || []);
+        setShowSuggestions(true);
+      } catch (err) {
+        console.error(err);
+      }
+    }, 300);
+  };
+
+  const selectUser = (user) => {
+    setInviteEmail(user.email);
+    setShowSuggestions(false);
+  };
+
+  // ---------- INVITE (direct Supabase) ----------
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
     setSending(true);
     try {
-      // Vérifier que l'utilisateur existe
-      const { data: userData, error: userError } = await supabase
-        .from('users').select('id').eq('email', inviteEmail.trim().toLowerCase()).single();
-      if (userError || !userData) {
-        toast.error('Aucun utilisateur trouvé avec cet email');
-        setSending(false);
+      const users = await apiFetch(`/api/admin/search-users?q=${encodeURIComponent(inviteEmail)}`);
+      const user = users.find((u) => u.email.toLowerCase() === inviteEmail.toLowerCase());
+      if (!user) {
+        toast.error('Utilisateur introuvable');
         return;
       }
-      // Vérifier qu'il n'est pas déjà membre
+
+      // Vérifier s'il n'est pas déjà membre
       const { data: existing } = await supabase
         .from('company_members')
-        .select('id').eq('company_id', activeCompanyId).eq('user_id', userData.id).maybeSingle();
+        .select('id')
+        .eq('company_id', activeCompanyId)
+        .eq('user_id', user.id)
+        .maybeSingle();
       if (existing) {
-        toast.error('Cet utilisateur est déjà membre');
-        setSending(false);
+        toast.error('Cet utilisateur est déjà membre.');
         return;
       }
-      // Insérer
-      const { error: insertError } = await supabase.from('company_members').insert({
+
+      const { error } = await supabase.from('company_members').insert({
         company_id: activeCompanyId,
-        user_id: userData.id,
+        user_id: user.id,
         role: inviteRole,
         is_admin: inviteRole === 'admin',
       });
-      if (insertError) throw insertError;
-      toast.success('Membre ajouté avec succès');
+      if (error) throw error;
+
+      toast.success('Membre ajouté avec succès.');
       setInviteEmail('');
+      setShowSuggestions(false);
       fetchMembers();
+
+      try {
+        await apiFetch('/api/company/invite-member', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: user.email,
+            company_name: 'Votre entreprise',
+            role: inviteRole,
+          }),
+        });
+      } catch (emailErr) {
+        console.error('Erreur envoi email invitation :', emailErr);
+      }
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de l\'ajout');
+      toast.error(err.message || "Erreur lors de l'ajout");
     } finally {
       setSending(false);
     }
   };
 
-  const handleRemoveMember = async (memberId) => {
-    if (!window.confirm('Retirer ce membre ?')) return;
-    const { error } = await supabase.from('company_members').delete().eq('id', memberId);
-    if (error) toast.error('Erreur');
-    else {
-      toast.success('Membre retiré');
-      fetchMembers();
-    }
-  };
-
+  // ---------- CHANGE ROLE (direct Supabase) ----------
   const handleChangeRole = async (memberId, newRole) => {
-    const { error } = await supabase.from('company_members').update({
-      role: newRole,
-      is_admin: newRole === 'admin',
-    }).eq('id', memberId);
-    if (error) toast.error('Erreur');
-    else {
+    const { error } = await supabase
+      .from('company_members')
+      .update({ role: newRole, is_admin: newRole === 'admin' })
+      .eq('id', memberId);
+    if (error) {
+      toast.error(error.message);
+    } else {
       toast.success('Rôle mis à jour');
       fetchMembers();
     }
   };
 
-  if (loading) return <div className="min-h-screen pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+  // ---------- REMOVE MEMBER (direct Supabase) ----------
+  const handleRemoveMember = async (memberId) => {
+    if (!window.confirm('Retirer ce membre ?')) return;
+    const { error } = await supabase.from('company_members').delete().eq('id', memberId);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Membre retiré');
+      fetchMembers();
+    }
+  };
+
+  // ---------- DROPDOWN CLOSE ----------
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (inputRef.current && !inputRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    window.addEventListener('mousedown', handleClick);
+    window.addEventListener('scroll', updateDropdownPosition);
+    return () => {
+      window.removeEventListener('mousedown', handleClick);
+      window.removeEventListener('scroll', updateDropdownPosition);
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin w-8 h-8" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        <h1 className="text-2xl font-bold text-slate-900 mb-6">Gérer l'équipe</h1>
-
-        <Card className="mb-8">
-          <CardContent className="p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><UserPlus className="w-5 h-5 text-blue-600" />Inviter un membre</h2>
-            <div className="flex flex-col sm:flex-row gap-3">
+    <div className="min-h-screen bg-slate-50 pt-16">
+      <div className="max-w-4xl mx-auto p-4">
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <h2 className="font-semibold mb-4 flex items-center gap-2">
+              <UserPlus className="w-5 h-5" />
+              Inviter un membre
+            </h2>
+            <div className="grid md:grid-cols-[1fr_auto_auto] gap-3">
               <Input
-                placeholder="Email de l'utilisateur"
+                ref={inputRef}
                 value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                className="flex-1"
+                onChange={handleSearchChange}
+                onFocus={updateDropdownPosition}
+                placeholder="Email ou nom"
+                className="h-11"
               />
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value)}
-                className="h-10 border border-slate-200 rounded-xl px-3 bg-white"
+                className="h-11 border rounded-xl px-3"
               >
                 <option value="recruiter">Recruteur</option>
                 <option value="admin">Admin</option>
               </select>
-              <Button onClick={handleInvite} disabled={sending || !inviteEmail.trim()} className="bg-blue-600 text-white hover:bg-blue-700">
-                {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-                Inviter
+              <Button onClick={handleInvite} disabled={sending}>
+                {sending ? <Loader2 className="animate-spin w-4 h-4" /> : 'Inviter'}
               </Button>
             </div>
           </CardContent>
         </Card>
 
+        {showSuggestions && dropdownPos &&
+          createPortal(
+            <div
+              style={{
+                position: 'absolute',
+                top: dropdownPos.top + 8,
+                left: dropdownPos.left,
+                width: dropdownPos.width,
+                zIndex: 9999,
+              }}
+            >
+              <ul className="bg-white border rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                {suggestions.map((user) => (
+                  <li
+                    key={user.id}
+                    onClick={() => selectUser(user)}
+                    className="px-4 py-3 hover:bg-gray-100 cursor-pointer flex justify-between"
+                  >
+                    <div>
+                      {user.first_name} {user.last_name}
+                      <div className="text-sm text-gray-500">{user.email}</div>
+                    </div>
+                    <Badge>{user.role === 'company' ? 'Entreprise' : 'Candidat'}</Badge>
+                  </li>
+                ))}
+              </ul>
+            </div>,
+            document.body
+          )
+        }
+
         <Card>
-          <CardContent className="p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-blue-600" />Membres ({members.length})</h2>
-            <div className="space-y-4">
-              {members.map(member => (
-                <div key={member.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+          <CardContent className="p-4">
+            <h2 className="font-semibold mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Membres ({members.length})
+            </h2>
+            <div className="space-y-3">
+              {members.map((m) => (
+                <div
+                  key={m.id}
+                  className="p-3 bg-gray-50 rounded-xl flex flex-col md:flex-row justify-between gap-3"
+                >
                   <div>
-                    <p className="font-medium text-slate-900">{member.user?.first_name} {member.user?.last_name}</p>
-                    <p className="text-sm text-slate-500">{member.user?.email}</p>
-                    <Badge className="mt-1">{member.role === 'admin' ? 'Admin' : 'Recruteur'}</Badge>
+                    <div className="font-medium">
+                      {m.user?.first_name} {m.user?.last_name}
+                    </div>
+                    <div className="text-sm text-gray-500">{m.user?.email}</div>
                   </div>
                   <div className="flex gap-2">
                     <select
-                      value={member.role}
-                      onChange={(e) => handleChangeRole(member.id, e.target.value)}
-                      className="h-8 border border-slate-200 rounded-lg px-2 text-sm bg-white"
+                      value={m.role}
+                      onChange={(e) => handleChangeRole(m.id, e.target.value)}
+                      className="border rounded-lg px-2"
                     >
                       <option value="recruiter">Recruteur</option>
                       <option value="admin">Admin</option>
                     </select>
-                    <Button variant="outline" size="sm" className="text-red-600" onClick={() => handleRemoveMember(member.id)}>
+                    <Button variant="outline" onClick={() => handleRemoveMember(m.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
