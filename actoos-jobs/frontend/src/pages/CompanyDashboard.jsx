@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import {
@@ -38,6 +38,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
+import UserMessages from '../components/UserMessages';
 
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => (
   <Card className="border-slate-200 overflow-hidden">
@@ -543,7 +544,6 @@ const CompanyDashboard = () => {
   };
 
   const handleToggleJobStatus = async (job, newStatus) => {
-    // Vérification de limite avant de passer une offre en active
     if (newStatus === 'active') {
       const { count: activeCount } = await supabase
         .from('jobs')
@@ -578,7 +578,6 @@ const CompanyDashboard = () => {
       return;
     }
 
-    // Vérification de la limite (active + pending)
     const { count: activeCount } = await supabase
       .from('jobs')
       .select('id', { count: 'exact', head: true })
@@ -964,6 +963,16 @@ const CompanyDashboard = () => {
                     Passez à un plan supérieur pour publier plus d'offres et accéder à des fonctionnalités avancées.
                   </p>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Messages de l'administration */}
+            <Card className="border-slate-200 overflow-hidden">
+              <CardHeader>
+                <CardTitle>Messages de l'administration</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UserMessages userId={user.id} />
               </CardContent>
             </Card>
           </div>

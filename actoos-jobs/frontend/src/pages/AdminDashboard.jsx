@@ -9,6 +9,9 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
+import MessageSender from '../components/MessageSender';
+// ❌ Suppression de l'import inutile
+// import MessageManager from '../components/MessageManager';
 import {
   Shield,
   Building2,
@@ -1435,6 +1438,15 @@ const AdminDashboard = () => {
             <FileText className="w-4 h-4" />
             Blog
           </TabButton>
+          <TabButton active={activeTab === 'message-companies'} onClick={() => setActiveTab('message-companies')}>
+            <Building2 className="w-4 h-4" />
+            Messages Entreprises
+          </TabButton>
+          <TabButton active={activeTab === 'message-candidates'} onClick={() => setActiveTab('message-candidates')}>
+            <Users className="w-4 h-4" />
+            Messages Candidats
+          </TabButton>
+          {/* ❌ Onglet "Messages envoyés" supprimé */}
         </div>
 
         {activeTab === 'overview' && (
@@ -2198,6 +2210,10 @@ const AdminDashboard = () => {
             </Card>
           </div>
         )}
+
+        {activeTab === 'message-companies' && <MessageSender role="company" />}
+        {activeTab === 'message-candidates' && <MessageSender role="candidate" />}
+        {/* ❌ Section "Messages envoyés" supprimée */}
 
         {/* Modale de suspension utilisateur */}
         {suspendModal.open && (
