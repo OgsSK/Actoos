@@ -36,7 +36,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Actoos Pro */}
-        <div className="bg-[#0F172A] rounded-[48px] p-8 md:p-16 mb-16 relative overflow-hidden shadow-2xl">
+       {/* <div className="bg-[#0F172A] rounded-[48px] p-8 md:p-16 mb-16 relative overflow-hidden shadow-2xl">
           <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] bg-[#D4AF37]/10 blur-[120px] rounded-full" />
           <div className="absolute bottom-[-50px] left-[-50px] w-[300px] h-[300px] bg-[#10B981]/5 blur-[100px] rounded-full" />
 
@@ -92,7 +92,7 @@ export default function ProductsPage() {
               </a>
             </div>
           </div>
-        </div>
+        </div>*/}
 
                 {/* Actoos Jobs */}
         <div className="bg-[#0F172A] rounded-[48px] p-8 md:p-16 mb-16 relative overflow-hidden shadow-2xl">
