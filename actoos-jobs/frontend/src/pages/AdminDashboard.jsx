@@ -10,8 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import MessageSender from '../components/MessageSender';
-// ❌ Suppression de l'import inutile
-// import MessageManager from '../components/MessageManager';
 import {
   Shield,
   Building2,
@@ -759,11 +757,22 @@ const AdminDashboard = () => {
   const [companySuspendDuration, setCompanySuspendDuration] = useState(0);
   const [companySuspendReason, setCompanySuspendReason] = useState('');
 
+  // ✅ État pour les demandes de changement de rôle (ajouté)
+  const [roleRequests, setRoleRequests] = useState([]);
+
   // Helper to get plan limit
   const getPlanLimit = (plan) => {
     if (plan === 'business' || plan === 'enterprise') return Infinity;
     if (plan === 'pro') return 5;
     return 1; // free
+  };
+
+  // 🔄 Traduction des rôles pour affichage
+  const roleLabel = (role) => {
+    if (role === 'candidate') return 'Candidat';
+    if (role === 'company') return 'Entreprise';
+    if (role === 'admin') return 'Admin';
+    return role || 'Inconnu';
   };
 
   useEffect(() => {
@@ -777,6 +786,13 @@ const AdminDashboard = () => {
       fetchSubscribers();
     }
   }, [user, isAdmin, authLoading, navigate]);
+
+  // Chargement des demandes de rôle
+  useEffect(() => {
+    if (isAdmin) {
+      fetchRoleRequests();
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     const fetchCancellations = async () => {
@@ -868,6 +884,28 @@ const AdminDashboard = () => {
     }
   };
 
+  // 🔒 Version sécurisée : garantit que roleRequests est toujours un tableau
+ const fetchRoleRequests = async () => {
+  const { data, error } = await supabase.rpc('get_pending_role_requests');
+  if (error) {
+    console.error('Erreur RPC:', error);
+    setRoleRequests([]);
+  } else {
+    // Enrichir avec les infos utilisateur (email, prénom, nom)
+    const enriched = data
+      ? await Promise.all(data.map(async (r) => {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('email, first_name, last_name')
+            .eq('id', r.user_id)
+            .single();
+          return { ...r, user: userData || { email: '', first_name: '', last_name: '' } };
+        }))
+      : [];
+    setRoleRequests(enriched);
+  }
+};
+
   const fetchSubscribers = async () => {
     setLoadingSubscribers(true);
     const { data, error } = await supabase
@@ -904,6 +942,48 @@ const AdminDashboard = () => {
     toast.success('Données actualisées');
   };
 
+  // ---- Gestion des demandes de rôle ----
+const handleRoleRequest = async (requestId, action) => {
+  const message = action === 'reject'
+    ? window.prompt('Raison du refus (optionnelle) :')
+    : null;
+
+  // Traiter la demande (approuver/rejeter)
+  const { error } = await supabase.rpc('handle_role_request', {
+    p_request_id: requestId,
+    p_action: action,
+    p_admin_message: message || null,
+  });
+
+  if (error) {
+    toast.error(error.message);
+    return;
+  }
+
+  // Envoyer l’email à l’utilisateur
+  const requestData = roleRequests.find(r => r.id === requestId);
+  if (requestData) {
+    try {
+      await apiFetch('/api/admin/send-role-change-email', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: requestData.user_email,
+          first_name: requestData.user_first_name || 'Utilisateur',
+          action: action,
+          requested_role: requestData.requested_role,
+          admin_message: message || null,
+        }),
+      });
+    } catch (err) {
+      console.error('Erreur envoi email:', err);
+    }
+  }
+
+  toast.success(`Demande ${action === 'approve' ? 'approuvée' : 'refusée'}`);
+  fetchRoleRequests();
+};
+
+  // ---- Gestion des offres ----
   const handleApproveJob = async (job) => {
     if (!job.company?.is_verified) {
       toast.error("L'entreprise n'est pas encore vérifiée. Veuillez d'abord valider l'entreprise.");
@@ -1446,7 +1526,14 @@ const AdminDashboard = () => {
             <Users className="w-4 h-4" />
             Messages Candidats
           </TabButton>
-          {/* ❌ Onglet "Messages envoyés" supprimé */}
+          <TabButton
+  active={activeTab === 'roleRequests'}
+  onClick={() => setActiveTab('roleRequests')}
+  count={roleRequests.length}
+>
+  <UserCog className="w-4 h-4" />
+  Demandes de rôle
+</TabButton>
         </div>
 
         {activeTab === 'overview' && (
@@ -2213,7 +2300,52 @@ const AdminDashboard = () => {
 
         {activeTab === 'message-companies' && <MessageSender role="company" />}
         {activeTab === 'message-candidates' && <MessageSender role="candidate" />}
-        {/* ❌ Section "Messages envoyés" supprimée */}
+
+        {/* 🔥 NOUVEL ONGLET : Demandes de changement de rôle */}
+        {activeTab === 'roleRequests' && (
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserCog className="w-5 h-5" />
+                Demandes de changement de rôle
+              </CardTitle>
+              <CardDescription>Gérez les demandes des utilisateurs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {roleRequests.length === 0 ? (
+                  <p className="text-center text-slate-500 py-8">Aucune demande en attente</p>
+                ) : (
+                  roleRequests.map((r) => (
+                    <div key={r.id} className="p-4 bg-white border border-slate-200 rounded-2xl">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-slate-900">
+                            {r.user?.first_name} {r.user?.last_name} ({r.user?.email})
+                          </p>
+                          {/* Traduction des rôles pour un affichage lisible */}
+                          <div className="text-sm text-slate-600">
+  De <Badge>{roleLabel(r.actual_role)}</Badge> → <Badge className="bg-blue-100 text-blue-700">{roleLabel(r.requested_role)}</Badge>
+</div>
+                          {r.reason && <p className="text-sm text-slate-500 mt-1">« {r.reason} »</p>}
+                          <p className="text-xs text-slate-400 mt-1">{new Date(r.created_at).toLocaleString('fr-FR')}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleRoleRequest(r.id, 'approve')}>
+                            Approuver
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-red-600" onClick={() => handleRoleRequest(r.id, 'reject')}>
+                            Rejeter
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Modale de suspension utilisateur */}
         {suspendModal.open && (

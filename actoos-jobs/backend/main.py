@@ -189,6 +189,15 @@ class AdminUpdateMessageRequest(BaseModel):
     expire_value: Optional[int] = None
     expire_unit: Optional[str] = None
 
+class RoleChangeRequestRequest(BaseModel):
+    requested_role: str
+    reason: Optional[str] = None
+
+class AdminHandleRoleRequest(BaseModel):
+    request_id: str
+    action: str  # 'approve' ou 'reject'
+    admin_message: Optional[str] = None
+
 def clean_subject(text: str, max_length: int = 50) -> str:
     cleaned = text.replace('\n', ' ').replace('\r', ' ')
     if len(cleaned) > max_length:
@@ -1187,7 +1196,6 @@ async def admin_delete_job(req: AdminActionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 # ----- Admin Messages -----
-
 @app.post("/api/admin/send-messages")
 async def admin_send_messages(req: AdminSendMessagesRequest):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -1197,7 +1205,6 @@ async def admin_send_messages(req: AdminSendMessagesRequest):
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
 
-    # Calcul de la date d'expiration (optionnelle)
     expires_at = None
     if req.expire_value and req.expire_value > 0 and req.expire_unit:
         now = datetime.utcnow()
@@ -1248,7 +1255,6 @@ async def admin_send_messages(req: AdminSendMessagesRequest):
             errors.append(f"Erreur insertion pour {user_id}")
             continue
 
-        # Envoi email avec salutation personnalisée
         first_name = user.get('first_name')
         greeting = first_name if first_name else "Utilisateur"
         try:
@@ -1272,7 +1278,6 @@ async def get_admin_messages():
         raise HTTPException(status_code=500, detail="Supabase not configured")
 
     try:
-        # Filtrer les messages non supprimés (soft delete)
         resp = httpx.get(
             f"{supabase_url}/rest/v1/admin_messages?select=*,recipient:users(email,first_name,last_name)&deleted_at=is.null&order=sent_at.desc",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -1296,7 +1301,6 @@ async def admin_update_message(message_id: str, req: AdminUpdateMessageRequest):
     if req.content is not None:
         update_data["content"] = req.content
 
-    # Recalculer expires_at si les paramètres sont fournis
     if req.expire_value is not None and req.expire_unit is not None:
         if req.expire_value > 0:
             now = datetime.utcnow()
@@ -1323,7 +1327,6 @@ async def admin_update_message(message_id: str, req: AdminUpdateMessageRequest):
 
 @app.delete("/api/admin/messages/{message_id}")
 async def admin_delete_message(message_id: str):
-    """Soft delete : marque le message comme supprimé (deleted_at)"""
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
@@ -1339,7 +1342,6 @@ async def admin_delete_message(message_id: str):
 
 @app.delete("/api/admin/messages/{message_id}/permanent")
 async def admin_permanent_delete_message(message_id: str):
-    """Suppression définitive (hard delete)"""
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
@@ -1354,7 +1356,6 @@ async def admin_permanent_delete_message(message_id: str):
 
 @app.post("/api/admin/messages/{message_id}/restore")
 async def admin_restore_message(message_id: str):
-    """Restaure un message soft‑deleted"""
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
@@ -1367,6 +1368,210 @@ async def admin_restore_message(message_id: str):
     if resp.status_code != 200:
         raise HTTPException(status_code=400, detail=resp.text)
     return {"success": True, "message": "Message restauré"}
+
+
+class NotifyAdminRoleRequest(BaseModel):
+    user_email: str
+    user_name: str
+    current_role: str
+    requested_role: str
+
+@app.post("/api/notify-admin-role-request")
+async def notify_admin_role_request(req: NotifyAdminRoleRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        resend.Emails.send({
+            "from": "Actoos Jobs <noreply@actoos.com>",
+            "to": ["contact@actoos.com"],
+            "subject": f"Demande de changement de rôle de {req.user_name}",
+            "html": f"""
+                <h2>Nouvelle demande de changement de rôle</h2>
+                <p><strong>Utilisateur :</strong> {req.user_name} ({req.user_email})</p>
+                <p><strong>Rôle actuel :</strong> {req.current_role}</p>
+                <p><strong>Rôle demandé :</strong> {req.requested_role}</p>
+                <p><a href="https://jobs.actoos.com/admin">Accéder au dashboard admin</a></p>
+            """
+        })
+        return {"success": True, "message": "Notification envoyée à l'administrateur"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+class SendRoleChangeEmailRequest(BaseModel):
+    email: str
+    first_name: str
+    action: str  # 'approve' ou 'reject'
+    requested_role: str
+    admin_message: Optional[str] = None
+
+@app.post("/api/admin/send-role-change-email")
+async def send_role_change_email(req: SendRoleChangeEmailRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+
+    if req.action == 'approve':
+        subject = "Votre demande de changement de rôle a été approuvée"
+        body = f"<h2>Bonjour {req.first_name},</h2><p>Votre demande pour devenir <strong>{req.requested_role}</strong> a été approuvée.</p><p>Veuillez vous reconnecter pour accéder à votre nouvel espace.</p>"
+    else:
+        msg = req.admin_message or "Non spécifié"
+        subject = "Votre demande de changement de rôle a été refusée"
+        body = f"<h2>Bonjour {req.first_name},</h2><p>Votre demande pour devenir <strong>{req.requested_role}</strong> a été refusée.</p><p>Raison : {msg}</p>"
+
+    try:
+        resend.Emails.send({
+            "from": "Actoos Jobs <noreply@actoos.com>",
+            "to": [req.email],
+            "subject": subject,
+            "html": body
+        })
+        return {"success": True, "message": "Email envoyé"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ----- Changement de rôle -----
+@app.post("/api/user/request-role-change")
+async def request_role_change(req: RoleChangeRequestRequest, request: Request):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    auth_header = request.headers.get("authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    token = auth_header.replace("Bearer ", "")
+    user_resp = httpx.get(f"{supabase_url}/auth/v1/user", headers={"Authorization": f"Bearer {token}"})
+    if user_resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Token invalide")
+    user_data = user_resp.json()
+    user_id = user_data.get("id")
+
+    current_user = httpx.get(
+        f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=role",
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    ).json()
+    if not current_user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    current_role = current_user[0]["role"]
+
+    if req.requested_role == "admin":
+        raise HTTPException(status_code=400, detail="Le rôle admin n'est pas demandable")
+
+    existing = httpx.get(
+        f"{supabase_url}/rest/v1/role_change_requests?user_id=eq.{user_id}&status=eq.pending",
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    ).json()
+    if existing:
+        raise HTTPException(status_code=400, detail="Vous avez déjà une demande en cours")
+
+    try:
+        response = httpx.post(
+            f"{supabase_url}/rest/v1/role_change_requests",
+            json={
+                "user_id": user_id,
+                "current_role": current_role,
+                "requested_role": req.requested_role,
+                "reason": req.reason
+            },
+            headers={
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+            }
+        )
+        if response.status_code not in (200, 201):
+            raise Exception(f"Insert failed: {response.text}")
+        return {"success": True, "message": "Demande envoyée"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/role-requests")
+async def get_role_requests(status: Optional[str] = None):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    query = f"{supabase_url}/rest/v1/role_change_requests?select=*,user:users(email,first_name,last_name)&order=created_at.desc"
+    if status:
+        query += f"&status=eq.{status}"
+
+    try:
+        response = httpx.get(query, headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"})
+        return {"success": True, "requests": response.json()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/admin/handle-role-request")
+async def admin_handle_role_request(req: AdminHandleRoleRequest):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    req_resp = httpx.get(
+        f"{supabase_url}/rest/v1/role_change_requests?id=eq.{req.request_id}&select=*,user:users(email,first_name,last_name)",
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    ).json()
+    if not req_resp:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    role_req = req_resp[0]
+
+    if role_req["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Demande déjà traitée")
+
+    new_status = "approved" if req.action == "approve" else "rejected"
+
+    try:
+        httpx.patch(
+            f"{supabase_url}/rest/v1/role_change_requests?id=eq.{req.request_id}",
+            json={"status": new_status, "admin_message": req.admin_message, "updated_at": "now()"},
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+
+        user_email = role_req["user"]["email"]
+        user_first = role_req["user"].get("first_name") or "Utilisateur"
+
+        if new_status == "approved":
+            httpx.patch(
+                f"{supabase_url}/rest/v1/users?id=eq.{role_req['user_id']}",
+                json={"role": role_req["requested_role"]},
+                headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+            )
+            httpx.put(
+                f"{supabase_url}/auth/v1/admin/users/{role_req['user_id']}",
+                json={"user_metadata": {"role": role_req["requested_role"]}},
+                headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+            )
+
+        if resend.api_key and user_email:
+            if new_status == "approved":
+                subject = "Votre demande de changement de rôle a été approuvée"
+                body = f"<h2>Bonjour {user_first},</h2><p>Votre demande pour devenir <strong>{role_req['requested_role']}</strong> a été approuvée.</p><p>Veuillez vous reconnecter pour accéder à votre nouvel espace.</p>"
+            else:
+                msg = req.admin_message or "Non spécifié"
+                subject = "Votre demande de changement de rôle a été refusée"
+                body = f"<h2>Bonjour {user_first},</h2><p>Votre demande pour devenir <strong>{role_req['requested_role']}</strong> a été refusée.</p><p>Raison : {msg}</p>"
+
+            try:
+                resend.Emails.send({
+                    "from": "Actoos Jobs <noreply@actoos.com>",
+                    "to": [user_email],
+                    "subject": subject,
+                    "html": body
+                })
+            except Exception as e:
+                print(f"Email error: {e}")
+
+        return {"success": True, "message": f"Demande {new_status}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ----- Reports -----
 @app.post("/api/report")
@@ -1458,7 +1663,6 @@ async def admin_suspend_user(req: AdminSuspendUserRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Réactivation / suspension simple (toggle)
 @app.post("/api/admin/toggle-user-status")
 async def toggle_user_status(req: AdminToggleUserStatusRequest):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -1773,21 +1977,17 @@ async def delete_own_account(request: Request):
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
 
     try:
-        # Supprimer les données liées
         httpx.delete(f"{supabase_url}/rest/v1/applications?candidate_id=eq.{user_id}", headers=headers)
         httpx.delete(f"{supabase_url}/rest/v1/saved_jobs?user_id=eq.{user_id}", headers=headers)
         httpx.delete(f"{supabase_url}/rest/v1/job_alerts?user_id=eq.{user_id}", headers=headers)
         httpx.delete(f"{supabase_url}/rest/v1/notifications?user_id=eq.{user_id}", headers=headers)
         httpx.delete(f"{supabase_url}/rest/v1/candidate_documents?user_id=eq.{user_id}", headers=headers)
         httpx.delete(f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{user_id}", headers=headers)
-        # Entreprises (cascade)
         companies_resp = httpx.get(f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id", headers=headers)
         companies = companies_resp.json()
         for company in companies:
             httpx.delete(f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}", headers=headers)
-        # Utilisateur public
         httpx.delete(f"{supabase_url}/rest/v1/users?id=eq.{user_id}", headers=headers)
-        # Utilisateur auth
         httpx.delete(f"{supabase_url}/auth/v1/admin/users/{user_id}", headers=headers)
 
         return {"success": True, "message": "Compte supprimé définitivement"}
