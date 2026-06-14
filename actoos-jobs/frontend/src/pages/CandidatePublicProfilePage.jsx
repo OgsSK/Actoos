@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
@@ -18,6 +19,7 @@ const normalizeUrl = (url) => {
 };
 
 const CandidatePublicProfilePage = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const { user: currentUser } = useAuth();
   const [profile, setProfile] = useState(null);
@@ -30,23 +32,23 @@ const CandidatePublicProfilePage = () => {
   }, [id]);
 
   const fetchProfile = async () => {
-  try {
-    const data = await apiFetch(`/api/candidate/${id}`);
-    setProfile(data);
-  } catch (err) {
-    console.error('Erreur chargement profil candidat:', err);
-    toast.error('Candidat introuvable');
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      const data = await apiFetch(`/api/candidate/${id}`);
+      setProfile(data);
+    } catch (err) {
+      console.error('Erreur chargement profil candidat:', err);
+      toast.error(t('candidateProfile.notFound'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleReport = async () => {
     if (!currentUser) {
-      toast.error('Veuillez vous connecter pour signaler');
+      toast.error(t('candidateProfile.loginToReport'));
       return;
     }
-    const reason = window.prompt('Pourquoi signalez-vous ce candidat ?');
+    const reason = window.prompt(t('candidateProfile.reportTitle'));
     if (!reason) return;
     setReporting(true);
     try {
@@ -59,21 +61,21 @@ const CandidatePublicProfilePage = () => {
           reason: reason
         }),
       });
-      toast.success('Signalement envoyé. Merci !');
+      toast.success(t('candidateProfile.reportSent'));
     } catch (err) {
-      toast.error("Erreur lors de l'envoi du signalement");
+      toast.error(t('candidateProfile.reportError'));
     } finally {
       setReporting(false);
     }
   };
 
   if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
-  if (!profile) return <div className="pt-20 text-center">Candidat introuvable.</div>;
+  if (!profile) return <div className="pt-20 text-center">{t('candidateProfile.notFound')}</div>;
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <Link to="/dashboard/entreprise/candidatures"><Button variant="ghost" className="mb-6"><ChevronLeft className="w-4 h-4 mr-2" />Retour</Button></Link>
+        <Link to="/dashboard/entreprise/candidatures"><Button variant="ghost" className="mb-6"><ChevronLeft className="w-4 h-4 mr-2" />{t('candidateProfile.back')}</Button></Link>
 
         <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
@@ -96,19 +98,19 @@ const CandidatePublicProfilePage = () => {
                     <div className="flex flex-wrap gap-3 mt-3">
                       {profile.linkedin_url && (
                         <a href={normalizeUrl(profile.linkedin_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
-                          <Globe className="w-4 h-4" /> LinkedIn
+                          <Globe className="w-4 h-4" /> {t('candidateProfile.linkedin')}
                         </a>
                       )}
                       {profile.portfolio_url && (
                         <a href={normalizeUrl(profile.portfolio_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
-                          <ExternalLink className="w-4 h-4" /> Portfolio
+                          <ExternalLink className="w-4 h-4" /> {t('candidateProfile.portfolio')}
                         </a>
                       )}
                     </div>
 
                     <div className="mt-4">
                       <Button variant="outline" size="sm" onClick={handleReport} disabled={reporting}>
-                        <Flag className="w-4 h-4 mr-2" /> Signaler ce candidat
+                        <Flag className="w-4 h-4 mr-2" /> {t('candidateProfile.reportButton')}
                       </Button>
                     </div>
                   </div>
@@ -119,25 +121,28 @@ const CandidatePublicProfilePage = () => {
 
                 {profile.desired_salary_min && (
                   <p className="text-sm text-slate-500 mb-4">
-                    Prétentions salariales : {profile.desired_salary_min.toLocaleString()} - {profile.desired_salary_max?.toLocaleString()} FCFA
+                    {t('candidateProfile.salaryExpectations', { 
+                      min: profile.desired_salary_min.toLocaleString(), 
+                      max: profile.desired_salary_max?.toLocaleString() 
+                    })}
                   </p>
                 )}
 
                 {profile.skills?.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-2"><Award className="w-5 h-5 text-blue-600" />Compétences</h3>
+                    <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-2"><Award className="w-5 h-5 text-blue-600" />{t('candidateProfile.skills')}</h3>
                     <div className="flex flex-wrap gap-2">{profile.skills.map(skill => <Badge key={skill} variant="secondary">{skill}</Badge>)}</div>
                   </div>
                 )}
 
                 {profile.experience?.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-2"><Briefcase className="w-5 h-5 text-blue-600" />Expériences</h3>
+                    <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-2"><Briefcase className="w-5 h-5 text-blue-600" />{t('candidateProfile.experience')}</h3>
                     <div className="space-y-4">
                       {profile.experience.map((exp, idx) => (
                         <div key={idx} className="p-4 bg-slate-50 rounded-xl">
                           <p className="font-medium text-slate-800">{exp.title}</p>
-                          <p className="text-sm text-slate-600">{exp.company} – {exp.start_date} à {exp.end_date || 'présent'}</p>
+                          <p className="text-sm text-slate-600">{exp.company} – {exp.start_date} à {exp.end_date || t('candidateProfile.present')}</p>
                           {exp.description && <p className="text-sm text-slate-500 mt-1">{exp.description}</p>}
                         </div>
                       ))}
@@ -147,7 +152,7 @@ const CandidatePublicProfilePage = () => {
 
                 {profile.education?.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-2"><GraduationCap className="w-5 h-5 text-blue-600" />Formation</h3>
+                    <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-2"><GraduationCap className="w-5 h-5 text-blue-600" />{t('candidateProfile.education')}</h3>
                     <div className="space-y-4">
                       {profile.education.map((edu, idx) => (
                         <div key={idx} className="p-4 bg-slate-50 rounded-xl">
@@ -162,7 +167,7 @@ const CandidatePublicProfilePage = () => {
                 {profile.cv_url && (
                   <div className="mt-4">
                     <a href={profile.cv_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl hover:bg-blue-100">
-                      <FileText className="w-4 h-4" /> Télécharger le CV
+                      <FileText className="w-4 h-4" /> {t('candidateProfile.downloadCV')}
                     </a>
                   </div>
                 )}

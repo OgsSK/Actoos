@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
@@ -11,6 +12,7 @@ import { toast } from 'sonner';
 import { Users, UserPlus, Loader2, Trash2 } from 'lucide-react';
 
 const CompanyTeamPage = () => {
+  const { t } = useTranslation();
   const { activeCompanyId } = useAuth();
 
   const [members, setMembers] = useState([]);
@@ -25,7 +27,6 @@ const CompanyTeamPage = () => {
   const searchTimeout = useRef(null);
   const inputRef = useRef(null);
 
-  // ---------- FETCH MEMBERS (direct Supabase) ----------
   const fetchMembers = async () => {
     if (!activeCompanyId) return;
     setLoading(true);
@@ -35,7 +36,7 @@ const CompanyTeamPage = () => {
       .eq('company_id', activeCompanyId);
     if (error) {
       console.error(error);
-      toast.error('Erreur lors du chargement des membres');
+      toast.error(t('companyTeam.toasts.loadError'));
       setMembers([]);
     } else {
       setMembers(data || []);
@@ -47,7 +48,6 @@ const CompanyTeamPage = () => {
     fetchMembers();
   }, [activeCompanyId]);
 
-  // ---------- SEARCH (via API) ----------
   const updateDropdownPosition = () => {
     if (!inputRef.current) return;
     const rect = inputRef.current.getBoundingClientRect();
@@ -84,7 +84,6 @@ const CompanyTeamPage = () => {
     setShowSuggestions(false);
   };
 
-  // ---------- INVITE (direct Supabase) ----------
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
     setSending(true);
@@ -92,11 +91,10 @@ const CompanyTeamPage = () => {
       const users = await apiFetch(`/api/admin/search-users?q=${encodeURIComponent(inviteEmail)}`);
       const user = users.find((u) => u.email.toLowerCase() === inviteEmail.toLowerCase());
       if (!user) {
-        toast.error('Utilisateur introuvable');
+        toast.error(t('companyTeam.toasts.userNotFound'));
         return;
       }
 
-      // Vérifier s'il n'est pas déjà membre
       const { data: existing } = await supabase
         .from('company_members')
         .select('id')
@@ -104,7 +102,7 @@ const CompanyTeamPage = () => {
         .eq('user_id', user.id)
         .maybeSingle();
       if (existing) {
-        toast.error('Cet utilisateur est déjà membre.');
+        toast.error(t('companyTeam.toasts.alreadyMember'));
         return;
       }
 
@@ -116,7 +114,7 @@ const CompanyTeamPage = () => {
       });
       if (error) throw error;
 
-      toast.success('Membre ajouté avec succès.');
+      toast.success(t('companyTeam.toasts.memberAdded'));
       setInviteEmail('');
       setShowSuggestions(false);
       fetchMembers();
@@ -132,15 +130,15 @@ const CompanyTeamPage = () => {
         });
       } catch (emailErr) {
         console.error('Erreur envoi email invitation :', emailErr);
+        toast.error(t('companyTeam.toasts.emailError'));
       }
     } catch (err) {
-      toast.error(err.message || "Erreur lors de l'ajout");
+      toast.error(err.message || t('companyTeam.toasts.addError'));
     } finally {
       setSending(false);
     }
   };
 
-  // ---------- CHANGE ROLE (direct Supabase) ----------
   const handleChangeRole = async (memberId, newRole) => {
     const { error } = await supabase
       .from('company_members')
@@ -149,24 +147,22 @@ const CompanyTeamPage = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Rôle mis à jour');
+      toast.success(t('companyTeam.toasts.roleUpdated'));
       fetchMembers();
     }
   };
 
-  // ---------- REMOVE MEMBER (direct Supabase) ----------
   const handleRemoveMember = async (memberId) => {
-    if (!window.confirm('Retirer ce membre ?')) return;
+    if (!window.confirm(t('companyTeam.toasts.removeConfirm'))) return;
     const { error } = await supabase.from('company_members').delete().eq('id', memberId);
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Membre retiré');
+      toast.success(t('companyTeam.toasts.memberRemoved'));
       fetchMembers();
     }
   };
 
-  // ---------- DROPDOWN CLOSE ----------
   useEffect(() => {
     const handleClick = (e) => {
       if (inputRef.current && !inputRef.current.contains(e.target)) {
@@ -189,6 +185,11 @@ const CompanyTeamPage = () => {
     );
   }
 
+  const roleOptions = [
+    { value: 'recruiter', label: t('companyTeam.invite.roleRecruiter') },
+    { value: 'admin', label: t('companyTeam.invite.roleAdmin') },
+  ];
+
   return (
     <div className="min-h-screen bg-slate-50 pt-16">
       <div className="max-w-4xl mx-auto p-4">
@@ -196,7 +197,7 @@ const CompanyTeamPage = () => {
           <CardContent className="p-4">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               <UserPlus className="w-5 h-5" />
-              Inviter un membre
+              {t('companyTeam.invite.title')}
             </h2>
             <div className="grid md:grid-cols-[1fr_auto_auto] gap-3">
               <Input
@@ -204,7 +205,7 @@ const CompanyTeamPage = () => {
                 value={inviteEmail}
                 onChange={handleSearchChange}
                 onFocus={updateDropdownPosition}
-                placeholder="Email ou nom"
+                placeholder={t('companyTeam.invite.placeholder')}
                 className="h-11"
               />
               <select
@@ -212,11 +213,14 @@ const CompanyTeamPage = () => {
                 onChange={(e) => setInviteRole(e.target.value)}
                 className="h-11 border rounded-xl px-3"
               >
-                <option value="recruiter">Recruteur</option>
-                <option value="admin">Admin</option>
+                {roleOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
               <Button onClick={handleInvite} disabled={sending}>
-                {sending ? <Loader2 className="animate-spin w-4 h-4" /> : 'Inviter'}
+                {sending ? <Loader2 className="animate-spin w-4 h-4" /> : t('companyTeam.invite.button')}
               </Button>
             </div>
           </CardContent>
@@ -244,7 +248,11 @@ const CompanyTeamPage = () => {
                       {user.first_name} {user.last_name}
                       <div className="text-sm text-gray-500">{user.email}</div>
                     </div>
-                    <Badge>{user.role === 'company' ? 'Entreprise' : 'Candidat'}</Badge>
+                    <Badge>
+                      {user.role === 'company'
+                        ? t('companyTeam.badges.company')
+                        : t('companyTeam.badges.candidate')}
+                    </Badge>
                   </li>
                 ))}
               </ul>
@@ -257,7 +265,7 @@ const CompanyTeamPage = () => {
           <CardContent className="p-4">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               <Users className="w-5 h-5" />
-              Membres ({members.length})
+              {t('companyTeam.members.title', { count: members.length })}
             </h2>
             <div className="space-y-3">
               {members.map((m) => (
@@ -277,8 +285,11 @@ const CompanyTeamPage = () => {
                       onChange={(e) => handleChangeRole(m.id, e.target.value)}
                       className="border rounded-lg px-2"
                     >
-                      <option value="recruiter">Recruteur</option>
-                      <option value="admin">Admin</option>
+                      {roleOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
                     </select>
                     <Button variant="outline" onClick={() => handleRemoveMember(m.id)}>
                       <Trash2 className="w-4 h-4" />

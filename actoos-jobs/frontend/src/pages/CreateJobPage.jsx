@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
@@ -8,6 +9,9 @@ import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import AIAssistant from '../components/AIAssistant';
 import { toast } from 'sonner';
+// Ajout des hooks pour les préférences et les villes
+import { usePreferences } from '../hooks/usePreferences';
+import { useCities } from '../hooks/useCities';
 import {
   Briefcase, MapPin, DollarSign, Calendar, Users,
   Plus, X, Save, Loader2, ChevronLeft, Send,
@@ -17,14 +21,19 @@ import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { apiFetch } from '../lib/api';
 
 const CreateJobPage = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const { user, activeCompanyId } = useAuth();
   const navigate = useNavigate();
 
+  // Récupération des préférences et des villes filtrées par pays
+  const { prefs } = usePreferences();
+  const { cities: filteredCities } = useCities(prefs.country);
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [company, setCompany] = useState(null);
-  const [cities, setCities] = useState([]);
+  // Suppression de l'état local cities (remplacé par filteredCities)
   const [categories, setCategories] = useState([]);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [limitInfo, setLimitInfo] = useState({ currentPlan: '', maxActiveJobs: 0, activeJobs: 0 });
@@ -64,13 +73,13 @@ const CreateJobPage = () => {
 
   const fetchData = async () => {
     if (!user?.id) {
-      toast.error('Utilisateur non identifié');
+      toast.error(t('createJob.toasts.userNotIdentified'));
       navigate('/connexion');
       return;
     }
 
     if (!activeCompanyId) {
-      toast.error('Aucune entreprise sélectionnée');
+      toast.error(t('createJob.toasts.noCompanySelected'));
       navigate('/dashboard/entreprise');
       return;
     }
@@ -84,19 +93,15 @@ const CreateJobPage = () => {
         .single();
 
       if (companyError || !comp) {
-        toast.error('Entreprise introuvable');
+        toast.error(t('createJob.toasts.companyNotFound'));
         navigate('/dashboard/entreprise');
         return;
       }
 
       setCompany(comp);
 
-      const { data: citiesData } = await supabase
-        .from('cities')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-      setCities(citiesData || []);
+      // Suppression de l'appel aux villes (maintenant géré par useCities)
+      // const { data: citiesData } = ... supprimé
 
       const { data: catsData } = await supabase
         .from('job_categories')
@@ -146,7 +151,7 @@ const CreateJobPage = () => {
       });
     } catch (error) {
       console.error('Error fetching job:', error);
-      toast.error('Offre non trouvée');
+      toast.error(t('createJob.toasts.jobNotFound'));
       navigate('/dashboard/entreprise');
     }
   };
@@ -195,7 +200,7 @@ const CreateJobPage = () => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      toast.error('Veuillez remplir les champs obligatoires');
+      toast.error(t('createJob.toasts.fillRequiredFields'));
       return;
     }
 
@@ -203,47 +208,47 @@ const CreateJobPage = () => {
     try {
       const safeTitle = (form.title || '').substring(0, 200);
 
+      // Récupération du pays depuis les préférences (et non plus en dur 'ML')
       const { data: country } = await supabase
         .from('countries')
         .select('id')
-        .eq('code', 'ML')
+        .eq('code', prefs.country || 'ML') // fallback sur ML si prefs.country est vide
         .single();
+      const countryId = country?.id;
 
       let finalStatus = form.status;
 
       if (publish) {
         if (!company?.is_verified) {
-          toast.error("Votre entreprise n'est pas encore vérifiée. Vous ne pouvez pas soumettre d'offre.");
+          toast.error(t('createJob.toasts.companyNotVerified'));
           setSaving(false);
           return;
         }
 
-        // Vérification de la limite d'offres actives uniquement si l'offre n'est pas déjà active
-       // Vérification de la limite (active + pending)
-if (!id) { // nouvelle offre
-  const { count: activeCount } = await supabase
-    .from('jobs')
-    .select('id', { count: 'exact', head: true })
-    .eq('company_id', company.id)
-    .eq('status', 'active');
-  const { count: pendingCount } = await supabase
-    .from('jobs')
-    .select('id', { count: 'exact', head: true })
-    .eq('company_id', company.id)
-    .eq('status', 'pending');
-  const totalActiveAndPending = (activeCount || 0) + (pendingCount || 0);
-  const limit = getPlanLimit();
-  if (totalActiveAndPending >= limit) {
-    toast.error(`Vous avez déjà ${totalActiveAndPending} offre(s) active(s) ou en attente. Limite de votre plan : ${limit}.`);
-    setSaving(false);
-    return;
-  }
-}
+        if (!id) {
+          const { count: activeCount } = await supabase
+            .from('jobs')
+            .select('id', { count: 'exact', head: true })
+            .eq('company_id', company.id)
+            .eq('status', 'active');
+          const { count: pendingCount } = await supabase
+            .from('jobs')
+            .select('id', { count: 'exact', head: true })
+            .eq('company_id', company.id)
+            .eq('status', 'pending');
+          const totalActiveAndPending = (activeCount || 0) + (pendingCount || 0);
+          const limit = getPlanLimit();
+          if (totalActiveAndPending >= limit) {
+            toast.error(t('createJob.toasts.limitReached', { total: totalActiveAndPending, limit }));
+            setSaving(false);
+            return;
+          }
+        }
 
         if (id && (form.status === 'active' || form.status === 'paused')) {
-          finalStatus = form.status; // On conserve le statut actif ou pause
+          finalStatus = form.status;
         } else {
-          finalStatus = 'pending'; // Soumission pour validation
+          finalStatus = 'pending';
         }
       }
 
@@ -264,7 +269,7 @@ if (!id) { // nouvelle offre
         salary_currency: 'XOF',
         is_salary_visible: form.is_salary_visible,
         city_id: form.city_id || null,
-        country_id: country?.id,
+        country_id: countryId, // Utilisation de l'ID du pays depuis les préférences
         address: form.address || null,
         is_remote: form.is_remote,
         remote_type: form.is_remote ? form.remote_type : null,
@@ -294,7 +299,7 @@ if (!id) { // nouvelle offre
 
       if (publish) {
         if (finalStatus === 'pending') {
-          toast.success('Offre soumise pour validation ! Elle sera visible après approbation.');
+          toast.success(t('createJob.toasts.submittedForValidation'));
           try {
             await apiFetch('/api/send-job-alerts', { method: 'POST' });
           } catch (err) {
@@ -313,16 +318,16 @@ if (!id) { // nouvelle offre
             console.error('Erreur notification admin job:', err);
           }
         } else if (finalStatus === 'active') {
-          toast.success('Offre mise à jour avec succès.');
+          toast.success(t('createJob.toasts.offerUpdated'));
         }
       } else {
-        toast.success('Brouillon enregistré');
+        toast.success(t('createJob.toasts.draftSaved'));
       }
 
       navigate('/dashboard/entreprise');
     } catch (error) {
       console.error('Error saving job:', error);
-      toast.error(error?.message || error?.details || "Erreur lors de l'enregistrement");
+      toast.error(error?.message || error?.details || t('createJob.toasts.saveError'));
     } finally {
       setSaving(false);
     }
@@ -342,12 +347,12 @@ if (!id) { // nouvelle offre
 
   const getPublishButtonText = () => {
     if (id && (form.status === 'active' || form.status === 'paused')) {
-      return "Mettre à jour l'offre";
+      return t('createJob.updateOffer');
     }
     if (isUnverified) {
-      return 'Validation entreprise requise';
+      return t('createJob.validationRequired');
     }
-    return 'Soumettre pour validation';
+    return t('createJob.submitForValidation');
   };
 
   const isPublishDisabled = () => {
@@ -366,8 +371,8 @@ if (!id) { // nouvelle offre
               </svg>
             </div>
             <div>
-              <p className="text-amber-800 font-medium">Entreprise en attente de validation</p>
-              <p className="text-amber-600 text-sm">Votre entreprise n'est pas encore vérifiée. Vous pouvez enregistrer vos offres en brouillon, mais elles ne seront pas publiées tant que l'administrateur n'aura pas validé votre compte.</p>
+              <p className="text-amber-800 font-medium">{t('createJob.unverifiedBanner.title')}</p>
+              <p className="text-amber-600 text-sm">{t('createJob.unverifiedBanner.description')}</p>
             </div>
           </div>
         )}
@@ -376,11 +381,11 @@ if (!id) { // nouvelle offre
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/dashboard/entreprise')} className="-ml-2" type="button">
               <ChevronLeft className="w-4 h-4 mr-1" />
-              Retour
+              {t('createJob.back')}
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">
-                {id ? "Modifier l'offre" : "Nouvelle offre d'emploi"}
+                {id ? t('createJob.titleEdit') : t('createJob.titleNew')}
               </h1>
               <p className="text-slate-600">{company?.name}</p>
             </div>
@@ -388,7 +393,7 @@ if (!id) { // nouvelle offre
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-              Enregistrer
+              {t('createJob.save')}
             </Button>
             <Button
               onClick={() => handleSave(true)}
@@ -408,12 +413,12 @@ if (!id) { // nouvelle offre
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-blue-600" />
-                Informations de base
+                {t('createJob.sections.basicInfo')}
               </h2>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Titre du poste *
+                  {t('createJob.labels.title')}
                 </label>
                 <Input
                   value={form.title}
@@ -421,7 +426,7 @@ if (!id) { // nouvelle offre
                     setForm({ ...form, title: e.target.value });
                     if (errors.title) setErrors(prev => ({ ...prev, title: false }));
                   }}
-                  placeholder="Ex: Développeur Full Stack, Comptable Senior..."
+                  placeholder={t('createJob.placeholders.title')}
                   required
                   className={inputErrorClass('title')}
                   data-testid="job-title-input"
@@ -437,7 +442,7 @@ if (!id) { // nouvelle offre
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Catégorie *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.category')}</label>
                   <select
                     value={form.category_id}
                     onChange={(e) => {
@@ -447,14 +452,16 @@ if (!id) { // nouvelle offre
                     className={selectErrorClass('category_id', 'w-full h-10 px-3 py-2 border rounded-md bg-white')}
                     data-testid="job-category-select"
                   >
-                    <option value="">Sélectionner</option>
+                    <option value="">{t('createJob.options.selectCategory')}</option>
                     {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      <option key={cat.id} value={cat.id}>
+                        {t(`categories.${cat.slug}`, cat.name)}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Type de contrat *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.contractType')}</label>
                   <select
                     value={form.contract_type}
                     onChange={(e) => {
@@ -465,9 +472,9 @@ if (!id) { // nouvelle offre
                     required
                     data-testid="job-contract-select"
                   >
-                    <option value="">Sélectionner</option>
+                    <option value="">{t('createJob.options.selectContract')}</option>
                     {Object.entries(CONTRACT_TYPES).map(([key, val]) => (
-                      <option key={key} value={key}>{val.label}</option>
+                      <option key={key} value={key}>{t(`contractTypes.${key}`, { defaultValue: val.label })}</option>
                     ))}
                   </select>
                 </div>
@@ -477,7 +484,7 @@ if (!id) { // nouvelle offre
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     <GraduationCap className="w-4 h-4 inline mr-1" />
-                    Niveau d'expérience
+                    {t('createJob.labels.experienceLevel')}
                   </label>
                   <select
                     value={form.experience_level}
@@ -485,16 +492,16 @@ if (!id) { // nouvelle offre
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     data-testid="job-experience-select"
                   >
-                    <option value="">Non spécifié</option>
+                    <option value="">{t('createJob.options.unspecified')}</option>
                     {Object.entries(EXPERIENCE_LEVELS).map(([key, val]) => (
-                      <option key={key} value={key}>{val.label}</option>
+                      <option key={key} value={key}>{t(`experienceLevels.${key}`, { defaultValue: val.label })}</option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     <Users className="w-4 h-4 inline mr-1" />
-                    Postes à pourvoir
+                    {t('createJob.labels.positionsCount')}
                   </label>
                   <Input
                     type="number"
@@ -514,18 +521,19 @@ if (!id) { // nouvelle offre
                     onChange={(e) => setForm({ ...form, is_urgent: e.target.checked })}
                     className="rounded border-slate-300 text-red-600 focus:ring-red-500"
                   />
-                  <span className="text-sm text-slate-600">Offre urgente</span>
+                  <span className="text-sm text-slate-600">{t('createJob.labels.urgent')}</span>
                 </label>
               </div>
             </CardContent>
           </Card>
 
+          {/* Card Description */}
           <Card>
             <CardContent className="p-6 space-y-4">
-              <h2 className="font-semibold text-slate-900">Description du poste</h2>
+              <h2 className="font-semibold text-slate-900">{t('createJob.sections.description')}</h2>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Description *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.description')}</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => {
@@ -539,7 +547,7 @@ if (!id) { // nouvelle offre
                       ? 'border border-red-500 focus:ring-red-500'
                       : 'border border-slate-200 focus:ring-blue-500'
                   )}
-                  placeholder="Décrivez le poste, le contexte, l'équipe..."
+                  placeholder={t('createJob.placeholders.description')}
                   required
                   data-testid="job-description-textarea"
                 />
@@ -554,13 +562,13 @@ if (!id) { // nouvelle offre
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Missions / Responsabilités</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.missions')}</label>
                 <textarea
                   value={form.responsibilities}
                   onChange={(e) => setForm({ ...form, responsibilities: e.target.value })}
                   rows={4}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="• Mission 1&#10;• Mission 2&#10;• Mission 3..."
+                  placeholder={t('createJob.placeholders.missions')}
                   data-testid="job-responsibilities-textarea"
                 />
                 <div className="mt-2">
@@ -574,13 +582,13 @@ if (!id) { // nouvelle offre
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Profil recherché / Exigences</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.requirements')}</label>
                 <textarea
                   value={form.requirements}
                   onChange={(e) => setForm({ ...form, requirements: e.target.value })}
                   rows={4}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="• Diplôme requis&#10;• Compétences techniques&#10;• Qualités personnelles..."
+                  placeholder={t('createJob.placeholders.requirements')}
                   data-testid="job-requirements-textarea"
                 />
                 <div className="mt-2">
@@ -594,34 +602,35 @@ if (!id) { // nouvelle offre
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Avantages offerts</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.benefits')}</label>
                 <textarea
                   value={form.benefits}
                   onChange={(e) => setForm({ ...form, benefits: e.target.value })}
                   rows={3}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="• Assurance santé&#10;• Télétravail partiel&#10;• Formation continue..."
+                  placeholder={t('createJob.placeholders.benefits')}
                   data-testid="job-benefits-textarea"
                 />
               </div>
             </CardContent>
           </Card>
 
+          {/* Card Skills */}
           <Card>
             <CardContent className="p-6 space-y-4">
-              <h2 className="font-semibold text-slate-900">Compétences requises</h2>
+              <h2 className="font-semibold text-slate-900">{t('createJob.sections.skills')}</h2>
 
               <div className="flex gap-2">
                 <Input
                   value={newSkill}
                   onChange={(e) => setNewSkill(e.target.value)}
-                  placeholder="Ex: React, Python, Excel..."
+                  placeholder={t('createJob.placeholders.skill')}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
                   data-testid="job-skill-input"
                 />
                 <Button type="button" onClick={handleAddSkill} disabled={!newSkill.trim()}>
                   <Plus className="w-4 h-4 mr-1" />
-                  Ajouter
+                  {t('createJob.skills.add')}
                 </Button>
               </div>
 
@@ -644,34 +653,36 @@ if (!id) { // nouvelle offre
             </CardContent>
           </Card>
 
+          {/* Card Location */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-blue-600" />
-                Localisation
+                {t('createJob.sections.location')}
               </h2>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Ville</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.city')}</label>
                   <select
                     value={form.city_id}
                     onChange={(e) => setForm({ ...form, city_id: e.target.value })}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     data-testid="job-city-select"
                   >
-                    <option value="">Sélectionner</option>
-                    {cities.map(city => (
+                    <option value="">{t('createJob.options.selectCity')}</option>
+                    {/* Utilisation de filteredCities */}
+                    {filteredCities.map(city => (
                       <option key={city.id} value={city.id}>{city.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Adresse précise</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.address')}</label>
                   <Input
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    placeholder="Quartier, rue..."
+                    placeholder={t('createJob.placeholders.address')}
                   />
                 </div>
               </div>
@@ -684,7 +695,7 @@ if (!id) { // nouvelle offre
                     onChange={(e) => setForm({ ...form, is_remote: e.target.checked })}
                     className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm text-slate-600">Télétravail possible</span>
+                  <span className="text-sm text-slate-600">{t('createJob.labels.remote')}</span>
                 </label>
 
                 {form.is_remote && (
@@ -693,41 +704,42 @@ if (!id) { // nouvelle offre
                     onChange={(e) => setForm({ ...form, remote_type: e.target.value })}
                     className="h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
                   >
-                    <option value="">Type de télétravail</option>
-                    <option value="full">100% télétravail</option>
-                    <option value="partial">Hybride</option>
-                    <option value="occasional">Occasionnel</option>
+                    <option value="">{t('createJob.labels.remoteType')}</option>
+                    <option value="full">{t('createJob.options.remoteFull')}</option>
+                    <option value="partial">{t('createJob.options.remoteHybrid')}</option>
+                    <option value="occasional">{t('createJob.options.remoteOccasional')}</option>
                   </select>
                 )}
               </div>
             </CardContent>
           </Card>
 
+          {/* Card Salary */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-blue-600" />
-                Rémunération
+                {t('createJob.sections.salary')}
               </h2>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Salaire minimum (FCFA/mois)</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.salaryMin')}</label>
                   <Input
                     type="number"
                     value={form.salary_min}
                     onChange={(e) => setForm({ ...form, salary_min: e.target.value })}
-                    placeholder="Ex: 300000"
+                    placeholder={t('createJob.placeholders.salaryMin')}
                     data-testid="job-salary-min-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Salaire maximum (FCFA/mois)</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.salaryMax')}</label>
                   <Input
                     type="number"
                     value={form.salary_max}
                     onChange={(e) => setForm({ ...form, salary_max: e.target.value })}
-                    placeholder="Ex: 500000"
+                    placeholder={t('createJob.placeholders.salaryMax')}
                     data-testid="job-salary-max-input"
                   />
                 </div>
@@ -740,21 +752,22 @@ if (!id) { // nouvelle offre
                   onChange={(e) => setForm({ ...form, is_salary_visible: e.target.checked })}
                   className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-600">Afficher le salaire aux candidats</span>
+                <span className="text-sm text-slate-600">{t('createJob.labels.showSalary')}</span>
               </label>
             </CardContent>
           </Card>
 
+          {/* Card Dates */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-600" />
-                Dates
+                {t('createJob.sections.dates')}
               </h2>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Date limite de candidature</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.applicationDeadline')}</label>
                   <Input
                     type="date"
                     value={form.application_deadline}
@@ -764,7 +777,7 @@ if (!id) { // nouvelle offre
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Date de début souhaitée</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.startDate')}</label>
                   <Input
                     type="date"
                     value={form.start_date}
@@ -779,7 +792,7 @@ if (!id) { // nouvelle offre
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-              Enregistrer comme brouillon
+              {t('createJob.saveDraft')}
             </Button>
             <Button
               onClick={() => handleSave(true)}
@@ -794,7 +807,7 @@ if (!id) { // nouvelle offre
           </div>
           {isUnverified && (
             <p className="text-center text-xs text-amber-600 mt-1">
-              Votre entreprise doit être validée avant de pouvoir soumettre une offre.
+              {t('createJob.companyUnverified')}
             </p>
           )}
         </div>
@@ -807,14 +820,17 @@ if (!id) { // nouvelle offre
               <Briefcase className="w-8 h-8 text-blue-600" />
             </div>
             <h2 className="text-xl font-bold text-slate-900 mb-4">
-              Limite d'offres atteinte
+              {t('createJob.limitModal.title')}
             </h2>
             <p className="text-slate-600 mb-6">
-              Votre plan <strong>{limitInfo.currentPlan === 'free' ? 'Gratuit' : limitInfo.currentPlan}</strong> vous permet de publier <strong>{limitInfo.maxActiveJobs} offre{limitInfo.maxActiveJobs > 1 ? 's' : ''}</strong> active{limitInfo.maxActiveJobs > 1 ? 's' : ''}.<br />
-              Vous avez déjà <strong>{limitInfo.activeJobs}</strong> offre{limitInfo.activeJobs > 1 ? 's' : ''} active{limitInfo.activeJobs > 1 ? 's' : ''}.
+              {t('createJob.limitModal.message', {
+                plan: limitInfo.currentPlan === 'free' ? t('pricing.free') : limitInfo.currentPlan,
+                max: limitInfo.maxActiveJobs,
+                current: limitInfo.activeJobs
+              })}
             </p>
             <p className="text-sm text-slate-500 mb-8">
-              Pour publier davantage d'offres, passez à un plan supérieur.
+              {t('createJob.limitModal.upgradeSuggestion')}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
@@ -823,11 +839,11 @@ if (!id) { // nouvelle offre
                 onClick={() => setShowLimitModal(false)}
                 type="button"
               >
-                Plus tard
+                {t('createJob.limitModal.later')}
               </Button>
               <Link to="/tarifs" onClick={() => setShowLimitModal(false)}>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl" type="button">
-                  Voir les plans
+                  {t('createJob.limitModal.seePlans')}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>

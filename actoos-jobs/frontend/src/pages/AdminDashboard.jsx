@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
@@ -47,60 +48,64 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 
 // ---------- Stats Card ----------
-const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) => (
-  <Card
-    className={cn(
-      'border-slate-200 transition-all overflow-hidden',
-      onClick && 'cursor-pointer hover:shadow-lg hover:border-blue-300'
-    )}
-    onClick={onClick}
-  >
-    <CardContent className="p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm text-slate-500 truncate">{label}</p>
-          <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{value}</p>
-          {trend !== undefined && (
-            <p
-              className={cn(
-                'text-xs mt-1 flex items-center gap-1',
-                trend > 0 ? 'text-green-600' : 'text-slate-500'
-              )}
-            >
-              <TrendingUp className="w-3 h-3" />
-              {trend > 0 ? '+' : ''}
-              {trend}% ce mois
-            </p>
-          )}
-        </div>
-        <div
-          className={cn(
-            'w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0',
-            color === 'blue' && 'bg-blue-100',
-            color === 'green' && 'bg-green-100',
-            color === 'yellow' && 'bg-yellow-100',
-            color === 'red' && 'bg-red-100',
-            color === 'purple' && 'bg-purple-100'
-          )}
-        >
-          <Icon
-            className={cn(
-              'w-5 h-5 sm:w-6 sm:h-6',
-              color === 'blue' && 'text-blue-600',
-              color === 'green' && 'text-green-600',
-              color === 'yellow' && 'text-yellow-600',
-              color === 'red' && 'text-red-600',
-              color === 'purple' && 'text-purple-600'
+const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) => {
+  const { t } = useTranslation();
+  return (
+    <Card
+      className={cn(
+        'border-slate-200 transition-all overflow-hidden',
+        onClick && 'cursor-pointer hover:shadow-lg hover:border-blue-300'
+      )}
+      onClick={onClick}
+    >
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-slate-500 truncate">{label}</p>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{value}</p>
+            {trend !== undefined && (
+              <p
+                className={cn(
+                  'text-xs mt-1 flex items-center gap-1',
+                  trend > 0 ? 'text-green-600' : 'text-slate-500'
+                )}
+              >
+                <TrendingUp className="w-3 h-3" />
+                {trend > 0 ? '+' : ''}
+                {t('adminDashboard.stats.trend', { trend })}
+              </p>
             )}
-          />
+          </div>
+          <div
+            className={cn(
+              'w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0',
+              color === 'blue' && 'bg-blue-100',
+              color === 'green' && 'bg-green-100',
+              color === 'yellow' && 'bg-yellow-100',
+              color === 'red' && 'bg-red-100',
+              color === 'purple' && 'bg-purple-100'
+            )}
+          >
+            <Icon
+              className={cn(
+                'w-5 h-5 sm:w-6 sm:h-6',
+                color === 'blue' && 'text-blue-600',
+                color === 'green' && 'text-green-600',
+                color === 'yellow' && 'text-yellow-600',
+                color === 'red' && 'text-red-600',
+                color === 'purple' && 'text-purple-600'
+              )}
+            />
+          </div>
         </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
 // ---------- Job Moderation Card ----------
 const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) => {
+  const { t } = useTranslation();
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
   const [reason, setReason] = useState('');
@@ -112,10 +117,10 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
 
   const statusConfig = {
-    pending: { label: 'En attente', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-    active: { label: 'Active', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-    suspended: { label: 'Suspendue', color: 'bg-red-100 text-red-700', icon: Ban },
-    rejected: { label: 'Rejetée', color: 'bg-slate-100 text-slate-700', icon: XCircle },
+    pending: { label: t('adminDashboard.jobs.status.pending'), color: 'bg-yellow-100 text-yellow-700', icon: Clock },
+    active: { label: t('adminDashboard.jobs.status.active'), color: 'bg-green-100 text-green-700', icon: CheckCircle },
+    suspended: { label: t('adminDashboard.jobs.status.suspended'), color: 'bg-red-100 text-red-700', icon: Ban },
+    rejected: { label: t('adminDashboard.jobs.status.rejected'), color: 'bg-slate-100 text-slate-700', icon: XCircle },
   };
 
   const status = statusConfig[job.status] || statusConfig.pending;
@@ -179,7 +184,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
         if (error) throw error;
         setJobDetails(data);
       } catch (err) {
-        toast.error("Impossible de charger les détails");
+        toast.error(t('adminDashboard.jobs.detailsError'));
       } finally {
         setLoadingDetails(false);
       }
@@ -201,7 +206,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
               onClick={() => setShowMenu(false)}
             >
               <Eye className="w-4 h-4" />
-              Voir l'offre
+              {t('adminDashboard.jobs.viewJob')}
             </Link>
           </div>
         </>,
@@ -247,14 +252,14 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
             </span>
             <span className="flex items-center gap-1">
               <MapPin className="w-3 h-3" />
-              {job.city?.name || 'Non spécifié'}
+              {job.city?.name || t('adminDashboard.jobs.detailsUnspecified')}
             </span>
             <Badge className={cn(contractInfo.color, 'border-0 text-xs')}>
               {contractInfo.label}
             </Badge>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Publié {formatRelative(job.created_at)} par {job.posted_by_user?.email}
+            {t('adminDashboard.jobs.publishedBy', { date: formatRelative(job.created_at), email: job.posted_by_user?.email })}
           </p>
         </div>
         <div className="shrink-0">
@@ -272,38 +277,38 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
           className="text-blue-600 hover:text-blue-700"
         >
           {loadingDetails ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-          {showDetails ? 'Masquer les détails' : 'Afficher les détails'}
+          {showDetails ? t('adminDashboard.jobs.hideDetails') : t('adminDashboard.jobs.showDetails')}
         </Button>
       </div>
 
       {showDetails && jobDetails && (
         <div className="mt-2 p-4 bg-slate-50 rounded-xl text-sm space-y-3 border border-slate-100">
           <div>
-            <strong>Description :</strong>
+            <strong>{t('adminDashboard.jobs.detailsDescription')}</strong>
             <p className="whitespace-pre-line">{jobDetails.description}</p>
           </div>
           {jobDetails.requirements && (
             <div>
-              <strong>Profil recherché :</strong>
+              <strong>{t('adminDashboard.jobs.detailsRequirements')}</strong>
               <p className="whitespace-pre-line">{jobDetails.requirements}</p>
             </div>
           )}
           {jobDetails.responsibilities && (
             <div>
-              <strong>Missions :</strong>
+              <strong>{t('adminDashboard.jobs.detailsMissions')}</strong>
               <p className="whitespace-pre-line">{jobDetails.responsibilities}</p>
             </div>
           )}
           {jobDetails.benefits && (
             <div>
-              <strong>Avantages :</strong>
+              <strong>{t('adminDashboard.jobs.detailsBenefits')}</strong>
               <p className="whitespace-pre-line">{jobDetails.benefits}</p>
             </div>
           )}
           <div className="grid grid-cols-2 gap-2">
             {jobDetails.skills_required?.length > 0 && (
               <div>
-                <strong>Compétences :</strong>
+                <strong>{t('adminDashboard.jobs.detailsSkills')}</strong>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {jobDetails.skills_required.map((skill) => (
                     <Badge key={skill} className="bg-blue-50 text-blue-700 text-xs">{skill}</Badge>
@@ -312,26 +317,26 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
               </div>
             )}
             <div>
-              <strong>Expérience :</strong> {EXPERIENCE_LEVELS[jobDetails.experience_level]?.label || 'Non spécifié'}
+              <strong>{t('adminDashboard.jobs.detailsExperience')}</strong> {t(`experienceLevels.${jobDetails.experience_level}`, { defaultValue: jobDetails.experience_level || t('adminDashboard.jobs.detailsUnspecified') })}
             </div>
             {jobDetails.salary_min && jobDetails.salary_max && (
               <div>
-                <strong>Salaire :</strong> {jobDetails.salary_min.toLocaleString('fr-FR')} - {jobDetails.salary_max.toLocaleString('fr-FR')} FCFA
+                <strong>{t('adminDashboard.jobs.detailsSalary')}</strong> {jobDetails.salary_min.toLocaleString('fr-FR')} - {jobDetails.salary_max.toLocaleString('fr-FR')} FCFA
               </div>
             )}
             <div>
-              <strong>Postes :</strong> {jobDetails.positions_count}
+              <strong>{t('adminDashboard.jobs.detailsPositions')}</strong> {jobDetails.positions_count}
             </div>
             {jobDetails.application_deadline && (
               <div>
-                <strong>Date limite :</strong> {new Date(jobDetails.application_deadline).toLocaleDateString('fr-FR')}
+                <strong>{t('adminDashboard.jobs.detailsDeadline')}</strong> {new Date(jobDetails.application_deadline).toLocaleDateString('fr-FR')}
               </div>
             )}
             <div>
-              <strong>Télétravail :</strong> {jobDetails.is_remote ? 'Oui' : 'Non'}
+              <strong>{t('adminDashboard.jobs.detailsRemote')}</strong> {jobDetails.is_remote ? t('adminDashboard.jobs.detailsYes') : t('adminDashboard.jobs.detailsNo')}
             </div>
             <div>
-              <strong>Urgent :</strong> {jobDetails.is_urgent ? 'Oui' : 'Non'}
+              <strong>{t('adminDashboard.jobs.detailsUrgent')}</strong> {jobDetails.is_urgent ? t('adminDashboard.jobs.detailsYes') : t('adminDashboard.jobs.detailsNo')}
             </div>
           </div>
         </div>
@@ -342,7 +347,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
           <>
             {!job.company?.is_verified && (
               <p className="text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-lg w-full sm:w-auto">
-                L'entreprise n'est pas encore vérifiée.
+                {t('adminDashboard.jobs.companyNotVerified')}
               </p>
             )}
             <Button
@@ -353,7 +358,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
               disabled={!job.company?.is_verified}
             >
               <Check className="w-4 h-4 mr-1" />
-              Approuver
+              {t('adminDashboard.jobs.approve')}
             </Button>
             <Button
               size="sm"
@@ -362,7 +367,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
               onClick={() => onReject(job)}
             >
               <XCircle className="w-4 h-4 mr-1" />
-              Rejeter
+              {t('adminDashboard.jobs.reject')}
             </Button>
           </>
         )}
@@ -371,7 +376,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
           <>
             {!job.company?.is_verified && (
               <p className="text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-lg w-full sm:w-auto">
-                L'entreprise n'est pas encore vérifiée.
+                {t('adminDashboard.jobs.companyNotVerified')}
               </p>
             )}
             <Button
@@ -382,7 +387,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
               disabled={!job.company?.is_verified}
             >
               <Check className="w-4 h-4 mr-1" />
-              Publier l'offre
+              {t('adminDashboard.jobs.publish')}
             </Button>
           </>
         )}
@@ -395,7 +400,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
             onClick={() => setActionType('suspend')}
           >
             <Ban className="w-4 h-4 mr-1" />
-            Suspendre
+            {t('adminDashboard.jobs.suspend')}
           </Button>
         )}
 
@@ -407,7 +412,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
             onClick={() => onApprove(job)}
           >
             <Check className="w-4 h-4 mr-1" />
-            Réactiver
+            {t('adminDashboard.jobs.reactivate')}
           </Button>
         )}
 
@@ -418,7 +423,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
           onClick={() => setActionType('delete')}
         >
           <Trash2 className="w-4 h-4 mr-1" />
-          Supprimer
+          {t('adminDashboard.jobs.delete')}
         </Button>
       </div>
 
@@ -426,9 +431,9 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-xl">
             <h3 className="text-lg font-semibold mb-4">
-              {actionType === 'suspend' ? "Suspendre l'offre" : "Supprimer l'offre"}
+              {actionType === 'suspend' ? t('adminDashboard.jobs.suspendModalTitle') : t('adminDashboard.jobs.deleteModalTitle')}
             </h3>
-            <label className="block text-sm font-medium mb-2">Raison (optionnelle)</label>
+            <label className="block text-sm font-medium mb-2">{t('adminDashboard.jobs.reasonLabel')}</label>
             <textarea
               className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500"
               rows="3"
@@ -437,10 +442,10 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
             />
             <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
               <Button variant="outline" className="min-h-[44px]" onClick={() => setActionType(null)}>
-                Annuler
+                {t('adminDashboard.jobs.cancel')}
               </Button>
               <Button className="bg-red-600 text-white hover:bg-red-700 min-h-[44px]" onClick={confirmAction}>
-                Confirmer
+                {t('adminDashboard.jobs.confirm')}
               </Button>
             </div>
           </div>
@@ -454,6 +459,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
 
 // ---------- Company Validation Card ----------
 const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJobs, onSuspendWithDuration }) => {
+  const { t } = useTranslation();
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
   const [reason, setReason] = useState('');
@@ -461,8 +467,8 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
 
   const statusConfig = {
-    false: { label: 'Non vérifiée', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-    true: { label: 'Vérifiée', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+    false: { label: t('adminDashboard.companies.status.unverified'), color: 'bg-yellow-100 text-yellow-700', icon: Clock },
+    true: { label: t('adminDashboard.companies.status.verified'), color: 'bg-green-100 text-green-700', icon: CheckCircle },
   };
 
   const status = statusConfig[company.is_verified ? 'true' : 'false'] || statusConfig.false;
@@ -530,7 +536,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
                 className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
               >
                 <Eye className="w-4 h-4" />
-                Voir le site
+                {t('adminDashboard.companies.viewSite')}
               </a>
             )}
             <button
@@ -541,7 +547,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
               className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
             >
               <FileText className="w-4 h-4" />
-              Voir les offres ({company.jobs_count || 0})
+              {t('adminDashboard.companies.viewOffers', { count: company.jobs_count || 0 })}
             </button>
           </div>
         </>,
@@ -572,7 +578,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-slate-500">
             {company.industry && <span>{company.industry}</span>}
-            {company.size && <span>• {company.size} employés</span>}
+            {company.size && <span>• {t('adminDashboard.companies.employees', { size: company.size })}</span>}
             {company.city?.name && (
               <span className="flex items-center gap-1">
                 <MapPin className="w-3 h-3" />
@@ -581,7 +587,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
             )}
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Créée {formatRelative(company.created_at)} • {company.jobs_count || 0} offres
+            {t('adminDashboard.companies.createdAt', { date: formatRelative(company.created_at) })} • {t('adminDashboard.companies.offersCount', { count: company.jobs_count || 0 })}
           </p>
         </div>
         <div className="shrink-0">
@@ -601,7 +607,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
               onClick={() => onApprove(company)}
             >
               <Check className="w-4 h-4 mr-1" />
-              Valider
+              {t('adminDashboard.companies.validate')}
             </Button>
             <Button
               size="sm"
@@ -610,7 +616,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
               onClick={() => setActionType('reject')}
             >
               <XCircle className="w-4 h-4 mr-1" />
-              Rejeter
+              {t('adminDashboard.companies.reject')}
             </Button>
           </>
         ) : (
@@ -622,7 +628,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
             disabled={!company.is_active}
           >
             <Ban className="w-4 h-4 mr-1" />
-            Suspendre
+            {t('adminDashboard.companies.suspend')}
           </Button>
         )}
         <Button
@@ -632,7 +638,7 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
           onClick={() => setActionType('delete')}
         >
           <Trash2 className="w-4 h-4 mr-1" />
-          Supprimer l'entreprise
+          {t('adminDashboard.companies.deleteCompany')}
         </Button>
       </div>
 
@@ -640,11 +646,11 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-xl">
             <h3 className="text-lg font-semibold mb-4">
-              {actionType === 'reject' ? "Rejeter l'entreprise" : "Supprimer l'entreprise"}
+              {actionType === 'reject' ? t('adminDashboard.companies.rejectModalTitle') : t('adminDashboard.companies.deleteModalTitle')}
             </h3>
             {actionType === 'reject' && (
               <>
-                <label className="block text-sm font-medium mb-2">Raison (optionnelle)</label>
+                <label className="block text-sm font-medium mb-2">{t('adminDashboard.jobs.reasonLabel')}</label>
                 <textarea
                   className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500"
                   rows="3"
@@ -655,15 +661,15 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
             )}
             {actionType === 'delete' && (
               <p className="text-sm text-red-600 mb-4">
-                ⚠️ Cette action est irréversible. Toutes les offres et données associées seront supprimées.
+                {t('adminDashboard.companies.deleteWarning')}
               </p>
             )}
             <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
               <Button variant="outline" className="min-h-[44px]" onClick={() => setActionType(null)}>
-                Annuler
+                {t('adminDashboard.companies.cancel')}
               </Button>
               <Button className="bg-red-600 text-white hover:bg-red-700 min-h-[44px]" onClick={confirmAction}>
-                Confirmer
+                {t('adminDashboard.companies.confirm')}
               </Button>
             </div>
           </div>
@@ -700,6 +706,7 @@ const TabButton = ({ active, onClick, children, count }) => (
 
 // ---------- Main Admin Dashboard ----------
 const AdminDashboard = () => {
+  const { t } = useTranslation();
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -747,37 +754,27 @@ const AdminDashboard = () => {
   });
   const [editingSlug, setEditingSlug] = useState(null);
 
-  // États pour la suspension temporaire des utilisateurs
   const [suspendModal, setSuspendModal] = useState({ open: false, userId: null });
   const [suspendDuration, setSuspendDuration] = useState(0);
   const [suspendReason, setSuspendReason] = useState('');
 
-  // États pour la suspension temporaire des entreprises
   const [companySuspendModal, setCompanySuspendModal] = useState({ open: false, companyId: null });
   const [companySuspendDuration, setCompanySuspendDuration] = useState(0);
   const [companySuspendReason, setCompanySuspendReason] = useState('');
 
-  // ✅ État pour les demandes de changement de rôle (ajouté)
   const [roleRequests, setRoleRequests] = useState([]);
 
-  // Helper to get plan limit
   const getPlanLimit = (plan) => {
     if (plan === 'business' || plan === 'enterprise') return Infinity;
     if (plan === 'pro') return 5;
-    return 1; // free
+    return 1;
   };
 
-  // 🔄 Traduction des rôles pour affichage
-  const roleLabel = (role) => {
-    if (role === 'candidate') return 'Candidat';
-    if (role === 'company') return 'Entreprise';
-    if (role === 'admin') return 'Admin';
-    return role || 'Inconnu';
-  };
+  const roleLabel = (role) => t(`adminDashboard.roleLabels.${role}`, { defaultValue: role || t('adminDashboard.roleLabels.unknown') });
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
-      toast.error('Accès non autorisé');
+      toast.error(t('adminDashboard.unauthorized'));
       navigate('/');
       return;
     }
@@ -787,7 +784,6 @@ const AdminDashboard = () => {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
-  // Chargement des demandes de rôle
   useEffect(() => {
     if (isAdmin) {
       fetchRoleRequests();
@@ -878,33 +874,31 @@ const AdminDashboard = () => {
       });
     } catch (error) {
       console.error('Error fetching admin data:', error);
-      toast.error('Erreur lors du chargement des données');
+      toast.error(t('adminDashboard.loadingError'));
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔒 Version sécurisée : garantit que roleRequests est toujours un tableau
- const fetchRoleRequests = async () => {
-  const { data, error } = await supabase.rpc('get_pending_role_requests');
-  if (error) {
-    console.error('Erreur RPC:', error);
-    setRoleRequests([]);
-  } else {
-    // Enrichir avec les infos utilisateur (email, prénom, nom)
-    const enriched = data
-      ? await Promise.all(data.map(async (r) => {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('email, first_name, last_name')
-            .eq('id', r.user_id)
-            .single();
-          return { ...r, user: userData || { email: '', first_name: '', last_name: '' } };
-        }))
-      : [];
-    setRoleRequests(enriched);
-  }
-};
+  const fetchRoleRequests = async () => {
+    const { data, error } = await supabase.rpc('get_pending_role_requests');
+    if (error) {
+      console.error('Erreur RPC:', error);
+      setRoleRequests([]);
+    } else {
+      const enriched = data
+        ? await Promise.all(data.map(async (r) => {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('email, first_name, last_name')
+              .eq('id', r.user_id)
+              .single();
+            return { ...r, user: userData || { email: '', first_name: '', last_name: '' } };
+          }))
+        : [];
+      setRoleRequests(enriched);
+    }
+  };
 
   const fetchSubscribers = async () => {
     setLoadingSubscribers(true);
@@ -939,58 +933,53 @@ const AdminDashboard = () => {
     setRefreshing(true);
     await fetchData();
     setRefreshing(false);
-    toast.success('Données actualisées');
+    toast.success(t('adminDashboard.dataRefreshed'));
   };
 
-  // ---- Gestion des demandes de rôle ----
-const handleRoleRequest = async (requestId, action) => {
-  const message = action === 'reject'
-    ? window.prompt('Raison du refus (optionnelle) :')
-    : null;
+  const handleRoleRequest = async (requestId, action) => {
+    const message = action === 'reject'
+      ? window.prompt(t('adminDashboard.jobs.reasonLabel'))
+      : null;
 
-  // Traiter la demande (approuver/rejeter)
-  const { error } = await supabase.rpc('handle_role_request', {
-    p_request_id: requestId,
-    p_action: action,
-    p_admin_message: message || null,
-  });
+    const { error } = await supabase.rpc('handle_role_request', {
+      p_request_id: requestId,
+      p_action: action,
+      p_admin_message: message || null,
+    });
 
-  if (error) {
-    toast.error(error.message);
-    return;
-  }
-
-  // Envoyer l’email à l’utilisateur
-  const requestData = roleRequests.find(r => r.id === requestId);
-  if (requestData) {
-    try {
-      await apiFetch('/api/admin/send-role-change-email', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: requestData.user_email,
-          first_name: requestData.user_first_name || 'Utilisateur',
-          action: action,
-          requested_role: requestData.requested_role,
-          admin_message: message || null,
-        }),
-      });
-    } catch (err) {
-      console.error('Erreur envoi email:', err);
-    }
-  }
-
-  toast.success(`Demande ${action === 'approve' ? 'approuvée' : 'refusée'}`);
-  fetchRoleRequests();
-};
-
-  // ---- Gestion des offres ----
-  const handleApproveJob = async (job) => {
-    if (!job.company?.is_verified) {
-      toast.error("L'entreprise n'est pas encore vérifiée. Veuillez d'abord valider l'entreprise.");
+    if (error) {
+      toast.error(error.message);
       return;
     }
 
-    // Vérifier la limite d'offres actives de l'entreprise
+    const requestData = roleRequests.find(r => r.id === requestId);
+    if (requestData) {
+      try {
+        await apiFetch('/api/admin/send-role-change-email', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: requestData.user_email,
+            first_name: requestData.user_first_name || t('adminDashboard.roleLabels.unknown'),
+            action: action,
+            requested_role: requestData.requested_role,
+            admin_message: message || null,
+          }),
+        });
+      } catch (err) {
+        console.error('Erreur envoi email:', err);
+      }
+    }
+
+    toast.success(action === 'approve' ? t('adminDashboard.roleRequests.approvedToast') : t('adminDashboard.roleRequests.rejectedToast'));
+    fetchRoleRequests();
+  };
+
+  const handleApproveJob = async (job) => {
+    if (!job.company?.is_verified) {
+      toast.error(t('adminDashboard.jobs.approveCompanyFirst'));
+      return;
+    }
+
     const plan = job.company?.subscription_plan || 'free';
     const limit = getPlanLimit(plan);
     const { count: activeCount } = await supabase
@@ -1000,7 +989,7 @@ const handleRoleRequest = async (requestId, action) => {
       .eq('status', 'active');
 
     if (activeCount >= limit) {
-      toast.error(`Cette entreprise a déjà atteint sa limite de ${limit} offre(s) active(s).`);
+      toast.error(t('adminDashboard.jobs.approveLimitReached', { limit }));
       return;
     }
 
@@ -1022,21 +1011,21 @@ const handleRoleRequest = async (requestId, action) => {
 
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'active' } : j)));
       setStats((s) => ({ ...s, pendingJobs: Math.max(0, s.pendingJobs - 1), activeJobs: s.activeJobs + 1 }));
-      toast.success('Offre approuvée');
+      toast.success(t('adminDashboard.jobs.approvedToast'));
     } catch (error) {
-      toast.error("Erreur lors de l'approbation");
+      toast.error(t('adminDashboard.jobs.approveError'));
     }
   };
 
   const handleRejectJob = async (job) => {
-    if (!window.confirm('Rejeter cette offre ?')) return;
+    if (!window.confirm(t('adminDashboard.jobs.rejectConfirm'))) return;
     try {
       await supabase.from('jobs').update({ status: 'rejected' }).eq('id', job.id);
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'rejected' } : j)));
       setStats((s) => ({ ...s, pendingJobs: Math.max(0, s.pendingJobs - 1) }));
-      toast.success('Offre rejetée');
+      toast.success(t('adminDashboard.jobs.rejectedToast'));
     } catch (error) {
-      toast.error('Erreur');
+      toast.error(t('adminDashboard.jobs.genericError'));
     }
   };
 
@@ -1048,9 +1037,9 @@ const handleRoleRequest = async (requestId, action) => {
       });
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'suspended' } : j)));
       setStats((s) => ({ ...s, activeJobs: Math.max(0, s.activeJobs - 1) }));
-      toast.success('Offre suspendue et email envoyé');
+      toast.success(t('adminDashboard.jobs.suspendedToast'));
     } catch (error) {
-      toast.error('Erreur');
+      toast.error(t('adminDashboard.jobs.genericError'));
     }
   };
 
@@ -1061,10 +1050,10 @@ const handleRoleRequest = async (requestId, action) => {
         body: JSON.stringify({ id: job.id, reason }),
       });
       setJobs((prev) => prev.filter((j) => j.id !== job.id));
-      toast.success('Offre supprimée et email envoyé');
+      toast.success(t('adminDashboard.jobs.deletedToast'));
       fetchData();
     } catch (error) {
-      toast.error('Erreur');
+      toast.error(t('adminDashboard.jobs.genericError'));
     }
   };
 
@@ -1080,9 +1069,9 @@ const handleRoleRequest = async (requestId, action) => {
         pendingCompanies: Math.max(0, s.pendingCompanies - 1),
         verifiedCompanies: s.verifiedCompanies + 1,
       }));
-      toast.success('Entreprise validée et email envoyé');
+      toast.success(t('adminDashboard.companies.validatedToast'));
     } catch (error) {
-      toast.error('Erreur lors de la validation');
+      toast.error(t('adminDashboard.companies.validateError'));
     }
   };
 
@@ -1096,21 +1085,21 @@ const handleRoleRequest = async (requestId, action) => {
         prev.map((c) => (c.id === company.id ? { ...c, is_verified: false, is_active: false } : c))
       );
       setStats((s) => ({ ...s, pendingCompanies: Math.max(0, s.pendingCompanies - 1) }));
-      toast.success('Entreprise rejetée et email envoyé');
+      toast.success(t('adminDashboard.companies.rejectedToast'));
     } catch (error) {
-      toast.error('Erreur');
+      toast.error(t('adminDashboard.companies.genericError'));
     }
   };
 
   const handleDeleteCompany = async (company) => {
-    if (!window.confirm(`Supprimer définitivement l'entreprise "${company.name}" ?`)) return;
+    if (!window.confirm(t('adminDashboard.companies.deleteConfirm', { name: company.name }))) return;
     try {
       await apiFetch(`/api/admin/delete-company/${company.id}`, { method: 'DELETE' });
       setCompanies((prev) => prev.filter((c) => c.id !== company.id));
-      toast.success('Entreprise supprimée');
+      toast.success(t('adminDashboard.companies.deletedToast'));
     } catch (error) {
       console.error('Delete company error:', error);
-      toast.error(error.message || 'Erreur');
+      toast.error(error.message || t('adminDashboard.companies.genericError'));
     }
   };
 
@@ -1125,10 +1114,10 @@ const handleRoleRequest = async (requestId, action) => {
       const { error } = await supabase.from('users').update({ role: newRole }).eq('id', userId);
       if (error) throw error;
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-      toast.success("Rôle mis à jour. L'utilisateur doit se reconnecter pour voir son nouvel espace.");
+      toast.success(t('adminDashboard.users.roleUpdated'));
     } catch (error) {
       console.error('Erreur changement de rôle:', error);
-      toast.error(error.message || 'Erreur lors du changement de rôle');
+      toast.error(error.message || t('adminDashboard.users.roleUpdateError'));
     }
   };
 
@@ -1139,39 +1128,38 @@ const handleRoleRequest = async (requestId, action) => {
         body: JSON.stringify({ user_id: userId, is_active: !currentStatus }),
       });
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_active: !currentStatus } : u)));
-      toast.success(currentStatus ? 'Compte suspendu' : 'Compte réactivé');
+      toast.success(currentStatus ? t('adminDashboard.users.suspendedToast') : t('adminDashboard.users.reactivatedToast'));
     } catch (error) {
-      toast.error('Erreur');
+      toast.error(t('adminDashboard.jobs.genericError'));
     }
   };
 
   const handleBanUser = async (userId) => {
-    if (!window.confirm('Bannir définitivement cet utilisateur ?')) return;
+    if (!window.confirm(t('adminDashboard.users.banConfirm'))) return;
     try {
       await apiFetch('/api/admin/ban-user', {
         method: 'POST',
         body: JSON.stringify({ user_id: userId, reason: 'Violation des règles' }),
       });
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_active: false, is_banned: true } : u)));
-      toast.success('Utilisateur banni');
+      toast.success(t('adminDashboard.users.bannedToast'));
     } catch (error) {
-      toast.error('Erreur');
+      toast.error(t('adminDashboard.jobs.genericError'));
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Supprimer définitivement cet utilisateur ? Cette action est irréversible.')) return;
+    if (!window.confirm(t('adminDashboard.users.deleteConfirm'))) return;
     try {
       await apiFetch(`/api/admin/delete-user/${userId}`, { method: 'DELETE' });
       setUsers((prev) => prev.filter((u) => u.id !== userId));
-      toast.success('Utilisateur supprimé définitivement');
+      toast.success(t('adminDashboard.users.deletedToast'));
       fetchData();
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('adminDashboard.users.deleteError'));
     }
   };
 
-  // ---- Suspension temporaire d'un utilisateur ----
   const handleSuspendUser = async () => {
     if (!suspendModal.userId) return;
     try {
@@ -1185,17 +1173,16 @@ const handleRoleRequest = async (requestId, action) => {
       });
       if (res.success) {
         setUsers(prev => prev.map(u => u.id === suspendModal.userId ? { ...u, is_active: false } : u));
-        toast.success(`Utilisateur suspendu ${suspendDuration ? `pour ${suspendDuration} jour(s)` : 'définitivement'}`);
+        toast.success(t('adminDashboard.users.suspendedToast'));
       } else {
-        toast.error(res.message || 'Erreur');
+        toast.error(res.message || t('adminDashboard.jobs.genericError'));
       }
       setSuspendModal({ open: false, userId: null });
     } catch (error) {
-      toast.error(error.message || 'Erreur réseau');
+      toast.error(error.message || t('adminDashboard.jobs.genericError'));
     }
   };
 
-  // ---- Suspension temporaire d'une entreprise ----
   const handleSuspendCompanyWithDuration = async () => {
     if (!companySuspendModal.companyId) return;
     try {
@@ -1209,13 +1196,13 @@ const handleRoleRequest = async (requestId, action) => {
       });
       if (res.success) {
         setCompanies(prev => prev.map(c => c.id === companySuspendModal.companyId ? { ...c, is_active: false } : c));
-        toast.success(`Entreprise suspendue ${companySuspendDuration ? `pour ${companySuspendDuration} jour(s)` : 'définitivement'}`);
+        toast.success(t('adminDashboard.companies.suspendedToast'));
       } else {
-        toast.error(res.message || 'Erreur');
+        toast.error(res.message || t('adminDashboard.jobs.genericError'));
       }
       setCompanySuspendModal({ open: false, companyId: null });
     } catch (error) {
-      toast.error(error.message || 'Erreur réseau');
+      toast.error(error.message || t('adminDashboard.jobs.genericError'));
     }
   };
 
@@ -1228,12 +1215,12 @@ const handleRoleRequest = async (requestId, action) => {
       toast.error(error.message);
     } else {
       setReports(prev => prev.map(r => (r.id === reportId ? { ...r, status: newStatus } : r)));
-      toast.success('Signalement mis à jour');
+      toast.success(t('adminDashboard.reports.updatedToast'));
     }
   };
 
   const handleSuspendReportedItem = async (report) => {
-    const reason = window.prompt('Raison de la suspension (optionnelle) :');
+    const reason = window.prompt(t('adminDashboard.jobs.reasonLabel'));
     if (reason === null) return;
 
     try {
@@ -1242,17 +1229,17 @@ const handleRoleRequest = async (requestId, action) => {
           method: 'POST',
           body: JSON.stringify({ id: report.reported_item_id, reason }),
         });
-        toast.success('Offre suspendue et email envoyé');
+        toast.success(t('adminDashboard.reports.suspendedToast'));
       } else {
         await apiFetch('/api/admin/suspend-company', {
           method: 'POST',
           body: JSON.stringify({ id: report.reported_item_id, reason }),
         });
-        toast.success('Entreprise suspendue et email envoyé');
+        toast.success(t('adminDashboard.reports.companySuspendedToast'));
       }
       fetchData();
     } catch (error) {
-      toast.error(error.message || 'Erreur');
+      toast.error(error.message || t('adminDashboard.jobs.genericError'));
     }
   };
 
@@ -1266,14 +1253,14 @@ const handleRoleRequest = async (requestId, action) => {
           method: 'POST',
           body: JSON.stringify({ id: report.reported_item_id, reason: 'Signalement traité' }),
         });
-        toast.success('Offre supprimée et email envoyé');
+        toast.success(t('adminDashboard.reports.deletedToast'));
       } else {
         await apiFetch(`/api/admin/delete-company/${report.reported_item_id}`, { method: 'DELETE' });
-        toast.success('Entreprise supprimée et email envoyé');
+        toast.success(t('adminDashboard.reports.companyDeletedToast'));
       }
       fetchData();
     } catch (error) {
-      toast.error(error.message || 'Erreur');
+      toast.error(error.message || t('adminDashboard.jobs.genericError'));
     }
   };
 
@@ -1299,21 +1286,21 @@ const handleRoleRequest = async (requestId, action) => {
     }
 
     if (!userIdToBan) {
-      toast.error("Impossible de trouver l'utilisateur à bannir");
+      toast.error(t('adminDashboard.reports.banError'));
       return;
     }
 
-    if (!window.confirm('Bannir définitivement cet utilisateur ?')) return;
+    if (!window.confirm(t('adminDashboard.reports.banConfirm'))) return;
 
     try {
       await apiFetch('/api/admin/ban-user', {
         method: 'POST',
         body: JSON.stringify({ user_id: userIdToBan, reason: 'Signalement traité' }),
       });
-      toast.success('Utilisateur banni et email envoyé');
+      toast.success(t('adminDashboard.reports.bannedToast'));
       fetchData();
     } catch (error) {
-      toast.error(error.message || 'Erreur');
+      toast.error(error.message || t('adminDashboard.jobs.genericError'));
     }
   };
 
@@ -1326,7 +1313,7 @@ const handleRoleRequest = async (requestId, action) => {
       setSubscribers(prev =>
         prev.map(s => (s.id === sub.id ? { ...s, is_active: !sub.is_active } : s))
       );
-      toast.success(sub.is_active ? 'Désactivé' : 'Réactivé');
+      toast.success(t('adminDashboard.newsletter.toggledToast'));
     } else {
       toast.error(error.message);
     }
@@ -1334,7 +1321,7 @@ const handleRoleRequest = async (requestId, action) => {
 
   const handleSendNewsletter = async () => {
     if (!newsletter.subject || !newsletter.content) {
-      toast.error('Veuillez remplir le sujet et le contenu.');
+      toast.error(t('adminDashboard.newsletter.fillRequired'));
       return;
     }
     setSendingNewsletter(true);
@@ -1347,10 +1334,10 @@ const handleRoleRequest = async (requestId, action) => {
         toast.success(res.message);
         setNewsletter({ subject: '', content: '' });
       } else {
-        toast.error(res.message || 'Erreur');
+        toast.error(res.message || t('adminDashboard.jobs.genericError'));
       }
     } catch (err) {
-      toast.error('Erreur réseau');
+      toast.error(t('adminDashboard.newsletter.networkError'));
     } finally {
       setSendingNewsletter(false);
     }
@@ -1358,7 +1345,7 @@ const handleRoleRequest = async (requestId, action) => {
 
   const handleGenerateBlog = async () => {
     if (!blogForm.title.trim()) {
-      toast.error('Le titre est requis pour générer un article');
+      toast.error(t('adminDashboard.blog.titleRequired'));
       return;
     }
     setGenerating(true);
@@ -1367,7 +1354,7 @@ const handleRoleRequest = async (requestId, action) => {
         method: 'POST',
         body: JSON.stringify(blogForm),
       });
-      toast.success('Article généré avec succès');
+      toast.success(t('adminDashboard.blog.generatedToast'));
       setBlogForm({
         title: '',
         keywords: '',
@@ -1380,7 +1367,7 @@ const handleRoleRequest = async (requestId, action) => {
       });
       fetchBlogPosts();
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de la génération');
+      toast.error(err.message || t('adminDashboard.blog.generateError'));
     } finally {
       setGenerating(false);
     }
@@ -1392,22 +1379,22 @@ const handleRoleRequest = async (requestId, action) => {
         method: 'PUT',
         body: JSON.stringify(updates),
       });
-      toast.success('Article mis à jour');
+      toast.success(t('adminDashboard.blog.updatedToast'));
       setEditingSlug(null);
       fetchBlogPosts();
     } catch (err) {
-      toast.error(err.message || 'Erreur');
+      toast.error(err.message || t('adminDashboard.blog.updateError'));
     }
   };
 
   const handleDeleteBlog = async (slug) => {
-    if (!window.confirm('Supprimer cet article ?')) return;
+    if (!window.confirm(t('adminDashboard.blog.deleteConfirm'))) return;
     try {
       await apiFetch(`/api/admin/blog/${slug}`, { method: 'DELETE' });
-      toast.success('Article supprimé');
+      toast.success(t('adminDashboard.blog.deletedToast'));
       fetchBlogPosts();
     } catch (err) {
-      toast.error(err.message || 'Erreur');
+      toast.error(err.message || t('adminDashboard.blog.deleteError'));
     }
   };
 
@@ -1447,93 +1434,87 @@ const handleRoleRequest = async (requestId, action) => {
               <Shield className="w-7 h-7 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-slate-900">Administration</h1>
-              <p className="text-slate-600">Gérez les offres, entreprises et utilisateurs</p>
+              <h1 className="text-2xl font-bold text-slate-900">{t('adminDashboard.title')}</h1>
+              <p className="text-slate-600">{t('adminDashboard.subtitle')}</p>
             </div>
           </div>
 
           <Button variant="outline" onClick={handleRefresh} disabled={refreshing} className="w-full sm:w-auto gap-2 min-h-[44px]">
             <RefreshCw className={cn('w-4 h-4', refreshing && 'animate-spin')} />
-            Actualiser
+            {t('adminDashboard.refresh')}
           </Button>
         </div>
 
         <div className="grid grid-cols-2 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <StatCard
             icon={Clock}
-            label="Offres en attente"
+            label={t('adminDashboard.stats.pendingJobs')}
             value={stats.pendingJobs}
             color="yellow"
-            onClick={() => {
-              setActiveTab('jobs');
-              setJobFilter('pending');
-            }}
+            onClick={() => { setActiveTab('jobs'); setJobFilter('pending'); }}
           />
-          <StatCard icon={Briefcase} label="Offres actives" value={stats.activeJobs} color="green" />
+          <StatCard icon={Briefcase} label={t('adminDashboard.stats.activeJobs')} value={stats.activeJobs} color="green" />
           <StatCard
             icon={AlertTriangle}
-            label="Entreprises en attente"
+            label={t('adminDashboard.stats.pendingCompanies')}
             value={stats.pendingCompanies}
             color="yellow"
-            onClick={() => {
-              setActiveTab('companies');
-              setCompanyFilter('unverified');
-            }}
+            onClick={() => { setActiveTab('companies'); setCompanyFilter('unverified'); }}
           />
-          <StatCard icon={Building2} label="Entreprises vérifiées" value={stats.verifiedCompanies} color="green" />
-          <StatCard icon={Users} label="Candidats" value={stats.totalCandidates} color="blue" />
-          <StatCard icon={FileText} label="Candidatures" value={stats.totalApplications} color="purple" />
+          <StatCard icon={Building2} label={t('adminDashboard.stats.verifiedCompanies')} value={stats.verifiedCompanies} color="green" />
+          <StatCard icon={Users} label={t('adminDashboard.stats.candidates')} value={stats.totalCandidates} color="blue" />
+          <StatCard icon={FileText} label={t('adminDashboard.stats.applications')} value={stats.totalApplications} color="purple" />
         </div>
 
         <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
           <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
             <LayoutDashboard className="w-4 h-4" />
-            Vue d'ensemble
+            {t('adminDashboard.tabs.overview')}
           </TabButton>
           <TabButton active={activeTab === 'jobs'} onClick={() => setActiveTab('jobs')} count={stats.pendingJobs}>
             <Briefcase className="w-4 h-4" />
-            Modération offres
+            {t('adminDashboard.tabs.jobs')}
           </TabButton>
           <TabButton active={activeTab === 'companies'} onClick={() => setActiveTab('companies')} count={stats.pendingCompanies}>
             <Building2 className="w-4 h-4" />
-            Validation entreprises
+            {t('adminDashboard.tabs.companies')}
           </TabButton>
           <TabButton active={activeTab === 'users'} onClick={() => setActiveTab('users')}>
             <Users className="w-4 h-4" />
-            Utilisateurs
+            {t('adminDashboard.tabs.users')}
           </TabButton>
           <TabButton active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} count={reports.filter((r) => r.status === 'pending').length}>
             <Flag className="w-4 h-4" />
-            Signalements
+            {t('adminDashboard.tabs.reports')}
           </TabButton>
           <TabButton active={activeTab === 'subscriptions'} onClick={() => setActiveTab('subscriptions')}>
             <CreditCard className="w-4 h-4" />
-            Abonnements
+            {t('adminDashboard.tabs.subscriptions')}
           </TabButton>
           <TabButton active={activeTab === 'newsletter'} onClick={() => setActiveTab('newsletter')}>
             <Mail className="w-4 h-4" />
-            Newsletter
+            {t('adminDashboard.tabs.newsletter')}
           </TabButton>
           <TabButton active={activeTab === 'blog'} onClick={() => setActiveTab('blog')}>
             <FileText className="w-4 h-4" />
-            Blog
+            {t('adminDashboard.tabs.blog')}
           </TabButton>
           <TabButton active={activeTab === 'message-companies'} onClick={() => setActiveTab('message-companies')}>
             <Building2 className="w-4 h-4" />
-            Messages Entreprises
+            {t('adminDashboard.tabs.messageCompanies')}
           </TabButton>
           <TabButton active={activeTab === 'message-candidates'} onClick={() => setActiveTab('message-candidates')}>
             <Users className="w-4 h-4" />
-            Messages Candidats
+            {t('adminDashboard.tabs.messageCandidates')}
           </TabButton>
           <TabButton
-  active={activeTab === 'roleRequests'}
-  onClick={() => setActiveTab('roleRequests')}
-  count={roleRequests.length}
->
-  <UserCog className="w-4 h-4" />
-  Demandes de rôle
-</TabButton>
+            active={activeTab === 'roleRequests'}
+            onClick={() => setActiveTab('roleRequests')}
+            count={roleRequests.length}
+          >
+            <UserCog className="w-4 h-4" />
+            {t('adminDashboard.tabs.roleRequests')}
+          </TabButton>
         </div>
 
         {activeTab === 'overview' && (
@@ -1541,11 +1522,11 @@ const handleRoleRequest = async (requestId, action) => {
             <Card className="overflow-hidden">
               <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 gap-4">
                 <div>
-                  <CardTitle className="text-lg">Offres en attente</CardTitle>
-                  <CardDescription>À modérer</CardDescription>
+                  <CardTitle className="text-lg">{t('adminDashboard.overview.pendingJobsTitle')}</CardTitle>
+                  <CardDescription>{t('adminDashboard.overview.pendingJobsDesc')}</CardDescription>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => { setActiveTab('jobs'); setJobFilter('pending'); }} className="min-h-[44px]">
-                  Voir tout
+                  {t('adminDashboard.overview.viewAll')}
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </CardHeader>
@@ -1561,7 +1542,7 @@ const handleRoleRequest = async (requestId, action) => {
                   />
                 ))}
                 {jobs.filter((j) => j.status === 'pending' || j.status === 'draft').length === 0 && (
-                  <p className="text-center text-slate-500 py-8">Aucune offre en attente</p>
+                  <p className="text-center text-slate-500 py-8">{t('adminDashboard.overview.noPendingJobs')}</p>
                 )}
               </CardContent>
             </Card>
@@ -1569,11 +1550,11 @@ const handleRoleRequest = async (requestId, action) => {
             <Card className="overflow-hidden">
               <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 gap-4">
                 <div>
-                  <CardTitle className="text-lg">Entreprises en attente</CardTitle>
-                  <CardDescription>À valider</CardDescription>
+                  <CardTitle className="text-lg">{t('adminDashboard.overview.pendingCompaniesTitle')}</CardTitle>
+                  <CardDescription>{t('adminDashboard.overview.pendingCompaniesDesc')}</CardDescription>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => { setActiveTab('companies'); setCompanyFilter('unverified'); }} className="min-h-[44px]">
-                  Voir tout
+                  {t('adminDashboard.overview.viewAll')}
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </CardHeader>
@@ -1590,7 +1571,7 @@ const handleRoleRequest = async (requestId, action) => {
                   />
                 ))}
                 {companies.filter((c) => c.is_verified !== true).length === 0 && (
-                  <p className="text-center text-slate-500 py-8">Aucune entreprise en attente</p>
+                  <p className="text-center text-slate-500 py-8">{t('adminDashboard.overview.noPendingCompanies')}</p>
                 )}
               </CardContent>
             </Card>
@@ -1604,7 +1585,7 @@ const handleRoleRequest = async (requestId, action) => {
                 <div className="flex-1 relative min-w-0">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
-                    placeholder="Rechercher une offre..."
+                    placeholder={t('adminDashboard.jobs.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9"
@@ -1617,12 +1598,12 @@ const handleRoleRequest = async (requestId, action) => {
                     onChange={(e) => setJobFilter(e.target.value)}
                     className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white w-full"
                   >
-                    <option value="all">Tous les statuts</option>
-                    <option value="pending">En attente</option>
-                    <option value="draft">Brouillon</option>
-                    <option value="active">Active</option>
-                    <option value="suspended">Suspendue</option>
-                    <option value="rejected">Rejetée</option>
+                    <option value="all">{t('adminDashboard.jobs.filterAll')}</option>
+                    <option value="pending">{t('adminDashboard.jobs.filterPending')}</option>
+                    <option value="draft">{t('adminDashboard.jobs.filterDraft')}</option>
+                    <option value="active">{t('adminDashboard.jobs.filterActive')}</option>
+                    <option value="suspended">{t('adminDashboard.jobs.filterSuspended')}</option>
+                    <option value="rejected">{t('adminDashboard.jobs.filterRejected')}</option>
                   </select>
                 </div>
               </div>
@@ -1641,7 +1622,7 @@ const handleRoleRequest = async (requestId, action) => {
                 ))
               ) : (
                 <p className="text-center text-slate-500 py-12">
-                  {searchQuery ? 'Aucune offre trouvée' : 'Aucune offre'}
+                  {searchQuery ? t('adminDashboard.jobs.noJobsFound') : t('adminDashboard.jobs.noJobs')}
                 </p>
               )}
             </CardContent>
@@ -1655,7 +1636,7 @@ const handleRoleRequest = async (requestId, action) => {
                 <div className="flex-1 relative min-w-0">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
-                    placeholder="Rechercher une entreprise..."
+                    placeholder={t('adminDashboard.companies.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9"
@@ -1668,9 +1649,9 @@ const handleRoleRequest = async (requestId, action) => {
                     onChange={(e) => setCompanyFilter(e.target.value)}
                     className="h-10 px-3 py-2 border border-slate-200 rounded-md text-sm bg-white w-full"
                   >
-                    <option value="all">Tous les statuts</option>
-                    <option value="unverified">Non vérifiée</option>
-                    <option value="verified">Vérifiée</option>
+                    <option value="all">{t('adminDashboard.companies.filterAll')}</option>
+                    <option value="unverified">{t('adminDashboard.companies.filterUnverified')}</option>
+                    <option value="verified">{t('adminDashboard.companies.filterVerified')}</option>
                   </select>
                 </div>
               </div>
@@ -1690,7 +1671,7 @@ const handleRoleRequest = async (requestId, action) => {
                 ))
               ) : (
                 <p className="text-center text-slate-500 py-12">
-                  {searchQuery ? 'Aucune entreprise trouvée' : 'Aucune entreprise'}
+                  {searchQuery ? t('adminDashboard.companies.noCompaniesFound') : t('adminDashboard.companies.noCompanies')}
                 </p>
               )}
             </CardContent>
@@ -1702,9 +1683,9 @@ const handleRoleRequest = async (requestId, action) => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                Gestion des utilisateurs
+                {t('adminDashboard.users.title')}
               </CardTitle>
-              <CardDescription>Modifier les rôles, suspendre, bannir ou supprimer des comptes</CardDescription>
+              <CardDescription>{t('adminDashboard.users.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -1725,7 +1706,7 @@ const handleRoleRequest = async (requestId, action) => {
                           'mt-1',
                           u.is_banned ? 'bg-red-100 text-red-700' : u.is_active ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                         )}>
-                          {u.is_banned ? 'Banni' : u.is_active ? 'Actif' : 'Suspendu'}
+                          {u.is_banned ? t('adminDashboard.users.status.banned') : u.is_active ? t('adminDashboard.users.status.active') : t('adminDashboard.users.status.suspended')}
                         </Badge>
                       </div>
 
@@ -1735,12 +1716,11 @@ const handleRoleRequest = async (requestId, action) => {
                           onChange={(e) => handleToggleUserRole(u.id, e.target.value)}
                           className="border border-slate-200 rounded-xl px-3 py-2 text-sm w-full sm:w-auto min-h-[44px] bg-white"
                         >
-                          <option value="candidate">Candidat</option>
-                          <option value="company">Entreprise</option>
-                          <option value="admin">Admin</option>
+                          <option value="candidate">{t('adminDashboard.users.roles.candidate')}</option>
+                          <option value="company">{t('adminDashboard.users.roles.company')}</option>
+                          <option value="admin">{t('adminDashboard.users.roles.admin')}</option>
                         </select>
 
-                        {/* Bouton Suspendre qui ouvre la modale */}
                         <Button
                           size="sm"
                           variant="outline"
@@ -1749,10 +1729,9 @@ const handleRoleRequest = async (requestId, action) => {
                           disabled={!u.is_active}
                         >
                           <UserX className="w-4 h-4 mr-1" />
-                          Suspendre
+                          {t('adminDashboard.users.actions.suspend')}
                         </Button>
 
-                        {/* Bouton Réactiver (seulement si inactif) */}
                         {!u.is_active && (
                           <Button
                             size="sm"
@@ -1761,7 +1740,7 @@ const handleRoleRequest = async (requestId, action) => {
                             onClick={() => handleToggleUserActive(u.id, u.is_active)}
                           >
                             <UserCheck className="w-4 h-4 mr-1" />
-                            Réactiver
+                            {t('adminDashboard.users.actions.reactivate')}
                           </Button>
                         )}
 
@@ -1773,7 +1752,7 @@ const handleRoleRequest = async (requestId, action) => {
                             onClick={() => handleBanUser(u.id)}
                           >
                             <Ban className="w-4 h-4 mr-1" />
-                            Bannir
+                            {t('adminDashboard.users.actions.ban')}
                           </Button>
                         )}
 
@@ -1784,14 +1763,14 @@ const handleRoleRequest = async (requestId, action) => {
                           onClick={() => handleDeleteUser(u.id)}
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
-                          Supprimer
+                          {t('adminDashboard.users.actions.delete')}
                         </Button>
                       </div>
                     </div>
                   </div>
                 ))}
                 {users.length === 0 && (
-                  <p className="text-center text-slate-500 py-8">Aucun utilisateur trouvé</p>
+                  <p className="text-center text-slate-500 py-8">{t('adminDashboard.users.noUsers')}</p>
                 )}
               </div>
             </CardContent>
@@ -1803,14 +1782,14 @@ const handleRoleRequest = async (requestId, action) => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Flag className="w-5 h-5" />
-                Signalements
+                {t('adminDashboard.reports.title')}
               </CardTitle>
-              <CardDescription>Examinez et traitez les signalements</CardDescription>
+              <CardDescription>{t('adminDashboard.reports.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {reports.length === 0 ? (
-                  <p className="text-center text-slate-500 py-8">Aucun signalement</p>
+                  <p className="text-center text-slate-500 py-8">{t('adminDashboard.reports.noReports')}</p>
                 ) : (
                   reports.map((report) => {
                     const isJobReport = report.reported_item_type === 'job';
@@ -1829,13 +1808,13 @@ const handleRoleRequest = async (requestId, action) => {
                               isCompanyReport ? 'bg-purple-100 text-purple-700' :
                               'bg-yellow-100 text-yellow-700'
                             }>
-                              {isJobReport ? '📋 Offre' : isCompanyReport ? '🏢 Entreprise' : '👤 Candidat'}
+                              {isJobReport ? t('adminDashboard.reports.badges.job') : isCompanyReport ? t('adminDashboard.reports.badges.company') : t('adminDashboard.reports.badges.candidate')}
                             </Badge>
                             <p className="font-semibold text-slate-900 truncate">
-                              Signalé par {report.reporter?.email || 'Anonyme'}
+                              {t('adminDashboard.reports.reportedBy', { email: report.reporter?.email || 'Anonyme' })}
                             </p>
                           </div>
-                          <p className="text-sm text-slate-500 mt-1">Raison : {report.reason}</p>
+                          <p className="text-sm text-slate-500 mt-1">{t('adminDashboard.reports.reason', { reason: report.reason })}</p>
                           <Badge
                             className={cn(
                               'mt-2',
@@ -1846,7 +1825,7 @@ const handleRoleRequest = async (requestId, action) => {
                                 : 'bg-green-100 text-green-700'
                             )}
                           >
-                            {report.status === 'pending' ? 'En attente' : report.status === 'reviewed' ? 'Vu' : 'Résolu'}
+                            {report.status === 'pending' ? t('adminDashboard.reports.status.pending') : report.status === 'reviewed' ? t('adminDashboard.reports.status.reviewed') : t('adminDashboard.reports.status.resolved')}
                           </Badge>
                         </div>
 
@@ -1858,7 +1837,7 @@ const handleRoleRequest = async (requestId, action) => {
                             onClick={() => handleUpdateReportStatus(report.id, 'reviewed')}
                             disabled={report.status !== 'pending'}
                           >
-                            Marquer vu
+                            {t('adminDashboard.reports.markReviewed')}
                           </Button>
                           <Button
                             size="sm"
@@ -1867,7 +1846,7 @@ const handleRoleRequest = async (requestId, action) => {
                             onClick={() => handleUpdateReportStatus(report.id, 'resolved')}
                             disabled={report.status === 'resolved'}
                           >
-                            Résolu
+                            {t('adminDashboard.reports.markResolved')}
                           </Button>
 
                           {!isCandidateReport && (
@@ -1879,7 +1858,7 @@ const handleRoleRequest = async (requestId, action) => {
                                 onClick={() => handleSuspendReportedItem(report)}
                               >
                                 <Ban className="w-4 h-4 mr-1" />
-                                Suspendre {isJobReport ? "l'offre" : "l'entreprise"}
+                                {isJobReport ? t('adminDashboard.reports.suspendJob') : t('adminDashboard.reports.suspendCompany')}
                               </Button>
                               <Button
                                 size="sm"
@@ -1888,7 +1867,7 @@ const handleRoleRequest = async (requestId, action) => {
                                 onClick={() => handleDeleteReportedItem(report)}
                               >
                                 <Trash2 className="w-4 h-4 mr-1" />
-                                Supprimer {isJobReport ? "l'offre" : "l'entreprise"}
+                                {isJobReport ? t('adminDashboard.reports.deleteJob') : t('adminDashboard.reports.deleteCompany')}
                               </Button>
                             </>
                           )}
@@ -1900,7 +1879,7 @@ const handleRoleRequest = async (requestId, action) => {
                             onClick={() => handleBanReportedUser(report)}
                           >
                             <UserX className="w-4 h-4 mr-1" />
-                            Bannir l'utilisateur
+                            {t('adminDashboard.reports.banUser')}
                           </Button>
                         </div>
                       </div>
@@ -1918,10 +1897,10 @@ const handleRoleRequest = async (requestId, action) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="w-5 h-5" />
-                  Abonnements actifs / résiliés
+                  {t('adminDashboard.subscriptions.title')}
                 </CardTitle>
                 <CardDescription>
-                  Vue d'ensemble de tous les abonnements entreprise
+                  {t('adminDashboard.subscriptions.description')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1929,12 +1908,12 @@ const handleRoleRequest = async (requestId, action) => {
                   <table className="w-full text-sm">
                     <thead className="border-b bg-slate-50">
                       <tr>
-                        <th className="text-left py-3 px-4 font-medium">Entreprise</th>
-                        <th className="text-left py-3 px-4 font-medium">Plan</th>
-                        <th className="text-left py-3 px-4 font-medium">Ancien plan</th>
-                        <th className="text-left py-3 px-4 font-medium">Stripe Sub ID</th>
-                        <th className="text-left py-3 px-4 font-medium">Expiration</th>
-                        <th className="text-left py-3 px-4 font-medium">Raison résiliation</th>
+                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.company')}</th>
+                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.plan')}</th>
+                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.previousPlan')}</th>
+                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.stripeSubId')}</th>
+                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.expiration')}</th>
+                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.cancellationReason')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1982,9 +1961,9 @@ const handleRoleRequest = async (requestId, action) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5" />
-                  Dernières résiliations
+                  {t('adminDashboard.subscriptions.cancellationsTitle')}
                 </CardTitle>
-                <CardDescription>Entreprises ayant résilié leur plan payant</CardDescription>
+                <CardDescription>{t('adminDashboard.subscriptions.cancellationsDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 {loadingCancellations ? (
@@ -1992,7 +1971,7 @@ const handleRoleRequest = async (requestId, action) => {
                     <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                   </div>
                 ) : cancellations.length === 0 ? (
-                  <p className="text-sm text-slate-500 text-center py-4">Aucune résiliation enregistrée.</p>
+                  <p className="text-sm text-slate-500 text-center py-4">{t('adminDashboard.subscriptions.noCancellations')}</p>
                 ) : (
                   <div className="space-y-3">
                     {cancellations.map((c) => (
@@ -2001,10 +1980,10 @@ const handleRoleRequest = async (requestId, action) => {
                           <div>
                             <p className="font-semibold text-slate-900">{c.name}</p>
                             <p className="text-sm text-slate-600">
-                              Plan après résiliation : <Badge className="bg-slate-200 text-slate-700">{c.subscription_plan}</Badge>
+                              {t('adminDashboard.subscriptions.cancelledFrom')} <Badge className="bg-slate-200 text-slate-700">{c.subscription_plan}</Badge>
                               {c.previous_subscription_plan && (
                                 <>
-                                  {' '}← depuis <Badge className="bg-amber-100 text-amber-700">{c.previous_subscription_plan}</Badge>
+                                  {' '}{t('adminDashboard.subscriptions.toFrom')} <Badge className="bg-amber-100 text-amber-700">{c.previous_subscription_plan}</Badge>
                                 </>
                               )}
                             </p>
@@ -2033,27 +2012,27 @@ const handleRoleRequest = async (requestId, action) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Mail className="w-5 h-5" />
-                  Envoyer une newsletter
+                  {t('adminDashboard.newsletter.sendTitle')}
                 </CardTitle>
-                <CardDescription>Envoyez un email à tous les abonnés</CardDescription>
+                <CardDescription>{t('adminDashboard.newsletter.sendDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Sujet</label>
+                  <label className="block text-sm font-medium mb-1">{t('adminDashboard.newsletter.subjectLabel')}</label>
                   <Input
                     value={newsletter.subject}
                     onChange={(e) => setNewsletter({ ...newsletter, subject: e.target.value })}
-                    placeholder="Sujet de l'email"
+                    placeholder={t('adminDashboard.newsletter.subjectPlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Contenu (HTML)</label>
+                  <label className="block text-sm font-medium mb-1">{t('adminDashboard.newsletter.contentLabel')}</label>
                   <textarea
                     rows={10}
                     className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500"
                     value={newsletter.content}
                     onChange={(e) => setNewsletter({ ...newsletter, content: e.target.value })}
-                    placeholder="<h1>Titre</h1><p>Votre message...</p>"
+                    placeholder={t('adminDashboard.newsletter.contentPlaceholder')}
                   />
                 </div>
                 <Button
@@ -2066,7 +2045,7 @@ const handleRoleRequest = async (requestId, action) => {
                   ) : (
                     <Mail className="w-4 h-4 mr-2" />
                   )}
-                  Envoyer la newsletter
+                  {t('adminDashboard.newsletter.sendButton')}
                 </Button>
               </CardContent>
             </Card>
@@ -2075,25 +2054,25 @@ const handleRoleRequest = async (requestId, action) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="w-5 h-5" />
-                  Abonnés ({subscribers.length})
+                  {t('adminDashboard.newsletter.subscribersTitle', { count: subscribers.length })}
                 </CardTitle>
-                <CardDescription>Liste des inscrits à la newsletter</CardDescription>
+                <CardDescription>{t('adminDashboard.newsletter.subscribersDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 {loadingSubscribers ? (
                   <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                 ) : subscribers.length === 0 ? (
-                  <p className="text-center text-slate-500 py-4">Aucun abonné pour le moment.</p>
+                  <p className="text-center text-slate-500 py-4">{t('adminDashboard.newsletter.noSubscribers')}</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="border-b">
                         <tr>
-                          <th className="text-left py-2 font-medium">Email</th>
-                          <th className="text-left py-2 font-medium">Statut</th>
-                          <th className="text-left py-2 font-medium">Actions</th>
-                          <th className="text-left py-2 font-medium">Inscription</th>
-                          <th className="text-left py-2 font-medium">Désabonnement</th>
+                          <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.email')}</th>
+                          <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.status')}</th>
+                          <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.actions')}</th>
+                          <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.subscribed')}</th>
+                          <th className="text-left py-2 font-medium">{t('adminDashboard.newsletter.table.unsubscribed')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2102,12 +2081,12 @@ const handleRoleRequest = async (requestId, action) => {
                             <td className="py-2">{sub.email}</td>
                             <td className="py-2">
                               <Badge className={sub.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
-                                {sub.is_active ? 'Actif' : 'Désabonné'}
+                                {sub.is_active ? t('adminDashboard.newsletter.statusActive') : t('adminDashboard.newsletter.statusUnsubscribed')}
                               </Badge>
                             </td>
                             <td className="py-2">
                               <Button size="sm" variant="outline" onClick={() => handleToggleSubscriber(sub)}>
-                                {sub.is_active ? 'Désactiver' : 'Réactiver'}
+                                {sub.is_active ? t('adminDashboard.newsletter.deactivate') : t('adminDashboard.newsletter.reactivate')}
                               </Button>
                             </td>
                             <td className="py-2">{new Date(sub.subscribed_at).toLocaleDateString()}</td>
@@ -2129,68 +2108,68 @@ const handleRoleRequest = async (requestId, action) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="w-5 h-5" />
-                  Générer un article avec l'IA
+                  {t('adminDashboard.blog.generateTitle')}
                 </CardTitle>
-                <CardDescription>Créez du contenu optimisé pour votre audience</CardDescription>
+                <CardDescription>{t('adminDashboard.blog.generateDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Titre *</label>
+                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.titleLabel')}</label>
                     <Input
                       value={blogForm.title}
                       onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
-                      placeholder="Ex: Comment réussir son entretien d'embauche"
+                      placeholder={t('adminDashboard.blog.titlePlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Mots-clés</label>
+                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.keywordsLabel')}</label>
                     <Input
                       value={blogForm.keywords}
                       onChange={(e) => setBlogForm({ ...blogForm, keywords: e.target.value })}
-                      placeholder="Ex: recrutement, carrière, conseils"
+                      placeholder={t('adminDashboard.blog.keywordsPlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Audience</label>
+                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.audienceLabel')}</label>
                     <select
                       value={blogForm.audience}
                       onChange={(e) => setBlogForm({ ...blogForm, audience: e.target.value })}
                       className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md bg-white"
                     >
-                      <option value="all">Tous</option>
-                      <option value="candidate">Candidats</option>
-                      <option value="recruiter">Recruteurs</option>
+                      <option value="all">{t('adminDashboard.blog.audienceAll')}</option>
+                      <option value="candidate">{t('adminDashboard.blog.audienceCandidates')}</option>
+                      <option value="recruiter">{t('adminDashboard.blog.audienceRecruiters')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Catégorie</label>
+                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.categoryLabel')}</label>
                     <select
                       value={blogForm.category}
                       onChange={(e) => setBlogForm({ ...blogForm, category: e.target.value })}
                       className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md bg-white"
                     >
-                      <option value="Carrière">Carrière</option>
-                      <option value="Recrutement">Recrutement</option>
-                      <option value="Technologie">Technologie</option>
-                      <option value="Entrepreneuriat">Entrepreneuriat</option>
-                      <option value="Conseils">Conseils</option>
+                      <option value="Carrière">{t('adminDashboard.blog.categories.carriere')}</option>
+                      <option value="Recrutement">{t('adminDashboard.blog.categories.recrutement')}</option>
+                      <option value="Technologie">{t('adminDashboard.blog.categories.technologie')}</option>
+                      <option value="Entrepreneuriat">{t('adminDashboard.blog.categories.entrepreneuriat')}</option>
+                      <option value="Conseils">{t('adminDashboard.blog.categories.conseils')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Auteur</label>
+                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.authorLabel')}</label>
                     <Input
                       value={blogForm.author}
                       onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })}
-                      placeholder="Équipe Actoos"
+                      placeholder={t('adminDashboard.blog.authorPlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Temps de lecture</label>
+                    <label className="block text-sm font-medium mb-1">{t('adminDashboard.blog.readTimeLabel')}</label>
                     <Input
                       value={blogForm.read_time}
                       onChange={(e) => setBlogForm({ ...blogForm, read_time: e.target.value })}
-                      placeholder="5 min"
+                      placeholder={t('adminDashboard.blog.readTimePlaceholder')}
                     />
                   </div>
                 </div>
@@ -2200,7 +2179,7 @@ const handleRoleRequest = async (requestId, action) => {
                   className="bg-blue-600 text-white hover:bg-blue-700"
                 >
                   {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                  Générer l'article
+                  {t('adminDashboard.blog.generateButton')}
                 </Button>
               </CardContent>
             </Card>
@@ -2209,15 +2188,15 @@ const handleRoleRequest = async (requestId, action) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Eye className="w-5 h-5" />
-                  Articles ({blogPosts.length})
+                  {t('adminDashboard.blog.articlesTitle', { count: blogPosts.length })}
                 </CardTitle>
-                <CardDescription>Gérez les articles du blog</CardDescription>
+                <CardDescription>{t('adminDashboard.blog.articlesDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 {loadingBlog ? (
                   <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                 ) : blogPosts.length === 0 ? (
-                  <p className="text-center text-slate-500 py-8">Aucun article pour le moment.</p>
+                  <p className="text-center text-slate-500 py-8">{t('adminDashboard.blog.noArticles')}</p>
                 ) : (
                   <div className="space-y-3">
                     {blogPosts.map((post) => (
@@ -2226,7 +2205,7 @@ const handleRoleRequest = async (requestId, action) => {
                           <div>
                             <h3 className="font-semibold text-slate-900">{post.title}</h3>
                             <p className="text-sm text-slate-500">
-                              {post.category} • {post.audience === 'candidate' ? 'Candidats' : post.audience === 'recruiter' ? 'Recruteurs' : 'Tous'} • {post.author}
+                              {post.category} • {post.audience === 'candidate' ? t('adminDashboard.blog.audienceCandidates') : post.audience === 'recruiter' ? t('adminDashboard.blog.audienceRecruiters') : t('adminDashboard.blog.audienceAll')} • {post.author}
                             </p>
                             <p className="text-xs text-slate-400 mt-1">{post.excerpt}</p>
                           </div>
@@ -2277,14 +2256,14 @@ const handleRoleRequest = async (requestId, action) => {
                                 onClick={() => handleUpdateBlog(post.slug, { title: post.title, content: post.content })}
                                 className="bg-blue-600 text-white hover:bg-blue-700"
                               >
-                                <Save className="w-4 h-4 mr-1" /> Enregistrer
+                                <Save className="w-4 h-4 mr-1" /> {t('adminDashboard.blog.save')}
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => setEditingSlug(null)}
                               >
-                                Annuler
+                                {t('adminDashboard.blog.cancel')}
                               </Button>
                             </div>
                           </div>
@@ -2301,20 +2280,19 @@ const handleRoleRequest = async (requestId, action) => {
         {activeTab === 'message-companies' && <MessageSender role="company" />}
         {activeTab === 'message-candidates' && <MessageSender role="candidate" />}
 
-        {/* 🔥 NOUVEL ONGLET : Demandes de changement de rôle */}
         {activeTab === 'roleRequests' && (
           <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserCog className="w-5 h-5" />
-                Demandes de changement de rôle
+                {t('adminDashboard.roleRequests.title')}
               </CardTitle>
-              <CardDescription>Gérez les demandes des utilisateurs</CardDescription>
+              <CardDescription>{t('adminDashboard.roleRequests.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {roleRequests.length === 0 ? (
-                  <p className="text-center text-slate-500 py-8">Aucune demande en attente</p>
+                  <p className="text-center text-slate-500 py-8">{t('adminDashboard.roleRequests.noRequests')}</p>
                 ) : (
                   roleRequests.map((r) => (
                     <div key={r.id} className="p-4 bg-white border border-slate-200 rounded-2xl">
@@ -2323,19 +2301,18 @@ const handleRoleRequest = async (requestId, action) => {
                           <p className="font-semibold text-slate-900">
                             {r.user?.first_name} {r.user?.last_name} ({r.user?.email})
                           </p>
-                          {/* Traduction des rôles pour un affichage lisible */}
                           <div className="text-sm text-slate-600">
-  De <Badge>{roleLabel(r.actual_role)}</Badge> → <Badge className="bg-blue-100 text-blue-700">{roleLabel(r.requested_role)}</Badge>
-</div>
+                            {t('adminDashboard.roleRequests.from')} <Badge>{roleLabel(r.actual_role)}</Badge> {t('adminDashboard.roleRequests.to')} <Badge className="bg-blue-100 text-blue-700">{roleLabel(r.requested_role)}</Badge>
+                          </div>
                           {r.reason && <p className="text-sm text-slate-500 mt-1">« {r.reason} »</p>}
                           <p className="text-xs text-slate-400 mt-1">{new Date(r.created_at).toLocaleString('fr-FR')}</p>
                         </div>
                         <div className="flex gap-2">
                           <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleRoleRequest(r.id, 'approve')}>
-                            Approuver
+                            {t('adminDashboard.roleRequests.approve')}
                           </Button>
                           <Button size="sm" variant="outline" className="text-red-600" onClick={() => handleRoleRequest(r.id, 'reject')}>
-                            Rejeter
+                            {t('adminDashboard.roleRequests.reject')}
                           </Button>
                         </div>
                       </div>
@@ -2347,27 +2324,26 @@ const handleRoleRequest = async (requestId, action) => {
           </Card>
         )}
 
-        {/* Modale de suspension utilisateur */}
         {suspendModal.open && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-              <h3 className="text-lg font-semibold mb-4">Suspendre le compte</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('adminDashboard.users.suspendModalTitle')}</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Durée de suspension</label>
+                  <label className="block text-sm font-medium mb-1">{t('adminDashboard.users.suspendDurationLabel')}</label>
                   <select
                     value={suspendDuration}
                     onChange={(e) => setSuspendDuration(Number(e.target.value))}
                     className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-white"
                   >
-                    <option value={0}>Indéfinie</option>
-                    <option value={1}>1 jour</option>
-                    <option value={7}>7 jours</option>
-                    <option value={30}>30 jours</option>
+                    <option value={0}>{t('adminDashboard.users.durationIndefinite')}</option>
+                    <option value={1}>{t('adminDashboard.users.duration1day')}</option>
+                    <option value={7}>{t('adminDashboard.users.duration7days')}</option>
+                    <option value={30}>{t('adminDashboard.users.duration30days')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Raison (optionnelle)</label>
+                  <label className="block text-sm font-medium mb-1">{t('adminDashboard.users.suspendReasonLabel')}</label>
                   <textarea
                     className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none"
                     rows={2}
@@ -2377,37 +2353,36 @@ const handleRoleRequest = async (requestId, action) => {
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-6">
-                <Button variant="outline" onClick={() => setSuspendModal({ open: false, userId: null })}>Annuler</Button>
-                <Button className="bg-red-600 text-white hover:bg-red-700" onClick={handleSuspendUser}>Suspendre</Button>
+                <Button variant="outline" onClick={() => setSuspendModal({ open: false, userId: null })}>{t('adminDashboard.users.cancel')}</Button>
+                <Button className="bg-red-600 text-white hover:bg-red-700" onClick={handleSuspendUser}>{t('adminDashboard.users.confirm')}</Button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Modale de suspension entreprise */}
         {companySuspendModal.open && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-              <h3 className="text-lg font-semibold mb-4">Suspendre l'entreprise</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('adminDashboard.companies.suspendModalTitle')}</h3>
               <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg mb-4">
-                ⚠️ La suspension rendra l'entreprise invisible publiquement et empêchera la publication d'offres.
+                {t('adminDashboard.companies.suspendWarning')}
               </p>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Durée de suspension</label>
+                  <label className="block text-sm font-medium mb-1">{t('adminDashboard.companies.suspendDurationLabel')}</label>
                   <select
                     value={companySuspendDuration}
                     onChange={(e) => setCompanySuspendDuration(Number(e.target.value))}
                     className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-white"
                   >
-                    <option value={0}>Indéfinie</option>
-                    <option value={1}>1 jour</option>
-                    <option value={7}>7 jours</option>
-                    <option value={30}>30 jours</option>
+                    <option value={0}>{t('adminDashboard.companies.durationIndefinite')}</option>
+                    <option value={1}>{t('adminDashboard.companies.duration1day')}</option>
+                    <option value={7}>{t('adminDashboard.companies.duration7days')}</option>
+                    <option value={30}>{t('adminDashboard.companies.duration30days')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Raison (optionnelle)</label>
+                  <label className="block text-sm font-medium mb-1">{t('adminDashboard.companies.suspendReasonLabel')}</label>
                   <textarea
                     className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none"
                     rows={2}
@@ -2417,8 +2392,8 @@ const handleRoleRequest = async (requestId, action) => {
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-6">
-                <Button variant="outline" onClick={() => setCompanySuspendModal({ open: false, companyId: null })}>Annuler</Button>
-                <Button className="bg-red-600 text-white hover:bg-red-700" onClick={handleSuspendCompanyWithDuration}>Suspendre</Button>
+                <Button variant="outline" onClick={() => setCompanySuspendModal({ open: false, companyId: null })}>{t('adminDashboard.companies.cancel')}</Button>
+                <Button className="bg-red-600 text-white hover:bg-red-700" onClick={handleSuspendCompanyWithDuration}>{t('adminDashboard.companies.confirm')}</Button>
               </div>
             </div>
           </div>

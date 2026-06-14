@@ -2,8 +2,12 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
-import { fetchCategories, fetchCities } from '../lib/data';
+import { fetchCategories } from '../lib/data';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import { usePreferences } from '../hooks/usePreferences';
+import { useCities } from '../hooks/useCities';
+import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 import {
   Search,
   MapPin,
@@ -28,7 +32,7 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 
-// -------------------- Local UI components --------------------
+// -------------------- Local UI components (unchanged) --------------------
 const Button = React.forwardRef(
   ({ children, className = '', variant = 'default', size = 'default', type = 'button', ...props }, ref) => {
     const base =
@@ -98,13 +102,37 @@ const removeAccents = (str = '') => {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 };
 
-const formatSalary = (value) => {
-  if (value === null || value === undefined) return '';
-  return Number(value).toLocaleString('fr-FR');
+// -------------------- Salary Input (filtre au blur) --------------------
+const SalaryInput = ({ placeholder, value, onApply }) => {
+  const [local, setLocal] = useState('');
+
+  useEffect(() => {
+    setLocal(value || '');
+  }, [value]);
+
+  const handleBlur = () => {
+    const num = local ? parseInt(local, 10) : null;
+    onApply(isNaN(num) ? null : num);
+  };
+
+  return (
+    <Input
+      type="number"
+      placeholder={placeholder}
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') handleBlur();
+      }}
+    />
+  );
 };
 
 // -------------------- Job Card --------------------
 const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
+  const { t } = useTranslation();
+  const { format } = useCurrencyFormatter();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -114,56 +142,48 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
   const handleToggleStatus = async (newStatus) => {
     try {
       const updates = { status: newStatus };
-
       if (newStatus === 'active' && !job.published_at) {
         updates.published_at = new Date().toISOString();
         updates.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       }
-
       await supabase.from('jobs').update(updates).eq('id', job.id);
-      toast.success(newStatus === 'active' ? 'Offre publiée !' : 'Statut mis à jour');
+      toast.success(newStatus === 'active' ? t('jobs.publishedToast') : t('jobs.statusUpdated'));
       setShowMenu(false);
       window.location.reload();
     } catch (err) {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t('jobs.updateError'));
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Supprimer cette offre ?')) return;
+    if (!window.confirm(t('jobs.deleteConfirm'))) return;
     try {
       await supabase.from('jobs').delete().eq('id', job.id);
-      toast.success('Offre supprimée');
+      toast.success(t('jobs.deletedToast'));
       setShowMenu(false);
       window.location.reload();
     } catch (err) {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('jobs.deleteError'));
     }
   };
 
   const updateMenuPosition = () => {
     if (!menuButtonRef.current) return;
-
     const rect = menuButtonRef.current.getBoundingClientRect();
-
     const menuWidth = 240;
     const menuHeight = 220;
     const padding = 12;
     const gap = 8;
-
     const left = Math.max(
       padding,
       Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - padding)
     );
-
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-
     const top =
       spaceBelow >= menuHeight || spaceBelow >= spaceAbove
         ? rect.bottom + gap
         : Math.max(padding, rect.top - menuHeight - gap);
-
     setMenuPos({ top, left });
   };
 
@@ -174,13 +194,10 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
 
   useEffect(() => {
     if (!showMenu) return;
-
     const close = () => setShowMenu(false);
     const reposition = () => updateMenuPosition();
-
     window.addEventListener('resize', reposition);
     window.addEventListener('scroll', close, true);
-
     return () => {
       window.removeEventListener('resize', reposition);
       window.removeEventListener('scroll', close, true);
@@ -193,21 +210,18 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
           <div className="fixed inset-0 z-[9998]" onClick={() => setShowMenu(false)} />
           <div
             className="fixed z-[9999] w-[240px] max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-2xl border border-slate-200 py-1 overflow-hidden"
-            style={{
-              top: menuPos.top,
-              left: menuPos.left,
-            }}
+            style={{ top: menuPos.top, left: menuPos.left }}
           >
             <button
-  onClick={() => {
-    onEdit && onEdit(job);
-    setShowMenu(false);
-  }}
-  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
->
-  <Edit className="w-4 h-4" />
-  Modifier
-</button>
+              onClick={() => {
+                onEdit && onEdit(job);
+                setShowMenu(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              <Edit className="w-4 h-4" />
+              {t('jobs.edit')}
+            </button>
 
             {job.status === 'draft' || job.status === 'closed' || job.status === 'expired' ? (
               <button
@@ -215,7 +229,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"
               >
                 <Send className="w-4 h-4" />
-                Publier
+                {t('jobs.publish')}
               </button>
             ) : job.status === 'active' ? (
               <button
@@ -223,7 +237,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-yellow-600 hover:bg-slate-50"
               >
                 <Clock className="w-4 h-4" />
-                Mettre en pause
+                {t('jobs.pause')}
               </button>
             ) : job.status === 'paused' ? (
               <button
@@ -231,7 +245,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"
               >
                 <CheckCircle className="w-4 h-4" />
-                Réactiver
+                {t('jobs.reactivate')}
               </button>
             ) : null}
 
@@ -240,7 +254,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-slate-50"
             >
               <Trash2 className="w-4 h-4" />
-              Supprimer
+              {t('jobs.delete')}
             </button>
           </div>
         </>,
@@ -257,7 +271,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
     >
       {isOwner && (
         <div className="absolute top-3 left-3 z-20">
-          <Badge className="bg-blue-600 text-white text-xs">Votre offre</Badge>
+          <Badge className="bg-blue-600 text-white text-xs">{t('jobs.yourOffer')}</Badge>
         </div>
       )}
 
@@ -265,12 +279,14 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
         <CardContent className="p-0">
           <div className="flex flex-wrap gap-2 p-3 pb-0">
             {job.is_featured && (
-              <Badge className="bg-blue-600 text-white rounded-full">⭐ Mise en avant</Badge>
+              <Badge className="bg-blue-600 text-white rounded-full">{t('jobs.featured')}</Badge>
             )}
-            {job.is_urgent && <Badge className="bg-red-500 text-white rounded-full">🔥 Urgent</Badge>}
+            {job.is_urgent && (
+              <Badge className="bg-red-500 text-white rounded-full">{t('jobs.urgent')}</Badge>
+            )}
             {job.is_remote && (
               <Badge className="border border-green-500 text-green-600 rounded-full bg-white">
-                🏠 Télétravail
+                {t('jobs.remote')}
               </Badge>
             )}
           </div>
@@ -306,7 +322,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
                   <span className="text-slate-700 font-medium line-clamp-1">{job.company?.name}</span>
                   {job.company?.is_verified && (
                     <Badge className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
-                      ✓ Vérifié
+                      {t('jobs.verified')}
                     </Badge>
                   )}
                 </div>
@@ -314,7 +330,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
                 <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-slate-500">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
-                    {job.city?.name || 'Non spécifié'}
+                    {job.city?.name || t('jobs.unspecified')}
                   </span>
 
                   <Badge className={cn(contractInfo.color, 'border-0 rounded-full')}>
@@ -324,7 +340,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
                   {job.salary_min && job.salary_max && (
                     <span className="flex items-center gap-1">
                       <Banknote className="w-4 h-4" />
-                      {formatSalary(job.salary_min)} - {formatSalary(job.salary_max)} FCFA
+                      {format(job.salary_min)} – {format(job.salary_max)}
                     </span>
                   )}
                 </div>
@@ -355,7 +371,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
                 {formatRelative(job.created_at)}
               </span>
               <span className="text-blue-600 text-sm font-medium flex items-center gap-1">
-                Voir l'offre <ExternalLink className="w-4 h-4" />
+                {t('jobs.viewOffer')} <ExternalLink className="w-4 h-4" />
               </span>
             </div>
           </div>
@@ -402,7 +418,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
   );
 };
 
-// -------------------- Filters Sidebar --------------------
+// -------------------- Filters Sidebar (avec SalaryInput et traductions) --------------------
 const FiltersSidebar = ({
   filters,
   onChange,
@@ -412,6 +428,7 @@ const FiltersSidebar = ({
   experienceLevels,
   onReset,
 }) => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState({
     contract: true,
     location: true,
@@ -462,14 +479,14 @@ const FiltersSidebar = ({
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-slate-900 flex items-center gap-2">
           <SlidersHorizontal className="w-5 h-5 text-blue-600" />
-          Filtres
+          {t('jobs.filters')}
         </h3>
         <Button variant="ghost" size="sm" onClick={onReset} className="text-blue-600">
-          Réinitialiser
+          {t('jobs.resetFilters')}
         </Button>
       </div>
 
-      <FilterSection id="contract" title="Type de contrat">
+      <FilterSection id="contract" title={t('jobs.contractType')}>
         <div className="space-y-2">
           {contractOptions.map(({ value, label }) => (
             <label key={value} className="flex items-center gap-2 cursor-pointer">
@@ -484,13 +501,15 @@ const FiltersSidebar = ({
                 }}
                 className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
               />
-              <span className="text-sm text-slate-700">{label}</span>
+              <span className="text-sm text-slate-700">
+                {t(`contracts.${value}`, label)}
+              </span>
             </label>
           ))}
         </div>
       </FilterSection>
 
-      <FilterSection id="location" title="Localisation">
+      <FilterSection id="location" title={t('jobs.location')}>
         <select
           value={filters.city || 'all'}
           onChange={(e) =>
@@ -498,7 +517,7 @@ const FiltersSidebar = ({
           }
           className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="all">Toutes les villes</option>
+          <option value="all">{t('jobs.allCities')}</option>
           {cities.map((city) => (
             <option key={city.name} value={city.name}>
               {city.name}
@@ -513,44 +532,32 @@ const FiltersSidebar = ({
             onChange={(e) => onChange({ ...filters, remote: e.target.checked })}
             className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
           />
-          <span className="text-sm text-slate-700">Télétravail possible</span>
+          <span className="text-sm text-slate-700">{t('jobs.remotePossible')}</span>
         </label>
       </FilterSection>
 
-      <FilterSection id="salary" title="Salaire (FCFA)">
+      <FilterSection id="salary" title={t('jobs.salary')}>
         <div className="space-y-3">
           <div>
-            <Label className="text-xs text-slate-500 mb-1">Salaire minimum</Label>
-            <Input
-              type="number"
+            <Label className="text-xs text-slate-500 mb-1">{t('jobs.minSalary')}</Label>
+            <SalaryInput
               placeholder="Ex: 100000"
-              value={filters.salary_min || ''}
-              onChange={(e) =>
-                onChange({
-                  ...filters,
-                  salary_min: e.target.value ? parseInt(e.target.value) : null,
-                })
-              }
+              value={filters.salary_min}
+              onApply={(val) => onChange({ ...filters, salary_min: val })}
             />
           </div>
           <div>
-            <Label className="text-xs text-slate-500 mb-1">Salaire maximum</Label>
-            <Input
-              type="number"
+            <Label className="text-xs text-slate-500 mb-1">{t('jobs.maxSalary')}</Label>
+            <SalaryInput
               placeholder="Ex: 500000"
-              value={filters.salary_max || ''}
-              onChange={(e) =>
-                onChange({
-                  ...filters,
-                  salary_max: e.target.value ? parseInt(e.target.value) : null,
-                })
-              }
+              value={filters.salary_max}
+              onApply={(val) => onChange({ ...filters, salary_max: val })}
             />
           </div>
         </div>
       </FilterSection>
 
-      <FilterSection id="experience" title="Expérience">
+      <FilterSection id="experience" title={t('jobs.experience')}>
         <div className="space-y-2">
           {experienceOptions.map(({ value, label }) => (
             <label key={value} className="flex items-center gap-2 cursor-pointer">
@@ -565,13 +572,15 @@ const FiltersSidebar = ({
                 }}
                 className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
               />
-              <span className="text-sm text-slate-700">{label}</span>
+              <span className="text-sm text-slate-700">
+                {t(`experienceLevels.${value}`, label)}
+              </span>
             </label>
           ))}
         </div>
       </FilterSection>
 
-      <FilterSection id="category" title="Catégorie">
+      <FilterSection id="category" title={t('jobs.category')}>
         <select
           value={filters.category || 'all'}
           onChange={(e) =>
@@ -579,10 +588,10 @@ const FiltersSidebar = ({
           }
           className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="all">Toutes les catégories</option>
+          <option value="all">{t('jobs.allCategories')}</option>
           {categories.map((cat) => (
             <option key={cat.slug} value={cat.slug}>
-              {cat.icon || '📌'} {cat.name}
+              {t(`categories.${cat.slug}`, cat.name)}
             </option>
           ))}
         </select>
@@ -593,16 +602,20 @@ const FiltersSidebar = ({
 
 // -------------------- Main Jobs Page --------------------
 const JobsPage = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const { user, isCompany } = useAuth();
   const navigate = useNavigate();
+  const { prefs } = usePreferences();
+  const { cities: filteredCities, loading: citiesLoading } = useCities(prefs.country);
+
+  const [countryId, setCountryId] = useState(null);
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const [cities, setCities] = useState([]);
   const [categories, setCategories] = useState([]);
   const [availableContractTypes, setAvailableContractTypes] = useState([]);
   const [availableExperienceLevels, setAvailableExperienceLevels] = useState([]);
@@ -621,21 +634,35 @@ const JobsPage = () => {
   const [sortBy, setSortBy] = useState('recent');
 
   useEffect(() => {
-    const loadLists = async () => {
-      const [cats, cityList] = await Promise.all([fetchCategories(), fetchCities()]);
+    if (prefs.country) {
+      supabase
+        .from('countries')
+        .select('id')
+        .eq('code', prefs.country)
+        .single()
+        .then(({ data }) => {
+          if (data) setCountryId(data.id);
+        });
+    }
+  }, [prefs.country]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      const cats = await fetchCategories();
       setCategories(cats);
-      setCities(cityList);
     };
-    loadLists();
+    loadCategories();
   }, []);
 
   useEffect(() => {
+    if (!countryId) return;
     const loadFilterOptions = async () => {
       try {
         const { data: contractData } = await supabase
           .from('jobs')
           .select('contract_type')
-          .eq('status', 'active');
+          .eq('status', 'active')
+          .eq('country_id', countryId);
 
         if (contractData) {
           const uniqueTypes = [...new Set(contractData.map((j) => j.contract_type).filter(Boolean))];
@@ -647,7 +674,8 @@ const JobsPage = () => {
         const { data: expData } = await supabase
           .from('jobs')
           .select('experience_level')
-          .eq('status', 'active');
+          .eq('status', 'active')
+          .eq('country_id', countryId);
 
         if (expData) {
           const uniqueExp = [...new Set(expData.map((j) => j.experience_level).filter(Boolean))];
@@ -665,9 +693,10 @@ const JobsPage = () => {
       }
     };
     loadFilterOptions();
-  }, []);
+  }, [countryId]);
 
   useEffect(() => {
+    if (!countryId) return;
     const fetchJobs = async () => {
       setLoading(true);
       try {
@@ -680,6 +709,7 @@ const JobsPage = () => {
             city:cities(name)
           `)
           .eq('status', 'active')
+          .eq('country_id', countryId)
           .order('is_featured', { ascending: false })
           .order('created_at', { ascending: false })
           .limit(50);
@@ -694,7 +724,7 @@ const JobsPage = () => {
     };
 
     fetchJobs();
-  }, []);
+  }, [countryId]);
 
   useEffect(() => {
     if (user) {
@@ -752,23 +782,23 @@ const JobsPage = () => {
 
   const handleSaveJob = async (jobId) => {
     if (!user) {
-      toast.error('Connectez-vous pour sauvegarder');
+      toast.error(t('jobs.loginToSave'));
       return;
     }
 
     if (isCompany) {
-      toast.error("Les comptes entreprise ne peuvent pas ajouter d'offres en favoris");
+      toast.error(t('jobs.companyCannotSave'));
       return;
     }
 
     if (savedJobs.includes(jobId)) {
       await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', jobId);
       setSavedJobs((prev) => prev.filter((id) => id !== jobId));
-      toast.success('Offre retirée des favoris');
+      toast.success(t('jobs.unsaveSuccess'));
     } else {
       await supabase.from('saved_jobs').insert({ user_id: user.id, job_id: jobId });
       setSavedJobs((prev) => [...prev, jobId]);
-      toast.success('Offre sauvegardée');
+      toast.success(t('jobs.saveSuccess'));
     }
   };
 
@@ -794,9 +824,11 @@ const JobsPage = () => {
     if (filters.category) count++;
     return count;
   }, [filters]);
-const handleEditJob = (job) => {
-  navigate(`/dashboard/entreprise/offres/${job.id}/modifier`);
-};
+
+  const handleEditJob = (job) => {
+    navigate(`/dashboard/entreprise/offres/${job.id}/modifier`);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="bg-white border-b border-slate-200 sticky top-16 lg:top-20 z-30">
@@ -807,7 +839,7 @@ const handleEditJob = (job) => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <Input
                   type="text"
-                  placeholder="Poste, compétences..."
+                  placeholder={t('jobs.searchPlaceholder')}
                   value={filters.keyword}
                   onChange={(e) => setFilters((prev) => ({ ...prev, keyword: e.target.value }))}
                   className="pl-10 h-12 rounded-xl"
@@ -826,8 +858,8 @@ const handleEditJob = (job) => {
                   }
                   className="w-full h-12 rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="all">Toutes les villes</option>
-                  {cities.map((city) => (
+                  <option value="all">{t('jobs.allCities')}</option>
+                  {filteredCities.map((city) => (
                     <option key={city.name} value={city.name}>
                       {city.name}
                     </option>
@@ -842,7 +874,7 @@ const handleEditJob = (job) => {
               onClick={() => setShowMobileFilters(true)}
             >
               <Filter className="w-4 h-4 mr-2" />
-              Filtres
+              {t('jobs.filters')}
               {activeFiltersCount > 0 && (
                 <Badge className="ml-2 bg-blue-600 text-white rounded-full">{activeFiltersCount}</Badge>
               )}
@@ -858,7 +890,7 @@ const handleEditJob = (job) => {
               <FiltersSidebar
                 filters={filters}
                 onChange={setFilters}
-                cities={cities}
+                cities={filteredCities}
                 categories={categories}
                 contractTypes={availableContractTypes}
                 experienceLevels={availableExperienceLevels}
@@ -871,11 +903,10 @@ const handleEditJob = (job) => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div className="min-w-0">
                 <h1 className="text-2xl font-bold text-slate-900 break-words">
-                  {filters.keyword ? `Résultats pour "${filters.keyword}"` : 'Toutes les offres'}
+                  {filters.keyword ? t('jobs.resultsFor', { query: filters.keyword }) : t('jobs.allOffers')}
                 </h1>
                 <p className="text-slate-600 mt-1">
-                  {filteredJobs.length} offre{filteredJobs.length > 1 ? 's' : ''} trouvée
-                  {filteredJobs.length > 1 ? 's' : ''}
+                  {t('jobs.results', { count: filteredJobs.length })}
                 </p>
               </div>
 
@@ -884,8 +915,8 @@ const handleEditJob = (job) => {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full sm:w-44 h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="recent">Plus récentes</option>
-                <option value="salary">Salaire décroissant</option>
+                <option value="recent">{t('jobs.sortRecent')}</option>
+                <option value="salary">{t('jobs.sortSalary')}</option>
               </select>
             </div>
 
@@ -957,7 +988,7 @@ const handleEditJob = (job) => {
 
                 {filters.remote && (
                   <Badge className="gap-1 rounded-full bg-slate-100 text-slate-700">
-                    Télétravail
+                    {t('jobs.remote')}
                     <button onClick={() => setFilters((prev) => ({ ...prev, remote: false }))}>
                       <X className="w-3 h-3" />
                     </button>
@@ -966,17 +997,17 @@ const handleEditJob = (job) => {
               </div>
             )}
 
-            {loading ? (
+            {loading || !countryId ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
               </div>
             ) : filteredJobs.length === 0 ? (
               <div className="text-center py-20">
                 <Briefcase className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 mb-2">Aucune offre trouvée</h3>
-                <p className="text-slate-600 mb-4">Essayez de modifier vos critères de recherche</p>
+                <h3 className="text-lg font-medium text-slate-900 mb-2">{t('jobs.noResults')}</h3>
+                <p className="text-slate-600 mb-4">{t('jobs.noResultsHint')}</p>
                 <Button variant="outline" onClick={resetFilters} className="rounded-xl border-blue-600 text-blue-600">
-                  Réinitialiser les filtres
+                  {t('jobs.resetFilters')}
                 </Button>
               </div>
             ) : (
@@ -1006,7 +1037,7 @@ const handleEditJob = (job) => {
           />
           <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-xl overflow-y-auto">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
-              <h2 className="font-semibold text-lg">Filtres</h2>
+              <h2 className="font-semibold text-lg">{t('jobs.filters')}</h2>
               <button onClick={() => setShowMobileFilters(false)}>
                 <X className="w-6 h-6" />
               </button>
@@ -1016,7 +1047,7 @@ const handleEditJob = (job) => {
               <FiltersSidebar
                 filters={filters}
                 onChange={setFilters}
-                cities={cities}
+                cities={filteredCities}
                 categories={categories}
                 contractTypes={availableContractTypes}
                 experienceLevels={availableExperienceLevels}
@@ -1029,7 +1060,7 @@ const handleEditJob = (job) => {
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
                 onClick={() => setShowMobileFilters(false)}
               >
-                Voir {filteredJobs.length} résultat{filteredJobs.length > 1 ? 's' : ''}
+                {t('jobs.viewResults', { count: filteredJobs.length })}
               </Button>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import ReportButton from '../components/ReportButton'; // <-- ajouté
+import ReportButton from '../components/ReportButton';
 
 import {
   Loader2,
@@ -20,15 +21,15 @@ import {
   Briefcase,
   Clock,
   Banknote,
-} from 'lucide-react'; // Flag retiré car plus nécessaire
+} from 'lucide-react';
 
 import { toast } from 'sonner';
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
 const CompanyDetailPage = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
-  const { user } = useAuth();
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
@@ -51,7 +52,7 @@ const CompanyDetailPage = () => {
         setCompany(data);
       } catch (err) {
         console.error(err);
-        toast.error('Entreprise introuvable');
+        toast.error(t('companyDetail.notFound'));
       } finally {
         setLoading(false);
       }
@@ -85,7 +86,7 @@ const CompanyDetailPage = () => {
 
     fetchCompany();
     fetchJobs();
-  }, [id]);
+  }, [id, t]);
 
   const isOwner = user?.id && company?.owner_id === user.id;
 
@@ -100,7 +101,7 @@ const CompanyDetailPage = () => {
   if (!company) {
     return (
       <div className="pt-20 text-center text-slate-500">
-        Entreprise introuvable.
+        {t('companyDetail.notFoundMessage')}
       </div>
     );
   }
@@ -108,20 +109,16 @@ const CompanyDetailPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* RETOUR */}
         <Link to="/entreprises">
           <Button variant="ghost" className="mb-6">
             <ChevronLeft className="w-4 h-4 mr-2" />
-            Retour
+            {t('companyDetail.back')}
           </Button>
         </Link>
 
-        {/* CARD ENTREPRISE */}
         <Card className="rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
           <CardContent className="p-6 sm:p-8">
-            {/* HEADER */}
             <div className="flex flex-col sm:flex-row items-start gap-6 mb-8">
-              {/* LOGO */}
               <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center shrink-0">
                 {company.logo_url ? (
                   <img
@@ -134,7 +131,6 @@ const CompanyDetailPage = () => {
                 )}
               </div>
 
-              {/* INFOS */}
               <div className="flex-1 min-w-0">
                 <h1 className="text-3xl font-bold text-slate-900 break-words">
                   {company.name}
@@ -144,7 +140,6 @@ const CompanyDetailPage = () => {
                   <Badge className="mt-3">{company.industry}</Badge>
                 )}
 
-                {/* META */}
                 <div className="flex flex-wrap gap-4 mt-5 text-sm text-slate-600">
                   {company.city && (
                     <span className="flex items-center gap-1">
@@ -156,7 +151,7 @@ const CompanyDetailPage = () => {
                   {company.size && (
                     <span className="flex items-center gap-1">
                       <Users className="w-4 h-4" />
-                      {company.size} employés
+                      {t('companyDetail.employees', { size: company.size })}
                     </span>
                   )}
 
@@ -168,7 +163,7 @@ const CompanyDetailPage = () => {
                       className="flex items-center gap-1 text-blue-600 hover:underline"
                     >
                       <Globe className="w-4 h-4" />
-                      Site web
+                      {t('companyDetail.website')}
                     </a>
                   )}
 
@@ -178,33 +173,31 @@ const CompanyDetailPage = () => {
                       className="flex items-center gap-1 text-blue-600 hover:underline"
                     >
                       <Mail className="w-4 h-4" />
-                      Email
+                      {t('companyDetail.email')}
                     </a>
                   )}
                 </div>
 
-                {/* SIGNALEMENT ou BADGE PROPRIO */}
                 <div className="mt-6">
-                  {!isOwner && user && !isAdmin ? (   // ← ajout de && !isAdmin
-  <ReportButton
-    itemType="company"
-    itemId={company.id}
-    reporterId={user.id}
-  />
-) : isOwner ? (
-  <Badge variant="outline" className="text-sm">
-    Votre entreprise
-  </Badge>
-) : null}
+                  {!isOwner && user && !isAdmin ? (
+                    <ReportButton
+                      itemType="company"
+                      itemId={company.id}
+                      reporterId={user.id}
+                    />
+                  ) : isOwner ? (
+                    <Badge variant="outline" className="text-sm">
+                      {t('companyDetail.yourCompany')}
+                    </Badge>
+                  ) : null}
                 </div>
               </div>
             </div>
 
-            {/* DESCRIPTION */}
             {company.description && (
               <div className="border-t border-slate-100 pt-6">
                 <h2 className="text-xl font-semibold text-slate-900 mb-4">
-                  À propos
+                  {t('companyDetail.about')}
                 </h2>
                 <p className="text-slate-600 leading-relaxed whitespace-pre-line">
                   {company.description}
@@ -214,10 +207,9 @@ const CompanyDetailPage = () => {
           </CardContent>
         </Card>
 
-        {/* OFFRES DE L'ENTREPRISE */}
         <div className="mt-10">
           <h2 className="text-2xl font-bold text-slate-900 mb-6">
-            Offres d'emploi {jobs.length > 0 && `(${jobs.length})`}
+            {t('companyDetail.jobs')}{jobs.length > 0 && ` (${jobs.length})`}
           </h2>
 
           {jobsLoading ? (
@@ -228,7 +220,7 @@ const CompanyDetailPage = () => {
             <Card className="border border-slate-200">
               <CardContent className="p-8 text-center text-slate-500">
                 <Briefcase className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                <p>Aucune offre active pour le moment.</p>
+                <p>{t('companyDetail.noJobs')}</p>
               </CardContent>
             </Card>
           ) : (

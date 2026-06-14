@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation, Trans } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
@@ -11,6 +12,7 @@ import {
   User, Lock, Loader2, ChevronLeft, Save, LogOut, Mail,
   Trash2, AlertTriangle, UserCog
 } from 'lucide-react';
+import CountryCurrencySelector from '../components/CountryCurrencySelector';
 
 // Composant qui fait défiler le texte s'il est trop long
 const ScrollText = ({ children, className = '' }) => {
@@ -48,10 +50,10 @@ const ScrollText = ({ children, className = '' }) => {
 };
 
 const SettingsPage = () => {
+  const { t } = useTranslation();
   const { user, signOut, updatePassword, isCompany, isAdmin, profile } = useAuth();
   const navigate = useNavigate();
 
-  // États existants
   const [passwords, setPasswords] = useState({ newPassword: '', confirmPassword: '' });
   const [newEmail, setNewEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -60,11 +62,10 @@ const SettingsPage = () => {
   const [emailLoading, setEmailLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // Nouveaux états pour la demande de changement de rôle
   const [showRoleModal, setShowRoleModal] = useState(false);
-const [requestedRole, setRequestedRole] = useState(
-  profile?.role === 'candidate' ? 'company' : 'candidate'
-);
+  const [requestedRole, setRequestedRole] = useState(
+    profile?.role === 'candidate' ? 'company' : 'candidate'
+  );
   const [requestReason, setRequestReason] = useState('');
   const [requestLoading, setRequestLoading] = useState(false);
 
@@ -72,20 +73,20 @@ const [requestedRole, setRequestedRole] = useState(
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (passwords.newPassword !== passwords.confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error(t('settings.toasts.passwordMismatch'));
       return;
     }
     if (passwords.newPassword.length < 8) {
-      toast.error('Le mot de passe doit contenir au moins 8 caractères');
+      toast.error(t('settings.toasts.passwordLength'));
       return;
     }
     setLoading(true);
     try {
       await updatePassword(passwords.newPassword);
-      toast.success('Mot de passe mis à jour avec succès');
+      toast.success(t('settings.toasts.passwordUpdated'));
       setPasswords({ newPassword: '', confirmPassword: '' });
     } catch (err) {
-      toast.error(err.message || 'Erreur lors du changement de mot de passe');
+      toast.error(err.message || t('settings.toasts.passwordError'));
     } finally {
       setLoading(false);
     }
@@ -95,7 +96,7 @@ const [requestedRole, setRequestedRole] = useState(
   const handleChangeEmail = async (e) => {
     e.preventDefault();
     if (!newEmail || !currentPassword) {
-      toast.error('Veuillez remplir tous les champs');
+      toast.error(t('settings.toasts.fillAllFields'));
       return;
     }
     setEmailLoading(true);
@@ -105,20 +106,18 @@ const [requestedRole, setRequestedRole] = useState(
         password: currentPassword,
       });
       if (signInError) {
-        toast.error('Mot de passe actuel incorrect');
+        toast.error(t('settings.toasts.wrongPassword'));
         return;
       }
 
       const { error } = await supabase.auth.updateUser({ email: newEmail });
       if (error) throw error;
 
-      toast.success(
-        'Un email de confirmation a été envoyé à la nouvelle adresse. Veuillez vérifier votre boîte de réception.'
-      );
+      toast.success(t('settings.toasts.emailConfirmationSent'));
       setNewEmail('');
       setCurrentPassword('');
     } catch (err) {
-      toast.error(err.message || "Erreur lors du changement d'email");
+      toast.error(err.message || t('settings.toasts.emailError'));
     } finally {
       setEmailLoading(false);
     }
@@ -131,19 +130,14 @@ const [requestedRole, setRequestedRole] = useState(
       await signOut();
       window.location.href = '/';
     } catch (err) {
-      toast.error(err.message || 'Erreur de déconnexion');
+      toast.error(err.message || t('settings.toasts.logoutError'));
       setLoggingOut(false);
     }
   };
 
   // Suppression du compte (RGPD)
   const handleDeleteAccount = async () => {
-    if (
-      !window.confirm(
-        'Supprimer définitivement votre compte ? Cette action est irréversible, toutes vos données seront effacées.'
-      )
-    )
-      return;
+    if (!window.confirm(t('settings.dangerZone.confirm'))) return;
 
     setDeleting(true);
     try {
@@ -153,60 +147,61 @@ const [requestedRole, setRequestedRole] = useState(
       });
 
       if (res.success) {
-        toast.success('Votre compte a été supprimé définitivement.');
+        toast.success(t('settings.toasts.accountDeleted'));
         await supabase.auth.signOut();
         setTimeout(() => {
           window.location.href = '/';
         }, 2000);
       } else {
-        toast.error(res.message || 'Erreur lors de la suppression.');
+        toast.error(res.message || t('settings.toasts.deleteError'));
       }
     } catch (err) {
       console.error('Delete account error:', err);
-      toast.error(err.message || 'Erreur réseau lors de la suppression.');
+      toast.error(err.message || t('settings.toasts.deleteError'));
     } finally {
       setDeleting(false);
     }
   };
 
   // Demande de changement de rôle
-const handleRequestRoleChange = async () => {
-  setRequestLoading(true);
-  try {
-    const { error } = await supabase.rpc('submit_role_change_request', {
-      p_requested_role: requestedRole,
-      p_reason: requestReason?.trim() || null,
-    });
+  const handleRequestRoleChange = async () => {
+    setRequestLoading(true);
+    try {
+      const { error } = await supabase.rpc('submit_role_change_request', {
+        p_requested_role: requestedRole,
+        p_reason: requestReason?.trim() || null,
+      });
 
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Votre demande a été envoyée. L'administrateur va l'examiner.");
-      setShowRoleModal(false);
-      setRequestReason('');
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success(t('settings.toasts.roleRequestSent'));
+        setShowRoleModal(false);
+        setRequestReason('');
 
-      // Envoyer une notification à l'admin (non bloquante)
-      try {
-        await apiFetch('/api/notify-admin-role-request', {
-          method: 'POST',
-          body: JSON.stringify({
-            user_email: user.email,
-            user_name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || user.email,
-            current_role: profile?.role || 'candidate',
-            requested_role: requestedRole,
-          }),
-        });
-      } catch (notifErr) {
-        console.error('Erreur notification admin:', notifErr);
+        try {
+          await apiFetch('/api/notify-admin-role-request', {
+            method: 'POST',
+            body: JSON.stringify({
+              user_email: user.email,
+              user_name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || user.email,
+              current_role: profile?.role || 'candidate',
+              requested_role: requestedRole,
+            }),
+          });
+        } catch (notifErr) {
+          console.error('Erreur notification admin:', notifErr);
+        }
       }
+    } catch (err) {
+      console.error('Erreur:', err);
+      toast.error(err.message || t('settings.toasts.roleRequestError'));
+    } finally {
+      setRequestLoading(false);
     }
-  } catch (err) {
-    console.error('Erreur:', err);
-    toast.error(err.message || 'Erreur réseau');
-  } finally {
-    setRequestLoading(false);
-  }
-};
+  };
+
+  const isCandidate = profile?.role === 'candidate';
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -214,7 +209,7 @@ const handleRequestRoleChange = async () => {
         <div className="flex items-center gap-4 mb-8">
           <Button variant="ghost" onClick={() => navigate('/dashboard')} className="gap-2">
             <ChevronLeft className="w-4 h-4" />
-            Retour
+            {t('settings.back')}
           </Button>
           <Button
             variant="ghost"
@@ -222,11 +217,11 @@ const handleRequestRoleChange = async () => {
             className="gap-2"
           >
             <User className="w-4 h-4" />
-            Mon profil
+            {t('settings.myProfile')}
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Paramètres</h1>
-            <p className="text-slate-600">Gérez votre compte</p>
+            <h1 className="text-2xl font-bold text-slate-900">{t('settings.title')}</h1>
+            <p className="text-slate-600">{t('settings.subtitle')}</p>
           </div>
         </div>
 
@@ -239,10 +234,19 @@ const handleRequestRoleChange = async () => {
                   <User className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-slate-900">Informations du compte</h2>
-                  <p className="text-sm text-slate-500">{user?.email}</p>
+                  <h2 className="font-semibold text-slate-900">{t('settings.accountInfo.title')}</h2>
+                  <p className="text-sm text-slate-500">
+                    {t('settings.accountInfo.description', { email: user?.email })}
+                  </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Sélecteur de pays et devise */}
+          <Card>
+            <CardContent className="p-6">
+              <CountryCurrencySelector />
             </CardContent>
           </Card>
 
@@ -254,40 +258,38 @@ const handleRequestRoleChange = async () => {
                   <Mail className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-slate-900">Changer l'adresse email</h2>
-                  <p className="text-sm text-slate-500">
-                    Un email de confirmation sera envoyé à la nouvelle adresse
-                  </p>
+                  <h2 className="font-semibold text-slate-900">{t('settings.changeEmail.title')}</h2>
+                  <p className="text-sm text-slate-500">{t('settings.changeEmail.description')}</p>
                 </div>
               </div>
               <form onSubmit={handleChangeEmail} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Nouvel email
+                    {t('settings.changeEmail.newEmailLabel')}
                   </label>
                   <Input
                     type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="nouveau@email.com"
+                    placeholder={t('settings.changeEmail.newEmailPlaceholder')}
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Mot de passe actuel (pour vérification)
+                    {t('settings.changeEmail.currentPasswordLabel')}
                   </label>
                   <Input
                     type="password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder={t('settings.changeEmail.currentPasswordPlaceholder')}
                     required
                   />
                 </div>
                 <Button type="submit" disabled={emailLoading} className="bg-green-600 hover:bg-green-700 text-white">
                   {emailLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
-                  Changer l'email
+                  {t('settings.changeEmail.submit')}
                 </Button>
               </form>
             </CardContent>
@@ -301,38 +303,38 @@ const handleRequestRoleChange = async () => {
                   <Lock className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-slate-900">Changer le mot de passe</h2>
-                  <p className="text-sm text-slate-500">Utilisez au moins 8 caractères</p>
+                  <h2 className="font-semibold text-slate-900">{t('settings.changePassword.title')}</h2>
+                  <p className="text-sm text-slate-500">{t('settings.changePassword.description')}</p>
                 </div>
               </div>
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Nouveau mot de passe
+                    {t('settings.changePassword.newPasswordLabel')}
                   </label>
                   <Input
                     type="password"
                     value={passwords.newPassword}
                     onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                    placeholder="••••••••"
+                    placeholder={t('settings.changePassword.newPasswordPlaceholder')}
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Confirmer le mot de passe
+                    {t('settings.changePassword.confirmPasswordLabel')}
                   </label>
                   <Input
                     type="password"
                     value={passwords.confirmPassword}
                     onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                    placeholder="••••••••"
+                    placeholder={t('settings.changePassword.confirmPasswordPlaceholder')}
                     required
                   />
                 </div>
                 <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                  Mettre à jour
+                  {t('settings.changePassword.submit')}
                 </Button>
               </form>
             </CardContent>
@@ -343,8 +345,8 @@ const handleRequestRoleChange = async () => {
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="font-semibold text-slate-900">Se déconnecter</h3>
-                  <p className="text-sm text-slate-500">Vous serez redirigé vers la page d'accueil</p>
+                  <h3 className="font-semibold text-slate-900">{t('settings.logout.title')}</h3>
+                  <p className="text-sm text-slate-500">{t('settings.logout.description')}</p>
                 </div>
                 <Button
                   variant="outline"
@@ -353,24 +355,28 @@ const handleRequestRoleChange = async () => {
                   className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50 min-h-[44px]"
                 >
                   {loggingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <LogOut className="w-4 h-4 mr-2" />}
-                  Déconnexion
+                  {t('settings.logout.button')}
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Demande de changement de rôle (uniquement pour candidat/entreprise) */}
+          {/* Demande de changement de rôle */}
           {!isAdmin && (
             <Card className="overflow-visible">
               <CardContent className="p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  {/* La colonne de gauche est limitée pour laisser de la place au bouton */}
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-slate-900 truncate">Changer de type de compte</h3>
+                    <h3 className="font-semibold text-slate-900 truncate">{t('settings.roleChange.title')}</h3>
                     <p className="text-sm text-slate-500 mt-1 line-clamp-2">
-                      Vous êtes actuellement <strong>{profile?.role === 'candidate' ? 'Candidat' : 'Entreprise'}</strong>.
-                      Vous pouvez demander à passer en compte{' '}
-                      {profile?.role === 'candidate' ? 'Entreprise' : 'Candidat'}.
+                      <Trans
+                        i18nKey={
+                          isCandidate
+                            ? 'settings.roleChange.descriptionCandidate'
+                            : 'settings.roleChange.descriptionCompany'
+                        }
+                        components={{ strong: <strong /> }}
+                      />
                     </p>
                   </div>
                   <Button
@@ -379,8 +385,7 @@ const handleRequestRoleChange = async () => {
                     className="w-full sm:w-auto text-blue-600 border-blue-200 hover:bg-blue-50 min-h-[44px] shrink-0 overflow-hidden"
                   >
                     <UserCog className="w-4 h-4 mr-2 shrink-0" />
-                    {/* Le texte défile s'il est trop long */}
-                    <ScrollText>Demander un changement</ScrollText>
+                    <ScrollText>{t('settings.roleChange.requestButton')}</ScrollText>
                   </Button>
                 </div>
               </CardContent>
@@ -391,33 +396,37 @@ const handleRequestRoleChange = async () => {
           {showRoleModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
               <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-                <h3 className="text-lg font-semibold mb-4">Demander un changement de rôle</h3>
+                <h3 className="text-lg font-semibold mb-4">{t('settings.roleChange.modal.title')}</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Nouveau rôle souhaité</label>
+                    <label className="block text-sm font-medium mb-1">
+                      {t('settings.roleChange.modal.roleLabel')}
+                    </label>
                     <select
                       value={requestedRole}
                       onChange={(e) => setRequestedRole(e.target.value)}
                       className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-white"
                     >
-                      {profile?.role === 'candidate' && <option value="company">Entreprise</option>}
-                      {profile?.role === 'company' && <option value="candidate">Candidat</option>}
+                      {isCandidate && <option value="company">{t('settings.roleChange.modal.roleCompany')}</option>}
+                      {!isCandidate && <option value="candidate">{t('settings.roleChange.modal.roleCandidate')}</option>}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Message (optionnel)</label>
+                    <label className="block text-sm font-medium mb-1">
+                      {t('settings.roleChange.modal.reasonLabel')}
+                    </label>
                     <textarea
                       className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none"
                       rows={3}
                       value={requestReason}
                       onChange={(e) => setRequestReason(e.target.value)}
-                      placeholder="Expliquez pourquoi vous souhaitez changer de rôle..."
+                      placeholder={t('settings.roleChange.modal.reasonPlaceholder')}
                     />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 mt-6">
                   <Button variant="outline" onClick={() => setShowRoleModal(false)}>
-                    Annuler
+                    {t('settings.roleChange.modal.cancel')}
                   </Button>
                   <Button
                     className="bg-blue-600 text-white hover:bg-blue-700"
@@ -425,7 +434,7 @@ const handleRequestRoleChange = async () => {
                     disabled={requestLoading}
                   >
                     {requestLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Envoyer la demande
+                    {t('settings.roleChange.modal.submit')}
                   </Button>
                 </div>
               </div>
@@ -439,10 +448,10 @@ const handleRequestRoleChange = async () => {
                 <div>
                   <h3 className="font-semibold text-red-800 flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 shrink-0" />
-                    Zone dangereuse
+                    {t('settings.dangerZone.title')}
                   </h3>
                   <p className="text-sm text-red-600 mt-1">
-                    Supprimez votre compte et toutes vos données. Cette action est irréversible.
+                    {t('settings.dangerZone.description')}
                   </p>
                 </div>
                 <Button
@@ -456,7 +465,7 @@ const handleRequestRoleChange = async () => {
                   ) : (
                     <Trash2 className="w-4 h-4 mr-2" />
                   )}
-                  Supprimer mon compte
+                  {t('settings.dangerZone.button')}
                 </Button>
               </div>
             </CardContent>

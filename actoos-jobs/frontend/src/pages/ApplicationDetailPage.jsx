@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
@@ -13,17 +14,8 @@ import {
 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 
-const statusConfig = {
-  pending: { label: 'Nouvelle', color: 'bg-blue-100 text-blue-700' },
-  viewed: { label: 'Vue', color: 'bg-slate-100 text-slate-700' },
-  shortlisted: { label: 'Présélectionné', color: 'bg-purple-100 text-purple-700' },
-  interview: { label: 'Entretien', color: 'bg-green-100 text-green-700' },
-  accepted: { label: 'Accepté', color: 'bg-green-100 text-green-700' },
-  rejected: { label: 'Refusé', color: 'bg-red-100 text-red-700' },
-};
-
 // ---------- InterviewBlock component ----------
-const InterviewBlock = ({ title, icon: Icon, content, onChange, onGenerate, generating, disabled, emptyMessage }) => {
+const InterviewBlock = ({ title, icon: Icon, content, onChange, onGenerate, generating, disabled, emptyMessage, t }) => {
   const [editing, setEditing] = useState(false);
 
   return (
@@ -38,7 +30,7 @@ const InterviewBlock = ({ title, icon: Icon, content, onChange, onGenerate, gene
               variant="ghost"
               size="sm"
               onClick={() => setEditing(!editing)}
-              title={editing ? "Passer en lecture" : "Modifier"}
+              title={editing ? t('applicationDetail.readMode') : t('applicationDetail.editMode')}
             >
               {editing ? <Eye className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
             </Button>
@@ -49,7 +41,7 @@ const InterviewBlock = ({ title, icon: Icon, content, onChange, onGenerate, gene
             onClick={onGenerate}
             disabled={generating || disabled}
           >
-            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Générer'}
+            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : t('applicationDetail.generate')}
           </Button>
         </div>
       </div>
@@ -71,13 +63,14 @@ const InterviewBlock = ({ title, icon: Icon, content, onChange, onGenerate, gene
         </p>
       )}
       {content && !editing && (
-        <p className="text-xs text-slate-400 mt-1">✏️ Cliquez sur le crayon pour modifier.</p>
+        <p className="text-xs text-slate-400 mt-1">✏️ {t('applicationDetail.clickToEdit')}</p>
       )}
     </div>
   );
 };
 
 const ApplicationDetailPage = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [application, setApplication] = useState(null);
   const [candidateProfile, setCandidateProfile] = useState(null);
@@ -114,7 +107,7 @@ const ApplicationDetailPage = () => {
     setUpdating(true);
     let reason = null;
     if (newStatus === 'rejected') {
-      reason = window.prompt('Veuillez indiquer la raison du refus (facultatif) :');
+      reason = window.prompt(t('applicationDetail.toasts.rejectionPrompt'));
       if (reason === null) {
         setUpdating(false);
         return;
@@ -128,7 +121,7 @@ const ApplicationDetailPage = () => {
       const { error } = await supabase.from('applications').update(updates).eq('id', id);
       if (error) throw error;
       setApplication(prev => ({ ...prev, ...updates }));
-      toast.success('Statut mis à jour');
+      toast.success(t('applicationDetail.toasts.statusUpdated'));
 
       if (newStatus !== 'pending') {
         const cleanJobTitle = (application.job.title || '').replace(/\n/g, ' ').substring(0, 60);
@@ -150,7 +143,7 @@ const ApplicationDetailPage = () => {
         }
       }
     } catch (err) {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t('applicationDetail.toasts.updateError'));
     } finally {
       setUpdating(false);
     }
@@ -165,8 +158,8 @@ const ApplicationDetailPage = () => {
       if (error) throw error;
       setApplication(prev => ({ ...prev, meeting_link: meetingLink }));
       setCustomRoomName('');
-      toast.success('Lien mis à jour !');
-    } catch (err) { toast.error('Erreur'); }
+      toast.success(t('applicationDetail.toasts.linkUpdated'));
+    } catch (err) { toast.error(t('applicationDetail.toasts.updateError')); }
     finally { setUpdating(false); }
   };
 
@@ -176,12 +169,11 @@ const ApplicationDetailPage = () => {
       const { error } = await supabase.from('applications').update({ meeting_link: null }).eq('id', id);
       if (error) throw error;
       setApplication(prev => ({ ...prev, meeting_link: null }));
-      toast.success('Lien supprimé');
-    } catch (err) { toast.error('Erreur'); }
+      toast.success(t('applicationDetail.toasts.linkDeleted'));
+    } catch (err) { toast.error(t('applicationDetail.toasts.updateError')); }
     finally { setUpdating(false); }
   };
 
-  // Construit un contexte riche pour l'IA
   const buildInterviewContext = () => {
     const job = application?.job;
     const profile = candidateProfile;
@@ -216,14 +208,14 @@ Profil du candidat :
         })
       });
       setInterviewQuestions(res.result);
-      toast.success('Questions générées !');
-    } catch (err) { toast.error(err.message || 'Erreur IA'); }
+      toast.success(t('applicationDetail.toasts.questionsGenerated'));
+    } catch (err) { toast.error(err.message || t('applicationDetail.toasts.aiError')); }
     finally { setGeneratingQuestions(false); }
   };
 
   const handleGenerateAnswers = async () => {
     if (!interviewQuestions) {
-      toast.error('Générez d\'abord des questions');
+      toast.error(t('applicationDetail.toasts.needQuestionsFirst'));
       return;
     }
     setGeneratingAnswers(true);
@@ -236,8 +228,8 @@ Profil du candidat :
         })
       });
       setInterviewAnswers(res.result);
-      toast.success('Réponses types générées !');
-    } catch (err) { toast.error(err.message || 'Erreur IA'); }
+      toast.success(t('applicationDetail.toasts.answersGenerated'));
+    } catch (err) { toast.error(err.message || t('applicationDetail.toasts.aiError')); }
     finally { setGeneratingAnswers(false); }
   };
 
@@ -253,8 +245,8 @@ Profil du candidat :
         })
       });
       setInterviewTips(res.result);
-      toast.success('Conseils générés !');
-    } catch (err) { toast.error(err.message || 'Erreur IA'); }
+      toast.success(t('applicationDetail.toasts.tipsGenerated'));
+    } catch (err) { toast.error(err.message || t('applicationDetail.toasts.aiError')); }
     finally { setGeneratingTips(false); }
   };
 
@@ -264,8 +256,8 @@ Profil du candidat :
     try {
       const { error } = await supabase.from('applications').update({ notes }).eq('id', id);
       if (error) throw error;
-      toast.success('Notes sauvegardées');
-    } catch (err) { toast.error('Erreur lors de la sauvegarde'); }
+      toast.success(t('applicationDetail.savedNotes'));
+    } catch (err) { toast.error(t('applicationDetail.toasts.saveError')); }
     finally { setSavingNotes(false); }
   };
 
@@ -288,23 +280,32 @@ Profil du candidat :
       });
       toast.success(res.message);
     } catch (err) {
-      toast.error(err.message || "Erreur lors de l'envoi de l'email");
+      toast.error(err.message || t('applicationDetail.toasts.emailError'));
     } finally {
       setSendingEmail(false);
     }
   };
 
   if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
-  if (!application) return <div className="pt-20 text-center">Candidature introuvable.</div>;
+  if (!application) return <div className="pt-20 text-center">{t('applicationDetail.notFound')}</div>;
 
   const candidate = application.candidate;
   const job = application.job;
-  const status = statusConfig[application.status] || statusConfig.pending;
+  const statusLabel = t(`applicationDetail.status.${application.status}`, { defaultValue: application.status });
+  const statusColors = {
+    pending: 'bg-blue-100 text-blue-700',
+    viewed: 'bg-slate-100 text-slate-700',
+    shortlisted: 'bg-purple-100 text-purple-700',
+    interview: 'bg-green-100 text-green-700',
+    accepted: 'bg-green-100 text-green-700',
+    rejected: 'bg-red-100 text-red-700',
+  };
+  const statusColor = statusColors[application.status] || 'bg-slate-100 text-slate-700';
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <Link to="/dashboard/entreprise/candidatures"><Button variant="ghost" className="mb-6"><ChevronLeft className="w-4 h-4 mr-2" />Retour aux candidatures</Button></Link>
+        <Link to="/dashboard/entreprise/candidatures"><Button variant="ghost" className="mb-6"><ChevronLeft className="w-4 h-4 mr-2" />{t('applicationDetail.back')}</Button></Link>
 
         <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
@@ -323,7 +324,7 @@ Profil du candidat :
                     <p className="text-slate-600 flex items-center gap-2 mt-1"><Mail className="w-4 h-4" /> {candidate?.email}</p>
                     {candidate?.phone && <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {candidate.phone}</p>}
                     {candidate?.city?.name && <p className="text-slate-600 flex items-center gap-2 mt-1"><MapPin className="w-4 h-4" /> {candidate.city.name}</p>}
-                    <Link to={`/candidat/${candidate.id}`} className="inline-flex items-center gap-1 mt-3 text-blue-600 hover:underline text-sm"><ExternalLink className="w-4 h-4" /> Voir le profil complet</Link>
+                    <Link to={`/candidat/${candidate.id}`} className="inline-flex items-center gap-1 mt-3 text-blue-600 hover:underline text-sm"><ExternalLink className="w-4 h-4" /> {t('applicationDetail.viewFullProfile')}</Link>
                   </div>
                 </div>
 
@@ -337,57 +338,60 @@ Profil du candidat :
               </CardContent>
             </Card>
 
-            <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">Offre concernée</h2><Link to={`/emplois/${job?.id}`} className="text-blue-600 hover:underline flex items-center gap-2"><Briefcase className="w-4 h-4" /> {job?.title}</Link></CardContent></Card>
-            {application.cover_letter && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">Lettre de motivation</h2><p className="text-slate-600 whitespace-pre-wrap">{application.cover_letter}</p></CardContent></Card>}
-            {candidateProfile?.cv_url && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">CV du candidat</h2><a href={candidateProfile.cv_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl hover:bg-blue-100"><FileText className="w-4 h-4" /> Voir le CV</a></CardContent></Card>}
+            <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.jobTitle')}</h2><Link to={`/emplois/${job?.id}`} className="text-blue-600 hover:underline flex items-center gap-2"><Briefcase className="w-4 h-4" /> {job?.title}</Link></CardContent></Card>
+            {application.cover_letter && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.coverLetter')}</h2><p className="text-slate-600 whitespace-pre-wrap">{application.cover_letter}</p></CardContent></Card>}
+            {candidateProfile?.cv_url && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.cv')}</h2><a href={candidateProfile.cv_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl hover:bg-blue-100"><FileText className="w-4 h-4" /> {t('applicationDetail.viewCV')}</a></CardContent></Card>}
           </div>
 
           {/* Panneau latéral */}
           <div className="space-y-6">
-            <Card><CardContent className="p-6 text-center"><Badge className={`${status.color} text-sm px-4 py-2`}>{status.label}</Badge><p className="text-xs text-slate-500 mt-2">Candidature reçue {formatRelative(application.created_at)}</p></CardContent></Card>
+            <Card><CardContent className="p-6 text-center"><Badge className={`${statusColor} text-sm px-4 py-2`}>{statusLabel}</Badge><p className="text-xs text-slate-500 mt-2">{t('applicationDetail.receivedAt', { date: formatRelative(application.created_at) })}</p></CardContent></Card>
             <Card>
               <CardContent className="p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Changer le statut</h3>
+                <h3 className="font-semibold text-slate-900 mb-4">{t('applicationDetail.changeStatus')}</h3>
                 <div className="space-y-2">
-                  {Object.entries(statusConfig).map(([key, config]) => (
-                    <button key={key} onClick={() => handleStatusChange(key)} disabled={updating || application.status === key}
-                      className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${application.status === key ? 'bg-blue-50 text-blue-700 cursor-default' : 'hover:bg-slate-100 text-slate-700'}`}>
-                      {config.label}
-                    </button>
-                  ))}
+                  {Object.entries(statusColors).map(([key, colorClass]) => {
+                    const label = t(`applicationDetail.status.${key}`);
+                    return (
+                      <button key={key} onClick={() => handleStatusChange(key)} disabled={updating || application.status === key}
+                        className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${application.status === key ? 'bg-blue-50 text-blue-700 cursor-default' : 'hover:bg-slate-100 text-slate-700'}`}>
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" /> Planifier un entretien</h3>
+                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" /> {t('applicationDetail.scheduleInterview')}</h3>
                 <div className="mb-5">
-                  <div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span><h4 className="text-sm font-medium text-slate-800">Choisissez un créneau</h4></div>
+                  <div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span><h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step1ChooseSlot')}</h4></div>
                   <div className="ml-8 flex flex-wrap gap-2">
-                    <a href="https://calendly.com/actoos/entretien" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm text-white hover:bg-blue-700"><Calendar className="w-4 h-4" /> Ouvrir Calendly</a>
-                    <Button variant="outline" size="sm" onClick={() => handleSendEmail('calendly')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" /> Envoyer par email</Button>
+                    <a href="https://calendly.com/actoos/entretien" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm text-white hover:bg-blue-700"><Calendar className="w-4 h-4" /> {t('applicationDetail.openCalendly')}</a>
+                    <Button variant="outline" size="sm" onClick={() => handleSendEmail('calendly')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}</Button>
                   </div>
                 </div>
                 <div className="mb-5 pt-4 border-t border-slate-100">
-                  <div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span><h4 className="text-sm font-medium text-slate-800">Créez un lien de visioconférence</h4></div>
+                  <div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span><h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step2CreateLink')}</h4></div>
                   <div className="ml-8 space-y-3">
                     {application.meeting_link ? (
                       <>
                         <div className="bg-blue-50 rounded-xl p-3 text-sm break-all"><a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">{application.meeting_link}</a></div>
                         <div className="flex gap-2">
-                          <a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-green-700"><Video className="w-4 h-4" /> Rejoindre</a>
-                          <Button variant="outline" size="sm" onClick={() => handleSendEmail('jitsi')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" /> Envoyer</Button>
+                          <a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-green-700"><Video className="w-4 h-4" /> {t('applicationDetail.joinMeeting')}</a>
+                          <Button variant="outline" size="sm" onClick={() => handleSendEmail('jitsi')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}</Button>
                         </div>
-                        <input type="text" placeholder="Nouveau nom de salle" value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
+                        <input type="text" placeholder={t('applicationDetail.newRoomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1" onClick={handleCreateMeeting} disabled={updating}><RefreshCw className="w-4 h-4 mr-1" /> Mettre à jour</Button>
-                          <Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteMeeting} disabled={updating}><Trash2 className="w-4 h-4" /> Supprimer</Button>
+                          <Button variant="outline" size="sm" className="flex-1" onClick={handleCreateMeeting} disabled={updating}><RefreshCw className="w-4 h-4 mr-1" /> {t('applicationDetail.updateLink')}</Button>
+                          <Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteMeeting} disabled={updating}><Trash2 className="w-4 h-4" /> {t('applicationDetail.deleteLink')}</Button>
                         </div>
                       </>
                     ) : (
                       <>
-                        <input type="text" placeholder="Nom de la salle (ex: mon-entretien)" value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
-                        <Button variant="outline" className="w-full" onClick={handleCreateMeeting} disabled={updating}>{updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Video className="w-4 h-4 mr-2" />} Générer un lien Jitsi</Button>
+                        <input type="text" placeholder={t('applicationDetail.roomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
+                        <Button variant="outline" className="w-full" onClick={handleCreateMeeting} disabled={updating}>{updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Video className="w-4 h-4 mr-2" />} {t('applicationDetail.generateJitsiLink')}</Button>
                       </>
                     )}
                   </div>
@@ -400,38 +404,41 @@ Profil du candidat :
               <CardContent className="p-6 space-y-5">
                 <h3 className="font-semibold text-slate-900 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-blue-600" />
-                  Préparer l'entretien
+                  {t('applicationDetail.prepareInterview')}
                 </h3>
 
                 <InterviewBlock
-                  title="Questions"
+                  title={t('applicationDetail.questions')}
                   icon={MessageSquare}
                   content={interviewQuestions}
                   onChange={setInterviewQuestions}
                   onGenerate={handleGenerateQuestions}
                   generating={generatingQuestions}
-                  emptyMessage="Cliquez sur Générer pour obtenir des questions personnalisées."
+                  emptyMessage={t('applicationDetail.emptyQuestions')}
+                  t={t}
                 />
 
                 <InterviewBlock
-                  title="Réponses types"
+                  title={t('applicationDetail.answers')}
                   icon={Sparkles}
                   content={interviewAnswers}
                   onChange={setInterviewAnswers}
                   onGenerate={handleGenerateAnswers}
                   generating={generatingAnswers}
                   disabled={!interviewQuestions}
-                  emptyMessage="Générez d'abord des questions, puis obtenez des réponses types pour évaluer le candidat."
+                  emptyMessage={t('applicationDetail.emptyAnswers')}
+                  t={t}
                 />
 
                 <InterviewBlock
-                  title="Conseils"
+                  title={t('applicationDetail.tips')}
                   icon={Lightbulb}
                   content={interviewTips}
                   onChange={setInterviewTips}
                   onGenerate={handleGenerateTips}
                   generating={generatingTips}
-                  emptyMessage="Obtenez des conseils pour mener un entretien structuré et pertinent."
+                  emptyMessage={t('applicationDetail.emptyTips')}
+                  t={t}
                 />
 
                 <Button
@@ -445,7 +452,7 @@ Profil du candidat :
                   ) : (
                     <Save className="w-4 h-4 mr-2" />
                   )}
-                  Sauvegarder dans les notes
+                  {t('applicationDetail.saveNotes')}
                 </Button>
               </CardContent>
             </Card>

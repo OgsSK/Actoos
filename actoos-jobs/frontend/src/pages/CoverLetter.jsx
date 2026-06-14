@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -7,6 +8,7 @@ import { toast } from 'sonner';
 import { apiFetch } from '../lib/api';
 
 const CoverLetter = () => {
+  const { t } = useTranslation();
   const [jobDescription, setJobDescription] = useState('');
   const [candidateProfile, setCandidateProfile] = useState('');
   const [letter, setLetter] = useState('');
@@ -15,7 +17,7 @@ const CoverLetter = () => {
 
   const handleGenerate = async () => {
     if (!jobDescription.trim() || !candidateProfile.trim()) {
-      toast.error('Veuillez remplir les deux champs.');
+      toast.error(t('coverLetter.toasts.fillBothFields'));
       return;
     }
     setLoading(true);
@@ -28,9 +30,9 @@ const CoverLetter = () => {
         }),
       });
       setLetter(res.result);
-      toast.success('Lettre générée !');
+      toast.success(t('coverLetter.toasts.generated'));
     } catch (err) {
-      toast.error(err.message || 'Erreur');
+      toast.error(err.message || t('coverLetter.toasts.error'));
     } finally {
       setLoading(false);
     }
@@ -39,7 +41,7 @@ const CoverLetter = () => {
   const handleCopy = () => {
     navigator.clipboard.writeText(letter);
     setCopied(true);
-    toast.success('Copiée dans le presse-papier !');
+    toast.success(t('coverLetter.toasts.copied'));
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -47,10 +49,10 @@ const CoverLetter = () => {
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-10">
-          <Badge className="bg-blue-100 text-blue-700 border-0 mb-4">IA</Badge>
-          <h1 className="text-3xl font-bold text-slate-900 mb-4">Générateur de lettre de motivation</h1>
+          <Badge className="bg-blue-100 text-blue-700 border-0 mb-4">{t('coverLetter.badge')}</Badge>
+          <h1 className="text-3xl font-bold text-slate-900 mb-4">{t('coverLetter.title')}</h1>
           <p className="text-slate-600 max-w-2xl mx-auto">
-            Entrez l'offre d'emploi et votre profil pour générer une lettre de motivation personnalisée.
+            {t('coverLetter.subtitle')}
           </p>
         </div>
 
@@ -59,35 +61,35 @@ const CoverLetter = () => {
             <CardContent className="p-6 space-y-4">
               <div>
                 <h3 className="font-semibold text-lg flex items-center gap-2 mb-2">
-                  <Briefcase className="w-5 h-5 text-blue-600" /> Offre d'emploi
+                  <Briefcase className="w-5 h-5 text-blue-600" /> {t('coverLetter.jobSection')}
                 </h3>
                 <textarea
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                   rows={6}
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Collez la description de l'offre..."
+                  placeholder={t('coverLetter.jobPlaceholder')}
                 />
               </div>
               <div>
                 <h3 className="font-semibold text-lg flex items-center gap-2 mb-2">
-                  <User className="w-5 h-5 text-blue-600" /> Votre profil
+                  <User className="w-5 h-5 text-blue-600" /> {t('coverLetter.profileSection')}
                 </h3>
                 <textarea
                   value={candidateProfile}
                   onChange={(e) => setCandidateProfile(e.target.value)}
                   rows={6}
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Décrivez votre parcours, compétences, motivations..."
+                  placeholder={t('coverLetter.profilePlaceholder')}
                 />
               </div>
               <Button
                 onClick={handleGenerate}
                 disabled={loading}
-                className="w-full bg-blue-600 text-white hover:bg-blue-700 text-white "
+                className="w-full bg-blue-600 text-white hover:bg-blue-700"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Sparkles className="w-5 h-5 mr-2" />}
-                Générer la lettre
+                {t('coverLetter.generateButton')}
               </Button>
             </CardContent>
           </Card>
@@ -96,12 +98,12 @@ const CoverLetter = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-lg flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-blue-600" /> Votre lettre
+                  <FileText className="w-5 h-5 text-blue-600" /> {t('coverLetter.letterTitle')}
                 </h3>
                 {letter && (
                   <Button size="sm" variant="outline" onClick={handleCopy}>
                     {copied ? <Check className="w-4 h-4 mr-2" /> : null}
-                    {copied ? 'Copié !' : 'Copier'}
+                    {copied ? t('coverLetter.copiedButton') : t('coverLetter.copyButton')}
                   </Button>
                 )}
               </div>
@@ -112,7 +114,7 @@ const CoverLetter = () => {
               ) : (
                 <div className="text-center py-16 text-slate-400">
                   <FileText className="w-16 h-16 mx-auto mb-4" />
-                  <p>Votre lettre apparaîtra ici après la génération.</p>
+                  <p>{t('coverLetter.emptyState')}</p>
                 </div>
               )}
             </CardContent>

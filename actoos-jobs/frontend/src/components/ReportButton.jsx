@@ -1,43 +1,37 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Flag, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
-const REPORT_REASONS = {
-  job: [
-    { value: 'offre_inappropriee', label: 'Offre inappropriée' },
-    { value: 'offre_fausse', label: 'Offre frauduleuse ou fausse' },
-    { value: 'discrimination', label: 'Discrimination' },
-    { value: 'spam', label: 'Spam' },
-    { value: 'autre', label: 'Autre' },
-  ],
-  company: [
-    { value: 'entreprise_fictive', label: 'Entreprise fictive' },
-    { value: 'informations_erronees', label: 'Informations erronées' },
-    { value: 'harcelement', label: 'Harcèlement' },
-    { value: 'autre', label: 'Autre' },
-  ],
-};
-
 const ReportButton = ({ itemType, itemId, reporterId }) => {
+  const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const reasons = REPORT_REASONS[itemType] || REPORT_REASONS.job;
+  // Récupération dynamique des motifs depuis les traductions
+  const reasonObj = t(`reportReasons.${itemType}`, { returnObjects: true }) || t('reportReasons.job', { returnObjects: true });
+  const reasons = reasonObj ? Object.entries(reasonObj).map(([value, label]) => ({ value, label })) : [];
+
+  const subtitleKey =
+    itemType === 'job'
+      ? 'report.subtitleJob'
+      : itemType === 'company'
+      ? 'report.subtitleCompany'
+      : 'report.subtitleDefault';
 
   const handleSubmit = async () => {
     if (!reason) {
-      toast.error('Veuillez sélectionner un motif.');
+      toast.error(t('report.reasonRequired'));
       return;
     }
 
     setLoading(true);
     try {
       const fullReason = `${reason}${details ? ' - ' + details : ''}`;
-      // Insertion directe dans Supabase
       const { error } = await supabase.from('reports').insert({
         reporter_id: reporterId,
         reported_item_type: itemType,
@@ -48,13 +42,13 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
 
       if (error) throw error;
 
-      toast.success('Signalement envoyé. Merci de votre vigilance.');
+      toast.success(t('report.sentSuccess'));
       setShowModal(false);
       setReason('');
       setDetails('');
     } catch (err) {
       console.error('Erreur signalement:', err);
-      toast.error('Erreur lors du signalement');
+      toast.error(t('report.sendError'));
     } finally {
       setLoading(false);
     }
@@ -67,10 +61,10 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
       <button
         onClick={() => setShowModal(true)}
         className="text-slate-400 hover:text-red-500 flex items-center gap-1 text-sm transition-colors"
-        title="Signaler ce contenu"
+        title={t('report.button')}
       >
         <Flag className="w-4 h-4" />
-        Signaler
+        {t('report.button')}
       </button>
 
       {showModal && (
@@ -78,12 +72,11 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <Flag className="w-5 h-5 text-red-500" />
-              <h3 className="text-lg font-semibold text-slate-900">Signaler ce contenu</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{t('report.title')}</h3>
             </div>
 
             <p className="text-sm text-slate-600 mb-4">
-              Pourquoi souhaitez-vous signaler ce{' '}
-              {itemType === 'job' ? "cette offre d'emploi" : 'ce profil entreprise'} ?
+              {t(subtitleKey)}
             </p>
 
             <div className="space-y-2 mb-4">
@@ -112,14 +105,14 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
             <textarea
               className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none focus:ring-2 focus:ring-blue-500 outline-none"
               rows={3}
-              placeholder="Précisez votre signalement (facultatif)..."
+              placeholder={t('report.detailsPlaceholder')}
               value={details}
               onChange={(e) => setDetails(e.target.value)}
             />
 
             <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
               <Button variant="outline" onClick={() => setShowModal(false)}>
-                Annuler
+                {t('report.cancel')}
               </Button>
               <Button
                 onClick={handleSubmit}
@@ -127,7 +120,7 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Envoyer le signalement
+                {t('report.send')}
               </Button>
             </div>
           </div>

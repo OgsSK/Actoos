@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
@@ -27,29 +28,40 @@ import {
 } from 'lucide-react';
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
-const statusConfig = {
-  draft: { label: 'Brouillon', color: 'bg-slate-100 text-slate-700', icon: FileText },
-  active: { label: 'Publiée', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-  paused: { label: 'En pause', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-  closed: { label: 'Fermée', color: 'bg-red-100 text-red-700', icon: XCircle },
-  expired: { label: 'Expirée', color: 'bg-slate-100 text-slate-700', icon: Clock },
-  pending: { label: 'En validation', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
+// Mapping icônes conservé, labels traduits dans le composant
+const statusIcons = {
+  draft: FileText,
+  active: CheckCircle,
+  paused: Clock,
+  closed: XCircle,
+  expired: Clock,
+  pending: Clock,
+};
+
+const statusColors = {
+  draft: 'bg-slate-100 text-slate-700',
+  active: 'bg-green-100 text-green-700',
+  paused: 'bg-yellow-100 text-yellow-700',
+  closed: 'bg-red-100 text-red-700',
+  expired: 'bg-slate-100 text-slate-700',
+  pending: 'bg-yellow-100 text-yellow-700',
 };
 
 const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusinessPlan }) => {
+  const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const menuButtonRef = useRef(null);
 
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
-  const status = statusConfig[job.status] || statusConfig.draft;
-  const StatusIcon = status.icon;
+  const statusLabel = t(`companyJobs.status.${job.status}`, { defaultValue: job.status });
+  const StatusIcon = statusIcons[job.status] || FileText;
 
   const updateMenuPosition = () => {
     if (!menuButtonRef.current) return;
     const rect = menuButtonRef.current.getBoundingClientRect();
     const menuWidth = 240;
-    const menuHeight = isBusinessPlan ? 310 : 260; // plus haut si le bouton boost est présent
+    const menuHeight = isBusinessPlan ? 310 : 260;
     const padding = 12;
     const gap = 8;
     const left = Math.max(
@@ -91,38 +103,29 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
             style={{ top: menuPos.top, left: menuPos.left }}
           >
             <button
-              onClick={() => {
-                onEdit(job);
-                setShowMenu(false);
-              }}
+              onClick={() => { onEdit(job); setShowMenu(false); }}
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
             >
               <Edit className="w-4 h-4" />
-              Modifier
+              {t('companyJobs.menu.edit')}
             </button>
 
             {job.status === 'active' && (
               <>
                 <button
-                  onClick={() => {
-                    onToggleStatus(job, 'paused');
-                    setShowMenu(false);
-                  }}
+                  onClick={() => { onToggleStatus(job, 'paused'); setShowMenu(false); }}
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-yellow-600 hover:bg-slate-50"
                 >
                   <Clock className="w-4 h-4" />
-                  Mettre en pause
+                  {t('companyJobs.menu.pause')}
                 </button>
                 {isBusinessPlan && (
                   <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      onFreeBoost(job);
-                    }}
+                    onClick={() => { setShowMenu(false); onFreeBoost(job); }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-600 hover:bg-slate-50"
                   >
                     <Zap className="w-4 h-4" />
-                    Utiliser mon boost mensuel
+                    {t('companyJobs.menu.boost')}
                   </button>
                 )}
               </>
@@ -130,39 +133,30 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
 
             {job.status === 'paused' && (
               <button
-                onClick={() => {
-                  onToggleStatus(job, 'active');
-                  setShowMenu(false);
-                }}
+                onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"
               >
                 <CheckCircle className="w-4 h-4" />
-                Réactiver
+                {t('companyJobs.menu.reactivate')}
               </button>
             )}
 
             {(job.status === 'draft' || job.status === 'closed' || job.status === 'expired') && (
               <button
-                onClick={() => {
-                  onToggleStatus(job, 'active');
-                  setShowMenu(false);
-                }}
+                onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"
               >
                 <Send className="w-4 h-4" />
-                Publier
+                {t('companyJobs.menu.publish')}
               </button>
             )}
 
             <button
-              onClick={() => {
-                onDelete(job);
-                setShowMenu(false);
-              }}
+              onClick={() => { onDelete(job); setShowMenu(false); }}
               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-slate-50"
             >
               <Trash2 className="w-4 h-4" />
-              Supprimer
+              {t('companyJobs.menu.delete')}
             </button>
           </div>
         </>,
@@ -192,9 +186,9 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
               {job.title}
             </Link>
 
-            <Badge className={`${status.color} border-0 text-xs flex items-center gap-1`}>
+            <Badge className={`${statusColors[job.status] || ''} border-0 text-xs flex items-center gap-1`}>
               <StatusIcon className="w-3 h-3" />
-              {status.label}
+              {statusLabel}
             </Badge>
           </div>
 
@@ -212,12 +206,12 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
 
             <span className="flex items-center gap-1">
               <Eye className="w-3 h-3" />
-              {job.views_count || 0} vues
+              {t('companyJobs.views', { count: job.views_count || 0 })}
             </span>
 
             <span className="flex items-center gap-1">
               <FileText className="w-3 h-3" />
-              {job.applications_count || 0} candidatures
+              {t('companyJobs.applications', { count: job.applications_count || 0 })}
             </span>
           </div>
 
@@ -246,7 +240,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
           onClick={() => onEdit(job)}
         >
           <Edit className="w-4 h-4 mr-2" />
-          Modifier
+          {t('companyJobs.menu.edit')}
         </Button>
 
         <Button
@@ -255,7 +249,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
           onClick={() => onDelete(job)}
         >
           <Trash2 className="w-4 h-4 mr-2" />
-          Supprimer
+          {t('companyJobs.menu.delete')}
         </Button>
       </div>
 
@@ -265,6 +259,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
 };
 
 const CompanyJobsPage = () => {
+  const { t } = useTranslation();
   const { user, activeCompanyId } = useAuth();
   const navigate = useNavigate();
 
@@ -312,15 +307,15 @@ const CompanyJobsPage = () => {
   };
 
   const handleDeleteJob = async (job) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer "${job.title}" ?`)) return;
+    if (!window.confirm(t('companyJobs.confirmDelete', { title: job.title }))) return;
 
     try {
       await supabase.from('jobs').delete().eq('id', job.id);
       setJobs(jobs.filter((j) => j.id !== job.id));
-      toast.success('Offre supprimée');
+      toast.success(t('companyJobs.toasts.deleted'));
     } catch (error) {
       console.error('Error deleting job:', error);
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('companyJobs.toasts.deleteError'));
     }
   };
 
@@ -335,79 +330,73 @@ const CompanyJobsPage = () => {
 
       await supabase.from('jobs').update(updates).eq('id', job.id);
       setJobs(jobs.map((j) => (j.id === job.id ? { ...j, ...updates } : j)));
-      toast.success(newStatus === 'active' ? 'Offre publiée !' : 'Statut mis à jour');
+      toast.success(newStatus === 'active' ? t('companyJobs.toasts.published') : t('companyJobs.toasts.statusUpdated'));
     } catch (error) {
       console.error('Error updating job status:', error);
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t('companyJobs.toasts.updateError'));
     }
   };
 
   const handleFreeBoost = async (job) => {
-  try {
-    // 1. Récupérer les informations de l'entreprise
-    const { data: companyData, error: companyError } = await supabase
-      .from('companies')
-      .select('id, subscription_plan, last_free_boost_at')
-      .eq('owner_id', user.id)
-      .single();
+    try {
+      const { data: companyData, error: companyError } = await supabase
+        .from('companies')
+        .select('id, subscription_plan, last_free_boost_at')
+        .eq('owner_id', user.id)
+        .single();
 
-    if (companyError || !companyData) throw new Error('Entreprise introuvable');
+      if (companyError || !companyData) throw new Error(t('companyJobs.toasts.companyNotFound'));
 
-    // 2. Vérifier le plan
-    if (companyData.subscription_plan !== 'business') {
-      toast.error('Cette fonctionnalité est réservée au plan Business');
-      return;
-    }
-
-    // 3. Vérifier le délai d'un mois
-    const now = new Date();
-    if (companyData.last_free_boost_at) {
-      const lastBoost = new Date(companyData.last_free_boost_at);
-      const diffDays = (now - lastBoost) / (1000 * 60 * 60 * 24);
-      if (diffDays < 30) {
-        const daysLeft = Math.ceil(30 - diffDays);
-        toast.error(`Boost déjà utilisé ce mois. Réessayez dans ${daysLeft} jour(s).`);
+      if (companyData.subscription_plan !== 'business') {
+        toast.error(t('companyJobs.toasts.boostBusinessOnly'));
         return;
       }
+
+      const now = new Date();
+      if (companyData.last_free_boost_at) {
+        const lastBoost = new Date(companyData.last_free_boost_at);
+        const diffDays = (now - lastBoost) / (1000 * 60 * 60 * 24);
+        if (diffDays < 30) {
+          const daysLeft = Math.ceil(30 - diffDays);
+          toast.error(t('companyJobs.toasts.boostAlreadyUsed', { days: daysLeft }));
+          return;
+        }
+      }
+
+      const { data: jobData, error: jobError } = await supabase
+        .from('jobs')
+        .select('id, status, company_id')
+        .eq('id', job.id)
+        .single();
+
+      if (jobError || !jobData || jobData.status !== 'active' || jobData.company_id !== companyData.id) {
+        toast.error(t('companyJobs.toasts.jobNotEligible'));
+        return;
+      }
+
+      const boostedUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const { error: updateJobError } = await supabase
+        .from('jobs')
+        .update({ boosted_until: boostedUntil })
+        .eq('id', job.id);
+
+      if (updateJobError) throw updateJobError;
+
+      const { error: updateCompanyError } = await supabase
+        .from('companies')
+        .update({ last_free_boost_at: now.toISOString() })
+        .eq('id', companyData.id);
+
+      if (updateCompanyError) throw updateCompanyError;
+
+      toast.success(t('companyJobs.toasts.boostActivated'));
+      fetchJobs();
+    } catch (err) {
+      console.error('Erreur boost gratuit:', err);
+      toast.error(err.message || t('companyJobs.toasts.boostError'));
     }
-
-    // 4. Vérifier que l'offre est bien active et appartient à cette entreprise
-    const { data: jobData, error: jobError } = await supabase
-      .from('jobs')
-      .select('id, status, company_id')
-      .eq('id', job.id)
-      .single();
-
-    if (jobError || !jobData || jobData.status !== 'active' || jobData.company_id !== companyData.id) {
-      toast.error("L'offre n'est pas éligible");
-      return;
-    }
-
-    // 5. Appliquer le boost (7 jours)
-    const boostedUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-    const { error: updateJobError } = await supabase
-      .from('jobs')
-      .update({ boosted_until: boostedUntil })
-      .eq('id', job.id);
-
-    if (updateJobError) throw updateJobError;
-
-    // 6. Mettre à jour la date de dernier boost
-    const { error: updateCompanyError } = await supabase
-      .from('companies')
-      .update({ last_free_boost_at: now.toISOString() })
-      .eq('id', companyData.id);
-
-    if (updateCompanyError) throw updateCompanyError;
-
-    toast.success('Boost gratuit activé pour 7 jours !');
-    fetchJobs(); // rafraîchir la liste des offres
-  } catch (err) {
-    console.error('Erreur boost gratuit:', err);
-    toast.error(err.message || 'Erreur lors de l\'activation du boost');
-  }
-};
+  };
 
   const isBusinessPlan = company?.subscription_plan === 'business';
 
@@ -427,19 +416,19 @@ const CompanyJobsPage = () => {
             <Link to="/dashboard/entreprise">
               <Button variant="ghost" className="min-h-[44px]">
                 <ChevronLeft className="w-4 h-4 mr-2" />
-                Retour
+                {t('companyJobs.back')}
               </Button>
             </Link>
 
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
-              Toutes mes offres
+              {t('companyJobs.title')}
             </h1>
           </div>
 
           <Link to="/dashboard/entreprise/offres/nouvelle" className="w-full sm:w-auto">
             <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto min-h-[44px]">
               <Plus className="w-4 h-4 mr-2" />
-              Nouvelle offre
+              {t('companyJobs.newOffer')}
             </Button>
           </Link>
         </div>
@@ -448,12 +437,16 @@ const CompanyJobsPage = () => {
           <Card className="rounded-2xl border border-slate-200">
             <CardContent className="p-8 text-center">
               <Briefcase className="w-14 h-14 mx-auto mb-4 text-slate-300" />
-              <h2 className="text-lg font-semibold text-slate-900 mb-2">Aucune offre</h2>
-              <p className="text-slate-500 mb-6">Vous n'avez encore publié aucune offre.</p>
+              <h2 className="text-lg font-semibold text-slate-900 mb-2">
+                {t('companyJobs.noJobs.title')}
+              </h2>
+              <p className="text-slate-500 mb-6">
+                {t('companyJobs.noJobs.message')}
+              </p>
               <Link to="/dashboard/entreprise/offres/nouvelle">
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white min-h-[44px]">
                   <Plus className="w-4 h-4 mr-2" />
-                  Créer une offre
+                  {t('companyJobs.noJobs.createButton')}
                 </Button>
               </Link>
             </CardContent>

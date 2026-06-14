@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -11,6 +12,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 
 const CompaniesPage = () => {
+  const { t } = useTranslation();
   const { isCompany } = useAuth();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +20,6 @@ const CompaniesPage = () => {
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [industries, setIndustries] = useState([]);
 
-  // Récupération dynamique des secteurs d'activité
   useEffect(() => {
     const fetchIndustries = async () => {
       const { data, error } = await supabase
@@ -42,11 +43,9 @@ const CompaniesPage = () => {
   const fetchCompanies = async () => {
     setLoading(true);
     try {
-      // 1. Récupérer les entreprises vérifiées
       let query = supabase
         .from('companies')
-        .select(`
-          *,
+        .select(`*,
           city:cities(name)
         `)
         .eq('is_active', true)
@@ -64,7 +63,6 @@ const CompaniesPage = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // 2. Compter les offres **actives** pour chaque entreprise
         const companyIds = data.map(c => c.id);
         const { data: activeJobs } = await supabase
           .from('jobs')
@@ -77,7 +75,6 @@ const CompaniesPage = () => {
           countMap[row.company_id] = (countMap[row.company_id] || 0) + 1;
         });
 
-        // 3. Fusionner les comptages avec les entreprises
         const enriched = data.map(company => ({
           ...company,
           activeJobsCount: countMap[company.id] || 0,
@@ -99,10 +96,10 @@ const CompaniesPage = () => {
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h1 className="text-3xl font-bold text-slate-900 mb-4">
-            Entreprises qui recrutent
+            {t('companiesPage.title')}
           </h1>
           <p className="text-slate-600 mb-8 max-w-2xl">
-            Découvrez les entreprises qui recrutent et consultez leurs offres d'emploi.
+            {t('companiesPage.subtitle')}
           </p>
 
           {/* Search & Filters */}
@@ -112,7 +109,7 @@ const CompaniesPage = () => {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher une entreprise..."
+                placeholder={t('companiesPage.searchPlaceholder')}
                 className="pl-10"
               />
             </div>
@@ -121,7 +118,7 @@ const CompaniesPage = () => {
               onChange={(e) => setSelectedIndustry(e.target.value)}
               className="h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[200px]"
             >
-              <option value="">Tous les secteurs</option>
+              <option value="">{t('companiesPage.allIndustries')}</option>
               {industries.map(ind => (
                 <option key={ind} value={ind}>{ind}</option>
               ))}
@@ -140,10 +137,10 @@ const CompaniesPage = () => {
           <div className="text-center py-16">
             <Building2 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-slate-900 mb-2">
-              Aucune entreprise trouvée
+              {t('companiesPage.noCompanies.title')}
             </h2>
             <p className="text-slate-600">
-              Essayez de modifier vos critères de recherche.
+              {t('companiesPage.noCompanies.hint')}
             </p>
           </div>
         ) : (
@@ -202,11 +199,11 @@ const CompaniesPage = () => {
                   <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
                     <Badge className="bg-blue-50 text-blue-700 border-0">
                       <Briefcase className="w-3 h-3 mr-1" />
-                      {company.activeJobsCount || 0} offres
+                      {t('companiesPage.offers', { count: company.activeJobsCount || 0 })}
                     </Badge>
                     <Link to={`/entreprises/${company.id}`}>
                       <Button variant="ghost" size="sm">
-                        Voir le profil
+                        {t('companiesPage.viewProfile')}
                       </Button>
                     </Link>
                   </div>
@@ -216,19 +213,17 @@ const CompaniesPage = () => {
           </div>
         )}
 
-        {/* CTA pour les entreprises – masqué si l'utilisateur est déjà une entreprise */}
         {!isCompany && (
           <div className="mt-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 sm:p-12 text-white text-center">
             <h2 className="text-2xl font-bold mb-4">
-              Vous êtes une entreprise ?
+              {t('companiesPage.cta.title')}
             </h2>
             <p className="text-blue-100 mb-6 max-w-xl mx-auto">
-              Créez votre profil entreprise et publiez vos offres d'emploi pour 
-              attirer les meilleurs talents.
+              {t('companiesPage.cta.subtitle')}
             </p>
             <Link to="/inscription?type=entreprise">
               <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">
-                Créer mon profil entreprise
+                {t('companiesPage.cta.button')}
               </Button>
             </Link>
           </div>

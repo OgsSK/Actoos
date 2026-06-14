@@ -32,6 +32,13 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
+SUPPORTED_CURRENCIES = {
+    "XOF": "FCFA",
+    "EUR": "EUR",
+    "USD": "USD",
+    "MAD": "MAD"
+}
+
 SUBSCRIPTION_PLANS = {
     "pro_monthly": {"amount": 49000, "name": "Plan Pro - Mensuel", "type": "subscription", "interval": "month"},
     "pro_annual": {"amount": 470400, "name": "Plan Pro - Annuel (-20%)", "type": "subscription", "interval": "year"},
@@ -195,7 +202,20 @@ class RoleChangeRequestRequest(BaseModel):
 
 class AdminHandleRoleRequest(BaseModel):
     request_id: str
-    action: str  # 'approve' ou 'reject'
+    action: str
+    admin_message: Optional[str] = None
+
+class NotifyAdminRoleRequest(BaseModel):
+    user_email: str
+    user_name: str
+    current_role: str
+    requested_role: str
+
+class SendRoleChangeEmailRequest(BaseModel):
+    email: str
+    first_name: str
+    action: str
+    requested_role: str
     admin_message: Optional[str] = None
 
 def clean_subject(text: str, max_length: int = 50) -> str:
@@ -215,6 +235,159 @@ def save_blog_posts(posts):
     with open(BLOG_FILE, 'w', encoding='utf-8') as f:
         json.dump(posts, f, indent=2, ensure_ascii=False, default=str)
 
+# ==================== 📧 EMAILS MULTILINGUES ====================
+def get_user_language(email):
+    try:
+        user_resp = httpx.get(
+            f"{SUPABASE_URL}/rest/v1/users?select=preferences&email=eq.{email}",
+            headers={"apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}
+        )
+        users = user_resp.json()
+        if users and users[0].get('preferences') and users[0]['preferences'].get('language'):
+            return users[0]['preferences']['language']
+    except:
+        pass
+    return 'fr'
+
+def email_new_application(recruiter_name, candidate_name, job_title, lang='fr'):
+    if lang == 'en':
+        return f"""
+        <h2>Hello {recruiter_name},</h2>
+        <p><strong>{candidate_name}</strong> has applied to your job offer <strong>{job_title}</strong>.</p>
+        <p>Check the application on <a href="https://jobs.actoos.com/dashboard/entreprise/candidatures">Actoos Jobs</a>.</p>
+        """
+    return f"""
+    <h2>Bonjour {recruiter_name},</h2>
+    <p><strong>{candidate_name}</strong> vient de postuler à votre offre <strong>{job_title}</strong>.</p>
+    <p>Consultez la candidature sur <a href="https://jobs.actoos.com/dashboard/entreprise/candidatures">Actoos Jobs</a>.</p>
+    """
+
+def email_status_change(candidate_name, job_title, new_status, company_name, reason=None, lang='fr'):
+    labels_fr = {
+        'viewed': 'a été consultée',
+        'shortlisted': 'a été présélectionnée',
+        'interview': 'vous êtes invité à un entretien',
+        'accepted': 'a été acceptée',
+        'rejected': "n'a malheureusement pas été retenue"
+    }
+    labels_en = {
+        'viewed': 'has been viewed',
+        'shortlisted': 'has been shortlisted',
+        'interview': 'you are invited for an interview',
+        'accepted': 'has been accepted',
+        'rejected': 'has unfortunately been rejected'
+    }
+    company_info = f" chez {company_name}" if company_name else ""
+    reason_text = f" Raison : {reason}" if reason else ""
+
+    if lang == 'en':
+        status_text = labels_en.get(new_status, 'has been updated')
+        message = f"Your application for <strong>{job_title}</strong>{company_info} {status_text}.{reason_text}"
+        return f"<h2>Hello {candidate_name},</h2><p>{message}</p><p>Check your applications on <a href='https://jobs.actoos.com/mes-candidatures'>Actoos Jobs</a>.</p>"
+    else:
+        status_text = labels_fr.get(new_status, 'a été mise à jour')
+        message = f"Votre candidature pour le poste <strong>{job_title}</strong>{company_info} {status_text}.{reason_text}"
+        return f"<h2>Bonjour {candidate_name},</h2><p>{message}</p><p>Consultez vos candidatures sur <a href='https://jobs.actoos.com/mes-candidatures'>Actoos Jobs</a>.</p>"
+
+def email_interview_invitation(candidate_name, job_title, meeting_link, company_name=None, lang='fr'):
+    company_info = f" chez {company_name}" if company_name else ""
+    if lang == 'en':
+        return f"""
+        <h2>Hello {candidate_name},</h2>
+        <p>You are invited for an interview for the position <strong>{job_title}</strong>{company_info}.</p>
+        <p>Here is the video conference link:</p>
+        <p><a href="{meeting_link}">{meeting_link}</a></p>
+        <p>Best regards,<br/>The Actoos Jobs Team</p>
+        """
+    return f"""
+    <h2>Bonjour {candidate_name},</h2>
+    <p>Vous êtes invité à un entretien pour le poste <strong>{job_title}</strong>{company_info}.</p>
+    <p>Voici le lien de visioconférence :</p>
+    <p><a href="{meeting_link}">{meeting_link}</a></p>
+    <p>À bientôt,<br/>L'équipe Actoos Jobs</p>
+    """
+
+def email_company_verified(owner_first_name, company_name, lang='fr'):
+    if lang == 'en':
+        return f"""
+        <h2>Congratulations {owner_first_name}!</h2>
+        <p>Your company <strong>{company_name}</strong> has been validated by our team. You can now post jobs and receive applications.</p>
+        <p><a href="https://jobs.actoos.com/dashboard/entreprise">Go to your recruiter space</a></p>
+        """
+    return f"""
+    <h2>Félicitations {owner_first_name} !</h2>
+    <p>Votre entreprise <strong>{company_name}</strong> a été validée par notre équipe. Vous pouvez maintenant publier des offres et recevoir des candidatures.</p>
+    <p><a href="https://jobs.actoos.com/dashboard/entreprise">Accéder à mon espace recruteur</a></p>
+    """
+
+def email_account_suspended(first_name, duration_days=None, reason=None, lang='fr'):
+    duration_text = f" pour {duration_days} jour(s)" if duration_days else " définitivement"
+    reason_text = f"\nRaison : {reason}" if reason else ""
+    if lang == 'en':
+        return f"<h2>Hello {first_name},</h2><p>Your Actoos Jobs account has been suspended{duration_text}.{reason_text}</p><p>Contact us if you have questions.</p>"
+    return f"<h2>Bonjour {first_name},</h2><p>Votre compte sur Actoos Jobs a été suspendu{duration_text}.{reason_text}</p><p>Contactez-nous si vous avez des questions.</p>"
+
+def email_account_reactivated(first_name, lang='fr'):
+    if lang == 'en':
+        return f"<h2>Hello {first_name},</h2><p>Your Actoos Jobs account has been reactivated.</p>"
+    return f"<h2>Bonjour {first_name},</h2><p>Votre compte sur Actoos Jobs a été réactivé.</p>"
+
+def email_account_banned(first_name, reason=None, lang='fr'):
+    reason_text = f" Reason: {reason}" if reason else ""
+    if lang == 'en':
+        return f"<h2>Hello {first_name},</h2><p>Your account has been permanently banned.{reason_text}</p>"
+    return f"<h2>Bonjour {first_name},</h2><p>Votre compte a été banni définitivement.<strong>Raison :</strong> {reason or 'Non spécifiée'}</p>"
+
+def email_account_deleted(first_name, lang='fr'):
+    if lang == 'en':
+        return f"<h2>Hello {first_name},</h2><p>Your account has been deleted by the administrator.</p>"
+    return f"<h2>Bonjour {first_name},</h2><p>Votre compte a été supprimé par l'administrateur.</p>"
+
+def email_company_deleted(company_name, first_name, lang='fr'):
+    if lang == 'en':
+        return f"<h2>Hello {first_name},</h2><p>Your company <strong>{company_name}</strong> has been deleted by the administrator.</p><p>If you think this is an error, please contact our support.</p>"
+    return f"<h2>Bonjour {first_name},</h2><p>Votre entreprise <strong>{company_name}</strong> a été supprimée par l'administrateur.</p><p>Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre support.</p>"
+
+def email_company_suspended(company_name, duration_days=None, reason=None, lang='fr'):
+    duration_text = f" pour {duration_days} jour(s)" if duration_days else " définitivement"
+    reason_text = f" Raison : {reason}" if reason else ""
+    if lang == 'en':
+        return f"<h2>Important information</h2><p>Your company <strong>{company_name}</strong> has been suspended{duration_text}.{reason_text}</p>"
+    return f"<h2>Information importante</h2><p>Votre entreprise <strong>{company_name}</strong> a été suspendue{duration_text}.{reason_text}</p>"
+
+def email_company_rejected(owner_first_name, company_name, reason=None, lang='fr'):
+    reason_text = reason or 'Non spécifiée'
+    if lang == 'en':
+        return f"<h2>Sorry {owner_first_name},</h2><p>Your company <strong>{company_name}</strong> was not validated.</p><p><strong>Reason:</strong> {reason_text}</p>"
+    return f"<h2>Désolé {owner_first_name},</h2><p>Votre entreprise <strong>{company_name}</strong> n'a pas été validée.</p><p><strong>Raison :</strong> {reason_text}</p>"
+
+def email_job_suspended(job_title, reason=None, lang='fr'):
+    reason_text = reason or 'Non spécifiée'
+    if lang == 'en':
+        return f"<h2>Your job \"{job_title}\" has been suspended</h2><p><strong>Reason:</strong> {reason_text}</p>"
+    return f"<h2>Votre offre \"{job_title}\" a été suspendue</h2><p><strong>Raison :</strong> {reason_text}</p>"
+
+def email_job_deleted(job_title, reason=None, lang='fr'):
+    reason_text = reason or 'Non spécifiée'
+    if lang == 'en':
+        return f"<h2>Your job \"{job_title}\" has been deleted by the administrator</h2><p><strong>Reason:</strong> {reason_text}</p>"
+    return f"<h2>Votre offre \"{job_title}\" a été supprimée par l'administrateur</h2><p><strong>Raison :</strong> {reason_text}</p>"
+
+def email_admin_message(greeting, content, lang='fr'):
+    if lang == 'en':
+        return f"""
+        <h2>Hello {greeting},</h2>
+        <p>{content}</p>
+        <p>Check your messages on <a href="https://jobs.actoos.com">Actoos Jobs</a>.</p>
+        """
+    return f"""
+    <h2>Bonjour {greeting},</h2>
+    <p>{content}</p>
+    <p>Consultez vos messages sur <a href="https://jobs.actoos.com">Actoos Jobs</a>.</p>
+    """
+
+# ==================== END EMAILS ====================
+
 # ----- Endpoints -----
 @app.get("/api/health")
 async def health():
@@ -223,6 +396,13 @@ async def health():
 @app.get("/api/pricing")
 async def get_pricing():
     return {"subscriptions": SUBSCRIPTION_PLANS, "boosts": BOOST_PACKAGES, "currency": "XOF"}
+
+@app.get("/api/config/currencies")
+async def get_currencies():
+    return {
+        "currencies": SUPPORTED_CURRENCIES,
+        "default": "XOF"
+    }
 
 # ----- Stripe Checkout -----
 @app.post("/api/checkout/session")
@@ -234,9 +414,12 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
     if package_id in SUBSCRIPTION_PLANS:
         package = SUBSCRIPTION_PLANS[package_id]
         mode = "subscription"
+        preferred_currency = (checkout_request.metadata or {}).get("currency", "xof")
+        if preferred_currency.upper() not in SUPPORTED_CURRENCIES:
+            preferred_currency = "xof"
         line_item = {
             'price_data': {
-                'currency': 'xof',
+                'currency': preferred_currency.lower(),
                 'product_data': {'name': package["name"]},
                 'unit_amount': int(package["amount"]),
                 'recurring': {'interval': package["interval"]},
@@ -279,7 +462,7 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
             "session_id": session.id,
             "package_id": package_id,
             "amount": package["amount"],
-            "currency": "xof",
+            "currency": preferred_currency.lower(),
             "status": "pending",
             "payment_status": "initiated",
             "metadata": metadata
@@ -334,7 +517,6 @@ async def stripe_webhook(request: Request):
                 package_id = session.metadata.get("package_id")
                 job_id = session.metadata.get("job_id")
 
-                # Abonnement
                 if user_id and package_id and package_id in SUBSCRIPTION_PLANS:
                     company_resp = httpx.get(
                         f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
@@ -360,7 +542,6 @@ async def stripe_webhook(request: Request):
                             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
                         )
 
-                # Boost payant (laissé pour compatibilité future)
                 if job_id and package_id and package_id in BOOST_PACKAGES:
                     days = BOOST_PACKAGES[package_id]["days"]
                     boosted_until = datetime.utcnow() + timedelta(days=days)
@@ -561,12 +742,14 @@ async def send_interview_link(req: SendInterviewLinkRequest):
         raise HTTPException(status_code=500, detail="Email service not configured")
     try:
         safe_job_title = clean_subject(req.job_title)
-        company_info = f" chez {req.company_name}" if req.company_name else ""
+        lang = get_user_language(req.email)
+        html = email_interview_invitation(req.candidate_name, req.job_title, req.meeting_link, req.company_name, lang)
+        subject = f"Entretien pour le poste : {safe_job_title}" if lang == 'fr' else f"Interview for: {safe_job_title}"
         resend.Emails.send({
             "from": "Actoos Jobs <noreply@actoos.com>",
             "to": [req.email],
-            "subject": f"Entretien pour le poste : {safe_job_title}",
-            "html": f"<h2>Bonjour {req.candidate_name},</h2><p>Vous êtes invité à un entretien pour le poste <strong>{req.job_title}</strong>{company_info}.</p><p>Voici le lien de visioconférence :</p><p><a href=\"{req.meeting_link}\">{req.meeting_link}</a></p><p>À bientôt,</p><p>L'équipe Actoos Jobs</p>"
+            "subject": subject,
+            "html": html
         })
         return {"success": True, "message": "Email envoyé avec succès."}
     except Exception as e:
@@ -686,23 +869,18 @@ async def notify_new_application(req: NotifyNewApplicationRequest):
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
     try:
+        lang = get_user_language(req.recruiter_email)
+        html = email_new_application(req.recruiter_name, req.candidate_name, req.job_title, lang)
+        subject = f"Nouvelle candidature pour {clean_subject(req.job_title)}" if lang == 'fr' else f"New application for {clean_subject(req.job_title)}"
         resend.Emails.send({
             "from": "Actoos Jobs <noreply@actoos.com>",
             "to": [req.recruiter_email],
-            "subject": f"Nouvelle candidature pour {clean_subject(req.job_title)}",
-            "html": f"<h2>Bonjour {req.recruiter_name},</h2><p><strong>{req.candidate_name}</strong> vient de postuler à votre offre <strong>{req.job_title}</strong>.</p><p>Consultez la candidature sur <a href=\"https://jobs.actoos.com/dashboard/entreprise/candidatures\">Actoos Jobs</a>.</p>"
+            "subject": subject,
+            "html": html
         })
         return {"success": True, "message": "Email envoyé au recruteur."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-STATUS_EMAIL_TEMPLATES = {
-    "viewed": "Votre candidature pour le poste **{job_title}**{company_info} a été consultée par le recruteur.",
-    "shortlisted": "Félicitations ! Votre candidature pour le poste **{job_title}**{company_info} a été présélectionnée.",
-    "interview": "Vous êtes invité à un entretien pour le poste **{job_title}**{company_info}. Le recruteur vous contactera pour convenir d'une date.",
-    "accepted": "Votre candidature pour le poste **{job_title}**{company_info} a été acceptée.",
-    "rejected": "Votre candidature pour le poste **{job_title}**{company_info} n'a malheureusement pas été retenue."
-}
 
 @app.get("/api/candidate/{candidate_id}")
 async def get_candidate_public_profile(candidate_id: str):
@@ -771,19 +949,14 @@ async def notify_status_change(req: NotifyStatusChangeRequest):
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
     safe_job_title = clean_subject(req.job_title)
-    company_info = f" chez {req.company_name}" if req.company_name else ""
-    reason_text = f" Raison : {req.reason}" if req.new_status == "rejected" and req.reason else ""
-    template = STATUS_EMAIL_TEMPLATES.get(
-        req.new_status,
-        "Votre candidature pour le poste **{job_title}**{company_info} a été mise à jour : {new_status}."
-    )
-    message = template.replace("{job_title}", req.job_title).replace("{company_info}", company_info).replace("{new_status}", req.new_status) + reason_text
-    html = f"<h2>Bonjour {req.candidate_name},</h2><p>{message}</p><p>Consultez vos candidatures sur <a href=\"https://jobs.actoos.com/mes-candidatures\">Actoos Jobs</a>.</p>"
+    lang = get_user_language(req.candidate_email)
+    html = email_status_change(req.candidate_name, req.job_title, req.new_status, req.company_name, req.reason, lang)
+    subject = f"Votre candidature - {safe_job_title}" if lang == 'fr' else f"Your application - {safe_job_title}"
     try:
         resend.Emails.send({
             "from": "Actoos Jobs <noreply@actoos.com>",
             "to": [req.candidate_email],
-            "subject": f"Votre candidature - {safe_job_title}",
+            "subject": subject,
             "html": html
         })
         return {"success": True, "message": "Email envoyé au candidat."}
@@ -802,7 +975,7 @@ async def send_job_alerts():
 
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     alerts_resp = httpx.get(
-        f"{supabase_url}/rest/v1/job_alerts?select=*,user:users(email)&is_active=eq.true",
+        f"{supabase_url}/rest/v1/job_alerts?select=*,user:users(email,preferences)&is_active=eq.true",
         headers=headers
     )
     alerts = alerts_resp.json()
@@ -835,13 +1008,26 @@ async def send_job_alerts():
         contract_types = alert.get("contract_types")
         salary_min = alert.get("salary_min")
 
+        user_prefs = alert.get("user", {}).get("preferences") or {}
+        country_code = user_prefs.get("country")
+        country_id = None
+        if country_code:
+            country_resp = httpx.get(
+                f"{supabase_url}/rest/v1/countries?select=id&code=eq.{country_code}",
+                headers=headers
+            )
+            countries = country_resp.json()
+            if countries:
+                country_id = countries[0]["id"]
+
         rpc_payload = {
             "p_keywords": keywords if keywords else None,
             "p_user_id": user_id,
             "p_category_id": category_id,
             "p_city_id": city_id,
             "p_contract_types": contract_types,
-            "p_salary_min": salary_min
+            "p_salary_min": salary_min,
+            "p_country_id": str(country_id) if country_id else None
         }
 
         try:
@@ -948,11 +1134,14 @@ async def admin_verify_company(req: AdminVerifyCompanyRequest):
         owner_email = owner.get("email")
         owner_first_name = owner.get("first_name") or "Cher recruteur"
         if owner_email and resend.api_key:
+            lang = get_user_language(owner_email)
+            html = email_company_verified(owner_first_name, company['name'], lang)
+            subject = "Votre entreprise a été validée" if lang == 'fr' else "Your company has been validated"
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [owner_email],
-                "subject": "Votre entreprise a été validée",
-                "html": f"<h2>Félicitations {owner_first_name} !</h2><p>Votre entreprise <strong>{company['name']}</strong> a été validée par notre équipe. Vous pouvez maintenant publier des offres et recevoir des candidatures.</p><p><a href=\"https://jobs.actoos.com/dashboard/entreprise\">Accéder à mon espace recruteur</a></p>"
+                "subject": subject,
+                "html": html
             })
         return {"success": True, "message": "Entreprise validée et email envoyé"}
     except Exception as e:
@@ -1010,11 +1199,14 @@ async def admin_delete_company(company_id: str):
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         if owner_email and resend.api_key:
+            lang = get_user_language(owner_email)
+            html = email_company_deleted(company['name'], owner_first_name, lang)
+            subject = "Votre entreprise a été supprimée" if lang == 'fr' else "Your company has been deleted"
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [owner_email],
-                "subject": "Votre entreprise a été supprimée",
-                "html": f"<h2>Bonjour {owner_first_name},</h2><p>Votre entreprise <strong>{company['name']}</strong> a été supprimée par l'administrateur.</p><p>Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre support.</p>"
+                "subject": subject,
+                "html": html
             })
         return {"success": True, "message": "Entreprise supprimée et notification envoyée"}
     except Exception as e:
@@ -1045,11 +1237,14 @@ async def admin_delete_user(user_id: str):
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         if user_email and resend.api_key:
+            lang = get_user_language(user_email)
+            html = email_account_deleted(user_first_name, lang)
+            subject = "Votre compte a été supprimé" if lang == 'fr' else "Your account has been deleted"
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [user_email],
-                "subject": "Votre compte a été supprimé",
-                "html": f"<h2>Bonjour {user_first_name},</h2><p>Votre compte sur Actoos Jobs a été supprimé par l'administrateur.</p><p>Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre support.</p>"
+                "subject": subject,
+                "html": html
             })
         return {"success": True, "message": "Utilisateur supprimé et notification envoyée"}
     except Exception as e:
@@ -1077,11 +1272,15 @@ async def admin_reject_company(req: AdminActionRequest):
         )
         owner_email = company.get("owner", {}).get("email")
         if owner_email and resend.api_key:
+            owner_first_name = company['owner'].get('first_name', '')
+            lang = get_user_language(owner_email)
+            html = email_company_rejected(owner_first_name, company['name'], req.reason, lang)
+            subject = "Votre entreprise a été refusée" if lang == 'fr' else "Your company has been rejected"
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [owner_email],
-                "subject": "Votre entreprise a été refusée",
-                "html": f"<h2>Désolé {company['owner']['first_name']}</h2><p>Votre entreprise <strong>{company['name']}</strong> n'a pas été validée.</p><p><strong>Raison :</strong> {req.reason or 'Non spécifiée'}</p>"
+                "subject": subject,
+                "html": html
             })
         return {"success": True, "message": "Entreprise rejetée"}
     except Exception as e:
@@ -1117,15 +1316,15 @@ async def admin_suspend_company(req: AdminSuspendCompanyRequest):
         )
 
         owner_email = company.get("owner", {}).get("email")
-        owner_first_name = company.get("owner", {}).get("first_name") or "Propriétaire"
         if owner_email and resend.api_key:
-            duration_text = f" pour {req.duration_days} jour(s)" if req.duration_days else " définitivement"
-            reason_text = f" Raison : {req.reason}" if req.reason else ""
+            lang = get_user_language(owner_email)
+            html = email_company_suspended(company['name'], req.duration_days, req.reason, lang)
+            subject = "Votre entreprise a été suspendue" if lang == 'fr' else "Your company has been suspended"
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [owner_email],
-                "subject": "Votre entreprise a été suspendue",
-                "html": f"<h2>Information importante</h2><p>Votre entreprise <strong>{company['name']}</strong> a été suspendue{duration_text}.{reason_text}</p>"
+                "subject": subject,
+                "html": html
             })
 
         return {"success": True, "message": "Entreprise suspendue"}
@@ -1154,11 +1353,14 @@ async def admin_suspend_job(req: AdminActionRequest):
         )
         owner_email = job.get("posted_by_user", {}).get("email")
         if owner_email and resend.api_key:
+            lang = get_user_language(owner_email)
+            html = email_job_suspended(job['title'], req.reason, lang)
+            subject = "Votre offre a été suspendue" if lang == 'fr' else "Your job has been suspended"
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [owner_email],
-                "subject": "Votre offre a été suspendue",
-                "html": f"<h2>Votre offre \"{job['title']}\" a été suspendue</h2><p><strong>Raison :</strong> {req.reason or 'Non spécifiée'}</p>"
+                "subject": subject,
+                "html": html
             })
         return {"success": True, "message": "Offre suspendue"}
     except Exception as e:
@@ -1185,11 +1387,14 @@ async def admin_delete_job(req: AdminActionRequest):
         )
         owner_email = job.get("posted_by_user", {}).get("email")
         if owner_email and resend.api_key:
+            lang = get_user_language(owner_email)
+            html = email_job_deleted(job['title'], req.reason, lang)
+            subject = "Votre offre a été supprimée" if lang == 'fr' else "Your job has been deleted"
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [owner_email],
-                "subject": "Votre offre a été supprimée",
-                "html": f"<h2>Votre offre \"{job['title']}\" a été supprimée par l'administrateur</h2><p><strong>Raison :</strong> {req.reason or 'Non spécifiée'}</p>"
+                "subject": subject,
+                "html": html
             })
         return {"success": True, "message": "Offre supprimée"}
     except Exception as e:
@@ -1233,13 +1438,13 @@ async def admin_send_messages(req: AdminSendMessagesRequest):
             errors.append(f"Email manquant pour {user_id}")
             continue
 
+        # Insérer dans la table admin_messages
         insert_data = {
             "recipient_id": user_id,
             "subject": req.subject,
             "content": req.content,
             "expires_at": expires_at
         }
-
         insert_resp = httpx.post(
             f"{supabase_url}/rest/v1/admin_messages",
             json=insert_data,
@@ -1255,14 +1460,17 @@ async def admin_send_messages(req: AdminSendMessagesRequest):
             errors.append(f"Erreur insertion pour {user_id}")
             continue
 
+        # Envoyer l'email dans la langue du destinataire
+        lang = get_user_language(email)
         first_name = user.get('first_name')
-        greeting = first_name if first_name else "Utilisateur"
+        greeting = first_name if first_name else ("Utilisateur" if lang == 'fr' else "User")
+        html = email_admin_message(greeting, req.content, lang)
         try:
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [email],
                 "subject": req.subject,
-                "html": f"<h2>Bonjour {greeting},</h2><p>{req.content}</p><p>Consultez vos messages sur <a href=\"https://jobs.actoos.com\">Actoos Jobs</a>.</p>"
+                "html": html
             })
             success_count += 1
         except Exception as e:
@@ -1368,70 +1576,6 @@ async def admin_restore_message(message_id: str):
     if resp.status_code != 200:
         raise HTTPException(status_code=400, detail=resp.text)
     return {"success": True, "message": "Message restauré"}
-
-
-class NotifyAdminRoleRequest(BaseModel):
-    user_email: str
-    user_name: str
-    current_role: str
-    requested_role: str
-
-@app.post("/api/notify-admin-role-request")
-async def notify_admin_role_request(req: NotifyAdminRoleRequest):
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Email service not configured")
-    try:
-        resend.Emails.send({
-            "from": "Actoos Jobs <noreply@actoos.com>",
-            "to": ["contact@actoos.com"],
-            "subject": f"Demande de changement de rôle de {req.user_name}",
-            "html": f"""
-                <h2>Nouvelle demande de changement de rôle</h2>
-                <p><strong>Utilisateur :</strong> {req.user_name} ({req.user_email})</p>
-                <p><strong>Rôle actuel :</strong> {req.current_role}</p>
-                <p><strong>Rôle demandé :</strong> {req.requested_role}</p>
-                <p><a href="https://jobs.actoos.com/admin">Accéder au dashboard admin</a></p>
-            """
-        })
-        return {"success": True, "message": "Notification envoyée à l'administrateur"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-
-
-class SendRoleChangeEmailRequest(BaseModel):
-    email: str
-    first_name: str
-    action: str  # 'approve' ou 'reject'
-    requested_role: str
-    admin_message: Optional[str] = None
-
-@app.post("/api/admin/send-role-change-email")
-async def send_role_change_email(req: SendRoleChangeEmailRequest):
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Email service not configured")
-
-    if req.action == 'approve':
-        subject = "Votre demande de changement de rôle a été approuvée"
-        body = f"<h2>Bonjour {req.first_name},</h2><p>Votre demande pour devenir <strong>{req.requested_role}</strong> a été approuvée.</p><p>Veuillez vous reconnecter pour accéder à votre nouvel espace.</p>"
-    else:
-        msg = req.admin_message or "Non spécifié"
-        subject = "Votre demande de changement de rôle a été refusée"
-        body = f"<h2>Bonjour {req.first_name},</h2><p>Votre demande pour devenir <strong>{req.requested_role}</strong> a été refusée.</p><p>Raison : {msg}</p>"
-
-    try:
-        resend.Emails.send({
-            "from": "Actoos Jobs <noreply@actoos.com>",
-            "to": [req.email],
-            "subject": subject,
-            "html": body
-        })
-        return {"success": True, "message": "Email envoyé"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 
 # ----- Changement de rôle -----
 @app.post("/api/user/request-role-change")
@@ -1650,13 +1794,14 @@ async def admin_suspend_user(req: AdminSuspendUserRequest):
         )
 
         if resend.api_key:
-            duration_text = f" pour {req.duration_days} jour(s)" if req.duration_days else " définitivement"
-            reason_text = f"\nRaison : {req.reason}" if req.reason else ""
+            lang = get_user_language(user["email"])
+            html = email_account_suspended(user['first_name'], req.duration_days, req.reason, lang)
+            subject = "Votre compte a été suspendu" if lang == 'fr' else "Your account has been suspended"
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [user["email"]],
-                "subject": "Votre compte a été suspendu",
-                "html": f"<h2>Bonjour {user['first_name']},</h2><p>Votre compte sur Actoos Jobs a été suspendu{duration_text}.{reason_text}</p><p>Si vous avez des questions, contactez-nous.</p>"
+                "subject": subject,
+                "html": html
             })
 
         return {"success": True, "message": "Utilisateur suspendu"}
@@ -1684,14 +1829,20 @@ async def toggle_user_status(req: AdminToggleUserStatusRequest):
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         if resend.api_key:
-            status_text = "réactivé" if req.is_active else "suspendu"
+            lang = get_user_language(user["email"])
+            if req.is_active:
+                html = email_account_reactivated(user['first_name'], lang)
+                subject = "Votre compte a été réactivé" if lang == 'fr' else "Your account has been reactivated"
+            else:
+                html = email_account_suspended(user['first_name'], None, None, lang)
+                subject = "Votre compte a été suspendu" if lang == 'fr' else "Your account has been suspended"
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [user["email"]],
-                "subject": f"Votre compte a été {status_text}",
-                "html": f"<h2>Bonjour {user['first_name']},</h2><p>Votre compte sur Actoos Jobs a été {status_text}.</p><p>Si vous avez des questions, contactez-nous.</p>"
+                "subject": subject,
+                "html": html
             })
-        return {"success": True, "message": f"Compte {status_text}"}
+        return {"success": True, "message": f"Compte {'réactivé' if req.is_active else 'suspendu'}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1716,11 +1867,14 @@ async def ban_user(req: AdminBanUserRequest):
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         if resend.api_key:
+            lang = get_user_language(user["email"])
+            html = email_account_banned(user['first_name'], req.reason, lang)
+            subject = "Votre compte a été banni" if lang == 'fr' else "Your account has been banned"
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [user["email"]],
-                "subject": "Votre compte a été banni",
-                "html": f"<h2>Bonjour {user['first_name']},</h2><p>Votre compte sur Actoos Jobs a été banni définitivement.</p><p><strong>Raison :</strong> {req.reason or 'Non spécifiée'}</p>"
+                "subject": subject,
+                "html": html
             })
         return {"success": True, "message": "Utilisateur banni"}
     except Exception as e:

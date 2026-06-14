@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
@@ -9,16 +10,8 @@ import { Loader2, ChevronLeft, Users, Trash2 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 import { toast } from 'sonner';
 
-const statusConfig = {
-  pending: { label: 'Nouvelle', color: 'bg-blue-100 text-blue-700' },
-  viewed: { label: 'Vue', color: 'bg-slate-100 text-slate-700' },
-  shortlisted: { label: 'Présélectionné', color: 'bg-purple-100 text-purple-700' },
-  interview: { label: 'Entretien', color: 'bg-green-100 text-green-700' },
-  accepted: { label: 'Accepté', color: 'bg-green-100 text-green-700' },
-  rejected: { label: 'Refusé', color: 'bg-red-100 text-red-700' },
-};
-
 const CompanyApplicationsPage = () => {
+  const { t } = useTranslation();
   const { user, activeCompanyId } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +53,7 @@ const CompanyApplicationsPage = () => {
   };
 
   const handleDeleteApplication = async (appId) => {
-    if (!window.confirm('Supprimer définitivement cette candidature ?')) return;
+    if (!window.confirm(t('companyApplications.deleteConfirm'))) return;
 
     try {
       const { error } = await supabase
@@ -70,11 +63,11 @@ const CompanyApplicationsPage = () => {
 
       if (error) throw error;
 
-      toast.success('Candidature supprimée');
+      toast.success(t('companyApplications.toasts.deleted'));
       setApplications((prev) => prev.filter((app) => app.id !== appId));
     } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Erreur lors de la suppression');
+      toast.error(err.message || t('companyApplications.toasts.deleteError'));
     }
   };
 
@@ -93,23 +86,33 @@ const CompanyApplicationsPage = () => {
           <Link to="/dashboard/entreprise">
             <Button variant="ghost">
               <ChevronLeft className="w-4 h-4 mr-2" />
-              Retour
+              {t('companyApplications.back')}
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900">Toutes les candidatures</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{t('companyApplications.title')}</h1>
         </div>
 
         {applications.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center text-slate-500">
               <Users className="w-12 h-12 mx-auto mb-4" />
-              Aucune candidature.
+              {t('companyApplications.noApplications')}
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
             {applications.map((app) => {
-              const status = statusConfig[app.status] || statusConfig.pending;
+              const statusLabel = t(`companyApplications.status.${app.status}`, { defaultValue: app.status });
+              const statusColors = {
+                pending: 'bg-blue-100 text-blue-700',
+                viewed: 'bg-slate-100 text-slate-700',
+                shortlisted: 'bg-purple-100 text-purple-700',
+                interview: 'bg-green-100 text-green-700',
+                accepted: 'bg-green-100 text-green-700',
+                rejected: 'bg-red-100 text-red-700',
+              };
+              const statusColor = statusColors[app.status] || 'bg-slate-100 text-slate-700';
+
               return (
                 <Card key={app.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4 flex items-center gap-4">
@@ -125,7 +128,7 @@ const CompanyApplicationsPage = () => {
                           {app.job?.title}
                         </p>
                       </div>
-                      <Badge className={status.color}>{status.label}</Badge>
+                      <Badge className={statusColor}>{statusLabel}</Badge>
                       <span className="text-xs text-slate-400 hidden sm:block">
                         {formatRelative(app.created_at)}
                       </span>
@@ -140,7 +143,7 @@ const CompanyApplicationsPage = () => {
                       }}
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
-                      Supprimer
+                      {t('companyApplications.deleteButton')}
                     </Button>
                   </CardContent>
                 </Card>

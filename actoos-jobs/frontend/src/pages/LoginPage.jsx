@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -23,6 +24,7 @@ const GoogleIcon = () => (
 );
 
 const LoginPage = () => {
+  const { t } = useTranslation();
   const { signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,21 +47,21 @@ const LoginPage = () => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      toast.error('Veuillez remplir tous les champs');
+      toast.error(t('auth.login.fillAllFields'));
       return;
     }
 
     setLoading(true);
     try {
       await signIn({ email, password });
-      toast.success('Connexion réussie !');
+      toast.success(t('auth.login.success'));
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Login error:', error);
       if (error.message?.includes('Invalid login')) {
-        toast.error('Email ou mot de passe incorrect');
+        toast.error(t('auth.login.errorInvalid'));
       } else {
-        toast.error(error.message || 'Erreur de connexion');
+        toast.error(error.message || t('auth.login.errorGeneric'));
       }
     } finally {
       setLoading(false);
@@ -72,7 +74,7 @@ const LoginPage = () => {
       await signInWithGoogle();
     } catch (error) {
       console.error('Google login error:', error);
-      toast.error('Erreur de connexion avec Google');
+      toast.error(t('auth.login.errorGoogle'));
       setGoogleLoading(false);
     }
   };
@@ -91,9 +93,9 @@ const LoginPage = () => {
 
         <Card className="shadow-xl border-0">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl">Connexion</CardTitle>
+            <CardTitle className="text-2xl">{t('auth.login.title')}</CardTitle>
             <CardDescription>
-              Accédez à votre espace personnel
+              {t('auth.login.description')}
             </CardDescription>
           </CardHeader>
 
@@ -110,25 +112,25 @@ const LoginPage = () => {
               ) : (
                 <GoogleIcon />
               )}
-              <span className="ml-3">Continuer avec Google</span>
+              <span className="ml-3">{t('auth.login.googleButton')}</span>
             </Button>
 
             <div className="relative my-6">
               <Separator />
               <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-sm text-slate-500">
-                ou
+                {t('auth.login.orSeparator')}
               </span>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Adresse email *</Label>
+                <Label htmlFor="email">{t('auth.login.emailLabel')}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <Input
                     id="email"
                     type="email"
-                    placeholder="votre@email.com"
+                    placeholder={t('auth.login.emailPlaceholder')}
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
@@ -145,12 +147,12 @@ const LoginPage = () => {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Mot de passe *</Label>
+                  <Label htmlFor="password">{t('auth.login.passwordLabel')}</Label>
                   <Link
                     to="/mot-de-passe-oublie"
                     className="text-sm text-blue-600 hover:text-blue-700"
                   >
-                    Mot de passe oublié ?
+                    {t('auth.login.forgotPassword')}
                   </Link>
                 </div>
                 <div className="relative">
@@ -158,7 +160,7 @@ const LoginPage = () => {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
+                    placeholder={t('auth.login.passwordPlaceholder')}
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
@@ -189,26 +191,24 @@ const LoginPage = () => {
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin mr-2" />
                 ) : null}
-                Se connecter
+                {t('auth.login.submitButton')}
               </Button>
             </form>
 
             <p className="text-center text-sm text-slate-600 mt-6">
-              Pas encore de compte ?{' '}
+              {t('auth.login.noAccount')}{' '}
               <Link to="/inscription" className="text-blue-600 hover:text-blue-700 font-medium">
-                Créer un compte
+                {t('auth.login.createAccount')}
               </Link>
             </p>
           </CardContent>
         </Card>
 
         <p className="text-center text-xs text-slate-500 mt-6">
-          En vous connectant, vous acceptez nos{' '}
-          <Link to="/cgu" className="text-blue-600 hover:underline">CGU</Link>
-          {' '}et notre{' '}
-          <Link to="/confidentialite" className="text-blue-600 hover:underline">
-            Politique de confidentialité
-          </Link>
+          {t('auth.login.legalPrefix')}{' '}
+          <Link to="/cgu" className="text-blue-600 hover:underline">{t('auth.login.cgu')}</Link>
+          {' '}{t('auth.login.legalAnd')}{' '}
+          <Link to="/confidentialite" className="text-blue-600 hover:underline">{t('auth.login.privacy')}</Link>
         </p>
       </div>
     </div>

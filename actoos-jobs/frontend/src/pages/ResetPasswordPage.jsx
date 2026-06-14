@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 import { Lock, Loader2, CheckCircle, ArrowRight } from 'lucide-react';
 
 const ResetPasswordPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -26,11 +28,11 @@ const ResetPasswordPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error(t('resetPassword.toasts.passwordMismatch'));
       return;
     }
     if (password.length < 8) {
-      toast.error('Le mot de passe doit contenir au moins 8 caractères');
+      toast.error(t('resetPassword.toasts.passwordLength'));
       return;
     }
     setLoading(true);
@@ -38,9 +40,9 @@ const ResetPasswordPage = () => {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       setDone(true);
-      toast.success('Mot de passe mis à jour avec succès !');
+      toast.success(t('resetPassword.toasts.updateSuccess'));
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de la mise à jour');
+      toast.error(err.message || t('resetPassword.toasts.updateError'));
     } finally {
       setLoading(false);
     }
@@ -58,9 +60,9 @@ const ResetPasswordPage = () => {
 
         <Card className="shadow-xl border-0">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl">Nouveau mot de passe</CardTitle>
+            <CardTitle className="text-2xl">{t('resetPassword.title')}</CardTitle>
             <CardDescription>
-              Choisissez un nouveau mot de passe pour votre compte.
+              {t('resetPassword.description')}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
@@ -68,25 +70,25 @@ const ResetPasswordPage = () => {
               <div className="text-center space-y-4">
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
                 <p className="text-slate-700">
-                  Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter.
+                  {t('resetPassword.successMessage')}
                 </p>
                 <Button onClick={() => navigate('/connexion')} className="w-full bg-blue-600 text-white hover:bg-blue-700">
                   <ArrowRight className="w-4 h-4 mr-2" />
-                  Se connecter
+                  {t('resetPassword.loginButton')}
                 </Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-                    Nouveau mot de passe
+                    {t('resetPassword.newPasswordLabel')}
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <Input
                       id="password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder={t('resetPassword.placeholder')}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-10 h-12"
@@ -96,12 +98,12 @@ const ResetPasswordPage = () => {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700">
-                    Confirmer le mot de passe
+                    {t('resetPassword.confirmPasswordLabel')}
                   </label>
                   <Input
                     id="confirmPassword"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder={t('resetPassword.placeholder')}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="h-12"
@@ -110,7 +112,7 @@ const ResetPasswordPage = () => {
                 </div>
                 <Button type="submit" disabled={loading} className="w-full h-12 text-base bg-blue-600 text-white hover:bg-blue-700">
                   {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                  Mettre à jour le mot de passe
+                  {t('resetPassword.submitButton')}
                 </Button>
               </form>
             )}

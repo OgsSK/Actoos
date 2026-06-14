@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
@@ -48,7 +49,7 @@ const SkillBadge = ({ skill, onRemove }) => (
 );
 
 // ---------- Experience Item ----------
-const ExperienceItem = ({ experience, onEdit, onRemove }) => (
+const ExperienceItem = ({ experience, onEdit, onRemove, t }) => (
   <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
     <div className="flex items-start justify-between">
       <div className="flex items-start gap-3">
@@ -60,7 +61,7 @@ const ExperienceItem = ({ experience, onEdit, onRemove }) => (
           <p className="text-sm text-slate-600">{experience.company}</p>
           <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
             <Calendar className="w-3.5 h-3.5" />
-            <span>{experience.start_date} - {experience.end_date || 'Présent'}</span>
+            <span>{experience.start_date} - {experience.end_date || t('candidateProfilePage.experience.present')}</span>
             {experience.location && (
               <>
                 <span>•</span>
@@ -72,7 +73,9 @@ const ExperienceItem = ({ experience, onEdit, onRemove }) => (
         </div>
       </div>
       <div className="flex gap-1">
-        <Button variant="ghost" size="sm" type="button" onClick={() => onEdit(experience)}>Modifier</Button>
+        <Button variant="ghost" size="sm" type="button" onClick={() => onEdit(experience)}>
+          {t('candidateProfilePage.experience.edit')}
+        </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -91,7 +94,7 @@ const ExperienceItem = ({ experience, onEdit, onRemove }) => (
 );
 
 // ---------- Education Item ----------
-const EducationItem = ({ education, onEdit, onRemove }) => (
+const EducationItem = ({ education, onEdit, onRemove, t }) => (
   <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
     <div className="flex items-start justify-between">
       <div className="flex items-start gap-3">
@@ -108,7 +111,9 @@ const EducationItem = ({ education, onEdit, onRemove }) => (
         </div>
       </div>
       <div className="flex gap-1">
-        <Button variant="ghost" size="sm" type="button" onClick={() => onEdit(education)}>Modifier</Button>
+        <Button variant="ghost" size="sm" type="button" onClick={() => onEdit(education)}>
+          {t('candidateProfilePage.education.edit')}
+        </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -124,7 +129,7 @@ const EducationItem = ({ education, onEdit, onRemove }) => (
 );
 
 // ---------- Experience Modal ----------
-const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
+const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
   const [form, setForm] = useState({
     title: '',
     company: '',
@@ -164,7 +169,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+      toast.error(t('candidateProfilePage.experience.fillRequired'));
       return;
     }
 
@@ -176,12 +181,12 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
       <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-100">
           <h3 className="text-lg font-semibold text-slate-900">
-            {experience ? "Modifier l'expérience" : "Ajouter une expérience"}
+            {experience ? t('candidateProfilePage.experience.modalEditTitle') : t('candidateProfilePage.experience.modalAddTitle')}
           </h3>
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Poste *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.experience.jobTitle')}</label>
             <Input
               value={form.title}
               onChange={(e) => {
@@ -192,7 +197,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Entreprise *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.experience.company')}</label>
             <Input
               value={form.company}
               onChange={(e) => {
@@ -203,7 +208,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Lieu</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.experience.location')}</label>
             <Input
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -211,7 +216,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Date de début *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.experience.startDate')}</label>
               <Input
                 type="month"
                 value={form.start_date}
@@ -223,7 +228,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Date de fin</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.experience.endDate')}</label>
               <Input
                 type="month"
                 value={form.end_date}
@@ -240,11 +245,11 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
               onChange={(e) => setForm({ ...form, current: e.target.checked, end_date: '' })}
               className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-slate-600">J'occupe actuellement ce poste</span>
+            <span className="text-sm text-slate-600">{t('candidateProfilePage.experience.currentlyWorking')}</span>
           </label>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.experience.description')}</label>
             <textarea
               rows={3}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -262,9 +267,9 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
           </div>
         </div>
         <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
-          <Button variant="outline" type="button" onClick={onClose}>Annuler</Button>
+          <Button variant="outline" type="button" onClick={onClose}>{t('candidateProfilePage.experience.cancel')}</Button>
           <Button type="button" onClick={handleSave}>
-            {experience ? 'Enregistrer' : 'Ajouter'}
+            {experience ? t('candidateProfilePage.experience.save') : t('candidateProfilePage.experience.saveNew')}
           </Button>
         </div>
       </div>
@@ -273,7 +278,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null }) => {
 };
 
 // ---------- Education Modal ----------
-const EducationModal = ({ isOpen, onClose, onSave, education = null }) => {
+const EducationModal = ({ isOpen, onClose, onSave, education = null, t }) => {
   const [form, setForm] = useState({ degree: '', school: '', field: '', year: '' });
   const [errors, setErrors] = useState({});
 
@@ -294,7 +299,7 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null }) => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+      toast.error(t('candidateProfilePage.education.fillRequired'));
       return;
     }
 
@@ -306,12 +311,12 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null }) => {
       <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full">
         <div className="p-6 border-b border-slate-100">
           <h3 className="text-lg font-semibold text-slate-900">
-            {education ? 'Modifier la formation' : 'Ajouter une formation'}
+            {education ? t('candidateProfilePage.education.modalEditTitle') : t('candidateProfilePage.education.modalAddTitle')}
           </h3>
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Diplôme *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.education.degree')}</label>
             <Input
               value={form.degree}
               onChange={(e) => {
@@ -322,7 +327,7 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Établissement *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.education.school')}</label>
             <Input
               value={form.school}
               onChange={(e) => {
@@ -333,14 +338,14 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Domaine d'études</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.education.field')}</label>
             <Input
               value={form.field}
               onChange={(e) => setForm({ ...form, field: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Année d'obtention *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.education.year')}</label>
             <Input
               type="number"
               min="1950"
@@ -355,9 +360,9 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null }) => {
           </div>
         </div>
         <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
-          <Button variant="outline" type="button" onClick={onClose}>Annuler</Button>
+          <Button variant="outline" type="button" onClick={onClose}>{t('candidateProfilePage.education.cancel')}</Button>
           <Button type="button" onClick={handleSave}>
-            {education ? 'Enregistrer' : 'Ajouter'}
+            {education ? t('candidateProfilePage.education.save') : t('candidateProfilePage.education.saveNew')}
           </Button>
         </div>
       </div>
@@ -366,38 +371,36 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null }) => {
 };
 
 // ---------- Analyse CV Modale ----------
-const CvAnalysisModal = ({ isOpen, onClose, cvText, onTextChange, onAnalyze, analyzing, result }) => {
+const CvAnalysisModal = ({ isOpen, onClose, cvText, onTextChange, onAnalyze, analyzing, result, t }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900">Analyse de votre CV</h3>
+          <h3 className="text-lg font-semibold text-slate-900">{t('candidateProfilePage.cvAnalysis.title')}</h3>
           <button type="button" onClick={onClose}><X className="w-5 h-5" /></button>
         </div>
         <div className="p-6 space-y-4">
-          <p className="text-sm text-slate-600">
-            Collez le texte de votre CV ci-dessous pour obtenir des suggestions d'amélioration.
-          </p>
+          <p className="text-sm text-slate-600">{t('candidateProfilePage.cvAnalysis.description')}</p>
           <textarea
             rows={8}
             className="w-full border border-slate-200 rounded-xl p-3 text-sm"
             value={cvText}
             onChange={(e) => onTextChange(e.target.value)}
-            placeholder="Collez ici le contenu de votre CV..."
+            placeholder={t('candidateProfilePage.cvAnalysis.placeholder')}
           />
           {result && (
             <div className="bg-blue-50 rounded-xl p-4 text-sm whitespace-pre-wrap">
-              <p className="font-medium mb-2">Suggestions :</p>
+              <p className="font-medium mb-2">{t('candidateProfilePage.cvAnalysis.suggestions')}</p>
               {result}
             </div>
           )}
         </div>
         <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
-          <Button variant="outline" type="button" onClick={onClose}>Fermer</Button>
+          <Button variant="outline" type="button" onClick={onClose}>{t('candidateProfilePage.cvAnalysis.close')}</Button>
           <Button type="button" onClick={onAnalyze} disabled={analyzing || !cvText.trim()}>
             {analyzing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            Analyser
+            {analyzing ? t('candidateProfilePage.cvAnalysis.analyzing') : t('candidateProfilePage.cvAnalysis.analyze')}
           </Button>
         </div>
       </div>
@@ -407,6 +410,7 @@ const CvAnalysisModal = ({ isOpen, onClose, cvText, onTextChange, onAnalyze, ana
 
 // ---------- Main Component ----------
 const CandidateProfilePage = () => {
+  const { t } = useTranslation();
   const { user, profile, updateProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -448,7 +452,6 @@ const CandidateProfilePage = () => {
 
   const [documents, setDocuments] = useState([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
-  const [reporting, setReporting] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [cvText, setCvText] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
@@ -532,29 +535,29 @@ const CandidateProfilePage = () => {
           })
         });
         await updateProfile({ avatar_url: res.url });
-        toast.success('Photo mise à jour');
+        toast.success(t('candidateProfilePage.photo.updated'));
         await refreshProfile();
       };
       reader.readAsDataURL(file);
     } catch (err) {
-      toast.error('Erreur upload photo');
+      toast.error(t('candidateProfilePage.photo.uploadError'));
     } finally {
       setUploadingPhoto(false);
     }
   };
 
   const handleDeletePhoto = async () => {
-    if (!window.confirm('Supprimer votre photo de profil ?')) return;
+    if (!window.confirm(t('candidateProfilePage.photo.deleteConfirm'))) return;
     try {
       if (personalInfo.avatar_url) {
         const urlParts = personalInfo.avatar_url.split('/avatars/');
         if (urlParts[1]) await supabase.storage.from('avatars').remove([urlParts[1]]);
       }
       await updateProfile({ avatar_url: null });
-      toast.success('Photo supprimée');
+      toast.success(t('candidateProfilePage.photo.deleted'));
       await refreshProfile();
     } catch (err) {
-      toast.error('Erreur suppression photo');
+      toast.error(t('candidateProfilePage.photo.deleteError'));
     }
   };
 
@@ -564,11 +567,11 @@ const CandidateProfilePage = () => {
     if (!file) return;
     const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (!validTypes.includes(file.type)) {
-      toast.error('Format non supporté. Utilisez PDF ou Word.');
+      toast.error(t('candidateProfilePage.cv.invalidFormat'));
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Le fichier est trop volumineux (max 5MB)');
+      toast.error(t('candidateProfilePage.cv.fileTooLarge'));
       return;
     }
     setUploadingCV(true);
@@ -579,17 +582,17 @@ const CandidateProfilePage = () => {
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from('cvs').getPublicUrl(fileName);
       await supabase.from('candidate_profiles').upsert({ user_id: user.id, cv_url: urlData.publicUrl }, { onConflict: 'user_id' });
-      toast.success('CV téléchargé');
+      toast.success(t('candidateProfilePage.cv.uploadedToast'));
       await refreshProfile();
     } catch (error) {
-      toast.error('Erreur upload CV');
+      toast.error(t('candidateProfilePage.cv.uploadError'));
     } finally {
       setUploadingCV(false);
     }
   };
 
   const handleDeleteCV = async () => {
-    if (!window.confirm('Supprimer votre CV ?')) return;
+    if (!window.confirm(t('candidateProfilePage.cv.deleteConfirm'))) return;
     setUploadingCV(true);
     try {
       if (cvUrl) {
@@ -597,10 +600,10 @@ const CandidateProfilePage = () => {
         if (urlParts[1]) await supabase.storage.from('cvs').remove([urlParts[1]]);
       }
       await supabase.from('candidate_profiles').upsert({ user_id: user.id, cv_url: null }, { onConflict: 'user_id' });
-      toast.success('CV supprimé');
+      toast.success(t('candidateProfilePage.cv.deletedToast'));
       await refreshProfile();
     } catch (error) {
-      toast.error('Erreur suppression CV');
+      toast.error(t('candidateProfilePage.cv.deleteError'));
     } finally {
       setUploadingCV(false);
     }
@@ -629,35 +632,35 @@ const CandidateProfilePage = () => {
           file_url: res.url,
           file_type: fileType
         }, ...prev]);
-        toast.success('Document ajouté');
+        toast.success(t('candidateProfilePage.documents.addedToast'));
       };
       reader.readAsDataURL(file);
     } catch (err) {
       console.error('Erreur upload document:', err);
-      toast.error('Erreur upload document');
+      toast.error(t('candidateProfilePage.documents.uploadError'));
     } finally {
       setUploadingDoc(false);
     }
   };
 
   const handleDeleteDocument = async (doc) => {
-    if (!window.confirm('Supprimer ce document ?')) return;
+    if (!window.confirm(t('candidateProfilePage.documents.deleteConfirm'))) return;
     try {
       const urlParts = doc.file_url.split('/candidate-documents/');
       if (urlParts[1]) await supabase.storage.from('candidate-documents').remove([urlParts[1]]);
       await supabase.from('candidate_documents').delete().eq('id', doc.id);
       setDocuments(prev => prev.filter(d => d.id !== doc.id));
-      toast.success('Document supprimé');
+      toast.success(t('candidateProfilePage.documents.deletedToast'));
     } catch (err) {
       console.error('Erreur suppression document:', err);
-      toast.error('Erreur suppression document');
+      toast.error(t('candidateProfilePage.documents.deleteError'));
     }
   };
 
   // ---- Analyse IA du CV ----
   const handleAnalyzeCV = async () => {
     if (!cvText.trim()) {
-      toast.error('Veuillez coller le texte de votre CV');
+      toast.error(t('candidateProfilePage.cvAnalysis.emptyText'));
       return;
     }
     setAnalyzing(true);
@@ -671,9 +674,9 @@ const CandidateProfilePage = () => {
         })
       });
       setAnalysisResult(res.result);
-      toast.success('Analyse terminée');
+      toast.success(t('candidateProfilePage.cvAnalysis.doneToast'));
     } catch (err) {
-      toast.error(err.message || 'Erreur analyse IA');
+      toast.error(err.message || t('candidateProfilePage.cvAnalysis.errorToast'));
     } finally {
       setAnalyzing(false);
     }
@@ -688,32 +691,6 @@ const CandidateProfilePage = () => {
   };
 
   const handleRemoveSkill = (skillToRemove) => setSkills(skills.filter(s => s !== skillToRemove));
-
-  const handleReport = async () => {
-    if (!user) {
-      toast.error('Veuillez vous connecter pour signaler');
-      return;
-    }
-    const reason = window.prompt('Pourquoi signalez-vous ce candidat ?');
-    if (!reason) return;
-    setReporting(true);
-    try {
-      await apiFetch('/api/report', {
-        method: 'POST',
-        body: JSON.stringify({
-          reporter_id: user.id,
-          reported_item_type: 'candidate',
-          reported_item_id: user.id,
-          reason: reason
-        }),
-      });
-      toast.success('Signalement envoyé. Merci !');
-    } catch (err) {
-      toast.error("Erreur lors de l'envoi du signalement");
-    } finally {
-      setReporting(false);
-    }
-  };
 
   // ---- Expériences ----
   const handleSaveExperience = (exp) => {
@@ -751,7 +728,7 @@ const CandidateProfilePage = () => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+      toast.error(t('candidateProfilePage.toasts.fillRequired'));
       return;
     }
 
@@ -779,11 +756,11 @@ const CandidateProfilePage = () => {
 
       if (error) throw error;
 
-      toast.success('Profil mis à jour avec succès !');
+      toast.success(t('candidateProfilePage.toasts.profileUpdated'));
       await refreshProfile();
     } catch (error) {
       console.error('Erreur sauvegarde profil:', error);
-      toast.error(error.message || 'Erreur lors de la sauvegarde du profil');
+      toast.error(error.message || t('candidateProfilePage.toasts.saveError'));
     } finally {
       setSaving(false);
     }
@@ -796,11 +773,11 @@ const CandidateProfilePage = () => {
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/dashboard')} className="gap-2" type="button">
               <ChevronLeft className="w-4 h-4" />
-              Retour
+              {t('candidateProfilePage.back')}
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Mon Profil</h1>
-              <p className="text-slate-600">Gérez vos informations professionnelles</p>
+              <h1 className="text-2xl font-bold text-slate-900">{t('candidateProfilePage.title')}</h1>
+              <p className="text-slate-600">{t('candidateProfilePage.subtitle')}</p>
             </div>
           </div>
           <Button
@@ -810,7 +787,7 @@ const CandidateProfilePage = () => {
             type="button"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Enregistrer
+            {t('candidateProfilePage.save')}
           </Button>
         </div>
 
@@ -834,15 +811,15 @@ const CandidateProfilePage = () => {
                 </button>
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-slate-900">Photo de profil</h3>
-                <p className="text-sm text-slate-500">JPG, PNG (max 2Mo)</p>
+                <h3 className="font-semibold text-slate-900">{t('candidateProfilePage.photo.title')}</h3>
+                <p className="text-sm text-slate-500">{t('candidateProfilePage.photo.hint')}</p>
                 <div className="flex gap-2 mt-2">
                   <Button variant="outline" size="sm" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto} type="button">
-                    <Upload className="w-4 h-4 mr-2" /> Changer
+                    <Upload className="w-4 h-4 mr-2" /> {t('candidateProfilePage.photo.change')}
                   </Button>
                   {personalInfo.avatar_url && (
                     <Button variant="outline" size="sm" onClick={handleDeletePhoto} className="text-red-600 hover:bg-red-50" type="button">
-                      <Trash2 className="w-4 h-4 mr-2" /> Supprimer
+                      <Trash2 className="w-4 h-4 mr-2" /> {t('candidateProfilePage.photo.delete')}
                     </Button>
                   )}
                 </div>
@@ -853,10 +830,10 @@ const CandidateProfilePage = () => {
 
           <Card>
             <CardContent className="p-6">
-              <SectionHeader icon={User} title="Informations personnelles" description="Vos informations de base" />
+              <SectionHeader icon={User} title={t('candidateProfilePage.personalInfo.sectionTitle')} description={t('candidateProfilePage.personalInfo.sectionDesc')} />
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Prénom *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.personalInfo.firstName')}</label>
                   <Input
                     value={personalInfo.first_name}
                     onChange={(e) => {
@@ -867,7 +844,7 @@ const CandidateProfilePage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Nom *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.personalInfo.lastName')}</label>
                   <Input
                     value={personalInfo.last_name}
                     onChange={(e) => {
@@ -878,21 +855,21 @@ const CandidateProfilePage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.personalInfo.phone')}</label>
                   <Input
                     value={personalInfo.phone}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
-                    placeholder="+223 XX XX XX XX"
+                    placeholder={t('candidateProfilePage.personalInfo.phonePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Ville</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.personalInfo.city')}</label>
                   <select
                     value={personalInfo.city_id}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, city_id: e.target.value })}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
-                    <option value="">Sélectionnez une ville</option>
+                    <option value="">{t('candidateProfilePage.personalInfo.selectCity')}</option>
                     {cities.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}
                   </select>
                 </div>
@@ -902,10 +879,10 @@ const CandidateProfilePage = () => {
 
           <Card>
             <CardContent className="p-6">
-              <SectionHeader icon={Briefcase} title="Profil professionnel" description="Votre titre et présentation" />
+              <SectionHeader icon={Briefcase} title={t('candidateProfilePage.professionalProfile.sectionTitle')} description={t('candidateProfilePage.professionalProfile.sectionDesc')} />
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Titre professionnel *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.professionalProfile.title')}</label>
                   <Input
                     value={candidateInfo.title}
                     onChange={(e) => {
@@ -924,7 +901,7 @@ const CandidateProfilePage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">À propos de moi</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.professionalProfile.bio')}</label>
                   <textarea
                     rows={4}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -943,20 +920,20 @@ const CandidateProfilePage = () => {
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Niveau d'expérience</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.professionalProfile.experienceLevel')}</label>
                     <select
                       value={candidateInfo.experience_level}
                       onChange={(e) => setCandidateInfo({ ...candidateInfo, experience_level: e.target.value })}
                       className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
-                      <option value="">Sélectionnez</option>
+                      <option value="">{t('candidateProfilePage.professionalProfile.selectLevel')}</option>
                       {Object.entries(EXPERIENCE_LEVELS).map(([key, val]) => (
-                        <option key={key} value={key}>{val.label}</option>
+                        <option key={key} value={key}>{t(`experienceLevels.${key}`, { defaultValue: val.label })}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Années d'expérience</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.professionalProfile.yearsOfExperience')}</label>
                     <Input
                       type="number"
                       min="0"
@@ -975,7 +952,7 @@ const CandidateProfilePage = () => {
                       onChange={(e) => setCandidateInfo({ ...candidateInfo, is_available: e.target.checked })}
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-slate-600">Je suis disponible immédiatement</span>
+                    <span className="text-sm text-slate-600">{t('candidateProfilePage.professionalProfile.available')}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -984,7 +961,7 @@ const CandidateProfilePage = () => {
                       onChange={(e) => setCandidateInfo({ ...candidateInfo, is_open_to_remote: e.target.checked })}
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-slate-600">Ouvert au télétravail</span>
+                    <span className="text-sm text-slate-600">{t('candidateProfilePage.professionalProfile.openToRemote')}</span>
                   </label>
                 </div>
               </div>
@@ -993,25 +970,25 @@ const CandidateProfilePage = () => {
 
           <Card>
             <CardContent className="p-6">
-              <SectionHeader icon={FileText} title="Mon CV" description="Téléchargez votre CV principal (PDF ou Word)" />
+              <SectionHeader icon={FileText} title={t('candidateProfilePage.cv.sectionTitle')} description={t('candidateProfilePage.cv.sectionDesc')} />
               <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
                 {cvUrl ? (
                   <div className="space-y-4">
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                       <Check className="w-8 h-8 text-green-600" />
                     </div>
-                    <p className="font-medium text-slate-900">CV téléchargé</p>
+                    <p className="font-medium text-slate-900">{t('candidateProfilePage.cv.uploaded')}</p>
                     <div className="flex justify-center gap-2 flex-wrap">
                       <a href={cvUrl} target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" type="button">
-                          <Eye className="w-4 h-4 mr-2" /> Visualiser
+                          <Eye className="w-4 h-4 mr-2" /> {t('candidateProfilePage.cv.view')}
                         </Button>
                       </a>
                       <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadingCV} type="button">
-                        <Upload className="w-4 h-4 mr-2" />Changer
+                        <Upload className="w-4 h-4 mr-2" />{t('candidateProfilePage.cv.change')}
                       </Button>
                       <Button variant="outline" onClick={handleDeleteCV} disabled={uploadingCV} className="text-red-600 hover:bg-red-50" type="button">
-                        <Trash2 className="w-4 h-4 mr-2" />Supprimer
+                        <Trash2 className="w-4 h-4 mr-2" />{t('candidateProfilePage.cv.delete')}
                       </Button>
                     </div>
                   </div>
@@ -1020,10 +997,10 @@ const CandidateProfilePage = () => {
                     <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
                       <Upload className="w-8 h-8 text-slate-400" />
                     </div>
-                    <p className="font-medium text-slate-900">Téléchargez votre CV</p>
-                    <p className="text-sm text-slate-500">PDF ou Word, max 5MB</p>
+                    <p className="font-medium text-slate-900">{t('candidateProfilePage.cv.uploadTitle')}</p>
+                    <p className="text-sm text-slate-500">{t('candidateProfilePage.cv.uploadHint')}</p>
                     <Button onClick={() => fileInputRef.current?.click()} disabled={uploadingCV} type="button">
-                      <Upload className="w-4 h-4 mr-2" />Choisir un fichier
+                      <Upload className="w-4 h-4 mr-2" />{t('candidateProfilePage.cv.chooseFile')}
                     </Button>
                   </div>
                 )}
@@ -1031,7 +1008,7 @@ const CandidateProfilePage = () => {
               </div>
               <div className="mt-4 text-center">
                 <Button variant="outline" onClick={() => setShowAnalysis(true)} type="button">
-                  <Sparkles className="w-4 h-4 mr-2" /> Analyser mon CV (IA)
+                  <Sparkles className="w-4 h-4 mr-2" /> {t('candidateProfilePage.cv.analyzeButton')}
                 </Button>
               </div>
             </CardContent>
@@ -1039,7 +1016,7 @@ const CandidateProfilePage = () => {
 
           <Card>
             <CardContent className="p-6">
-              <SectionHeader icon={File} title="Documents" description="Diplômes, attestations, certifications..." />
+              <SectionHeader icon={File} title={t('candidateProfilePage.documents.sectionTitle')} description={t('candidateProfilePage.documents.sectionDesc')} />
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <select
@@ -1047,9 +1024,9 @@ const CandidateProfilePage = () => {
                     className="h-10 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white"
                     defaultValue="other"
                   >
-                    <option value="diploma">Diplôme</option>
-                    <option value="certificate">Certificat / Attestation</option>
-                    <option value="other">Autre</option>
+                    <option value="diploma">{t('candidateProfilePage.documents.typeDiploma')}</option>
+                    <option value="certificate">{t('candidateProfilePage.documents.typeCertificate')}</option>
+                    <option value="other">{t('candidateProfilePage.documents.typeOther')}</option>
                   </select>
                   <label className="flex-1 cursor-pointer">
                     <input
@@ -1073,7 +1050,7 @@ const CandidateProfilePage = () => {
                       disabled={uploadingDoc}
                       type="button"
                     >
-                      <Upload className="w-4 h-4 mr-2" /> Ajouter un document
+                      <Upload className="w-4 h-4 mr-2" /> {t('candidateProfilePage.documents.addButton')}
                     </Button>
                   </label>
                 </div>
@@ -1103,7 +1080,7 @@ const CandidateProfilePage = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500 text-center py-4">Aucun document ajouté.</p>
+                  <p className="text-sm text-slate-500 text-center py-4">{t('candidateProfilePage.documents.empty')}</p>
                 )}
               </div>
             </CardContent>
@@ -1111,16 +1088,16 @@ const CandidateProfilePage = () => {
 
           <Card>
             <CardContent className="p-6">
-              <SectionHeader icon={Award} title="Compétences" description="Ajoutez vos compétences clés" />
+              <SectionHeader icon={Award} title={t('candidateProfilePage.skills.sectionTitle')} description={t('candidateProfilePage.skills.sectionDesc')} />
               <div className="flex gap-2">
                 <Input
                   value={newSkill}
                   onChange={(e) => setNewSkill(e.target.value)}
-                  placeholder="Ex: React, Python..."
+                  placeholder={t('candidateProfilePage.skills.placeholder')}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
                 />
                 <Button onClick={handleAddSkill} disabled={!newSkill.trim()} type="button">
-                  <Plus className="w-4 h-4 mr-1" />Ajouter
+                  <Plus className="w-4 h-4 mr-1" />{t('candidateProfilePage.skills.add')}
                 </Button>
               </div>
               {skills.length > 0 ? (
@@ -1130,7 +1107,7 @@ const CandidateProfilePage = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-500 text-center py-4">Aucune compétence ajoutée.</p>
+                <p className="text-sm text-slate-500 text-center py-4">{t('candidateProfilePage.skills.empty')}</p>
               )}
               <div className="mt-2">
                 <AIAssistant
@@ -1143,9 +1120,9 @@ const CandidateProfilePage = () => {
                       .filter(s => s.length > 0 && !skills.includes(s));
                     if (skillsArray.length > 0) {
                       setSkills([...skills, ...skillsArray]);
-                      toast.success(`${skillsArray.length} compétence(s) ajoutée(s) !`);
+                      toast.success(t('candidateProfilePage.skills.addedToast', { count: skillsArray.length }));
                     } else {
-                      toast.info('Aucune nouvelle compétence trouvée.');
+                      toast.info(t('candidateProfilePage.skills.noneFound'));
                     }
                   }}
                 />
@@ -1157,8 +1134,8 @@ const CandidateProfilePage = () => {
             <CardContent className="p-6">
               <SectionHeader
                 icon={Briefcase}
-                title="Expériences professionnelles"
-                description="Votre parcours professionnel"
+                title={t('candidateProfilePage.experience.sectionTitle')}
+                description={t('candidateProfilePage.experience.sectionDesc')}
                 action={
                   <Button
                     variant="outline"
@@ -1169,7 +1146,7 @@ const CandidateProfilePage = () => {
                     }}
                     type="button"
                   >
-                    <Plus className="w-4 h-4 mr-1" />Ajouter
+                    <Plus className="w-4 h-4 mr-1" />{t('candidateProfilePage.experience.add')}
                   </Button>
                 }
               />
@@ -1184,13 +1161,14 @@ const CandidateProfilePage = () => {
                         setShowExpModal(true);
                       }}
                       onRemove={handleRemoveExperience}
+                      t={t}
                     />
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-slate-500">
                   <Briefcase className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                  <p>Aucune expérience ajoutée</p>
+                  <p>{t('candidateProfilePage.experience.empty')}</p>
                 </div>
               )}
             </CardContent>
@@ -1200,8 +1178,8 @@ const CandidateProfilePage = () => {
             <CardContent className="p-6">
               <SectionHeader
                 icon={GraduationCap}
-                title="Formation"
-                description="Vos diplômes et certifications"
+                title={t('candidateProfilePage.education.sectionTitle')}
+                description={t('candidateProfilePage.education.sectionDesc')}
                 action={
                   <Button
                     variant="outline"
@@ -1212,7 +1190,7 @@ const CandidateProfilePage = () => {
                     }}
                     type="button"
                   >
-                    <Plus className="w-4 h-4 mr-1" />Ajouter
+                    <Plus className="w-4 h-4 mr-1" />{t('candidateProfilePage.education.add')}
                   </Button>
                 }
               />
@@ -1227,13 +1205,14 @@ const CandidateProfilePage = () => {
                         setShowEduModal(true);
                       }}
                       onRemove={handleRemoveEducation}
+                      t={t}
                     />
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-slate-500">
                   <GraduationCap className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                  <p>Aucune formation ajoutée</p>
+                  <p>{t('candidateProfilePage.education.empty')}</p>
                 </div>
               )}
             </CardContent>
@@ -1241,11 +1220,11 @@ const CandidateProfilePage = () => {
 
           <Card>
             <CardContent className="p-6">
-              <SectionHeader icon={Globe} title="Liens" description="Portfolio et réseaux sociaux" />
+              <SectionHeader icon={Globe} title={t('candidateProfilePage.links.sectionTitle')} description={t('candidateProfilePage.links.sectionDesc')} />
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Link className="w-4 h-4 inline mr-1" />LinkedIn
+                    <Link className="w-4 h-4 inline mr-1" />{t('candidateProfilePage.links.linkedin')}
                   </label>
                   <Input
                     value={candidateInfo.linkedin_url}
@@ -1254,7 +1233,7 @@ const CandidateProfilePage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Globe className="w-4 h-4 inline mr-1" />Portfolio / Site web
+                    <Globe className="w-4 h-4 inline mr-1" />{t('candidateProfilePage.links.portfolio')}
                   </label>
                   <Input
                     value={candidateInfo.portfolio_url}
@@ -1267,10 +1246,10 @@ const CandidateProfilePage = () => {
 
           <Card>
             <CardContent className="p-6">
-              <SectionHeader icon={Briefcase} title="Prétentions salariales" description="Fourchette de salaire souhaitée (FCFA/mois)" />
+              <SectionHeader icon={Briefcase} title={t('candidateProfilePage.salary.sectionTitle')} description={t('candidateProfilePage.salary.sectionDesc')} />
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Salaire minimum</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.salary.minSalary')}</label>
                   <Input
                     type="number"
                     value={candidateInfo.desired_salary_min}
@@ -1278,7 +1257,7 @@ const CandidateProfilePage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Salaire maximum</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.salary.maxSalary')}</label>
                   <Input
                     type="number"
                     value={candidateInfo.desired_salary_max}
@@ -1292,7 +1271,7 @@ const CandidateProfilePage = () => {
           <div className="flex justify-end pt-4">
             <Button onClick={handleSave} disabled={saving} size="lg" className="gap-2 bg-blue-600 text-white hover:bg-blue-700" type="button">
               {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-              Enregistrer les modifications
+              {t('candidateProfilePage.saveChanges')}
             </Button>
           </div>
         </div>
@@ -1306,6 +1285,7 @@ const CandidateProfilePage = () => {
         }}
         onSave={handleSaveExperience}
         experience={editingExp}
+        t={t}
       />
       <EducationModal
         isOpen={showEduModal}
@@ -1315,6 +1295,7 @@ const CandidateProfilePage = () => {
         }}
         onSave={handleSaveEducation}
         education={editingEdu}
+        t={t}
       />
       <CvAnalysisModal
         isOpen={showAnalysis}
@@ -1324,6 +1305,7 @@ const CandidateProfilePage = () => {
         onAnalyze={handleAnalyzeCV}
         analyzing={analyzing}
         result={analysisResult}
+        t={t}
       />
     </div>
   );

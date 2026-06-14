@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { apiFetch } from '../lib/api';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -16,6 +17,7 @@ const colorClasses = {
 };
 
 const BlogArticlePage = () => {
+  const { t } = useTranslation();
   const { id } = useParams(); // id = slug
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,9 +49,9 @@ const BlogArticlePage = () => {
       <div className="min-h-screen flex items-center justify-center pt-20">
         <div className="text-center">
           <h1 className="text-6xl font-bold text-slate-300">404</h1>
-          <p className="text-xl text-slate-600 mt-4">Article introuvable</p>
+          <p className="text-xl text-slate-600 mt-4">{t('blogArticle.notFoundTitle')}</p>
           <Link to="/blog" className="text-blue-600 hover:underline mt-4 inline-block">
-            Retour au blog
+            {t('blogArticle.notFoundBack')}
           </Link>
         </div>
       </div>
@@ -64,7 +66,7 @@ const BlogArticlePage = () => {
         <Link to="/blog">
           <Button variant="ghost" className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Retour au blog
+            {t('blogArticle.back')}
           </Button>
         </Link>
 
@@ -94,7 +96,7 @@ const BlogArticlePage = () => {
           <Link to="/blog">
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Voir tous les articles
+              {t('blogArticle.allArticles')}
             </Button>
           </Link>
         </div>

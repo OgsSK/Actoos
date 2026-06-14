@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
@@ -30,64 +31,76 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
 // ---------- Stats Card ----------
-const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => (
-  <Card className="border-slate-200 overflow-hidden">
-    <CardContent className="p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm text-slate-500 truncate">{label}</p>
-          <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{value}</p>
-          {trend !== undefined && (
-            <p
-              className={cn(
-                'text-xs mt-1 flex items-center gap-1',
-                trend > 0 ? 'text-green-600' : 'text-slate-500'
-              )}
-            >
-              <TrendingUp className="w-3 h-3" />
-              {trend > 0 ? '+' : ''}
-              {trend}% ce mois
-            </p>
-          )}
-        </div>
-
-        <div
-          className={cn(
-            'w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0',
-            color === 'blue' && 'bg-blue-100',
-            color === 'green' && 'bg-green-100',
-            color === 'purple' && 'bg-purple-100',
-            color === 'orange' && 'bg-orange-100'
-          )}
-        >
-          <Icon
-            className={cn(
-              'w-5 h-5 sm:w-6 sm:h-6',
-              color === 'blue' && 'text-blue-600',
-              color === 'green' && 'text-green-600',
-              color === 'purple' && 'text-purple-600',
-              color === 'orange' && 'text-orange-600'
+const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
+  const { t } = useTranslation();
+  return (
+    <Card className="border-slate-200 overflow-hidden">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-slate-500 truncate">{label}</p>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{value}</p>
+            {trend !== undefined && (
+              <p
+                className={cn(
+                  'text-xs mt-1 flex items-center gap-1',
+                  trend > 0 ? 'text-green-600' : 'text-slate-500'
+                )}
+              >
+                <TrendingUp className="w-3 h-3" />
+                {trend > 0 ? '+' : ''}
+                {t('candidateDashboard.stats.trend', { trend })}
+              </p>
             )}
-          />
+          </div>
+
+          <div
+            className={cn(
+              'w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0',
+              color === 'blue' && 'bg-blue-100',
+              color === 'green' && 'bg-green-100',
+              color === 'purple' && 'bg-purple-100',
+              color === 'orange' && 'bg-orange-100'
+            )}
+          >
+            <Icon
+              className={cn(
+                'w-5 h-5 sm:w-6 sm:h-6',
+                color === 'blue' && 'text-blue-600',
+                color === 'green' && 'text-green-600',
+                color === 'purple' && 'text-purple-600',
+                color === 'orange' && 'text-orange-600'
+              )}
+            />
+          </div>
         </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
 // ---------- Application Card ----------
 const ApplicationCard = ({ application }) => {
-  const statusConfig = {
-    pending: { label: 'En attente', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-    viewed: { label: 'Vue', color: 'bg-blue-100 text-blue-700', icon: Eye },
-    shortlisted: { label: 'Présélectionné', color: 'bg-purple-100 text-purple-700', icon: Target },
-    interview: { label: 'Entretien', color: 'bg-green-100 text-green-700', icon: Calendar },
-    accepted: { label: 'Acceptée', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-    rejected: { label: 'Refusée', color: 'bg-red-100 text-red-700', icon: XCircle },
+  const { t } = useTranslation();
+  const statusIcons = {
+    pending: Clock,
+    viewed: Eye,
+    shortlisted: Target,
+    interview: Calendar,
+    accepted: CheckCircle,
+    rejected: XCircle,
   };
-
-  const status = statusConfig[application.status] || statusConfig.pending;
-  const StatusIcon = status.icon;
+  const statusColors = {
+    pending: 'bg-yellow-100 text-yellow-700',
+    viewed: 'bg-blue-100 text-blue-700',
+    shortlisted: 'bg-purple-100 text-purple-700',
+    interview: 'bg-green-100 text-green-700',
+    accepted: 'bg-green-100 text-green-700',
+    rejected: 'bg-red-100 text-red-700',
+  };
+  const statusLabel = t(`myApplications.status.${application.status}`, { defaultValue: application.status });
+  const StatusIcon = statusIcons[application.status] || Clock;
+  const statusColor = statusColors[application.status] || 'bg-yellow-100 text-yellow-700';
 
   return (
     <Link
@@ -101,16 +114,16 @@ const ApplicationCard = ({ application }) => {
 
         <div className="flex-1 min-w-0">
           <p className="font-medium text-slate-900 line-clamp-2">
-            {application.job?.title || "Offre d'emploi"}
+            {application.job?.title || t('candidateDashboard.applications.defaultJobTitle')}
           </p>
           <p className="text-sm text-slate-500 line-clamp-1">
-            {application.job?.company?.name || 'Entreprise'}
+            {application.job?.company?.name || t('candidateDashboard.applications.defaultCompany')}
           </p>
         </div>
 
-        <Badge className={cn(status.color, 'gap-1 border-0 shrink-0 text-xs w-fit')}>
+        <Badge className={cn(statusColor, 'gap-1 border-0 shrink-0 text-xs w-fit')}>
           <StatusIcon className="w-3 h-3" />
-          {status.label}
+          {statusLabel}
         </Badge>
       </div>
 
@@ -121,6 +134,7 @@ const ApplicationCard = ({ application }) => {
 
 // ---------- Saved Job Card ----------
 const SavedJobCard = ({ job, onRemove }) => {
+  const { t } = useTranslation();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
 
   return (
@@ -139,11 +153,11 @@ const SavedJobCard = ({ job, onRemove }) => {
           </Link>
 
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 mt-1">
-            <span className="line-clamp-1">{job.company?.name || 'Entreprise'}</span>
+            <span className="line-clamp-1">{job.company?.name || t('candidateDashboard.applications.defaultCompany')}</span>
             <span>•</span>
             <span className="flex items-center gap-1">
               <MapPin className="w-3 h-3" />
-              {job.city?.name || 'Non spécifié'}
+              {job.city?.name || t('candidateDashboard.savedJobs.unspecifiedLocation')}
             </span>
           </div>
         </div>
@@ -169,13 +183,16 @@ const SavedJobCard = ({ job, onRemove }) => {
 
 // ---------- Profile Completion Widget ----------
 const ProfileCompletionWidget = ({ completion }) => {
+  const { t } = useTranslation();
   const strokeColor =
     completion >= 80 ? '#22c55e' : completion >= 50 ? '#f59e0b' : '#3b82f6';
+
+  const messageKey = completion < 50 ? 'low' : completion < 80 ? 'medium' : 'high';
 
   return (
     <Card className="border-slate-200 overflow-hidden">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Complétude du profil</CardTitle>
+        <CardTitle className="text-base">{t('candidateDashboard.profileCompletion.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
@@ -200,13 +217,11 @@ const ProfileCompletionWidget = ({ completion }) => {
 
           <div className="flex-1">
             <p className="text-sm text-slate-600 mb-3">
-              {completion < 50 && 'Complétez votre profil pour attirer plus de recruteurs'}
-              {completion >= 50 && completion < 80 && 'Bon début ! Ajoutez plus de détails'}
-              {completion >= 80 && 'Excellent ! Votre profil est presque complet'}
+              {t(`candidateDashboard.profileCompletion.messages.${messageKey}`)}
             </p>
             <Link to="/profil">
               <Button size="sm" variant="outline" className="min-h-[44px]">
-                Compléter mon profil
+                {t('candidateDashboard.profileCompletion.completeProfile')}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </Link>
@@ -219,6 +234,7 @@ const ProfileCompletionWidget = ({ completion }) => {
 
 // ---------- Main Dashboard ----------
 const CandidateDashboard = () => {
+  const { t } = useTranslation();
   const { user, profile, loading: authLoading } = useAuth();
   const [applications, setApplications] = useState([]);
   const [savedJobs, setSavedJobs] = useState([]);
@@ -320,22 +336,11 @@ const CandidateDashboard = () => {
   };
 
   const getTip = (completion) => {
-    const lowProfileTips = [
-      'Ajoutez une photo de profil : les profils avec photo reçoivent plus de contacts.',
-      'Renseignez votre titre professionnel pour apparaître dans les recherches.',
-      'Complétez votre CV pour postuler en un clic.',
-      'Indiquez vos compétences clés pour être trouvé plus facilement.',
-    ];
-
-    const highProfileTips = [
-      'Mettez à jour votre CV régulièrement pour refléter vos dernières expériences.',
-      'Activez les alertes emploi pour ne rien manquer.',
-      'Ajoutez des exemples de réalisations dans vos expériences.',
-      'Partagez votre profil sur LinkedIn pour augmenter votre visibilité.',
-    ];
-
-    const tips = completion < 60 ? lowProfileTips : highProfileTips;
-    return tips[Math.floor(Math.random() * tips.length)];
+    const tips = t(
+      completion < 60 ? 'candidateDashboard.dailyTip.low' : 'candidateDashboard.dailyTip.high',
+      { returnObjects: true }
+    );
+    return tips && tips.length ? tips[Math.floor(Math.random() * tips.length)] : '';
   };
 
   if (authLoading || loading) {
@@ -362,9 +367,9 @@ const CandidateDashboard = () => {
 
             <div className="min-w-0">
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 truncate">
-                Bonjour, {profile?.first_name || 'Candidat'} 👋
+                {t('candidateDashboard.greeting', { name: profile?.first_name || 'Candidat' })}
               </h1>
-              <p className="text-slate-600 mt-1">Voici un aperçu de votre activité</p>
+              <p className="text-slate-600 mt-1">{t('candidateDashboard.activityPreview')}</p>
             </div>
           </div>
 
@@ -372,13 +377,13 @@ const CandidateDashboard = () => {
             <Link to="/profil" className="w-full">
               <Button variant="outline" className="w-full min-h-[44px]">
                 <User className="w-4 h-4 mr-2" />
-                Mon profil
+                {t('candidateDashboard.myProfile')}
               </Button>
             </Link>
             <Link to="/emplois" className="w-full">
               <Button className="w-full min-h-[44px] bg-blue-600 text-white hover:bg-blue-700">
                 <Briefcase className="w-4 h-4 mr-2" />
-                Rechercher
+                {t('candidateDashboard.searchJobs')}
               </Button>
             </Link>
           </div>
@@ -386,12 +391,12 @@ const CandidateDashboard = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <StatCard icon={FileText} label="Candidatures" value={applications.length} color="blue" />
-          <StatCard icon={Heart} label="Offres sauvegardées" value={savedJobs.length} color="purple" />
-          <StatCard icon={Bell} label="Alertes actives" value={alertsCount} color="orange" />
+          <StatCard icon={FileText} label={t('candidateDashboard.stats.applications')} value={applications.length} color="blue" />
+          <StatCard icon={Heart} label={t('candidateDashboard.stats.savedJobs')} value={savedJobs.length} color="purple" />
+          <StatCard icon={Bell} label={t('candidateDashboard.stats.activeAlerts')} value={alertsCount} color="orange" />
           <StatCard
             icon={Target}
-            label="Taux de complétude"
+            label={t('candidateDashboard.stats.completionRate')}
             value={`${profileCompletion}%`}
             color="green"
           />
@@ -404,12 +409,12 @@ const CandidateDashboard = () => {
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-2">
                 <div>
-                  <CardTitle className="text-lg">Mes candidatures</CardTitle>
-                  <CardDescription>Suivez l'état de vos candidatures</CardDescription>
+                  <CardTitle className="text-lg">{t('candidateDashboard.applications.title')}</CardTitle>
+                  <CardDescription>{t('candidateDashboard.applications.description')}</CardDescription>
                 </div>
                 <Link to="/mes-candidatures" className="w-full sm:w-auto">
                   <Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">
-                    Voir tout
+                    {t('candidateDashboard.applications.viewAll')}
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
@@ -419,9 +424,9 @@ const CandidateDashboard = () => {
                 {applications.length === 0 ? (
                   <div className="text-center py-8">
                     <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-600 mb-4">Aucune candidature pour le moment</p>
+                    <p className="text-slate-600 mb-4">{t('candidateDashboard.applications.empty')}</p>
                     <Link to="/emplois">
-                      <Button className="min-h-[44px]">Trouver un emploi</Button>
+                      <Button className="min-h-[44px]">{t('candidateDashboard.applications.findJob')}</Button>
                     </Link>
                   </div>
                 ) : (
@@ -438,12 +443,12 @@ const CandidateDashboard = () => {
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-2">
                 <div>
-                  <CardTitle className="text-lg">Offres sauvegardées</CardTitle>
-                  <CardDescription>Les offres qui vous intéressent</CardDescription>
+                  <CardTitle className="text-lg">{t('candidateDashboard.savedJobs.title')}</CardTitle>
+                  <CardDescription>{t('candidateDashboard.savedJobs.description')}</CardDescription>
                 </div>
                 <Link to="/offres-sauvegardees" className="w-full sm:w-auto">
                   <Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">
-                    Voir tout
+                    {t('candidateDashboard.savedJobs.viewAll')}
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
@@ -453,10 +458,10 @@ const CandidateDashboard = () => {
                 {savedJobs.length === 0 ? (
                   <div className="text-center py-8">
                     <Heart className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-600 mb-4">Aucune offre sauvegardée</p>
+                    <p className="text-slate-600 mb-4">{t('candidateDashboard.savedJobs.empty')}</p>
                     <Link to="/emplois">
                       <Button variant="outline" className="min-h-[44px]">
-                        Parcourir les offres
+                        {t('candidateDashboard.savedJobs.browseJobs')}
                       </Button>
                     </Link>
                   </div>
@@ -470,14 +475,14 @@ const CandidateDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* ✅ Messages de l'administration */}
+            {/* Messages de l'administration */}
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Mail className="w-5 h-5 text-blue-600" />
-                  Messages de l'administration
+                  {t('candidateDashboard.adminMessages.title')}
                 </CardTitle>
-                <CardDescription>Communications importantes de l'équipe Actoos</CardDescription>
+                <CardDescription>{t('candidateDashboard.adminMessages.description')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
                 <UserMessages userId={user?.id} />
@@ -492,7 +497,7 @@ const CandidateDashboard = () => {
             {/* Quick Actions */}
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Actions rapides</CardTitle>
+                <CardTitle className="text-base">{t('candidateDashboard.quickActions.title')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <Link
@@ -503,8 +508,8 @@ const CandidateDashboard = () => {
                     <Upload className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-slate-900">Mettre à jour mon CV</p>
-                    <p className="text-xs text-slate-500">Téléchargez votre dernier CV</p>
+                    <p className="font-medium text-slate-900">{t('candidateDashboard.quickActions.updateCV')}</p>
+                    <p className="text-xs text-slate-500">{t('candidateDashboard.quickActions.updateCVDesc')}</p>
                   </div>
                 </Link>
 
@@ -516,8 +521,8 @@ const CandidateDashboard = () => {
                     <Bell className="w-5 h-5 text-green-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-slate-900">Créer une alerte</p>
-                    <p className="text-xs text-slate-500">Recevez les offres par email</p>
+                    <p className="font-medium text-slate-900">{t('candidateDashboard.quickActions.createAlert')}</p>
+                    <p className="text-xs text-slate-500">{t('candidateDashboard.quickActions.createAlertDesc')}</p>
                   </div>
                 </Link>
 
@@ -529,8 +534,8 @@ const CandidateDashboard = () => {
                     <Settings className="w-5 h-5 text-slate-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-slate-900">Paramètres</p>
-                    <p className="text-xs text-slate-500">Gérez votre compte</p>
+                    <p className="font-medium text-slate-900">{t('candidateDashboard.quickActions.settings')}</p>
+                    <p className="text-xs text-slate-500">{t('candidateDashboard.quickActions.settingsDesc')}</p>
                   </div>
                 </Link>
               </CardContent>
@@ -544,7 +549,7 @@ const CandidateDashboard = () => {
                     <BookOpen className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <h4 className="font-medium text-blue-900">Conseil du jour</h4>
+                    <h4 className="font-medium text-blue-900">{t('candidateDashboard.dailyTip.title')}</h4>
                     <p className="text-sm text-blue-700 mt-1">{getTip(profileCompletion)}</p>
                   </div>
                 </div>

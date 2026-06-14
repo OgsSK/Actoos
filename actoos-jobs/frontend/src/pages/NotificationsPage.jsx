@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
 import { Loader2, ChevronLeft, Bell, Check, Trash2 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 import { toast } from 'sonner';
 
 const NotificationsPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +38,7 @@ const NotificationsPage = () => {
   const markAllAsRead = async () => {
     await supabase.from('notifications').update({ is_read: true, read_at: new Date().toISOString() }).eq('user_id', user.id).eq('is_read', false);
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() })));
-    toast.success('Toutes les notifications sont marquées comme lues');
+    toast.success(t('notifications.allReadSuccess'));
   };
 
   const deleteNotification = async (id) => {
@@ -54,23 +55,30 @@ const NotificationsPage = () => {
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard"><Button variant="ghost"><ChevronLeft className="w-4 h-4 mr-2" />Retour</Button></Link>
+            <Link to="/dashboard"><Button variant="ghost"><ChevronLeft className="w-4 h-4 mr-2" />{t('notifications.back')}</Button></Link>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Notifications</h1>
-              {unreadCount > 0 && <p className="text-sm text-slate-500">{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</p>}
+              <h1 className="text-2xl font-bold text-slate-900">{t('notifications.title')}</h1>
+              {unreadCount > 0 && (
+                <p className="text-sm text-slate-500">
+                  {t('notifications.unreadCount', { count: unreadCount })}
+                </p>
+              )}
             </div>
           </div>
           {unreadCount > 0 && (
             <Button variant="outline" size="sm" onClick={markAllAsRead}>
-              <Check className="w-4 h-4 mr-2" /> Tout marquer comme lu
+              <Check className="w-4 h-4 mr-2" /> {t('notifications.markAllAsRead')}
             </Button>
           )}
         </div>
 
         {notifications.length === 0 ? (
-          <Card><CardContent className="p-8 text-center text-slate-500">
-            <Bell className="w-12 h-12 mx-auto mb-4 text-slate-300" />Aucune notification.
-          </CardContent></Card>
+          <Card>
+            <CardContent className="p-8 text-center text-slate-500">
+              <Bell className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+              {t('notifications.noNotifications')}
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-3">
             {notifications.map((notif) => (
@@ -78,7 +86,7 @@ const NotificationsPage = () => {
                 <CardContent className="p-4 flex items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      {!notif.is_read && <span className="w-2 h-2 bg-blue-600 text-white rounded-full"></span>}
+                      {!notif.is_read && <span className="w-2 h-2 bg-blue-600 rounded-full"></span>}
                       <h3 className="font-medium text-slate-900">{notif.title}</h3>
                     </div>
                     <p className="text-sm text-slate-600">{notif.message}</p>
@@ -86,11 +94,11 @@ const NotificationsPage = () => {
                   </div>
                   <div className="flex gap-1 shrink-0">
                     {!notif.is_read && (
-                      <Button variant="ghost" size="icon" onClick={() => markAsRead(notif.id)} title="Marquer comme lu">
+                      <Button variant="ghost" size="icon" onClick={() => markAsRead(notif.id)} title={t('notifications.markAsRead')}>
                         <Check className="w-4 h-4 text-blue-600" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" onClick={() => deleteNotification(notif.id)} title="Supprimer">
+                    <Button variant="ghost" size="icon" onClick={() => deleteNotification(notif.id)} title={t('notifications.delete')}>
                       <Trash2 className="w-4 h-4 text-red-500" />
                     </Button>
                   </div>

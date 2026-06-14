@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
@@ -8,6 +9,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
+import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter'; // 👈 Ajouté
 import {
   Building2,
   Briefcase,
@@ -36,53 +38,57 @@ import {
   Undo2,
   CreditCard,
   Layers,
+  Banknote, // 👈 Ajouté pour le salaire
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import UserMessages from '../components/UserMessages';
 
-const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => (
-  <Card className="border-slate-200 overflow-hidden">
-    <CardContent className="p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm text-slate-500 truncate">{label}</p>
-          <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{value}</p>
-          {trend !== undefined && (
-            <p
-              className={cn(
-                'text-xs mt-1 flex items-center gap-1',
-                trend > 0 ? 'text-green-600' : 'text-slate-500'
-              )}
-            >
-              <TrendingUp className="w-3 h-3" />
-              {trend > 0 ? '+' : ''}
-              {trend}% ce mois
-            </p>
-          )}
-        </div>
-        <div
-          className={cn(
-            'w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0',
-            color === 'blue' && 'bg-blue-100',
-            color === 'green' && 'bg-green-100',
-            color === 'purple' && 'bg-purple-100',
-            color === 'orange' && 'bg-orange-100'
-          )}
-        >
-          <Icon
-            className={cn(
-              'w-5 h-5 sm:w-6 sm:h-6',
-              color === 'blue' && 'text-blue-600',
-              color === 'green' && 'text-green-600',
-              color === 'purple' && 'text-purple-600',
-              color === 'orange' && 'text-orange-600'
+const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
+  const { t } = useTranslation();
+  return (
+    <Card className="border-slate-200 overflow-hidden">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-slate-500 truncate">{label}</p>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{value}</p>
+            {trend !== undefined && (
+              <p
+                className={cn(
+                  'text-xs mt-1 flex items-center gap-1',
+                  trend > 0 ? 'text-green-600' : 'text-slate-500'
+                )}
+              >
+                <TrendingUp className="w-3 h-3" />
+                {trend > 0 ? '+' : ''}
+                {t('companyDashboard.stats.trend', { trend })}
+              </p>
             )}
-          />
+          </div>
+          <div
+            className={cn(
+              'w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0',
+              color === 'blue' && 'bg-blue-100',
+              color === 'green' && 'bg-green-100',
+              color === 'purple' && 'bg-purple-100',
+              color === 'orange' && 'bg-orange-100'
+            )}
+          >
+            <Icon
+              className={cn(
+                'w-5 h-5 sm:w-6 sm:h-6',
+                color === 'blue' && 'text-blue-600',
+                color === 'green' && 'text-green-600',
+                color === 'purple' && 'text-purple-600',
+                color === 'orange' && 'text-orange-600'
+              )}
+            />
+          </div>
         </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
 const CompanyJobCard = ({
   job,
@@ -93,22 +99,24 @@ const CompanyJobCard = ({
   onCancelSubmission,
   isCompanyVerified,
 }) => {
+  const { t } = useTranslation();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   const buttonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const { format } = useCurrencyFormatter(); // 👈 Hook de formatage
 
-  const statusConfig = {
-    draft: { label: 'Brouillon', color: 'bg-slate-100 text-slate-700' },
-    pending: { label: 'En validation', color: 'bg-yellow-100 text-yellow-700' },
-    active: { label: 'Publiée', color: 'bg-green-100 text-green-700' },
-    paused: { label: 'En pause', color: 'bg-yellow-100 text-yellow-700' },
-    closed: { label: 'Fermée', color: 'bg-red-100 text-red-700' },
-    expired: { label: 'Expirée', color: 'bg-slate-100 text-slate-700' },
-    rejected: { label: 'Refusée', color: 'bg-red-100 text-red-700' },
+  const statusLabel = t(`companyDashboard.status.${job.status}`, { defaultValue: job.status });
+  const statusColors = {
+    draft: 'bg-slate-100 text-slate-700',
+    pending: 'bg-yellow-100 text-yellow-700',
+    active: 'bg-green-100 text-green-700',
+    paused: 'bg-yellow-100 text-yellow-700',
+    closed: 'bg-red-100 text-red-700',
+    expired: 'bg-slate-100 text-slate-700',
+    rejected: 'bg-red-100 text-red-700',
   };
-
-  const status = statusConfig[job.status] || statusConfig.draft;
+  const statusColor = statusColors[job.status] || 'bg-slate-100 text-slate-700';
 
   const updateMenuPosition = () => {
     if (!buttonRef.current) return;
@@ -157,14 +165,11 @@ const CompanyJobCard = ({
           >
             {(job.status === 'draft' || job.status === 'rejected') && (
               <button
-                onClick={() => {
-                  onEdit(job);
-                  setShowMenu(false);
-                }}
+                onClick={() => { onEdit(job); setShowMenu(false); }}
                 className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
               >
                 <Edit className="w-4 h-4" />
-                Modifier
+                {t('companyDashboard.jobCard.menu.edit')}
               </button>
             )}
 
@@ -174,14 +179,14 @@ const CompanyJobCard = ({
               className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
             >
               <Users className="w-4 h-4" />
-              Voir les candidatures
+              {t('companyDashboard.jobCard.menu.viewApplications')}
             </Link>
 
             {job.status === 'draft' && (
               <button
                 onClick={() => {
                   if (!isCompanyVerified) {
-                    toast.error("Votre entreprise n'est pas encore vérifiée.");
+                    toast.error(t('companyDashboard.toasts.companyNotVerifiedMenu'));
                     setShowMenu(false);
                     return;
                   }
@@ -195,59 +200,47 @@ const CompanyJobCard = ({
                 )}
               >
                 <Send className="w-4 h-4" />
-                {isCompanyVerified ? 'Soumettre pour validation' : 'Validation entreprise requise'}
+                {isCompanyVerified ? t('companyDashboard.jobCard.menu.submitForValidation') : t('companyDashboard.jobCard.menu.validationRequired')}
               </button>
             )}
 
             {job.status === 'pending' && (
               <button
-                onClick={() => {
-                  onCancelSubmission(job);
-                  setShowMenu(false);
-                }}
+                onClick={() => { onCancelSubmission(job); setShowMenu(false); }}
                 className="w-full flex items-center gap-2 px-4 py-3 text-sm text-amber-600 hover:bg-slate-50"
               >
                 <Undo2 className="w-4 h-4" />
-                Annuler la soumission
+                {t('companyDashboard.jobCard.menu.cancelSubmission')}
               </button>
             )}
 
             {job.status === 'active' && (
               <button
-                onClick={() => {
-                  onToggleStatus(job, 'paused');
-                  setShowMenu(false);
-                }}
+                onClick={() => { onToggleStatus(job, 'paused'); setShowMenu(false); }}
                 className="w-full flex items-center gap-2 px-4 py-3 text-sm text-yellow-600 hover:bg-slate-50"
               >
                 <Clock className="w-4 h-4" />
-                Mettre en pause
+                {t('companyDashboard.jobCard.menu.pause')}
               </button>
             )}
 
             {job.status === 'paused' && (
               <button
-                onClick={() => {
-                  onToggleStatus(job, 'active');
-                  setShowMenu(false);
-                }}
+                onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }}
                 className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"
               >
                 <CheckCircle className="w-4 h-4" />
-                Republier
+                {t('companyDashboard.jobCard.menu.republish')}
               </button>
             )}
 
             {job.status !== 'pending' && (
               <button
-                onClick={() => {
-                  onDelete(job);
-                  setShowMenu(false);
-                }}
+                onClick={() => { onDelete(job); setShowMenu(false); }}
                 className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
               >
                 <Trash2 className="w-4 h-4" />
-                Supprimer
+                {t('companyDashboard.jobCard.menu.delete')}
               </button>
             )}
           </div>
@@ -274,29 +267,37 @@ const CompanyJobCard = ({
               {job.title}
             </Link>
 
-            <Badge className={cn(status.color, 'border-0 text-xs w-fit')}>
-              {status.label}
+            <Badge className={cn(statusColor, 'border-0 text-xs w-fit')}>
+              {statusLabel}
             </Badge>
           </div>
 
           <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-slate-500">
             <span className="flex items-center gap-1">
               <MapPin className="w-3 h-3" />
-              {job.city?.name || 'Non spécifié'}
+              {job.city?.name || t('companyDashboard.jobCard.unspecifiedLocation')}
             </span>
 
             <Badge className={cn(contractInfo.color, 'border-0 text-xs')}>
               {contractInfo.label}
             </Badge>
 
+            {/* 👇 Affichage conditionnel du salaire formaté */}
+            {job.salary_min && job.salary_max && (
+              <span className="flex items-center gap-1">
+                <Banknote className="w-3 h-3" />
+                {format(job.salary_min)} – {format(job.salary_max)}
+              </span>
+            )}
+
             <span className="flex items-center gap-1">
               <Eye className="w-3 h-3" />
-              {job.views_count || 0} vues
+              {t('companyDashboard.jobCard.views', { count: job.views_count || 0 })}
             </span>
 
             <span className="flex items-center gap-1">
               <FileText className="w-3 h-3" />
-              {job.applications_count || 0} candidatures
+              {t('companyDashboard.jobCard.applications', { count: job.applications_count || 0 })}
             </span>
           </div>
         </div>
@@ -323,17 +324,26 @@ const CompanyJobCard = ({
 };
 
 const ApplicationCard = ({ application }) => {
-  const statusConfig = {
-    pending: { label: 'Nouvelle', color: 'bg-blue-100 text-blue-700', icon: Clock },
-    viewed: { label: 'Vue', color: 'bg-slate-100 text-slate-700', icon: Eye },
-    shortlisted: { label: 'Présélectionné', color: 'bg-purple-100 text-purple-700', icon: CheckCircle },
-    interview: { label: 'Entretien', color: 'bg-green-100 text-green-700', icon: Calendar },
-    accepted: { label: 'Accepté', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-    rejected: { label: 'Refusé', color: 'bg-red-100 text-red-700', icon: XCircle },
+  const { t } = useTranslation();
+  const statusIcons = {
+    pending: Clock,
+    viewed: Eye,
+    shortlisted: CheckCircle,
+    interview: Calendar,
+    accepted: CheckCircle,
+    rejected: XCircle,
   };
-
-  const status = statusConfig[application.status] || statusConfig.pending;
-  const StatusIcon = status.icon;
+  const statusColors = {
+    pending: 'bg-blue-100 text-blue-700',
+    viewed: 'bg-slate-100 text-slate-700',
+    shortlisted: 'bg-purple-100 text-purple-700',
+    interview: 'bg-green-100 text-green-700',
+    accepted: 'bg-green-100 text-green-700',
+    rejected: 'bg-red-100 text-red-700',
+  };
+  const statusLabel = t(`companyDashboard.applicationStatus.${application.status}`, { defaultValue: application.status });
+  const StatusIcon = statusIcons[application.status] || Clock;
+  const statusColor = statusColors[application.status] || 'bg-slate-100 text-slate-700';
 
   return (
     <Link
@@ -352,9 +362,9 @@ const ApplicationCard = ({ application }) => {
           <p className="text-sm text-slate-500 line-clamp-1">{application.job?.title}</p>
         </div>
 
-        <Badge className={cn(status.color, 'gap-1 border-0 shrink-0 text-xs w-fit')}>
+        <Badge className={cn(statusColor, 'gap-1 border-0 shrink-0 text-xs w-fit')}>
           <StatusIcon className="w-3 h-3" />
-          {status.label}
+          {statusLabel}
         </Badge>
       </div>
 
@@ -364,6 +374,7 @@ const ApplicationCard = ({ application }) => {
 };
 
 const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => {
+  const { t } = useTranslation();
   const [reason, setReason] = useState('');
 
   const handleConfirm = () => {
@@ -379,7 +390,7 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
           <div className="flex items-center justify-between mb-4 gap-3">
             <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2 min-w-0">
               <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-              Résilier l'abonnement
+              {t('companyDashboard.cancelModal.title')}
             </h2>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600 shrink-0">
               <X className="w-5 h-5" />
@@ -388,35 +399,35 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
 
           <div className="space-y-4">
             <p className="text-sm text-slate-600">
-              Vous êtes sur le point de résilier votre abonnement. Cette action est irréversible.
+              {t('companyDashboard.cancelModal.description')}
             </p>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Raison de la résiliation (optionnel)
+                {t('companyDashboard.cancelModal.reasonLabel')}
               </label>
               <textarea
                 rows={3}
                 className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Dites-nous pourquoi vous partez..."
+                placeholder={t('companyDashboard.cancelModal.reasonPlaceholder')}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
               />
             </div>
 
             <div className="bg-red-50 rounded-xl p-4 text-sm text-red-700">
-              <p className="font-medium mb-1">⚠️ Conséquences :</p>
+              <p className="font-medium mb-1">{t('companyDashboard.cancelModal.consequencesTitle')}</p>
               <ul className="list-disc list-inside space-y-1 text-red-600">
-                <li>Votre plan sera rétrogradé en plan Gratuit</li>
-                <li>Les fonctionnalités premium seront désactivées</li>
-                <li>Cette action est immédiate</li>
+                {(t('companyDashboard.cancelModal.consequences', { returnObjects: true }) || []).map((item, idx) => (
+                  <li key={idx}>{item}</li>
+                ))}
               </ul>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 mt-6">
             <Button variant="outline" className="flex-1 min-h-[44px]" onClick={onClose}>
-              Annuler
+              {t('companyDashboard.cancelModal.cancelButton')}
             </Button>
             <Button
               className="flex-1 min-h-[44px] bg-red-600 hover:bg-red-700 text-white"
@@ -424,7 +435,7 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
               disabled={cancelling}
             >
               {cancelling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Confirmer la résiliation
+              {t('companyDashboard.cancelModal.confirmButton')}
             </Button>
           </div>
         </CardContent>
@@ -434,6 +445,7 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
 };
 
 const CompanyDashboard = () => {
+  const { t } = useTranslation();
   const { user, activeCompanyId, setActiveCompanyId } = useAuth();
   const navigate = useNavigate();
 
@@ -505,7 +517,7 @@ const CompanyDashboard = () => {
       });
     } catch (err) {
       console.error(err);
-      toast.error('Erreur de chargement du dashboard');
+      toast.error(t('companyDashboard.toasts.loadError'));
     } finally {
       setLoading(false);
     }
@@ -537,10 +549,10 @@ const CompanyDashboard = () => {
   const handleEditJob = (job) => navigate(`/dashboard/entreprise/offres/${job.id}/modifier`);
 
   const handleDeleteJob = async (job) => {
-    if (!window.confirm(`Supprimer "${job.title}" ?`)) return;
+    if (!window.confirm(t('companyDashboard.toasts.deleteConfirm', { title: job.title }))) return;
     await supabase.from('jobs').delete().eq('id', job.id);
     setJobs((prev) => prev.filter((j) => j.id !== job.id));
-    toast.success('Offre supprimée');
+    toast.success(t('companyDashboard.toasts.jobDeleted'));
   };
 
   const handleToggleJobStatus = async (job, newStatus) => {
@@ -552,7 +564,7 @@ const CompanyDashboard = () => {
         .eq('status', 'active');
       const limit = getPlanLimit();
       if (activeCount >= limit) {
-        toast.error(`Limite atteinte (${limit} offre(s) max).`);
+        toast.error(t('companyDashboard.toasts.limitReached', { limit }));
         return;
       }
     }
@@ -565,16 +577,16 @@ const CompanyDashboard = () => {
       }
       await supabase.from('jobs').update(updates).eq('id', job.id);
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, ...updates } : j)));
-      toast.success(newStatus === 'active' ? 'Offre publiée' : 'Statut mis à jour');
+      toast.success(newStatus === 'active' ? t('companyDashboard.toasts.offerPublished') : t('companyDashboard.toasts.statusUpdated'));
     } catch (err) {
       console.error(err);
-      toast.error('Erreur');
+      toast.error(t('companyDashboard.toasts.updateError'));
     }
   };
 
   const handleSubmitForReview = async (job) => {
     if (!company?.is_verified) {
-      toast.error("Votre entreprise n'est pas encore vérifiée. Vous ne pouvez pas soumettre d'offre pour le moment.");
+      toast.error(t('companyDashboard.toasts.companyNotVerified'));
       return;
     }
 
@@ -590,14 +602,14 @@ const CompanyDashboard = () => {
       .eq('status', 'pending');
     const limit = getPlanLimit();
     if ((activeCount || 0) + (pendingCount || 0) >= limit) {
-      toast.error(`Limite atteinte (${limit} offre(s) max). Vous avez déjà ${(activeCount || 0) + (pendingCount || 0)} offre(s) active(s) ou en attente.`);
+      toast.error(t('companyDashboard.toasts.limitReachedDetailed', { limit, total: (activeCount || 0) + (pendingCount || 0) }));
       return;
     }
 
     try {
       await supabase.from('jobs').update({ status: 'pending' }).eq('id', job.id);
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'pending' } : j)));
-      toast.success('Offre soumise pour validation');
+      toast.success(t('companyDashboard.toasts.submittedForValidation'));
       try {
         await apiFetch('/api/notify-admin-new-job', {
           method: 'POST',
@@ -609,9 +621,10 @@ const CompanyDashboard = () => {
         });
       } catch (err) {
         console.error('Erreur notification admin job:', err);
+        toast.error(t('companyDashboard.toasts.adminNotifyError'));
       }
     } catch (err) {
-      toast.error("Erreur lors de la soumission");
+      toast.error(t('companyDashboard.toasts.submissionError'));
     }
   };
 
@@ -619,9 +632,9 @@ const CompanyDashboard = () => {
     try {
       await supabase.from('jobs').update({ status: 'draft' }).eq('id', job.id);
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'draft' } : j)));
-      toast.success('Soumission annulée, offre remise en brouillon');
+      toast.success(t('companyDashboard.toasts.submissionCancelled'));
     } catch (err) {
-      toast.error('Erreur');
+      toast.error(t('companyDashboard.toasts.updateError'));
     }
   };
 
@@ -640,11 +653,11 @@ const CompanyDashboard = () => {
 
       if (error) throw error;
 
-      toast.success('Abonnement résilié avec succès');
+      toast.success(t('companyDashboard.toasts.subscriptionCancelled'));
       setShowCancelModal(false);
       fetchCompanyData(company.id);
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de la résiliation');
+      toast.error(err.message || t('companyDashboard.toasts.cancelError'));
     } finally {
       setCancelling(false);
     }
@@ -664,8 +677,10 @@ const CompanyDashboard = () => {
   const activeJobsCount = jobs.filter((j) => j.status === 'active').length;
   const planLimit = getPlanLimit();
   const progressPercent = planLimit === Infinity ? 0 : Math.min(100, (activeJobsCount / planLimit) * 100);
-  const planLabel = company?.subscription_plan === 'free' ? 'Gratuit' : company?.subscription_plan?.charAt(0).toUpperCase() + company?.subscription_plan?.slice(1);
-  const limitDisplay = planLimit === Infinity ? 'Illimité' : planLimit;
+  const planLabel = company?.subscription_plan === 'free'
+    ? t('pricing.free')
+    : company?.subscription_plan?.charAt(0).toUpperCase() + company?.subscription_plan?.slice(1);
+  const limitDisplay = planLimit === Infinity ? t('companyDashboard.subscriptionCard.unlimited') : planLimit;
 
   if (loading) {
     return (
@@ -682,14 +697,12 @@ const CompanyDashboard = () => {
           <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Building2 className="w-10 h-10 text-blue-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-4">Créez votre première entreprise</h1>
-          <p className="text-slate-600 mb-8">
-            Pour publier des offres et recevoir des candidatures, commencez par créer le profil de votre entreprise.
-          </p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-4">{t('companyDashboard.noCompany.title')}</h1>
+          <p className="text-slate-600 mb-8">{t('companyDashboard.noCompany.subtitle')}</p>
           <Link to="/dashboard/entreprise/creer">
             <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700 min-h-[44px]">
               <Plus className="w-5 h-5 mr-2" />
-              Créer mon entreprise
+              {t('companyDashboard.noCompany.createButton')}
             </Button>
           </Link>
         </div>
@@ -709,12 +722,12 @@ const CompanyDashboard = () => {
           >
             {companies.map(c => (
               <option key={c.id} value={c.id}>
-                {c.name} {c.owner_id === user.id ? '(propriétaire)' : '(membre)'}
+                {c.name} {c.owner_id === user.id ? t('companyDashboard.companySelector.owner') : t('companyDashboard.companySelector.member')}
               </option>
             ))}
           </select>
           <Link to="/dashboard/entreprise/creer" className="ml-auto">
-            <Button variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" /> Nouvelle entreprise</Button>
+            <Button variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" /> {t('companyDashboard.companySelector.newCompany')}</Button>
           </Link>
         </div>
 
@@ -729,32 +742,32 @@ const CompanyDashboard = () => {
             </div>
             <div className="min-w-0">
               <h1 className="text-2xl font-bold text-slate-900 truncate">{company?.name}</h1>
-              <p className="text-slate-600">Espace recruteur</p>
+              <p className="text-slate-600">{t('companyDashboard.header.title')}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
             <Link to="/dashboard/entreprise/profil" className="w-full">
               <Button variant="outline" className="w-full min-h-[44px]">
                 <Settings className="w-4 h-4 mr-2" />
-                Profil entreprise
+                {t('companyDashboard.profileButton')}
               </Button>
             </Link>
             <Link to="/dashboard/entreprise/offres/nouvelle" className="w-full">
               <Button className="w-full min-h-[44px] bg-blue-600 text-white hover:bg-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
-                Nouvelle offre
+                {t('companyDashboard.newOfferButton')}
               </Button>
             </Link>
           </div>
         </div>
 
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <StatCard icon={Briefcase} label="Offres publiées" value={stats.activeJobs} color="blue" />
-          <StatCard icon={FileText} label="Total candidatures" value={stats.totalApplications} color="green" />
-          <StatCard icon={Users} label="Nouvelles candidatures" value={stats.newApplications} color="purple" />
+          <StatCard icon={Briefcase} label={t('companyDashboard.stats.publishedJobs')} value={stats.activeJobs} color="blue" />
+          <StatCard icon={FileText} label={t('companyDashboard.stats.totalApplications')} value={stats.totalApplications} color="green" />
+          <StatCard icon={Users} label={t('companyDashboard.stats.newApplications')} value={stats.newApplications} color="purple" />
           <StatCard
             icon={Eye}
-            label="Vues totales"
+            label={t('companyDashboard.stats.totalViews')}
             value={jobs.reduce((s, j) => s + (j.views_count || 0), 0)}
             color="orange"
           />
@@ -765,12 +778,12 @@ const CompanyDashboard = () => {
             <Card className="border-slate-200 overflow-visible">
               <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Mes offres d'emploi</h2>
-                  <p className="text-sm text-slate-500">{stats.totalJobs} offres au total</p>
+                  <h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.jobsSection.title')}</h2>
+                  <p className="text-sm text-slate-500">{t('companyDashboard.jobsSection.totalOffers', { count: stats.totalJobs })}</p>
                 </div>
                 <Link to="/dashboard/entreprise/offres" className="w-full sm:w-auto">
                   <Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">
-                    Voir tout
+                    {t('companyDashboard.jobsSection.viewAll')}
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
@@ -779,9 +792,9 @@ const CompanyDashboard = () => {
                 {jobs.length === 0 ? (
                   <div className="text-center py-8">
                     <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-600 mb-4">Aucune offre publiée</p>
+                    <p className="text-slate-600 mb-4">{t('companyDashboard.jobsSection.noOffers')}</p>
                     <Link to="/dashboard/entreprise/offres/nouvelle">
-                      <Button className="min-h-[44px]">Publier une offre</Button>
+                      <Button className="min-h-[44px]">{t('companyDashboard.jobsSection.publishButton')}</Button>
                     </Link>
                   </div>
                 ) : (
@@ -808,12 +821,12 @@ const CompanyDashboard = () => {
             <Card className="border-slate-200 overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Candidatures récentes</h2>
-                  <p className="text-sm text-slate-500">{stats.newApplications} nouvelles</p>
+                  <h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.applicationsSection.title')}</h2>
+                  <p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.newCount', { count: stats.newApplications })}</p>
                 </div>
                 <Link to="/dashboard/entreprise/candidatures" className="w-full sm:w-auto">
                   <Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">
-                    Voir tout
+                    {t('companyDashboard.applicationsSection.viewAll')}
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
@@ -822,7 +835,7 @@ const CompanyDashboard = () => {
                 {applications.length === 0 ? (
                   <div className="text-center py-6">
                     <Users className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm text-slate-500">Aucune candidature</p>
+                    <p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.noApplications')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -836,12 +849,11 @@ const CompanyDashboard = () => {
 
             <Card className="border-slate-200 overflow-hidden">
               <CardContent className="p-4 sm:p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Profil entreprise</h3>
+                <h3 className="font-semibold text-slate-900 mb-4">{t('companyDashboard.companyProfileCard.title')}</h3>
 
                 {!company?.is_verified && (
                   <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">
-                    ⏳ Votre entreprise est en attente de validation. Vous pouvez préparer vos offres en brouillon.
-                    Une fois validée, vous pourrez les soumettre pour publication.
+                    {t('companyDashboard.companyProfileCard.pendingValidation')}
                   </div>
                 )}
 
@@ -855,7 +867,7 @@ const CompanyDashboard = () => {
                   {company?.size && (
                     <p className="flex items-center gap-2 text-slate-600">
                       <Users className="w-4 h-4 text-slate-400" />
-                      {company.size} employés
+                      {t('companyDashboard.companyProfileCard.employees', { size: company.size })}
                     </p>
                   )}
                   {company?.website && (
@@ -884,7 +896,7 @@ const CompanyDashboard = () => {
                   {company?.founded_year && (
                     <p className="flex items-center gap-2 text-slate-600">
                       <Calendar className="w-4 h-4 text-slate-400" />
-                      Créée en {company.founded_year}
+                      {t('companyDashboard.companyProfileCard.founded', { year: company.founded_year })}
                     </p>
                   )}
                   {company?.address && (
@@ -897,7 +909,7 @@ const CompanyDashboard = () => {
 
                 <Link to="/dashboard/entreprise/profil">
                   <Button variant="outline" className="w-full mt-4 min-h-[44px]">
-                    Modifier le profil
+                    {t('companyDashboard.companyProfileCard.editProfile')}
                   </Button>
                 </Link>
               </CardContent>
@@ -907,18 +919,18 @@ const CompanyDashboard = () => {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
                   <Badge className="bg-blue-100 text-blue-700 border-0 text-sm px-3 py-1">
-                    Plan actuel : {planLabel}
+                    {t('companyDashboard.subscriptionCard.currentPlan', { plan: planLabel })}
                   </Badge>
                   <Link to="/tarifs" className="w-full sm:w-auto">
                     <Button variant="ghost" size="sm" className="w-full sm:w-auto text-blue-600 hover:bg-blue-100 min-h-[44px]">
-                      Changer de plan
+                      {t('companyDashboard.subscriptionCard.changePlan')}
                     </Button>
                   </Link>
                 </div>
 
                 <div className="mb-4">
                   <div className="flex justify-between text-sm text-slate-600 mb-1">
-                    <span>Offres actives</span>
+                    <span>{t('companyDashboard.subscriptionCard.activeOffers')}</span>
                     <span>{activeJobsCount} / {limitDisplay}</span>
                   </div>
                   <div className="w-full bg-blue-100 rounded-full h-2">
@@ -932,7 +944,7 @@ const CompanyDashboard = () => {
                 {company?.subscription_plan !== 'free' && company?.stripe_subscription_id ? (
                   <>
                     <p className="text-sm text-blue-800 mb-4">
-                      Vous êtes actuellement sur le plan {company.subscription_plan}. Vous pouvez gérer votre abonnement ou le résilier.
+                      {t('companyDashboard.subscriptionCard.activePlanMessage', { plan: planLabel })}
                     </p>
                     <div className="space-y-2">
                       <Button
@@ -941,7 +953,7 @@ const CompanyDashboard = () => {
                         onClick={handleOpenPortal}
                       >
                         <CreditCard className="w-4 h-4 mr-2" />
-                        Gérer mon abonnement
+                        {t('companyDashboard.subscriptionCard.manageSubscription')}
                       </Button>
                       <Button
                         variant="outline"
@@ -949,27 +961,26 @@ const CompanyDashboard = () => {
                         onClick={() => setShowCancelModal(true)}
                       >
                         <AlertTriangle className="w-4 h-4 mr-2" />
-                        Résilier l'abonnement
+                        {t('companyDashboard.subscriptionCard.cancelSubscription')}
                       </Button>
                     </div>
                   </>
                 ) : company?.subscription_plan === 'free' && company?.cancellation_reason ? (
                   <div className="text-sm text-slate-700 mt-2">
-                    <p className="font-medium">Raison de la dernière résiliation :</p>
-                    <p className="italic mt-1">« {company.cancellation_reason} »</p>
+                    <p className="font-medium">{t('companyDashboard.subscriptionCard.lastCancelReason')}</p>
+                    <p className="italic mt-1">{t('companyDashboard.subscriptionCard.cancelReasonQuote', { reason: company.cancellation_reason })}</p>
                   </div>
                 ) : (
                   <p className="text-sm text-blue-800">
-                    Passez à un plan supérieur pour publier plus d'offres et accéder à des fonctionnalités avancées.
+                    {t('companyDashboard.subscriptionCard.freePlanMessage')}
                   </p>
                 )}
               </CardContent>
             </Card>
 
-            {/* Messages de l'administration */}
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader>
-                <CardTitle>Messages de l'administration</CardTitle>
+                <CardTitle>{t('companyDashboard.adminMessages.title')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <UserMessages userId={user.id} />

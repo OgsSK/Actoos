@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { apiFetch } from '../lib/api';
+import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter'; // 👈 Import ajouté
 
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -24,8 +26,10 @@ import {
 import { CONTRACT_TYPES } from '../lib/utils';
 
 const JobDetailPage = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const { user, isAdmin } = useAuth();
+  const { format } = useCurrencyFormatter(); // 👈 Hook de formatage
 
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,20 +37,17 @@ const JobDetailPage = () => {
   const [hasApplied, setHasApplied] = useState(false);
   const [matchScore, setMatchScore] = useState(null);
 
-  // Vérification rôle entreprise
   const isCompany =
     user?.user_metadata?.role === 'company' ||
     user?.app_metadata?.role === 'company' ||
     user?.user_metadata?.account_type === 'company';
 
-  // isOwner doit être calculé dès que job est disponible, avant les useEffect qui l'utilisent
   const isOwner = user?.id && job?.company?.owner_id === user.id;
 
   useEffect(() => {
     fetchJob();
   }, [id]);
 
-  // Incrémente les vues après chargement et si l'utilisateur n'est pas le propriétaire
   useEffect(() => {
     if (job && !isOwner) {
       supabase.rpc('increment_views_count', { row_id: job.id }).then(({ error }) => {
@@ -83,7 +84,7 @@ const JobDetailPage = () => {
       setJob(data);
     } catch (err) {
       console.error(err);
-      toast.error('Offre introuvable');
+      toast.error(t('jobDetail.notFound'));
     } finally {
       setLoading(false);
     }
@@ -122,7 +123,7 @@ const JobDetailPage = () => {
 
   const requireAuth = () => {
     if (!user) {
-      toast.error('Veuillez vous connecter');
+      toast.error(t('jobDetail.pleaseLogin'));
       window.location.href = '/connexion';
       return false;
     }
@@ -132,11 +133,11 @@ const JobDetailPage = () => {
   const handleApply = async () => {
     if (!requireAuth()) return;
     if (isCompany) {
-      toast.error('Les entreprises ne peuvent pas postuler');
+      toast.error(t('jobDetail.companyCannotApply'));
       return;
     }
     if (hasApplied) {
-      toast.info('Vous avez déjà postulé');
+      toast.info(t('jobDetail.alreadyAppliedMessage'));
       return;
     }
 
@@ -152,10 +153,7 @@ const JobDetailPage = () => {
       if (error) throw error;
 
       setHasApplied(true);
-      toast.success('Candidature envoyée');
-
-      // Incrémente le compteur de candidatures (via trigger SQL)
-      // (le trigger après INSERT sur applications le fera automatiquement)
+      toast.success(t('jobDetail.applicationSent'));
 
       // Envoi de l'email au recruteur (ne bloque pas l'utilisateur en cas d'échec)
       try {
@@ -184,14 +182,14 @@ const JobDetailPage = () => {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Erreur lors de l'envoi");
+      toast.error(t('jobDetail.applicationError'));
     }
   };
 
   const handleToggleSave = async () => {
     if (!requireAuth()) return;
     if (isCompany) {
-      toast.error('Les entreprises ne peuvent pas ajouter des favoris');
+      toast.error(t('jobDetail.companyCannotSaveFavorites'));
       return;
     }
 
@@ -203,17 +201,17 @@ const JobDetailPage = () => {
           .eq('user_id', user.id)
           .eq('job_id', job.id);
         setIsSaved(false);
-        toast.success('Retiré des favoris');
+        toast.success(t('jobDetail.removedFromFavorites'));
       } else {
         await supabase
           .from('saved_jobs')
           .insert({ user_id: user.id, job_id: job.id });
         setIsSaved(true);
-        toast.success('Offre sauvegardée');
+        toast.success(t('jobDetail.savedToFavorites'));
       }
     } catch (err) {
       console.error(err);
-      toast.error('Erreur');
+      toast.error(t('jobDetail.errorSaving'));
     }
   };
 
@@ -227,7 +225,7 @@ const JobDetailPage = () => {
 
   if (!job) {
     return (
-      <div className="pt-20 text-center">Offre non trouvée.</div>
+      <div className="pt-20 text-center">{t('jobDetail.notFoundMessage')}</div>
     );
   }
 
@@ -238,7 +236,7 @@ const JobDetailPage = () => {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <Link to="/emplois">
           <Button variant="ghost" className="mb-6">
-            <ChevronLeft className="w-4 h-4 mr-2" /> Retour aux offres
+            <ChevronLeft className="w-4 h-4 mr-2" /> {t('jobDetail.backToJobs')}
           </Button>
         </Link>
 
@@ -259,20 +257,21 @@ const JobDetailPage = () => {
                   <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{job.title}</h1>
                   {user?.role === 'candidate' && !isOwner && matchScore !== null && (
                     <Badge className="bg-blue-100 text-blue-700 text-sm px-3 py-1">
-                      🎯 {matchScore}% de correspondance
+                      🎯 {t('jobDetail.matchScore', { score: matchScore })}
                     </Badge>
                   )}
                 </div>
                 <p className="text-lg text-slate-600">{job.company?.name}</p>
                 <div className="flex flex-wrap gap-3 mt-4">
                   <Badge className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> {job.city?.name || 'Non spécifié'}
+                    <MapPin className="w-3 h-3" /> {job.city?.name || t('jobDetail.unspecified')}
                   </Badge>
                   <Badge className={contractInfo.color}>{contractInfo.label}</Badge>
                   {job.salary_min && job.salary_max && (
                     <Badge variant="outline" className="flex items-center gap-1">
                       <Banknote className="w-3 h-3" />
-                      {job.salary_min.toLocaleString('fr-FR')} - {job.salary_max.toLocaleString('fr-FR')} FCFA
+                      {/* ✅ Conversion avec le hook useCurrencyFormatter */}
+                      {format(job.salary_min)} – {format(job.salary_max)}
                     </Badge>
                   )}
                 </div>
@@ -284,11 +283,11 @@ const JobDetailPage = () => {
                   <>
                     {hasApplied ? (
                       <Badge className="bg-green-100 text-green-700 text-sm px-4 py-2 w-full sm:w-auto text-center">
-                        ✅ Déjà postulé
+                        ✅ {t('jobDetail.alreadyApplied')}
                       </Badge>
                     ) : (
                       <Button onClick={handleApply} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto text-white">
-                        Postuler
+                        {t('jobDetail.apply')}
                       </Button>
                     )}
                     <Button variant="outline" size="icon" onClick={handleToggleSave} className="w-full sm:w-auto">
@@ -298,7 +297,7 @@ const JobDetailPage = () => {
                 )}
                 {isOwner && (
                   <Badge variant="outline" className="text-sm w-full sm:w-auto text-center">
-                    Votre offre
+                    {t('jobDetail.yourOffer')}
                   </Badge>
                 )}
               </div>
@@ -313,23 +312,23 @@ const JobDetailPage = () => {
 
             {/* DESCRIPTION */}
             <div className="prose max-w-none">
-              <h2>Description du poste</h2>
+              <h2>{t('jobDetail.descriptionTitle')}</h2>
               <p>{job.description}</p>
               {job.responsibilities && (
                 <>
-                  <h3>Missions</h3>
+                  <h3>{t('jobDetail.missionsTitle')}</h3>
                   <p>{job.responsibilities}</p>
                 </>
               )}
               {job.requirements && (
                 <>
-                  <h3>Profil recherché</h3>
+                  <h3>{t('jobDetail.profileTitle')}</h3>
                   <p>{job.requirements}</p>
                 </>
               )}
               {job.benefits && (
                 <>
-                  <h3>Avantages</h3>
+                  <h3>{t('jobDetail.benefitsTitle')}</h3>
                   <p>{job.benefits}</p>
                 </>
               )}

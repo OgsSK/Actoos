@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { apiFetch } from '../lib/api';
 import { Card, CardContent } from '../components/ui/card';
@@ -11,7 +12,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Icônes disponibles pour les articles
 const iconMap = {
   FileText,
   Target,
@@ -21,7 +21,6 @@ const iconMap = {
   Users,
 };
 
-// Couleurs disponibles pour les bordures et badges
 const colorClasses = {
   blue: 'bg-blue-100 text-blue-600',
   red: 'bg-red-100 text-red-600',
@@ -31,8 +30,8 @@ const colorClasses = {
   indigo: 'bg-indigo-100 text-indigo-600',
 };
 
-// Composant Newsletter (inchangé)
 const NewsletterSection = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
@@ -40,7 +39,7 @@ const NewsletterSection = () => {
   const handleNewsletter = async (e) => {
     e.preventDefault();
     if (!email) {
-      toast.error('Veuillez entrer votre email.');
+      toast.error(t('blog.newsletter.toasts.emailRequired'));
       return;
     }
     setLoading(true);
@@ -50,9 +49,9 @@ const NewsletterSection = () => {
         body: JSON.stringify({ email }),
       });
       setSubscribed(true);
-      toast.success('Inscription réussie !');
+      toast.success(t('blog.newsletter.toasts.subscribeSuccess'));
     } catch (err) {
-      toast.error(err.message || "Erreur lors de l'inscription.");
+      toast.error(err.message || t('blog.newsletter.toasts.subscribeError'));
     } finally {
       setLoading(false);
     }
@@ -62,8 +61,8 @@ const NewsletterSection = () => {
     return (
       <div className="mt-16 bg-white rounded-2xl p-8 sm:p-12 border border-slate-200 text-center">
         <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-slate-900 mb-4">Vous êtes inscrit !</h2>
-        <p className="text-slate-600">Merci pour votre intérêt. À très vite dans votre boîte mail.</p>
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">{t('blog.newsletter.subscribedTitle')}</h2>
+        <p className="text-slate-600">{t('blog.newsletter.subscribedMessage')}</p>
       </div>
     );
   }
@@ -72,37 +71,33 @@ const NewsletterSection = () => {
     <div className="mt-16 bg-white rounded-2xl p-8 sm:p-12 border border-slate-200">
       <div className="max-w-2xl mx-auto text-center">
         <BookOpen className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-slate-900 mb-4">Restez informé</h2>
-        <p className="text-slate-600 mb-6">
-          Recevez nos derniers articles et conseils carrière directement dans votre boîte mail.
-        </p>
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">{t('blog.newsletter.title')}</h2>
+        <p className="text-slate-600 mb-6">{t('blog.newsletter.subtitle')}</p>
         <form onSubmit={handleNewsletter} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
           <input
             type="email"
-            placeholder="Votre email"
+            placeholder={t('blog.newsletter.placeholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="flex-1 h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <Button type="submit" disabled={loading} className="bg-blue-600 text-white hover:bg-blue-700">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "S'inscrire"}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('blog.newsletter.subscribeButton')}
           </Button>
         </form>
-        <p className="text-xs text-slate-500 mt-3">
-          En vous inscrivant, vous acceptez notre politique de confidentialité.
-        </p>
+        <p className="text-xs text-slate-500 mt-3">{t('blog.newsletter.privacyNote')}</p>
       </div>
     </div>
   );
 };
 
 const BlogPage = () => {
+  const { t } = useTranslation();
   const { user, isCompany } = useAuth();
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('Tous');
+  const [activeCategory, setActiveCategory] = useState(t('blog.allCategories'));
 
-  // Détermine l'audience à filtrer
   const audience = user ? (isCompany ? 'company' : 'candidate') : 'all';
 
   useEffect(() => {
@@ -110,7 +105,6 @@ const BlogPage = () => {
       setLoading(true);
       try {
         const data = await apiFetch(`/api/blog/posts?audience=${audience}`);
-        // Rotation quotidienne basée sur le jour de l'année
         if (data && Array.isArray(data)) {
           const dayOfYear = Math.floor(
             (new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000
@@ -123,19 +117,19 @@ const BlogPage = () => {
           setArticles([]);
         }
       } catch (err) {
-        toast.error('Impossible de charger les articles');
+        toast.error(t('blog.loadingError'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchArticles();
-  }, [audience]);
+  }, [audience, t]);
 
-  const categories = ['Tous', ...new Set(articles.map((a) => a.category))];
+  const categories = [t('blog.allCategories'), ...new Set(articles.map((a) => a.category))];
 
   const filteredArticles =
-    activeCategory === 'Tous'
+    activeCategory === t('blog.allCategories')
       ? articles
       : articles.filter((a) => a.category === activeCategory);
 
@@ -149,21 +143,14 @@ const BlogPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
-      {/* Header */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <Badge className="bg-blue-100 text-blue-700 border-0 mb-4">Blog</Badge>
-          <h1 className="text-3xl font-bold text-slate-900 mb-4">
-            Conseils et ressources pour votre carrière
-          </h1>
-          <p className="text-slate-600 max-w-2xl mx-auto">
-            Retrouvez nos meilleurs conseils pour booster votre recherche d'emploi,
-            réussir vos entretiens et développer votre carrière.
-          </p>
+          <Badge className="bg-blue-100 text-blue-700 border-0 mb-4">{t('blog.badge')}</Badge>
+          <h1 className="text-3xl font-bold text-slate-900 mb-4">{t('blog.title')}</h1>
+          <p className="text-slate-600 max-w-2xl mx-auto">{t('blog.subtitle')}</p>
         </div>
       </div>
 
-      {/* Filtres par catégorie */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-wrap gap-2 justify-center">
           {categories.map((cat) => (
@@ -179,12 +166,11 @@ const BlogPage = () => {
         </div>
       </div>
 
-      {/* Grille d'articles */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {filteredArticles.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-600">Aucun article pour le moment.</p>
+            <p className="text-slate-600">{t('blog.noArticles')}</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -227,7 +213,7 @@ const BlogPage = () => {
                           </span>
                         </div>
                         <span className="flex items-center gap-1 text-blue-600 font-medium">
-                          Lire l'article
+                          {t('blog.readMore')}
                           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                         </span>
                       </div>

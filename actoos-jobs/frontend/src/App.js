@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { I18nextProvider } from 'react-i18next';
+import i18n from './i18n';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import GeoBanner from './components/GeoBanner'; // <-- Ajout du bandeau géographique
 import Homepage from './pages/Homepage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -185,6 +188,7 @@ const AppContent = () => {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
+      <GeoBanner /> {/* Bandeau géographique */}
       <CookieBanner />
       <Footer />
 
@@ -204,12 +208,14 @@ const AppContent = () => {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </Router>
+    <I18nextProvider i18n={i18n}>
+      <Router>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </Router>
+    </I18nextProvider>
   );
 }
 
-export default App;
+export default App; 

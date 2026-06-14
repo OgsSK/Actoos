@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import LanguageSwitcher from './LanguageSwitcher';
+import HeaderPreferences from './HeaderPreferences';
 
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -21,6 +24,7 @@ import {
 import { cn } from '../lib/utils';
 
 const Header = ({ user, onLogout }) => {
+  const { t } = useTranslation();
   const { isAdmin, isCompany, isCandidate, profile } = useAuth();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -30,6 +34,7 @@ const Header = ({ user, onLogout }) => {
   const navigate = useNavigate();
 
   const isHomepage = location.pathname === '/';
+  const isTransparent = isHomepage && !scrolled;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,21 +42,15 @@ const Header = ({ user, onLogout }) => {
     };
 
     window.addEventListener('scroll', handleScroll);
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const navLinks = [
-    { label: 'Emplois', href: '/emplois' },
-    { label: 'Entreprises', href: '/entreprises' },
-    // Tarifs uniquement pour les entreprises connectées
-    ...(isCompany ? [{ label: 'Tarifs', href: '/tarifs' }] : []),
-    { label: 'Blog', href: '/blog' },
+    { label: t('header.nav.jobs'), href: '/emplois' },
+    { label: t('header.nav.companies'), href: '/entreprises' },
+    ...(isCompany ? [{ label: t('header.nav.pricing'), href: '/tarifs' }] : []),
+    { label: t('header.nav.blog'), href: '/blog' },
   ];
-
-  const isTransparent = isHomepage && !scrolled;
 
   const headerClasses = cn(
     'fixed top-0 left-0 right-0 z-50 transition-all duration-500',
@@ -69,9 +68,7 @@ const Header = ({ user, onLogout }) => {
 
   const logoClasses = cn(
     'font-bold text-xl transition-colors',
-    isTransparent
-      ? 'text-white'
-      : 'text-slate-900'
+    isTransparent ? 'text-white' : 'text-slate-900'
   );
 
   const getInitials = () => {
@@ -96,8 +93,8 @@ const Header = ({ user, onLogout }) => {
 
   const handleLogout = () => {
     setMobileMenuOpen(false);
-    onLogout();                         // déconnexion Supabase
-    navigate('/connexion');            // redirection immédiate
+    onLogout();
+    navigate('/connexion');
   };
 
   return (
@@ -119,7 +116,7 @@ const Header = ({ user, onLogout }) => {
             </div>
 
             <span className={logoClasses}>
-              Actoos Jobs
+              {t('header.brand')}
             </span>
           </Link>
 
@@ -136,12 +133,13 @@ const Header = ({ user, onLogout }) => {
             ))}
           </nav>
 
-          {/* User Menu */}
-          <div className="hidden lg:flex items-center gap-3">
-            {user ? (
-              <div className="flex items-center gap-1">
+          {/* Desktop Right Section */}
+          <div className="hidden lg:flex items-center gap-2">
+            <LanguageSwitcher isTransparent={isTransparent} />
+            <HeaderPreferences isTransparent={isTransparent} />
 
-                {/* Profile Button */}
+            {user ? (
+              <div className="flex items-center gap-1 ml-1">
                 <button
                   onClick={() => navigate(profileLink)}
                   className={cn(
@@ -163,20 +161,16 @@ const Header = ({ user, onLogout }) => {
                     <span
                       className={cn(
                         'text-sm font-medium leading-tight',
-                        isTransparent
-                          ? 'text-white'
-                          : 'text-slate-900'
+                        isTransparent ? 'text-white' : 'text-slate-900'
                       )}
                     >
-                      {user.user_metadata?.first_name || 'Compte'}
+                      {user.user_metadata?.first_name || t('header.user.defaultName')}
                     </span>
 
                     <span
                       className={cn(
                         'text-xs leading-tight max-w-[140px] truncate',
-                        isTransparent
-                          ? 'text-white/70'
-                          : 'text-slate-500'
+                        isTransparent ? 'text-white/70' : 'text-slate-500'
                       )}
                     >
                       {displayEmail}
@@ -184,7 +178,6 @@ const Header = ({ user, onLogout }) => {
                   </div>
                 </button>
 
-                {/* Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -211,7 +204,7 @@ const Header = ({ user, onLogout }) => {
                       className="cursor-pointer rounded-xl px-3 py-2 focus:bg-slate-100 focus:text-slate-900"
                     >
                       <LayoutDashboard className="w-4 h-4 mr-3" />
-                      Tableau de bord
+                      {t('header.user.dashboard')}
                     </DropdownMenuItem>
 
                     <DropdownMenuItem
@@ -219,7 +212,7 @@ const Header = ({ user, onLogout }) => {
                       className="cursor-pointer rounded-xl px-3 py-2 focus:bg-slate-100 focus:text-slate-900"
                     >
                       <User className="w-4 h-4 mr-3" />
-                      Mon profil
+                      {t('header.user.profile')}
                     </DropdownMenuItem>
 
                     {isCandidate && (
@@ -228,7 +221,7 @@ const Header = ({ user, onLogout }) => {
                         className="cursor-pointer rounded-xl px-3 py-2 focus:bg-slate-100 focus:text-slate-900"
                       >
                         <Bell className="w-4 h-4 mr-3" />
-                        Créer une alerte
+                        {t('header.user.createAlert')}
                       </DropdownMenuItem>
                     )}
 
@@ -237,7 +230,7 @@ const Header = ({ user, onLogout }) => {
                       className="cursor-pointer rounded-xl px-3 py-2 focus:bg-slate-100 focus:text-slate-900"
                     >
                       <Settings className="w-4 h-4 mr-3" />
-                      Paramètres
+                      {t('header.user.settings')}
                     </DropdownMenuItem>
 
                     {isAdmin && (
@@ -249,7 +242,7 @@ const Header = ({ user, onLogout }) => {
                           className="cursor-pointer rounded-xl px-3 py-2 text-blue-600 focus:bg-blue-50 focus:text-blue-700"
                         >
                           <Shield className="w-4 h-4 mr-3" />
-                          Administration
+                          {t('header.user.admin')}
                         </DropdownMenuItem>
                       </>
                     )}
@@ -260,7 +253,7 @@ const Header = ({ user, onLogout }) => {
                         className="mt-1 opacity-100 !cursor-default rounded-xl px-3 py-2"
                       >
                         <Badge className="bg-blue-100 text-blue-700 border-0 text-xs">
-                          Plan : {profile?.subscription_plan || 'free'}
+                          {t('header.user.plan', { plan: profile?.subscription_plan || 'free' })}
                         </Badge>
                       </DropdownMenuItem>
                     )}
@@ -272,7 +265,7 @@ const Header = ({ user, onLogout }) => {
                       className="cursor-pointer rounded-xl px-3 py-2 text-red-600 focus:bg-red-50 focus:text-red-700"
                     >
                       <LogOut className="w-4 h-4 mr-3" />
-                      Déconnexion
+                      {t('header.user.logout')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -282,13 +275,9 @@ const Header = ({ user, onLogout }) => {
                 <Link to="/connexion">
                   <Button
                     variant="ghost"
-                    className={
-                      isTransparent
-                        ? 'text-white hover:bg-white/10'
-                        : ''
-                    }
+                    className={isTransparent ? 'text-white hover:bg-white/10' : ''}
                   >
-                    Connexion
+                    {t('header.auth.login')}
                   </Button>
                 </Link>
 
@@ -300,11 +289,10 @@ const Header = ({ user, onLogout }) => {
                         : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
                     }
                   >
-                    Inscription
+                    {t('header.auth.register')}
                   </Button>
                 </Link>
 
-                {/* Bouton Espace Entreprise remplace Recruter */}
                 <Link to="/inscription?type=entreprise">
                   <Button
                     variant="outline"
@@ -316,7 +304,7 @@ const Header = ({ user, onLogout }) => {
                     )}
                   >
                     <Building2 className="w-4 h-4" />
-                    Espace Entreprise
+                    {t('header.auth.companySpace')}
                   </Button>
                 </Link>
               </>
@@ -324,20 +312,26 @@ const Header = ({ user, onLogout }) => {
           </div>
 
           {/* Mobile Toggle */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className={cn(
-              'lg:hidden p-2 rounded-lg transition-colors',
-              isTransparent
-                ? 'text-white hover:bg-white/10'
-                : 'text-slate-700 hover:bg-slate-100'
-            )}
-          >
-            {mobileMenuOpen
-              ? <X className="w-6 h-6" />
-              : <Menu className="w-6 h-6" />
-            }
-          </button>
+          <div className="lg:hidden flex items-center gap-2">
+            <LanguageSwitcher isTransparent={isTransparent} />
+            <HeaderPreferences isTransparent={isTransparent} />
+
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={cn(
+                'p-2 rounded-lg transition-colors',
+                isTransparent
+                  ? 'text-white hover:bg-white/10'
+                  : 'text-slate-700 hover:bg-slate-100'
+              )}
+            >
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -373,8 +367,6 @@ const Header = ({ user, onLogout }) => {
           </div>
 
           <div className="px-6 py-6 pt-20 space-y-4 overflow-y-auto h-full">
-
-            {/* User Info */}
             {user && (
               <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
                 <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
@@ -383,7 +375,7 @@ const Header = ({ user, onLogout }) => {
 
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-900 truncate">
-                    {user.user_metadata?.first_name || 'Utilisateur'}
+                    {user.user_metadata?.first_name || t('header.user.defaultUser')}
                   </p>
 
                   <p className="text-xs text-slate-500 truncate">
@@ -393,7 +385,6 @@ const Header = ({ user, onLogout }) => {
               </div>
             )}
 
-            {/* Navigation */}
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -405,9 +396,7 @@ const Header = ({ user, onLogout }) => {
               </Link>
             ))}
 
-            {/* Actions */}
             <div className="pt-4 border-t border-slate-100 space-y-2">
-
               {user ? (
                 <>
                   <Link
@@ -416,7 +405,7 @@ const Header = ({ user, onLogout }) => {
                   >
                     <Button className="w-full">
                       <LayoutDashboard className="w-4 h-4 mr-2" />
-                      Tableau de bord
+                      {t('header.user.dashboard')}
                     </Button>
                   </Link>
 
@@ -424,16 +413,12 @@ const Header = ({ user, onLogout }) => {
                     to={profileLink}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                    >
+                    <Button variant="outline" className="w-full">
                       <User className="w-4 h-4 mr-2" />
-                      Mon profil
+                      {t('header.user.profile')}
                     </Button>
                   </Link>
 
-                  {/* 🔔 Alerte pour les candidats dans le menu mobile */}
                   {isCandidate && (
                     <Link
                       to="/alertes"
@@ -441,7 +426,7 @@ const Header = ({ user, onLogout }) => {
                     >
                       <Button variant="outline" className="w-full">
                         <Bell className="w-4 h-4 mr-2" />
-                        Alertes emploi
+                        {t('header.mobile.alerts')}
                       </Button>
                     </Link>
                   )}
@@ -450,12 +435,9 @@ const Header = ({ user, onLogout }) => {
                     to="/parametres"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                    >
+                    <Button variant="outline" className="w-full">
                       <Settings className="w-4 h-4 mr-2" />
-                      Paramètres
+                      {t('header.user.settings')}
                     </Button>
                   </Link>
 
@@ -465,7 +447,7 @@ const Header = ({ user, onLogout }) => {
                     onClick={handleLogout}
                   >
                     <LogOut className="w-4 h-4 mr-2" />
-                    Déconnexion
+                    {t('header.user.logout')}
                   </Button>
                 </>
               ) : (
@@ -474,11 +456,8 @@ const Header = ({ user, onLogout }) => {
                     to="/connexion"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                    >
-                      Connexion
+                    <Button variant="outline" className="w-full">
+                      {t('header.auth.login')}
                     </Button>
                   </Link>
 
@@ -487,7 +466,7 @@ const Header = ({ user, onLogout }) => {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <Button className="w-full">
-                      Inscription
+                      {t('header.auth.register')}
                     </Button>
                   </Link>
 
@@ -495,12 +474,9 @@ const Header = ({ user, onLogout }) => {
                     to="/inscription?type=entreprise"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                    >
+                    <Button variant="outline" className="w-full">
                       <Building2 className="w-4 h-4 mr-2" />
-                      Espace Entreprise
+                      {t('header.auth.companySpace')}
                     </Button>
                   </Link>
                 </>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
 import { Button } from './ui/button';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 import { Mail, Loader2 } from 'lucide-react';
 
 const MessageSender = ({ role }) => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [subject, setSubject] = useState('');
@@ -41,9 +43,15 @@ const MessageSender = ({ role }) => {
     );
   };
 
+  const durationUnits = [
+    { value: 'minutes', label: t('messageSender.durationUnits.minutes') },
+    { value: 'hours', label: t('messageSender.durationUnits.hours') },
+    { value: 'days', label: t('messageSender.durationUnits.days') },
+  ];
+
   const handleSend = async () => {
     if (!subject.trim() || !content.trim() || selectedIds.length === 0) {
-      toast.error('Veuillez sélectionner au moins un destinataire et remplir le sujet et le contenu.');
+      toast.error(t('messageSender.toasts.fillRequired'));
       return;
     }
     setSending(true);
@@ -60,18 +68,18 @@ const MessageSender = ({ role }) => {
       });
       if (res.success) {
         if (res.errors && res.errors.length > 0) {
-          toast.error(`Erreurs: ${res.errors.join(', ')}`);
+          toast.error(t('messageSender.toasts.partialError', { errors: res.errors.join(', ') }));
         }
-        toast.success(`Message envoyé à ${res.sent} utilisateur(s).`);
+        toast.success(t('messageSender.toasts.sentSuccess', { count: res.sent }));
         setSubject('');
         setContent('');
         setSelectedIds([]);
       } else {
-        toast.error('Erreur lors de l\'envoi.');
+        toast.error(t('messageSender.toasts.sendError'));
       }
     } catch (err) {
       console.error('Send error:', err);
-      toast.error(err.message || 'Erreur réseau');
+      toast.error(err.message || t('messageSender.toasts.networkError'));
     } finally {
       setSending(false);
     }
@@ -82,9 +90,9 @@ const MessageSender = ({ role }) => {
       {/* Liste des destinataires */}
       <Card className="lg:col-span-1 overflow-hidden">
         <CardHeader>
-          <CardTitle>{role === 'company' ? 'Entreprises' : 'Candidats'}</CardTitle>
+          <CardTitle>{t('messageSender.recipientsTitle', { role: t(`messageSender.roles.${role}`) })}</CardTitle>
           <Input
-            placeholder="Rechercher..."
+            placeholder={t('messageSender.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="mt-2"
@@ -113,33 +121,33 @@ const MessageSender = ({ role }) => {
       {/* Composition du message */}
       <Card className="lg:col-span-2 overflow-hidden">
         <CardHeader>
-          <CardTitle>Composer un message</CardTitle>
+          <CardTitle>{t('messageSender.composeTitle')}</CardTitle>
           <CardDescription>
-            {selectedIds.length} destinataire(s) sélectionné(s)
+            {t('messageSender.composeDescription', { count: selectedIds.length })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Input
-            placeholder="Sujet du message"
+            placeholder={t('messageSender.subjectPlaceholder')}
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
           />
           <textarea
             rows={10}
             className="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Contenu du message (HTML autorisé)..."
+            placeholder={t('messageSender.contentPlaceholder')}
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
           <div className="flex items-center gap-4">
             <label className="text-sm text-slate-600">
-              Durée d’affichage :
+              {t('messageSender.durationLabel')}
             </label>
             <div className="flex gap-2">
               <Input
                 type="number"
                 min="0"
-                placeholder="Valeur"
+                placeholder={t('messageSender.durationValuePlaceholder')}
                 value={expireValue}
                 onChange={(e) => setExpireValue(Number(e.target.value))}
                 className="w-24"
@@ -149,9 +157,9 @@ const MessageSender = ({ role }) => {
                 onChange={(e) => setExpireUnit(e.target.value)}
                 className="h-10 border border-slate-200 rounded-xl px-3 bg-white"
               >
-                <option value="minutes">Minutes</option>
-                <option value="hours">Heures</option>
-                <option value="days">Jours</option>
+                {durationUnits.map(unit => (
+                  <option key={unit.value} value={unit.value}>{unit.label}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -161,7 +169,7 @@ const MessageSender = ({ role }) => {
             className="bg-blue-600 text-white hover:bg-blue-700 w-full sm:w-auto"
           >
             {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
-            Envoyer
+            {t('messageSender.sendButton')}
           </Button>
         </CardContent>
       </Card>

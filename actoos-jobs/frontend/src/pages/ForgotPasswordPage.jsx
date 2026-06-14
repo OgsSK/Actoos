@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation, Trans } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 import { Mail, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 
 const ForgotPasswordPage = () => {
+  const { t } = useTranslation();
   const { resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,7 +18,7 @@ const ForgotPasswordPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) {
-      toast.error('Veuillez entrer votre adresse email');
+      toast.error(t('forgotPassword.toasts.emptyEmail'));
       return;
     }
     setLoading(true);
@@ -24,7 +26,7 @@ const ForgotPasswordPage = () => {
       await resetPassword(email);
       setSent(true);
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de l\'envoi du lien');
+      toast.error(err.message || t('forgotPassword.toasts.sendError'));
     } finally {
       setLoading(false);
     }
@@ -44,9 +46,9 @@ const ForgotPasswordPage = () => {
 
         <Card className="shadow-xl border-0">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl">Mot de passe oublié ?</CardTitle>
+            <CardTitle className="text-2xl">{t('forgotPassword.title')}</CardTitle>
             <CardDescription>
-              Entrez votre adresse email pour recevoir un lien de réinitialisation.
+              {t('forgotPassword.description')}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
@@ -54,12 +56,14 @@ const ForgotPasswordPage = () => {
               <div className="text-center space-y-4">
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
                 <p className="text-slate-700">
-                  Si un compte est associé à <strong>{email}</strong>, vous recevrez un email avec les instructions pour réinitialiser votre mot de passe.
+                  <Trans i18nKey="forgotPassword.successMessage" values={{ email }}>
+                    Si un compte est associé à <strong>{email}</strong>, vous recevrez un email avec les instructions pour réinitialiser votre mot de passe.
+                  </Trans>
                 </p>
                 <Link to="/connexion">
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Retour à la connexion
+                    {t('forgotPassword.backToLogin')}
                   </Button>
                 </Link>
               </div>
@@ -67,14 +71,14 @@ const ForgotPasswordPage = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-                    Adresse email
+                    {t('forgotPassword.emailLabel')}
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <Input
                       id="email"
                       type="email"
-                      placeholder="votre@email.com"
+                      placeholder={t('forgotPassword.emailPlaceholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10 h-12"
@@ -84,11 +88,11 @@ const ForgotPasswordPage = () => {
                 </div>
                 <Button type="submit" disabled={loading} className="w-full h-12 text-base bg-blue-600 text-white hover:bg-blue-700">
                   {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                  Envoyer le lien
+                  {t('forgotPassword.submitButton')}
                 </Button>
                 <p className="text-center text-sm text-slate-600 mt-4">
                   <Link to="/connexion" className="text-blue-600 hover:underline">
-                    Retour à la connexion
+                    {t('forgotPassword.backToLogin')}
                   </Link>
                 </p>
               </form>

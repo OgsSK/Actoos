@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -23,6 +24,7 @@ const GoogleIcon = () => (
 );
 
 const RegisterPage = () => {
+  const { t } = useTranslation();
   const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
@@ -70,17 +72,17 @@ const RegisterPage = () => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+      toast.error(t('register.toasts.fillAllFields'));
       return;
     }
 
     if (formData.password.length < 8) {
-      toast.error('Le mot de passe doit contenir au moins 8 caractères');
+      toast.error(t('register.toasts.passwordLength'));
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error(t('register.toasts.passwordMismatch'));
       return;
     }
 
@@ -94,14 +96,14 @@ const RegisterPage = () => {
         lastName: formData.lastName,
       });
 
-      toast.success('Compte créé ! Vérifiez votre email pour confirmer votre inscription.');
+      toast.success(t('register.toasts.accountCreated'));
       navigate('/connexion');
     } catch (error) {
       console.error('Signup error:', error);
       if (error.message?.includes('already registered')) {
-        toast.error('Cet email est déjà utilisé');
+        toast.error(t('register.toasts.emailAlreadyUsed'));
       } else {
-        toast.error(error.message || "Erreur lors de l'inscription");
+        toast.error(error.message || t('register.toasts.genericError'));
       }
     } finally {
       setLoading(false);
@@ -114,7 +116,7 @@ const RegisterPage = () => {
       await signInWithGoogle();
     } catch (error) {
       console.error('Google signup error:', error);
-      toast.error('Erreur de connexion avec Google');
+      toast.error(t('register.toasts.googleError'));
       setGoogleLoading(false);
     }
   };
@@ -134,8 +136,8 @@ const RegisterPage = () => {
 
           <Card className="shadow-xl border-0">
             <CardHeader className="text-center pb-2">
-              <CardTitle className="text-2xl">Créer un compte</CardTitle>
-              <CardDescription>Choisissez votre type de profil</CardDescription>
+              <CardTitle className="text-2xl">{t('register.title')}</CardTitle>
+              <CardDescription>{t('register.chooseProfile')}</CardDescription>
             </CardHeader>
 
             <CardContent className="pt-4 space-y-4">
@@ -152,9 +154,9 @@ const RegisterPage = () => {
                     <User className="w-7 h-7 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg text-slate-900">Je cherche un emploi</h3>
+                    <h3 className="font-semibold text-lg text-slate-900">{t('register.candidateTitle')}</h3>
                     <p className="text-slate-600 text-sm mt-1">
-                      Créez votre profil, postulez aux offres et suivez vos candidatures.
+                      {t('register.candidateDesc')}
                     </p>
                   </div>
                 </div>
@@ -173,18 +175,18 @@ const RegisterPage = () => {
                     <Building2 className="w-7 h-7 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg text-slate-900">Je recrute</h3>
+                    <h3 className="font-semibold text-lg text-slate-900">{t('register.companyTitle')}</h3>
                     <p className="text-slate-600 text-sm mt-1">
-                      Publiez des offres, gérez les candidatures et collaborez en équipe.
+                      {t('register.companyDesc')}
                     </p>
                   </div>
                 </div>
               </button>
 
               <p className="text-center text-sm text-slate-600 pt-4">
-                Déjà inscrit ?{' '}
+                {t('register.alreadyRegistered')}{' '}
                 <Link to="/connexion" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Se connecter
+                  {t('register.loginLink')}
                 </Link>
               </p>
             </CardContent>
@@ -221,7 +223,7 @@ const RegisterPage = () => {
               </div>
             </div>
             <CardTitle className="text-2xl">
-              {role === 'candidate' ? 'Inscription Candidat' : 'Inscription Entreprise'}
+              {role === 'candidate' ? t('register.candidateFormTitle') : t('register.companyFormTitle')}
             </CardTitle>
             <CardDescription>
               <button
@@ -229,7 +231,7 @@ const RegisterPage = () => {
                 onClick={() => setStep(1)}
                 className="text-blue-600 hover:underline"
               >
-                ← Changer de profil
+                {t('register.changeProfile')}
               </button>
             </CardDescription>
           </CardHeader>
@@ -247,24 +249,24 @@ const RegisterPage = () => {
               ) : (
                 <GoogleIcon />
               )}
-              <span className="ml-3">Continuer avec Google</span>
+              <span className="ml-3">{t('register.googleButton')}</span>
             </Button>
 
             <div className="relative my-6">
               <Separator />
               <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-sm text-slate-500">
-                ou
+                {t('register.orSeparator')}
               </span>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">Prénom *</Label>
+                  <Label htmlFor="firstName">{t('register.firstNameLabel')}</Label>
                   <Input
                     id="firstName"
                     name="firstName"
-                    placeholder="Jean"
+                    placeholder={t('register.firstNamePlaceholder')}
                     value={formData.firstName}
                     onChange={handleChange}
                     className={cn(
@@ -275,11 +277,11 @@ const RegisterPage = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Nom *</Label>
+                  <Label htmlFor="lastName">{t('register.lastNameLabel')}</Label>
                   <Input
                     id="lastName"
                     name="lastName"
-                    placeholder="Dupont"
+                    placeholder={t('register.lastNamePlaceholder')}
                     value={formData.lastName}
                     onChange={handleChange}
                     className={cn(
@@ -293,13 +295,13 @@ const RegisterPage = () => {
 
               {role === 'company' && (
                 <div className="space-y-2">
-                  <Label htmlFor="companyName">Nom de l'entreprise *</Label>
+                  <Label htmlFor="companyName">{t('register.companyNameLabel')}</Label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <Input
                       id="companyName"
                       name="companyName"
-                      placeholder="Ma Société SARL"
+                      placeholder={t('register.companyNamePlaceholder')}
                       value={formData.companyName}
                       onChange={handleChange}
                       className={cn(
@@ -312,14 +314,14 @@ const RegisterPage = () => {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Adresse email *</Label>
+                <Label htmlFor="email">{t('register.emailLabel')}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <Input
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="votre@email.com"
+                    placeholder={t('register.emailPlaceholder')}
                     value={formData.email}
                     onChange={handleChange}
                     className={cn(
@@ -332,14 +334,14 @@ const RegisterPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe *</Label>
+                <Label htmlFor="password">{t('register.passwordLabel')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <Input
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Min. 8 caractères"
+                    placeholder={t('register.passwordPlaceholder')}
                     value={formData.password}
                     onChange={handleChange}
                     className={cn(
@@ -359,14 +361,14 @@ const RegisterPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
+                <Label htmlFor="confirmPassword">{t('register.confirmPasswordLabel')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <Input
                     id="confirmPassword"
                     name="confirmPassword"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Confirmez votre mot de passe"
+                    placeholder={t('register.confirmPasswordPlaceholder')}
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     className={cn(
@@ -392,26 +394,24 @@ const RegisterPage = () => {
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin mr-2" />
                 ) : null}
-                Créer mon compte
+                {t('register.submitButton')}
               </Button>
             </form>
 
             <p className="text-center text-sm text-slate-600 mt-6">
-              Déjà inscrit ?{' '}
+              {t('register.alreadyRegistered')}{' '}
               <Link to="/connexion" className="text-blue-600 hover:text-blue-700 font-medium">
-                Se connecter
+                {t('register.loginLink')}
               </Link>
             </p>
           </CardContent>
         </Card>
 
         <p className="text-center text-xs text-slate-500 mt-6">
-          En créant un compte, vous acceptez nos{' '}
-          <Link to="/cgu" className="text-blue-600 hover:underline">CGU</Link>
-          {' '}et notre{' '}
-          <Link to="/confidentialite" className="text-blue-600 hover:underline">
-            Politique de confidentialité
-          </Link>
+          {t('register.legalPrefix')}{' '}
+          <Link to="/cgu" className="text-blue-600 hover:underline">{t('register.cgu')}</Link>
+          {' '}{t('register.legalAnd')}{' '}
+          <Link to="/confidentialite" className="text-blue-600 hover:underline">{t('register.privacy')}</Link>
         </p>
       </div>
     </div>
