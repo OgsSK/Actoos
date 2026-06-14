@@ -3,48 +3,48 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, Phone } from 'lucide-react';
-import FooterPreferences from '../components/FooterPreferences'; // 👈 Import ajouté
+import FooterPreferences from '../components/FooterPreferences';
 
 const Footer = () => {
   const { t } = useTranslation();
   const { isCandidate, isCompany } = useAuth();
 
   return (
-    <footer className="bg-slate-900 text-slate-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
-            <Link to="/" className="text-2xl font-bold text-white">
+    <footer className="border-t border-slate-800 bg-slate-950 text-slate-300">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-2 xl:grid-cols-4">
+          <div>
+            <Link to="/" className="text-2xl font-semibold tracking-tight text-white">
               Actoos <span className="text-blue-500">Jobs</span>
             </Link>
-            <p className="mt-4 text-sm text-slate-400">
-              {t('footer.brand.tagline')}
+            <p className="mt-4 max-w-sm text-sm leading-6 text-slate-400">
+              La plateforme de recrutement nouvelle génération. Trouvez votre emploi idéal ou recrutez les meilleurs talents.
             </p>
           </div>
 
-          {/* Candidats */}
           <div>
-            <h3 className="text-white font-semibold mb-4">{t('footer.sections.candidates.title')}</h3>
-            <ul className="space-y-3 text-sm">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-white">
+              {t('footer.sections.candidates.title')}
+            </h3>
+            <ul className="mt-4 space-y-3 text-sm text-slate-400">
               <li>
-                <Link to="/emplois" className="hover:text-white transition-colors">
+                <Link to="/emplois" className="transition-colors hover:text-white">
                   {t('footer.sections.candidates.links.search')}
                 </Link>
               </li>
               <li>
-                <Link to="/inscription" className="hover:text-white transition-colors">
+                <Link to="/inscription" className="transition-colors hover:text-white">
                   {t('footer.sections.candidates.links.createAccount')}
                 </Link>
               </li>
               <li>
-                <Link to="/dashboard" className="hover:text-white transition-colors">
+                <Link to="/dashboard" className="transition-colors hover:text-white">
                   {t('footer.sections.candidates.links.dashboard')}
                 </Link>
               </li>
               {isCandidate && (
                 <li>
-                  <Link to="/blog" className="hover:text-white transition-colors">
+                  <Link to="/blog" className="transition-colors hover:text-white">
                     {t('footer.sections.candidates.links.careerTips')}
                   </Link>
                 </li>
@@ -52,23 +52,24 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Entreprises */}
           <div>
-            <h3 className="text-white font-semibold mb-4">{t('footer.sections.companies.title')}</h3>
-            <ul className="space-y-3 text-sm">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-white">
+              {t('footer.sections.companies.title')}
+            </h3>
+            <ul className="mt-4 space-y-3 text-sm text-slate-400">
               <li>
-                <Link to="/inscription?type=entreprise" className="hover:text-white transition-colors">
+                <Link to="/inscription?type=entreprise" className="transition-colors hover:text-white">
                   {t('footer.sections.companies.links.publishOffer')}
                 </Link>
               </li>
               <li>
-                <Link to="/dashboard/entreprise" className="hover:text-white transition-colors">
+                <Link to="/dashboard/entreprise" className="transition-colors hover:text-white">
                   {t('footer.sections.companies.links.dashboard')}
                 </Link>
               </li>
               {isCompany && (
                 <li>
-                  <Link to="/tarifs" className="hover:text-white transition-colors">
+                  <Link to="/tarifs" className="transition-colors hover:text-white">
                     {t('footer.sections.companies.links.pricing')}
                   </Link>
                 </li>
@@ -76,74 +77,62 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Informations */}
           <div>
-            <h3 className="text-white font-semibold mb-4">{t('footer.sections.info.title')}</h3>
-            <ul className="space-y-3 text-sm">
-              <li>
-                <Link to="/a-propos" className="hover:text-white transition-colors">
-                  {t('footer.sections.info.links.about')}
-                </Link>
-              </li>
-              <li>
-                <Link to="/faq" className="hover:text-white transition-colors">
-                  {t('footer.sections.info.links.faq')}
-                </Link>
-              </li>
-              <li>
-                <Link to="/cgu" className="hover:text-white transition-colors">
-                  {t('footer.sections.info.links.cgu')}
-                </Link>
-              </li>
-              <li>
-                <Link to="/confidentialite" className="hover:text-white transition-colors">
-                  {t('footer.sections.info.links.privacy')}
-                </Link>
-              </li>
-              <li>
-                <Link to="/cookies" className="hover:text-white transition-colors">
-                  {t('footer.sections.info.links.cookies')}
-                </Link>
-              </li>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-white">
+              {t('footer.sections.info.title')}
+            </h3>
+            <ul className="mt-4 space-y-3 text-sm text-slate-400">
+              <li><Link to="/a-propos" className="transition-colors hover:text-white">{t('footer.sections.info.links.about')}</Link></li>
+              <li><Link to="/faq" className="transition-colors hover:text-white">{t('footer.sections.info.links.faq')}</Link></li>
+              <li><Link to="/cgu" className="transition-colors hover:text-white">{t('footer.sections.info.links.cgu')}</Link></li>
+              <li><Link to="/confidentialite" className="transition-colors hover:text-white">{t('footer.sections.info.links.privacy')}</Link></li>
+              <li><Link to="/cookies" className="transition-colors hover:text-white">{t('footer.sections.info.links.cookies')}</Link></li>
             </ul>
           </div>
         </div>
 
-        {/* Contact */}
-        <div className="mt-12 pt-8 border-t border-slate-800">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div>
-              <h3 className="text-white font-semibold text-lg mb-2">{t('footer.contact.title')}</h3>
-              <p className="text-slate-400 text-sm max-w-md">
-                {t('footer.contact.description')}
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="flex items-center gap-6 text-sm text-slate-300">
-                <a href={`mailto:${t('footer.contact.email')}`} className="flex items-center gap-2 hover:text-white transition-colors">
-                  <Mail className="w-5 h-5 text-blue-400" />
-                  {t('footer.contact.email')}
-                </a>
-                <a href={`tel:${t('footer.contact.phone').replace(/\s/g, '')}`} className="flex items-center gap-2 hover:text-white transition-colors">
-                  <Phone className="w-5 h-5 text-blue-400" />
-                  {t('footer.contact.phone')}
-                </a>
-              </div>
-              {/* Sélecteur de préférences placé à côté des liens de contact */}
-              <FooterPreferences />
-              <Link
-                to="/contact"
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors"
+        <div className="mt-12 grid grid-cols-1 gap-6 border-t border-slate-800 pt-8 lg:grid-cols-[1.3fr_1fr] lg:items-start">
+          <div>
+            <h3 className="text-base font-semibold text-white">
+              {t('footer.contact.title')}
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+              {t('footer.contact.description')}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <a
+                href={`mailto:${t('footer.contact.email')}`}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2.5 text-sm text-slate-200 transition hover:border-slate-500 hover:text-white"
               >
-                {t('footer.contact.button')}
-              </Link>
+                <Mail className="h-4 w-4 text-slate-400" />
+                <span className="whitespace-nowrap">{t('footer.contact.email')}</span>
+              </a>
+
+              <a
+                href={`tel:${t('footer.contact.phone').replace(/\s/g, '')}`}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2.5 text-sm text-slate-200 transition hover:border-slate-500 hover:text-white"
+              >
+                <Phone className="h-4 w-4 text-slate-400" />
+                <span className="whitespace-nowrap">{t('footer.contact.phone')}</span>
+              </a>
             </div>
+
+            <FooterPreferences />
+
+            <Link
+              to="/contact"
+              className="inline-flex w-full items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 sm:w-auto"
+            >
+              {t('footer.contact.button')}
+            </Link>
           </div>
         </div>
 
-        {/* Copyright */}
-        <div className="mt-8 pt-8 border-t border-slate-800 text-center text-sm text-slate-500">
-          <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
+        <div className="mt-8 border-t border-slate-800 pt-6 text-sm text-slate-500">
+          <p>© {new Date().getFullYear()} Actoos Jobs. Tous droits réservés.</p>
         </div>
       </div>
     </footer>

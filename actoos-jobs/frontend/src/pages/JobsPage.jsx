@@ -2,12 +2,13 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
-import { fetchCategories } from '../lib/data';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
 import { useCities } from '../hooks/useCities';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
+import useCachedData from '../hooks/useCachedData';
+import { JobCardSkeleton } from '../components/ui/Skeleton';
 import {
   Search,
   MapPin,
@@ -18,7 +19,6 @@ import {
   X,
   ChevronDown,
   ChevronUp,
-  Loader2,
   SlidersHorizontal,
   Heart,
   ExternalLink,
@@ -607,7 +607,7 @@ const JobsPage = () => {
   const { user, isCompany } = useAuth();
   const navigate = useNavigate();
   const { prefs } = usePreferences();
-  const { cities: filteredCities, loading: citiesLoading } = useCities(prefs.country);
+  const { cities: filteredCities } = useCities(prefs.country);
 
   const [countryId, setCountryId] = useState(null);
 
@@ -616,7 +616,8 @@ const JobsPage = () => {
   const [savedJobs, setSavedJobs] = useState([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const [categories, setCategories] = useState([]);
+  const { data: categories } = useCachedData('job_categories', 'id, slug, name, icon', 'name');
+
   const [availableContractTypes, setAvailableContractTypes] = useState([]);
   const [availableExperienceLevels, setAvailableExperienceLevels] = useState([]);
 
@@ -645,14 +646,6 @@ const JobsPage = () => {
         });
     }
   }, [prefs.country]);
-
-  useEffect(() => {
-    const loadCategories = async () => {
-      const cats = await fetchCategories();
-      setCategories(cats);
-    };
-    loadCategories();
-  }, []);
 
   useEffect(() => {
     if (!countryId) return;
@@ -998,8 +991,10 @@ const JobsPage = () => {
             )}
 
             {loading || !countryId ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <div className="space-y-4">
+                {[...Array(4)].map((_, i) => (
+                  <JobCardSkeleton key={i} />
+                ))}
               </div>
             ) : filteredJobs.length === 0 ? (
               <div className="text-center py-20">

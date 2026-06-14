@@ -9,7 +9,8 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
-import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter'; // 👈 Ajouté
+import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
+import DashboardSkeleton from '../components/DashboardSkeleton'; // 👈 Import du squelette
 import {
   Building2,
   Briefcase,
@@ -38,7 +39,7 @@ import {
   Undo2,
   CreditCard,
   Layers,
-  Banknote, // 👈 Ajouté pour le salaire
+  Banknote,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import UserMessages from '../components/UserMessages';
@@ -104,7 +105,7 @@ const CompanyJobCard = ({
   const buttonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-  const { format } = useCurrencyFormatter(); // 👈 Hook de formatage
+  const { format } = useCurrencyFormatter();
 
   const statusLabel = t(`companyDashboard.status.${job.status}`, { defaultValue: job.status });
   const statusColors = {
@@ -282,7 +283,6 @@ const CompanyJobCard = ({
               {contractInfo.label}
             </Badge>
 
-            {/* 👇 Affichage conditionnel du salaire formaté */}
             {job.salary_min && job.salary_max && (
               <span className="flex items-center gap-1">
                 <Banknote className="w-3 h-3" />
@@ -682,13 +682,8 @@ const CompanyDashboard = () => {
     : company?.subscription_plan?.charAt(0).toUpperCase() + company?.subscription_plan?.slice(1);
   const limitDisplay = planLimit === Infinity ? t('companyDashboard.subscriptionCard.unlimited') : planLimit;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 pt-20 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
+  // ✅ Remplacement du spinner par le squelette
+  if (loading) return <DashboardSkeleton />;
 
   if (companies.length === 0) {
     return (
