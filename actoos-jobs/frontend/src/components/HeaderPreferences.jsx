@@ -1,26 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next'; // 👈 import ajouté
+import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
 import { supabase } from '../lib/supabase';
 import { Globe } from 'lucide-react';
 
-const CURRENCIES = {
-  XOF: 'FCFA',
-  EUR: 'EUR',
-  USD: 'USD',
-  MAD: 'MAD',
+// ✅ Labels pour les codes de devise (tu peux les enrichir au besoin)
+const CURRENCY_LABELS = {
+  XOF: 'FCFA (XOF)',
+  EUR: 'Euro (€)',
+  USD: 'US Dollar ($)',
+  MAD: 'Dirham marocain (MAD)',
+  GBP: 'Livre sterling (£)',
+  BRL: 'Réal brésilien (R$)',
+  ARS: 'Peso argentin (AR$)',
+  NGN: 'Naira nigérian (₦)',
+  ZAR: 'Rand sud-africain (R)',
+  SAR: 'Riyal saoudien (﷼)',
+AED: 'Dirham des Émirats (د.إ)',
+EGP: 'Livre égyptienne (ج.م)',
+DZD: 'Dinar algérien (د.ج)',
+TND: 'Dinar tunisien (د.ت)',
+CHF: 'Franc suisse (CHF)',
+XAF: 'Franc CFA (XAF)',
+GNF: 'Franc guinéen (FG)',
+CDF: 'Franc congolais (FC)',
+MGA: 'Ariary malgache (Ar)',
 };
 
 const HeaderPreferences = () => {
-  const { t } = useTranslation(); // 👈 récupération de t
+  const { t } = useTranslation();
   const { prefs, updatePrefs } = usePreferences();
   const [countries, setCountries] = useState([]);
+  const [availableCurrencies, setAvailableCurrencies] = useState([]);
 
   useEffect(() => {
     supabase.from('countries')
       .select('code, name, currency')
       .order('name')
-      .then(({ data }) => setCountries(data || []));
+      .then(({ data }) => {
+        setCountries(data || []);
+        // ✅ Extraire les devises uniques depuis les pays récupérés
+        const currencies = [...new Set(data?.map(c => c.currency).filter(Boolean))];
+        setAvailableCurrencies(currencies);
+      });
   }, []);
 
   const handleCountryChange = (e) => {
@@ -53,8 +75,10 @@ const HeaderPreferences = () => {
         onChange={handleCurrencyChange}
         className="bg-transparent text-slate-600 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        {Object.entries(CURRENCIES).map(([code, label]) => (
-          <option key={code} value={code}>{label}</option>
+        {availableCurrencies.map(code => (
+          <option key={code} value={code}>
+            {CURRENCY_LABELS[code] || code}
+          </option>
         ))}
       </select>
     </div>

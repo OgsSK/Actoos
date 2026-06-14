@@ -33,10 +33,11 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 SUPPORTED_CURRENCIES = {
-    "XOF": "FCFA",
-    "EUR": "EUR",
-    "USD": "USD",
-    "MAD": "MAD"
+    "XOF": "FCFA", "EUR": "EUR", "USD": "USD", "MAD": "MAD",
+    "GBP": "GBP", "BRL": "BRL", "ARS": "ARS", "NGN": "NGN",
+    "ZAR": "ZAR", "SAR": "SAR", "AED": "AED", "EGP": "EGP",
+    "DZD": "DZD", "TND": "TND", "CHF": "CHF", "XAF": "XAF",
+    "GNF": "GNF", "CDF": "CDF", "MGA": "MGA"
 }
 
 SUBSCRIPTION_PLANS = {
@@ -1047,14 +1048,26 @@ async def send_job_alerts():
         job_links = "<br>".join([
             f"<a href='https://jobs.actoos.com/emplois/{j['id']}'>{j['title']}</a>" for j in jobs
         ])
+
+        # ---- EMAIL MULTILINGUE ----
+        lang = get_user_language(user_email)
+        if lang == 'en':
+            subject = f"Job alert: {keywords or 'New offers'}"
+            body_header = "<h2>New offers matching your alert</h2>"
+            body_intro = "<p>Here are the offers found for your criteria:</p>"
+            body_footer = "<p>Happy job hunting!</p>"
+        else:
+            subject = f"Alerte emploi : {keywords or 'Nouvelles offres'}"
+            body_header = "<h2>Nouvelles offres correspondant à votre alerte</h2>"
+            body_intro = "<p>Voici les offres trouvées pour vos critères :</p>"
+            body_footer = "<p>Bonne recherche !</p>"
+
         try:
             resend.Emails.send({
                 "from": "Actoos Jobs <noreply@actoos.com>",
                 "to": [user_email],
-                "subject": f"Alerte emploi : {keywords or 'Nouvelles offres'}",
-                "html": f"<h2>Nouvelles offres correspondant à votre alerte</h2>"
-                        f"<p>Voici les offres trouvées pour vos critères :</p>{job_links}"
-                        f"<p>Bonne recherche !</p>"
+                "subject": subject,
+                "html": f"{body_header}{body_intro}{job_links}{body_footer}"
             })
 
             httpx.patch(
@@ -1438,7 +1451,6 @@ async def admin_send_messages(req: AdminSendMessagesRequest):
             errors.append(f"Email manquant pour {user_id}")
             continue
 
-        # Insérer dans la table admin_messages
         insert_data = {
             "recipient_id": user_id,
             "subject": req.subject,
@@ -1460,7 +1472,6 @@ async def admin_send_messages(req: AdminSendMessagesRequest):
             errors.append(f"Erreur insertion pour {user_id}")
             continue
 
-        # Envoyer l'email dans la langue du destinataire
         lang = get_user_language(email)
         first_name = user.get('first_name')
         greeting = first_name if first_name else ("Utilisateur" if lang == 'fr' else "User")

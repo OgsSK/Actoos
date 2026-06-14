@@ -25,6 +25,7 @@ export const useCities = (countryCode) => {
           .from('cities')
           .select('*')
           .eq('country_id', country.id)
+          .eq('is_active', true)
           .order('name');
         setCities(data || []);
       } else {

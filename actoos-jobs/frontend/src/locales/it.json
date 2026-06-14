@@ -1,0 +1,2524 @@
+{
+  "common": {
+    "search": "Cerca",
+    "login": "Accedi",
+    "register": "Registrati",
+    "logout": "Esci",
+    "dashboard": "Dashboard",
+    "profile": "Profilo",
+    "settings": "Impostazioni",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo"
+  },
+  "home": {
+    "hero": {
+      "badge": "Dove il talento incontra il suo futuro",
+      "titleLine1": "Trova il lavoro che",
+      "titleLine2": "ti cambia la vita",
+      "subtitle": "Migliaia di opportunità ti aspettano. Candidati con un clic e costruisci la tua carriera con le migliori aziende.",
+      "searchPlaceholder": "Titolo di lavoro, competenze o azienda...",
+      "allCities": "Tutte le città",
+      "searchButton": "Cerca",
+      "activeJobs": "Offerte attive",
+      "companies": "Aziende",
+      "candidates": "Candidati",
+      "popularSearches": "Ricerche popolari:",
+      "searching": "Ricerca in corso..."
+    },
+    "categories": {
+      "title": "Esplora per categoria",
+      "subtitle": "Trova opportunità nel tuo campo di competenza"
+    },
+    "jobs": {
+      "title": "Offerte recenti",
+      "subtitle": "Le ultime opportunità pubblicate",
+      "viewAll": "Vedi tutte le offerte",
+      "noJobsTitle": "Nessuna offerta disponibile",
+      "noJobsText": "Le prime offerte arriveranno presto!",
+      "postFirstJob": "Pubblica la prima offerta",
+      "postJob": "Pubblica un'offerta",
+      "seeJobs": "Vedi le offerte",
+      "saveLogin": "Accedi per salvare questa offerta",
+      "companyCannotSave": "Le aziende non possono aggiungere offerte ai preferiti",
+      "saveSuccess": "Offerta salvata",
+      "unsaveSuccess": "Offerta rimossa dai preferiti",
+      "urgent": "🔥 Urgente - Candidati ora",
+      "salary": "Stipendio",
+      "unspecified": "Non specificato",
+      "unknownCompany": "Azienda",
+      "unknownLocation": "Non specificato",
+      "yourJob": "La tua offerta"
+    },
+    "companies": {
+      "title": "Aziende che assumono",
+      "subtitle": "Scopri le aziende che si affidano a Actoos Jobs"
+    },
+    "how": {
+      "title": "Come funziona?",
+      "subtitle": "Trova il tuo lavoro ideale in 4 semplici passi",
+      "step1Title": "Crea il tuo profilo",
+      "step1Desc": "Registrati gratuitamente e completa il tuo profilo in pochi minuti.",
+      "step2Title": "Cerca offerte",
+      "step2Desc": "Esplora centinaia di offerte e utilizza i nostri filtri avanzati.",
+      "step3Title": "Candidati con un clic",
+      "step3Desc": "Invia la tua candidatura direttamente ai reclutatori.",
+      "step4Title": "Ottieni il lavoro",
+      "step4Desc": "Tieni traccia delle tue candidature e preparati per i colloqui."
+    },
+    "cta": {
+      "badge": "Per le aziende",
+      "title": "Recluta i migliori talenti",
+      "subtitle": "Pubblica le tue offerte, ricevi candidature qualificate e trova il tuo prossimo collaboratore in pochi giorni.",
+      "feature1": "Pubblicazione illimitata di offerte",
+      "feature2": "Accesso a un bacino di candidati qualificati",
+      "feature3": "Strumenti di gestione delle candidature",
+      "feature4": "Visibilità premium sulla piattaforma",
+      "createAccount": "Crea un account aziendale",
+      "publishJob": "Pubblica un'offerta",
+      "pricing": "Vedi le nostre tariffe"
+    },
+    "why": {
+      "mainTitle": "Perché scegliere Actoos Jobs?",
+      "mainSubtitle": "La piattaforma di reclutamento di nuova generazione, creata da ingegneri appassionati.",
+      "title1": "100% gratuito per i candidati",
+      "desc1": "Crea il tuo profilo, candidati e fatti assumere senza pagare nulla.",
+      "title2": "Visibilità immediata per le aziende",
+      "desc2": "Pubblica le tue offerte e raggiungi migliaia di candidati qualificati.",
+      "title3": "Dati sicuri e locali",
+      "desc3": "Le tue informazioni sono ospitate in modo sicuro e rimangono confidenziali.",
+      "title4": "Motore di ricerca intelligente",
+      "desc4": "Trova l'offerta ideale grazie a una ricerca rapida e filtri precisi.",
+      "title5": "Supporto locale reattivo",
+      "desc5": "Un team reattivo, pronto ad assisterti.",
+      "title6": "Statistiche in tempo reale",
+      "desc6": "Monitora le prestazioni delle tue offerte e candidature in diretta.",
+      "createAccount": "Crea un account gratuito"
+    }
+  },
+  "jobs": {
+    "filters": "Filtri",
+    "resetFilters": "Ripristina i filtri",
+    "contractType": "Tipo di contratto",
+    "location": "Località",
+    "salary": "Stipendio",
+    "minSalary": "Stipendio minimo",
+    "maxSalary": "Stipendio massimo",
+    "remotePossible": "Telelavoro possibile",
+    "experience": "Esperienza",
+    "category": "Categoria",
+    "allCities": "Tutte le città",
+    "allCategories": "Tutte le categorie",
+    "sortRecent": "Più recenti",
+    "sortSalary": "Stipendio decrescente",
+    "allOffers": "Tutte le offerte",
+    "results": "{{count}} offerta/e trovata/e",
+    "noResults": "Nessuna offerta trovata",
+    "noResultsHint": "Prova a modificare i tuoi criteri di ricerca",
+    "viewOffer": "Vedi l'offerta",
+    "yourOffer": "La tua offerta",
+    "verified": "Verificato",
+    "featured": "In evidenza",
+    "urgent": "Urgente",
+    "remote": "Telelavoro",
+    "unspecified": "Non specificato",
+    "edit": "Modifica",
+    "publish": "Pubblica",
+    "pause": "Metti in pausa",
+    "reactivate": "Riattiva",
+    "delete": "Elimina",
+    "deleteConfirm": "Eliminare questa offerta?",
+    "deletedToast": "Offerta eliminata",
+    "updateError": "Errore durante l'aggiornamento",
+    "deleteError": "Errore durante l'eliminazione",
+    "publishedToast": "Offerta pubblicata!",
+    "statusUpdated": "Stato aggiornato",
+    "loginToSave": "Accedi per salvare questa offerta",
+    "companyCannotSave": "Le aziende non possono salvare le offerte",
+    "saveSuccess": "Offerta salvata",
+    "unsaveSuccess": "Offerta rimossa dai preferiti",
+    "searchPlaceholder": "Titolo di lavoro, competenze o azienda...",
+    "resultsFor": "Risultati per \"{{query}}\"",
+    "viewResults": "Vedi i {{count}} risultati"
+  },
+  "pricing": {
+    "badge": "Tariffe",
+    "title": "Piani pensati per la tua crescita",
+    "subtitle": "Dal reclutamento occasionale alla gestione avanzata, scegli la formula che corrisponde alle tue esigenze e cresci con semplicità.",
+    "monthly": "Mensile",
+    "annual": "Annuale (-20%)",
+    "free": "Gratuito",
+    "pro": "Pro",
+    "business": "Business",
+    "currentPlan": "Piano attuale",
+    "upgrade": "Passa a",
+    "subscribe": "Abbonati",
+    "manage": "Gestisci il mio abbonamento",
+    "cancel": "Annulla",
+    "perMonth": "/mese",
+    "perYear": "/anno",
+    "billedAnnually": "fatturati annualmente",
+    "billedMonthly": "fatturati mensilmente",
+    "startTrial": "Prova gratuita",
+    "getStarted": "Inizia",
+    "contactSales": "Contatta le vendite",
+    "mostPopular": "Raccomandato",
+    "features": "Funzionalità",
+    "included": "Incluso",
+    "notIncluded": "Non incluso",
+    "choosePlan": "Scegli questo piano",
+    "contactUs": "Contattaci",
+    "customPlan": "Piano su misura",
+    "comparePlans": "Confronta i piani",
+    "allPlansInclude": "Tutti i piani includono",
+    "securePayment": "Pagamento sicuro",
+    "moneyBack": "Soddisfatti o rimborsati entro 30 giorni",
+    "upToDiscount": "Risparmia fino al {{percent}}% con l'abbonamento annuale",
+    "toggle": {
+      "monthly": "Mensile",
+      "annual": "Annuale (-20%)",
+      "savePercent": "-20%"
+    },
+    "plans": {
+      "free": {
+        "name": "Gratuito",
+        "description": "Per scoprire la piattaforma.",
+        "features": [
+          "1 offerta attiva",
+          "Candidature illimitate",
+          "Profilo aziendale",
+          "Supporto via email"
+        ],
+        "limitations": [
+          "Nessuna statistica",
+          "Nessuna messa in evidenza",
+          "Nessuna API"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "description": "Per PMI e reclutatori indipendenti.",
+        "features": [
+          "5 offerte attive",
+          "1 utente (admin)",
+          "Statistiche di base",
+          "Supporto prioritario",
+          "Profilo aziendale verificato"
+        ],
+        "limitations": [
+          "Nessuna messa in evidenza",
+          "Nessuna API",
+          "Nessuna esportazione"
+        ]
+      },
+      "business": {
+        "name": "Business",
+        "description": "Per aziende che reclutano attivamente.",
+        "features": [
+          "Offerte attive illimitate",
+          "Fino a 5 utenti",
+          "Statistiche avanzate",
+          "Supporto dedicato",
+          "1 boost di 7 giorni/mese incluso",
+          "Profilo aziendale premium"
+        ],
+        "limitations": []
+      }
+    },
+    "actions": {
+      "backToFree": "Torna al piano Gratuito",
+      "manageSubscription": "Gestisci il mio abbonamento",
+      "upgradeTo": "Passa a {{plan}}",
+      "downgradeTo": "Ritorna a {{plan}}",
+      "subscribeMonthly": "Abbonati (mensile)",
+      "subscribeAnnual": "Abbonati (annuale -20%)"
+    },
+    "comparison": {
+      "title": "Confronto dettagliato",
+      "subtitle": "Funzionalità chiave per piano",
+      "featureColumn": "Funzionalità",
+      "freeColumn": "Gratuito",
+      "proColumn": "Pro",
+      "businessColumn": "Business",
+      "rows": {
+        "activeOffers": "Offerte attive simultanee",
+        "candidates": "Candidature ricevute",
+        "verifiedProfile": "Profilo aziendale verificato",
+        "analytics": "Statistiche (visualizzazioni, candidature)",
+        "emailSupport": "Supporto via email",
+        "freeBoost": "Boost mensile gratuito incluso"
+      }
+    },
+    "faq": {
+      "title": "Domande frequenti",
+      "subtitle": "Tutto ciò che devi sapere sui nostri abbonamenti",
+      "items": [
+        {
+          "question": "Come funziona l'abbonamento?",
+          "answer": "Scegli un piano (Pro o Business) con fatturazione mensile o annuale. L'abbonamento viene rinnovato automaticamente a ogni periodo. Puoi annullare in qualsiasi momento dal tuo spazio aziendale, senza costi."
+        },
+        {
+          "question": "Posso cambiare piano in qualsiasi momento?",
+          "answer": "Sì, puoi passare da un piano all'altro in qualsiasi momento. Se passi a un piano superiore, pagherai solo la differenza proporzionale al numero di giorni rimanenti. Se passi a un piano inferiore, la modifica avrà effetto alla prossima scadenza."
+        },
+        {
+          "question": "Ci sono costi nascosti o vincoli?",
+          "answer": "Nessun costo nascosto. I prezzi visualizzati sono prezzi finali, tasse incluse. Non c'è vincolo di durata: puoi annullare in qualsiasi momento. L'abbonamento annuale offre uno sconto del 20% rispetto alla tariffa mensile, ma sei libero di recedere prima della fine del periodo annuale (la disdetta avrà effetto alla fine dell'anno in corso)."
+        },
+        {
+          "question": "Posso annullare il mio abbonamento?",
+          "answer": "Certamente. La disdetta si effettua con un clic dal tuo spazio aziendale, nella sezione 'Abbonamento'. Il tuo abbonamento rimarrà attivo fino alla fine del periodo pagato. Nessun rimborso viene effettuato per i periodi non utilizzati, salvo diversa disposizione di legge."
+        },
+        {
+          "question": "Le mie offerte di lavoro restano online dopo la fine dell'abbonamento?",
+          "answer": "Sì, le tue offerte attive rimangono pubblicate fino alla loro data di scadenza normale. Semplicemente non potrai pubblicarne di nuove se hai raggiunto il limite del tuo nuovo piano (o il limite gratuito)."
+        },
+        {
+          "question": "Quali metodi di pagamento sono accettati?",
+          "answer": "Accettiamo carte di credito internazionali (Visa, Mastercard, American Express) tramite Stripe, un elaboratore di pagamenti certificato PCI-DSS di livello 1. Non memorizziamo mai i dati della tua carta di credito sui nostri server."
+        },
+        {
+          "question": "Come vengono gestiti i dati di fatturazione?",
+          "answer": "I tuoi dati di fatturazione (indirizzo, storico dei pagamenti) sono archiviati in modo sicuro e non vengono mai condivisi con terzi. Puoi consultare e scaricare le tue fatture dal tuo spazio aziendale."
+        },
+        {
+          "question": "Offrite soluzioni per grandi gruppi o esigenze specifiche?",
+          "answer": "Sì, offriamo piani Enterprise su misura. Contatta il nostro team commerciale tramite la pagina Contatti per discutere le tue esigenze: numero illimitato di utenti, integrazione API avanzata, supporto dedicato, SLA, formazione, ecc."
+        },
+        {
+          "question": "Posso utilizzare il piano gratuito a tempo indeterminato?",
+          "answer": "Il piano gratuito ti permette di testare la piattaforma con 1 offerta attiva. Non ha limiti di tempo. Puoi passare a un piano a pagamento quando hai bisogno di più funzionalità."
+        },
+        {
+          "question": "Cosa succede se supero il limite di offerte?",
+          "answer": "Se raggiungi il limite del tuo piano, non potrai pubblicare nuove offerte. Puoi archiviare vecchie offerte o passare al piano superiore per aumentare la tua quota."
+        },
+        {
+          "question": "Posso ottenere un rimborso?",
+          "answer": "Offriamo una garanzia di 14 giorni per i nuovi abbonati. Se non sei soddisfatto, contattaci per un rimborso completo."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Una soluzione su misura?",
+      "subtitle": "Per grandi gruppi e esigenze specifiche, creiamo offerte personalizzate con un accompagnamento dedicato.",
+      "button": "Contatta il nostro team"
+    },
+    "toast": {
+      "mustLogin": "Devi aver effettuato l'accesso per abbonarti",
+      "boostsComingSoon": "I boost saranno presto disponibili",
+      "checkoutError": "Errore durante la creazione della sessione di pagamento",
+      "mustLoginFree": "Devi aver effettuato l'accesso per iniziare",
+      "alreadyFree": "Sei già nel piano Gratuito",
+      "cancelToFree": "Per tornare al piano Gratuito, ti preghiamo di annullare l'abbonamento dal tuo spazio aziendale."
+    },
+    "loginBanner": {
+      "message": "Accedi per sottoscrivere un piano",
+      "button": "Accedi"
+    }
+  },
+  "jobDetail": {
+    "notFound": "Offerta non trovata",
+    "notFoundMessage": "Offerta non trovata.",
+    "backToJobs": "Torna alle offerte",
+    "apply": "Candidati",
+    "alreadyApplied": "Già candidato",
+    "removedFromFavorites": "Rimosso dai preferiti",
+    "savedToFavorites": "Offerta salvata",
+    "errorSaving": "Errore durante il salvataggio",
+    "yourOffer": "La tua offerta",
+    "unspecified": "Non specificato",
+    "descriptionTitle": "Descrizione del posto",
+    "missionsTitle": "Missioni",
+    "profileTitle": "Profilo ricercato",
+    "benefitsTitle": "Benefit",
+    "pleaseLogin": "Per favore, accedi",
+    "companyCannotApply": "Le aziende non possono candidarsi",
+    "alreadyAppliedMessage": "Hai già inviato la candidatura",
+    "applicationSent": "Candidatura inviata",
+    "applicationError": "Errore durante l'invio della candidatura",
+    "matchScore": "{{score}}% di corrispondenza",
+    "currency": "FCFA",
+    "companyCannotSaveFavorites": "Le aziende non possono aggiungere ai preferiti"
+  },
+  "auth": {
+    "login": {
+      "title": "Accesso",
+      "description": "Accedi al tuo spazio personale",
+      "googleButton": "Continua con Google",
+      "orSeparator": "oppure",
+      "emailLabel": "Indirizzo email *",
+      "emailPlaceholder": "tua@email.com",
+      "passwordLabel": "Password *",
+      "passwordPlaceholder": "••••••••",
+      "forgotPassword": "Password dimenticata?",
+      "submitButton": "Accedi",
+      "noAccount": "Non hai ancora un account?",
+      "createAccount": "Crea un account",
+      "legalPrefix": "Accedendo, accetti i nostri",
+      "legalAnd": "e la nostra",
+      "cgu": "CGU",
+      "privacy": "Informativa sulla privacy",
+      "success": "Accesso riuscito!",
+      "errorInvalid": "Email o password errati",
+      "errorGeneric": "Errore di accesso",
+      "errorGoogle": "Errore di accesso con Google",
+      "fillAllFields": "Compila tutti i campi"
+    }
+  },
+  "jobAlerts": {
+    "title": "Avvisi di lavoro",
+    "subtitle": "Ricevi offerte corrispondenti ai tuoi criteri",
+    "newAlert": "Nuovo avviso",
+    "createTitle": "Crea un avviso",
+    "editTitle": "Modifica l'avviso",
+    "createDescription": "Definisci i tuoi criteri per ricevere notifiche via email.",
+    "nameLabel": "Nome (opzionale)",
+    "namePlaceholder": "Es: Offerte tech a Roma",
+    "keywordsLabel": "Parole chiave *",
+    "keywordsPlaceholder": "Es: sviluppatore, contabile, Roma",
+    "keywordsHint": "Separa le parole con spazi. Es: \"sviluppatore Roma\"",
+    "categoryLabel": "Categoria",
+    "allCategories": "Tutte le categorie",
+    "cityLabel": "Città",
+    "allCities": "Tutte le città",
+    "contractTypesLabel": "Tipi di contratto",
+    "salaryMinLabel": "Stipendio minimo (FCFA)",
+    "salaryMinPlaceholder": "Es: 300000",
+    "frequencyLabel": "Frequenza",
+    "frequencies": {
+      "instant": "Immediata",
+      "daily": "Quotidiana",
+      "weekly": "Settimanale"
+    },
+    "cancel": "Annulla",
+    "createButton": "Crea l'avviso",
+    "editButton": "Modifica",
+    "alertActive": "Attivo",
+    "alertInactive": "Inattivo",
+    "noAlerts": "Non hai ancora nessun avviso.",
+    "createFirstAlert": "Crea il mio primo avviso",
+    "myAlerts": "I miei avvisi ({{count}})",
+    "lastSent": "Ultimo invio: {{date}}",
+    "activate": "Attiva",
+    "deactivate": "Disattiva",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "deleteConfirm": "Eliminare questo avviso?",
+    "toasts": {
+      "loadError": "Errore durante il caricamento degli avvisi",
+      "addCriteria": "Aggiungi almeno un criterio (parole chiave, categoria, città, stipendio)",
+      "editSuccess": "Avviso modificato",
+      "createSuccess": "Avviso creato con successo",
+      "saveError": "Errore",
+      "activateSuccess": "Avviso attivato",
+      "deactivateSuccess": "Avviso disattivato",
+      "toggleError": "Errore",
+      "deleteSuccess": "Avviso eliminato",
+      "deleteError": "Errore"
+    }
+  },
+  "contractTypes": {
+    "cdi": "Tempo indeterminato",
+    "cdd": "Tempo determinato",
+    "stage": "Stage",
+    "freelance": "Freelance",
+    "interim": "Interinale",
+    "alternance": "Apprendistato",
+    "temps_partiel": "Part-time"
+  },
+  "myApplications": {
+    "title": "Le mie candidature",
+    "back": "Indietro",
+    "refresh": "Aggiorna",
+    "noApplications": "Nessuna candidatura.",
+    "jobDefault": "Offerta",
+    "status": {
+      "pending": "In attesa",
+      "viewed": "Visualizzata",
+      "shortlisted": "Preselezionato",
+      "interview": "Colloquio",
+      "accepted": "Accettata",
+      "rejected": "Rifiutata"
+    }
+  },
+  "notifications": {
+    "title": "Notifiche",
+    "back": "Indietro",
+    "unreadCount_one": "{{count}} da leggere",
+    "unreadCount_other": "{{count}} da leggere",
+    "markAllAsRead": "Segna tutte come lette",
+    "allReadSuccess": "Tutte le notifiche sono state segnate come lette",
+    "noNotifications": "Nessuna notifica.",
+    "markAsRead": "Segna come letta",
+    "delete": "Elimina"
+  },
+  "paymentCancel": {
+    "title": "Pagamento annullato",
+    "message": "Hai annullato il processo di pagamento. Nessun importo è stato addebitato.",
+    "retry": "Riprova",
+    "backHome": "Torna alla home"
+  },
+  "paymentSuccess": {
+    "error": {
+      "title": "Errore",
+      "message": "Impossibile finalizzare il tuo acquisto.",
+      "backToDashboard": "Torna alla dashboard"
+    },
+    "boost": {
+      "title": "Boost attivato!",
+      "message": "La tua offerta è ora in evidenza con il <badge>{{packageName}}</badge>.",
+      "viewOffers": "Vedi le mie offerte",
+      "backToDashboard": "Torna alla dashboard"
+    },
+    "subscription": {
+      "title": "Pagamento riuscito!",
+      "message": "Il tuo abbonamento <badge>{{packageName}}</badge> è ora attivo.",
+      "goToDashboard": "Accedi al mio spazio"
+    },
+    "amountPaidLabel": "Importo pagato:"
+  },
+  "privacyPolicy": {
+    "title": "Informativa sulla privacy",
+    "back": "Indietro",
+    "lastUpdate": "Ultimo aggiornamento: Maggio 2026",
+    "sections": {
+      "intro": {
+        "title": "Introduzione",
+        "content": "Da Actoos Jobs, prendiamo molto sul serio la protezione dei tuoi dati personali. Questa informativa sulla privacy spiega come raccogliamo, utilizziamo e proteggiamo le tue informazioni quando utilizzi la nostra piattaforma."
+      },
+      "dataCollected": {
+        "title": "Dati raccolti",
+        "content": "Raccogliamo le informazioni che ci fornisci direttamente, come nome, indirizzo email, CV e qualsiasi altra informazione relativa al tuo profilo candidato o azienda."
+      },
+      "dataUsage": {
+        "title": "Utilizzo dei dati",
+        "content": "I tuoi dati vengono utilizzati per metterti in contatto con datori di lavoro o candidati, migliorare i nostri servizi e inviarti comunicazioni relative al tuo account o alle nostre offerte."
+      },
+      "dataSharing": {
+        "title": "Condivisione dei dati",
+        "content": "Non vendiamo mai i tuoi dati personali. Possono essere condivisi con i reclutatori nell'ambito della tua ricerca di lavoro, solo con il tuo consenso."
+      },
+      "security": {
+        "title": "Sicurezza",
+        "content": "Implementiamo misure di sicurezza tecniche e organizzative per proteggere i tuoi dati da accessi non autorizzati."
+      },
+      "yourRights": {
+        "title": "I tuoi diritti",
+        "content": "In conformità con la normativa vigente, hai il diritto di accedere, rettificare e cancellare i tuoi dati. Per esercitare questi diritti, contattaci all'indirizzo <a>{email}</a>."
+      },
+      "contact": {
+        "title": "Contatto",
+        "content": "Per qualsiasi domanda relativa a questa informativa, scrivici a <a>{email}</a>."
+      }
+    },
+    "contactEmail": "contact@actoos.com"
+  },
+  "register": {
+    "title": "Crea un account",
+    "chooseProfile": "Scegli il tuo tipo di profilo",
+    "candidateTitle": "Cerco lavoro",
+    "candidateDesc": "Crea il tuo profilo, candidati alle offerte e tieni traccia delle tue candidature.",
+    "companyTitle": "Sto reclutando",
+    "companyDesc": "Pubblica offerte, gestisci le candidature e collabora in team.",
+    "alreadyRegistered": "Già registrato?",
+    "loginLink": "Accedi",
+    "changeProfile": "← Cambia profilo",
+    "candidateFormTitle": "Registrazione Candidato",
+    "companyFormTitle": "Registrazione Azienda",
+    "firstNameLabel": "Nome *",
+    "firstNamePlaceholder": "Mario",
+    "lastNameLabel": "Cognome *",
+    "lastNamePlaceholder": "Rossi",
+    "companyNameLabel": "Nome dell'azienda *",
+    "companyNamePlaceholder": "Mia Azienda Srl",
+    "emailLabel": "Indirizzo email *",
+    "emailPlaceholder": "tua@email.com",
+    "passwordLabel": "Password *",
+    "passwordPlaceholder": "Min. 8 caratteri",
+    "confirmPasswordLabel": "Conferma password *",
+    "confirmPasswordPlaceholder": "Conferma la tua password",
+    "googleButton": "Continua con Google",
+    "orSeparator": "oppure",
+    "submitButton": "Crea il mio account",
+    "legalPrefix": "Creando un account, accetti i nostri",
+    "legalAnd": "e la nostra",
+    "cgu": "CGU",
+    "privacy": "Informativa sulla privacy",
+    "toasts": {
+      "fillAllFields": "Compila tutti i campi obbligatori",
+      "passwordLength": "La password deve contenere almeno 8 caratteri",
+      "passwordMismatch": "Le password non corrispondono",
+      "accountCreated": "Account creato! Controlla la tua email per confermare la registrazione.",
+      "emailAlreadyUsed": "Questa email è già utilizzata",
+      "genericError": "Errore durante la registrazione",
+      "googleError": "Errore di accesso con Google"
+    }
+  },
+  "report": {
+    "button": "Segnala",
+    "mustLogin": "Accedi per segnalare",
+    "sentSuccess": "Segnalazione inviata",
+    "sendError": "Errore durante l'invio della segnalazione",
+    "title": "Segnala questo {{itemType}}",
+    "itemTypes": {
+      "job": "questa offerta",
+      "company": "questa azienda",
+      "user": "questo utente",
+      "default": "questo elemento"
+    },
+    "reasonPlaceholder": "Motivo della segnalazione...",
+    "reasonDefault": "Non specificato",
+    "cancel": "Annulla",
+    "send": "Invia la segnalazione"
+  },
+  "resetPassword": {
+    "title": "Nuova password",
+    "description": "Scegli una nuova password per il tuo account.",
+    "newPasswordLabel": "Nuova password",
+    "confirmPasswordLabel": "Conferma password",
+    "placeholder": "••••••••",
+    "submitButton": "Aggiorna la password",
+    "successTitle": "Password modificata",
+    "successMessage": "La tua password è stata modificata con successo. Ora puoi accedere.",
+    "loginButton": "Accedi",
+    "toasts": {
+      "passwordMismatch": "Le password non corrispondono",
+      "passwordLength": "La password deve contenere almeno 8 caratteri",
+      "updateSuccess": "Password aggiornata con successo!",
+      "updateError": "Errore durante l'aggiornamento"
+    }
+  },
+  "savedJobs": {
+    "title": "Offerte salvate",
+    "back": "Indietro",
+    "noSaved": "Nessuna offerta salvata."
+  },
+  "scheduleInterview": {
+    "title": "Programma un colloquio"
+  },
+  "unsubscribe": {
+    "loading": "Elaborazione in corso...",
+    "error": {
+      "noEmail": "Nessun indirizzo email fornito.",
+      "generic": "Si è verificato un errore.",
+      "network": "Errore di rete.",
+      "title": "Errore"
+    },
+    "success": {
+      "title": "Disiscrizione confermata"
+    }
+  },
+  "interviewPrep": {
+    "badge": "Nuovo",
+    "title": "Preparazione ai colloqui",
+    "description": "Inserisci un'offerta di lavoro e il tuo profilo per ottenere domande probabili, risposte tipo e consigli personalizzati.",
+    "jobSection": "Offerta di lavoro",
+    "jobPlaceholder": "Incolla qui la descrizione dell'offerta...",
+    "profileSection": "Il tuo profilo",
+    "profilePlaceholder": "Riassumi il tuo profilo: competenze, esperienza, formazione...",
+    "questions": {
+      "title": "Domande probabili",
+      "empty": "Clicca su Genera per ottenere domande."
+    },
+    "answers": {
+      "title": "Risposte tipo",
+      "empty": "Genera prima le domande."
+    },
+    "tips": {
+      "title": "Consigli personalizzati",
+      "empty": "Clicca su Genera per ottenere consigli."
+    },
+    "generateButton": "Genera",
+    "toast": {
+      "needJobDescription": "Inserisci prima una descrizione dell'offerta.",
+      "success": "Generato con successo!",
+      "error": "Errore durante la generazione."
+    }
+  },
+  "forgotPassword": {
+    "title": "Password dimenticata?",
+    "description": "Inserisci il tuo indirizzo email per ricevere un link di ripristino.",
+    "emailLabel": "Indirizzo email",
+    "emailPlaceholder": "tua@email.com",
+    "submitButton": "Invia il link",
+    "backToLogin": "Torna al login",
+    "successMessage": "Se esiste un account associato a <strong>{{email}}</strong>, riceverai un'email con le istruzioni per reimpostare la password.",
+    "toasts": {
+      "emptyEmail": "Inserisci il tuo indirizzo email",
+      "sendError": "Errore durante l'invio del link"
+    }
+  },
+  "faq": {
+    "title": "Domande Frequenti",
+    "subtitle": "Trova rapidamente risposte alle tue domande su Actoos Jobs.",
+    "searchPlaceholder": "Cerca una domanda...",
+    "allCategories": "Tutte",
+    "noResults": "Nessuna domanda trovata per \"{{search}}\"",
+    "noResultsHint": "Prova con altre parole chiave o sfoglia le categorie.",
+    "categories": [
+      {
+        "name": "Generale",
+        "questions": [
+          {
+            "q": "Cos'è Actoos Jobs?",
+            "a": "Actoos Jobs è la piattaforma di reclutamento leader in Mali e in Africa occidentale. Mettiamo in contatto candidati qualificati con aziende locali e internazionali. Puoi cercare offerte, candidarti facilmente e monitorare le tue candidature. I reclutatori possono pubblicare offerte, gestire le candidature e programmare colloqui, il tutto gratuitamente con un'opzione di abbonamento premium."
+          },
+          {
+            "q": "La registrazione è gratuita?",
+            "a": "Sì, la registrazione e l'uso di base sono completamente gratuiti per i candidati. Anche le aziende possono creare un account gratuito e pubblicare un numero limitato di offerte. Sono disponibili piani a pagamento per funzionalità avanzate (più offerte, maggiore visibilità, ecc.)."
+          },
+          {
+            "q": "Come si crea un account?",
+            "a": "Clicca su 'Registrati' in alto a destra del sito. Puoi scegliere un account Candidato o Azienda. Compila il modulo con la tua email e una password, oppure accedi rapidamente con Google. Il tuo account verrà creato immediatamente."
+          }
+        ]
+      },
+      {
+        "name": "Candidati",
+        "questions": [
+          {
+            "q": "Come candidarsi a un'offerta?",
+            "a": "Sfoglia le offerte dalla pagina 'Lavori'. Clicca su un'offerta per vedere i dettagli, poi su 'Candidati'. Se non hai ancora completato il tuo profilo, ti inviteremo a farlo per ottimizzare le tue possibilità. Una volta inviata la candidatura, l'azienda viene immediatamente notificata."
+          },
+          {
+            "q": "Cos'è il punteggio di corrispondenza?",
+            "a": "È una stima della corrispondenza tra il tuo profilo e un'offerta. Più alto è il punteggio, più le tue competenze, esperienza e preferenze salariali corrispondono a ciò che cerca il datore di lavoro. Ti aiuta a identificare le offerte più promettenti."
+          },
+          {
+            "q": "Posso salvare le offerte per dopo?",
+            "a": "Assolutamente. Clicca sul cuore in alto a destra dell'offerta per aggiungerla ai preferiti. Le ritroverai nella tua dashboard, alla voce 'Offerte salvate'."
+          },
+          {
+            "q": "Come funzionano gli avvisi di lavoro?",
+            "a": "Dalla tua dashboard, vai su 'Avvisi di lavoro'. Definisci i tuoi criteri (parole chiave, città, categoria, stipendio minimo, frequenza). Riceverai un'email non appena viene pubblicata un'offerta corrispondente."
+          },
+          {
+            "q": "Cosa fare in caso di problemi tecnici?",
+            "a": "Puoi contattarci tramite il modulo di contatto (pagina Contatti) o segnalare contenuti inappropriati direttamente dall'offerta. Il nostro team interviene rapidamente."
+          }
+        ]
+      },
+      {
+        "name": "Reclutatori / Aziende",
+        "questions": [
+          {
+            "q": "Come creare un profilo aziendale?",
+            "a": "Dopo aver creato un account di tipo 'Azienda', accedi alla tua dashboard e clicca su 'Crea la mia azienda'. Inserisci le informazioni richieste (nome, settore, descrizione, logo, ecc.). La tua azienda sarà sottoposta a convalida da parte del nostro team. Una volta convalidata, potrai pubblicare offerte."
+          },
+          {
+            "q": "Perché la mia azienda è in attesa di convalida?",
+            "a": "Per garantire la qualità e l'affidabilità delle offerte, verifichiamo manualmente ogni nuova azienda. Di solito ci vogliono meno di 24 ore. Riceverai una notifica via email dopo la convalida. Nel frattempo, puoi preparare le tue offerte in bozza."
+          },
+          {
+            "q": "Quante offerte posso pubblicare?",
+            "a": "Con il piano gratuito puoi pubblicare 1 offerta attiva. I piani Pro e Business consentono di pubblicare più offerte contemporaneamente. Puoi sempre salvare bozze senza limiti. Consulta la pagina 'Tariffe' per maggiori dettagli."
+          },
+          {
+            "q": "Come gestire le candidature ricevute?",
+            "a": "Nella tua dashboard, vai su 'Candidature'. Vedrai tutte le candidature classificate per offerta. Puoi cambiare lo stato (visualizzata, preselezionata, colloquio, accettata, rifiutata). Il candidato verrà notificato automaticamente via email."
+          },
+          {
+            "q": "Posso programmare un colloquio video direttamente dalla piattaforma?",
+            "a": "Sì, nella pagina di dettaglio di una candidatura, puoi generare un link di videoconferenza Jitsi con un clic e inviarlo via email al candidato. Puoi anche utilizzare il nostro assistente IA per preparare domande personalizzate per il colloquio."
+          },
+          {
+            "q": "Come disdire il mio abbonamento a pagamento?",
+            "a": "Vai nella tua dashboard, nella sezione abbonamento, clicca su 'Annulla'. Potrai indicare il motivo (opzionale). Il tuo abbonamento verrà immediatamente declassato al piano gratuito. Non ti verranno più addebitati costi."
+          }
+        ]
+      },
+      {
+        "name": "Abbonamenti e Pagamenti",
+        "questions": [
+          {
+            "q": "Quali metodi di pagamento sono accettati?",
+            "a": "Accettiamo carte di credito (Visa, Mastercard) tramite il nostro partner Stripe. Tutti i pagamenti sono sicuri e in franchi CFA (XOF)."
+          },
+          {
+            "q": "Posso cambiare piano in qualsiasi momento?",
+            "a": "Sì, puoi passare a un piano superiore o inferiore. La differenza sarà calcolata proporzionalmente. I piani annuali offrono uno sconto del 20%."
+          },
+          {
+            "q": "Cosa succede dopo una disdetta?",
+            "a": "Il tuo account rimane attivo e le tue offerte pubblicate restano online fino alla loro scadenza. Torni al piano gratuito e perdi l'accesso alle funzionalità premium (offerte extra, boost, ecc.)."
+          }
+        ]
+      },
+      {
+        "name": "Sicurezza e privacy",
+        "questions": [
+          {
+            "q": "I miei dati personali sono protetti?",
+            "a": "Sì. Applichiamo una rigorosa politica sulla privacy. Le tue informazioni non vengono mai condivise senza il tuo consenso. Consulta la nostra pagina 'Privacy' per maggiori dettagli."
+          },
+          {
+            "q": "Come segnalare un'offerta fraudolenta o un abuso?",
+            "a": "Su ogni offerta e ogni pagina azienda troverai un pulsante 'Segnala'. Seleziona il motivo e descrivi il problema. Il nostro team di moderazione esamina ogni segnalazione nel più breve tempo possibile."
+          },
+          {
+            "q": "Posso eliminare il mio account?",
+            "a": "Sì, contattaci tramite il modulo di contatto indicando la tua richiesta. Provvederemo a eliminare il tuo account e tutti i dati associati in conformità con la normativa."
+          }
+        ]
+      }
+    ]
+  },
+  "createJob": {
+    "titleNew": "Nuova offerta di lavoro",
+    "titleEdit": "Modifica offerta",
+    "back": "Indietro",
+    "save": "Salva",
+    "saveDraft": "Salva come bozza",
+    "submitForValidation": "Invia per la convalida",
+    "updateOffer": "Aggiorna offerta",
+    "validationRequired": "Convalida dell'azienda richiesta",
+    "companyUnverified": "La tua azienda deve essere convalidata prima di poter inviare un'offerta.",
+    "unverifiedBanner": {
+      "title": "Azienda in attesa di convalida",
+      "description": "La tua azienda non è ancora stata verificata. Puoi salvare le tue offerte come bozza, ma non saranno pubblicate finché l'amministratore non avrà convalidato il tuo account."
+    },
+    "sections": {
+      "basicInfo": "Informazioni di base",
+      "description": "Descrizione del posto",
+      "skills": "Competenze richieste",
+      "location": "Località",
+      "salary": "Retribuzione",
+      "dates": "Date"
+    },
+    "labels": {
+      "title": "Titolo del posto *",
+      "category": "Categoria *",
+      "contractType": "Tipo di contratto *",
+      "experienceLevel": "Livello di esperienza",
+      "positionsCount": "Posti da coprire",
+      "urgent": "Offerta urgente",
+      "description": "Descrizione *",
+      "missions": "Missioni / Responsabilità",
+      "requirements": "Profilo ricercato / Requisiti",
+      "benefits": "Benefit offerti",
+      "skillInput": "Aggiungi una competenza",
+      "city": "Città",
+      "address": "Indirizzo preciso",
+      "remote": "Telelavoro possibile",
+      "remoteType": "Tipo di telelavoro",
+      "salaryMin": "Stipendio minimo (FCFA/mese)",
+      "salaryMax": "Stipendio massimo (FCFA/mese)",
+      "showSalary": "Mostra lo stipendio ai candidati",
+      "applicationDeadline": "Data limite per la candidatura",
+      "startDate": "Data di inizio desiderata"
+    },
+    "placeholders": {
+      "title": "Es: Sviluppatore Full Stack, Contabile Senior...",
+      "description": "Descrivi il posto, il contesto, il team...",
+      "missions": "• Missione 1\n• Missione 2\n• Missione 3...",
+      "requirements": "• Diploma richiesto\n• Competenze tecniche\n• Qualità personali...",
+      "benefits": "• Assicurazione sanitaria\n• Telelavoro parziale\n• Formazione continua...",
+      "skill": "Es: React, Python, Excel...",
+      "address": "Quartiere, via...",
+      "salaryMin": "Es: 300000",
+      "salaryMax": "Es: 500000"
+    },
+    "options": {
+      "selectCategory": "Seleziona",
+      "selectContract": "Seleziona",
+      "selectCity": "Seleziona",
+      "unspecified": "Non specificato",
+      "remoteFull": "100% telelavoro",
+      "remoteHybrid": "Ibrido",
+      "remoteOccasional": "Occasionale"
+    },
+    "skills": {
+      "add": "Aggiungi"
+    },
+    "toasts": {
+      "userNotIdentified": "Utente non identificato",
+      "noCompanySelected": "Nessuna azienda selezionata",
+      "companyNotFound": "Azienda non trovata",
+      "fillRequiredFields": "Compila i campi obbligatori",
+      "companyNotVerified": "La tua azienda non è ancora stata verificata. Non puoi inviare un'offerta.",
+      "limitReached": "Hai già {{total}} offerta/e attiva/e o in attesa. Limite del tuo piano: {{limit}}.",
+      "submittedForValidation": "Offerta inviata per la convalida! Sarà visibile dopo l'approvazione.",
+      "offerUpdated": "Offerta aggiornata con successo.",
+      "draftSaved": "Bozza salvata",
+      "saveError": "Errore durante il salvataggio",
+      "jobNotFound": "Offerta non trovata"
+    },
+    "limitModal": {
+      "title": "Limite di offerte raggiunto",
+      "message": "Il tuo piano {{plan}} ti permette di pubblicare al massimo {{max}} offerta/e attiva/e. Hai già {{current}} offerta/e attiva/e.",
+      "upgradeSuggestion": "Per pubblicare più offerte, passa a un piano superiore.",
+      "later": "Più tardi",
+      "seePlans": "Vedi i piani"
+    }
+  },
+  "experienceLevels": {
+    "junior": "Junior",
+    "intermediate": "Intermedio",
+    "senior": "Senior",
+    "lead": "Lead",
+    "manager": "Manager"
+  },
+  "createCompany": {
+    "title": "Crea la tua azienda",
+    "subtitle": "Inserisci le informazioni della tua azienda per iniziare a reclutare",
+    "back": "Indietro",
+    "logo": "Aggiungi un logo",
+    "uploading": "Caricamento...",
+    "labels": {
+      "name": "Nome dell'azienda *",
+      "description": "Descrizione",
+      "industry": "Settore di attività",
+      "size": "Dimensioni dell'azienda",
+      "website": "Sito web",
+      "email": "Email di contatto",
+      "phone": "Telefono",
+      "foundedYear": "Anno di fondazione",
+      "city": "Città",
+      "address": "Indirizzo"
+    },
+    "placeholders": {
+      "name": "Es: Orange",
+      "description": "Presenta la tua azienda, la sua missione, i suoi valori...",
+      "website": "esempio.com",
+      "email": "recruiting@esempio.com",
+      "phone": "+39 XXX XXX XXXX",
+      "year": "Es: 2010",
+      "address": "Quartiere, via..."
+    },
+    "options": {
+      "selectIndustry": "Seleziona",
+      "selectSize": "Seleziona",
+      "selectCity": "Seleziona"
+    },
+    "sizes": {
+      "1-10": "1-10 dipendenti",
+      "11-50": "11-50 dipendenti",
+      "51-200": "51-200 dipendenti",
+      "201-500": "201-500 dipendenti",
+      "500+": "500+ dipendenti"
+    },
+    "industries": [
+      "Tecnologia",
+      "Finanza & Banche",
+      "Telecomunicazioni",
+      "Commercio & Distribuzione",
+      "Industria & Manifatturiero",
+      "Agricoltura",
+      "Edilizia & Costruzioni",
+      "Trasporti & Logistica",
+      "Sanità & Farmaceutico",
+      "Istruzione & Formazione",
+      "Turismo & Ospitalità",
+      "Servizi alle imprese",
+      "ONG & Umanitario",
+      "Pubblica amministrazione",
+      "Altro"
+    ],
+    "toasts": {
+      "imageRequired": "Seleziona un'immagine",
+      "imageTooBig": "L'immagine non deve superare i 2 MB",
+      "logoUploaded": "Logo caricato",
+      "uploadError": "Errore durante il caricamento",
+      "fillRequired": "Compila i campi obbligatori",
+      "companyCreated": "Azienda creata con successo! Reindirizzamento...",
+      "createError": "Errore durante la creazione",
+      "notificationError": "Errore di notifica all'amministratore"
+    },
+    "submit": "Crea la mia azienda"
+  },
+  "coverLetter": {
+    "badge": "IA",
+    "title": "Generatore di lettera di presentazione",
+    "subtitle": "Inserisci l'offerta di lavoro e il tuo profilo per generare una lettera di presentazione personalizzata.",
+    "jobSection": "Offerta di lavoro",
+    "jobPlaceholder": "Incolla la descrizione dell'offerta...",
+    "profileSection": "Il tuo profilo",
+    "profilePlaceholder": "Descrivi il tuo percorso, competenze, motivazioni...",
+    "generateButton": "Genera la lettera",
+    "letterTitle": "La tua lettera",
+    "copyButton": "Copia",
+    "copiedButton": "Copiata!",
+    "emptyState": "La tua lettera apparirà qui dopo la generazione.",
+    "toasts": {
+      "fillBothFields": "Compila entrambi i campi.",
+      "generated": "Lettera generata!",
+      "copied": "Copiata negli appunti!",
+      "error": "Errore"
+    }
+  },
+  "cookies": {
+    "title": "Politica sui Cookie",
+    "back": "Indietro",
+    "lastUpdate": "Ultimo aggiornamento: Maggio 2026",
+    "contactEmail": "contact@actoos.com",
+    "sections": {
+      "whatIsCookie": {
+        "title": "1. Cos'è un cookie?",
+        "content": "Un cookie è un piccolo file di testo memorizzato sul tuo dispositivo (computer, telefono, tablet) quando visiti un sito web. I cookie consentono al sito di riconoscere il tuo dispositivo e di memorizzare alcune informazioni sulle tue preferenze o azioni passate."
+      },
+      "cookieTypes": {
+        "title": "2. Tipi di cookie utilizzati",
+        "subsections": [
+          {
+            "title": "Cookie essenziali",
+            "content": "Necessari per il funzionamento della Piattaforma. Consentono di utilizzare le funzionalità di base come l'accesso sicuro e la navigazione tra le pagine.",
+            "duration": "Durata: Sessione"
+          },
+          {
+            "title": "Cookie di preferenza",
+            "content": "Consentono di memorizzare le tue preferenze (lingua, regione, impostazioni di visualizzazione) per personalizzare la tua esperienza.",
+            "duration": "Durata: 1 anno"
+          },
+          {
+            "title": "Cookie analitici",
+            "content": "Ci aiutano a capire come i visitatori interagiscono con il nostro sito raccogliendo informazioni anonime sulle pagine visitate e sul tempo trascorso.",
+            "duration": "Durata: 2 anni"
+          },
+          {
+            "title": "Cookie di marketing",
+            "content": "Utilizzati per tracciare i visitatori sui siti web e mostrare pubblicità pertinenti e interessanti per l'utente.",
+            "duration": "Durata: 6 mesi"
+          }
+        ]
+      },
+      "thirdParty": {
+        "title": "3. Cookie di terze parti",
+        "content": "Utilizziamo servizi di terze parti che possono depositare cookie:\n- Google Analytics - Analisi del traffico\n- Supabase - Autenticazione e servizi backend\n- Stripe - Elaborazione dei pagamenti (per offerte premium)"
+      },
+      "manageCookies": {
+        "title": "4. Gestione dei cookie",
+        "content": "Puoi controllare e/o eliminare i cookie come desideri:\n- Tramite le impostazioni del tuo browser\n- Utilizzando il nostro banner di consenso ai cookie\n- Installando estensioni per il blocco dei cookie\n\nNota: la disattivazione di alcuni cookie potrebbe influire sulla tua esperienza sulla Piattaforma."
+      },
+      "browserSettings": {
+        "title": "5. Impostazioni del browser",
+        "content": "Ecco come gestire i cookie nei principali browser:\n- Chrome: Impostazioni > Privacy e sicurezza > Cookie\n- Firefox: Opzioni > Privacy e sicurezza > Cookie\n- Safari: Preferenze > Privacy > Cookie\n- Edge: Impostazioni > Privacy > Cookie"
+      },
+      "changes": {
+        "title": "6. Modifiche",
+        "content": "Potremmo aggiornare questa politica sui cookie per riflettere i cambiamenti nelle nostre pratiche o per altri motivi operativi, legali o normativi."
+      },
+      "contact": {
+        "title": "7. Contatto",
+        "content": "Per qualsiasi domanda sul nostro utilizzo dei cookie, contattaci all'indirizzo: <a>{{email}}</a>"
+      }
+    }
+  },
+  "contact": {
+    "title": "Contattaci",
+    "subtitle": "Una domanda, un suggerimento? Siamo a tua disposizione.",
+    "labels": {
+      "name": "Nome completo",
+      "email": "Email",
+      "subject": "Oggetto",
+      "message": "Messaggio"
+    },
+    "placeholders": {
+      "name": "Il tuo nome",
+      "email": "tu@esempio.com",
+      "subject": "Oggetto del tuo messaggio",
+      "message": "Scrivi qui il tuo messaggio..."
+    },
+    "sendButton": "Invia il messaggio",
+    "success": {
+      "title": "Messaggio inviato!",
+      "message": "Ti risponderemo al più presto."
+    },
+    "toasts": {
+      "fillAllFields": "Compila tutti i campi.",
+      "sent": "Messaggio inviato con successo!",
+      "error": "Errore durante l'invio."
+    }
+  },
+  "companyTeam": {
+    "invite": {
+      "title": "Invita un membro",
+      "placeholder": "Email o nome",
+      "button": "Invita",
+      "roleRecruiter": "Reclutatore",
+      "roleAdmin": "Admin"
+    },
+    "members": {
+      "title": "Membri ({{count}})",
+      "roleRecruiter": "Reclutatore",
+      "roleAdmin": "Admin"
+    },
+    "badges": {
+      "company": "Azienda",
+      "candidate": "Candidato"
+    },
+    "toasts": {
+      "loadError": "Errore durante il caricamento dei membri",
+      "userNotFound": "Utente non trovato",
+      "alreadyMember": "Questo utente è già membro.",
+      "memberAdded": "Membro aggiunto con successo.",
+      "emailError": "Errore nell'invio dell'email di invito",
+      "addError": "Errore durante l'aggiunta",
+      "roleUpdated": "Ruolo aggiornato",
+      "memberRemoved": "Membro rimosso",
+      "removeConfirm": "Rimuovere questo membro?"
+    }
+  },
+  "companyProfile": {
+    "back": "Indietro",
+    "title": "Modifica profilo aziendale",
+    "subtitle": "Aggiorna le informazioni della tua azienda",
+    "logo": "Aggiungi un logo",
+    "uploading": "Caricamento...",
+    "labels": {
+      "name": "Nome dell'azienda *",
+      "description": "Descrizione",
+      "industry": "Settore di attività",
+      "size": "Dimensioni dell'azienda",
+      "website": "Sito web",
+      "email": "Email di contatto",
+      "phone": "Telefono",
+      "foundedYear": "Anno di fondazione",
+      "country": "Paese",
+      "city": "Città",
+      "address": "Indirizzo"
+    },
+    "placeholders": {
+      "name": "Es: Orange Italia",
+      "description": "Presenta la tua azienda, la sua missione, i suoi valori...",
+      "website": "https://www.esempio.com",
+      "email": "recruiting@esempio.com",
+      "phone": "+39 XXX XXX XXXX",
+      "year": "Es: 2010",
+      "address": "Quartiere, via..."
+    },
+    "options": {
+      "selectIndustry": "Seleziona",
+      "selectSize": "Seleziona",
+      "selectCountry": "Seleziona",
+      "selectCity": "Seleziona"
+    },
+    "sizes": {
+      "1-10": "1-10 dipendenti",
+      "11-50": "11-50 dipendenti",
+      "51-200": "51-200 dipendenti",
+      "201-500": "201-500 dipendenti",
+      "500+": "500+ dipendenti"
+    },
+    "submit": "Salva le modifiche",
+    "noCompany": {
+      "title": "Nessuna azienda trovata",
+      "message": "Non hai ancora creato un'azienda o non sei associato a un'azienda esistente.",
+      "createButton": "Crea la mia azienda"
+    },
+    "toasts": {
+      "imageRequired": "Seleziona un'immagine",
+      "imageTooBig": "L'immagine non deve superare i 2 MB",
+      "logoUploaded": "Logo caricato con successo",
+      "uploadError": "Errore durante il caricamento del logo",
+      "nameRequired": "Il nome dell'azienda è obbligatorio",
+      "updateSuccess": "Profilo aziendale aggiornato con successo",
+      "updateError": "Errore durante l'aggiornamento del profilo"
+    }
+  },
+  "companyJobs": {
+    "title": "Tutte le mie offerte",
+    "back": "Indietro",
+    "newOffer": "Nuova offerta",
+    "noJobs": {
+      "title": "Nessuna offerta",
+      "message": "Non hai ancora pubblicato offerte.",
+      "createButton": "Crea un'offerta"
+    },
+    "status": {
+      "draft": "Bozza",
+      "active": "Pubblicata",
+      "paused": "In pausa",
+      "closed": "Chiusa",
+      "expired": "Scaduta",
+      "pending": "In convalida"
+    },
+    "menu": {
+      "edit": "Modifica",
+      "pause": "Metti in pausa",
+      "boost": "Usa il mio boost mensile",
+      "reactivate": "Riattiva",
+      "publish": "Pubblica",
+      "delete": "Elimina"
+    },
+    "views": "{{count}} visualizzazioni",
+    "applications": "{{count}} candidature",
+    "confirmDelete": "Sei sicuro di voler eliminare \"{{title}}\"?",
+    "toasts": {
+      "deleted": "Offerta eliminata",
+      "deleteError": "Errore durante l'eliminazione",
+      "published": "Offerta pubblicata!",
+      "statusUpdated": "Stato aggiornato",
+      "updateError": "Errore durante l'aggiornamento",
+      "boostActivated": "Boost gratuito attivato per 7 giorni!",
+      "boostError": "Errore durante l'attivazione del boost",
+      "boostBusinessOnly": "Questa funzionalità è riservata al piano Business",
+      "boostAlreadyUsed": "Boost già utilizzato questo mese. Riprova tra {{days}} giorno/i.",
+      "jobNotEligible": "L'offerta non è idonea",
+      "companyNotFound": "Azienda non trovata"
+    }
+  },
+  "companyDetail": {
+    "notFound": "Azienda non trovata",
+    "notFoundMessage": "Azienda non trovata.",
+    "back": "Indietro",
+    "yourCompany": "La tua azienda",
+    "about": "Chi siamo",
+    "jobs": "Offerte di lavoro",
+    "noJobs": "Nessuna offerta attiva al momento.",
+    "employees": "{{size}} dipendenti",
+    "website": "Sito web",
+    "email": "Email"
+  },
+  "companyDashboard": {
+    "noCompany": {
+      "title": "Crea la tua prima azienda",
+      "subtitle": "Per pubblicare offerte e ricevere candidature, inizia creando il profilo della tua azienda.",
+      "createButton": "Crea la mia azienda"
+    },
+    "companySelector": {
+      "owner": "(proprietario)",
+      "member": "(membro)",
+      "newCompany": "Nuova azienda"
+    },
+    "header": {
+      "title": "Spazio reclutatore"
+    },
+    "profileButton": "Profilo aziendale",
+    "newOfferButton": "Nuova offerta",
+    "stats": {
+      "publishedJobs": "Offerte pubblicate",
+      "totalApplications": "Totale candidature",
+      "newApplications": "Nuove candidature",
+      "totalViews": "Visualizzazioni totali",
+      "trend": "+{{trend}}% questo mese"
+    },
+    "jobsSection": {
+      "title": "Le mie offerte di lavoro",
+      "totalOffers": "{{count}} offerte in totale",
+      "viewAll": "Vedi tutto",
+      "noOffers": "Nessuna offerta pubblicata",
+      "publishButton": "Pubblica un'offerta"
+    },
+    "applicationsSection": {
+      "title": "Candidature recenti",
+      "newCount": "{{count}} nuove",
+      "viewAll": "Vedi tutto",
+      "noApplications": "Nessuna candidatura"
+    },
+    "companyProfileCard": {
+      "title": "Profilo aziendale",
+      "pendingValidation": "⏳ La tua azienda è in attesa di convalida. Puoi preparare le tue offerte in bozza. Una volta convalidata, potrai inviarle per la pubblicazione.",
+      "employees": "{{size}} dipendenti",
+      "founded": "Fondata nel {{year}}",
+      "editProfile": "Modifica profilo"
+    },
+    "subscriptionCard": {
+      "currentPlan": "Piano attuale: {{plan}}",
+      "changePlan": "Cambia piano",
+      "activeOffers": "Offerte attive",
+      "unlimited": "Illimitato",
+      "activePlanMessage": "Sei attualmente nel piano {{plan}}. Puoi gestire il tuo abbonamento o annullarlo.",
+      "manageSubscription": "Gestisci il mio abbonamento",
+      "cancelSubscription": "Annulla l'abbonamento",
+      "freePlanMessage": "Passa a un piano superiore per pubblicare più offerte e accedere a funzionalità avanzate.",
+      "lastCancelReason": "Motivo dell'ultima disdetta:",
+      "cancelReasonQuote": "« {{reason}} »"
+    },
+    "adminMessages": {
+      "title": "Messaggi dell'amministrazione"
+    },
+    "status": {
+      "draft": "Bozza",
+      "pending": "In convalida",
+      "active": "Pubblicata",
+      "paused": "In pausa",
+      "closed": "Chiusa",
+      "expired": "Scaduta",
+      "rejected": "Rifiutata"
+    },
+    "applicationStatus": {
+      "pending": "Nuova",
+      "viewed": "Visualizzata",
+      "shortlisted": "Preselezionato",
+      "interview": "Colloquio",
+      "accepted": "Accettato",
+      "rejected": "Rifiutato"
+    },
+    "jobCard": {
+      "unspecifiedLocation": "Non specificato",
+      "views": "{{count}} visualizzazioni",
+      "applications": "{{count}} candidature",
+      "menu": {
+        "edit": "Modifica",
+        "viewApplications": "Vedi le candidature",
+        "submitForValidation": "Invia per la convalida",
+        "validationRequired": "Convalida dell'azienda richiesta",
+        "cancelSubmission": "Annulla l'invio",
+        "pause": "Metti in pausa",
+        "republish": "Ripubblica",
+        "delete": "Elimina"
+      }
+    },
+    "cancelModal": {
+      "title": "Annulla abbonamento",
+      "description": "Stai per annullare il tuo abbonamento. Questa azione è irreversibile.",
+      "reasonLabel": "Motivo della disdetta (opzionale)",
+      "reasonPlaceholder": "Dicci perché te ne vai...",
+      "consequencesTitle": "⚠️ Conseguenze:",
+      "consequences": [
+        "Il tuo piano verrà declassato al piano Gratuito",
+        "Le funzionalità premium saranno disattivate",
+        "Questa azione è immediata"
+      ],
+      "cancelButton": "Annulla",
+      "confirmButton": "Conferma la disdetta"
+    },
+    "toasts": {
+      "loadError": "Errore di caricamento della dashboard",
+      "jobDeleted": "Offerta eliminata",
+      "limitReached": "Limite raggiunto ({{limit}} offerta/e max).",
+      "offerPublished": "Offerta pubblicata",
+      "statusUpdated": "Stato aggiornato",
+      "updateError": "Errore",
+      "companyNotVerified": "La tua azienda non è ancora stata verificata. Al momento non puoi inviare un'offerta.",
+      "limitReachedDetailed": "Limite raggiunto ({{limit}} offerta/e max). Hai già {{total}} offerta/e attiva/e o in attesa.",
+      "submittedForValidation": "Offerta inviata per la convalida",
+      "submissionCancelled": "Invio annullato, offerta rimessa in bozza",
+      "submissionError": "Errore durante l'invio",
+      "subscriptionCancelled": "Abbonamento annullato con successo",
+      "cancelError": "Errore durante l'annullamento",
+      "deleteConfirm": "Eliminare \"{{title}}\"?",
+      "adminNotifyError": "Errore di notifica all'amministratore per l'offerta",
+      "companyNotVerifiedMenu": "La tua azienda non è ancora stata verificata."
+    }
+  },
+  "companyApplications": {
+    "title": "Tutte le candidature",
+    "back": "Indietro",
+    "noApplications": "Nessuna candidatura.",
+    "deleteConfirm": "Eliminare definitivamente questa candidatura?",
+    "deleteButton": "Elimina",
+    "status": {
+      "pending": "Nuova",
+      "viewed": "Visualizzata",
+      "shortlisted": "Preselezionato",
+      "interview": "Colloquio",
+      "accepted": "Accettato",
+      "rejected": "Rifiutato"
+    },
+    "toasts": {
+      "deleted": "Candidatura eliminata",
+      "deleteError": "Errore durante l'eliminazione"
+    }
+  },
+  "companiesPage": {
+    "title": "Aziende che assumono",
+    "subtitle": "Scopri le aziende che stanno reclutando e consulta le loro offerte di lavoro.",
+    "searchPlaceholder": "Cerca un'azienda...",
+    "allIndustries": "Tutti i settori",
+    "noCompanies": {
+      "title": "Nessuna azienda trovata",
+      "hint": "Prova a modificare i tuoi criteri di ricerca."
+    },
+    "viewProfile": "Vedi il profilo",
+    "offers": "{{count}} offerte",
+    "cta": {
+      "title": "Sei un'azienda?",
+      "subtitle": "Crea il tuo profilo aziendale e pubblica le tue offerte di lavoro per attrarre i migliori talenti.",
+      "button": "Crea il mio profilo aziendale"
+    }
+  },
+  "cgu": {
+    "title": "Condizioni Generali di Utilizzo",
+    "back": "Indietro",
+    "lastUpdate": "Ultimo aggiornamento: Maggio 2026",
+    "contactEmail": "contact@actoos.com",
+    "sections": [
+      {
+        "title": "1. Oggetto",
+        "content": "Le presenti Condizioni Generali di Utilizzo (CGU) hanno lo scopo di definire le modalità e le condizioni di utilizzo dei servizi offerti da Actoos Jobs (di seguito \"la Piattaforma\"), nonché di definire i diritti e gli obblighi delle parti in questo ambito."
+      },
+      {
+        "title": "2. Accettazione delle CGU",
+        "content": "L'utilizzo della Piattaforma implica l'accettazione piena e completa delle presenti CGU. Registrandoti su Actoos Jobs, riconosci di aver letto, compreso e accettato senza riserve le presenti condizioni."
+      },
+      {
+        "title": "3. Descrizione dei servizi",
+        "content": "Actoos Jobs è una piattaforma internazionale di incontro tra datori di lavoro e candidati. I servizi offerti includono:\n- Pubblicazione e consultazione di offerte di lavoro\n- Creazione e gestione di profili candidato e azienda\n- Sistema di candidatura online\n- Strumenti di gestione delle candidature per i datori di lavoro\n- Avvisi di lavoro personalizzati"
+      },
+      {
+        "title": "4. Registrazione e account utente",
+        "content": "Per accedere a determinati servizi, l'utente deve creare un account. Si impegna a fornire informazioni accurate e a mantenerle aggiornate. L'utente è responsabile della riservatezza delle proprie credenziali di accesso."
+      },
+      {
+        "title": "5. Obblighi degli utenti",
+        "content": "Gli utenti si impegnano a:\n- Non pubblicare contenuti illegali, diffamatori o discriminatori\n- Non usurpare l'identità di terzi\n- Non utilizzare la Piattaforma per scopi fraudolenti\n- Rispettare i diritti di proprietà intellettuale\n- Non disturbare il funzionamento della Piattaforma"
+      },
+      {
+        "title": "6. Proprietà intellettuale",
+        "content": "Tutti gli elementi della Piattaforma (testi, immagini, loghi, ecc.) sono protetti dal diritto di proprietà intellettuale. Qualsiasi riproduzione o uso non autorizzato è vietato."
+      },
+      {
+        "title": "7. Responsabilità",
+        "content": "Actoos Jobs non può essere ritenuta responsabile del contenuto pubblicato dagli utenti, né dell'esito degli incontri effettuati tramite la Piattaforma. Gli utenti rimangono gli unici responsabili delle loro interazioni."
+      },
+      {
+        "title": "8. Modifica delle CGU",
+        "content": "Actoos Jobs si riserva il diritto di modificare le presenti CGU in qualsiasi momento. Gli utenti saranno informati delle modifiche via email o notifica sulla Piattaforma."
+      },
+      {
+        "title": "9. Legge applicabile",
+        "content": "Le presenti CGU sono soggette alla legge vigente. Ogni controversia sarà sottoposta ai tribunali competenti."
+      },
+      {
+        "title": "10. Contatto",
+        "content": "Per qualsiasi domanda relativa alle presenti CGU, puoi contattarci all'indirizzo: <a>{{email}}</a>"
+      }
+    ]
+  },
+  "candidateProfile": {
+    "notFound": "Candidato non trovato.",
+    "back": "Indietro",
+    "reportButton": "Segnala questo candidato",
+    "reportTitle": "Perché segnali questo candidato?",
+    "reportSent": "Segnalazione inviata. Grazie!",
+    "reportError": "Errore durante l'invio della segnalazione",
+    "loginToReport": "Accedi per segnalare",
+    "salaryExpectations": "Aspettative salariali: {{min}} - {{max}} FCFA",
+    "skills": "Competenze",
+    "experience": "Esperienze",
+    "education": "Formazione",
+    "downloadCV": "Scarica il CV",
+    "present": "presente",
+    "linkedin": "LinkedIn",
+    "portfolio": "Portfolio"
+  },
+  "candidateProfilePage": {
+    "title": "Il mio Profilo",
+    "subtitle": "Gestisci le tue informazioni professionali",
+    "back": "Indietro",
+    "save": "Salva",
+    "saveChanges": "Salva le modifiche",
+    "photo": {
+      "title": "Foto del profilo",
+      "hint": "JPG, PNG (max 2 MB)",
+      "change": "Cambia",
+      "delete": "Elimina",
+      "deleteConfirm": "Eliminare la tua foto del profilo?",
+      "uploadError": "Errore nel caricamento della foto",
+      "updated": "Foto aggiornata",
+      "deleted": "Foto eliminata",
+      "deleteError": "Errore nell'eliminazione della foto"
+    },
+    "personalInfo": {
+      "sectionTitle": "Informazioni personali",
+      "sectionDesc": "Le tue informazioni di base",
+      "firstName": "Nome *",
+      "lastName": "Cognome *",
+      "phone": "Telefono",
+      "phonePlaceholder": "+39 XXX XXX XXXX",
+      "city": "Città",
+      "selectCity": "Seleziona una città"
+    },
+    "professionalProfile": {
+      "sectionTitle": "Profilo professionale",
+      "sectionDesc": "Il tuo titolo e presentazione",
+      "title": "Titolo professionale *",
+      "bio": "Chi sono",
+      "experienceLevel": "Livello di esperienza",
+      "selectLevel": "Seleziona",
+      "yearsOfExperience": "Anni di esperienza",
+      "available": "Sono disponibile immediatamente",
+      "openToRemote": "Aperto al telelavoro"
+    },
+    "cv": {
+      "sectionTitle": "Il mio CV",
+      "sectionDesc": "Carica il tuo CV principale (PDF o Word)",
+      "uploaded": "CV caricato",
+      "view": "Visualizza",
+      "change": "Cambia",
+      "delete": "Elimina",
+      "deleteConfirm": "Eliminare il tuo CV?",
+      "uploadTitle": "Carica il tuo CV",
+      "uploadHint": "PDF o Word, max 5 MB",
+      "chooseFile": "Scegli un file",
+      "analyzeButton": "Analizza il mio CV (IA)",
+      "uploadError": "Errore nel caricamento del CV",
+      "uploadedToast": "CV caricato",
+      "deletedToast": "CV eliminato",
+      "deleteError": "Errore nell'eliminazione del CV",
+      "invalidFormat": "Formato non supportato. Usa PDF o Word.",
+      "fileTooLarge": "Il file è troppo grande (max 5 MB)"
+    },
+    "documents": {
+      "sectionTitle": "Documenti",
+      "sectionDesc": "Diplomi, attestati, certificazioni...",
+      "typeDiploma": "Diploma",
+      "typeCertificate": "Certificato / Attestato",
+      "typeOther": "Altro",
+      "addButton": "Aggiungi un documento",
+      "addedToast": "Documento aggiunto",
+      "uploadError": "Errore nel caricamento del documento",
+      "deleteConfirm": "Eliminare questo documento?",
+      "deletedToast": "Documento eliminato",
+      "deleteError": "Errore nell'eliminazione del documento",
+      "empty": "Nessun documento aggiunto."
+    },
+    "skills": {
+      "sectionTitle": "Competenze",
+      "sectionDesc": "Aggiungi le tue competenze chiave",
+      "placeholder": "Es: React, Python...",
+      "add": "Aggiungi",
+      "empty": "Nessuna competenza aggiunta.",
+      "addedToast": "{{count}} competenza/e aggiunta/e!",
+      "noneFound": "Nessuna nuova competenza trovata."
+    },
+    "experience": {
+      "sectionTitle": "Esperienze professionali",
+      "sectionDesc": "Il tuo percorso professionale",
+      "add": "Aggiungi",
+      "edit": "Modifica",
+      "delete": "Elimina",
+      "empty": "Nessuna esperienza aggiunta",
+      "present": "Presente",
+      "modalAddTitle": "Aggiungi un'esperienza",
+      "modalEditTitle": "Modifica l'esperienza",
+      "jobTitle": "Posizione *",
+      "company": "Azienda *",
+      "location": "Luogo",
+      "startDate": "Data di inizio *",
+      "endDate": "Data di fine",
+      "currentlyWorking": "Attualmente ricopro questa posizione",
+      "description": "Descrizione",
+      "cancel": "Annulla",
+      "save": "Salva",
+      "saveNew": "Aggiungi",
+      "fillRequired": "Compila tutti i campi obbligatori"
+    },
+    "education": {
+      "sectionTitle": "Formazione",
+      "sectionDesc": "I tuoi diplomi e certificazioni",
+      "add": "Aggiungi",
+      "edit": "Modifica",
+      "delete": "Elimina",
+      "empty": "Nessuna formazione aggiunta",
+      "modalAddTitle": "Aggiungi una formazione",
+      "modalEditTitle": "Modifica la formazione",
+      "degree": "Diploma *",
+      "school": "Istituto *",
+      "field": "Area di studi",
+      "year": "Anno di conseguimento *",
+      "cancel": "Annulla",
+      "save": "Salva",
+      "saveNew": "Aggiungi",
+      "fillRequired": "Compila tutti i campi obbligatori"
+    },
+    "links": {
+      "sectionTitle": "Link",
+      "sectionDesc": "Portfolio e social network",
+      "linkedin": "LinkedIn",
+      "portfolio": "Portfolio / Sito web"
+    },
+    "salary": {
+      "sectionTitle": "Aspettative salariali",
+      "sectionDesc": "Fascia salariale desiderata (FCFA/mese)",
+      "minSalary": "Stipendio minimo",
+      "maxSalary": "Stipendio massimo"
+    },
+    "cvAnalysis": {
+      "title": "Analisi del tuo CV",
+      "description": "Incolla il testo del tuo CV qui sotto per ottenere suggerimenti di miglioramento.",
+      "placeholder": "Incolla qui il contenuto del tuo CV...",
+      "suggestions": "Suggerimenti:",
+      "close": "Chiudi",
+      "analyze": "Analizza",
+      "analyzing": "Analisi in corso...",
+      "doneToast": "Analisi completata",
+      "errorToast": "Errore nell'analisi IA",
+      "emptyText": "Incolla il testo del tuo CV"
+    },
+    "report": {
+      "button": "Segnala",
+      "title": "Perché segnali questo candidato?",
+      "loginRequired": "Accedi per segnalare",
+      "sent": "Segnalazione inviata. Grazie!",
+      "error": "Errore durante l'invio della segnalazione"
+    },
+    "toasts": {
+      "profileUpdated": "Profilo aggiornato con successo!",
+      "saveError": "Errore durante il salvataggio del profilo",
+      "fillRequired": "Compila tutti i campi obbligatori"
+    }
+  },
+  "blog": {
+    "badge": "Blog",
+    "title": "Consigli e risorse per la tua carriera",
+    "subtitle": "Trova i nostri migliori consigli per potenziare la tua ricerca di lavoro, superare i colloqui e sviluppare la tua carriera.",
+    "allCategories": "Tutte",
+    "noArticles": "Nessun articolo per il momento.",
+    "readMore": "Leggi l'articolo",
+    "newsletter": {
+      "title": "Rimani informato",
+      "subtitle": "Ricevi i nostri ultimi articoli e consigli di carriera direttamente nella tua casella email.",
+      "placeholder": "La tua email",
+      "subscribeButton": "Iscriviti",
+      "privacyNote": "Iscrivendoti, accetti la nostra informativa sulla privacy.",
+      "subscribedTitle": "Sei iscritto!",
+      "subscribedMessage": "Grazie per l'interesse. A presto nella tua casella email.",
+      "toasts": {
+        "emailRequired": "Inserisci la tua email.",
+        "subscribeSuccess": "Iscrizione riuscita!",
+        "subscribeError": "Errore durante l'iscrizione."
+      }
+    },
+    "loadingError": "Impossibile caricare gli articoli"
+  },
+  "blogArticle": {
+    "notFoundTitle": "Articolo non trovato",
+    "notFoundBack": "Torna al blog",
+    "back": "Torna al blog",
+    "allArticles": "Vedi tutti gli articoli"
+  },
+  "authCallback": {
+    "title": "Accesso in corso...",
+    "message": "Attendi mentre completiamo la tua autenticazione."
+  },
+  "applicationDetail": {
+    "notFound": "Candidatura non trovata.",
+    "back": "Torna alle candidature",
+    "viewFullProfile": "Vedi il profilo completo",
+    "jobTitle": "Offerta interessata",
+    "coverLetter": "Lettera di presentazione",
+    "cv": "CV del candidato",
+    "viewCV": "Vedi il CV",
+    "receivedAt": "Candidatura ricevuta il {{date}}",
+    "changeStatus": "Cambia stato",
+    "scheduleInterview": "Programma un colloquio",
+    "step1ChooseSlot": "1. Scegli un orario",
+    "openCalendly": "Apri Calendly",
+    "sendEmail": "Invia per email",
+    "step2CreateLink": "2. Crea un link di videoconferenza",
+    "joinMeeting": "Partecipa",
+    "updateLink": "Aggiorna",
+    "deleteLink": "Elimina",
+    "newRoomPlaceholder": "Nuovo nome stanza",
+    "roomPlaceholder": "Nome della stanza (es: mio-colloquio)",
+    "generateJitsiLink": "Genera un link Jitsi",
+    "prepareInterview": "Prepara il colloquio",
+    "questions": "Domande",
+    "emptyQuestions": "Clicca su Genera per ottenere domande personalizzate.",
+    "answers": "Risposte tipo",
+    "emptyAnswers": "Genera prima le domande, poi ottieni risposte tipo per valutare il candidato.",
+    "tips": "Consigli",
+    "emptyTips": "Ottieni consigli per condurre un colloquio strutturato e pertinente.",
+    "generate": "Genera",
+    "saveNotes": "Salva nelle note",
+    "savedNotes": "Note salvate",
+    "clickToEdit": "Clicca sulla matita per modificare.",
+    "readMode": "Modalità lettura",
+    "editMode": "Modifica",
+    "status": {
+      "pending": "Nuova",
+      "viewed": "Visualizzata",
+      "shortlisted": "Preselezionato",
+      "interview": "Colloquio",
+      "accepted": "Accettato",
+      "rejected": "Rifiutato"
+    },
+    "toasts": {
+      "statusUpdated": "Stato aggiornato",
+      "updateError": "Errore durante l'aggiornamento",
+      "linkUpdated": "Link aggiornato!",
+      "linkDeleted": "Link eliminato",
+      "questionsGenerated": "Domande generate!",
+      "answersGenerated": "Risposte tipo generate!",
+      "tipsGenerated": "Consigli generati!",
+      "needQuestionsFirst": "Genera prima le domande",
+      "saveError": "Errore durante il salvataggio",
+      "emailError": "Errore durante l'invio dell'email",
+      "aiError": "Errore IA",
+      "rejectionPrompt": "Indica il motivo del rifiuto (facoltativo):"
+    }
+  },
+  "applicationDetailCandidate": {
+    "notFound": "Candidatura non trovata.",
+    "back": "Torna alle mie candidature",
+    "jobDefault": "Offerta",
+    "joinInterview": "Partecipa al colloquio",
+    "prepareInterview": "Prepara il colloquio"
+  },
+  "about": {
+    "hero": {
+      "title": "Chi è Actoos Jobs",
+      "subtitle": "La piattaforma di reclutamento di nuova generazione, progettata per connettere i talenti con le aziende che assumono, semplificando e modernizzando il processo."
+    },
+    "mission": {
+      "title": "La nostra missione",
+      "content": "Semplificare il reclutamento su scala mondiale offrendo un'esperienza fluida, trasparente ed efficiente, che tu sia un candidato o un reclutatore. Crediamo che ogni talento meriti di essere scoperto."
+    },
+    "vision": {
+      "title": "La nostra visione",
+      "content": "Diventare il riferimento nel reclutamento a livello internazionale, utilizzando la tecnologia e l'intelligenza artificiale per creare connessioni professionali durature ed eque."
+    },
+    "values": {
+      "title": "I nostri valori",
+      "items": [
+        { "title": "Trasparenza", "desc": "Pubblica e candidati con piena fiducia." },
+        { "title": "Innovazione", "desc": "Strumenti intelligenti per un reclutamento moderno." },
+        { "title": "Prossimità", "desc": "Supporto locale, al tuo ascolto." },
+        { "title": "Prestazioni", "desc": "Massimizza le tue possibilità di trovare l'abbinamento giusto." }
+      ]
+    },
+    "team": {
+      "title": "Il team Actoos",
+      "content": "Fondata da un team di ingegneri appassionati, Actoos Jobs è sviluppata con cura per rispondere alle esigenze reali del mercato del lavoro. Uniamo competenze tecniche e conoscenza del territorio per offrire un servizio affidabile e innovativo."
+    }
+  },
+  "candidateDashboard": {
+    "greeting": "Ciao, {{name}} 👋",
+    "activityPreview": "Ecco un riepilogo della tua attività",
+    "myProfile": "Il mio profilo",
+    "searchJobs": "Cerca",
+    "stats": {
+      "applications": "Candidature",
+      "savedJobs": "Offerte salvate",
+      "activeAlerts": "Avvisi attivi",
+      "completionRate": "Tasso di completamento",
+      "trend": "+{{trend}}% questo mese"
+    },
+    "applications": {
+      "title": "Le mie candidature",
+      "description": "Tieni traccia dello stato delle tue candidature",
+      "viewAll": "Vedi tutto",
+      "empty": "Nessuna candidatura per il momento",
+      "findJob": "Trova un lavoro",
+      "defaultJobTitle": "Offerta di lavoro",
+      "defaultCompany": "Azienda"
+    },
+    "savedJobs": {
+      "title": "Offerte salvate",
+      "description": "Le offerte che ti interessano",
+      "viewAll": "Vedi tutto",
+      "empty": "Nessuna offerta salvata",
+      "browseJobs": "Sfoglia le offerte",
+      "unspecifiedLocation": "Non specificato"
+    },
+    "adminMessages": {
+      "title": "Messaggi dell'amministrazione",
+      "description": "Comunicazioni importanti del team Actoos"
+    },
+    "profileCompletion": {
+      "title": "Completamento del profilo",
+      "completeProfile": "Completa il mio profilo",
+      "messages": {
+        "low": "Completa il tuo profilo per attrarre più reclutatori",
+        "medium": "Buon inizio! Aggiungi più dettagli",
+        "high": "Eccellente! Il tuo profilo è quasi completo"
+      }
+    },
+    "quickActions": {
+      "title": "Azioni rapide",
+      "updateCV": "Aggiorna il mio CV",
+      "updateCVDesc": "Carica il tuo ultimo CV",
+      "createAlert": "Crea un avviso",
+      "createAlertDesc": "Ricevi le offerte per email",
+      "settings": "Impostazioni",
+      "settingsDesc": "Gestisci il tuo account"
+    },
+    "dailyTip": {
+      "title": "Consiglio del giorno",
+      "low": [
+        "Aggiungi una foto del profilo: i profili con foto ricevono più contatti.",
+        "Indica il tuo titolo professionale per apparire nelle ricerche.",
+        "Completa il tuo CV per candidarti con un clic.",
+        "Indica le tue competenze chiave per essere trovato più facilmente."
+      ],
+      "high": [
+        "Aggiorna regolarmente il tuo CV per riflettere le tue ultime esperienze.",
+        "Attiva gli avvisi di lavoro per non perdere nulla.",
+        "Aggiungi esempi di realizzazioni nelle tue esperienze.",
+        "Condividi il tuo profilo su LinkedIn per aumentare la tua visibilità."
+      ]
+    }
+  },
+  "footer": {
+    "brand": {
+      "tagline": "La piattaforma di reclutamento di nuova generazione. Trova il tuo lavoro ideale o assumi i migliori talenti."
+    },
+    "sections": {
+      "candidates": {
+        "title": "Candidati",
+        "links": {
+          "search": "Cerca un lavoro",
+          "createAccount": "Crea il mio account",
+          "dashboard": "Il mio spazio candidato",
+          "careerTips": "Consigli di carriera"
+        }
+      },
+      "companies": {
+        "title": "Aziende",
+        "links": {
+          "publishOffer": "Pubblica un'offerta",
+          "dashboard": "Spazio reclutatore",
+          "pricing": "Tariffe"
+        }
+      },
+      "info": {
+        "title": "Informazioni",
+        "links": {
+          "about": "Chi siamo",
+          "faq": "FAQ",
+          "cgu": "CGU",
+          "privacy": "Privacy",
+          "cookies": "Cookie"
+        }
+      }
+    },
+    "contact": {
+      "title": "Una domanda?",
+      "description": "Il nostro team è qui per aiutarti. Consulta le nostre FAQ o contattaci direttamente.",
+      "email": "contact@actoos.com",
+      "phone": "+32 465 74 36 61",
+      "button": "Contattaci"
+    },
+    "copyright": "© {{year}} Actoos Jobs. Tutti i diritti riservati."
+  },
+  "header": {
+    "brand": "Actoos Jobs",
+    "nav": {
+      "jobs": "Lavori",
+      "companies": "Aziende",
+      "pricing": "Tariffe",
+      "blog": "Blog"
+    },
+    "user": {
+      "dashboard": "Dashboard",
+      "profile": "Il mio profilo",
+      "createAlert": "Crea un avviso",
+      "settings": "Impostazioni",
+      "admin": "Amministrazione",
+      "plan": "Piano: {{plan}}",
+      "logout": "Esci",
+      "defaultName": "Account",
+      "defaultUser": "Utente"
+    },
+    "auth": {
+      "login": "Accedi",
+      "register": "Registrati",
+      "companySpace": "Spazio Azienda"
+    },
+    "mobile": {
+      "alerts": "Avvisi di lavoro"
+    }
+  },
+  "cookieBanner": {
+    "title": "Utilizziamo i cookie",
+    "description": "Per migliorare la tua esperienza, analizzare il traffico e personalizzare i contenuti. Puoi accettare tutti i cookie o personalizzare le tue preferenze.",
+    "customize": "Personalizza",
+    "rejectAll": "Rifiuta",
+    "acceptAll": "Accetta tutto",
+    "settings": {
+      "title": "Impostazioni dei cookie",
+      "essential": {
+        "label": "Cookie essenziali",
+        "description": "Necessari per il funzionamento del sito. Sempre attivati."
+      },
+      "analytics": {
+        "label": "Cookie analitici",
+        "description": "Ci aiutano a capire come utilizzi il sito."
+      },
+      "marketing": {
+        "label": "Cookie di marketing",
+        "description": "Utilizzati per mostrare pubblicità pertinenti."
+      },
+      "rejectAll": "Rifiuta tutto",
+      "save": "Salva"
+    }
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "subtitle": "Gestisci il tuo account",
+    "back": "Indietro",
+    "myProfile": "Il mio profilo",
+    "accountInfo": {
+      "title": "Informazioni account",
+      "description": "{{email}}"
+    },
+    "changeEmail": {
+      "title": "Cambia indirizzo email",
+      "description": "Un'email di conferma sarà inviata al nuovo indirizzo",
+      "newEmailLabel": "Nuova email",
+      "newEmailPlaceholder": "nuova@email.com",
+      "currentPasswordLabel": "Password attuale (per verifica)",
+      "currentPasswordPlaceholder": "••••••••",
+      "submit": "Cambia email"
+    },
+    "changePassword": {
+      "title": "Cambia la password",
+      "description": "Usa almeno 8 caratteri",
+      "newPasswordLabel": "Nuova password",
+      "newPasswordPlaceholder": "••••••••",
+      "confirmPasswordLabel": "Conferma password",
+      "confirmPasswordPlaceholder": "••••••••",
+      "submit": "Aggiorna"
+    },
+    "logout": {
+      "title": "Disconnettiti",
+      "description": "Sarai reindirizzato alla home page",
+      "button": "Esci"
+    },
+    "roleChange": {
+      "title": "Cambia tipo di account",
+      "currentRoleCandidate": "Candidato",
+      "currentRoleCompany": "Azienda",
+      "descriptionCandidate": "Sei attualmente <strong>Candidato</strong>. Puoi richiedere il passaggio a un account <strong>Azienda</strong>.",
+      "descriptionCompany": "Sei attualmente <strong>Azienda</strong>. Puoi richiedere il passaggio a un account <strong>Candidato</strong>.",
+      "requestButton": "Richiedi un cambiamento",
+      "modal": {
+        "title": "Richiedi un cambio di ruolo",
+        "roleLabel": "Nuovo ruolo desiderato",
+        "roleCompany": "Azienda",
+        "roleCandidate": "Candidato",
+        "reasonLabel": "Messaggio (opzionale)",
+        "reasonPlaceholder": "Spiega perché desideri cambiare ruolo...",
+        "cancel": "Annulla",
+        "submit": "Invia la richiesta"
+      }
+    },
+    "dangerZone": {
+      "title": "Zona pericolosa",
+      "description": "Elimina il tuo account e tutti i tuoi dati. Questa azione è irreversibile.",
+      "button": "Elimina il mio account",
+      "confirm": "Eliminare definitivamente il tuo account? Questa azione è irreversibile, tutti i tuoi dati saranno cancellati."
+    },
+    "toasts": {
+      "passwordMismatch": "Le password non corrispondono",
+      "passwordLength": "La password deve contenere almeno 8 caratteri",
+      "passwordUpdated": "Password aggiornata con successo",
+      "passwordError": "Errore durante la modifica della password",
+      "fillAllFields": "Compila tutti i campi",
+      "wrongPassword": "Password attuale errata",
+      "emailConfirmationSent": "Un'email di conferma è stata inviata al nuovo indirizzo. Controlla la tua casella di posta.",
+      "emailError": "Errore durante la modifica dell'email",
+      "logoutError": "Errore durante la disconnessione",
+      "accountDeleted": "Il tuo account è stato eliminato definitivamente.",
+      "deleteError": "Errore di rete durante l'eliminazione.",
+      "roleRequestSent": "La tua richiesta è stata inviata. L'amministratore la esaminerà.",
+      "roleRequestError": "Errore di rete"
+    }
+  },
+  "messageSender": {
+    "recipientsTitle": "{{role}}",
+    "searchPlaceholder": "Cerca...",
+    "composeTitle": "Componi un messaggio",
+    "composeDescription": "{{count}} destinatario/i selezionato/i",
+    "subjectPlaceholder": "Oggetto del messaggio",
+    "contentPlaceholder": "Contenuto del messaggio (HTML consentito)...",
+    "durationLabel": "Durata di visualizzazione:",
+    "durationValuePlaceholder": "Valore",
+    "durationUnits": {
+      "minutes": "Minuti",
+      "hours": "Ore",
+      "days": "Giorni"
+    },
+    "sendButton": "Invia",
+    "toasts": {
+      "fillRequired": "Seleziona almeno un destinatario e compila oggetto e contenuto.",
+      "partialError": "Errori: {{errors}}",
+      "sentSuccess": "Messaggio inviato a {{count}} utente/i.",
+      "sendError": "Errore durante l'invio.",
+      "networkError": "Errore di rete"
+    },
+    "roles": {
+      "company": "Aziende",
+      "candidate": "Candidati"
+    }
+  },
+  "messageManager": {
+    "title": "Tutti i messaggi inviati ({{count}})",
+    "noMessages": "Nessun messaggio inviato per il momento.",
+    "loadingError": "Errore durante il caricamento dei messaggi",
+    "unknownRecipient": "Sconosciuto",
+    "sentAt": "Inviato il {{date}}",
+    "modifiedAt": "Modificato il {{date}}",
+    "expiresAt": "Scade il {{date}}",
+    "edit": {
+      "subjectPlaceholder": "Oggetto",
+      "save": "Salva",
+      "cancel": "Annulla"
+    },
+    "toasts": {
+      "updated": "Messaggio aggiornato",
+      "deleted": "Messaggio eliminato",
+      "deleteConfirm": "Eliminare questo messaggio definitivamente?"
+    }
+  },
+  "geoBanner": {
+    "message": "Sembra che tu sia in <strong>{{country}}</strong>. Vuoi visualizzare le offerte e i prezzi adattati?",
+    "yes": "Sì",
+    "close": "Chiudi",
+    "countries": {
+      "BE": "Belgio",
+      "FR": "Francia",
+      "SN": "Senegal",
+      "CI": "Costa d'Avorio",
+      "MA": "Marocco",
+      "DE": "Germania",
+      "US": "Stati Uniti",
+      "ML": "Mali"
+    }
+  },
+  "userMessages": {
+    "loading": "Caricamento dei messaggi...",
+    "noMessages": "Nessun messaggio",
+    "new": "Nuovo",
+    "markAsRead": "Segna come letto",
+    "markedAsReadToast": "Messaggio segnato come letto",
+    "delete": "Elimina",
+    "deletedToast": "Messaggio eliminato",
+    "deleteDisabledTitle": "Segna il messaggio come letto prima di eliminarlo",
+    "modifiedAt": "Modificato il {{date}}",
+    "expiresAt": "Scade il {{date}}"
+  },
+  "blogArticles": {
+    "items": [
+      {
+        "id": 1,
+        "title": "Come redigere un CV che si distingua nel 2026",
+        "excerpt": "Scopri le migliori pratiche per creare un CV moderno ed efficace che attiri l'attenzione dei reclutatori.",
+        "content": "<h2>Introduzione</h2><p>Un CV ben redatto è il tuo passaporto per un colloquio. Ecco le regole d'oro per il 2026.</p><h3>1. Personalizza il tuo CV per ogni offerta</h3><p>Adatta titolo, competenze ed esperienza in base all'annuncio.</p><h3>2. Cura la forma</h3><p>Usa un layout arioso, un carattere leggibile e il formato PDF.</p><h3>3. Metti in evidenza i tuoi risultati</h3><p>Quantifica i tuoi risultati: \"Aumento del 20% del fatturato\".</p><p>Applica questi consigli e aumenterai le tue possibilità di essere notato.</p>",
+        "category": "Consigli CV",
+        "readTime": "5 min",
+        "author": "Team Actoos",
+        "date": "25 Maggio 2026",
+        "icon": "FileText",
+        "color": "blue"
+      },
+      {
+        "id": 2,
+        "title": "I 10 errori da evitare durante un colloquio di lavoro",
+        "excerpt": "Preparati al meglio per i tuoi colloqui evitando questi errori comuni che fanno la maggior parte dei candidati.",
+        "content": "<h2>Gli errori fatali in un colloquio</h2><p>Ecco le trappole da evitare per fare una buona impressione.</p><h3>1. Arrivare in ritardo</h3><p>Prevedi un margine di 15 minuti.</p><h3>2. Non informarsi sull'azienda</h3><p>Dimostra di conoscere la loro attività e i loro valori.</p><h3>3. Parlare solo di sé</h3><p>Fai domande pertinenti sul ruolo.</p><p>Evitare questi errori ti aiuterà a superare il colloquio.</p>",
+        "category": "Colloquio",
+        "readTime": "7 min",
+        "author": "Team Actoos",
+        "date": "23 Maggio 2026",
+        "icon": "Target",
+        "color": "red"
+      },
+      {
+        "id": 3,
+        "title": "Negoziare il tuo stipendio: guida completa",
+        "excerpt": "Impara a negoziare il tuo stipendio con fiducia e ottieni la retribuzione che meriti.",
+        "content": "<h2>Perché negoziare?</h2><p>La negoziazione salariale è un passo cruciale. Ecco come fare.</p><h3>1. Conoscere il proprio valore di mercato</h3><p>Usa strumenti come Glassdoor o PayScale.</p><h3>2. Aspettare il momento giusto</h3><p>Affronta l'argomento dopo aver dimostrato il tuo valore.</p><h3>3. Proporre una forbice</h3><p>Fornisci una forbice realistica e giustificala.</p><p>Con questi consigli, massimizzerai la tua retribuzione.</p>",
+        "category": "Stipendio",
+        "readTime": "8 min",
+        "author": "Team Actoos",
+        "date": "20 Maggio 2026",
+        "icon": "TrendingUp",
+        "color": "green"
+      },
+      {
+        "id": 4,
+        "title": "Riconversione professionale: da dove cominciare?",
+        "excerpt": "Vuoi cambiare carriera? Ecco i passi chiave per una riconversione professionale di successo.",
+        "content": "<h2>Bilancio delle competenze</h2><p>Identifica i tuoi punti di forza e le tue aspirazioni.</p><h3>1. Fare il punto della situazione</h3><p>Cosa ti motiva veramente?</p><h3>2. Formarsi</h3><p>Esplora le formazioni disponibili, online o in presenza.</p><h3>3. Fare networking</h3><p>Incontra professionisti del settore target.</p><p>Una riconversione di successo richiede tempo e metodo.</p>",
+        "category": "Carriera",
+        "readTime": "10 min",
+        "author": "Team Actoos",
+        "date": "18 Maggio 2026",
+        "icon": "Lightbulb",
+        "color": "yellow"
+      },
+      {
+        "id": 5,
+        "title": "Settori che assumono nel 2026",
+        "excerpt": "Scopri i settori più dinamici e le professioni più ricercate quest'anno.",
+        "content": "<h2>Principali settori in crescita</h2><ul><li>Tecnologia (IA, cybersecurity)</li><li>Sanità (assistenza domiciliare, telemedicina)</li><li>Energie rinnovabili</li><li>Logistica ed e-commerce</li></ul><p>Questi settori offrono numerose opportunità in tutto il mondo.</p>",
+        "category": "Mercato del lavoro",
+        "readTime": "6 min",
+        "author": "Team Actoos",
+        "date": "15 Maggio 2026",
+        "icon": "Briefcase",
+        "color": "purple"
+      },
+      {
+        "id": 6,
+        "title": "Sviluppare la propria rete professionale efficacemente",
+        "excerpt": "Il networking è essenziale per la tua carriera. Ecco come costruire e mantenere la tua rete.",
+        "content": "<h2>L'importanza della rete</h2><p>Una buona rete apre le porte. Ecco come svilupparla.</p><h3>1. Partecipare a eventi</h3><p>Conferenze, meetup, fiere professionali.</p><h3>2. Usare LinkedIn</h3><p>Ottimizza il tuo profilo e interagisci regolarmente.</p><h3>3. Dare prima di ricevere</h3><p>Aiuta gli altri, condividi risorse.</p>",
+        "category": "Networking",
+        "readTime": "5 min",
+        "author": "Team Actoos",
+        "date": "12 Maggio 2026",
+        "icon": "Users",
+        "color": "indigo"
+      }
+    ]
+  },
+  "api": {
+    "stripe": {
+      "notConfigured": "Stripe non è configurato",
+      "boostsNotAvailable": "Boost non disponibili al momento",
+      "invalidPackage": "Pacchetto non valido",
+      "sessionCreated": "Sessione di pagamento creata",
+      "webhookReceived": true
+    },
+    "subscription": {
+      "cancelSuccess": "Abbonamento annullato con successo.",
+      "companyNotFound": "Azienda non trovata",
+      "notConfigured": "Servizio di abbonamento non configurato"
+    },
+    "emails": {
+      "contactSubject": "[Contatto] {subject}",
+      "contactBody": "<h2>Nuovo messaggio da {name}</h2><p><strong>Email:</strong> {email}</p><p><strong>Oggetto:</strong> {subject}</p><p><strong>Messaggio:</strong></p><p>{message}</p>",
+      "newsletterWelcomeSubject": "Benvenuto alla newsletter Actoos Jobs",
+      "newsletterWelcomeBody": "<h1>Grazie per esserti iscritto!</h1><p>Riceverai i nostri ultimi consigli e offerte di lavoro.</p>",
+      "newsletterUnsubscribeSuccess": "Ti sei disiscritto con successo.",
+      "newsletterAlreadyUnsubscribed": "Indirizzo non trovato o già disiscritto.",
+      "interviewInviteSubject": "Colloquio per la posizione: {job_title}",
+      "interviewInviteBody": "<h2>Ciao {candidate_name},</h2><p>Sei invitato a un colloquio per la posizione <strong>{job_title}</strong>{company_info}.</p><p>Ecco il link per la videoconferenza:</p><p><a href=\"{meeting_link}\">{meeting_link}</a></p><p>A presto,</p><p>Il team Actoos Jobs</p>",
+      "newApplicationSubject": "Nuova candidatura per {job_title}",
+      "newApplicationBody": "<h2>Ciao {recruiter_name},</h2><p><strong>{candidate_name}</strong> si è appena candidato per la tua offerta <strong>{job_title}</strong>.</p><p>Consulta la candidatura su <a href=\"https://jobs.actoos.com/dashboard/entreprise/candidatures\">Actoos Jobs</a>.</p>",
+      "statusChangeSubject": "La tua candidatura - {job_title}",
+      "statusChangeTemplate_viewed": "La tua candidatura per la posizione **{job_title}**{company_info} è stata visualizzata dal reclutatore.",
+      "statusChangeTemplate_shortlisted": "Congratulazioni! La tua candidatura per la posizione **{job_title}**{company_info} è stata preselezionata.",
+      "statusChangeTemplate_interview": "Sei invitato a un colloquio per la posizione **{job_title}**{company_info}. Il reclutatore ti contatterà per fissare una data.",
+      "statusChangeTemplate_accepted": "La tua candidatura per la posizione **{job_title}**{company_info} è stata accettata.",
+      "statusChangeTemplate_rejected": "La tua candidatura per la posizione **{job_title}**{company_info} non è stata purtroppo selezionata.",
+      "statusChangeTemplate_default": "La tua candidatura per la posizione **{job_title}**{company_info} è stata aggiornata: {new_status}.",
+      "alertSubject": "Avviso di lavoro: {keywords}",
+      "alertBody": "<h2>Nuove offerte corrispondenti al tuo avviso</h2><p>Ecco le offerte trovate per i tuoi criteri:</p>{job_links}<p>Buona ricerca!</p>",
+      "companyVerifiedSubject": "La tua azienda è stata convalidata",
+      "companyVerifiedBody": "<h2>Congratulazioni {owner_first_name}!</h2><p>La tua azienda <strong>{company_name}</strong> è stata convalidata dal nostro team. Ora puoi pubblicare offerte e ricevere candidature.</p><p><a href=\"https://jobs.actoos.com/dashboard/entreprise\">Accedi al mio spazio reclutatore</a></p>",
+      "newCompanyAdminSubject": "Nuova azienda da convalidare: {company_name}",
+      "newCompanyAdminBody": "<h2>Nuova azienda in attesa di convalida</h2><p><strong>Azienda:</strong> {company_name}</p><p><strong>Proprietario:</strong> {owner_name} ({owner_email})</p><p><a href=\"https://jobs.actoos.com/admin\">Accedi alla dashboard amministratore</a></p>",
+      "newJobAdminSubject": "Nuova offerta da convalidare: {job_title}",
+      "newJobAdminBody": "<h2>Nuova offerta in attesa di convalida</h2><p><strong>Offerta:</strong> {job_title}</p><p><strong>Azienda:</strong> {company_name} ({company_email})</p><p><a href=\"https://jobs.actoos.com/admin\">Accedi alla dashboard amministratore</a></p>",
+      "companyDeletedSubject": "La tua azienda è stata eliminata",
+      "companyDeletedBody": "<h2>Ciao {owner_first_name},</h2><p>La tua azienda <strong>{company_name}</strong> è stata eliminata dall'amministratore.</p><p>Se ritieni si tratti di un errore, contatta il nostro supporto.</p>",
+      "userDeletedSubject": "Il tuo account è stato eliminato",
+      "userDeletedBody": "<h2>Ciao {user_first_name},</h2><p>Il tuo account su Actoos Jobs è stato eliminato dall'amministratore.</p><p>Se ritieni si tratti di un errore, contatta il nostro supporto.</p>",
+      "companyRejectedSubject": "La tua azienda è stata rifiutata",
+      "companyRejectedBody": "<h2>Spiacenti {owner_first_name}</h2><p>La tua azienda <strong>{company_name}</strong> non è stata convalidata.</p><p><strong>Motivo:</strong> {reason}</p>",
+      "companySuspendedSubject": "La tua azienda è stata sospesa",
+      "companySuspendedBody": "<h2>Informazione importante</h2><p>La tua azienda <strong>{company_name}</strong> è stata sospesa{duration_text}.{reason_text}</p>",
+      "jobSuspendedSubject": "La tua offerta è stata sospesa",
+      "jobSuspendedBody": "<h2>La tua offerta \"{job_title}\" è stata sospesa</h2><p><strong>Motivo:</strong> {reason}</p>",
+      "jobDeletedSubject": "La tua offerta è stata eliminata",
+      "jobDeletedBody": "<h2>La tua offerta \"{job_title}\" è stata eliminata dall'amministratore</h2><p><strong>Motivo:</strong> {reason}</p>",
+      "userSuspendedSubject": "Il tuo account è stato sospeso",
+      "userSuspendedBody": "<h2>Ciao {first_name},</h2><p>Il tuo account su Actoos Jobs è stato sospeso{duration_text}.{reason_text}</p><p>Se hai domande, contattaci.</p>",
+      "userBannedSubject": "Il tuo account è stato bannato",
+      "userBannedBody": "<h2>Ciao {first_name},</h2><p>Il tuo account su Actoos Jobs è stato bannato definitivamente.</p><p><strong>Motivo:</strong> {reason}</p>",
+      "userReactivatedSubject": "Il tuo account è stato riattivato",
+      "userReactivatedBody": "<h2>Ciao {first_name},</h2><p>Il tuo account su Actoos Jobs è stato riattivato.</p>",
+      "roleChangeApprovedSubject": "La tua richiesta di cambio ruolo è stata approvata",
+      "roleChangeApprovedBody": "<h2>Ciao {user_first},</h2><p>La tua richiesta per diventare <strong>{requested_role}</strong> è stata approvata.</p><p>Accedi nuovamente per accedere al tuo nuovo spazio.</p>",
+      "roleChangeRejectedSubject": "La tua richiesta di cambio ruolo è stata rifiutata",
+      "roleChangeRejectedBody": "<h2>Ciao {user_first},</h2><p>La tua richiesta per diventare <strong>{requested_role}</strong> è stata rifiutata.</p><p>Motivo: {msg}</p>",
+      "adminMessageSubject": "Nuovo messaggio dall'amministrazione",
+      "adminMessageBody": "<h2>Ciao {greeting},</h2><p>{content}</p><p>Consulta i tuoi messaggi su <a href=\"https://jobs.actoos.com\">Actoos Jobs</a>.</p>",
+      "freeBoostActivated": "Boost gratuito attivato per 7 giorni"
+    },
+    "errors": {
+      "supabaseNotConfigured": "Supabase non configurato",
+      "notAuthenticated": "Non autenticato",
+      "invalidToken": "Token non valido",
+      "candidateNotFound": "Candidato non trovato",
+      "jobNotFound": "Offerta non trovata",
+      "companyNotFound": "Azienda non trovata",
+      "applicationNotFound": "Candidatura non trovata",
+      "unauthorized": "Non sei autorizzato a eseguire questa azione",
+      "blogNotFound": "Articolo non trovato",
+      "blogGenerationFailed": "Generazione IA fallita",
+      "aiAllModelsFailed": "Tutti i modelli IA hanno fallito",
+      "aiInvalidAgent": "Agente IA non valido",
+      "aiNotConfigured": "Chiave API OpenRouter non configurata",
+      "emailNotConfigured": "Servizio email non configurato",
+      "paymentRequired": "Pagamento non effettuato",
+      "limitReached": "Limite di offerte raggiunto",
+      "boostAlreadyUsed": "Boost già utilizzato questo mese",
+      "boostBusinessOnly": "Riservato al piano Business",
+      "roleAdminNotRequestable": "Il ruolo di amministratore non può essere richiesto",
+      "requestAlreadyPending": "Hai già una richiesta in corso",
+      "requestAlreadyProcessed": "Richiesta già elaborata"
+    }
+  },
+  "adminDashboard": {
+    "title": "Amministrazione",
+    "subtitle": "Gestisci offerte, aziende e utenti",
+    "refresh": "Aggiorna",
+    "dataRefreshed": "Dati aggiornati",
+    "unauthorized": "Accesso non autorizzato",
+    "loadingError": "Errore durante il caricamento dei dati",
+    "tabs": {
+      "overview": "Panoramica",
+      "jobs": "Moderazione offerte",
+      "companies": "Convalida aziende",
+      "users": "Utenti",
+      "reports": "Segnalazioni",
+      "subscriptions": "Abbonamenti",
+      "newsletter": "Newsletter",
+      "blog": "Blog",
+      "messageCompanies": "Messaggi Aziende",
+      "messageCandidates": "Messaggi Candidati",
+      "roleRequests": "Richieste di ruolo"
+    },
+    "stats": {
+      "pendingJobs": "Offerte in attesa",
+      "activeJobs": "Offerte attive",
+      "pendingCompanies": "Aziende in attesa",
+      "verifiedCompanies": "Aziende verificate",
+      "candidates": "Candidati",
+      "applications": "Candidature",
+      "trend": "+{{trend}}% questo mese"
+    },
+    "overview": {
+      "pendingJobsTitle": "Offerte in attesa",
+      "pendingJobsDesc": "Da moderare",
+      "noPendingJobs": "Nessuna offerta in attesa",
+      "pendingCompaniesTitle": "Aziende in attesa",
+      "pendingCompaniesDesc": "Da convalidare",
+      "noPendingCompanies": "Nessuna azienda in attesa",
+      "viewAll": "Vedi tutto"
+    },
+    "jobs": {
+      "searchPlaceholder": "Cerca un'offerta...",
+      "filterAll": "Tutti gli stati",
+      "filterPending": "In attesa",
+      "filterDraft": "Bozza",
+      "filterActive": "Attiva",
+      "filterSuspended": "Sospesa",
+      "filterRejected": "Rifiutata",
+      "noJobs": "Nessuna offerta",
+      "noJobsFound": "Nessuna offerta trovata",
+      "publishedBy": "Pubblicata il {{date}} da {{email}}",
+      "showDetails": "Mostra dettagli",
+      "hideDetails": "Nascondi dettagli",
+      "detailsError": "Impossibile caricare i dettagli",
+      "detailsDescription": "Descrizione:",
+      "detailsRequirements": "Profilo ricercato:",
+      "detailsMissions": "Missioni:",
+      "detailsBenefits": "Benefit:",
+      "detailsSkills": "Competenze:",
+      "detailsExperience": "Esperienza:",
+      "detailsSalary": "Stipendio:",
+      "detailsPositions": "Posti:",
+      "detailsDeadline": "Scadenza:",
+      "detailsRemote": "Telelavoro:",
+      "detailsUrgent": "Urgente:",
+      "detailsYes": "Sì",
+      "detailsNo": "No",
+      "detailsUnspecified": "Non specificato",
+      "approve": "Approva",
+      "reject": "Rifiuta",
+      "publish": "Pubblica l'offerta",
+      "suspend": "Sospendi",
+      "reactivate": "Riattiva",
+      "delete": "Elimina",
+      "viewJob": "Vedi l'offerta",
+      "status": {
+        "pending": "In attesa",
+        "active": "Attiva",
+        "suspended": "Sospesa",
+        "rejected": "Rifiutata",
+        "draft": "Bozza"
+      },
+      "companyNotVerified": "L'azienda non è ancora stata verificata.",
+      "approveLimitReached": "Questa azienda ha già raggiunto il limite di {{limit}} offerta/e attiva/e.",
+      "approveCompanyFirst": "L'azienda non è ancora stata verificata. Convalida prima l'azienda.",
+      "rejectConfirm": "Rifiutare questa offerta?",
+      "approvedToast": "Offerta approvata",
+      "rejectedToast": "Offerta rifiutata",
+      "suspendedToast": "Offerta sospesa e email inviata",
+      "deletedToast": "Offerta eliminata e email inviata",
+      "approveError": "Errore durante l'approvazione",
+      "genericError": "Errore",
+      "suspendModalTitle": "Sospendi l'offerta",
+      "deleteModalTitle": "Elimina l'offerta",
+      "reasonLabel": "Motivo (opzionale)",
+      "cancel": "Annulla",
+      "confirm": "Conferma"
+    },
+    "companies": {
+      "searchPlaceholder": "Cerca un'azienda...",
+      "filterAll": "Tutti gli stati",
+      "filterUnverified": "Non verificata",
+      "filterVerified": "Verificata",
+      "noCompanies": "Nessuna azienda",
+      "noCompaniesFound": "Nessuna azienda trovata",
+      "employees": "{{size}} dipendenti",
+      "offersCount": "{{count}} offerte",
+      "createdAt": "Creata il {{date}}",
+      "viewSite": "Vedi il sito",
+      "viewOffers": "Vedi le offerte ({{count}})",
+      "validate": "Convalida",
+      "reject": "Rifiuta",
+      "suspend": "Sospendi",
+      "deleteCompany": "Elimina l'azienda",
+      "status": {
+        "verified": "Verificata",
+        "unverified": "Non verificata"
+      },
+      "validatedToast": "Azienda convalidata e email inviata",
+      "rejectedToast": "Azienda rifiutata e email inviata",
+      "deletedToast": "Azienda eliminata",
+      "validateError": "Errore durante la convalida",
+      "genericError": "Errore",
+      "rejectModalTitle": "Rifiuta l'azienda",
+      "deleteModalTitle": "Elimina l'azienda",
+      "deleteWarning": "⚠️ Questa azione è irreversibile. Tutte le offerte e i dati associati saranno eliminati.",
+      "deleteConfirm": "Eliminare definitivamente l'azienda \"{{name}}\"?",
+      "cancel": "Annulla",
+      "confirm": "Conferma",
+      "suspendModalTitle": "Sospendi l'azienda",
+      "suspendWarning": "⚠️ La sospensione renderà l'azienda invisibile pubblicamente e impedirà la pubblicazione di offerte.",
+      "suspendDurationLabel": "Durata della sospensione",
+      "suspendReasonLabel": "Motivo (opzionale)",
+      "durationIndefinite": "Indefinita",
+      "duration1day": "1 giorno",
+      "duration7days": "7 giorni",
+      "duration30days": "30 giorni",
+      "suspendedToast": "Azienda sospesa"
+    },
+    "users": {
+      "title": "Gestione utenti",
+      "description": "Modifica ruoli, sospendi, banna o elimina account",
+      "noUsers": "Nessun utente trovato",
+      "roles": {
+        "candidate": "Candidato",
+        "company": "Azienda",
+        "admin": "Admin"
+      },
+      "status": {
+        "active": "Attivo",
+        "suspended": "Sospeso",
+        "banned": "Bannato"
+      },
+      "actions": {
+        "suspend": "Sospendi",
+        "reactivate": "Riattiva",
+        "ban": "Banna",
+        "delete": "Elimina"
+      },
+      "banConfirm": "Bannare definitivamente questo utente?",
+      "deleteConfirm": "Eliminare definitivamente questo utente? Questa azione è irreversibile.",
+      "roleUpdated": "Ruolo aggiornato. L'utente deve riconnettersi per vedere il nuovo spazio.",
+      "roleUpdateError": "Errore durante la modifica del ruolo",
+      "suspendedToast": "Account sospeso",
+      "reactivatedToast": "Account riattivato",
+      "bannedToast": "Utente bannato",
+      "deletedToast": "Utente eliminato definitivamente",
+      "deleteError": "Errore durante l'eliminazione",
+      "suspendModalTitle": "Sospendi l'account",
+      "suspendDurationLabel": "Durata della sospensione",
+      "suspendReasonLabel": "Motivo (opzionale)",
+      "durationIndefinite": "Indefinita",
+      "duration1day": "1 giorno",
+      "duration7days": "7 giorni",
+      "duration30days": "30 giorni",
+      "cancel": "Annulla",
+      "confirm": "Sospendi"
+    },
+    "reports": {
+      "title": "Segnalazioni",
+      "description": "Esamina e gestisci le segnalazioni",
+      "noReports": "Nessuna segnalazione",
+      "badges": {
+        "job": "📋 Offerta",
+        "company": "🏢 Azienda",
+        "candidate": "👤 Candidato"
+      },
+      "reportedBy": "Segnalato da {{email}}",
+      "reason": "Motivo: {{reason}}",
+      "status": {
+        "pending": "In attesa",
+        "reviewed": "Visto",
+        "resolved": "Risolto"
+      },
+      "markReviewed": "Segna come visto",
+      "markResolved": "Risolto",
+      "suspendJob": "Sospendi l'offerta",
+      "suspendCompany": "Sospendi l'azienda",
+      "deleteJob": "Elimina l'offerta",
+      "deleteCompany": "Elimina l'azienda",
+      "banUser": "Banna l'utente",
+      "banError": "Impossibile trovare l'utente da bannare",
+      "banConfirm": "Bannare definitivamente questo utente?",
+      "bannedToast": "Utente bannato e email inviata",
+      "suspendedToast": "Offerta sospesa e email inviata",
+      "companySuspendedToast": "Azienda sospesa e email inviata",
+      "deletedToast": "Offerta eliminata e email inviata",
+      "companyDeletedToast": "Azienda eliminata e email inviata",
+      "updatedToast": "Segnalazione aggiornata"
+    },
+    "subscriptions": {
+      "title": "Abbonamenti attivi / annullati",
+      "description": "Panoramica di tutti gli abbonamenti aziendali",
+      "cancellationsTitle": "Ultimi annullamenti",
+      "cancellationsDescription": "Aziende che hanno annullato il loro piano a pagamento",
+      "noCancellations": "Nessun annullamento registrato.",
+      "table": {
+        "company": "Azienda",
+        "plan": "Piano",
+        "previousPlan": "Piano precedente",
+        "stripeSubId": "Stripe Sub ID",
+        "expiration": "Scadenza",
+        "cancellationReason": "Motivo dell'annullamento"
+      },
+      "cancelledFrom": "Piano dopo l'annullamento:",
+      "toFrom": "← dal"
+    },
+    "newsletter": {
+      "sendTitle": "Invia una newsletter",
+      "sendDescription": "Invia un'email a tutti gli iscritti",
+      "subjectLabel": "Oggetto",
+      "subjectPlaceholder": "Oggetto dell'email",
+      "contentLabel": "Contenuto (HTML)",
+      "contentPlaceholder": "<h1>Titolo</h1><p>Il tuo messaggio...</p>",
+      "sendButton": "Invia la newsletter",
+      "subscribersTitle": "Iscritti ({{count}})",
+      "subscribersDescription": "Elenco degli iscritti alla newsletter",
+      "noSubscribers": "Nessun iscritto per il momento.",
+      "table": {
+        "email": "Email",
+        "status": "Stato",
+        "actions": "Azioni",
+        "subscribed": "Iscritto",
+        "unsubscribed": "Disiscritto"
+      },
+      "statusActive": "Attivo",
+      "statusUnsubscribed": "Disiscritto",
+      "activate": "Attiva",
+      "deactivate": "Disattiva",
+      "reactivate": "Riattiva",
+      "fillRequired": "Compila oggetto e contenuto.",
+      "sentToast": "Newsletter inviata",
+      "networkError": "Errore di rete",
+      "toggledToast": "Stato dell'iscritto aggiornato"
+    },
+    "blog": {
+      "generateTitle": "Genera un articolo con l'IA",
+      "generateDescription": "Crea contenuti ottimizzati per il tuo pubblico",
+      "titleLabel": "Titolo *",
+      "titlePlaceholder": "Es: Come superare un colloquio di lavoro",
+      "keywordsLabel": "Parole chiave",
+      "keywordsPlaceholder": "Es: reclutamento, carriera, consigli",
+      "audienceLabel": "Pubblico",
+      "audienceAll": "Tutti",
+      "audienceCandidates": "Candidati",
+      "audienceRecruiters": "Reclutatori",
+      "categoryLabel": "Categoria",
+      "categories": {
+        "carriere": "Carriera",
+        "recrutement": "Reclutamento",
+        "technologie": "Tecnologia",
+        "entrepreneuriat": "Imprenditoria",
+        "conseils": "Consigli"
+      },
+      "authorLabel": "Autore",
+      "authorPlaceholder": "Team Actoos",
+      "readTimeLabel": "Tempo di lettura",
+      "readTimePlaceholder": "5 min",
+      "generateButton": "Genera l'articolo",
+      "articlesTitle": "Articoli ({{count}})",
+      "articlesDescription": "Gestisci gli articoli del blog",
+      "noArticles": "Nessun articolo per il momento.",
+      "save": "Salva",
+      "cancel": "Annulla",
+      "deleteConfirm": "Eliminare questo articolo?",
+      "generatedToast": "Articolo generato con successo",
+      "updatedToast": "Articolo aggiornato",
+      "deletedToast": "Articolo eliminato",
+      "generateError": "Errore durante la generazione",
+      "updateError": "Errore durante l'aggiornamento",
+      "deleteError": "Errore durante l'eliminazione",
+      "titleRequired": "Il titolo è obbligatorio per generare un articolo",
+      "audienceLabel2": "Pubblico"
+    },
+    "roleRequests": {
+      "title": "Richieste di cambio ruolo",
+      "description": "Gestisci le richieste degli utenti",
+      "noRequests": "Nessuna richiesta in attesa",
+      "from": "Da",
+      "to": "→",
+      "approve": "Approva",
+      "reject": "Rifiuta",
+      "approvedToast": "Richiesta approvata",
+      "rejectedToast": "Richiesta rifiutata"
+    },
+    "roleLabels": {
+      "candidate": "Candidato",
+      "company": "Azienda",
+      "admin": "Admin",
+      "unknown": "Sconosciuto"
+    }
+  },
+  "categories": {
+    "tech": "Tecnologia e IT",
+    "marketing": "Marketing e Comunicazione",
+    "finance": "Finanza e Contabilità",
+    "rh": "Risorse Umane",
+    "commerce": "Commercio e Vendite",
+    "sante": "Sanità e Medicina",
+    "education": "Istruzione e Formazione",
+    "btp": "Edilizia e Costruzioni",
+    "transport": "Trasporti e Logistica",
+    "agriculture": "Agricoltura e Ambiente",
+    "tourisme": "Turismo e Ospitalità",
+    "juridique": "Legale e Diritto",
+    "autre": "Altro"
+  },
+  "contracts": {
+    "cdi": "Tempo indeterminato",
+    "cdd": "Tempo determinato",
+    "stage": "Stage",
+    "alternance": "Apprendistato",
+    "freelance": "Freelance",
+    "interim": "Interinale",
+    "job_etudiant": "Lavoro per studenti",
+    "extra": "Extra",
+    "saisonnier": "Stagionale",
+    "benevolat": "Volontariato"
+  },
+  "experienceLevels": {
+    "junior": "Junior (0-2 anni)",
+    "intermediaire": "Intermedio (2-5 anni)",
+    "senior": "Senior (5-10 anni)",
+    "expert": "Esperto (10+ anni)"
+  },
+  "industries": {
+    "tech": "Tecnologia",
+    "finance": "Finanza & Banche",
+    "telecom": "Telecomunicazioni",
+    "commerce": "Commercio & Distribuzione",
+    "manufacturing": "Industria & Manifatturiero",
+    "agriculture": "Agricoltura",
+    "construction": "Edilizia & Costruzioni",
+    "transport": "Trasporti & Logistica",
+    "health": "Sanità & Farmaceutico",
+    "education": "Istruzione & Formazione",
+    "tourism": "Turismo & Ospitalità",
+    "services": "Servizi alle imprese",
+    "ngo": "ONG & Umanitario",
+    "public": "Pubblica amministrazione",
+    "other": "Altro"
+  },
+  "countries": {
+    "ML": "Mali",
+    "SN": "Senegal",
+    "CI": "Costa d'Avorio",
+    "BE": "Belgio",
+    "FR": "Francia",
+    "DE": "Germania",
+    "US": "Stati Uniti",
+    "MA": "Marocco"
+  }
+}
