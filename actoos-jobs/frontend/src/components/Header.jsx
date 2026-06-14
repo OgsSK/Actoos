@@ -36,9 +36,20 @@ const Header = ({ user, onLogout }) => {
   const { isAdmin, isCompany, isCandidate, profile } = useAuth();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Détection du scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 0);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // état initial
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -54,26 +65,19 @@ const Header = ({ user, onLogout }) => {
     [t, isCompany]
   );
 
+  // Fond du header : opaque en haut, légèrement transparent au scroll
   const headerClasses = cn(
     'sticky top-0 left-0 right-0 z-50 transition-all duration-300',
-    'bg-white/95 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_8px_30px_rgb(15,23,42,0.06)]'
-  );
-
-  const navLinkClasses = cn(
-    'relative text-sm font-medium transition-all duration-200 whitespace-nowrap px-1 py-2 text-slate-700 hover:text-blue-600'
-  );
-
-  const brandTextClasses = cn(
-    'font-semibold text-lg sm:text-xl leading-none whitespace-nowrap shrink-0 tracking-tight text-slate-900'
+    scrolled
+      ? 'bg-white/55 backdrop-blur-lg border-b border-slate-200/40 shadow-sm'
+      : 'bg-white border-b border-slate-200/80 shadow-[0_8px_30px_rgb(15,23,42,0.06)]'
   );
 
   const getInitials = () => {
     if (!user) return '?';
-
     const firstName = user.user_metadata?.first_name || user.email?.split('@')[0] || '';
     const lastName = user.user_metadata?.last_name || '';
     const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
-
     return initials || firstName.slice(0, 2).toUpperCase() || '?';
   };
 
@@ -89,22 +93,24 @@ const Header = ({ user, onLogout }) => {
   return (
     <header className={headerClasses}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* TOP BAR */}
-        <div className="flex h-16 lg:h-[72px] items-center justify-between gap-4 min-w-0">
-          <Link to="/" className="flex items-center gap-3 shrink-0 min-w-0 group">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 ring-1 bg-blue-600 ring-blue-500/20 text-white shadow-sm group-hover:bg-blue-700">
-              <Briefcase className="w-5 h-5 text-white" />
+        {/* === LIGNE PRINCIPALE (mobile first) === */}
+        <div className="flex flex-wrap items-center justify-between gap-2 py-3 min-h-[64px]">
+          {/* Logo + marque */}
+          <Link to="/" className="flex items-center gap-2 shrink-0 min-w-0 group">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center shrink-0 bg-blue-600 text-white shadow-sm group-hover:bg-blue-700 transition-colors">
+              <Briefcase className="w-5 h-5" />
             </div>
-
             <div className="flex flex-col min-w-0">
-              <span className={brandTextClasses}>{t('header.brand')}</span>
+              <span className="font-semibold text-base sm:text-lg leading-none whitespace-nowrap text-slate-900">
+                {t('header.brand')}
+              </span>
               <span className="hidden sm:block text-[11px] leading-none mt-0.5 text-slate-500">
                 Talent marketplace
               </span>
             </div>
           </Link>
 
-          {/* DESKTOP RIGHT ACTIONS */}
+          {/* Actions desktop (à partir de lg) */}
           <div className="hidden lg:flex items-center gap-2 shrink-0">
             {user ? (
               <>
@@ -119,7 +125,6 @@ const Header = ({ user, onLogout }) => {
                     </div>
                     <span className="absolute bottom-0 right-0 block w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white translate-x-1/4 translate-y-1/4" />
                   </div>
-
                   <div className="hidden xl:flex flex-col items-start min-w-0 text-left leading-tight">
                     <span className="text-sm font-semibold truncate w-full text-slate-900">
                       {user.user_metadata?.first_name || t('header.user.defaultName')}
@@ -153,7 +158,6 @@ const Header = ({ user, onLogout }) => {
                       <LayoutDashboard className="w-4 h-4 mr-3" />
                       {t('header.user.dashboard')}
                     </DropdownMenuItem>
-
                     <DropdownMenuItem
                       onClick={() => navigate(profileLink)}
                       className="cursor-pointer rounded-xl px-3 py-2.5 focus:bg-slate-100 focus:text-slate-900"
@@ -161,7 +165,6 @@ const Header = ({ user, onLogout }) => {
                       <User className="w-4 h-4 mr-3" />
                       {t('header.user.profile')}
                     </DropdownMenuItem>
-
                     {isCandidate && (
                       <DropdownMenuItem
                         onClick={() => navigate('/alertes')}
@@ -171,7 +174,6 @@ const Header = ({ user, onLogout }) => {
                         {t('header.user.createAlert')}
                       </DropdownMenuItem>
                     )}
-
                     <DropdownMenuItem
                       onClick={() => navigate('/parametres')}
                       className="cursor-pointer rounded-xl px-3 py-2.5 focus:bg-slate-100 focus:text-slate-900"
@@ -179,7 +181,6 @@ const Header = ({ user, onLogout }) => {
                       <Settings className="w-4 h-4 mr-3" />
                       {t('header.user.settings')}
                     </DropdownMenuItem>
-
                     {isAdmin && (
                       <>
                         <DropdownMenuSeparator className="my-2" />
@@ -192,7 +193,6 @@ const Header = ({ user, onLogout }) => {
                         </DropdownMenuItem>
                       </>
                     )}
-
                     {isCompany && (
                       <DropdownMenuItem
                         disabled
@@ -203,9 +203,7 @@ const Header = ({ user, onLogout }) => {
                         </Badge>
                       </DropdownMenuItem>
                     )}
-
                     <DropdownMenuSeparator className="my-2" />
-
                     <DropdownMenuItem
                       onClick={handleLogout}
                       className="cursor-pointer rounded-xl px-3 py-2.5 text-red-600 focus:bg-red-50 focus:text-red-700"
@@ -226,13 +224,11 @@ const Header = ({ user, onLogout }) => {
                     {t('header.auth.login')}
                   </Button>
                 </Link>
-
                 <Link to="/inscription">
                   <Button className="rounded-full px-5 shadow-sm bg-blue-600 text-white hover:bg-blue-700">
                     {t('header.auth.register')}
                   </Button>
                 </Link>
-
                 <Link to="/inscription?type=entreprise">
                   <Button
                     variant="outline"
@@ -246,7 +242,7 @@ const Header = ({ user, onLogout }) => {
             )}
           </div>
 
-          {/* MOBILE TOGGLE */}
+          {/* Bouton menu mobile */}
           <div className="lg:hidden flex items-center gap-2 shrink-0 ml-auto">
             <button
               type="button"
@@ -259,18 +255,17 @@ const Header = ({ user, onLogout }) => {
           </div>
         </div>
 
-        {/* SECOND ROW DESKTOP */}
+        {/* === LIGNE SECONDAIRE : navigation + langue/devise (desktop uniquement) === */}
         <div className="hidden lg:flex items-center justify-between gap-4 pb-3 border-t border-slate-100 pt-3">
           <nav className="flex flex-wrap items-center gap-x-8 gap-y-2 min-w-0">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.href;
-
               return (
                 <Link
                   key={link.href}
                   to={link.href}
                   className={cn(
-                    navLinkClasses,
+                    'relative text-sm font-medium transition-all duration-200 whitespace-nowrap px-1 py-2 text-slate-700 hover:text-blue-600',
                     isActive && 'text-blue-600'
                   )}
                 >
@@ -295,7 +290,7 @@ const Header = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* MOBILE MENU */}
+      {/* === MENU MOBILE (inchangé) === */}
       <div
         className={cn(
           'lg:hidden fixed inset-0 z-[9999] transition-all duration-300',
@@ -306,7 +301,6 @@ const Header = ({ user, onLogout }) => {
           className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm"
           onClick={() => setMobileMenuOpen(false)}
         />
-
         <div
           className={cn(
             'absolute right-0 top-0 bottom-0 w-[86%] max-w-sm bg-white shadow-2xl transition-transform duration-300 border-l border-slate-200',
@@ -325,6 +319,7 @@ const Header = ({ user, onLogout }) => {
           </div>
 
           <div className="px-5 py-5 pt-16 space-y-5 overflow-y-auto h-full">
+            {/* Langue + Devise */}
             <div className="space-y-3 pb-5 border-b border-slate-100">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2">
                 <LanguageSwitcher isTransparent={false} />
@@ -339,7 +334,6 @@ const Header = ({ user, onLogout }) => {
                 <div className="w-11 h-11 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0 shadow-sm">
                   {getInitials()}
                 </div>
-
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-900 truncate">
                     {user.user_metadata?.first_name || t('header.user.defaultUser')}
@@ -352,7 +346,6 @@ const Header = ({ user, onLogout }) => {
             <div className="space-y-1">
               {navLinks.map((link) => {
                 const isActive = location.pathname === link.href;
-
                 return (
                   <Link
                     key={link.href}
@@ -381,14 +374,12 @@ const Header = ({ user, onLogout }) => {
                       {t('header.user.dashboard')}
                     </Button>
                   </Link>
-
                   <Link to={profileLink} onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full rounded-xl justify-start">
                       <User className="w-4 h-4 mr-2" />
                       {t('header.user.profile')}
                     </Button>
                   </Link>
-
                   {isCandidate && (
                     <Link to="/alertes" onClick={() => setMobileMenuOpen(false)}>
                       <Button variant="outline" className="w-full rounded-xl justify-start">
@@ -397,14 +388,12 @@ const Header = ({ user, onLogout }) => {
                       </Button>
                     </Link>
                   )}
-
                   <Link to="/parametres" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full rounded-xl justify-start">
                       <Settings className="w-4 h-4 mr-2" />
                       {t('header.user.settings')}
                     </Button>
                   </Link>
-
                   {isAdmin && (
                     <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
                       <Button
@@ -416,7 +405,6 @@ const Header = ({ user, onLogout }) => {
                       </Button>
                     </Link>
                   )}
-
                   {isCompany && (
                     <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
                       <p className="text-xs text-blue-700 font-medium mb-1">
@@ -427,7 +415,6 @@ const Header = ({ user, onLogout }) => {
                       </p>
                     </div>
                   )}
-
                   <Button
                     variant="outline"
                     className="w-full rounded-xl text-red-600 border-red-200 hover:bg-red-50 justify-start"
@@ -444,13 +431,11 @@ const Header = ({ user, onLogout }) => {
                       {t('header.auth.login')}
                     </Button>
                   </Link>
-
                   <Link to="/inscription" onClick={() => setMobileMenuOpen(false)}>
                     <Button className="w-full rounded-xl">
                       {t('header.auth.register')}
                     </Button>
                   </Link>
-
                   <Link to="/inscription?type=entreprise" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full rounded-xl">
                       <Building2 className="w-4 h-4 mr-2" />
