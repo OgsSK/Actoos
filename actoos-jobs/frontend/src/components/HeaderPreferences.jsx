@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
 import { supabase } from '../lib/supabase';
 import { Globe } from 'lucide-react';
+import { cn } from '../lib/utils';
 
+// Labels pour les devises (tu peux enrichir)
 const CURRENCY_LABELS = {
   XOF: 'FCFA (XOF)',
   EUR: 'Euro (€)',
@@ -26,7 +28,7 @@ const CURRENCY_LABELS = {
   MGA: 'Ariary malgache (Ar)',
 };
 
-const HeaderPreferences = () => {
+const HeaderPreferences = ({ isMobile = false, isTransparent = false }) => {
   const { t } = useTranslation();
   const { prefs, updatePrefs } = usePreferences();
   const [countries, setCountries] = useState([]);
@@ -54,39 +56,51 @@ const HeaderPreferences = () => {
     updatePrefs('currency', e.target.value);
   };
 
-  return (
-    // Conteneur mobile-first : colonne par défaut, ligne à partir de sm
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-sm w-full sm:w-auto">
-      {/* Icône visible uniquement sur écrans sm+ (évite l'encombrement sur mobile) */}
-      <Globe className="hidden sm:block w-4 h-4 text-slate-400" />
-      
-      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-        <select
-          value={prefs.country}
-          onChange={handleCountryChange}
-          className="w-full sm:w-auto bg-transparent text-slate-600 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label={t('select_country')}
-        >
-          {countries.map(c => (
-            <option key={c.code} value={c.code}>
-              {t(`countries.${c.code}`, c.name)}
-            </option>
-          ))}
-        </select>
+  // Classes dynamiques pour mobile / desktop
+  const containerClasses = cn(
+    'flex items-center gap-1 text-sm',
+    isMobile ? 'gap-0.5 text-xs' : 'gap-2'
+  );
 
-        <select
-          value={prefs.currency}
-          onChange={handleCurrencyChange}
-          className="w-full sm:w-auto bg-transparent text-slate-600 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label={t('select_currency')}
-        >
-          {availableCurrencies.map(code => (
-            <option key={code} value={code}>
-              {CURRENCY_LABELS[code] || code}
-            </option>
-          ))}
-        </select>
-      </div>
+  const selectClasses = cn(
+    'bg-transparent text-slate-600 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all',
+    isMobile
+      ? 'px-1.5 py-0.5 text-xs border-slate-300 max-w-[90px] truncate'
+      : 'px-2 py-1'
+  );
+
+  const iconClasses = cn(
+    'text-slate-400',
+    isMobile ? 'w-3.5 h-3.5 hidden' : 'w-4 h-4'
+  );
+
+  return (
+    <div className={containerClasses}>
+      <Globe className={iconClasses} />
+      <select
+        value={prefs.country}
+        onChange={handleCountryChange}
+        className={selectClasses}
+        aria-label={t('select_country')}
+      >
+        {countries.map(c => (
+          <option key={c.code} value={c.code}>
+            {isMobile ? c.code : t(`countries.${c.code}`, c.name)}
+          </option>
+        ))}
+      </select>
+      <select
+        value={prefs.currency}
+        onChange={handleCurrencyChange}
+        className={selectClasses}
+        aria-label={t('select_currency')}
+      >
+        {availableCurrencies.map(code => (
+          <option key={code} value={code}>
+            {isMobile ? code : (CURRENCY_LABELS[code] || code)}
+          </option>
+        ))}
+      </select>
     </div>
   );
 };

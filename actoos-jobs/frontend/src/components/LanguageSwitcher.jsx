@@ -23,7 +23,7 @@ const LANGUAGES = [
 
 const normalizeLang = (lng = '') => lng.toLowerCase().split('-')[0];
 
-const LanguageSwitcher = ({ isTransparent = false }) => {
+const LanguageSwitcher = ({ isTransparent = false, isMobile = false }) => {
   const { i18n } = useTranslation();
 
   const currentCode = normalizeLang(i18n.resolvedLanguage || i18n.language || 'fr');
@@ -40,28 +40,54 @@ const LanguageSwitcher = ({ isTransparent = false }) => {
     }
   };
 
+  // Styles du bouton déclencheur adaptés au mode mobile
+  const triggerClasses = cn(
+    'h-11 gap-2 rounded-full border px-3.5 text-sm font-medium transition-all shrink-0 whitespace-nowrap shadow-none',
+    // Mode mobile compact
+    isMobile
+      ? 'h-8 gap-1 px-2 text-xs border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+      : '',
+    // Mode desktop (normal)
+    !isMobile && isTransparent
+      ? 'border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white'
+      : !isMobile
+        ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+        : '',
+    // Quand isMobile = true, isTransparent n'a pas d'effet car on garde le fond blanc pour la lisibilité
+    isMobile && isTransparent ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' : ''
+  );
+
+  const globeClasses = cn(
+    'h-4 w-4',
+    isMobile ? 'hidden' : (isTransparent ? 'text-white' : 'text-slate-500')
+  );
+
+  const codeClasses = cn(
+    'text-[11px] font-semibold uppercase tracking-wider',
+    isMobile && 'text-xs tracking-normal'
+  );
+
+  const flagClasses = 'text-base leading-none';
+
+  const nativeNameClasses = cn(
+    'hidden xl:inline max-w-[120px] truncate',
+    isMobile && 'hidden' // Jamais affiché en mobile
+  );
+
+  const chevronClasses = cn(
+    'h-4 w-4 opacity-70',
+    isMobile ? 'hidden' : (isTransparent ? 'text-white' : 'text-slate-500')
+  );
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          className={cn(
-            'h-11 gap-2 rounded-full border px-3.5 text-sm font-medium transition-all shrink-0 whitespace-nowrap shadow-none',
-            isTransparent
-              ? 'border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white'
-              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-          )}
-        >
-          <Globe className={cn('h-4 w-4', isTransparent ? 'text-white' : 'text-slate-500')} />
-          <span className="text-[11px] font-semibold uppercase tracking-wider">
-            {current.code}
-          </span>
-          <span className="text-base leading-none">{current.flag}</span>
-          <span className="hidden xl:inline max-w-[120px] truncate">
-            {current.nativeName}
-          </span>
-          <ChevronDown className={cn('h-4 w-4 opacity-70', isTransparent ? 'text-white' : 'text-slate-500')} />
+        <Button type="button" variant="ghost" className={triggerClasses}>
+          <Globe className={globeClasses} />
+          <span className={codeClasses}>{current.code}</span>
+          <span className={flagClasses}>{current.flag}</span>
+          <span className={nativeNameClasses}>{current.nativeName}</span>
+          <ChevronDown className={chevronClasses} />
         </Button>
       </DropdownMenuTrigger>
 
@@ -78,7 +104,6 @@ const LanguageSwitcher = ({ isTransparent = false }) => {
 
         {LANGUAGES.map((lang) => {
           const active = lang.code === current.code;
-
           return (
             <DropdownMenuItem
               key={lang.code}
