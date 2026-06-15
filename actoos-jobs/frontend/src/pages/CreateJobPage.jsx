@@ -9,7 +9,6 @@ import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import AIAssistant from '../components/AIAssistant';
 import { toast } from 'sonner';
-// Ajout des hooks pour les préférences et les villes
 import { usePreferences } from '../hooks/usePreferences';
 import { useCities } from '../hooks/useCities';
 import {
@@ -26,14 +25,12 @@ const CreateJobPage = () => {
   const { user, activeCompanyId } = useAuth();
   const navigate = useNavigate();
 
-  // Récupération des préférences et des villes filtrées par pays
   const { prefs } = usePreferences();
   const { cities: filteredCities } = useCities(prefs.country);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [company, setCompany] = useState(null);
-  // Suppression de l'état local cities (remplacé par filteredCities)
   const [categories, setCategories] = useState([]);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [limitInfo, setLimitInfo] = useState({ currentPlan: '', maxActiveJobs: 0, activeJobs: 0 });
@@ -100,9 +97,6 @@ const CreateJobPage = () => {
 
       setCompany(comp);
 
-      // Suppression de l'appel aux villes (maintenant géré par useCities)
-      // const { data: citiesData } = ... supprimé
-
       const { data: catsData } = await supabase
         .from('job_categories')
         .select('*')
@@ -167,11 +161,12 @@ const CreateJobPage = () => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
   };
 
+  // ✅ Limite gratuite passée à 3 pour le lancement
   const getPlanLimit = () => {
     const plan = company?.subscription_plan || 'free';
     if (plan === 'business' || plan === 'enterprise') return Infinity;
     if (plan === 'pro') return 5;
-    return 1;
+    return 3; // au lieu de 1
   };
 
   const countActiveJobs = async (excludeId = null) => {
@@ -208,11 +203,10 @@ const CreateJobPage = () => {
     try {
       const safeTitle = (form.title || '').substring(0, 200);
 
-      // Récupération du pays depuis les préférences (et non plus en dur 'ML')
       const { data: country } = await supabase
         .from('countries')
         .select('id')
-        .eq('code', prefs.country || 'ML') // fallback sur ML si prefs.country est vide
+        .eq('code', prefs.country || 'ML')
         .single();
       const countryId = country?.id;
 
@@ -269,7 +263,7 @@ const CreateJobPage = () => {
         salary_currency: 'XOF',
         is_salary_visible: form.is_salary_visible,
         city_id: form.city_id || null,
-        country_id: countryId, // Utilisation de l'ID du pays depuis les préférences
+        country_id: countryId,
         address: form.address || null,
         is_remote: form.is_remote,
         remote_type: form.is_remote ? form.remote_type : null,
@@ -527,7 +521,6 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Card Description */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.description')}</h2>
@@ -615,7 +608,6 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Card Skills */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.skills')}</h2>
@@ -653,7 +645,6 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Card Location */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -671,7 +662,6 @@ const CreateJobPage = () => {
                     data-testid="job-city-select"
                   >
                     <option value="">{t('createJob.options.selectCity')}</option>
-                    {/* Utilisation de filteredCities */}
                     {filteredCities.map(city => (
                       <option key={city.id} value={city.id}>{city.name}</option>
                     ))}
@@ -714,7 +704,6 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Card Salary */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -757,7 +746,6 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Card Dates */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">

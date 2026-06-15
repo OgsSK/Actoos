@@ -189,7 +189,7 @@
         "name": "Gratuito",
         "description": "Para descubrir la plataforma.",
         "features": [
-          "1 oferta activa",
+          "3 oferta activa",
           "Candidaturas ilimitadas",
           "Perfil de empresa",
           "Soporte por email"
@@ -2521,5 +2521,70 @@
     "DE": "Alemania",
     "US": "Estados Unidos",
     "MA": "Marruecos"
+  },
+  "companyProfile": {
+  "back": "Volver",
+  "title": "Perfil de la empresa",
+  "subtitle": "Edite la información de su empresa",
+  "uploading": "Subiendo…",
+  "logo": "Cambiar logotipo",
+  "labels": {
+    "name": "Nombre de la empresa",
+    "description": "Descripción",
+    "industry": "Sector",
+    "size": "Tamaño de la empresa",
+    "website": "Sitio web",
+    "email": "Correo de contacto",
+    "phone": "Teléfono",
+    "foundedYear": "Año de fundación",
+    "country": "País",
+    "city": "Ciudad",
+    "address": "Dirección"
+  },
+  "placeholders": {
+    "name": "Nombre de su empresa",
+    "description": "Describa su empresa en pocas frases",
+    "website": "https://www.miempresa.es",
+    "email": "contacto@empresa.es",
+    "phone": "+34 91 000 00 00",
+    "year": "Ej: 2020",
+    "address": "Calle, barrio, edificio…"
+  },
+  "options": {
+    "selectIndustry": "Seleccione un sector",
+    "selectSize": "Seleccione un tamaño",
+    "selectCity": "Seleccione una ciudad"
+  },
+  "submit": "Guardar cambios",
+  "deleteConfirm": "¿Está seguro de que desea eliminar permanentemente su empresa? Esta acción no se puede deshacer.",
+  "deleteSection": {
+    "title": "Eliminar mi empresa",
+    "description": "Esta acción eliminará permanentemente su empresa, todas sus ofertas y los datos asociados.",
+    "button": "Eliminar mi empresa",
+    "deleting": "Eliminando…"
+  },
+  "toasts": {
+    "imageRequired": "Por favor, seleccione una imagen",
+    "imageTooBig": "La imagen no debe superar los 2 MB",
+    "logoUploaded": "Logotipo subido con éxito",
+    "uploadError": "Error al subir el logotipo",
+    "nameRequired": "El nombre de la empresa es obligatorio",
+    "updateSuccess": "Perfil actualizado con éxito",
+    "updateError": "Error al actualizar el perfil",
+    "companyDeleted": "Empresa eliminada con éxito",
+    "deleteError": "Error al eliminar la empresa"
+  },
+  "noCompany": {
+    "title": "No se encontró ninguna empresa",
+    "message": "Primero debe crear una empresa para acceder a esta página.",
+    "createButton": "Crear mi empresa"
+  },
+  "sizes": {
+    "1-10": "1-10 empleados",
+    "11-50": "11-50 empleados",
+    "51-200": "51-200 empleados",
+    "201-500": "201-500 empleados",
+    "500+": "Más de 500 empleados"
   }
+}
 }

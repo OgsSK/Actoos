@@ -1287,6 +1287,68 @@ async def admin_delete_company(company_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.delete("/api/company/delete")
+async def delete_own_company(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    company_id = data.get("company_id")
+
+    if not user_id or not company_id:
+        raise HTTPException(status_code=400, detail="user_id et company_id sont requis")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Récupérer l'entreprise avec son propriétaire
+    company_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=id,name,owner_id,owner:users(email,first_name,last_name)",
+        headers=headers
+    )
+    companies = company_resp.json()
+    if not companies:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    company = companies[0]
+    if company["owner_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Vous n'êtes pas le propriétaire de cette entreprise")
+
+    # Supprimer les offres et membres
+    httpx.delete(f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}", headers=headers)
+    httpx.delete(f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}", headers=headers)
+    httpx.delete(f"{supabase_url}/rest/v1/companies?id=eq.{company_id}", headers=headers)
+
+    # Envoyer un email de confirmation
+    owner = company.get("owner")
+    if isinstance(owner, list) and len(owner) > 0:
+        owner = owner[0]  # au cas où la relation renvoie un tableau
+
+    owner_email = owner.get("email") if owner else None
+    if owner_email and resend.api_key:
+        first_name = owner.get("first_name") or "Utilisateur"
+        if not first_name or first_name.strip() == "":
+            first_name = "Utilisateur"
+
+        lang = get_user_language(owner_email)
+        if lang == 'en':
+            subject = "Your company has been deleted"
+            html = f"<h2>Hello {first_name},</h2><p>Your company <strong>{company['name']}</strong> has been successfully deleted.</p>"
+        else:
+            subject = "Votre entreprise a été supprimée"
+            html = f"<h2>Bonjour {first_name},</h2><p>Votre entreprise <strong>{company['name']}</strong> a bien été supprimée.</p>"
+        try:
+            resend.Emails.send({
+                "from": "Actoos Jobs <noreply@actoos.com>",
+                "to": [owner_email],
+                "subject": subject,
+                "html": html
+            })
+        except Exception as e:
+            print(f"Email error: {e}")
+
+    return {"success": True, "message": "Entreprise supprimée"}
+
+
 @app.delete("/api/admin/delete-user/{user_id}")
 async def admin_delete_user(user_id: str):
     supabase_url = os.getenv("SUPABASE_URL")

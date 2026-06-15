@@ -189,7 +189,7 @@
         "name": "Free",
         "description": "To discover the platform.",
         "features": [
-          "1 active job",
+          "3 active job",
           "Unlimited applications",
           "Company profile",
           "Email support"
@@ -2521,5 +2521,70 @@
   "DE": "Germany",
   "US": "United States",
   "MA": "Morocco"
+},
+"companyProfile": {
+  "back": "Back",
+  "title": "Company Profile",
+  "subtitle": "Edit your company information",
+  "uploading": "Uploading…",
+  "logo": "Change logo",
+  "labels": {
+    "name": "Company name",
+    "description": "Description",
+    "industry": "Industry",
+    "size": "Company size",
+    "website": "Website",
+    "email": "Contact email",
+    "phone": "Phone",
+    "foundedYear": "Year founded",
+    "country": "Country",
+    "city": "City",
+    "address": "Address"
+  },
+  "placeholders": {
+    "name": "Your company name",
+    "description": "Describe your company in a few sentences",
+    "website": "https://www.mycompany.com",
+    "email": "contact@company.com",
+    "phone": "+1 555 0000",
+    "year": "e.g. 2020",
+    "address": "Street, district, building…"
+  },
+  "options": {
+    "selectIndustry": "Select an industry",
+    "selectSize": "Select a size",
+    "selectCity": "Select a city"
+  },
+  "submit": "Save changes",
+  "deleteConfirm": "Are you sure you want to permanently delete your company? This action cannot be undone.",
+  "deleteSection": {
+    "title": "Delete my company",
+    "description": "This will permanently delete your company, all its offers and associated data.",
+    "button": "Delete my company",
+    "deleting": "Deleting…"
+  },
+  "toasts": {
+    "imageRequired": "Please select an image",
+    "imageTooBig": "Image must not exceed 2 MB",
+    "logoUploaded": "Logo uploaded successfully",
+    "uploadError": "Error uploading logo",
+    "nameRequired": "Company name is required",
+    "updateSuccess": "Profile updated successfully",
+    "updateError": "Error updating profile",
+    "companyDeleted": "Company deleted successfully",
+    "deleteError": "Error deleting company"
+  },
+  "noCompany": {
+    "title": "No company found",
+    "message": "You need to create a company first to access this page.",
+    "createButton": "Create my company"
+  },
+  "sizes": {
+    "1-10": "1-10 employees",
+    "11-50": "11-50 employees",
+    "51-200": "51-200 employees",
+    "201-500": "201-500 employees",
+    "500+": "More than 500 employees"
+  }
 }
 }

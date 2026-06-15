@@ -201,7 +201,6 @@ const PricingPage = () => {
     },
   ];
 
-  // Store prices (unchanged)
   const proMonthly = subscriptions.pro_monthly?.amount || 49000;
   const proAnnual = subscriptions.pro_annual?.amount || 470400;
   const businessMonthly = subscriptions.business_monthly?.amount || 149000;
@@ -221,10 +220,8 @@ const PricingPage = () => {
     toast.info(t('pricing.toast.cancelToFree'));
   };
 
-  // FAQ items from translations
   const faqItems = t('pricing.faq.items', { returnObjects: true }) || [];
 
-  // Comparison table rows
   const comparisonRows = [
     'activeOffers',
     'candidates',
@@ -270,7 +267,6 @@ const PricingPage = () => {
             const isUpgrade = company && ((plan.planKey === 'pro' && currentPlan === 'free') || (plan.planKey === 'business' && (currentPlan === 'free' || currentPlan === 'pro')));
             const isDowngrade = company && !isCurrentPlan && !isUpgrade && plan.planKey !== 'free' && currentPlan !== 'free';
 
-            // Determine price
             let monthlyPrice = 0;
             let annualPrice = 0;
             let annualMonthlyEquivalent = 0;
@@ -485,7 +481,7 @@ const PricingPage = () => {
                 <tr key={rowKey} className="border-b border-slate-100 last:border-0">
                   <td className="py-4 px-6 text-slate-700">{t(`pricing.comparison.rows.${rowKey}`)}</td>
                   <td className="py-4 px-6 text-slate-600">
-                    {rowKey === 'activeOffers' ? '1' : rowKey === 'candidates' ? t('pricing.plans.free.features.1') : rowKey === 'verifiedProfile' ? '-' : rowKey === 'analytics' ? '✓' : rowKey === 'emailSupport' ? '✓' : rowKey === 'freeBoost' ? '-' : ''}
+                    {rowKey === 'activeOffers' ? '3' : rowKey === 'candidates' ? t('pricing.plans.free.features.1') : rowKey === 'verifiedProfile' ? '-' : rowKey === 'analytics' ? '✓' : rowKey === 'emailSupport' ? '✓' : rowKey === 'freeBoost' ? '-' : ''}
                   </td>
                   <td className="py-4 px-6 text-slate-600">
                     {rowKey === 'activeOffers' ? '5' : rowKey === 'candidates' ? t('pricing.plans.pro.features.1') : rowKey === 'verifiedProfile' ? '✓' : rowKey === 'analytics' ? '✓' : rowKey === 'emailSupport' ? '✓' : rowKey === 'freeBoost' ? '-' : ''}

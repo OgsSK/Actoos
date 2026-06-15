@@ -189,7 +189,7 @@
         "name": "Gratuit",
         "description": "Pour découvrir la plateforme.",
         "features": [
-          "1 offre active",
+          "3 offre active",
           "Candidatures illimitées",
           "Profil entreprise",
           "Support par email"
@@ -2521,5 +2521,73 @@
   "DE": "Allemagne",
   "US": "États-Unis",
   "MA": "Maroc"
-}
+},
+
+  "companyProfile": {
+    "back": "Retour",
+    "title": "Profil de l'entreprise",
+    "subtitle": "Modifiez les informations de votre entreprise",
+    "uploading": "Téléchargement...",
+    "logo": "Changer le logo",
+    "labels": {
+      "name": "Nom de l'entreprise",
+      "description": "Description",
+      "industry": "Secteur d'activité",
+      "size": "Taille de l'entreprise",
+      "website": "Site web",
+      "email": "Email de contact",
+      "phone": "Téléphone",
+      "foundedYear": "Année de création",
+      "country": "Pays",
+      "city": "Ville",
+      "address": "Adresse"
+    },
+    "placeholders": {
+      "name": "Nom de votre entreprise",
+      "description": "Décrivez votre entreprise en quelques phrases",
+      "website": "https://www.monentreprise.com",
+      "email": "contact@entreprise.com",
+      "phone": "+223 00 00 00 00",
+      "year": "Ex: 2020",
+      "address": "Quartier, rue, immeuble..."
+    },
+    "options": {
+      "selectIndustry": "Sélectionnez un secteur",
+      "selectSize": "Sélectionnez une taille",
+      "selectCity": "Sélectionnez une ville"
+    },
+    "submit": "Enregistrer les modifications",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer définitivement votre entreprise ? Cette action est irréversible.",
+    "deleteSection": {
+      "title": "Supprimer mon entreprise",
+      "description": "Cette action supprimera définitivement votre entreprise, toutes ses offres et ses données associées.",
+      "button": "Supprimer mon entreprise",
+      "deleting": "Suppression en cours..."
+    },
+    "toasts": {
+      "imageRequired": "Veuillez sélectionner une image",
+      "imageTooBig": "L'image ne doit pas dépasser 2 Mo",
+      "logoUploaded": "Logo téléchargé avec succès",
+      "uploadError": "Erreur lors du téléchargement du logo",
+      "nameRequired": "Le nom de l'entreprise est obligatoire",
+      "updateSuccess": "Profil mis à jour avec succès",
+      "updateError": "Erreur lors de la mise à jour",
+      "companyDeleted": "Entreprise supprimée avec succès",
+      "deleteError": "Erreur lors de la suppression de l'entreprise"
+    },
+    "noCompany": {
+      "title": "Aucune entreprise trouvée",
+      "message": "Vous devez d'abord créer une entreprise pour accéder à cette page.",
+      "createButton": "Créer mon entreprise"
+    },
+    "sizes": {
+      "1-10": "1-10 employés",
+      "11-50": "11-50 employés",
+      "51-200": "51-200 employés",
+      "201-500": "201-500 employés",
+      "500+": "Plus de 500 employés"
+    }
+  }
+
+
 }

@@ -5,13 +5,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../hooks/usePreferences';
 import { useCities } from '../hooks/useCities';
 import { supabase } from '../lib/supabase';
+import { apiFetch } from '../lib/api'; // ← Import pour l'API
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { toast } from 'sonner';
 import {
   Building2, Globe, Mail, Phone, MapPin, Calendar,
-  Loader2, ChevronLeft, Save, Image
+  Loader2, ChevronLeft, Save, Image, Trash2
 } from 'lucide-react';
 
 // ----- Constantes de traduction -----
@@ -37,6 +38,7 @@ const CompanyProfilePage = () => {
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(prefs.country);
   const { cities: filteredCities } = useCities(selectedCountry);
+  const [deleting, setDeleting] = useState(false); // ← état pour la suppression
 
   const [form, setForm] = useState({
     name: '',
@@ -185,6 +187,28 @@ const CompanyProfilePage = () => {
       toast.error(error.message || t('companyProfile.toasts.updateError'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ✅ Suppression de l'entreprise
+  const handleDeleteCompany = async () => {
+    if (!window.confirm(t('companyProfile.deleteConfirm'))) return;
+
+    setDeleting(true);
+    try {
+      await apiFetch('/api/company/delete', {
+        method: 'DELETE',
+        body: JSON.stringify({
+          user_id: user.id,
+          company_id: activeCompanyId,
+        }),
+      });
+      toast.success(t('companyProfile.toasts.companyDeleted'));
+      navigate('/dashboard/entreprise'); // redirige après suppression
+    } catch (err) {
+      toast.error(err.message || t('companyProfile.toasts.deleteError'));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -433,6 +457,23 @@ const CompanyProfilePage = () => {
             </CardContent>
           </Card>
         </form>
+
+        {/* ✅ Section suppression d'entreprise */}
+        <div className="mt-8 border-t pt-6">
+          <h3 className="text-red-600 font-semibold mb-2">{t('companyProfile.deleteSection.title')}</h3>
+          <p className="text-sm text-slate-600 mb-4">
+            {t('companyProfile.deleteSection.description')}
+          </p>
+          <Button
+            variant="outline"
+            className="border-red-300 text-red-600 hover:bg-red-50"
+            onClick={handleDeleteCompany}
+            disabled={deleting}
+          >
+            {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+            {deleting ? t('companyProfile.deleteSection.deleting') : t('companyProfile.deleteSection.button')}
+          </Button>
+        </div>
       </div>
     </div>
   );

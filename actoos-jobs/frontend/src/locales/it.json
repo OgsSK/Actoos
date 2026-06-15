@@ -189,7 +189,7 @@
         "name": "Gratuito",
         "description": "Per scoprire la piattaforma.",
         "features": [
-          "1 offerta attiva",
+          "3 offerta attiva",
           "Candidature illimitate",
           "Profilo aziendale",
           "Supporto via email"
@@ -2521,5 +2521,70 @@
     "DE": "Germania",
     "US": "Stati Uniti",
     "MA": "Marocco"
+  },
+  "companyProfile": {
+  "back": "Indietro",
+  "title": "Profilo aziendale",
+  "subtitle": "Modifica le informazioni della tua azienda",
+  "uploading": "Caricamento…",
+  "logo": "Cambia logo",
+  "labels": {
+    "name": "Nome azienda",
+    "description": "Descrizione",
+    "industry": "Settore",
+    "size": "Dimensioni azienda",
+    "website": "Sito web",
+    "email": "Email di contatto",
+    "phone": "Telefono",
+    "foundedYear": "Anno di fondazione",
+    "country": "Paese",
+    "city": "Città",
+    "address": "Indirizzo"
+  },
+  "placeholders": {
+    "name": "Nome della tua azienda",
+    "description": "Descrivi la tua azienda in poche frasi",
+    "website": "https://www.miaazienda.com",
+    "email": "contatto@azienda.com",
+    "phone": "+39 000 000 0000",
+    "year": "Es: 2020",
+    "address": "Via, quartiere, edificio…"
+  },
+  "options": {
+    "selectIndustry": "Seleziona un settore",
+    "selectSize": "Seleziona una dimensione",
+    "selectCity": "Seleziona una città"
+  },
+  "submit": "Salva modifiche",
+  "deleteConfirm": "Sei sicuro di voler eliminare definitivamente la tua azienda? Questa azione è irreversibile.",
+  "deleteSection": {
+    "title": "Elimina la mia azienda",
+    "description": "Questa azione eliminerà definitivamente la tua azienda, tutte le sue offerte e i dati associati.",
+    "button": "Elimina la mia azienda",
+    "deleting": "Eliminazione in corso…"
+  },
+  "toasts": {
+    "imageRequired": "Seleziona un'immagine",
+    "imageTooBig": "L'immagine non deve superare 2 MB",
+    "logoUploaded": "Logo caricato con successo",
+    "uploadError": "Errore durante il caricamento del logo",
+    "nameRequired": "Il nome dell'azienda è obbligatorio",
+    "updateSuccess": "Profilo aggiornato con successo",
+    "updateError": "Errore durante l'aggiornamento del profilo",
+    "companyDeleted": "Azienda eliminata con successo",
+    "deleteError": "Errore durante l'eliminazione dell'azienda"
+  },
+  "noCompany": {
+    "title": "Nessuna azienda trovata",
+    "message": "Devi prima creare un'azienda per accedere a questa pagina.",
+    "createButton": "Crea la mia azienda"
+  },
+  "sizes": {
+    "1-10": "1-10 dipendenti",
+    "11-50": "11-50 dipendenti",
+    "51-200": "51-200 dipendenti",
+    "201-500": "201-500 dipendenti",
+    "500+": "Oltre 500 dipendenti"
   }
+}
 }

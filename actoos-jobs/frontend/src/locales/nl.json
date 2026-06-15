@@ -189,7 +189,7 @@
         "name": "Gratis",
         "description": "Om het platform te ontdekken.",
         "features": [
-          "1 actieve vacature",
+          "3 actieve vacature",
           "Onbeperkt sollicitaties",
           "Bedrijfsprofiel",
           "E-mailondersteuning"
@@ -2521,5 +2521,70 @@
     "DE": "Duitsland",
     "US": "Verenigde Staten",
     "MA": "Marokko"
+  },
+  "companyProfile": {
+  "back": "Terug",
+  "title": "Bedrijfsprofiel",
+  "subtitle": "Bewerk uw bedrijfsinformatie",
+  "uploading": "Uploaden…",
+  "logo": "Logo wijzigen",
+  "labels": {
+    "name": "Bedrijfsnaam",
+    "description": "Beschrijving",
+    "industry": "Sector",
+    "size": "Bedrijfsgrootte",
+    "website": "Website",
+    "email": "Contact e-mail",
+    "phone": "Telefoon",
+    "foundedYear": "Oprichtingsjaar",
+    "country": "Land",
+    "city": "Stad",
+    "address": "Adres"
+  },
+  "placeholders": {
+    "name": "Naam van uw bedrijf",
+    "description": "Beschrijf uw bedrijf in enkele zinnen",
+    "website": "https://www.mijnbedrijf.nl",
+    "email": "contact@bedrijf.nl",
+    "phone": "+31 20 0000000",
+    "year": "Bijv. 2020",
+    "address": "Straat, wijk, gebouw…"
+  },
+  "options": {
+    "selectIndustry": "Selecteer een sector",
+    "selectSize": "Selecteer een grootte",
+    "selectCity": "Selecteer een stad"
+  },
+  "submit": "Wijzigingen opslaan",
+  "deleteConfirm": "Weet u zeker dat u uw bedrijf permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+  "deleteSection": {
+    "title": "Mijn bedrijf verwijderen",
+    "description": "Hiermee wordt uw bedrijf, al zijn aanbiedingen en bijbehorende gegevens permanent verwijderd.",
+    "button": "Mijn bedrijf verwijderen",
+    "deleting": "Verwijderen…"
+  },
+  "toasts": {
+    "imageRequired": "Selecteer een afbeelding",
+    "imageTooBig": "Afbeelding mag niet groter zijn dan 2 MB",
+    "logoUploaded": "Logo succesvol geüpload",
+    "uploadError": "Fout bij uploaden logo",
+    "nameRequired": "Bedrijfsnaam is verplicht",
+    "updateSuccess": "Profiel succesvol bijgewerkt",
+    "updateError": "Fout bij bijwerken profiel",
+    "companyDeleted": "Bedrijf succesvol verwijderd",
+    "deleteError": "Fout bij verwijderen bedrijf"
+  },
+  "noCompany": {
+    "title": "Geen bedrijf gevonden",
+    "message": "U moet eerst een bedrijf aanmaken om deze pagina te kunnen bekijken.",
+    "createButton": "Mijn bedrijf aanmaken"
+  },
+  "sizes": {
+    "1-10": "1-10 werknemers",
+    "11-50": "11-50 werknemers",
+    "51-200": "51-200 werknemers",
+    "201-500": "201-500 werknemers",
+    "500+": "Meer dan 500 werknemers"
   }
+}
 }

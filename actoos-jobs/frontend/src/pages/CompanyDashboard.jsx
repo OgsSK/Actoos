@@ -671,7 +671,7 @@ const CompanyDashboard = () => {
     const plan = company?.subscription_plan || 'free';
     if (plan === 'business' || plan === 'enterprise') return Infinity;
     if (plan === 'pro') return 5;
-    return 1;
+    return 3;
   };
 
   const activeJobsCount = jobs.filter((j) => j.status === 'active').length;

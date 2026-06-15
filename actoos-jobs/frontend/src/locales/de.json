@@ -189,7 +189,7 @@
         "name": "Kostenlos",
         "description": "Um die Plattform zu entdecken.",
         "features": [
-          "1 aktive Stelle",
+          "3 aktive Stelle",
           "Unbegrenzte Bewerbungen",
           "Unternehmensprofil",
           "E-Mail-Support"
@@ -2521,5 +2521,70 @@
     "DE": "Deutschland",
     "US": "Vereinigte Staaten",
     "MA": "Marokko"
+  },
+  "companyProfile": {
+  "back": "Zurück",
+  "title": "Unternehmensprofil",
+  "subtitle": "Bearbeiten Sie Ihre Unternehmensinformationen",
+  "uploading": "Hochladen…",
+  "logo": "Logo ändern",
+  "labels": {
+    "name": "Firmenname",
+    "description": "Beschreibung",
+    "industry": "Branche",
+    "size": "Unternehmensgröße",
+    "website": "Webseite",
+    "email": "Kontakt-E-Mail",
+    "phone": "Telefon",
+    "foundedYear": "Gründungsjahr",
+    "country": "Land",
+    "city": "Stadt",
+    "address": "Adresse"
+  },
+  "placeholders": {
+    "name": "Name Ihres Unternehmens",
+    "description": "Beschreiben Sie Ihr Unternehmen in wenigen Sätzen",
+    "website": "https://www.meinunternehmen.de",
+    "email": "kontakt@unternehmen.de",
+    "phone": "+49 30 000000",
+    "year": "z.B. 2020",
+    "address": "Straße, Viertel, Gebäude…"
+  },
+  "options": {
+    "selectIndustry": "Wählen Sie eine Branche",
+    "selectSize": "Größe wählen",
+    "selectCity": "Stadt wählen"
+  },
+  "submit": "Änderungen speichern",
+  "deleteConfirm": "Sind Sie sicher, dass Sie Ihr Unternehmen endgültig löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "deleteSection": {
+    "title": "Mein Unternehmen löschen",
+    "description": "Dadurch werden Ihr Unternehmen, alle Angebote und zugehörigen Daten endgültig gelöscht.",
+    "button": "Mein Unternehmen löschen",
+    "deleting": "Löschen…"
+  },
+  "toasts": {
+    "imageRequired": "Bitte wählen Sie ein Bild aus",
+    "imageTooBig": "Das Bild darf 2 MB nicht überschreiten",
+    "logoUploaded": "Logo erfolgreich hochgeladen",
+    "uploadError": "Fehler beim Hochladen des Logos",
+    "nameRequired": "Der Firmenname ist erforderlich",
+    "updateSuccess": "Profil erfolgreich aktualisiert",
+    "updateError": "Fehler beim Aktualisieren des Profils",
+    "companyDeleted": "Unternehmen erfolgreich gelöscht",
+    "deleteError": "Fehler beim Löschen des Unternehmens"
+  },
+  "noCompany": {
+    "title": "Kein Unternehmen gefunden",
+    "message": "Sie müssen zuerst ein Unternehmen erstellen, um auf diese Seite zuzugreifen.",
+    "createButton": "Mein Unternehmen erstellen"
+  },
+  "sizes": {
+    "1-10": "1-10 Mitarbeiter",
+    "11-50": "11-50 Mitarbeiter",
+    "51-200": "51-200 Mitarbeiter",
+    "201-500": "201-500 Mitarbeiter",
+    "500+": "Mehr als 500 Mitarbeiter"
   }
+}
 }
