@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,12 +6,14 @@ import { apiFetch } from '../lib/api';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { useBlogPosts } from '../hooks/useBlogPosts';
 import {
   BookOpen, Clock, User, ArrowRight, FileText, Target,
   Lightbulb, TrendingUp, Users, Briefcase, CheckCircle, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// ----- Icônes et couleurs -----
 const iconMap = {
   FileText,
   Target,
@@ -30,6 +32,7 @@ const colorClasses = {
   indigo: 'bg-indigo-100 text-indigo-600',
 };
 
+// ----- Composant Newsletter (interne) -----
 const NewsletterSection = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
@@ -91,48 +94,39 @@ const NewsletterSection = () => {
   );
 };
 
+// ----- Page principale du blog -----
 const BlogPage = () => {
   const { t } = useTranslation();
   const { user, isCompany } = useAuth();
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState(t('blog.allCategories'));
 
+  // Audience basée sur le rôle de l'utilisateur connecté
   const audience = user ? (isCompany ? 'company' : 'candidate') : 'all';
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      setLoading(true);
-      try {
-        const data = await apiFetch(`/api/blog/posts?audience=${audience}`);
-        if (data && Array.isArray(data)) {
-          const dayOfYear = Math.floor(
-            (new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000
-          );
-          const shuffled = [...data].sort(
-            (a, b) => ((a.id * dayOfYear) % 7) - ((b.id * dayOfYear) % 7)
-          );
-          setArticles(shuffled);
-        } else {
-          setArticles([]);
-        }
-      } catch (err) {
-        toast.error(t('blog.loadingError'));
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Hook avec cache (30 min) – retourne { posts, loading }
+  const { posts, loading } = useBlogPosts(audience);
 
-    fetchArticles();
-  }, [audience, t]);
+  // Mélange déterministique pour varier l'affichage chaque jour (optionnel)
+  const shuffled = useMemo(() => {
+    if (!posts.length) return [];
+    const dayOfYear = Math.floor(
+      (new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000
+    );
+    return [...posts].sort(
+      (a, b) => ((a.id * dayOfYear) % 7) - ((b.id * dayOfYear) % 7)
+    );
+  }, [posts]);
 
-  const categories = [t('blog.allCategories'), ...new Set(articles.map((a) => a.category))];
+  // Catégories extraites des articles
+  const categories = [t('blog.allCategories'), ...new Set(posts.map((a) => a.category))];
 
+  // Filtrage par catégorie
   const filteredArticles =
     activeCategory === t('blog.allCategories')
-      ? articles
-      : articles.filter((a) => a.category === activeCategory);
+      ? shuffled
+      : shuffled.filter((a) => a.category === activeCategory);
 
+  // Affichage du loader
   if (loading) {
     return (
       <div className="min-h-screen pt-20 flex items-center justify-center">
@@ -143,6 +137,7 @@ const BlogPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
+      {/* En-tête */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
           <Badge className="bg-blue-100 text-blue-700 border-0 mb-4">{t('blog.badge')}</Badge>
@@ -151,6 +146,7 @@ const BlogPage = () => {
         </div>
       </div>
 
+      {/* Catégories */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-wrap gap-2 justify-center">
           {categories.map((cat) => (
@@ -166,6 +162,7 @@ const BlogPage = () => {
         </div>
       </div>
 
+      {/* Liste des articles */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {filteredArticles.length === 0 ? (
           <div className="text-center py-12">

@@ -1165,6 +1165,36 @@ async def notify_admin_new_company(req: NewCompanyNotificationRequest):
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
     try:
+        admin_email = "contact@actoos.com"
+        lang = get_user_language(admin_email)
+        if lang == 'en':
+            subject = f"New company to validate: {req.company_name}"
+            html = f"""
+                <h2>New company pending validation</h2>
+                <p><strong>Company:</strong> {req.company_name}</p>
+                <p><strong>Owner:</strong> {req.owner_name} ({req.owner_email})</p>
+                <p><a href="https://jobs.actoos.com/admin">Go to admin dashboard</a></p>
+            """
+        else:
+            subject = f"Nouvelle entreprise à valider : {req.company_name}"
+            html = f"""
+                <h2>Nouvelle entreprise en attente de validation</h2>
+                <p><strong>Entreprise :</strong> {req.company_name}</p>
+                <p><strong>Propriétaire :</strong> {req.owner_name} ({req.owner_email})</p>
+                <p><a href="https://jobs.actoos.com/admin">Accéder au dashboard admin</a></p>
+            """
+        resend.Emails.send({
+            "from": "Actoos Jobs <noreply@actoos.com>",
+            "to": [admin_email],
+            "subject": subject,
+            "html": html
+        })
+        return {"success": True, "message": "Notification envoyée à l'administrateur"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
         resend.Emails.send({
             "from": "Actoos Jobs <noreply@actoos.com>",
             "to": ["contact@actoos.com"],
@@ -1177,6 +1207,38 @@ async def notify_admin_new_company(req: NewCompanyNotificationRequest):
 
 @app.post("/api/notify-admin-new-job")
 async def notify_admin_new_job(req: NotifyAdminNewJobRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        admin_email = "contact@actoos.com"
+        lang = get_user_language(admin_email)  # détecter la langue de l'admin
+        if lang == 'en':
+            subject = f"New job to validate: {req.job_title}"
+            html = f"""
+                <h2>New job pending validation</h2>
+                <p><strong>Job:</strong> {req.job_title}</p>
+                <p><strong>Company:</strong> {req.company_name} ({req.company_email})</p>
+                <p><a href="https://jobs.actoos.com/admin">Go to admin dashboard</a></p>
+            """
+        else:
+            subject = f"Nouvelle offre à valider : {req.job_title}"
+            html = f"""
+                <h2>Nouvelle offre en attente de validation</h2>
+                <p><strong>Offre :</strong> {req.job_title}</p>
+                <p><strong>Entreprise :</strong> {req.company_name} ({req.company_email})</p>
+                <p><a href="https://jobs.actoos.com/admin">Accéder au dashboard admin</a></p>
+            """
+
+        resend.Emails.send({
+            "from": "Actoos Jobs <noreply@actoos.com>",
+            "to": [admin_email],
+            "subject": subject,
+            "html": html
+        })
+        return {"success": True, "message": "Notification envoyée à l'administrateur"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
     try:

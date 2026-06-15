@@ -108,8 +108,9 @@ const Header = ({ user, onLogout }) => {
   return (
     <header className={headerClasses}>
       <div className={containerClasses}>
+        {/* Barre principale */}
         <div className="flex items-center justify-between gap-3">
-          {/* Logo */}
+          {/* Logo + marque */}
           <Link to="/" className="flex items-center gap-2 shrink-0 min-w-0 group">
             <div className={logoClasses}>
               <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
@@ -143,7 +144,7 @@ const Header = ({ user, onLogout }) => {
             </button>
           </div>
 
-          {/* Desktop : actions utilisateur + dropdown */}
+          {/* Desktop : actions utilisateur + dropdown nouvelle génération */}
           <div className="hidden lg:flex items-center gap-2 shrink-0">
             {user ? (
               <>
@@ -168,7 +169,7 @@ const Header = ({ user, onLogout }) => {
                   </div>
                 </button>
 
-                {/* === DROPDOWN AMÉLIORÉ === */}
+                {/* ====== DROPDOWN NOUVELLE GÉNÉRATION ====== */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -184,78 +185,103 @@ const Header = ({ user, onLogout }) => {
                     align="end"
                     sideOffset={12}
                     className={cn(
-                      'w-60 rounded-2xl border border-slate-200/40 bg-white/90 backdrop-blur-2xl p-2',
-                      'shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_2px_8px_rgba(0,0,0,0.04),0_16px_32px_-12px_rgba(0,0,0,0.08)]',
-                      'animate-in fade-in-0 zoom-in-95 slide-in-from-top-2', // Assurez-vous d'avoir tailwindcss-animate ou supprimez cette ligne
+                      'dropdown-newgen',
+                      'w-64 rounded-2xl border border-white/20 bg-white/70 backdrop-blur-3xl p-2',
+                      'shadow-[0_0_0_1px_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.02),0_12px_28px_-4px_rgba(0,0,0,0.08),0_0_0_0.5px_rgba(0,0,0,0.05)]',
+                      'ring-1 ring-black/5',
                       'z-[9999]'
                     )}
                   >
+                    {/* Dashboard */}
                     <DropdownMenuItem
                       onClick={() => navigate('/dashboard')}
-                      className="cursor-pointer rounded-xl px-3 py-2.5 focus:bg-slate-50 focus:text-slate-900 group"
+                      className="cursor-pointer group relative rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/60 hover:shadow-sm hover:-translate-y-px focus:bg-white/60"
                     >
-                      <LayoutDashboard className="w-4 h-4 mr-3 text-slate-400/80 group-hover:text-slate-500 transition-colors" />
-                      <span className="font-medium tracking-tight">{t('header.user.dashboard')}</span>
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <LayoutDashboard className="relative w-4 h-4 mr-3 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                      <span className="relative font-medium tracking-tight text-slate-700 group-hover:text-slate-900">
+                        {t('header.user.dashboard')}
+                      </span>
                     </DropdownMenuItem>
 
+                    {/* Profil */}
                     <DropdownMenuItem
                       onClick={() => navigate(profileLink)}
-                      className="cursor-pointer rounded-xl px-3 py-2.5 focus:bg-slate-50 focus:text-slate-900 group"
+                      className="cursor-pointer group relative rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/60 hover:shadow-sm hover:-translate-y-px focus:bg-white/60"
                     >
-                      <User className="w-4 h-4 mr-3 text-slate-400/80 group-hover:text-slate-500 transition-colors" />
-                      <span className="font-medium tracking-tight">{t('header.user.profile')}</span>
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <User className="relative w-4 h-4 mr-3 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                      <span className="relative font-medium tracking-tight text-slate-700 group-hover:text-slate-900">
+                        {t('header.user.profile')}
+                      </span>
                     </DropdownMenuItem>
 
+                    {/* Alertes (candidat) */}
                     {isCandidate && (
                       <DropdownMenuItem
                         onClick={() => navigate('/alertes')}
-                        className="cursor-pointer rounded-xl px-3 py-2.5 focus:bg-slate-50 focus:text-slate-900 group"
+                        className="cursor-pointer group relative rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/60 hover:shadow-sm hover:-translate-y-px focus:bg-white/60"
                       >
-                        <Bell className="w-4 h-4 mr-3 text-slate-400/80 group-hover:text-slate-500 transition-colors" />
-                        <span className="font-medium tracking-tight">{t('header.user.createAlert')}</span>
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Bell className="relative w-4 h-4 mr-3 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                        <span className="relative font-medium tracking-tight text-slate-700 group-hover:text-slate-900">
+                          {t('header.user.createAlert')}
+                        </span>
                       </DropdownMenuItem>
                     )}
 
+                    {/* Paramètres */}
                     <DropdownMenuItem
                       onClick={() => navigate('/parametres')}
-                      className="cursor-pointer rounded-xl px-3 py-2.5 focus:bg-slate-50 focus:text-slate-900 group"
+                      className="cursor-pointer group relative rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/60 hover:shadow-sm hover:-translate-y-px focus:bg-white/60"
                     >
-                      <Settings className="w-4 h-4 mr-3 text-slate-400/80 group-hover:text-slate-500 transition-colors" />
-                      <span className="font-medium tracking-tight">{t('header.user.settings')}</span>
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Settings className="relative w-4 h-4 mr-3 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                      <span className="relative font-medium tracking-tight text-slate-700 group-hover:text-slate-900">
+                        {t('header.user.settings')}
+                      </span>
                     </DropdownMenuItem>
 
+                    {/* Admin */}
                     {isAdmin && (
                       <>
-                        <DropdownMenuSeparator className="my-1.5 border-slate-100/80" />
+                        <DropdownMenuSeparator className="my-1.5 border-slate-200/50" />
                         <DropdownMenuItem
                           onClick={() => navigate('/admin')}
-                          className="cursor-pointer rounded-xl px-3 py-2.5 text-blue-600 focus:bg-blue-50 focus:text-blue-700 group"
+                          className="cursor-pointer group relative rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/60 hover:shadow-sm hover:-translate-y-px focus:bg-white/60"
                         >
-                          <Shield className="w-4 h-4 mr-3 text-blue-500/80 group-hover:text-blue-600 transition-colors" />
-                          <span className="font-medium tracking-tight">{t('header.user.admin')}</span>
+                          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <Shield className="relative w-4 h-4 mr-3 text-purple-400 group-hover:text-purple-500 transition-colors" />
+                          <span className="relative font-medium tracking-tight text-slate-700 group-hover:text-slate-900">
+                            {t('header.user.admin')}
+                          </span>
                         </DropdownMenuItem>
                       </>
                     )}
 
+                    {/* Plan (entreprise) */}
                     {isCompany && (
                       <DropdownMenuItem
                         disabled
                         className="mt-1 opacity-100 !cursor-default rounded-xl px-3 py-2.5"
                       >
-                        <Badge className="bg-blue-50/50 text-blue-600/80 border-0 text-xs font-medium px-2 py-0.5">
+                        <Badge className="bg-blue-50/60 text-blue-600/80 border border-blue-100/50 backdrop-blur-sm text-xs font-medium px-2 py-0.5 rounded-lg">
                           {t('header.user.plan', { plan: profile?.subscription_plan || 'free' })}
                         </Badge>
                       </DropdownMenuItem>
                     )}
 
-                    <DropdownMenuSeparator className="my-1.5 border-slate-100/80" />
-
+                    {/* Déconnexion */}
+                    <DropdownMenuSeparator className="my-1.5 border-slate-200/50" />
                     <DropdownMenuItem
                       onClick={handleLogout}
-                      className="cursor-pointer rounded-xl px-3 py-2.5 text-red-500 focus:bg-red-50 focus:text-red-600 group"
+                      className="cursor-pointer group relative rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-red-50/80 hover:shadow-sm hover:-translate-y-px focus:bg-red-50/80"
                     >
-                      <LogOut className="w-4 h-4 mr-3 text-red-400/80 group-hover:text-red-500 transition-colors" />
-                      <span className="font-medium tracking-tight">{t('header.user.logout')}</span>
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <LogOut className="relative w-4 h-4 mr-3 text-red-400 group-hover:text-red-500 transition-colors" />
+                      <span className="relative font-medium tracking-tight text-slate-700 group-hover:text-red-600">
+                        {t('header.user.logout')}
+                      </span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -290,7 +316,7 @@ const Header = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* Ligne secondaire desktop */}
+      {/* Ligne secondaire desktop : navigation + langue/devise */}
       <div className="hidden lg:flex items-center justify-between gap-4 pb-3 border-t border-slate-100/70 pt-3 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <nav className="flex flex-wrap items-center gap-x-8 gap-y-2 min-w-0">
           {navLinks.map((link) => {
@@ -324,7 +350,7 @@ const Header = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* Menu mobile (inchangé, déjà optimisé) */}
+      {/* ====== MENU MOBILE CORRIGÉ ====== */}
       <div
         className={cn(
           'lg:hidden fixed inset-0 z-[9999] transition-all duration-300',
@@ -335,17 +361,24 @@ const Header = ({ user, onLogout }) => {
           className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
           onClick={() => setMobileMenuOpen(false)}
         />
+
+        {/* Panneau mobile – verre lisible */}
         <div
           className={cn(
-            'absolute right-0 top-0 bottom-0 w-[86%] max-w-sm bg-white shadow-2xl transition-transform duration-300 border-l border-slate-100',
-            mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+            'absolute right-0 top-0 bottom-0 w-[86%] max-w-sm',
+            'bg-white/70 backdrop-blur-xl',
+            'border-l border-white/20',
+            'shadow-[0_0_0_1px_rgba(255,255,255,0.2),-4px_0_20px_rgba(0,0,0,0.08)]',
+            'ring-1 ring-black/5',
+            'transition-all duration-300 ease-out',
+            mobileMenuOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
           )}
         >
           <div className="absolute top-4 right-4">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(false)}
-              className="p-2 rounded-full hover:bg-slate-50 transition-colors text-slate-400"
+              className="p-2 rounded-full bg-slate-100/80 backdrop-blur-sm hover:bg-slate-200/80 transition-colors text-slate-500"
               aria-label="Fermer le menu"
             >
               <X className="w-5 h-5" />
@@ -353,8 +386,9 @@ const Header = ({ user, onLogout }) => {
           </div>
 
           <div className="px-5 py-5 pt-16 space-y-5 overflow-y-auto h-full">
+            {/* Infos utilisateur */}
             {user && (
-              <div className="flex items-center gap-3 pb-5 border-b border-slate-100">
+              <div className="flex items-center gap-3 pb-5 border-b border-slate-200/40">
                 <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold shadow-sm">
                   {getInitials()}
                 </div>
@@ -367,6 +401,7 @@ const Header = ({ user, onLogout }) => {
               </div>
             )}
 
+            {/* Navigation */}
             <div className="space-y-1">
               {navLinks.map((link) => {
                 const isActive = location.pathname === link.href;
@@ -378,8 +413,8 @@ const Header = ({ user, onLogout }) => {
                     className={cn(
                       'flex items-center justify-between rounded-xl px-4 py-3 text-[15px] font-medium transition-all',
                       isActive
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        ? 'bg-blue-50/60 text-blue-700'
+                        : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
                     )}
                   >
                     <span>{link.label}</span>
@@ -389,7 +424,8 @@ const Header = ({ user, onLogout }) => {
               })}
             </div>
 
-            <div className="pt-4 border-t border-slate-100 space-y-3">
+            {/* Actions utilisateur */}
+            <div className="pt-4 border-t border-slate-200/40 space-y-3">
               {user ? (
                 <>
                   <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
@@ -399,21 +435,21 @@ const Header = ({ user, onLogout }) => {
                     </Button>
                   </Link>
                   <Link to={profileLink} onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full rounded-xl justify-start border-slate-200 text-slate-700 hover:bg-slate-50">
+                    <Button variant="outline" className="w-full rounded-xl justify-start border-slate-200 text-slate-700 hover:bg-white/50">
                       <User className="w-4 h-4 mr-2" />
                       {t('header.user.profile')}
                     </Button>
                   </Link>
                   {isCandidate && (
                     <Link to="/alertes" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="outline" className="w-full rounded-xl justify-start border-slate-200 text-slate-700 hover:bg-slate-50">
+                      <Button variant="outline" className="w-full rounded-xl justify-start border-slate-200 text-slate-700 hover:bg-white/50">
                         <Bell className="w-4 h-4 mr-2" />
                         {t('header.user.createAlert')}
                       </Button>
                     </Link>
                   )}
                   <Link to="/parametres" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full rounded-xl justify-start border-slate-200 text-slate-700 hover:bg-slate-50">
+                    <Button variant="outline" className="w-full rounded-xl justify-start border-slate-200 text-slate-700 hover:bg-white/50">
                       <Settings className="w-4 h-4 mr-2" />
                       {t('header.user.settings')}
                     </Button>
@@ -430,7 +466,7 @@ const Header = ({ user, onLogout }) => {
                     </Link>
                   )}
                   {isCompany && (
-                    <div className="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3">
+                    <div className="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 backdrop-blur-sm">
                       <p className="text-xs text-blue-700 font-medium mb-1">
                         {t('header.user.plan', { plan: profile?.subscription_plan || 'free' })}
                       </p>
@@ -451,7 +487,7 @@ const Header = ({ user, onLogout }) => {
               ) : (
                 <>
                   <Link to="/connexion" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50">
+                    <Button variant="outline" className="w-full rounded-xl border-slate-200 text-slate-700 hover:bg-white/50">
                       {t('header.auth.login')}
                     </Button>
                   </Link>
@@ -461,7 +497,7 @@ const Header = ({ user, onLogout }) => {
                     </Button>
                   </Link>
                   <Link to="/inscription?type=entreprise" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50">
+                    <Button variant="outline" className="w-full rounded-xl border-slate-200 text-slate-700 hover:bg-white/50">
                       <Building2 className="w-4 h-4 mr-2" />
                       {t('header.auth.companySpace')}
                     </Button>
