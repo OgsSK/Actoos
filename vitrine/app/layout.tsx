@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import CookieConsent from './components/CookieConsent';
 import { ProjectProvider } from './context/ProjectContext';
+import { LanguageProvider } from './context/LanguageContext';
 
 export const metadata: Metadata = {
   title: 'ACTOOS - Empowering Action. Delivering Progress.',
@@ -60,10 +61,12 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="antialiased">
-        <ProjectProvider>
-          {children}
-          <CookieConsent />
-        </ProjectProvider>
+        <LanguageProvider>
+          <ProjectProvider>
+            {children}
+            <CookieConsent />
+          </ProjectProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

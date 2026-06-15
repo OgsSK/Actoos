@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import { ArrowLeft, Mail } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { t } from '../../lib/translations';
 
 export default function ContactPage() {
+  const { language, setLanguage } = useLanguage();
   const [sent, setSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -25,10 +28,10 @@ export default function ContactPage() {
           email,
           message,
           html: `
-            <h2>Nouveau message depuis la page contact</h2>
-            <p><strong>Nom :</strong> ${name}</p>
-            <p><strong>Email :</strong> ${email}</p>
-            <p><strong>Message :</strong> ${message || '-'}</p>
+            <h2>${t[language].contactEmailSubject}</h2>
+            <p><strong>${t[language].contactEmailName}:</strong> ${name}</p>
+            <p><strong>${t[language].contactEmailEmail}:</strong> ${email}</p>
+            <p><strong>${t[language].contactEmailMessage}:</strong> ${message || '-'}</p>
           `,
         }),
       });
@@ -36,10 +39,10 @@ export default function ContactPage() {
       if (res.ok) {
         setSent(true);
       } else {
-        alert('Erreur lors de l\'envoi.');
+        alert(t[language].contactError);
       }
     } catch (error) {
-      alert('Erreur de connexion.');
+      alert(t[language].contactErrorConnection);
     }
   };
 
@@ -53,23 +56,39 @@ export default function ContactPage() {
               ACTOOS<span className="text-[#D4AF37]">.</span>
             </span>
           </a>
-          <a href="/" className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-bold">
-            <ArrowLeft size={18} />
-            <span>Retour</span>
-          </a>
+          <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4 text-[11px] font-black uppercase tracking-widest text-slate-400">
+              <button
+                onClick={() => setLanguage('fr')}
+                className={`${language === 'fr' ? 'text-slate-900 underline' : 'hover:text-black'}`}
+              >
+                FR
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={`${language === 'en' ? 'text-slate-900 underline' : 'hover:text-black'}`}
+              >
+                EN
+              </button>
+            </div>
+            <a href="/" className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-bold">
+              <ArrowLeft size={18} />
+              <span>{t[language].back}</span>
+            </a>
+          </div>
         </div>
       </nav>
 
       <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-4 block">
-            Contact
+            {t[language].contactTag}
           </span>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-950 mb-6">
-            Parlons de votre projet<span className="text-[#D4AF37]">.</span>
+            {t[language].contactPageTitle}
           </h1>
           <p className="text-slate-500 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-            Une question, une idée, un projet ? Nous sommes à votre écoute.
+            {t[language].contactPageSubtitle}
           </p>
         </div>
 
@@ -78,7 +97,7 @@ export default function ContactPage() {
             <div className="flex items-start space-x-4">
               <Mail size={24} className="text-[#D4AF37] flex-shrink-0" />
               <div>
-                <h3 className="font-bold text-lg">Email</h3>
+                <h3 className="font-bold text-lg">{t[language].contactEmailLabel}</h3>
                 <a href="mailto:contact@actoos.com" className="text-slate-600 hover:text-[#D4AF37] transition-colors">
                   contact@actoos.com
                 </a>
@@ -88,16 +107,37 @@ export default function ContactPage() {
 
           {sent ? (
             <div className="bg-green-50 rounded-2xl p-8 text-center">
-              <h3 className="font-bold text-xl mb-2">Message envoyé !</h3>
-              <p className="text-slate-600">Nous vous répondrons dans les 24h.</p>
+              <h3 className="font-bold text-xl mb-2">{t[language].contactSuccessTitle}</h3>
+              <p className="text-slate-600">{t[language].contactSuccessMessage}</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <input type="text" name="name" placeholder="Votre nom" required className="w-full border rounded-xl px-4 py-3 text-sm" />
-              <input type="email" name="email" placeholder="Votre email" required className="w-full border rounded-xl px-4 py-3 text-sm" />
-              <textarea name="message" placeholder="Votre message" rows={5} required className="w-full border rounded-xl px-4 py-3 text-sm" />
-              <button type="submit" className="w-full bg-slate-950 text-white py-3 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-[#D4AF37] transition-all">
-                Envoyer
+              <input
+                type="text"
+                name="name"
+                placeholder={t[language].contactPlaceholderName}
+                required
+                className="w-full border rounded-xl px-4 py-3 text-sm"
+              />
+              <input
+                type="email"
+                name="email"
+                placeholder={t[language].contactPlaceholderEmail}
+                required
+                className="w-full border rounded-xl px-4 py-3 text-sm"
+              />
+              <textarea
+                name="message"
+                placeholder={t[language].contactPlaceholderMessage}
+                rows={5}
+                required
+                className="w-full border rounded-xl px-4 py-3 text-sm"
+              />
+              <button
+                type="submit"
+                className="w-full bg-slate-950 text-white py-3 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-[#D4AF37] transition-all"
+              >
+                {t[language].contactSendButton}
               </button>
             </form>
           )}

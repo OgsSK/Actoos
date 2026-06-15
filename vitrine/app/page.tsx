@@ -6,9 +6,12 @@ import {
 } from 'lucide-react';
 import ProjectChatBot from './components/ProjectChatBot';
 import FadeInSection from './components/FadeInSection';
+import { useLanguage } from './context/LanguageContext';
+import { t } from '../lib/translations'; // 👈 ajout de l'import des traductions
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { language, setLanguage } = useLanguage();
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-amber-50">
@@ -32,12 +35,25 @@ export default function HomePage() {
             </div>
           </div>
           
+          {/* Desktop menu avec sélecteur de langue */}
           <div className="hidden md:flex items-center space-x-10 text-[11px] font-black uppercase tracking-widest text-slate-400">
-            <a href="/produits" className="hover:text-black transition-colors">Produits</a>
-            <a href="/expertise" className="hover:text-black transition-colors">Expertise</a>
-            <a href="/a-propos" className="hover:text-black transition-colors">À propos</a>
-            <a href="/philosophie" className="hover:text-black transition-colors">Philosophie</a>
-            <a href="#chatbot" className="hover:text-black transition-colors">Concevoir votre projet</a>
+            <button
+              onClick={() => setLanguage('fr')}
+              className={`${language === 'fr' ? 'text-slate-900 underline' : 'hover:text-black'}`}
+            >
+              FR
+            </button>
+            <button
+              onClick={() => setLanguage('en')}
+              className={`${language === 'en' ? 'text-slate-900 underline' : 'hover:text-black'}`}
+            >
+              EN
+            </button>
+            <a href="/produits" className="hover:text-black transition-colors">{t[language].navProducts}</a>
+            <a href="/expertise" className="hover:text-black transition-colors">{t[language].navExpertise}</a>
+            <a href="/a-propos" className="hover:text-black transition-colors">{t[language].navAbout}</a>
+            <a href="/philosophie" className="hover:text-black transition-colors">{t[language].navPhilosophy}</a>
+            <a href="#chatbot" className="hover:text-black transition-colors">{t[language].navProject}</a>
           </div>
 
           <button 
@@ -49,13 +65,28 @@ export default function HomePage() {
           </button>
         </div>
 
+        {/* Mobile menu avec sélecteur de langue */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-slate-100 px-6 py-4 space-y-4">
-            <a href="/produits" className="block text-sm font-bold text-slate-600 hover:text-black">Produits</a>
-            <a href="/expertise" className="block text-sm font-bold text-slate-600 hover:text-black">Expertise</a>
-            <a href="/a-propos" className="block text-sm font-bold text-slate-600 hover:text-black">À propos</a>
-            <a href="/philosophie" className="block text-sm font-bold text-slate-600 hover:text-black">Philosophie</a>
-            <a href="#chatbot" className="block text-sm font-bold text-slate-600 hover:text-black">Concevoir votre projet</a>
+            <div className="flex items-center space-x-6 text-sm font-black uppercase">
+              <button
+                onClick={() => setLanguage('fr')}
+                className={`${language === 'fr' ? 'text-slate-900 underline' : 'text-slate-400 hover:text-black'}`}
+              >
+                FR
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={`${language === 'en' ? 'text-slate-900 underline' : 'text-slate-400 hover:text-black'}`}
+              >
+                EN
+              </button>
+            </div>
+            <a href="/produits" className="block text-sm font-bold text-slate-600 hover:text-black">{t[language].navProducts}</a>
+            <a href="/expertise" className="block text-sm font-bold text-slate-600 hover:text-black">{t[language].navExpertise}</a>
+            <a href="/a-propos" className="block text-sm font-bold text-slate-600 hover:text-black">{t[language].navAbout}</a>
+            <a href="/philosophie" className="block text-sm font-bold text-slate-600 hover:text-black">{t[language].navPhilosophy}</a>
+            <a href="#chatbot" className="block text-sm font-bold text-slate-600 hover:text-black">{t[language].navProject}</a>
           </div>
         )}
       </nav>
@@ -66,19 +97,19 @@ export default function HomePage() {
           <div className="inline-flex items-center space-x-2 bg-slate-50 px-5 py-2.5 rounded-full border border-slate-100 mb-8 md:mb-10">
             <Layers size={14} className="text-[#D4AF37]" />
             <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-              Créateur de solutions logicielles
+              {t[language].heroTag}
             </span>
           </div>
           
           <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tighter leading-[0.9] mb-8 md:mb-12 text-slate-950">
-            Vos idées<br/>
+            {t[language].heroTitleLine1}<br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#F5D78E] to-[#D4AF37] italic">
-               prennent forme.
+               {t[language].heroTitleLine2}
             </span>
           </h1>
           
           <p className="text-lg md:text-xl lg:text-2xl text-slate-400 font-medium max-w-3xl leading-relaxed px-4">
-            Actoos conçoit et développe des logiciels sur mesure – applications mobiles, tableaux de bord, plateformes de gestion… De l’idée au produit fini, nous façonnons des solutions numériques puissantes, prêtes à être déployées.
+            {t[language].heroDescription}
           </p>
 
           <div className="mt-12 md:mt-16 flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0">
@@ -86,13 +117,13 @@ export default function HomePage() {
               href="/expertise"
               className="bg-slate-950 text-white px-8 md:px-10 py-4 md:py-5 rounded-2xl font-black uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-2xl text-center"
             >
-              Notre expertise
+              {t[language].heroButtonExpertise}
             </a>
             <a 
               href="#chatbot"
               className="bg-white text-slate-950 border-2 border-slate-100 px-8 md:px-10 py-4 md:py-5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition-all text-center"
             >
-              Parlez-nous de votre projet
+              {t[language].heroButtonProject}
             </a>
           </div>
         </header>
@@ -103,10 +134,10 @@ export default function HomePage() {
         <section id="chatbot" className="py-16 px-4 bg-slate-50 scroll-mt-[100px]">
           <div className="max-w-4xl mx-auto text-center mb-8">
             <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-950 mb-4">
-              Votre logiciel sur mesure commence ici.
+              {t[language].chatbotTitle}
             </h2>
             <p className="text-slate-500 text-lg">
-              Décrivez votre projet, notre IA vous répond avec une proposition concrète.
+              {t[language].chatbotSubtitle}
             </p>
           </div>
           <ProjectChatBot />
@@ -119,15 +150,13 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-4 block">
-                Ce que nous faisons
+                {t[language].expertiseTag}
               </span>
               <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-slate-950 mb-6">
-                Des solutions logicielles<br/>conçues pour durer.
+                {t[language].expertiseTitleLine1}<br/>{t[language].expertiseTitleLine2}
               </h2>
               <p className="text-slate-500 text-base md:text-xl max-w-3xl mx-auto leading-relaxed">
-                Nous maîtrisons tout le cycle de vie d'un logiciel : conception, développement, 
-                maintenance. De l'application mobile grand public à la plateforme métier complexe, 
-                nous créons des outils fiables, évolutifs et sécurisés.
+                {t[language].expertiseDescription}
               </p>
             </div>
 
@@ -137,11 +166,10 @@ export default function HomePage() {
                   <Smartphone size={24} className="text-slate-900" />
                 </div>
                 <h3 className="text-xl font-black italic tracking-tighter text-slate-950 mb-3">
-                  Applications mobiles
+                  {t[language].expertiseMobileTitle}
                 </h3>
                 <p className="text-slate-500 text-sm leading-relaxed">
-                  Des apps iOS et Android performantes, avec ou sans mode hors-ligne, 
-                  pour vos clients, vos équipes terrain ou vos partenaires.
+                  {t[language].expertiseMobileDesc}
                 </p>
               </div>
 
@@ -150,11 +178,10 @@ export default function HomePage() {
                   <Globe size={24} className="text-white" />
                 </div>
                 <h3 className="text-xl font-black italic tracking-tighter text-slate-950 mb-3">
-                  Plateformes web
+                  {t[language].expertiseWebTitle}
                 </h3>
                 <p className="text-slate-500 text-sm leading-relaxed">
-                  Dashboards, back-offices, portails clients… Des interfaces complètes 
-                  et intuitives pour piloter votre activité en temps réel.
+                  {t[language].expertiseWebDesc}
                 </p>
               </div>
 
@@ -163,24 +190,23 @@ export default function HomePage() {
                   <Code size={24} className="text-white" />
                 </div>
                 <h3 className="text-xl font-black italic tracking-tighter text-slate-950 mb-3">
-                  Logiciels sur mesure
+                  {t[language].expertiseCustomTitle}
                 </h3>
                 <p className="text-slate-500 text-sm leading-relaxed">
-                  Vous avez un besoin unique ? Nous créons un logiciel entièrement 
-                  personnalisé, adapté à vos processus et à votre secteur d'activité.
+                  {t[language].expertiseCustomDesc}
                 </p>
               </div>
             </div>
 
             <div className="mt-12 text-center">
               <p className="text-sm text-slate-400 mb-4">
-                Un exemple concret ? Découvrez notre logiciel de gestion d'interventions terrain, déjà utilisé par des entreprises.
+                {t[language].expertiseExample}
               </p>
               <a
                 href="/produits"
                 className="inline-flex items-center space-x-2 text-[#10B981] font-bold text-sm hover:underline"
               >
-                <span>Découvrir</span>
+                <span>{t[language].expertiseDiscover}</span>
                 <ArrowRight size={14} />
               </a>
             </div>
@@ -195,37 +221,35 @@ export default function HomePage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20 items-center">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-4 block">
-                  Notre philosophie
+                  {t[language].philosophyTag}
                 </span>
                 <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-slate-950 mb-6">
-                  Le logiciel doit<br/>
+                  {t[language].philosophyTitleLine1}<br/>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#F5D78E]">
-                    servir votre métier,
+                    {t[language].philosophyTitleHighlight}
                   </span>
-                  <br/>pas l'inverse.
+                  <br/>{t[language].philosophyTitleLine2}
                 </h2>
                 <p className="text-slate-500 text-base md:text-lg leading-relaxed mb-8">
-                  Trop de solutions vous imposent de changer votre façon de travailler. 
-                  Nous faisons le contraire : nous comprenons votre activité et concevons 
-                  un outil qui s'y adapte parfaitement. Simple, efficace, et conçu pour durer.
+                  {t[language].philosophyDescription}
                 </p>
                 <div className="space-y-4">
                   <div className="flex items-start space-x-4">
                     <div className="w-2 h-2 bg-[#D4AF37] rounded-full mt-2 flex-shrink-0" />
                     <p className="text-slate-600 text-sm md:text-base">
-                      <strong className="text-slate-900">Sur mesure</strong> — Chaque solution est unique, développée pour vos besoins spécifiques.
+                      <strong className="text-slate-900">{t[language].philosophyPoint1Title}</strong> — {t[language].philosophyPoint1Desc}
                     </p>
                   </div>
                   <div className="flex items-start space-x-4">
                     <div className="w-2 h-2 bg-[#10B981] rounded-full mt-2 flex-shrink-0" />
                     <p className="text-slate-600 text-sm md:text-base">
-                      <strong className="text-slate-900">Accompagnement</strong> — De la conception à la maintenance, nous restons à vos côtés.
+                      <strong className="text-slate-900">{t[language].philosophyPoint2Title}</strong> — {t[language].philosophyPoint2Desc}
                     </p>
                   </div>
                   <div className="flex items-start space-x-4">
                     <div className="w-2 h-2 bg-slate-400 rounded-full mt-2 flex-shrink-0" />
                     <p className="text-slate-600 text-sm md:text-base">
-                      <strong className="text-slate-900">Évolutivité</strong> — Votre logiciel grandit avec votre entreprise, sans refonte.
+                      <strong className="text-slate-900">{t[language].philosophyPoint3Title}</strong> — {t[language].philosophyPoint3Desc}
                     </p>
                   </div>
                 </div>
@@ -249,19 +273,19 @@ export default function HomePage() {
         <section className="py-16 md:py-24 px-6 bg-white">
           <div className="max-w-4xl mx-auto text-center">
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-4 block">
-              Contact
+              {t[language].contactTag}
             </span>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-slate-950 mb-6">
-              Prêt à démarrer votre projet ?
+              {t[language].contactTitle}
             </h2>
             <p className="text-slate-500 text-base md:text-lg mb-10 max-w-2xl mx-auto">
-              Discutons de vos besoins et voyons comment Actoos peut vous aider à concrétiser votre vision.
+              {t[language].contactDescription}
             </p>
             <a 
              href="/contact"
             className="inline-flex items-center space-x-3 bg-slate-950 text-white px-10 py-5 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-[#D4AF37] transition-all shadow-2xl"
             >
-              <span>Nous contacter</span>
+              <span>{t[language].contactButton}</span>
               <ArrowRight size={18} />
             </a>
           </div>
@@ -284,52 +308,51 @@ export default function HomePage() {
                 </span>
               </div>
               <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-sm">
-                Créateur de logiciels sur mesure pour les entreprises et les entrepreneurs.
-                Nous transformons vos idées en solutions numériques performantes.
+                {t[language].footerDescription}
               </p>
             </div>
             <div>
               <h5 className="font-black uppercase tracking-[0.2em] text-[10px] text-slate-950 mb-6 md:mb-8">
-                Navigation
+                {t[language].footerNavTitle}
               </h5>
               <ul className="space-y-3 md:space-y-4 text-sm font-bold text-slate-500">
                 <li>
                   <a href="/expertise" className="hover:text-black transition-colors">
-                    Expertise
+                    {t[language].navExpertise}
                   </a>
                 </li>
                 <li>
                   <a href="/philosophie" className="hover:text-black transition-colors">
-                    Philosophie
+                    {t[language].navPhilosophy}
                   </a>
                 </li>
                 <li>
                   <a href="/contact" className="hover:text-black transition-colors">
-                    Contact
+                    {t[language].navContact}
                   </a>
                 </li>
               </ul>
             </div>
             <div>
               <h5 className="font-black uppercase tracking-[0.2em] text-[10px] text-slate-950 mb-6 md:mb-8">
-                Légal
+                {t[language].footerLegalTitle}
               </h5>
               <ul className="space-y-3 md:space-y-4 text-sm font-bold text-slate-400">
                 <li>
                   <a href="/privacy" className="hover:text-black transition-colors">
-                    Confidentialité
+                    {t[language].footerPrivacy}
                   </a>
                 </li>
                 <li>
                   <a href="/legal" className="hover:text-black transition-colors">
-                    Mentions légales
+                    {t[language].footerLegal}
                   </a>
                 </li>
               </ul>
             </div>
           </div>
           <div className="max-w-7xl mx-auto mt-16 md:mt-20 pt-8 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-300">
-            <p>© Actoos Group. Tous droits réservés.</p>
+            <p>{t[language].footerCopy}</p>
           </div>
         </footer>
       </FadeInSection>

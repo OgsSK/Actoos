@@ -6,6 +6,8 @@ import {
   Sparkles, Layout, Lightbulb, FileText, PanelRightClose,
   PanelLeftClose, Menu, X,
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { t } from '../../lib/translations';
 
 // ----- Types -----
 interface Message {
@@ -43,13 +45,10 @@ function renderMessageContent(text: string) {
   if (text.includes('<a href=')) {
     return <span dangerouslySetInnerHTML={{ __html: text }} />;
   }
-
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
   const matches = text.match(urlRegex) || [];
-
   if (matches.length === 0) return <span>{text}</span>;
-
   const elements: React.ReactNode[] = [];
   parts.forEach((part, i) => {
     if (part) elements.push(<span key={`t-${i}`}>{part}</span>);
@@ -97,18 +96,13 @@ const saveMessages = (msgs: Message[]) => {
   }
 };
 
-const initialAssistantMessage: Message = {
-  id: 'initial-message',
-  role: 'assistant',
-  content:
-    "Bonjour ! Je suis l'Agent Actoos. Décrivez votre projet en une phrase, je vous aide à le structurer et à l'affiner.",
-};
-
 const stepOrder = ['decrire', 'ajuster', 'soumettre'] as const;
 type Step = (typeof stepOrder)[number];
 
 // ----- Composant -----
 export default function ProjectChatBot() {
+  const { language } = useLanguage();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -143,12 +137,12 @@ export default function ProjectChatBot() {
   }, []);
 
   const resetConversation = () => {
+    const welcomeText = t[language]?.chatWelcome || "Bonjour ! Je suis l'Agent Actoos. Décrivez votre projet...";
     const fresh = [
       {
         id: generateId(),
         role: 'assistant' as const,
-        content:
-          "Bonjour ! Je suis l'Agent Actoos. Décrivez votre projet en une phrase, je vous aide à le structurer et à l'affiner.",
+        content: welcomeText,
       },
     ];
     setMessages(fresh);
@@ -181,7 +175,7 @@ export default function ProjectChatBot() {
     }
   }, [loading]);
 
-  // Chargement initial
+  // Chargement initial avec message traduit
   useEffect(() => {
     const saved = loadMessages();
     if (saved.length > 0) {
@@ -192,9 +186,10 @@ export default function ProjectChatBot() {
         setStep(saved.some((m) => m.content.includes('transmis')) ? 'soumettre' : 'ajuster');
       }
     } else {
-      setMessages([initialAssistantMessage]);
+      const welcomeText = t[language]?.chatWelcome || "Bonjour ! Je suis l'Agent Actoos. Décrivez votre projet...";
+      setMessages([{ id: generateId(), role: 'assistant', content: welcomeText }]);
     }
-  }, []);
+  }, [language]); // 👈 ajout de `language` en dépendance
 
   // Sauvegarde automatique
   useEffect(() => {
@@ -205,13 +200,12 @@ export default function ProjectChatBot() {
     if (!currentBrief) return [];
     const entries: Array<{ label: string; value: string | JSX.Element }> = [];
     const ignoreKeys = new Set(['projectName', 'features', 'pages', 'roles', 'modules', 'integrations', 'constraints', 'stack']);
-
     for (const [key, val] of Object.entries(currentBrief)) {
       if (ignoreKeys.has(key)) continue;
       if (val === undefined || val === null) continue;
       if (key === 'maturityScore' || key === 'priorityScore') {
         entries.push({
-          label: key === 'maturityScore' ? 'Maturité' : 'Urgence',
+          label: key === 'maturityScore' ? (t[language].maturity || 'Maturité') : (t[language].urgency || 'Urgence'),
           value: (
             <div className="flex items-center gap-2">
               <div className="flex-1 h-2 bg-slate-200 rounded-full">
@@ -228,7 +222,7 @@ export default function ProjectChatBot() {
       }
     }
     return entries;
-  }, [currentBrief]);
+  }, [currentBrief, language]);
 
   // ----- Envoi / discussion -----
   const handleSend = async (content?: string) => {
@@ -237,7 +231,6 @@ export default function ProjectChatBot() {
 
     const userMsg: Message = { id: generateId(), role: 'user', content: messageContent };
     setInput('');
-
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setLoading(true);
@@ -250,6 +243,7 @@ export default function ProjectChatBot() {
           action: 'chat',
           role: 'analyst',
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          language,
         }),
       });
 
@@ -278,18 +272,15 @@ export default function ProjectChatBot() {
       };
 
       const rawResponse = data.response || '';
-
       const briefing = tryParseBriefing(rawResponse);
       if (briefing) {
         handleBriefingResponse(briefing);
         return;
       }
-
       if (data.briefing) {
         handleBriefingResponse(data);
         return;
       }
-
       if (rawResponse && !rawResponse.startsWith('{')) {
         setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: rawResponse }]);
       }
@@ -308,7 +299,7 @@ export default function ProjectChatBot() {
     const assistantMsg: Message = {
       id: generateId(),
       role: 'assistant',
-      content: "Voici le cadrage de votre projet. Vous pouvez l'ajuster ou cliquer sur les suggestions ci-dessous.",
+      content: language === 'en' ? "Here is your project brief. You can adjust it or click on the suggestions below." : "Voici le cadrage de votre projet. Vous pouvez l'ajuster ou cliquer sur les suggestions ci-dessous.",
       type: 'briefing',
       briefing: brief,
       suggestions: data.suggestions || [],
@@ -322,7 +313,7 @@ export default function ProjectChatBot() {
         {
           id: generateId(),
           role: 'assistant',
-          content: '💡 Suggestions :',
+          content: language === 'en' ? '💡 Suggestions:' : '💡 Suggestions :',
           type: 'suggestions',
           suggestions: data.suggestions,
         },
@@ -344,6 +335,7 @@ export default function ProjectChatBot() {
           currentBrief,
           modification: suggestion,
           messages: messages.map((m) => ({ role: m.role, content: m.content })),
+          language,
         }),
       });
 
@@ -405,6 +397,7 @@ export default function ProjectChatBot() {
           action: 'chat',
           role: 'analyst',
           messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
+          language,
         }),
       });
       const data = await res.json();
@@ -483,38 +476,38 @@ export default function ProjectChatBot() {
       const html = `
         <div style="font-family: 'Inter', Arial, sans-serif; max-width: 650px; margin: 0 auto; color: #1f2937; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
           <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 32px 24px; text-align: center;">
-            <h1 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;">✨ Nouveau projet</h1>
-            <p style="color: #475569; margin: 8px 0 0; font-size: 14px;">Soumis depuis l'Agent Actoos</p>
+            <h1 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;">✨ ${language === 'en' ? 'New project' : 'Nouveau projet'}</h1>
+            <p style="color: #475569; margin: 8px 0 0; font-size: 14px;">${language === 'en' ? 'Submitted from Agent Actoos' : "Soumis depuis l'Agent Actoos"}</p>
           </div>
           <div style="padding: 24px;">
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-              <tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b; width: 120px;">Client</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.name}</td></tr>
+              <tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b; width: 120px;">${language === 'en' ? 'Client' : 'Client'}</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.name}</td></tr>
               <tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b;">Email</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.email}</td></tr>
-              ${submitForm.message ? `<tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b;">Message</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.message}</td></tr>` : ''}
+              ${submitForm.message ? `<tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Message' : 'Message'}</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.message}</td></tr>` : ''}
             </table>
             ${currentBrief ? `
             <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
               <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">📋</span> Brief structuré
+                <span style="font-size: 20px;">📋</span> ${language === 'en' ? 'Structured Brief' : 'Brief structuré'}
               </h2>
               <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b; width: 130px;">Nom du projet</td><td style="padding: 6px 8px; color: #0f172a; font-weight: 600;">${currentBrief.projectName || 'N/A'}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Objectif</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.objective || 'N/A'}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b; width: 130px;">${language === 'en' ? 'Project name' : 'Nom du projet'}</td><td style="padding: 6px 8px; color: #0f172a; font-weight: 600;">${currentBrief.projectName || 'N/A'}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Objective' : 'Objectif'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.objective || 'N/A'}</td></tr>
                 <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Type</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.type}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Complexité</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.complexity}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Fonctionnalités</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.features.join(', ')}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Pages</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.pages.join(', ')}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Rôles</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.roles.join(', ')}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Modules</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.modules?.join(', ') || 'N/A'}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Complexity' : 'Complexité'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.complexity}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Features' : 'Fonctionnalités'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.features.join(', ')}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Pages' : 'Pages'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.pages.join(', ')}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Roles' : 'Rôles'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.roles.join(', ')}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Modules' : 'Modules'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.modules?.join(', ') || 'N/A'}</td></tr>
                 <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Architecture</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.architecture}</td></tr>
                 <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Stack</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.stack?.join(', ') || 'N/A'}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Priorité</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.priority || 'Standard'}</td></tr>
+                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Priority' : 'Priorité'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.priority || 'Standard'}</td></tr>
               </table>
             </div>
             ` : ''}
             <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
               <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">💬</span> Conversation
+                <span style="font-size: 20px;">💬</span> ${language === 'en' ? 'Conversation' : 'Conversation'}
               </h2>
               ${messages
                 .map(
@@ -529,7 +522,7 @@ export default function ProjectChatBot() {
             </div>
           </div>
           <div style="background: #f1f5f9; padding: 16px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
-            <p style="color: #64748b; font-size: 12px; margin: 0;">Envoyé depuis la vitrine Actoos • <a href="https://actoos.com" style="color: #D4AF37;">actoos.com</a></p>
+            <p style="color: #64748b; font-size: 12px; margin: 0;">${language === 'en' ? 'Sent from Actoos showcase' : 'Envoyé depuis la vitrine Actoos'} • <a href="https://actoos.com" style="color: #D4AF37;">actoos.com</a></p>
           </div>
         </div>
       `;
@@ -558,19 +551,19 @@ export default function ProjectChatBot() {
             html: `
 <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1f2937;">
   <div style="background: linear-gradient(135deg, #D4AF37 0%, #F5D78E 100%); padding: 24px; text-align: center; border-radius: 16px 16px 0 0;">
-    <h1 style="color: #0f172a; margin: 0; font-size: 20px;">✨ Projet bien reçu !</h1>
+    <h1 style="color: #0f172a; margin: 0; font-size: 20px;">✨ ${language === 'en' ? 'Project received!' : 'Projet bien reçu !'}</h1>
   </div>
   <div style="padding: 24px; background: #ffffff; border-radius: 0 0 16px 16px; border: 1px solid #e5e7eb;">
-    <p>Bonjour ${submitForm.name},</p>
-    <p>Nous avons bien reçu votre projet <strong>${currentBrief?.projectName || 'votre projet'}</strong>.</p>
-    <p>Notre équipe l'étudie avec attention et reviendra vers vous sous <strong>24h ouvrées</strong>.</p>
-    <p>🔗 Suivez l'avancement de votre projet ici :<br>
+    <p>${language === 'en' ? 'Hello' : 'Bonjour'} ${submitForm.name},</p>
+    <p>${language === 'en' ? 'We have received your project' : 'Nous avons bien reçu votre projet'} <strong>${currentBrief?.projectName || (language === 'en' ? 'your project' : 'votre projet')}</strong>.</p>
+    <p>${language === 'en' ? 'Our team will review it and get back to you within' : "Notre équipe l'étudie avec attention et reviendra vers vous sous"} <strong>${language === 'en' ? '24 business hours' : '24h ouvrées'}</strong>.</p>
+    <p>🔗 ${language === 'en' ? 'Track your project progress here:' : "Suivez l'avancement de votre projet ici :"}<br>
      <a href="https://actoos.com/client/${clientToken}" style="color: #D4AF37; font-weight: bold;">https://actoos.com/client/${clientToken}</a>
     </p>
-    <p>En attendant, vous pouvez nous contacter à tout moment :</p>
+    <p>${language === 'en' ? 'You can contact us anytime:' : 'En attendant, vous pouvez nous contacter à tout moment :'}</p>
     <p>📧 <a href="mailto:contact@actoos.com" style="color: #D4AF37;">contact@actoos.com</a></p>
-    <p>À très bientôt,</p>
-    <p><strong>L'équipe Actoos</strong></p>
+    <p>${language === 'en' ? 'Best regards' : 'À très bientôt'},</p>
+    <p><strong>${language === 'en' ? 'The Actoos team' : "L'équipe Actoos"}</strong></p>
   </div>
 </div>
 `,
@@ -583,12 +576,12 @@ export default function ProjectChatBot() {
           {
             id: generateId(),
             role: 'assistant',
-            content: `✅ Votre projet a été transmis à l'équipe Actoos. Vous recevrez une réponse sous 24h.<br/><br/>🔗 <a href="https://actoos.com/client/${clientToken}" target="_blank" class="text-blue-500 underline">Suivez l'avancement ici</a>`,
+            content: `✅ ${language === 'en' ? 'Your project has been submitted. You will receive a response within 24 hours.' : 'Votre projet a été transmis à l\'équipe Actoos. Vous recevrez une réponse sous 24h.'}<br/><br/>🔗 <a href="https://actoos.com/client/${clientToken}" target="_blank" class="text-blue-500 underline">${language === 'en' ? 'Track progress here' : "Suivez l'avancement ici"}</a>`,
           },
         ]);
         setStep('soumettre');
       } else {
-        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: "Erreur lors de l'envoi. Veuillez réessayer." }]);
+        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: language === 'en' ? 'Error sending. Please try again.' : "Erreur lors de l'envoi. Veuillez réessayer." }]);
       }
     } catch {
       setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
@@ -612,8 +605,8 @@ export default function ProjectChatBot() {
                   <Sparkles size={18} />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-bold text-slate-900 text-sm sm:text-base truncate">Agent Actoos</div>
-                  <div className="text-[11px] sm:text-xs text-slate-500 truncate">Structuration de projet guidée</div>
+                  <div className="font-bold text-slate-900 text-sm sm:text-base truncate">{t[language].chatTitle}</div>
+                  <div className="text-[11px] sm:text-xs text-slate-500 truncate">{t[language].chatSubtitle}</div>
                 </div>
               </div>
 
@@ -622,7 +615,7 @@ export default function ProjectChatBot() {
                   <button
                     onClick={() => setShowBriefPanel((v) => !v)}
                     className="lg:hidden px-3 py-2 rounded-xl text-xs font-bold bg-[#D4AF37]/10 text-[#D4AF37] hover:bg-[#D4AF37]/20 transition-colors flex items-center gap-1"
-                    title="Afficher le brief"
+                    title={language === 'en' ? 'Show brief' : 'Afficher le brief'}
                   >
                     {showBriefPanel ? <X size={14} /> : <Menu size={14} />}
                     Brief
@@ -632,7 +625,7 @@ export default function ProjectChatBot() {
                   <button
                     onClick={() => setShowBriefPanel(true)}
                     className="hidden lg:flex px-3 py-2 rounded-xl text-xs font-bold bg-[#D4AF37]/10 text-[#D4AF37] hover:bg-[#D4AF37]/20 transition-colors items-center gap-1"
-                    title="Afficher le brief"
+                    title={language === 'en' ? 'Show brief' : 'Afficher le brief'}
                   >
                     <Sparkles size={14} /> Brief
                   </button>
@@ -641,7 +634,7 @@ export default function ProjectChatBot() {
                   onClick={resetConversation}
                   className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
                 >
-                  Nouveau
+                  {t[language].newProject}
                 </button>
               </div>
             </div>
@@ -649,7 +642,7 @@ export default function ProjectChatBot() {
             {/* Étapes */}
             <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2 overflow-x-auto border-b border-slate-200/40 bg-white/20">
               <div className="flex items-center gap-2 sm:gap-4 min-w-max sm:min-w-0 sm:justify-center">
-                {['Décrire', 'Ajuster', 'Soumettre'].map((label, i) => {
+                {[t[language].stepDescribe, t[language].stepAdjust, t[language].stepSubmit].map((label, i) => {
                   const active = currentStepIndex === i;
                   const done = currentStepIndex > i;
                   return (
@@ -691,10 +684,10 @@ export default function ProjectChatBot() {
                         />
                         <div className="flex justify-end gap-2">
                           <button onClick={cancelEdit} className="text-xs text-slate-500">
-                            Annuler
+                            {language === 'en' ? 'Cancel' : 'Annuler'}
                           </button>
                           <button onClick={saveEdit} disabled={!editContent.trim()} className="text-xs bg-[#D4AF37] text-white px-3 py-1 rounded-full disabled:opacity-50">
-                            Modifier
+                            {language === 'en' ? 'Edit' : 'Modifier'}
                           </button>
                         </div>
                       </div>
@@ -702,14 +695,14 @@ export default function ProjectChatBot() {
                       <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#D4AF37]/30 shadow-lg shadow-amber-500/5">
                         <div className="flex items-center gap-2 mb-3">
                           <Layout size={18} className="text-[#D4AF37] shrink-0" />
-                          <h3 className="font-bold text-slate-900 text-sm sm:text-base truncate">{msg.briefing.projectName || 'Cadrage du projet'}</h3>
+                          <h3 className="font-bold text-slate-900 text-sm sm:text-base truncate">{msg.briefing.projectName || (language === 'en' ? 'Project Brief' : 'Cadrage du projet')}</h3>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                          <div><span className="text-slate-400">Type :</span> <strong className="block sm:inline">{msg.briefing.type}</strong></div>
-                          <div><span className="text-slate-400">Complexité :</span> <strong className="block sm:inline">{msg.briefing.complexity}</strong></div>
-                          <div className="sm:col-span-2"><span className="text-slate-400">Fonctionnalités :</span> <strong className="block sm:inline break-words">{msg.briefing.features.join(', ')}</strong></div>
-                          <div className="sm:col-span-2"><span className="text-slate-400">Pages :</span> <strong className="block sm:inline break-words">{msg.briefing.pages.join(', ')}</strong></div>
-                          <div className="sm:col-span-2"><span className="text-slate-400">Architecture :</span> <strong className="block sm:inline break-words">{msg.briefing.architecture}</strong></div>
+                          <div><span className="text-slate-400">{language === 'en' ? 'Type:' : 'Type :'}</span> <strong className="block sm:inline">{msg.briefing.type}</strong></div>
+                          <div><span className="text-slate-400">{language === 'en' ? 'Complexity:' : 'Complexité :'}</span> <strong className="block sm:inline">{msg.briefing.complexity}</strong></div>
+                          <div className="sm:col-span-2"><span className="text-slate-400">{language === 'en' ? 'Features:' : 'Fonctionnalités :'}</span> <strong className="block sm:inline break-words">{msg.briefing.features.join(', ')}</strong></div>
+                          <div className="sm:col-span-2"><span className="text-slate-400">{language === 'en' ? 'Pages:' : 'Pages :'}</span> <strong className="block sm:inline break-words">{msg.briefing.pages.join(', ')}</strong></div>
+                          <div className="sm:col-span-2"><span className="text-slate-400">{language === 'en' ? 'Architecture:' : 'Architecture :'}</span> <strong className="block sm:inline break-words">{msg.briefing.architecture}</strong></div>
                         </div>
                       </div>
                     ) : msg.type === 'suggestions' && msg.suggestions ? (
@@ -742,7 +735,7 @@ export default function ProjectChatBot() {
                         <button
                           onClick={() => handleCopy(msg.content, msg.id)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 bg-white shadow-sm"
-                          title="Copier"
+                          title={language === 'en' ? 'Copy' : 'Copier'}
                         >
                           {copiedId === msg.id ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
                         </button>
@@ -750,7 +743,7 @@ export default function ProjectChatBot() {
                           <button
                             onClick={() => handleEdit(msg)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 bg-white shadow-sm"
-                            title="Modifier"
+                            title={language === 'en' ? 'Edit' : 'Modifier'}
                           >
                             <Edit3 size={12} />
                           </button>
@@ -781,7 +774,7 @@ export default function ProjectChatBot() {
                     className="w-full sm:w-auto px-5 sm:px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white rounded-3xl font-bold text-sm shadow-lg shadow-amber-500/20 hover:scale-[1.02] transition-all inline-flex items-center justify-center gap-2"
                   >
                     <FileText size={16} />
-                    <span>Valider et transmettre à Actoos</span>
+                    <span>{t[language].chatValidate}</span>
                   </button>
                 </div>
               )}
@@ -790,7 +783,7 @@ export default function ProjectChatBot() {
               {showSubmitForm && (
                 <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-xl shadow-slate-500/5 space-y-3">
                   <div className="flex items-center justify-between gap-3">
-                    <h4 className="font-bold text-sm text-slate-800">Finaliser la transmission</h4>
+                    <h4 className="font-bold text-sm text-slate-800">{t[language].chatFinalize}</h4>
                     <button onClick={() => setShowSubmitForm(false)} className="text-slate-400 hover:text-slate-600 lg:hidden">
                       <PanelLeftClose size={16} />
                     </button>
@@ -799,7 +792,7 @@ export default function ProjectChatBot() {
                   <form onSubmit={handleSubmitProject} className="space-y-3">
                     <input
                       name="name"
-                      placeholder="Nom *"
+                      placeholder={t[language].chatPlaceholderName}
                       className="w-full border border-slate-200 rounded-3xl px-3 py-3 text-sm outline-none focus:border-[#D4AF37]"
                       value={submitForm.name}
                       onChange={(e) => setSubmitForm({ ...submitForm, name: e.target.value })}
@@ -808,7 +801,7 @@ export default function ProjectChatBot() {
                     <input
                       name="email"
                       type="email"
-                      placeholder="Email *"
+                      placeholder={t[language].chatPlaceholderEmail}
                       className="w-full border border-slate-200 rounded-3xl px-3 py-3 text-sm outline-none focus:border-[#D4AF37]"
                       value={submitForm.email}
                       onChange={(e) => setSubmitForm({ ...submitForm, email: e.target.value })}
@@ -816,7 +809,7 @@ export default function ProjectChatBot() {
                     />
                     <textarea
                       name="message"
-                      placeholder="Message (optionnel)"
+                      placeholder={t[language].chatPlaceholderMessage}
                       className="w-full border border-slate-200 rounded-3xl px-3 py-3 text-sm outline-none focus:border-[#D4AF37] resize-none"
                       rows={3}
                       value={submitForm.message}
@@ -824,14 +817,14 @@ export default function ProjectChatBot() {
                     />
                     <div className="flex items-start gap-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-3xl">
                       <input type="checkbox" checked readOnly className="mt-1 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]" />
-                      <span>La conversation et le brief seront joints automatiquement.</span>
+                      <span>{t[language].chatAutoJoin}</span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <button type="submit" className="flex-1 bg-[#D4AF37] text-white py-3 rounded-3xl font-bold text-sm disabled:opacity-50">
-                        Soumettre
+                        {t[language].chatSubmit}
                       </button>
                       <button type="button" onClick={() => setShowSubmitForm(false)} className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-3xl font-bold text-sm">
-                        Annuler
+                        {t[language].chatCancel}
                       </button>
                     </div>
                   </form>
@@ -846,7 +839,7 @@ export default function ProjectChatBot() {
                     className="w-full sm:w-auto px-5 sm:px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-3xl font-bold text-sm shadow-lg shadow-green-500/20 hover:scale-[1.02] transition-all inline-flex items-center justify-center gap-2"
                   >
                     <Sparkles size={16} />
-                    <span>Démarrer un nouveau projet</span>
+                    <span>{t[language].chatNewProject}</span>
                   </button>
                 </div>
               )}
@@ -866,7 +859,7 @@ export default function ProjectChatBot() {
                       handleSend();
                     }
                   }}
-                  placeholder="Décrivez votre projet..."
+                  placeholder={t[language].chatPlaceholderInput}
                   className="flex-1 bg-white border border-slate-200 rounded-3xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 transition-all min-w-0 shadow-sm"
                   disabled={loading}
                 />
@@ -874,7 +867,7 @@ export default function ProjectChatBot() {
                   onClick={() => handleSend()}
                   disabled={loading || !input.trim()}
                   className="bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white p-3 rounded-3xl disabled:opacity-50 shrink-0 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all"
-                  aria-label="Envoyer"
+                  aria-label={language === 'en' ? 'Send' : 'Envoyer'}
                 >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                 </button>
@@ -888,7 +881,7 @@ export default function ProjectChatBot() {
               <div className="flex items-center justify-between gap-2">
                 <h3 className="font-bold text-slate-900 flex items-center gap-2 min-w-0">
                   <Sparkles size={16} className="text-[#D4AF37] shrink-0" />
-                  <span className="truncate">Brief vivant</span>
+                  <span className="truncate">{t[language].chatBriefPanel}</span>
                 </h3>
                 <button onClick={() => setShowBriefPanel(false)} className="text-slate-400 hover:text-slate-600 lg:hidden">
                   <X size={16} />
@@ -908,7 +901,7 @@ export default function ProjectChatBot() {
               </div>
 
               <div className="rounded-3xl bg-[#D4AF37]/10 p-4 text-sm text-slate-700 leading-relaxed">
-                Le brief reste modifiable pendant l'échange. Sur mobile, il se replie pour laisser la place au chat.
+                {t[language].chatBriefHelp}
               </div>
             </aside>
           )}

@@ -6,30 +6,43 @@ import {
   ArrowLeft, Calendar, DollarSign, MessageSquare, RefreshCw,
   Upload, FileText, Send, Download, Activity, Eye, Trash2, Edit3, X, Check
 } from 'lucide-react';
-
-const CALENDLY_URL = 'https://calendly.com/contact-actoos/30min';
+import { useLanguage } from '../../context/LanguageContext';
+import { t } from '../../../lib/translations';
+import BookingModal from '../../components/BookingModal';
 
 function normalizeStatus(value: string) {
   return (value || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/-+/g, '_');
 }
 
-const getClientStatus = (status: string) => {
+function getClientStatus(status: string, lang: string) {
   const normalized = normalizeStatus(status);
-  const map: Record<string, string> = {
-    nouveau: 'Nouveau', contacté: 'En discussion', devis_envoyé: 'Devis envoyé',
-    en_cours: 'En cours', gagné: 'Accepté', perdu: 'Refusé', livré: 'Livré', terminé: 'Terminé',
+  const labels: Record<string, Record<string, string>> = {
+    nouveau: { fr: 'Nouveau', en: 'New' },
+    contacté: { fr: 'En discussion', en: 'In discussion' },
+    devis_envoyé: { fr: 'Devis envoyé', en: 'Quote sent' },
+    en_cours: { fr: 'En cours', en: 'In progress' },
+    gagné: { fr: 'Accepté', en: 'Accepted' },
+    perdu: { fr: 'Refusé', en: 'Refused' },
+    livré: { fr: 'Livré', en: 'Delivered' },
+    terminé: { fr: 'Terminé', en: 'Completed' },
   };
-  return map[normalized] || 'En attente';
-};
+  return labels[normalized]?.[lang] || (lang === 'fr' ? 'En attente' : 'Pending');
+}
 
-const getClientPaymentStatus = (status: string) => {
+function getClientPaymentStatus(status: string, lang: string) {
   const normalized = normalizeStatus(status);
-  const map: Record<string, string> = {
-    aucun: 'Non payé', devis_envoyé: 'Devis envoyé', acompte_payé: 'Acompte payé',
-    partiel: 'Partiellement payé', complet: 'Payé', remboursé: 'Remboursé', litige: 'Litige', annulé: 'Annulé',
+  const labels: Record<string, Record<string, string>> = {
+    aucun: { fr: 'Non payé', en: 'Unpaid' },
+    devis_envoyé: { fr: 'Devis envoyé', en: 'Quote sent' },
+    acompte_payé: { fr: 'Acompte payé', en: 'Deposit paid' },
+    partiel: { fr: 'Partiellement payé', en: 'Partially paid' },
+    complet: { fr: 'Payé', en: 'Paid' },
+    remboursé: { fr: 'Remboursé', en: 'Refunded' },
+    litige: { fr: 'Litige', en: 'Dispute' },
+    annulé: { fr: 'Annulé', en: 'Cancelled' },
   };
-  return map[normalized] || 'Non payé';
-};
+  return labels[normalized]?.[lang] || (lang === 'fr' ? 'Non payé' : 'Unpaid');
+}
 
 function normalizeConversation(value: any) {
   if (!value) return [];
@@ -43,6 +56,8 @@ function normalizeConversation(value: any) {
 }
 
 export default function ClientSpacePage() {
+  const { language, setLanguage } = useLanguage();
+
   const params = useParams<{ token: string }>();
   const routeToken = typeof params?.token === 'string' ? params.token : Array.isArray(params?.token) ? params.token[0] : '';
 
@@ -62,20 +77,15 @@ export default function ClientSpacePage() {
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
 
-  // Édition / suppression commentaires
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentContent, setEditCommentContent] = useState('');
 
-  // Notifications client
   const [clientLastRead, setClientLastRead] = useState<string>(
     typeof window !== 'undefined' ? localStorage.getItem('client_last_read') || new Date().toISOString() : new Date().toISOString()
   );
 
-  // Prévisualisation fichier
   const [previewFile, setPreviewFile] = useState<any>(null);
-
-  // Calendly
-  const [showCalendly, setShowCalendly] = useState(false);
+  const [showBooking, setShowBooking] = useState(false);
 
   useEffect(() => {
     const urlToken = new URLSearchParams(window.location.search).get('token') || '';
@@ -140,6 +150,26 @@ export default function ClientSpacePage() {
     }
   }, [activeTab]);
 
+  // Annulation de rendez-vous
+  const handleCancelBooking = async (projectId: string, bookingId: string) => {
+    if (!confirm(t[language].clientCancelAppointmentConfirm)) return;
+    try {
+      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/cancel-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ booking_id: bookingId, project_id: projectId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        loadProject(true); // recharge la page
+      } else {
+        alert(data.error || t[language].clientErrorCancelAppointment);
+      }
+    } catch (err) {
+      alert(t[language].clientErrorCancelAppointment);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim()) return;
     setMessageLoading(true);
@@ -148,7 +178,7 @@ export default function ClientSpacePage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: 'contact@actoos.com', name: projet?.client_name || 'Client', email: projet?.client_email || '', message,
-          html: `<h2>Message de ${projet?.client_name || 'un client'}</h2><p>${message}</p>`,
+          html: `<h2>${t[language].clientMessageFrom} ${projet?.client_name || 'un client'}</h2><p>${message}</p>`,
         }),
       });
       setMessageSent(true); setMessage('');
@@ -189,7 +219,7 @@ export default function ClientSpacePage() {
   };
 
   const handleDeleteFile = async (fileId: string) => {
-    if (!confirm('Supprimer ce fichier ?')) return;
+    if (!confirm(t[language].clientDeleteFileConfirm)) return;
     try {
       await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-file', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -209,22 +239,30 @@ export default function ClientSpacePage() {
       setEditingCommentId(null);
       setEditCommentContent('');
       loadComments(projet?.id);
-    } catch (err) { alert('Erreur lors de la modification'); }
+    } catch (err) { alert(t[language].clientErrorEditComment); }
   };
 
   const handleDeleteComment = async (id: string) => {
-    if (!confirm('Supprimer ce message ?')) return;
+    if (!confirm(t[language].clientDeleteCommentConfirm)) return;
     try {
       await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-comment', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
       loadComments(projet?.id);
-    } catch (err) { alert('Erreur lors de la suppression'); }
+    } catch (err) { alert(t[language].clientErrorDeleteComment); }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-2 border-[#D4AF37] border-t-transparent" /></div>;
-  if (!projet) return <div className="min-h-screen flex items-center justify-center p-4"><div className="text-center"><h1 className="text-2xl font-black text-slate-900">Projet introuvable</h1><p className="text-slate-500 mt-2">Le lien est invalide ou le projet n'existe plus.</p><a href="/" className="text-[#D4AF37] font-bold mt-4 inline-block">Retour à l'accueil</a></div></div>;
+  if (!projet) return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="text-center">
+        <h1 className="text-2xl font-black text-slate-900">{t[language].clientNotFoundTitle}</h1>
+        <p className="text-slate-500 mt-2">{t[language].clientNotFoundDesc}</p>
+        <a href="/" className="text-[#D4AF37] font-bold mt-4 inline-block">{t[language].clientBackHome}</a>
+      </div>
+    </div>
+  );
 
   const conversation = normalizeConversation(projet.conversation);
   const unreadCount = comments.filter(c => c.author !== 'client' && c.created_at > clientLastRead).length;
@@ -235,30 +273,90 @@ export default function ClientSpacePage() {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center"><RefreshCw size={20} className="text-white" /></div>
-            <div><span className="font-black text-xl">Espace client<span className="text-[#D4AF37]">.</span></span><span className="text-[10px] text-slate-400 block">Actoos</span></div>
+            <div><span className="font-black text-xl">{t[language].clientSpaceTitle}<span className="text-[#D4AF37]">.</span></span><span className="text-[10px] text-slate-400 block">Actoos</span></div>
           </div>
-          <a href="/" className="text-slate-400 hover:text-slate-600 text-sm font-bold flex items-center gap-2"><ArrowLeft size={16} /> Accueil</a>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center space-x-4 text-[11px] font-black uppercase tracking-widest text-slate-400">
+              <button onClick={() => setLanguage('fr')} className={`${language === 'fr' ? 'text-slate-900 underline' : 'hover:text-black'}`}>FR</button>
+              <button onClick={() => setLanguage('en')} className={`${language === 'en' ? 'text-slate-900 underline' : 'hover:text-black'}`}>EN</button>
+            </div>
+            <a href="/" className="text-slate-400 hover:text-slate-600 text-sm font-bold flex items-center gap-2"><ArrowLeft size={16} /> {t[language].clientBackHome}</a>
+          </div>
         </div>
       </nav>
 
       <main className="max-w-3xl mx-auto p-6 space-y-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-black text-slate-900">{projet.brief?.projectName || 'Votre projet'}</h1>
-            <p className="text-slate-500 text-sm mt-1">Suivez l'avancement de votre projet</p>
+            <h1 className="text-3xl font-black text-slate-900">{projet.brief?.projectName || t[language].clientYourProject}</h1>
+            <p className="text-slate-500 text-sm mt-1">{t[language].clientFollowProgress}</p>
           </div>
-          <button onClick={() => loadProject(true)} className="px-4 py-2 rounded-xl bg-white border shadow-sm text-sm font-bold flex items-center gap-2 hover:bg-slate-50"><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} /> Actualiser</button>
+          <button onClick={() => loadProject(true)} className="px-4 py-2 rounded-xl bg-white border shadow-sm text-sm font-bold flex items-center gap-2 hover:bg-slate-50"><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} /> {t[language].clientRefresh}</button>
         </div>
 
+        {/* Rendez-vous ou bouton de réservation */}
         <div className="flex flex-wrap gap-3">
-          <button onClick={() => setShowCalendly(true)} className="inline-flex items-center gap-2 bg-white rounded-2xl px-4 py-3 text-sm font-bold shadow-sm border hover:bg-slate-50 transition-colors"><Calendar size={16} className="text-[#D4AF37]" /> Prendre rendez-vous</button>
-          {projet.payment_link && <a href={projet.payment_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-white rounded-2xl px-4 py-3 text-sm font-bold shadow-sm border hover:bg-slate-50 transition-colors"><DollarSign size={16} className="text-green-500" /> Paiement</a>}
+          {projet.booking_id ? (
+            // Rendez-vous existant → bloc avec annulation
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D4AF37]/30 w-full">
+              <h3 className="font-bold text-lg flex items-center gap-2 mb-4">
+                <Calendar size={18} className="text-[#D4AF37]" />
+                {t[language].clientUpcomingAppointment}
+              </h3>
+              <div className="space-y-2 text-sm">
+                <p>
+                  <strong>{t[language].clientDate} :</strong>{" "}
+                  {new Date(projet.booking_start).toLocaleDateString(
+                    language === 'fr' ? 'fr-FR' : 'en-US',
+                    { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+                  )}
+                </p>
+                <p>
+                  <strong>{t[language].clientTime} :</strong>{" "}
+                  {new Date(projet.booking_start).toLocaleTimeString(
+                    language === 'fr' ? 'fr-FR' : 'en-US',
+                    { hour: '2-digit', minute: '2-digit' }
+                  )}
+                </p>
+                {projet.booking_link && (
+                  <a
+                    href={projet.booking_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[#D4AF37] font-bold hover:underline"
+                  >
+                    {t[language].clientJoinMeeting}
+                  </a>
+                )}
+              </div>
+              <button
+                onClick={() => handleCancelBooking(projet.id, projet.booking_id)}
+                className="mt-4 bg-red-50 text-red-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-red-100 transition-colors"
+              >
+                {t[language].clientCancelAppointment}
+              </button>
+            </div>
+          ) : (
+            // Pas de rendez-vous → bouton pour en prendre un
+            <button
+              onClick={() => setShowBooking(true)}
+              className="inline-flex items-center gap-2 bg-white rounded-2xl px-4 py-3 text-sm font-bold shadow-sm border hover:bg-slate-50 transition-colors"
+            >
+              <Calendar size={16} className="text-[#D4AF37]" /> {t[language].clientSchedule}
+            </button>
+          )}
+
+          {projet.payment_link && (
+            <a href={projet.payment_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-white rounded-2xl px-4 py-3 text-sm font-bold shadow-sm border hover:bg-slate-50 transition-colors">
+              <DollarSign size={16} className="text-green-500" /> {t[language].clientPayment}
+            </a>
+          )}
         </div>
 
         {/* Timeline des étapes */}
         {projet.steps && Array.isArray(projet.steps) && projet.steps.length > 0 && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border">
-            <h2 className="font-bold text-lg mb-4">📈 Avancement du projet</h2>
+            <h2 className="font-bold text-lg mb-4">📈 {t[language].clientProgressTitle}</h2>
             <div className="space-y-3">
               {projet.steps.map((step: any, idx: number) => (
                 <div key={idx} className="flex items-center gap-3">
@@ -274,7 +372,9 @@ export default function ClientSpacePage() {
                       {step.name}
                     </p>
                     <p className="text-[10px] text-slate-400">
-                      {step.status === 'terminé' ? 'Terminé' : step.status === 'en_cours' ? 'En cours' : 'À faire'}
+                      {step.status === 'terminé' ? t[language].clientStepCompleted :
+                       step.status === 'en_cours' ? t[language].clientStepInProgress :
+                       t[language].clientStepTodo}
                     </p>
                   </div>
                 </div>
@@ -286,34 +386,35 @@ export default function ClientSpacePage() {
         {/* Messages acceptation/refus */}
         {projet.status === 'gagné' && (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
-            <p className="text-sm text-green-700 font-medium">✅ Projet accepté</p>
-            <p className="text-sm text-green-600 mt-1">L'équipe Actoos va prendre contact avec vous pour la suite.</p>
+            <p className="text-sm text-green-700 font-medium">✅ {t[language].clientAcceptedTitle}</p>
+            <p className="text-sm text-green-600 mt-1">{t[language].clientAcceptedDesc}</p>
           </div>
         )}
         {projet.archived && projet.status === 'perdu' && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-            <p className="text-sm text-amber-700 font-medium">⏳ Projet en attente de décision</p>
+            <p className="text-sm text-amber-700 font-medium">⏳ {t[language].clientPendingTitle}</p>
           </div>
         )}
         {projet.status === 'perdu' && !projet.archived && projet.decision_message && (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-            <p className="text-sm text-red-700 font-medium">❌ Projet refusé</p>
-            <p className="text-sm text-red-600 mt-1">Raison : {projet.decision_message}</p>
+            <p className="text-sm text-red-700 font-medium">❌ {t[language].clientRefusedTitle}</p>
+            <p className="text-sm text-red-600 mt-1">{t[language].clientRefusedReason}: {projet.decision_message}</p>
           </div>
         )}
 
         {/* Statut / Paiement / Complexité / Mise à jour */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border"><span className="text-xs text-slate-400">Statut</span><p className="font-bold text-sm mt-1">{getClientStatus(projet.status)}</p></div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border"><span className="text-xs text-slate-400">Paiement</span><p className="font-bold text-sm mt-1">{getClientPaymentStatus(projet.payment_status)}</p></div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border"><span className="text-xs text-slate-400">Complexité</span><p className="font-bold text-sm mt-1">{projet.brief?.complexity || 'Non spécifiée'}</p></div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border"><span className="text-xs text-slate-400">Mise à jour</span><p className="font-bold text-sm mt-1">{lastSyncAt ? lastSyncAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '—'}</p></div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border"><span className="text-xs text-slate-400">{t[language].clientStatus}</span><p className="font-bold text-sm mt-1">{getClientStatus(projet.status, language)}</p></div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border"><span className="text-xs text-slate-400">{t[language].clientPayment}</span><p className="font-bold text-sm mt-1">{getClientPaymentStatus(projet.payment_status, language)}</p></div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border"><span className="text-xs text-slate-400">{t[language].clientComplexity}</span><p className="font-bold text-sm mt-1">{projet.brief?.complexity || t[language].clientUnspecified}</p></div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border"><span className="text-xs text-slate-400">{t[language].clientLastUpdate}</span><p className="font-bold text-sm mt-1">{lastSyncAt ? lastSyncAt.toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '—'}</p></div>
         </div>
-                {/* Barre de progression du paiement */}
+
+        {/* Barre de progression du paiement */}
         {projet.payment_amount > 0 && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border">
             <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-              <DollarSign size={16} className="text-[#D4AF37]" /> Progression du paiement
+              <DollarSign size={16} className="text-[#D4AF37]" /> {t[language].clientPaymentProgress}
             </h3>
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -324,17 +425,17 @@ export default function ClientSpacePage() {
                   />
                 </div>
                 <div className="flex justify-between mt-1">
-                  <span className="text-xs text-slate-500">{projet.paid_amount || 0}€ payés</span>
-                  <span className="text-xs text-slate-500">{projet.payment_amount}€ attendus</span>
+                  <span className="text-xs text-slate-500">{projet.paid_amount || 0}€ {t[language].clientPaid}</span>
+                  <span className="text-xs text-slate-500">{projet.payment_amount}€ {t[language].clientExpected}</span>
                 </div>
               </div>
               <span className={`ml-4 text-xs font-bold px-3 py-1 rounded-full ${(projet.paid_amount || 0) >= projet.payment_amount ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                {(projet.paid_amount || 0) >= projet.payment_amount ? '✅ Payé' : '⚠️ Acompte'}
+                {(projet.paid_amount || 0) >= projet.payment_amount ? `✅ ${t[language].clientPaidFull}` : `⚠️ ${t[language].clientDeposit}`}
               </span>
             </div>
             {(projet.paid_amount || 0) < projet.payment_amount && (
               <p className="text-xs text-slate-400 mt-3 pt-3 border-t border-slate-100">
-                Reste à payer : <strong className="text-amber-600">{(projet.payment_amount - (projet.paid_amount || 0)).toFixed(2)}€</strong>
+                {t[language].clientRemaining}: <strong className="text-amber-600">{(projet.payment_amount - (projet.paid_amount || 0)).toFixed(2)}€</strong>
               </p>
             )}
           </div>
@@ -342,10 +443,10 @@ export default function ClientSpacePage() {
 
         {/* Onglets */}
         <div className="flex items-center gap-1 bg-white rounded-2xl p-1 border border-slate-200 shadow-sm w-fit">
-          <button onClick={() => setActiveTab('dashboard')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors ${activeTab === 'dashboard' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>📊 Dashboard</button>
-          <button onClick={() => setActiveTab('fichiers')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors ${activeTab === 'fichiers' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>📁 Fichiers</button>
+          <button onClick={() => setActiveTab('dashboard')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors ${activeTab === 'dashboard' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>📊 {t[language].clientTabDashboard}</button>
+          <button onClick={() => setActiveTab('fichiers')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors ${activeTab === 'fichiers' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>📁 {t[language].clientTabFiles}</button>
           <button onClick={() => setActiveTab('commentaires')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'commentaires' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-            💬 Commentaires
+            💬 {t[language].clientTabComments}
             {unreadCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{unreadCount}</span>
             )}
@@ -354,33 +455,33 @@ export default function ClientSpacePage() {
 
         {activeTab === 'dashboard' && (
           <>
-            {projet.client_message && <div className="bg-white rounded-2xl p-5 shadow-sm border"><p className="text-xs text-slate-400 mb-2">Votre demande</p><p className="text-sm text-slate-700 whitespace-pre-wrap">{projet.client_message}</p></div>}
-            {projet.brief && <div className="bg-white rounded-2xl p-5 shadow-sm border"><h2 className="font-bold text-lg mb-4">📋 Détails du projet</h2><div className="grid grid-cols-2 gap-4">{Object.entries(projet.brief).filter(([key]) => !['features', 'stack'].includes(key)).map(([key, value]) => <div key={key}><span className="text-xs text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span><p className="font-medium text-sm">{value?.toString() || '-'}</p></div>)}</div></div>}
-            {conversation.length > 0 && <div className="bg-white rounded-2xl p-5 shadow-sm border space-y-4"><h2 className="font-bold text-lg flex items-center gap-2"><MessageSquare size={18} className="text-[#D4AF37]" /> Conversation</h2><div className="space-y-3 max-h-80 overflow-y-auto">{conversation.map((msg: any, i: number) => <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[80%] p-3 rounded-xl text-sm ${msg.role === 'user' ? 'bg-[#D4AF37] text-white' : 'bg-slate-50 border'}`}><div className="text-xs opacity-70 mb-1">{msg.role === 'user' ? 'Vous' : 'Actoos'}</div>{msg.content}</div></div>)}</div></div>}
-            <div className="bg-white rounded-2xl p-5 shadow-sm border space-y-4"><h2 className="font-bold text-lg flex items-center gap-2"><MessageSquare size={18} className="text-[#D4AF37]" /> Envoyer un message</h2>{messageSent && <p className="text-emerald-600 text-sm font-medium">✅ Message envoyé avec succès.</p>}<textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Votre message..." className="w-full border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-[#D4AF37] resize-none" rows={4} /><button onClick={handleSendMessage} disabled={!message.trim() || messageLoading} className="bg-[#D4AF37] text-white px-6 py-3 rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-amber-500 transition-colors">{messageLoading ? 'Envoi...' : 'Envoyer'}</button></div>
+            {projet.client_message && <div className="bg-white rounded-2xl p-5 shadow-sm border"><p className="text-xs text-slate-400 mb-2">{t[language].clientYourRequest}</p><p className="text-sm text-slate-700 whitespace-pre-wrap">{projet.client_message}</p></div>}
+            {projet.brief && <div className="bg-white rounded-2xl p-5 shadow-sm border"><h2 className="font-bold text-lg mb-4">📋 {t[language].clientProjectDetails}</h2><div className="grid grid-cols-2 gap-4">{Object.entries(projet.brief).filter(([key]) => !['features', 'stack'].includes(key)).map(([key, value]) => <div key={key}><span className="text-xs text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span><p className="font-medium text-sm">{value?.toString() || '-'}</p></div>)}</div></div>}
+            {conversation.length > 0 && <div className="bg-white rounded-2xl p-5 shadow-sm border space-y-4"><h2 className="font-bold text-lg flex items-center gap-2"><MessageSquare size={18} className="text-[#D4AF37]" /> {t[language].clientConversation}</h2><div className="space-y-3 max-h-80 overflow-y-auto">{conversation.map((msg: any, i: number) => <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[80%] p-3 rounded-xl text-sm ${msg.role === 'user' ? 'bg-[#D4AF37] text-white' : 'bg-slate-50 border'}`}><div className="text-xs opacity-70 mb-1">{msg.role === 'user' ? t[language].clientYou : 'Actoos'}</div>{msg.content}</div></div>)}</div></div>}
+            <div className="bg-white rounded-2xl p-5 shadow-sm border space-y-4"><h2 className="font-bold text-lg flex items-center gap-2"><MessageSquare size={18} className="text-[#D4AF37]" /> {t[language].clientSendMessage}</h2>{messageSent && <p className="text-emerald-600 text-sm font-medium">✅ {t[language].clientMessageSent}</p>}<textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={t[language].clientMessagePlaceholder} className="w-full border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-[#D4AF37] resize-none" rows={4} /><button onClick={handleSendMessage} disabled={!message.trim() || messageLoading} className="bg-[#D4AF37] text-white px-6 py-3 rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-amber-500 transition-colors">{messageLoading ? t[language].clientSending : t[language].clientSend}</button></div>
           </>
         )}
 
         {activeTab === 'fichiers' && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border space-y-4">
-            <h2 className="font-bold text-lg flex items-center gap-2"><Upload size={18} className="text-[#D4AF37]" /> Fichiers du projet</h2>
+            <h2 className="font-bold text-lg flex items-center gap-2"><Upload size={18} className="text-[#D4AF37]" /> {t[language].clientFilesTitle}</h2>
             <div className="flex gap-2">
-              <input type="text" value={uploadMessage} onChange={e => setUploadMessage(e.target.value)} placeholder="Message (optionnel) – ex : Voici mon logo" className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D4AF37]" />
+              <input type="text" value={uploadMessage} onChange={e => setUploadMessage(e.target.value)} placeholder={t[language].clientUploadMessagePlaceholder} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#D4AF37]" />
               <label className="inline-flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-white rounded-xl font-bold text-sm cursor-pointer hover:bg-amber-500 transition-colors">
-                <Upload size={16} /> Déposer
+                <Upload size={16} /> {t[language].clientUpload}
                 <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
               </label>
             </div>
-            {uploading && <p className="text-sm text-slate-500">Upload en cours...</p>}
+            {uploading && <p className="text-sm text-slate-500">{t[language].clientUploading}</p>}
             <div className="space-y-2">
-              {files.length === 0 && <p className="text-sm text-slate-400">Aucun fichier pour le moment.</p>}
+              {files.length === 0 && <p className="text-sm text-slate-400">{t[language].clientNoFiles}</p>}
               {files.map((f: any) => (
                 <div key={f.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                   <div className="flex items-center gap-3">
                     <FileText size={16} className="text-slate-400" />
                     <div>
                       <p className="font-medium text-sm">{f.name}</p>
-                      <p className="text-xs text-slate-400">{new Date(f.created_at).toLocaleDateString('fr-FR')} · {f.uploaded_by === 'client' ? 'Vous' : 'Équipe'}</p>
+                      <p className="text-xs text-slate-400">{new Date(f.created_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')} · {f.uploaded_by === 'client' ? t[language].clientYou : t[language].clientTeam}</p>
                       {f.message && <p className="text-xs text-slate-500 italic mt-1">"{f.message}"</p>}
                     </div>
                   </div>
@@ -399,13 +500,13 @@ export default function ClientSpacePage() {
 
         {activeTab === 'commentaires' && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border space-y-4">
-            <h2 className="font-bold text-lg flex items-center gap-2"><MessageSquare size={18} className="text-[#D4AF37]" /> Commentaires</h2>
+            <h2 className="font-bold text-lg flex items-center gap-2"><MessageSquare size={18} className="text-[#D4AF37]" /> {t[language].clientCommentsTitle}</h2>
             <div className="flex gap-2">
-              <input type="text" value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Ajouter un commentaire..." className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37]" onKeyDown={e => { if (e.key === 'Enter') handleAddComment(); }} />
+              <input type="text" value={commentText} onChange={e => setCommentText(e.target.value)} placeholder={t[language].clientCommentPlaceholder} className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37]" onKeyDown={e => { if (e.key === 'Enter') handleAddComment(); }} />
               <button onClick={handleAddComment} disabled={!commentText.trim() || commentSending} className="bg-[#D4AF37] text-white px-4 py-2 rounded-xl font-bold text-sm disabled:opacity-50"><Send size={16} /></button>
             </div>
             <div className="space-y-3 max-h-80 overflow-y-auto">
-              {comments.length === 0 && <p className="text-sm text-slate-400">Aucun commentaire pour le moment.</p>}
+              {comments.length === 0 && <p className="text-sm text-slate-400">{t[language].clientNoComments}</p>}
               {comments.map((c: any) => (
                 <div key={c.id} className={`flex ${c.author === 'client' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] p-3 rounded-xl text-sm ${c.author === 'client' ? 'bg-[#D4AF37] text-white' : 'bg-slate-50 border'}`}>
@@ -413,22 +514,22 @@ export default function ClientSpacePage() {
                       <div className="flex flex-col gap-2">
                         <input value={editCommentContent} onChange={e => setEditCommentContent(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm text-slate-800" autoFocus onKeyDown={async (e) => { if (e.key === 'Enter') await handleEditComment(c.id, editCommentContent); if (e.key === 'Escape') setEditingCommentId(null); }} />
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => setEditingCommentId(null)} className="text-xs text-white/70 hover:text-white">Annuler</button>
-                          <button onClick={() => handleEditComment(c.id, editCommentContent)} className="text-xs bg-white/20 px-2 py-1 rounded">Enregistrer</button>
+                          <button onClick={() => setEditingCommentId(null)} className="text-xs text-white/70 hover:text-white">{t[language].clientCancel}</button>
+                          <button onClick={() => handleEditComment(c.id, editCommentContent)} className="text-xs bg-white/20 px-2 py-1 rounded">{t[language].clientSave}</button>
                         </div>
                       </div>
                     ) : (
                       <>
                         <div className="text-xs opacity-70 mb-1 flex items-center gap-2">
-                          {c.author === 'client' ? 'Vous' : 'Actoos'}
-                          <span>· {new Date(c.created_at).toLocaleString('fr-FR')}</span>
-                          {c.edited_at && <span className="text-amber-300">(modifié)</span>}
+                          {c.author === 'client' ? t[language].clientYou : t[language].clientTeam}
+                          <span>· {new Date(c.created_at).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US')}</span>
+                          {c.edited_at && <span className="text-amber-300">({t[language].clientEdited})</span>}
                         </div>
                         <p>{c.content}</p>
                         {c.author === 'client' && new Date(c.created_at) > new Date(Date.now() - 5 * 60 * 1000) && (
                           <div className="flex gap-2 mt-1">
-                            <button onClick={() => { setEditingCommentId(c.id); setEditCommentContent(c.content); }} className="text-xs text-white/70 hover:text-white flex items-center gap-1"><Edit3 size={12} /> Modifier</button>
-                            <button onClick={() => handleDeleteComment(c.id)} className="text-xs text-white/70 hover:text-white flex items-center gap-1"><Trash2 size={12} /> Supprimer</button>
+                            <button onClick={() => { setEditingCommentId(c.id); setEditCommentContent(c.content); }} className="text-xs text-white/70 hover:text-white flex items-center gap-1"><Edit3 size={12} /> {t[language].clientEdit}</button>
+                            <button onClick={() => handleDeleteComment(c.id)} className="text-xs text-white/70 hover:text-white flex items-center gap-1"><Trash2 size={12} /> {t[language].clientDelete}</button>
                           </div>
                         )}
                       </>
@@ -455,34 +556,24 @@ export default function ClientSpacePage() {
               ) : previewFile.type === 'application/pdf' ? (
                 <iframe src={previewFile.url} className="w-full h-96" title={previewFile.name} />
               ) : (
-                <div className="text-center py-12 text-slate-400">Aperçu non disponible pour ce type de fichier. <a href={previewFile.url} target="_blank" className="text-[#D4AF37] font-bold">Télécharger</a></div>
+                <div className="text-center py-12 text-slate-400">{t[language].clientPreviewUnavailable} <a href={previewFile.url} target="_blank" className="text-[#D4AF37] font-bold">{t[language].clientDownload}</a></div>
               )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Calendly */}
-      {showCalendly && (
-  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowCalendly(false)}>
-    <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8 text-center" onClick={e => e.stopPropagation()}>
-      <Calendar size={48} className="text-[#D4AF37] mx-auto mb-4" />
-      <h3 className="text-xl font-black mb-2">Prendre rendez-vous</h3>
-      <p className="text-slate-500 mb-6">Notre agenda s'ouvre dans une nouvelle fenêtre.</p>
-      <a
-        href="https://calendly.com/contact-actoos/30min"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 bg-[#D4AF37] text-white px-6 py-3 rounded-xl font-bold hover:bg-amber-500 transition-colors"
-      >
-        <Calendar size={18} /> Ouvrir le calendrier
-      </a>
-      <button onClick={() => setShowCalendly(false)} className="mt-4 text-sm text-slate-400 hover:text-slate-600">
-        Fermer
-      </button>
-    </div>
-  </div>
-)}
+      {/* BookingModal pour la prise de rendez-vous */}
+      {showBooking && projet && (
+        <BookingModal
+          clientName={projet.client_name}
+          clientEmail={projet.client_email}
+          projectName={projet.brief?.projectName}
+          projectId={projet.id}
+          onClose={() => setShowBooking(false)}
+          onBooked={() => { loadProject(true); setShowBooking(false); }}
+        />
+      )}
     </div>
   );
 }

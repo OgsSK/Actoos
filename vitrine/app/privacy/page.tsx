@@ -1,8 +1,12 @@
 'use client';
 
 import { ArrowLeft } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { t } from '../../lib/translations';
 
 export default function PrivacyPage() {
+  const { language, setLanguage } = useLanguage();
+
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900">
       {/* Header */}
@@ -19,135 +23,74 @@ export default function PrivacyPage() {
               </span>
             </div>
           </a>
-          <a 
-            href="/"
-            className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-bold"
-          >
-            <ArrowLeft size={18} />
-            <span>Retour</span>
-          </a>
+          <div className="flex items-center space-x-6">
+            {/* Sélecteur de langue */}
+            <div className="flex items-center space-x-4 text-[11px] font-black uppercase tracking-widest text-slate-400">
+              <button
+                onClick={() => setLanguage('fr')}
+                className={`${language === 'fr' ? 'text-slate-900 underline' : 'hover:text-black'}`}
+              >
+                FR
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={`${language === 'en' ? 'text-slate-900 underline' : 'hover:text-black'}`}
+              >
+                EN
+              </button>
+            </div>
+            <a
+              href="/"
+              className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-bold"
+            >
+              <ArrowLeft size={18} />
+              <span>{t[language].back}</span>
+            </a>
+          </div>
         </div>
       </nav>
 
       {/* Content */}
       <main className="pt-32 pb-20 px-6 max-w-4xl mx-auto">
         <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">
-          Politique de Confidentialité<span className="text-[#D4AF37]">.</span>
+          {t[language].privacyTitle}
         </h1>
-        <p className="text-slate-400 text-sm mb-12">Dernière mise à jour : Mai 2025</p>
+        <p className="text-slate-400 text-sm mb-12">{t[language].privacyLastUpdate}</p>
 
         <div className="prose prose-slate max-w-none">
-          <section className="mb-12">
-            <h2 className="text-2xl font-black tracking-tight mb-4">1. Introduction</h2>
-            <p className="text-slate-600 leading-relaxed mb-4">
-              ACTOOS Group (&quot;nous&quot;, &quot;notre&quot;, &quot;nos&quot;) s&apos;engage à protéger la vie privée des utilisateurs 
-              de nos services. Cette politique de confidentialité explique comment nous collectons, utilisons, 
-              partageons et protégeons vos informations personnelles.
-            </p>
-            <p className="text-slate-600 leading-relaxed">
-              Cette politique s&apos;applique à tous nos services numériques, qu&apos;il s&apos;agisse de solutions 
-              sur mesure, d&apos;applications mobiles ou de plateformes web.
-            </p>
-          </section>
+          {/* Section 1 */}
+          <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection1 }} />
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-black tracking-tight mb-4">2. Données Collectées</h2>
-            <p className="text-slate-600 leading-relaxed mb-4">
-              Nous collectons les types de données suivants :
-            </p>
-            <ul className="list-disc pl-6 text-slate-600 space-y-2">
-              <li><strong>Données d&apos;identification</strong> : nom, prénom, adresse email, numéro de téléphone</li>
-              <li><strong>Données professionnelles</strong> : nom de l&apos;entreprise, fonction, secteur d&apos;activité</li>
-              <li><strong>Données techniques</strong> : adresse IP, type de navigateur, pages visitées</li>
-              <li><strong>Données de transaction</strong> : historique des commandes, informations de paiement</li>
-            </ul>
-          </section>
+          {/* Section 2 */}
+          <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection2 }} />
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-black tracking-tight mb-4">3. Utilisation des Données</h2>
-            <p className="text-slate-600 leading-relaxed mb-4">
-              Vos données sont utilisées pour :
-            </p>
-            <ul className="list-disc pl-6 text-slate-600 space-y-2">
-              <li>Fournir et améliorer nos services</li>
-              <li>Personnaliser votre expérience utilisateur</li>
-              <li>Communiquer avec vous concernant nos services</li>
-              <li>Assurer la sécurité de nos plateformes</li>
-              <li>Respecter nos obligations légales</li>
-            </ul>
-          </section>
+          {/* Section 3 */}
+          <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection3 }} />
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-black tracking-tight mb-4">4. Cookies</h2>
-            <p className="text-slate-600 leading-relaxed mb-4">
-              Nous utilisons des cookies pour :
-            </p>
-            <ul className="list-disc pl-6 text-slate-600 space-y-2">
-              <li><strong>Cookies essentiels</strong> : nécessaires au fonctionnement du site</li>
-              <li><strong>Cookies analytiques</strong> : comprendre comment les visiteurs utilisent notre site</li>
-              <li><strong>Cookies de préférences</strong> : mémoriser vos choix et paramètres</li>
-            </ul>
-            <p className="text-slate-600 leading-relaxed mt-4">
-              Vous pouvez gérer vos préférences de cookies via le bandeau de consentement affiché lors de votre première visite.
-            </p>
-          </section>
+          {/* Section 4 */}
+          <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection4 }} />
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-black tracking-tight mb-4">5. Partage des Données</h2>
-            <p className="text-slate-600 leading-relaxed mb-4">
-              Nous ne vendons jamais vos données personnelles. Nous pouvons partager vos données avec :
-            </p>
-            <ul className="list-disc pl-6 text-slate-600 space-y-2">
-              <li>Nos prestataires de services (hébergement, paiement, analytics)</li>
-              <li>Les autorités légales sur demande officielle</li>
-              <li>Nos partenaires commerciaux avec votre consentement</li>
-            </ul>
-          </section>
+          {/* Section 5 */}
+          <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection5 }} />
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-black tracking-tight mb-4">6. Vos Droits (RGPD)</h2>
-            <p className="text-slate-600 leading-relaxed mb-4">
-              Conformément au RGPD, vous disposez des droits suivants :
-            </p>
-            <ul className="list-disc pl-6 text-slate-600 space-y-2">
-              <li><strong>Droit d&apos;accès</strong> : obtenir une copie de vos données</li>
-              <li><strong>Droit de rectification</strong> : corriger vos données inexactes</li>
-              <li><strong>Droit à l&apos;effacement</strong> : demander la suppression de vos données</li>
-              <li><strong>Droit à la portabilité</strong> : recevoir vos données dans un format structuré</li>
-              <li><strong>Droit d&apos;opposition</strong> : vous opposer au traitement de vos données</li>
-            </ul>
-            <p className="text-slate-600 leading-relaxed mt-4">
-              Pour exercer ces droits, contactez-nous à : <a href="mailto:contact@actoos.com" className="text-[#D4AF37] hover:underline">contact@actoos.com</a>
-            </p>
-          </section>
+          {/* Section 6 */}
+          <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection6 }} />
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-black tracking-tight mb-4">7. Sécurité</h2>
-            <p className="text-slate-600 leading-relaxed">
-              Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles pour protéger 
-              vos données : chiffrement SSL/TLS, authentification forte, audits réguliers, et formation 
-              de notre personnel.
-            </p>
-          </section>
+          {/* Section 7 */}
+          <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection7 }} />
 
-          <section className="mb-12">
-            <h2 className="text-2xl font-black tracking-tight mb-4">8. Contact</h2>
-            <p className="text-slate-600 leading-relaxed">
-              Pour toute question concernant cette politique ou vos données personnelles :<br /><br />
-              <strong>ACTOOS Group</strong><br />
-              Email : <a href="mailto:contact@actoos.com" className="text-[#D4AF37] hover:underline">contact@actoos.com</a>
-            </p>
-          </section>
+          {/* Section 8 */}
+          <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection8 }} />
         </div>
       </main>
 
       {/* Footer */}
       <footer className="bg-slate-50 py-8 px-6 border-t border-slate-100">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
-          <p>© Actoos Group. Tous droits réservés.</p>
+          <p>{t[language].footerCopy}</p>
           <div className="flex space-x-8">
-            <span className="text-slate-600">Confidentialité</span>
-            <a href="/legal" className="hover:text-black transition-colors">Mentions légales</a>
+            <span className="text-slate-600">{t[language].footerPrivacy}</span>
+            <a href="/legal" className="hover:text-black transition-colors">{t[language].footerLegal}</a>
           </div>
         </div>
       </footer>

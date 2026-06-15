@@ -12,8 +12,10 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
+import { useLanguage } from '../context/LanguageContext';
+import { t } from '../../lib/translations';
+import BookingModal from '../components/BookingModal';
 
-const CALENDLY_URL = 'https://calendly.com/contact-actoos/30min';
 const COLORS = ['#D4AF37', '#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1'];
 
 function normalizeStatus(value: string) {
@@ -30,12 +32,19 @@ function normalizeConversation(value: any): any[] {
   return [];
 }
 
-function getStatusLabel(status: string) {
-  const map: Record<string, string> = {
-    nouveau: 'Nouveau', contacté: 'Contacté', devis_envoyé: 'Devis envoyé',
-    en_cours: 'En cours', gagné: 'Gagné', perdu: 'Perdu', livré: 'Livré', terminé: 'Terminé',
+function getStatusLabel(status: string, lang: string) {
+  const labels: Record<string, Record<string, string>> = {
+    nouveau: { fr: 'Nouveau', en: 'New' },
+    contacté: { fr: 'Contacté', en: 'Contacted' },
+    devis_envoyé: { fr: 'Devis envoyé', en: 'Quote sent' },
+    en_cours: { fr: 'En cours', en: 'In progress' },
+    gagné: { fr: 'Gagné', en: 'Won' },
+    perdu: { fr: 'Perdu', en: 'Lost' },
+    livré: { fr: 'Livré', en: 'Delivered' },
+    terminé: { fr: 'Terminé', en: 'Completed' },
   };
-  return map[normalizeStatus(status)] || status;
+  const statusKey = normalizeStatus(status);
+  return labels[statusKey]?.[lang] || status;
 }
 
 function getStatusColor(status: string) {
@@ -57,6 +66,7 @@ function getPaymentColor(status: string) {
 }
 
 export default function AdminPage() {
+  const { language, setLanguage } = useLanguage();
   const [projets, setProjets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [password, setPassword] = useState('');
@@ -72,29 +82,24 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projets' | 'decision' | 'corbeille' | 'messages' | 'fichiers'>('dashboard');
   const [mounted, setMounted] = useState(false);
 
-  // Commentaires & notifications
+  // Booking modal
+  const [showBooking, setShowBooking] = useState(false);
+  const [bookingProject, setBookingProject] = useState<any>(null);
+
   const [allComments, setAllComments] = useState<any[]>([]);
   const [lastReadTimestamp, setLastReadTimestamp] = useState<string>(
     typeof window !== 'undefined' ? localStorage.getItem('admin_last_read') || new Date().toISOString() : new Date().toISOString()
   );
   const [unreadCount, setUnreadCount] = useState(0);
-
-  // Fichiers globaux
   const [allFiles, setAllFiles] = useState<any[]>([]);
 
-  // Modale Détails
   const [detailTab, setDetailTab] = useState('details');
   const [selectedFiles, setSelectedFiles] = useState<any[]>([]);
   const [selectedComments, setSelectedComments] = useState<any[]>([]);
   const [adminComment, setAdminComment] = useState('');
   const [commentSending, setCommentSending] = useState(false);
-
-  // Édition / suppression commentaires admin
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentContent, setEditCommentContent] = useState('');
-
-  // Calendly
-  const [showCalendly, setShowCalendly] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -176,7 +181,7 @@ export default function AdminPage() {
     if (password === 'Salifkane&&7') {
       localStorage.setItem('admin_token', 'actoos-admin-2026');
       setToken('actoos-admin-2026'); setIsAuthenticated(true);
-    } else { alert('Mot de passe incorrect'); }
+    } else { alert(t[language].adminLoginError); }
   };
 
   const handleLogout = () => {
@@ -192,7 +197,7 @@ export default function AdminPage() {
         body: JSON.stringify({ id, status: normalizeStatus(status) }),
       });
       setProjets(prev => prev.map(p => p.id === id ? { ...p, status: normalizeStatus(status) } : p));
-    } catch (err) { alert('Erreur'); } finally { setActionLoading(null); }
+    } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
   };
 
   const updatePaymentStatus = async (id: string, paymentStatus: string) => {
@@ -203,7 +208,7 @@ export default function AdminPage() {
         body: JSON.stringify({ id, payment_status: normalizeStatus(paymentStatus) }),
       });
       setProjets(prev => prev.map(p => p.id === id ? { ...p, payment_status: normalizeStatus(paymentStatus) } : p));
-    } catch (err) { alert('Erreur'); } finally { setActionLoading(null); }
+    } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
   };
 
   const updateMaturity = async (id: string, value: number) => {
@@ -218,25 +223,24 @@ export default function AdminPage() {
 
   const handleDecision = async (projet: any, action: 'accept' | 'archive' | 'refuse') => {
     if (action === 'refuse') {
-      const reason = prompt('Raison du refus (obligatoire) :');
+      const reason = prompt(t[language].adminRefuseReasonPrompt);
       if (!reason) return;
-      if (!confirm('Êtes-vous sûr de vouloir refuser ce projet ? Cette action est irréversible.')) return;
+      if (!confirm(t[language].adminRefuseConfirm)) return;
       setActionLoading(projet.id);
       try {
         await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ id: projet.id, action: 'refuse', decision_message: reason }),
         });
-        // Email de refus au client
         await fetch('/api/send-project-email', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: projet.client_email, name: projet.client_name, email: projet.client_email, message: reason,
-            html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1f2937"><h2 style="color:#DC2626">❌ Projet non retenu</h2><p>Bonjour ${projet.client_name},</p><p>Nous avons étudié votre projet <strong>${projet.brief?.projectName || 'votre projet'}</strong>.</p><p>Malheureusement, nous ne pouvons pas y donner suite pour le moment.</p><p><strong>Raison :</strong> ${reason}</p><p>Nous restons à votre disposition.</p><p>Cordialement,</p><p><strong>L'équipe Actoos</strong></p></div>`,
+            html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1f2937"><h2 style="color:#DC2626">${t[language].adminRefuseEmailTitle}</h2><p>${t[language].adminHello} ${projet.client_name},</p><p>${t[language].adminRefuseEmailBody1} <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong>.</p><p>${t[language].adminRefuseEmailBody2}</p><p><strong>${t[language].adminReason} :</strong> ${reason}</p><p>${t[language].adminRegards}</p><p><strong>${t[language].adminTeam}</strong></p></div>`,
           }),
         });
         setProjets(prev => prev.filter(p => p.id !== projet.id));
-      } catch (err) { alert('Erreur'); } finally { setActionLoading(null); }
+      } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
     } else if (action === 'accept') {
       setActionLoading(projet.id);
       try {
@@ -244,19 +248,18 @@ export default function AdminPage() {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ id: projet.id, action: 'accept' }),
         });
-        // Email d'acceptation au client avec lien espace client
         const clientLink = `https://actoos.com/client/${projet.client_token}`;
         await fetch('/api/send-project-email', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: projet.client_email, name: projet.client_name, email: projet.client_email, message: 'Projet accepté',
-            html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1f2937"><h2 style="color:#10B981">✅ Projet accepté !</h2><p>Bonjour ${projet.client_name},</p><p>Votre projet <strong>${projet.brief?.projectName || 'votre projet'}</strong> a été accepté.</p><p>🔗 <strong>Suivez l'avancement et prenez rendez-vous :</strong><br><a href="${clientLink}" style="color:#D4AF37;font-weight:bold">${clientLink}</a></p><p>📧 <a href="mailto:contact@actoos.com" style="color:#D4AF37">contact@actoos.com</a></p><p>Cordialement,</p><p><strong>L'équipe Actoos</strong></p></div>`,
+            to: projet.client_email, name: projet.client_name, email: projet.client_email, message: t[language].adminAcceptEmailSubject,
+            html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1f2937"><h2 style="color:#10B981">${t[language].adminAcceptEmailTitle}</h2><p>${t[language].adminHello} ${projet.client_name},</p><p>${t[language].adminAcceptEmailBody} <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong>.</p><p>🔗 <strong>${t[language].adminFollowLink} :</strong><br><a href="${clientLink}" style="color:#D4AF37;font-weight:bold">${clientLink}</a></p><p>📧 <a href="mailto:contact@actoos.com" style="color:#D4AF37">contact@actoos.com</a></p><p>${t[language].adminRegards}</p><p><strong>${t[language].adminTeam}</strong></p></div>`,
           }),
         });
         setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, status: 'gagné' } : p));
-      } catch (err) { alert('Erreur'); } finally { setActionLoading(null); }
+      } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
     } else if (action === 'archive') {
-      if (!confirm('Archiver ce projet ? Il pourra être restauré depuis la corbeille.')) return;
+      if (!confirm(t[language].adminArchiveConfirm)) return;
       setActionLoading(projet.id);
       try {
         await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
@@ -264,7 +267,7 @@ export default function AdminPage() {
           body: JSON.stringify({ id: projet.id, action: 'archive' }),
         });
         setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, archived: true, status: 'perdu' } : p));
-      } catch (err) { alert('Erreur'); } finally { setActionLoading(null); }
+      } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
     }
   };
 
@@ -276,7 +279,7 @@ export default function AdminPage() {
         body: JSON.stringify({ id, action: 'restore' }),
       });
       setProjets(prev => prev.map(p => p.id === id ? { ...p, archived: false, status: 'nouveau' } : p));
-    } catch (err) { alert('Erreur'); } finally { setActionLoading(null); }
+    } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
   };
 
   const relancer = async (projet: any) => {
@@ -285,27 +288,27 @@ export default function AdminPage() {
       await fetch('/api/send-project-email', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: projet.client_email, name: projet.client_name, email: projet.client_email, message: 'Relance manuelle',
-          html: `<h2>Bonjour ${projet.client_name},</h2><p>Nous faisons suite à votre projet <strong>${projet.brief?.projectName || 'votre projet'}</strong>.</p><a href="${CALENDLY_URL}">Prendre rendez-vous</a>`,
+          to: projet.client_email, name: projet.client_name, email: projet.client_email, message: t[language].adminFollowUpSubject,
+          html: `<h2>${t[language].adminHello} ${projet.client_name},</h2><p>${t[language].adminFollowUpBody} <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong>.</p><a href="https://actoos.com/client/${projet.client_token}">Voir le projet</a>`,
         }),
       });
-      alert(`Relance envoyée à ${projet.client_email}`);
-    } catch { alert("Erreur lors de l'envoi"); } finally { setActionLoading(null); }
+      alert(`${t[language].adminFollowUpSent} ${projet.client_email}`);
+    } catch { alert(t[language].adminError); } finally { setActionLoading(null); }
   };
 
   const createPaymentLink = async (projet: any) => {
-    const amount = prompt('Montant (€) :', projet.payment_amount || '1000');
+    const amount = prompt(t[language].adminPaymentAmount, projet.payment_amount || '1000');
     if (!amount) return;
     setActionLoading(projet.id);
     try {
       const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/create-payment-link', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-  amount: parseFloat(amount),
-  currency: 'eur',
-  description: projet.brief?.projectName || 'Projet',
-  metadata: { projet_id: projet.id }, // ← déjà présent, vérifiez
-}),
+          amount: parseFloat(amount),
+          currency: 'eur',
+          description: projet.brief?.projectName || t[language].adminProject,
+          metadata: { projet_id: projet.id },
+        }),
       });
       const data = await res.json();
       if (data.url) {
@@ -317,16 +320,16 @@ export default function AdminPage() {
         await fetch('/api/send-project-email', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: projet.client_email, name: projet.client_name, email: projet.client_email, message: 'Lien de paiement',
-            html: `<h2>Bonjour ${projet.client_name},</h2><p>Voici votre lien de paiement : <a href="${data.url}">Payer ${amount}€</a></p>`,
+            to: projet.client_email, name: projet.client_name, email: projet.client_email, message: t[language].adminPaymentLinkSubject,
+            html: `<h2>${t[language].adminHello} ${projet.client_name},</h2><p>${t[language].adminPaymentLinkBody} <a href="${data.url}">${t[language].adminPay} ${amount}€</a></p>`,
           }),
         });
-        alert(`Lien de paiement créé et envoyé`);
+        alert(t[language].adminPaymentLinkCreated);
       }
-    } catch { alert('Erreur'); } finally { setActionLoading(null); }
+    } catch { alert(t[language].adminError); } finally { setActionLoading(null); }
   };
 
-  const openEmailForm = (projet: any) => setEmailForm({ projet, subject: `Suivi : ${projet.brief?.projectName || 'Projet'}`, body: '' });
+  const openEmailForm = (projet: any) => setEmailForm({ projet, subject: `${t[language].adminEmailDefaultSubject} ${projet.brief?.projectName || t[language].adminProject}`, body: '' });
 
   const sendEmailToClient = async () => {
     if (!emailForm) return;
@@ -339,8 +342,31 @@ export default function AdminPage() {
           html: `<h2>${emailForm.subject}</h2><p>${emailForm.body}</p>`,
         }),
       });
-      alert('Email envoyé'); setEmailForm(null);
-    } catch { alert('Erreur'); } finally { setEmailSending(false); }
+      alert(t[language].adminEmailSent); setEmailForm(null);
+    } catch { alert(t[language].adminError); } finally { setEmailSending(false); }
+  };
+
+  // Annulation de rendez-vous
+  const handleCancelBooking = async (projectId: string, bookingId: string) => {
+    if (!confirm(t[language].adminCancelAppointmentConfirm)) return;
+    try {
+      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/cancel-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ booking_id: bookingId, project_id: projectId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        loadProjects(); // Recharger toute la liste
+        if (selectedProject && selectedProject.id === projectId) {
+          setSelectedProject((prev: any) => ({ ...prev, booking_id: null, booking_start: null, booking_link: null }));
+        }
+      } else {
+        alert(data.error || t[language].adminError);
+      }
+    } catch (err) {
+      alert(t[language].adminError);
+    }
   };
 
   const handleAddAdminComment = async () => {
@@ -369,11 +395,11 @@ export default function AdminPage() {
       const res = await fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-comments?project_id=${selectedProject.id}`);
       const data = await res.json();
       setSelectedComments(Array.isArray(data) ? data : []);
-    } catch (err) { alert('Erreur lors de la modification'); }
+    } catch (err) { alert(t[language].adminErrorEditingComment); }
   };
 
   const handleDeleteAdminComment = async (id: string) => {
-    if (!confirm('Supprimer ce message ?')) return;
+    if (!confirm(t[language].adminDeleteCommentConfirm)) return;
     try {
       await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-comment', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -382,11 +408,11 @@ export default function AdminPage() {
       const res = await fetch(`https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/get-comments?project_id=${selectedProject.id}`);
       const data = await res.json();
       setSelectedComments(Array.isArray(data) ? data : []);
-    } catch (err) { alert('Erreur lors de la suppression'); }
+    } catch (err) { alert(t[language].adminErrorDeletingComment); }
   };
 
   const handleDeleteFile = async (fileId: string) => {
-    if (!confirm('Supprimer ce fichier ?')) return;
+    if (!confirm(t[language].adminDeleteFileConfirm)) return;
     try {
       await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-file', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -404,9 +430,8 @@ export default function AdminPage() {
   const filteredProjets = projets.filter(p => {
     const search = searchTerm.toLowerCase();
     const matchSearch = p.client_name?.toLowerCase().includes(search) || p.client_email?.toLowerCase().includes(search) || p.brief?.projectName?.toLowerCase().includes(search) || p.brief?.sector?.toLowerCase().includes(search);
-    // Pour l'onglet Projets : exclure les statuts de décision et les projets archivés/perdus
-const decisionStatuses = ['nouveau', 'perdu'];
-const matchStatus = !decisionStatuses.includes(p.status) && (statusFilter === 'all' || p.status === statusFilter);
+    const decisionStatuses = ['nouveau', 'perdu'];
+    const matchStatus = !decisionStatuses.includes(p.status) && (statusFilter === 'all' || p.status === statusFilter);
     return matchSearch && matchStatus;
   });
 
@@ -419,10 +444,9 @@ const matchStatus = !decisionStatuses.includes(p.status) && (statusFilter === 'a
     avgMaturity: activeProjets.length > 0 ? Math.round(activeProjets.reduce((sum, p) => sum + (p.brief?.maturityScore || 0), 0) / activeProjets.length) : 0,
     avgPriority: activeProjets.length > 0 ? Math.round(activeProjets.reduce((sum, p) => sum + (p.brief?.priorityScore || 0), 0) / activeProjets.length) : 0,
   };
-  // Compteurs pour les badges des onglets
-const pendingDecisions = activeProjets.filter(p => p.status !== 'gagné' && p.status !== 'perdu').length;
-const pendingProjects = activeProjets.filter(p => p.status === 'gagné' || p.status === 'en_cours' || p.status === 'livré').length;
-const archivedCount = archivedProjets.length;
+  const pendingDecisions = activeProjets.filter(p => p.status !== 'gagné' && p.status !== 'perdu').length;
+  const pendingProjects = activeProjets.filter(p => p.status === 'gagné' || p.status === 'en_cours' || p.status === 'livré').length;
+  const archivedCount = archivedProjets.length;
 
   const trendData = (() => {
     const months: Record<string, number> = {};
@@ -438,7 +462,7 @@ const archivedCount = archivedProjets.length;
 
   const sectorDistribution = (() => {
     const dist: Record<string, number> = {};
-    activeProjets.forEach(p => { const s = p.brief?.sector || 'Non spécifié'; dist[s] = (dist[s] || 0) + 1; });
+    activeProjets.forEach(p => { const s = p.brief?.sector || t[language].adminUnspecified; dist[s] = (dist[s] || 0) + 1; });
     return Object.entries(dist).map(([name, value]) => ({ name, value }));
   })();
 
@@ -450,14 +474,14 @@ const archivedCount = archivedProjets.length;
         <div className="bg-white rounded-3xl p-8 shadow-xl max-w-md w-full">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-[#D4AF37] rounded-2xl flex items-center justify-center mx-auto mb-4"><LayoutDashboard size={28} className="text-white" /></div>
-            <h1 className="text-2xl font-black">Cockpit Actoos</h1>
+            <h1 className="text-2xl font-black">{t[language].adminCockpitTitle}</h1>
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="relative">
-              <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Mot de passe" className="w-full border rounded-xl px-4 py-3 pr-12" />
+              <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder={t[language].adminPasswordPlaceholder} className="w-full border rounded-xl px-4 py-3 pr-12" />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
             </div>
-            <button type="submit" className="w-full bg-[#D4AF37] text-white rounded-xl py-3 font-bold">Accéder</button>
+            <button type="submit" className="w-full bg-[#D4AF37] text-white rounded-xl py-3 font-bold">{t[language].adminLoginButton}</button>
           </form>
         </div>
       </div>
@@ -470,53 +494,62 @@ const archivedCount = archivedProjets.length;
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center"><LayoutDashboard size={20} className="text-white" /></div>
-            <div><span className="font-black text-xl">Cockpit<span className="text-[#D4AF37]">.</span></span><span className="text-[10px] text-slate-400 block">Actoos Admin</span></div>
+            <div><span className="font-black text-xl">{t[language].adminCockpitShort}<span className="text-[#D4AF37]">.</span></span><span className="text-[10px] text-slate-400 block">Actoos Admin</span></div>
           </div>
           <div className="flex items-center gap-3">
-            <a href="/" className="text-slate-400 hover:text-slate-600 text-sm font-bold flex items-center gap-2"><ArrowLeft size={16} /> Accueil</a>
-            <button onClick={handleLogout} className="text-slate-400 hover:text-red-500 text-sm font-bold flex items-center gap-2"><LogOut size={16} /> Déconnexion</button>
+            <div className="flex items-center space-x-4 text-[11px] font-black uppercase tracking-widest text-slate-400">
+              <button onClick={() => setLanguage('fr')} className={`${language === 'fr' ? 'text-slate-900 underline' : 'hover:text-black'}`}>FR</button>
+              <button onClick={() => setLanguage('en')} className={`${language === 'en' ? 'text-slate-900 underline' : 'hover:text-black'}`}>EN</button>
+            </div>
+            <a href="/" className="text-slate-400 hover:text-slate-600 text-sm font-bold flex items-center gap-2"><ArrowLeft size={16} /> {t[language].adminHome}</a>
+            <button onClick={handleLogout} className="text-slate-400 hover:text-red-500 text-sm font-bold flex items-center gap-2"><LogOut size={16} /> {t[language].adminLogout}</button>
           </div>
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto px-6 pt-6">
-  <div className="flex items-center gap-1 bg-white rounded-2xl p-1 border border-slate-200 shadow-sm w-fit flex-wrap">
-    <button onClick={() => setActiveTab('dashboard')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'dashboard' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-      📊 Dashboard
-    </button>
-    <button onClick={() => setActiveTab('projets')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'projets' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-      📋 Projets
-      {pendingProjects > 0 && activeTab !== 'projets' && (
-        <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingProjects}</span>
-      )}
-    </button>
-    <button onClick={() => setActiveTab('decision')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'decision' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-      ⚖️ Décision
-      {pendingDecisions > 0 && activeTab !== 'decision' && (
-        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingDecisions}</span>
-      )}
-    </button>
-    <button onClick={() => setActiveTab('corbeille')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'corbeille' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-      🗑️ Corbeille ({archivedCount})
-    </button>
-    <button onClick={() => { setActiveTab('messages'); markAsRead(); }} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'messages' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-      💬 Messages
-      {unreadCount > 0 && activeTab !== 'messages' && (
-        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{unreadCount}</span>
-      )}
-    </button>
-    <button onClick={() => setActiveTab('fichiers')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'fichiers' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-      📁 Fichiers
-    </button>
-  </div>
-</div>
+        <div className="flex items-center gap-1 bg-white rounded-2xl p-1 border border-slate-200 shadow-sm w-fit flex-wrap">
+          <button onClick={() => setActiveTab('dashboard')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'dashboard' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+            📊 {t[language].adminTabDashboard}
+          </button>
+          <button onClick={() => setActiveTab('projets')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'projets' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+            📋 {t[language].adminTabProjects}
+            {pendingProjects > 0 && activeTab !== 'projets' && (
+              <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingProjects}</span>
+            )}
+          </button>
+          <button onClick={() => setActiveTab('decision')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'decision' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+            ⚖️ {t[language].adminTabDecision}
+            {pendingDecisions > 0 && activeTab !== 'decision' && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingDecisions}</span>
+            )}
+          </button>
+          <button onClick={() => setActiveTab('corbeille')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'corbeille' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+            🗑️ {t[language].adminTabTrash} ({archivedCount})
+          </button>
+          <button onClick={() => { setActiveTab('messages'); markAsRead(); }} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'messages' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+            💬 {t[language].adminTabMessages}
+            {unreadCount > 0 && activeTab !== 'messages' && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{unreadCount}</span>
+            )}
+          </button>
+          <button onClick={() => setActiveTab('fichiers')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'fichiers' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+            📁 {t[language].adminTabFiles}
+          </button>
+        </div>
+      </div>
 
       <main className="max-w-7xl mx-auto p-6 space-y-6">
         {/* ========== DASHBOARD ========== */}
         {activeTab === 'dashboard' && (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[{ label: 'Total', value: stats.total, icon: FileText, color: 'blue' }, { label: 'Ce mois', value: stats.thisMonth, icon: TrendingUp, color: 'emerald' }, { label: 'Maturité moy.', value: `${stats.avgMaturity}/10`, icon: BarChart3, color: 'amber' }, { label: 'Priorité moy.', value: `${stats.avgPriority}/10`, icon: Users, color: 'purple' }].map(s => (
+              {[
+                { label: t[language].adminTotal, value: stats.total, icon: FileText, color: 'blue' },
+                { label: t[language].adminThisMonth, value: stats.thisMonth, icon: TrendingUp, color: 'emerald' },
+                { label: t[language].adminAvgMaturity, value: `${stats.avgMaturity}/10`, icon: BarChart3, color: 'amber' },
+                { label: t[language].adminAvgPriority, value: `${stats.avgPriority}/10`, icon: Users, color: 'purple' }
+              ].map(s => (
                 <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.color === 'blue' ? 'bg-blue-50 text-blue-500' : s.color === 'emerald' ? 'bg-emerald-50 text-emerald-500' : s.color === 'amber' ? 'bg-amber-50 text-amber-500' : 'bg-purple-50 text-purple-500'}`}><s.icon size={20} /></div>
@@ -527,7 +560,7 @@ const archivedCount = archivedProjets.length;
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-                <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Activity size={16} className="text-[#D4AF37]" /> Évolution mensuelle</h3>
+                <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Activity size={16} className="text-[#D4AF37]" /> {t[language].adminMonthlyEvolution}</h3>
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart data={trendData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -539,7 +572,7 @@ const archivedCount = archivedProjets.length;
                 </ResponsiveContainer>
               </div>
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-                <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><PieChartIcon size={16} className="text-[#D4AF37]" /> Statuts</h3>
+                <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><PieChartIcon size={16} className="text-[#D4AF37]" /> {t[language].adminStatuses}</h3>
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie data={statusDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
@@ -550,7 +583,7 @@ const archivedCount = archivedProjets.length;
                 </ResponsiveContainer>
               </div>
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-                <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Target size={16} className="text-[#D4AF37]" /> Secteurs</h3>
+                <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Target size={16} className="text-[#D4AF37]" /> {t[language].adminSectors}</h3>
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie data={sectorDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
@@ -569,39 +602,41 @@ const archivedCount = archivedProjets.length;
           <>
             <div className="flex items-center gap-2 flex-wrap">
               <Search size={18} className="text-slate-400" />
-              <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Rechercher client, projet, secteur..." className="flex-1 min-w-[200px] bg-white rounded-2xl p-3 text-sm outline-none border border-slate-100" />
+              <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder={t[language].adminSearchPlaceholder} className="flex-1 min-w-[200px] bg-white rounded-2xl p-3 text-sm outline-none border border-slate-100" />
               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-white rounded-2xl p-3 text-sm border border-slate-100 outline-none">
-                <option value="all">Tous les statuts</option>
-                <option value="nouveau">Nouveau</option><option value="contacté">Contacté</option><option value="devis_envoyé">Devis envoyé</option>
-                <option value="en_cours">En cours</option><option value="livré">Livré</option><option value="terminé">Terminé</option>
+                <option value="all">{t[language].adminAllStatuses}</option>
+                <option value="nouveau">{getStatusLabel('nouveau', language)}</option>
+                <option value="contacté">{getStatusLabel('contacté', language)}</option>
+                <option value="devis_envoyé">{getStatusLabel('devis_envoyé', language)}</option>
+                <option value="en_cours">{getStatusLabel('en_cours', language)}</option>
+                <option value="livré">{getStatusLabel('livré', language)}</option>
+                <option value="terminé">{getStatusLabel('terminé', language)}</option>
               </select>
               <button onClick={loadProjects} disabled={loading} className="px-4 py-2 bg-white rounded-xl text-sm font-bold border hover:bg-slate-50 flex items-center gap-2 disabled:opacity-50">
-  <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> Rafraîchir
-</button>
-              <button onClick={() => { caches?.keys().then(names => names.forEach(n => caches.delete(n))); window.location.reload(); }} className="px-4 py-2 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200 hover:bg-red-100 flex items-center gap-2"><RefreshCw size={16} /> Vider cache & recharger</button>
+                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> {t[language].adminRefresh}
+              </button>
+              <button onClick={() => { caches?.keys().then(names => names.forEach(n => caches.delete(n))); window.location.reload(); }} className="px-4 py-2 bg-red-50 text-red-700 rounded-xl text-sm font-bold border border-red-200 hover:bg-red-100 flex items-center gap-2"><RefreshCw size={16} /> {t[language].adminClearCache}</button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredProjets.filter(p => !p.archived).map(projet => (
                 <div key={projet.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-3">
-                    <div><h3 className="font-bold text-lg">{projet.brief?.projectName || 'Sans titre'}</h3><p className="text-sm text-slate-500">{projet.client_name}</p></div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(projet.status)}`}>{getStatusLabel(projet.status)}</span>
+                    <div><h3 className="font-bold text-lg">{projet.brief?.projectName || t[language].adminUntitled}</h3><p className="text-sm text-slate-500">{projet.client_name}</p></div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(projet.status)}`}>{getStatusLabel(projet.status, language)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-500 mb-2"><Mail size={12} /> {projet.client_email}</div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500 mb-3"><Calendar size={12} /> {new Date(projet.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 mb-3"><Calendar size={12} /> {new Date(projet.created_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long' })}</div>
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="flex-1"><p className="text-xs text-slate-400">Maturité</p><div className="flex items-center gap-2"><div className="w-full h-1.5 bg-slate-200 rounded-full"><div className="h-1.5 bg-[#D4AF37] rounded-full" style={{ width: `${(projet.brief?.maturityScore || 0) * 10}%` }} /></div><span className="text-xs font-bold">{projet.brief?.maturityScore || 0}/10</span></div></div>
-                    <div className="flex-1"><p className="text-xs text-slate-400">Priorité</p><div className="flex items-center gap-2"><div className="w-full h-1.5 bg-slate-200 rounded-full"><div className="h-1.5 bg-[#D4AF37] rounded-full" style={{ width: `${(projet.brief?.priorityScore || 0) * 10}%` }} /></div><span className="text-xs font-bold">{projet.brief?.priorityScore || 0}/10</span></div></div>
+                    <div className="flex-1"><p className="text-xs text-slate-400">{t[language].adminMaturity}</p><div className="flex items-center gap-2"><div className="w-full h-1.5 bg-slate-200 rounded-full"><div className="h-1.5 bg-[#D4AF37] rounded-full" style={{ width: `${(projet.brief?.maturityScore || 0) * 10}%` }} /></div><span className="text-xs font-bold">{projet.brief?.maturityScore || 0}/10</span></div></div>
+                    <div className="flex-1"><p className="text-xs text-slate-400">{t[language].adminPriority}</p><div className="flex items-center gap-2"><div className="w-full h-1.5 bg-slate-200 rounded-full"><div className="h-1.5 bg-[#D4AF37] rounded-full" style={{ width: `${(projet.brief?.priorityScore || 0) * 10}%` }} /></div><span className="text-xs font-bold">{projet.brief?.priorityScore || 0}/10</span></div></div>
                   </div>
-                  {/* Curseur d'avancement */}
                   <div className="flex items-center gap-2 mb-3">
                     <input type="range" min="0" max="10" value={projet.brief?.maturityScore || 0} onChange={(e) => updateMaturity(projet.id, parseInt(e.target.value))} className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-[#D4AF37] [&::-webkit-slider-thumb]:rounded-full" />
                     <span className="text-xs font-bold">{projet.brief?.maturityScore || 0}/10</span>
                   </div>
-                  {/* Étapes */}
                   <div className="mb-3">
-                    <p className="text-xs text-slate-400 mb-1">Étapes du projet</p>
+                    <p className="text-xs text-slate-400 mb-1">{t[language].adminProjectSteps}</p>
                     {((projet.steps && Array.isArray(projet.steps) ? projet.steps : []) as { name: string; status: string }[]).map((step, idx) => (
                       <div key={idx} className="flex items-center gap-2 mb-1">
                         <button
@@ -651,7 +686,7 @@ const archivedCount = archivedProjets.length;
                     <div className="flex gap-2 mt-2">
                       <button
                         onClick={async () => {
-                          const newName = prompt('Nouvelle étape :');
+                          const newName = prompt(t[language].adminNewStepPrompt);
                           if (!newName) return;
                           const newSteps = [...(projet.steps || []), { name: newName, status: 'à_faire' }];
                           await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
@@ -662,11 +697,11 @@ const archivedCount = archivedProjets.length;
                         }}
                         className="text-xs text-[#D4AF37] font-bold hover:text-amber-600"
                       >
-                        + Ajouter une étape
+                        {t[language].adminAddStep}
                       </button>
                       <button
                         onClick={async () => {
-                          if (!confirm('Demander à l’IA de planifier les étapes ?')) return;
+                          if (!confirm(t[language].adminAiPlanConfirm)) return;
                           const res = await fetch('/api/generate-proposal', {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -686,27 +721,54 @@ const archivedCount = archivedProjets.length;
                         }}
                         className="text-xs text-blue-500 font-bold hover:text-blue-700"
                       >
-                        🤖 Planifier avec l’IA
+                        🤖 {t[language].adminAiPlan}
                       </button>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mb-3">
                     <select value={projet.payment_status || 'aucun'} onChange={e => updatePaymentStatus(projet.id, e.target.value)} className="text-xs border rounded-lg px-2 py-1 outline-none bg-white">
-                      <option value="aucun">Non payé</option><option value="acompte_payé">Acompte payé</option><option value="complet">Payé</option>
+                      <option value="aucun">{t[language].adminPaymentNone}</option>
+                      <option value="acompte_payé">{t[language].adminPaymentDeposit}</option>
+                      <option value="complet">{t[language].adminPaymentFull}</option>
                     </select>
                     <span className="text-xs text-slate-400">{projet.brief?.sector || '-'}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
                     <select value={projet.status || 'nouveau'} onChange={e => updateStatus(projet.id, e.target.value)} className="text-xs border rounded-lg px-2 py-1 outline-none bg-white">
-                      <option value="nouveau">Nouveau</option><option value="contacté">Contacté</option><option value="devis_envoyé">Devis envoyé</option>
-                      <option value="en_cours">En cours</option><option value="livré">Livré</option><option value="terminé">Terminé</option>
+                      <option value="nouveau">{getStatusLabel('nouveau', language)}</option>
+                      <option value="contacté">{getStatusLabel('contacté', language)}</option>
+                      <option value="devis_envoyé">{getStatusLabel('devis_envoyé', language)}</option>
+                      <option value="en_cours">{getStatusLabel('en_cours', language)}</option>
+                      <option value="livré">{getStatusLabel('livré', language)}</option>
+                      <option value="terminé">{getStatusLabel('terminé', language)}</option>
                     </select>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => relancer(projet)} title="Relancer" className="p-2 rounded-lg hover:bg-amber-50 text-amber-600"><RefreshCw size={14} /></button>
-                      <button onClick={() => setShowCalendly(true)} title="Prendre rendez-vous" className="p-2 rounded-lg hover:bg-blue-50 text-blue-600"><Calendar size={14} /></button>
-                      <button onClick={() => createPaymentLink(projet)} title="Créer un lien de paiement" className="p-2 rounded-lg hover:bg-green-50 text-green-600"><DollarSign size={14} /></button>
-                      <button onClick={() => openEmailForm(projet)} title="Envoyer un email" className="p-2 rounded-lg hover:bg-indigo-50 text-indigo-600"><Mail size={14} /></button>
-                      <button onClick={() => setSelectedProject(projet)} title="Voir les détails" className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"><EyeIcon size={14} /></button>
+                      <button onClick={() => relancer(projet)} title={t[language].adminFollowUp} className="p-2 rounded-lg hover:bg-amber-50 text-amber-600"><RefreshCw size={14} /></button>
+                      {/* Bouton Prendre rendez-vous OU info rendez-vous */}
+                      {projet.booking_id ? (
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <Calendar size={12} />
+                          <span>
+                            {new Date(projet.booking_start).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
+                            {' '}
+                            {new Date(projet.booking_start).toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <button onClick={() => handleCancelBooking(projet.id, projet.booking_id)} className="text-red-500 hover:text-red-700" title={t[language].adminCancelAppointment}>
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => { setBookingProject(projet); setShowBooking(true); }}
+                          title={t[language].adminSchedule}
+                          className="p-2 rounded-lg hover:bg-blue-50 text-blue-600"
+                        >
+                          <Calendar size={14} />
+                        </button>
+                      )}
+                      <button onClick={() => createPaymentLink(projet)} title={t[language].adminPaymentLink} className="p-2 rounded-lg hover:bg-green-50 text-green-600"><DollarSign size={14} /></button>
+                      <button onClick={() => openEmailForm(projet)} title={t[language].adminSendEmail} className="p-2 rounded-lg hover:bg-indigo-50 text-indigo-600"><Mail size={14} /></button>
+                      <button onClick={() => setSelectedProject(projet)} title={t[language].adminViewDetails} className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"><EyeIcon size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -720,17 +782,17 @@ const archivedCount = archivedProjets.length;
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {activeProjets.filter(p => p.status !== 'gagné' && p.status !== 'perdu').map(projet => (
               <div key={projet.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-                <h3 className="font-bold text-lg mb-1">{projet.brief?.projectName || 'Sans titre'}</h3>
+                <h3 className="font-bold text-lg mb-1">{projet.brief?.projectName || t[language].adminUntitled}</h3>
                 <p className="text-sm text-slate-500 mb-3">{projet.client_name} · {projet.client_email}</p>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => handleDecision(projet, 'accept')} className="flex-1 bg-green-500 text-white py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1 hover:bg-green-600"><CheckCircle size={14} /> Accepter</button>
-                  <button onClick={() => handleDecision(projet, 'archive')} className="flex-1 bg-amber-500 text-white py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1 hover:bg-amber-600"><Archive size={14} /> Archiver</button>
-                  <button onClick={() => handleDecision(projet, 'refuse')} className="flex-1 bg-red-500 text-white py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1 hover:bg-red-600"><Trash2 size={14} /> Refuser</button>
+                  <button onClick={() => handleDecision(projet, 'accept')} className="flex-1 bg-green-500 text-white py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1 hover:bg-green-600"><CheckCircle size={14} /> {t[language].adminAccept}</button>
+                  <button onClick={() => handleDecision(projet, 'archive')} className="flex-1 bg-amber-500 text-white py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1 hover:bg-amber-600"><Archive size={14} /> {t[language].adminArchive}</button>
+                  <button onClick={() => handleDecision(projet, 'refuse')} className="flex-1 bg-red-500 text-white py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1 hover:bg-red-600"><Trash2 size={14} /> {t[language].adminRefuse}</button>
                 </div>
               </div>
             ))}
             {activeProjets.filter(p => p.status !== 'gagné' && p.status !== 'perdu').length === 0 && (
-              <div className="col-span-full text-center py-12 text-slate-400">Aucun projet en attente de décision.</div>
+              <div className="col-span-full text-center py-12 text-slate-400">{t[language].adminNoDecision}</div>
             )}
           </div>
         )}
@@ -740,16 +802,16 @@ const archivedCount = archivedProjets.length;
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {archivedProjets.map(projet => (
               <div key={projet.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 opacity-80">
-                <h3 className="font-bold text-lg mb-1">{projet.brief?.projectName || 'Sans titre'}</h3>
+                <h3 className="font-bold text-lg mb-1">{projet.brief?.projectName || t[language].adminUntitled}</h3>
                 <p className="text-sm text-slate-500 mb-3">{projet.client_name} · {projet.client_email}</p>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => handleRestore(projet.id)} className="flex-1 bg-blue-500 text-white py-2 rounded-xl font-bold text-xs hover:bg-blue-600">Restaurer</button>
-                  <button onClick={() => handleDecision(projet, 'refuse')} className="flex-1 bg-red-500 text-white py-2 rounded-xl font-bold text-xs hover:bg-red-600">Supprimer</button>
+                  <button onClick={() => handleRestore(projet.id)} className="flex-1 bg-blue-500 text-white py-2 rounded-xl font-bold text-xs hover:bg-blue-600">{t[language].adminRestore}</button>
+                  <button onClick={() => handleDecision(projet, 'refuse')} className="flex-1 bg-red-500 text-white py-2 rounded-xl font-bold text-xs hover:bg-red-600">{t[language].adminDelete}</button>
                 </div>
               </div>
             ))}
             {archivedProjets.length === 0 && (
-              <div className="col-span-full text-center py-12 text-slate-400">La corbeille est vide.</div>
+              <div className="col-span-full text-center py-12 text-slate-400">{t[language].adminTrashEmpty}</div>
             )}
           </div>
         )}
@@ -758,8 +820,8 @@ const archivedCount = archivedProjets.length;
         {activeTab === 'messages' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black text-slate-900">Messages récents</h2>
-              <button onClick={loadComments} className="px-4 py-2 bg-white rounded-xl text-sm font-bold border hover:bg-slate-50 flex items-center gap-2"><RefreshCw size={16} /> Rafraîchir</button>
+              <h2 className="text-2xl font-black text-slate-900">{t[language].adminRecentMessages}</h2>
+              <button onClick={loadComments} className="px-4 py-2 bg-white rounded-xl text-sm font-bold border hover:bg-slate-50 flex items-center gap-2"><RefreshCw size={16} /> {t[language].adminRefresh}</button>
             </div>
             {Object.entries(
               allComments.reduce((acc: Record<string, any[]>, c) => {
@@ -776,7 +838,7 @@ const archivedCount = archivedProjets.length;
                   </div>
                   <button
                     onClick={async () => {
-                      const reply = prompt('Votre réponse :');
+                      const reply = prompt(t[language].adminReplyPrompt);
                       if (!reply) return;
                       await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/add-comment', {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -786,7 +848,7 @@ const archivedCount = archivedProjets.length;
                     }}
                     className="text-xs bg-[#D4AF37] text-white px-3 py-1.5 rounded-xl font-bold hover:bg-amber-500"
                   >
-                    Répondre
+                    {t[language].adminReply}
                   </button>
                 </div>
                 <div className="space-y-3">
@@ -795,8 +857,8 @@ const archivedCount = archivedProjets.length;
                       <div className={`max-w-[80%] p-3 rounded-xl text-sm ${c.author === 'client' ? 'bg-[#D4AF37]/10 text-slate-800 border border-[#D4AF37]/30' : 'bg-slate-50 border'}`}>
                         <div className="text-xs opacity-70 mb-1 flex items-center gap-2">
                           <span>{c.author === 'client' ? '👤 Client' : '🤖 Agent'}</span>
-                          <span>{new Date(c.created_at).toLocaleString('fr-FR')}</span>
-                          {c.edited_at && <span className="text-amber-600">(modifié)</span>}
+                          <span>{new Date(c.created_at).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US')}</span>
+                          {c.edited_at && <span className="text-amber-600">({t[language].adminEdited})</span>}
                         </div>
                         <p>{c.content}</p>
                       </div>
@@ -812,11 +874,11 @@ const archivedCount = archivedProjets.length;
         {activeTab === 'fichiers' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black text-slate-900">Tous les fichiers</h2>
-              <button onClick={loadAllFiles} className="px-4 py-2 bg-white rounded-xl text-sm font-bold border hover:bg-slate-50 flex items-center gap-2"><RefreshCw size={16} /> Rafraîchir</button>
+              <h2 className="text-2xl font-black text-slate-900">{t[language].adminAllFiles}</h2>
+              <button onClick={loadAllFiles} className="px-4 py-2 bg-white rounded-xl text-sm font-bold border hover:bg-slate-50 flex items-center gap-2"><RefreshCw size={16} /> {t[language].adminRefresh}</button>
             </div>
             <div className="space-y-2">
-              {allFiles.length === 0 && <p className="text-slate-400">Aucun fichier pour le moment.</p>}
+              {allFiles.length === 0 && <p className="text-slate-400">{t[language].adminNoFiles}</p>}
               {allFiles.map((f: any) => (
                 <div key={f.id} className="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border">
                   <div className="flex items-center gap-3">
@@ -824,7 +886,7 @@ const archivedCount = archivedProjets.length;
                     <div>
                       <p className="font-medium text-sm">{f.name}</p>
                       <p className="text-xs text-slate-400">
-                        {f.client_name} · {f.project_name} · {new Date(f.created_at).toLocaleDateString('fr-FR')}
+                        {f.client_name} · {f.project_name} · {new Date(f.created_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
                         {f.message && <span className="italic ml-2">"{f.message}"</span>}
                       </p>
                     </div>
@@ -845,20 +907,20 @@ const archivedCount = archivedProjets.length;
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setSelectedProject(null)}>
           <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-y-auto p-8" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-black">{selectedProject.brief?.projectName || 'Détails'}</h2>
+              <h2 className="text-2xl font-black">{selectedProject.brief?.projectName || t[language].adminDetailsTitle}</h2>
               <button onClick={() => setSelectedProject(null)}><X size={24} /></button>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-slate-50 rounded-2xl">
-              <div><span className="text-slate-400">Client :</span> <strong>{selectedProject.client_name}</strong></div>
-              <div><span className="text-slate-400">Email :</span> <strong>{selectedProject.client_email}</strong></div>
+              <div><span className="text-slate-400">{t[language].adminClient}:</span> <strong>{selectedProject.client_name}</strong></div>
+              <div><span className="text-slate-400">{t[language].adminEmail}:</span> <strong>{selectedProject.client_email}</strong></div>
             </div>
 
             <div className="flex items-center gap-2 mb-6 border-b pb-3">
               {['details', 'fichiers', 'commentaires'].map(tab => (
                 <button key={tab} onClick={() => setDetailTab(tab)} className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${detailTab === tab ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-                  {tab === 'details' && '📋 Détails'}
-                  {tab === 'fichiers' && `📁 Fichiers (${selectedFiles.length})`}
-                  {tab === 'commentaires' && `💬 Commentaires (${selectedComments.length})`}
+                  {tab === 'details' && `📋 ${t[language].adminDetailTabDetails}`}
+                  {tab === 'fichiers' && `📁 ${t[language].adminDetailTabFiles} (${selectedFiles.length})`}
+                  {tab === 'commentaires' && `💬 ${t[language].adminDetailTabComments} (${selectedComments.length})`}
                 </button>
               ))}
             </div>
@@ -872,12 +934,12 @@ const archivedCount = archivedProjets.length;
                 </div>
                 {selectedProject.conversation?.length > 0 && (
                   <div className="mb-4">
-                    <h3 className="font-bold text-sm mb-2 flex items-center gap-2"><MessageSquare size={16} /> Conversation complète</h3>
+                    <h3 className="font-bold text-sm mb-2 flex items-center gap-2"><MessageSquare size={16} /> {t[language].adminFullConversation}</h3>
                     <div className="space-y-3 max-h-64 overflow-y-auto p-3 bg-slate-50 rounded-xl">
                       {normalizeConversation(selectedProject.conversation).map((msg: any, i: number) => (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                           <div className={`max-w-[80%] p-3 rounded-xl text-sm ${msg.role === 'user' ? 'bg-[#D4AF37] text-white' : 'bg-white border'}`}>
-                            <div className="text-xs opacity-70 mb-1">{msg.role === 'user' ? 'Client' : 'Agent Actoos'}</div>
+                            <div className="text-xs opacity-70 mb-1">{msg.role === 'user' ? t[language].adminRoleClient : t[language].adminRoleAgent}</div>
                             {msg.content}
                           </div>
                         </div>
@@ -887,34 +949,17 @@ const archivedCount = archivedProjets.length;
                 )}
               </>
             )}
-            {/* Historique des paiements */}
-{selectedProject.payment_history?.length > 0 && (
-  <div className="mb-6">
-    <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><DollarSign size={16} className="text-[#D4AF37]" /> Historique des paiements</h3>
-    <div className="space-y-2">
-      {selectedProject.payment_history.map((payment: any, i: number) => (
-        <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-          <div>
-            <p className="font-medium text-sm">{payment.amount}€</p>
-            <p className="text-xs text-slate-400">{new Date(payment.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-          </div>
-          <span className="px-2 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold">✓</span>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
 
             {detailTab === 'fichiers' && (
               <div className="space-y-2">
-                {selectedFiles.length === 0 && <p className="text-sm text-slate-400">Aucun fichier pour le moment.</p>}
+                {selectedFiles.length === 0 && <p className="text-sm text-slate-400">{t[language].adminNoFiles}</p>}
                 {selectedFiles.map((f: any) => (
                   <div key={f.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                     <div className="flex items-center gap-3">
                       <FileText size={16} className="text-slate-400" />
                       <div>
                         <p className="font-medium text-sm">{f.name}</p>
-                        <p className="text-xs text-slate-400">{new Date(f.created_at).toLocaleDateString('fr-FR')} · {f.uploaded_by === 'client' ? 'Client' : 'Équipe'}</p>
+                        <p className="text-xs text-slate-400">{new Date(f.created_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')} · {f.uploaded_by === 'client' ? t[language].adminRoleClient : t[language].adminRoleTeam}</p>
                         {f.message && <p className="text-xs text-slate-500 italic mt-1">"{f.message}"</p>}
                       </div>
                     </div>
@@ -930,7 +975,7 @@ const archivedCount = archivedProjets.length;
             {detailTab === 'commentaires' && (
               <div className="space-y-4">
                 <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {selectedComments.length === 0 && <p className="text-sm text-slate-400">Aucun commentaire pour le moment.</p>}
+                  {selectedComments.length === 0 && <p className="text-sm text-slate-400">{t[language].adminNoComments}</p>}
                   {selectedComments.map((c: any) => (
                     <div key={c.id} className={`flex ${c.author === 'client' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[80%] p-3 rounded-xl text-sm ${c.author === 'client' ? 'bg-[#D4AF37]/10 text-slate-800 border border-[#D4AF37]/30' : 'bg-slate-50 border'}`}>
@@ -938,21 +983,21 @@ const archivedCount = archivedProjets.length;
                           <div className="flex flex-col gap-2">
                             <input value={editCommentContent} onChange={e => setEditCommentContent(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm text-slate-800" autoFocus onKeyDown={async (e) => { if (e.key === 'Enter') await handleEditAdminComment(c.id, editCommentContent); if (e.key === 'Escape') setEditingCommentId(null); }} />
                             <div className="flex justify-end gap-2">
-                              <button onClick={() => setEditingCommentId(null)} className="text-xs text-slate-500">Annuler</button>
-                              <button onClick={() => handleEditAdminComment(c.id, editCommentContent)} className="text-xs bg-[#D4AF37] text-white px-2 py-1 rounded">Enregistrer</button>
+                              <button onClick={() => setEditingCommentId(null)} className="text-xs text-slate-500">{t[language].adminCancel}</button>
+                              <button onClick={() => handleEditAdminComment(c.id, editCommentContent)} className="text-xs bg-[#D4AF37] text-white px-2 py-1 rounded">{t[language].adminSave}</button>
                             </div>
                           </div>
                         ) : (
                           <>
                             <div className="text-xs opacity-70 mb-1 flex items-center gap-2">
                               <span>{c.author === 'client' ? '👤 Client' : c.author === 'agent' ? '🤖 Agent' : '🛠️ Admin'}</span>
-                              <span>· {new Date(c.created_at).toLocaleString('fr-FR')}</span>
-                              {c.edited_at && <span className="text-amber-600">(modifié)</span>}
+                              <span>· {new Date(c.created_at).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US')}</span>
+                              {c.edited_at && <span className="text-amber-600">({t[language].adminEdited})</span>}
                             </div>
                             <p>{c.content}</p>
                             <div className="flex gap-2 mt-1">
-                              <button onClick={() => { setEditingCommentId(c.id); setEditCommentContent(c.content); }} className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1"><Edit3 size={12} /> Modifier</button>
-                              <button onClick={() => handleDeleteAdminComment(c.id)} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"><Trash2 size={12} /> Supprimer</button>
+                              <button onClick={() => { setEditingCommentId(c.id); setEditCommentContent(c.content); }} className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1"><Edit3 size={12} /> {t[language].adminEdit}</button>
+                              <button onClick={() => handleDeleteAdminComment(c.id)} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"><Trash2 size={12} /> {t[language].adminDelete}</button>
                             </div>
                           </>
                         )}
@@ -961,15 +1006,57 @@ const archivedCount = archivedProjets.length;
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <input type="text" value={adminComment} onChange={e => setAdminComment(e.target.value)} placeholder="Répondre au client..." className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37]" onKeyDown={e => { if (e.key === 'Enter') handleAddAdminComment(); }} />
-                  <button onClick={handleAddAdminComment} disabled={!adminComment.trim() || commentSending} className="bg-[#D4AF37] text-white px-4 py-2 rounded-xl font-bold text-sm disabled:opacity-50">Envoyer</button>
+                  <input type="text" value={adminComment} onChange={e => setAdminComment(e.target.value)} placeholder={t[language].adminReplyPlaceholder} className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#D4AF37]" onKeyDown={e => { if (e.key === 'Enter') handleAddAdminComment(); }} />
+                  <button onClick={handleAddAdminComment} disabled={!adminComment.trim() || commentSending} className="bg-[#D4AF37] text-white px-4 py-2 rounded-xl font-bold text-sm disabled:opacity-50">{t[language].adminSend}</button>
                 </div>
               </div>
             )}
 
+            {/* Rendez-vous dans la modale détails */}
+            {selectedProject.booking_id && (
+              <div className="mt-6 pt-6 border-t">
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                  <Calendar size={18} className="text-[#D4AF37]" />
+                  {t[language].adminAppointmentTitle}
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <p>
+                    <strong>{t[language].adminDate} :</strong>{" "}
+                    {new Date(selectedProject.booking_start).toLocaleDateString(
+                      language === 'fr' ? 'fr-FR' : 'en-US',
+                      { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+                    )}
+                  </p>
+                  <p>
+                    <strong>{t[language].adminTime} :</strong>{" "}
+                    {new Date(selectedProject.booking_start).toLocaleTimeString(
+                      language === 'fr' ? 'fr-FR' : 'en-US',
+                      { hour: '2-digit', minute: '2-digit' }
+                    )}
+                  </p>
+                  {selectedProject.booking_link && (
+                    <a
+                      href={selectedProject.booking_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#D4AF37] font-bold hover:underline"
+                    >
+                      {t[language].adminMeetingLink}
+                    </a>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleCancelBooking(selectedProject.id, selectedProject.booking_id)}
+                  className="mt-4 bg-red-50 text-red-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-red-100"
+                >
+                  {t[language].adminCancelAppointment}
+                </button>
+              </div>
+            )}
+
             <div className="mt-6 pt-6 border-t">
-              <h3 className="font-bold text-sm mb-2">📝 Notes internes</h3>
-              <textarea className="w-full border rounded-xl p-3 text-sm" rows={3} placeholder="Ajouter une note..." defaultValue={selectedProject.notes || ''} onBlur={e => fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: selectedProject.id, notes: e.target.value }) })} />
+              <h3 className="font-bold text-sm mb-2">📝 {t[language].adminInternalNotes}</h3>
+              <textarea className="w-full border rounded-xl p-3 text-sm" rows={3} placeholder={t[language].adminAddNote} defaultValue={selectedProject.notes || ''} onBlur={e => fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: selectedProject.id, notes: e.target.value }) })} />
             </div>
           </div>
         </div>
@@ -979,36 +1066,26 @@ const archivedCount = archivedProjets.length;
       {emailForm && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setEmailForm(null)}>
           <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-black mb-4">Envoyer un email</h2>
-            <p className="text-sm text-slate-500 mb-4">À : {emailForm.projet.client_email}</p>
-            <input type="text" value={emailForm.subject} onChange={e => setEmailForm({ ...emailForm, subject: e.target.value })} placeholder="Sujet" className="w-full border rounded-xl px-4 py-3 text-sm mb-3" />
-            <textarea value={emailForm.body} onChange={e => setEmailForm({ ...emailForm, body: e.target.value })} placeholder="Votre message..." rows={6} className="w-full border rounded-xl p-3 text-sm mb-4 resize-none" />
-            <div className="flex gap-2"><button onClick={sendEmailToClient} disabled={emailSending} className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm">Envoyer</button><button onClick={() => setEmailForm(null)} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm">Annuler</button></div>
+            <h2 className="text-xl font-black mb-4">{t[language].adminSendEmail}</h2>
+            <p className="text-sm text-slate-500 mb-4">{t[language].adminTo} : {emailForm.projet.client_email}</p>
+            <input type="text" value={emailForm.subject} onChange={e => setEmailForm({ ...emailForm, subject: e.target.value })} placeholder={t[language].adminEmailSubjectPlaceholder} className="w-full border rounded-xl px-4 py-3 text-sm mb-3" />
+            <textarea value={emailForm.body} onChange={e => setEmailForm({ ...emailForm, body: e.target.value })} placeholder={t[language].adminEmailBodyPlaceholder} rows={6} className="w-full border rounded-xl p-3 text-sm mb-4 resize-none" />
+            <div className="flex gap-2"><button onClick={sendEmailToClient} disabled={emailSending} className="flex-1 bg-[#D4AF37] text-white py-2 rounded-xl font-bold text-sm">{t[language].adminSend}</button><button onClick={() => setEmailForm(null)} className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm">{t[language].adminCancel}</button></div>
           </div>
         </div>
       )}
 
-      {/* ========== MODALE CALENDLY ========== */}
-     {showCalendly && (
-  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowCalendly(false)}>
-    <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8 text-center" onClick={e => e.stopPropagation()}>
-      <Calendar size={48} className="text-[#D4AF37] mx-auto mb-4" />
-      <h3 className="text-xl font-black mb-2">Prendre rendez-vous</h3>
-      <p className="text-slate-500 mb-6">Notre agenda s'ouvre dans une nouvelle fenêtre.</p>
-      <a
-        href="https://calendly.com/contact-actoos/30min"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 bg-[#D4AF37] text-white px-6 py-3 rounded-xl font-bold hover:bg-amber-500 transition-colors"
-      >
-        <Calendar size={18} /> Ouvrir le calendrier
-      </a>
-      <button onClick={() => setShowCalendly(false)} className="mt-4 text-sm text-slate-400 hover:text-slate-600">
-        Fermer
-      </button>
-    </div>
-  </div>
-)}
+      {/* BookingModal */}
+      {showBooking && bookingProject && (
+        <BookingModal
+          clientName={bookingProject.client_name}
+          clientEmail={bookingProject.client_email}
+          projectName={bookingProject.brief?.projectName}
+          projectId={bookingProject.id}
+          onClose={() => { setShowBooking(false); setBookingProject(null); }}
+          onBooked={() => { loadProjects(); setShowBooking(false); setBookingProject(null); }}
+        />
+      )}
     </div>
   );
 }
