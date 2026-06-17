@@ -1,23 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { 
   Code, Smartphone, Globe, ArrowRight, Layers, Menu, X 
 } from 'lucide-react';
 import ProjectChatBot from './components/ProjectChatBot';
 import FadeInSection from './components/FadeInSection';
 import { useLanguage } from './context/LanguageContext';
-import { t } from '../lib/translations'; // 👈 ajout de l'import des traductions
+import { t } from '../lib/translations';
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
+  const pathname = usePathname();
+
+  // Ferme automatiquement le menu mobile quand on change de page
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Empêche le défilement du body quand le drawer est ouvert
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-amber-50">
       
       {/* NAVIGATION */}
-      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-xl z-50 border-b border-slate-100">
+      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-xl z-40 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <img 
@@ -56,40 +75,100 @@ export default function HomePage() {
             <a href="#chatbot" className="hover:text-black transition-colors">{t[language].navProject}</a>
           </div>
 
+          {/* Bouton hamburger */}
           <button 
             className="md:hidden p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Ouvrir le menu"
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            <Menu size={24} />
           </button>
         </div>
+      </nav>
 
-        {/* Mobile menu avec sélecteur de langue */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-t border-slate-100 px-6 py-4 space-y-4">
+      {/* OVERLAY + DRAWER (menu mobile) */}
+      {/* Overlay sombre */}
+      <div
+        className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 md:hidden ${
+          mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+
+      {/* Drawer latéral */}
+      <div
+        className={`fixed top-0 right-0 z-50 h-full w-80 max-w-[85vw] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden ${
+          mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          {/* En-tête du drawer */}
+          <div className="flex items-center justify-between p-6 border-b border-slate-100">
+            <span className="font-black text-lg">Menu</span>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2 -mr-2"
+              aria-label="Fermer le menu"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Liens de navigation */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
             <div className="flex items-center space-x-6 text-sm font-black uppercase">
               <button
-                onClick={() => setLanguage('fr')}
+                onClick={() => { setLanguage('fr'); setMobileMenuOpen(false); }}
                 className={`${language === 'fr' ? 'text-slate-900 underline' : 'text-slate-400 hover:text-black'}`}
               >
                 FR
               </button>
               <button
-                onClick={() => setLanguage('en')}
+                onClick={() => { setLanguage('en'); setMobileMenuOpen(false); }}
                 className={`${language === 'en' ? 'text-slate-900 underline' : 'text-slate-400 hover:text-black'}`}
               >
                 EN
               </button>
             </div>
-            <a href="/produits" className="block text-sm font-bold text-slate-600 hover:text-black">{t[language].navProducts}</a>
-            <a href="/expertise" className="block text-sm font-bold text-slate-600 hover:text-black">{t[language].navExpertise}</a>
-            <a href="/a-propos" className="block text-sm font-bold text-slate-600 hover:text-black">{t[language].navAbout}</a>
-            <a href="/philosophie" className="block text-sm font-bold text-slate-600 hover:text-black">{t[language].navPhilosophy}</a>
-            <a href="#chatbot" className="block text-sm font-bold text-slate-600 hover:text-black">{t[language].navProject}</a>
+            
+            <a 
+              href="/produits" 
+              className="block text-base font-bold text-slate-600 hover:text-black py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t[language].navProducts}
+            </a>
+            <a 
+              href="/expertise" 
+              className="block text-base font-bold text-slate-600 hover:text-black py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t[language].navExpertise}
+            </a>
+            <a 
+              href="/a-propos" 
+              className="block text-base font-bold text-slate-600 hover:text-black py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t[language].navAbout}
+            </a>
+            <a 
+              href="/philosophie" 
+              className="block text-base font-bold text-slate-600 hover:text-black py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t[language].navPhilosophy}
+            </a>
+            <a 
+              href="#chatbot" 
+              className="block text-base font-bold text-slate-600 hover:text-black py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t[language].navProject}
+            </a>
           </div>
-        )}
-      </nav>
+        </div>
+      </div>
 
       {/* HERO */}
       <FadeInSection>

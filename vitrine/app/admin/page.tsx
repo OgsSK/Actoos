@@ -346,7 +346,6 @@ export default function AdminPage() {
     } catch { alert(t[language].adminError); } finally { setEmailSending(false); }
   };
 
-  // Annulation de rendez-vous
   const handleCancelBooking = async (projectId: string, bookingId: string) => {
     if (!confirm(t[language].adminCancelAppointmentConfirm)) return;
     try {
@@ -357,7 +356,7 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        loadProjects(); // Recharger toute la liste
+        loadProjects();
         if (selectedProject && selectedProject.id === projectId) {
           setSelectedProject((prev: any) => ({ ...prev, booking_id: null, booking_start: null, booking_link: null }));
         }
@@ -490,56 +489,73 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 font-sans">
+      {/* NAVBAR RESPONSIVE */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center"><LayoutDashboard size={20} className="text-white" /></div>
-            <div><span className="font-black text-xl">{t[language].adminCockpitShort}<span className="text-[#D4AF37]">.</span></span><span className="text-[10px] text-slate-400 block">Actoos Admin</span></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#D4AF37] to-amber-500 rounded-xl flex items-center justify-center shrink-0">
+              <LayoutDashboard size={18} className="text-white" />
+            </div>
+            <div className="min-w-0">
+              <span className="font-black text-lg sm:text-xl leading-tight">
+                {t[language].adminCockpitShort}<span className="text-[#D4AF37]">.</span>
+              </span>
+              <span className="text-[10px] text-slate-400 block">Actoos Admin</span>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center space-x-4 text-[11px] font-black uppercase tracking-widest text-slate-400">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center space-x-2 sm:space-x-4 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-400">
               <button onClick={() => setLanguage('fr')} className={`${language === 'fr' ? 'text-slate-900 underline' : 'hover:text-black'}`}>FR</button>
               <button onClick={() => setLanguage('en')} className={`${language === 'en' ? 'text-slate-900 underline' : 'hover:text-black'}`}>EN</button>
             </div>
-            <a href="/" className="text-slate-400 hover:text-slate-600 text-sm font-bold flex items-center gap-2"><ArrowLeft size={16} /> {t[language].adminHome}</a>
-            <button onClick={handleLogout} className="text-slate-400 hover:text-red-500 text-sm font-bold flex items-center gap-2"><LogOut size={16} /> {t[language].adminLogout}</button>
+            <a href="/" className="text-slate-400 hover:text-slate-600 font-bold flex items-center gap-1 text-xs sm:text-sm">
+              <ArrowLeft size={16} className="shrink-0" />
+              <span className="hidden sm:inline">{t[language].adminHome}</span>
+            </a>
+            <button onClick={handleLogout} className="text-slate-400 hover:text-red-500 font-bold flex items-center gap-1 text-xs sm:text-sm ml-2">
+              <LogOut size={16} className="shrink-0" />
+              <span className="hidden sm:inline">{t[language].adminLogout}</span>
+            </button>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 pt-6">
-        <div className="flex items-center gap-1 bg-white rounded-2xl p-1 border border-slate-200 shadow-sm w-fit flex-wrap">
-          <button onClick={() => setActiveTab('dashboard')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'dashboard' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-            📊 {t[language].adminTabDashboard}
-          </button>
-          <button onClick={() => setActiveTab('projets')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'projets' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-            📋 {t[language].adminTabProjects}
-            {pendingProjects > 0 && activeTab !== 'projets' && (
-              <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingProjects}</span>
-            )}
-          </button>
-          <button onClick={() => setActiveTab('decision')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'decision' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-            ⚖️ {t[language].adminTabDecision}
-            {pendingDecisions > 0 && activeTab !== 'decision' && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingDecisions}</span>
-            )}
-          </button>
-          <button onClick={() => setActiveTab('corbeille')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'corbeille' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-            🗑️ {t[language].adminTabTrash} ({archivedCount})
-          </button>
-          <button onClick={() => { setActiveTab('messages'); markAsRead(); }} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'messages' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-            💬 {t[language].adminTabMessages}
-            {unreadCount > 0 && activeTab !== 'messages' && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{unreadCount}</span>
-            )}
-          </button>
-          <button onClick={() => setActiveTab('fichiers')} className={`px-5 py-2 rounded-xl text-sm font-bold transition-colors relative ${activeTab === 'fichiers' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
-            📁 {t[language].adminTabFiles}
-          </button>
+      {/* ONGLETS AVEC PASTILLES NON COUPÉES */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+        <div className="overflow-x-auto -mx-4 sm:mx-0 py-2">
+          <div className="flex items-center gap-1 bg-white rounded-2xl p-1 border border-slate-200 shadow-sm w-fit min-w-max px-4 sm:px-0">
+            <button onClick={() => setActiveTab('dashboard')} className={`px-4 sm:px-5 py-2 rounded-xl text-sm font-bold transition-colors relative whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+              📊 {t[language].adminTabDashboard}
+            </button>
+            <button onClick={() => setActiveTab('projets')} className={`px-4 sm:px-5 py-2 rounded-xl text-sm font-bold transition-colors relative whitespace-nowrap ${activeTab === 'projets' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+              📋 {t[language].adminTabProjects}
+              {pendingProjects > 0 && activeTab !== 'projets' && (
+                <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingProjects}</span>
+              )}
+            </button>
+            <button onClick={() => setActiveTab('decision')} className={`px-4 sm:px-5 py-2 rounded-xl text-sm font-bold transition-colors relative whitespace-nowrap ${activeTab === 'decision' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+              ⚖️ {t[language].adminTabDecision}
+              {pendingDecisions > 0 && activeTab !== 'decision' && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingDecisions}</span>
+              )}
+            </button>
+            <button onClick={() => setActiveTab('corbeille')} className={`px-4 sm:px-5 py-2 rounded-xl text-sm font-bold transition-colors relative whitespace-nowrap ${activeTab === 'corbeille' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+              🗑️ {t[language].adminTabTrash} ({archivedCount})
+            </button>
+            <button onClick={() => { setActiveTab('messages'); markAsRead(); }} className={`px-4 sm:px-5 py-2 rounded-xl text-sm font-bold transition-colors relative whitespace-nowrap ${activeTab === 'messages' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+              💬 {t[language].adminTabMessages}
+              {unreadCount > 0 && activeTab !== 'messages' && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{unreadCount}</span>
+              )}
+            </button>
+            <button onClick={() => setActiveTab('fichiers')} className={`px-4 sm:px-5 py-2 rounded-xl text-sm font-bold transition-colors relative whitespace-nowrap ${activeTab === 'fichiers' ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+              📁 {t[language].adminTabFiles}
+            </button>
+          </div>
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto p-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* ========== DASHBOARD ========== */}
         {activeTab === 'dashboard' && (
           <>
@@ -550,7 +566,7 @@ export default function AdminPage() {
                 { label: t[language].adminAvgMaturity, value: `${stats.avgMaturity}/10`, icon: BarChart3, color: 'amber' },
                 { label: t[language].adminAvgPriority, value: `${stats.avgPriority}/10`, icon: Users, color: 'purple' }
               ].map(s => (
-                <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                <div key={s.label} className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.color === 'blue' ? 'bg-blue-50 text-blue-500' : s.color === 'emerald' ? 'bg-emerald-50 text-emerald-500' : s.color === 'amber' ? 'bg-amber-50 text-amber-500' : 'bg-purple-50 text-purple-500'}`}><s.icon size={20} /></div>
                     <div><p className="text-2xl font-black text-slate-900">{s.value}</p><p className="text-xs text-slate-400">{s.label}</p></div>
@@ -600,8 +616,8 @@ export default function AdminPage() {
         {/* ========== PROJETS ========== */}
         {activeTab === 'projets' && (
           <>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Search size={18} className="text-slate-400" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-wrap">
+              <Search size={18} className="text-slate-400 mt-1 sm:mt-0" />
               <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder={t[language].adminSearchPlaceholder} className="flex-1 min-w-[200px] bg-white rounded-2xl p-3 text-sm outline-none border border-slate-100" />
               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-white rounded-2xl p-3 text-sm border border-slate-100 outline-none">
                 <option value="all">{t[language].adminAllStatuses}</option>
@@ -622,8 +638,8 @@ export default function AdminPage() {
               {filteredProjets.filter(p => !p.archived).map(projet => (
                 <div key={projet.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-3">
-                    <div><h3 className="font-bold text-lg">{projet.brief?.projectName || t[language].adminUntitled}</h3><p className="text-sm text-slate-500">{projet.client_name}</p></div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(projet.status)}`}>{getStatusLabel(projet.status, language)}</span>
+                    <div className="min-w-0 flex-1 mr-2"><h3 className="font-bold text-lg truncate">{projet.brief?.projectName || t[language].adminUntitled}</h3><p className="text-sm text-slate-500">{projet.client_name}</p></div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap ${getStatusColor(projet.status)}`}>{getStatusLabel(projet.status, language)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-500 mb-2"><Mail size={12} /> {projet.client_email}</div>
                   <div className="flex items-center gap-2 text-xs text-slate-500 mb-3"><Calendar size={12} /> {new Date(projet.created_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long' })}</div>
@@ -744,7 +760,6 @@ export default function AdminPage() {
                     </select>
                     <div className="flex items-center gap-1">
                       <button onClick={() => relancer(projet)} title={t[language].adminFollowUp} className="p-2 rounded-lg hover:bg-amber-50 text-amber-600"><RefreshCw size={14} /></button>
-                      {/* Bouton Prendre rendez-vous OU info rendez-vous */}
                       {projet.booking_id ? (
                         <div className="flex items-center gap-2 text-xs text-slate-500">
                           <Calendar size={12} />
@@ -880,18 +895,18 @@ export default function AdminPage() {
             <div className="space-y-2">
               {allFiles.length === 0 && <p className="text-slate-400">{t[language].adminNoFiles}</p>}
               {allFiles.map((f: any) => (
-                <div key={f.id} className="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border">
-                  <div className="flex items-center gap-3">
-                    <FileText size={16} className="text-slate-400" />
-                    <div>
-                      <p className="font-medium text-sm">{f.name}</p>
-                      <p className="text-xs text-slate-400">
+                <div key={f.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white rounded-xl shadow-sm border gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText size={16} className="text-slate-400 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{f.name}</p>
+                      <p className="text-xs text-slate-400 truncate">
                         {f.client_name} · {f.project_name} · {new Date(f.created_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
                         {f.message && <span className="italic ml-2">"{f.message}"</span>}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
                     <a href={f.url} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-slate-200 rounded-lg"><Download size={16} className="text-[#D4AF37]" /></a>
                     <button onClick={() => handleDeleteFile(f.id)} className="p-2 hover:bg-red-50 rounded-lg"><Trash2 size={16} className="text-red-500" /></button>
                   </div>
@@ -905,19 +920,19 @@ export default function AdminPage() {
       {/* ========== MODALE DÉTAILS ========== */}
       {selectedProject && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setSelectedProject(null)}>
-          <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-y-auto p-8" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-8" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-black">{selectedProject.brief?.projectName || t[language].adminDetailsTitle}</h2>
               <button onClick={() => setSelectedProject(null)}><X size={24} /></button>
             </div>
-            <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-slate-50 rounded-2xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-slate-50 rounded-2xl">
               <div><span className="text-slate-400">{t[language].adminClient}:</span> <strong>{selectedProject.client_name}</strong></div>
               <div><span className="text-slate-400">{t[language].adminEmail}:</span> <strong>{selectedProject.client_email}</strong></div>
             </div>
 
-            <div className="flex items-center gap-2 mb-6 border-b pb-3">
+            <div className="flex items-center gap-2 mb-6 border-b pb-3 overflow-x-auto">
               {['details', 'fichiers', 'commentaires'].map(tab => (
-                <button key={tab} onClick={() => setDetailTab(tab)} className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${detailTab === tab ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+                <button key={tab} onClick={() => setDetailTab(tab)} className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${detailTab === tab ? 'bg-[#D4AF37] text-white shadow' : 'text-slate-500 hover:text-slate-700'}`}>
                   {tab === 'details' && `📋 ${t[language].adminDetailTabDetails}`}
                   {tab === 'fichiers' && `📁 ${t[language].adminDetailTabFiles} (${selectedFiles.length})`}
                   {tab === 'commentaires' && `💬 ${t[language].adminDetailTabComments} (${selectedComments.length})`}
@@ -927,7 +942,7 @@ export default function AdminPage() {
 
             {detailTab === 'details' && (
               <>
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                   {selectedProject.brief && Object.entries(selectedProject.brief).filter(([key]) => !['features', 'stack'].includes(key)).map(([key, value]) => (
                     <div key={key}><span className="text-slate-400 text-xs capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span><p className="font-medium break-all">{value?.toString() || '-'}</p></div>
                   ))}
@@ -954,16 +969,16 @@ export default function AdminPage() {
               <div className="space-y-2">
                 {selectedFiles.length === 0 && <p className="text-sm text-slate-400">{t[language].adminNoFiles}</p>}
                 {selectedFiles.map((f: any) => (
-                  <div key={f.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <FileText size={16} className="text-slate-400" />
+                  <div key={f.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <FileText size={16} className="text-slate-400 shrink-0" />
                       <div>
                         <p className="font-medium text-sm">{f.name}</p>
                         <p className="text-xs text-slate-400">{new Date(f.created_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')} · {f.uploaded_by === 'client' ? t[language].adminRoleClient : t[language].adminRoleTeam}</p>
                         {f.message && <p className="text-xs text-slate-500 italic mt-1">"{f.message}"</p>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <a href={f.url} target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-slate-200 rounded-lg"><Download size={16} className="text-[#D4AF37]" /></a>
                       <button onClick={() => handleDeleteFile(f.id)} className="p-2 hover:bg-red-50 rounded-lg"><Trash2 size={16} className="text-red-500" /></button>
                     </div>

@@ -40,6 +40,19 @@ interface ProjectBrief {
   [key: string]: any;
 }
 
+// ----- UUID v4 universel -----
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback manuel pour les environnements sans crypto.randomUUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 // ----- Rendu des URLs cliquables -----
 function renderMessageContent(text: string) {
   if (text.includes('<a href=')) {
@@ -189,7 +202,7 @@ export default function ProjectChatBot() {
       const welcomeText = t[language]?.chatWelcome || "Bonjour ! Je suis l'Agent Actoos. Décrivez votre projet...";
       setMessages([{ id: generateId(), role: 'assistant', content: welcomeText }]);
     }
-  }, [language]); // 👈 ajout de `language` en dépendance
+  }, [language]);
 
   // Sauvegarde automatique
   useEffect(() => {
@@ -452,7 +465,8 @@ export default function ProjectChatBot() {
     if (!submitForm.name.trim() || !submitForm.email.trim()) return;
 
     setLoading(true);
-    const clientToken = crypto.randomUUID();
+    // ✅ Correction : utilise une fonction de génération d'UUID compatible partout
+    const clientToken = generateUUID();
     
     try {
       await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/handle-request', {
