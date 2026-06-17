@@ -7,8 +7,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
-// Ajout des nouveaux hooks
-import { usePreferences } from '../contexts/PreferencesContext';
+import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import {
   Bell,
@@ -28,7 +27,6 @@ const JobAlertsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
-  // Récupération des préférences et des villes filtrées par pays
   const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
 
@@ -38,9 +36,7 @@ const JobAlertsPage = () => {
   const [editingAlert, setEditingAlert] = useState(null);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState([]);
-  // Suppression de l'état cities : const [cities, setCities] = useState([]) retiré
 
-  // Fréquences traduites
   const FREQUENCIES = [
     { value: 'instant', label: t('jobAlerts.frequencies.instant') },
     { value: 'daily', label: t('jobAlerts.frequencies.daily') },
@@ -75,7 +71,6 @@ const JobAlertsPage = () => {
     setLoading(false);
   };
 
-  // Simplification : ne charge que les catégories, plus les villes
   const fetchReferenceData = async () => {
     const { data: cats } = await supabase
       .from('job_categories')
@@ -274,7 +269,6 @@ const JobAlertsPage = () => {
                       className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                       <option value="">{t('jobAlerts.allCities')}</option>
-                      {/* Remplacement de cities.map par filteredCities.map */}
                       {filteredCities.map((city) => (
                         <option key={city.id} value={city.id}>{city.name}</option>
                       ))}

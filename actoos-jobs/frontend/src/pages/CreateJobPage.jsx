@@ -9,7 +9,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import AIAssistant from '../components/AIAssistant';
 import { toast } from 'sonner';
-import { usePreferences } from '../contexts/PreferencesContext';
+import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import {
   Briefcase, MapPin, DollarSign, Calendar, Users,
@@ -224,7 +224,7 @@ const CreateJobPage = () => {
             .eq('company_id', company.id)
             .eq('status', 'pending');
           const totalActiveAndPending = (activeCount || 0) + (pendingCount || 0);
-          const limit = getPlanLimit(company?.subscription_plan || 'free', 'jobs'); // ← corrigé
+          const limit = getPlanLimit(company?.subscription_plan || 'free', 'jobs');
           if (totalActiveAndPending >= limit) {
             toast.error(t('createJob.toasts.limitReached', { total: totalActiveAndPending, limit }));
             setSaving(false);
