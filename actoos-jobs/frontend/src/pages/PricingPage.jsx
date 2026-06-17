@@ -8,10 +8,10 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
+import { PLAN_LIMITS } from '../lib/planLimits';
 import {
-  Loader2, Check, Sparkles, Zap, Crown, Building2, ArrowRight, AlertCircle,
-  HelpCircle, ChevronDown, ChevronUp, X, Shield, Users, Briefcase, BarChart3,
-  Headphones, Globe, Lock, CreditCard,
+  Loader2, Check, Zap, Crown, Building2, ArrowRight, AlertCircle,
+  ChevronDown, ChevronUp, X, Shield, Briefcase, Clock, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -95,35 +95,42 @@ const PricingPage = () => {
     fetchCompany();
   }, [user]);
 
-  const handleCheckout = async (packageId) => {
-    if (!user) {
-      toast.error(t('pricing.toast.mustLogin'));
-      return;
-    }
-
-    if (packageId.startsWith('boost_') || packageId === 'featured') {
-      toast.info(t('pricing.toast.boostsComingSoon'));
-      return;
-    }
-
-    setCheckoutLoading(packageId);
-    try {
-      const result = await apiFetch('/api/checkout/session', {
-        method: 'POST',
-        body: JSON.stringify({
-          package_id: packageId,
-          origin_url: window.location.origin,
-          user_email: user.email,
-          user_id: user.id,
-        }),
-      });
-      window.location.href = result.url;
-    } catch (err) {
+const handleCheckout = async (packageId) => {
+  if (!user) {
+    toast.error(t('pricing.toast.mustLogin'));
+    return;
+  }
+  setCheckoutLoading(packageId);
+  try {
+    const result = await apiFetch('/api/checkout/session', {
+      method: 'POST',
+      body: JSON.stringify({
+        package_id: packageId,
+        origin_url: window.location.origin,
+        user_email: user.email,
+        user_id: user.id,
+      }),
+    });
+    window.location.href = result.url;
+  } catch (err) {
+    const msg = err.message || '';
+    if (msg.includes('DOWNGRADE_BLOCKED:')) {
+      const numbers = msg.match(/\d+/g);
+      if (numbers && numbers.length >= 3) {
+        toast.error(t('pricing.downgradeBlocked', {
+          active: numbers[numbers.length - 2],
+          limit: numbers[numbers.length - 1]
+        }));
+      } else {
+        toast.error(t('pricing.downgradeBlocked', { active: '?', limit: '?' }));
+      }
+    } else {
       toast.error(err.message || t('pricing.toast.checkoutError'));
-    } finally {
-      setCheckoutLoading(null);
     }
-  };
+  } finally {
+    setCheckoutLoading(null);
+  }
+};
 
   const handlePortal = () => {
     window.location.href = '/dashboard/entreprise';
@@ -144,16 +151,14 @@ const PricingPage = () => {
       id: 'free',
       nameKey: 'pricing.plans.free.name',
       descKey: 'pricing.plans.free.description',
-      featureKeys: [
-        { icon: Briefcase, key: 'pricing.plans.free.features.0' },
-        { icon: Users, key: 'pricing.plans.free.features.1' },
-        { icon: Shield, key: 'pricing.plans.free.features.2' },
-        { icon: Headphones, key: 'pricing.plans.free.features.3' },
+      features: [
+        { icon: Briefcase, text: t('pricing.plans.free.features.0', { count: PLAN_LIMITS.free.jobs }) },
+        { icon: Clock, text: t('pricing.plans.free.features.expiration', { days: PLAN_LIMITS.free.expirationDays }) },
+        { icon: Shield, text: t('pricing.plans.free.features.2') },
       ],
-      limitationKeys: [
-        'pricing.plans.free.limitations.0',
-        'pricing.plans.free.limitations.1',
-        'pricing.plans.free.limitations.2',
+      limitations: [
+        t('pricing.plans.free.limitations.0'),
+        t('pricing.plans.free.limitations.1'),
       ],
       icon: Building2,
       borderColor: 'border-slate-200',
@@ -164,17 +169,13 @@ const PricingPage = () => {
       id: 'pro_monthly',
       nameKey: 'pricing.plans.pro.name',
       descKey: 'pricing.plans.pro.description',
-      featureKeys: [
-        { icon: Briefcase, key: 'pricing.plans.pro.features.0' },
-        { icon: Users, key: 'pricing.plans.pro.features.1' },
-        { icon: BarChart3, key: 'pricing.plans.pro.features.2' },
-        { icon: Headphones, key: 'pricing.plans.pro.features.3' },
-        { icon: Shield, key: 'pricing.plans.pro.features.4' },
+      features: [
+        { icon: Briefcase, text: t('pricing.plans.pro.features.0', { count: PLAN_LIMITS.pro.jobs }) },
+        { icon: Clock, text: t('pricing.plans.pro.features.expiration', { days: PLAN_LIMITS.pro.expirationDays }) },
+        { icon: Shield, text: t('pricing.plans.pro.features.4') },
       ],
-      limitationKeys: [
-        'pricing.plans.pro.limitations.0',
-        'pricing.plans.pro.limitations.1',
-        'pricing.plans.pro.limitations.2',
+      limitations: [
+        t('pricing.plans.pro.limitations.0'),
       ],
       icon: Zap,
       borderColor: 'border-blue-200',
@@ -185,15 +186,13 @@ const PricingPage = () => {
       id: 'business_monthly',
       nameKey: 'pricing.plans.business.name',
       descKey: 'pricing.plans.business.description',
-      featureKeys: [
-        { icon: Briefcase, key: 'pricing.plans.business.features.0' },
-        { icon: Users, key: 'pricing.plans.business.features.1' },
-        { icon: BarChart3, key: 'pricing.plans.business.features.2' },
-        { icon: Headphones, key: 'pricing.plans.business.features.3' },
-        { icon: Zap, key: 'pricing.plans.business.features.4' },
-        { icon: Shield, key: 'pricing.plans.business.features.5' },
+      features: [
+        { icon: Briefcase, text: t('pricing.plans.business.features.0') },
+        { icon: Clock, text: t('pricing.plans.business.features.expiration', { days: PLAN_LIMITS.business.expirationDays }) },
+        { icon: Sparkles, text: t('pricing.plans.business.features.4') },
+        { icon: Shield, text: t('pricing.plans.business.features.5') },
       ],
-      limitationKeys: [],
+      limitations: [],
       icon: Crown,
       borderColor: 'border-blue-600',
       badge: { text: t('pricing.mostPopular'), color: 'bg-blue-600' },
@@ -222,13 +221,38 @@ const PricingPage = () => {
 
   const faqItems = t('pricing.faq.items', { returnObjects: true }) || [];
 
+  // ---------- Tableau comparatif dynamique et traduit ----------
   const comparisonRows = [
-    'activeOffers',
-    'candidates',
-    'verifiedProfile',
-    'analytics',
-    'emailSupport',
-    'freeBoost',
+    {
+      key: 'activeOffers',
+      free: `${PLAN_LIMITS.free.jobs}`,
+      pro: `${PLAN_LIMITS.pro.jobs}`,
+      business: '∞',
+    },
+    {
+      key: 'expiration',
+      free: t('pricing.comparison.values.expiration', { count: PLAN_LIMITS.free.expirationDays }),
+      pro: t('pricing.comparison.values.expiration', { count: PLAN_LIMITS.pro.expirationDays }),
+      business: t('pricing.comparison.values.expiration', { count: PLAN_LIMITS.business.expirationDays }),
+    },
+    {
+      key: 'candidates',
+      free: '✓',
+      pro: '✓',
+      business: '✓',
+    },
+    {
+      key: 'verifiedProfile',
+      free: '-',
+      pro: '✓',
+      business: '✓',
+    },
+    {
+      key: 'freeBoost',
+      free: '-',
+      pro: '-',
+      business: t('pricing.comparison.values.boostPerMonth'),
+    },
   ];
 
   return (
@@ -251,9 +275,7 @@ const PricingPage = () => {
           onClick={() => setAnnual(!annual)}
           className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none ${annual ? 'bg-blue-600' : 'bg-slate-300'}`}
         >
-          <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${annual ? 'translate-x-7' : 'translate-x-1'}`}
-          />
+          <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${annual ? 'translate-x-7' : 'translate-x-1'}`} />
         </button>
         <span className={`text-sm ${annual ? 'text-slate-900 font-semibold' : 'text-slate-400'}`}>
           {t('pricing.toggle.annual')}
@@ -300,23 +322,15 @@ const PricingPage = () => {
                   <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <plan.icon className="w-7 h-7 text-blue-600" />
                   </div>
-                  <CardTitle className="text-2xl font-bold text-slate-900">
-                    {t(plan.nameKey)}
-                  </CardTitle>
-                  <CardDescription className="text-slate-500 mt-2">
-                    {t(plan.descKey)}
-                  </CardDescription>
+                  <CardTitle className="text-2xl font-bold text-slate-900">{t(plan.nameKey)}</CardTitle>
+                  <CardDescription className="text-slate-500 mt-2">{t(plan.descKey)}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-8">
                   <div className="text-center mb-8">
                     {plan.id === 'free' ? (
                       <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-5xl font-bold text-slate-900">
-                          {format(0).value}
-                        </span>
-                        <span className="text-lg text-slate-500 ml-1">
-                          {format(0).symbol}
-                        </span>
+                        <span className="text-5xl font-bold text-slate-900">{format(0).value}</span>
+                        <span className="text-lg text-slate-500 ml-1">{format(0).symbol}</span>
                         <span className="text-slate-400">{t('pricing.perMonth')}</span>
                       </div>
                     ) : (
@@ -324,44 +338,26 @@ const PricingPage = () => {
                         {annual ? (
                           <>
                             <div className="flex items-baseline justify-center gap-1">
-                              <span className="text-5xl font-bold text-slate-900">
-                                {format(annualMonthlyEquivalent).value}
-                              </span>
-                              <span className="text-lg text-slate-500 ml-1">
-                                {format(annualMonthlyEquivalent).symbol}
-                              </span>
+                              <span className="text-5xl font-bold text-slate-900">{format(annualMonthlyEquivalent).value}</span>
+                              <span className="text-lg text-slate-500 ml-1">{format(annualMonthlyEquivalent).symbol}</span>
                               <span className="text-slate-400">{t('pricing.perMonth')}</span>
                             </div>
-                            <div className="mt-1 text-sm text-slate-500">
-                              {format(annualPrice).value}{' '}{format(annualPrice).symbol} {t('pricing.billedAnnually')}
-                            </div>
+                            <div className="mt-1 text-sm text-slate-500">{format(annualPrice).value} {format(annualPrice).symbol} {t('pricing.billedAnnually')}</div>
                             <div className="mt-2 flex items-center justify-center gap-2">
-                              <span className="text-sm text-slate-500">
-                                {format(annualPrice).value}{' '}{format(annualPrice).symbol} {t('pricing.perYear')}
-                              </span>
-                              <Badge className="bg-green-50 text-green-700 border-0 rounded-full text-xs">
-                                {t('pricing.toggle.savePercent')}
-                              </Badge>
+                              <span className="text-sm text-slate-500">{format(annualPrice).value} {format(annualPrice).symbol} {t('pricing.perYear')}</span>
+                              <Badge className="bg-green-50 text-green-700 border-0 rounded-full text-xs">{t('pricing.toggle.savePercent')}</Badge>
                             </div>
                           </>
                         ) : (
                           <>
                             <div className="flex items-baseline justify-center gap-1">
-                              <span className="text-5xl font-bold text-slate-900">
-                                {format(monthlyPrice).value}
-                              </span>
-                              <span className="text-lg text-slate-500 ml-1">
-                                {format(monthlyPrice).symbol}
-                              </span>
+                              <span className="text-5xl font-bold text-slate-900">{format(monthlyPrice).value}</span>
+                              <span className="text-lg text-slate-500 ml-1">{format(monthlyPrice).symbol}</span>
                               <span className="text-slate-400">{t('pricing.perMonth')}</span>
                             </div>
-                            <div className="mt-1 text-sm text-slate-500">
-                              {format(monthlyPrice).value}{' '}{format(monthlyPrice).symbol} {t('pricing.billedMonthly')}
-                            </div>
+                            <div className="mt-1 text-sm text-slate-500">{format(monthlyPrice).value} {format(monthlyPrice).symbol} {t('pricing.billedMonthly')}</div>
                             <div className="mt-2 flex items-center justify-center gap-2">
-                              <span className="text-sm text-slate-500">
-                                {format(monthlyPrice).value}{' '}{format(monthlyPrice).symbol} {t('pricing.perMonth')}
-                              </span>
+                              <span className="text-sm text-slate-500">{format(monthlyPrice).value} {format(monthlyPrice).symbol} {t('pricing.perMonth')}</span>
                             </div>
                           </>
                         )}
@@ -370,16 +366,16 @@ const PricingPage = () => {
                   </div>
 
                   <ul className="space-y-4 mb-8">
-                    {plan.featureKeys.map((feature, i) => (
+                    {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-3 text-slate-700">
                         <feature.icon className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                        <span>{t(feature.key)}</span>
+                        <span>{feature.text}</span>
                       </li>
                     ))}
-                    {plan.limitationKeys.map((limKey, i) => (
+                    {plan.limitations.map((lim, i) => (
                       <li key={i} className="flex items-start gap-3 text-slate-400 line-through">
                         <X className="w-5 h-5 text-slate-300 shrink-0 mt-0.5" />
-                        <span>{t(limKey)}</span>
+                        <span>{lim}</span>
                       </li>
                     ))}
                   </ul>
@@ -387,9 +383,7 @@ const PricingPage = () => {
                   <div className="space-y-3">
                     {plan.id === 'free' ? (
                       <Button
-                        className={`w-full h-14 text-lg font-semibold rounded-2xl ${
-                          isCurrentPlan ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                        }`}
+                        className={`w-full h-14 text-lg font-semibold rounded-2xl ${isCurrentPlan ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
                         onClick={handleFreePlan}
                         disabled={isCurrentPlan}
                       >
@@ -397,56 +391,27 @@ const PricingPage = () => {
                       </Button>
                     ) : isCurrentPlan ? (
                       <>
-                        <Button
-                          className="w-full h-14 text-lg font-semibold rounded-2xl bg-slate-100 text-slate-500 cursor-not-allowed"
-                          disabled
-                        >
+                        <Button className="w-full h-14 text-lg font-semibold rounded-2xl bg-slate-100 text-slate-500 cursor-not-allowed" disabled>
                           {t('pricing.currentPlan')}
                         </Button>
-                        <Button
-                          variant="outline"
-                          className="w-full h-14 text-lg rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50"
-                          onClick={handlePortal}
-                        >
-                          <CreditCard className="w-5 h-5 mr-2" />
+                        <Button variant="outline" className="w-full h-14 text-lg rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50" onClick={handlePortal}>
                           {t('pricing.actions.manageSubscription')}
                         </Button>
                       </>
                     ) : (
                       <>
                         <Button
-                          className={`w-full h-14 text-lg font-semibold rounded-2xl ${
-                            plan.badge
-                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                              : 'bg-blue-50 hover:bg-blue-100 text-blue-700'
-                          }`}
+                          className={`w-full h-14 text-lg font-semibold rounded-2xl ${plan.badge ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-50 hover:bg-blue-100 text-blue-700'}`}
                           onClick={() => handleCheckout(annual ? plan.id.replace('monthly', 'annual') : plan.id)}
                           disabled={checkoutLoading === plan.id}
                         >
-                          {checkoutLoading === plan.id ? (
-                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                          ) : (
-                            <Building2 className="w-5 h-5 mr-2" />
-                          )}
-                          {isUpgrade
-                            ? t('pricing.actions.upgradeTo', { plan: t(plan.nameKey) })
-                            : isDowngrade
-                            ? t('pricing.actions.downgradeTo', { plan: t(plan.nameKey) })
-                            : annual
-                            ? t('pricing.actions.subscribeAnnual')
-                            : t('pricing.actions.subscribeMonthly')}
+                          {checkoutLoading === plan.id ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Building2 className="w-5 h-5 mr-2" />}
+                          {isUpgrade ? t('pricing.actions.upgradeTo', { plan: t(plan.nameKey) }) : isDowngrade ? t('pricing.actions.downgradeTo', { plan: t(plan.nameKey) }) : annual ? t('pricing.actions.subscribeAnnual') : t('pricing.actions.subscribeMonthly')}
                           <ArrowRight className="w-5 h-5 ml-2" />
                         </Button>
                         {!annual && (
-                          <Button
-                            variant="outline"
-                            className="w-full h-14 text-lg rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50"
-                            onClick={() => handleCheckout(plan.id.replace('monthly', 'annual'))}
-                            disabled={checkoutLoading === plan.id.replace('monthly', 'annual')}
-                          >
-                            {checkoutLoading === plan.id.replace('monthly', 'annual') ? (
-                              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                            ) : null}
+                          <Button variant="outline" className="w-full h-14 text-lg rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50" onClick={() => handleCheckout(plan.id.replace('monthly', 'annual'))} disabled={checkoutLoading === plan.id.replace('monthly', 'annual')}>
+                            {checkoutLoading === plan.id.replace('monthly', 'annual') ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
                             {t('pricing.actions.subscribeAnnual')}
                           </Button>
                         )}
@@ -477,18 +442,12 @@ const PricingPage = () => {
               </tr>
             </thead>
             <tbody>
-              {comparisonRows.map((rowKey) => (
-                <tr key={rowKey} className="border-b border-slate-100 last:border-0">
-                  <td className="py-4 px-6 text-slate-700">{t(`pricing.comparison.rows.${rowKey}`)}</td>
-                  <td className="py-4 px-6 text-slate-600">
-                    {rowKey === 'activeOffers' ? '3' : rowKey === 'candidates' ? t('pricing.plans.free.features.1') : rowKey === 'verifiedProfile' ? '-' : rowKey === 'analytics' ? '✓' : rowKey === 'emailSupport' ? '✓' : rowKey === 'freeBoost' ? '-' : ''}
-                  </td>
-                  <td className="py-4 px-6 text-slate-600">
-                    {rowKey === 'activeOffers' ? '5' : rowKey === 'candidates' ? t('pricing.plans.pro.features.1') : rowKey === 'verifiedProfile' ? '✓' : rowKey === 'analytics' ? '✓' : rowKey === 'emailSupport' ? '✓' : rowKey === 'freeBoost' ? '-' : ''}
-                  </td>
-                  <td className="py-4 px-6 text-blue-600 font-medium">
-                    {rowKey === 'activeOffers' ? t('pricing.plans.business.features.0') : rowKey === 'candidates' ? t('pricing.plans.business.features.1') : rowKey === 'verifiedProfile' ? '✓' : rowKey === 'analytics' ? '✓' : rowKey === 'emailSupport' ? '✓' : rowKey === 'freeBoost' ? t('pricing.plans.business.features.4') : ''}
-                  </td>
+              {comparisonRows.map((row, i) => (
+                <tr key={i} className="border-b border-slate-100 last:border-0">
+                  <td className="py-4 px-6 text-slate-700">{t(`pricing.comparison.rows.${row.key}`)}</td>
+                  <td className="py-4 px-6 text-slate-600">{row.free}</td>
+                  <td className="py-4 px-6 text-slate-600">{row.pro}</td>
+                  <td className="py-4 px-6 text-blue-600 font-medium">{row.business}</td>
                 </tr>
               ))}
             </tbody>
@@ -527,9 +486,7 @@ const PricingPage = () => {
         <div className="bg-blue-600 rounded-3xl p-8 sm:p-12 text-center text-white">
           <Building2 className="w-16 h-16 text-blue-200 mx-auto mb-6" />
           <h2 className="text-3xl font-bold mb-4">{t('pricing.cta.title')}</h2>
-          <p className="text-blue-100 mb-8 max-w-xl mx-auto">
-            {t('pricing.cta.subtitle')}
-          </p>
+          <p className="text-blue-100 mb-8 max-w-xl mx-auto">{t('pricing.cta.subtitle')}</p>
           <Link to="/contact">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 rounded-2xl font-semibold">
               {t('pricing.cta.button')}

@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { usePreferences } from '../hooks/usePreferences';
+import { usePreferencesContext } from '../contexts/PreferencesContext'; // ✅ Correction de l'import
 import { useCities } from '../hooks/useCities';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 import useCachedData from '../hooks/useCachedData';
@@ -32,7 +32,7 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 
-// -------------------- Local UI components (unchanged) --------------------
+// -------------------- Local UI components (inchangés) --------------------
 const Button = React.forwardRef(
   ({ children, className = '', variant = 'default', size = 'default', type = 'button', ...props }, ref) => {
     const base =
@@ -262,6 +262,9 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
       )
     : null;
 
+  // Détermine si l'offre est boostée et que le boost n'a pas expiré
+  const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
+
   return (
     <Card
       className={cn(
@@ -287,6 +290,12 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
             {job.is_remote && (
               <Badge className="border border-green-500 text-green-600 rounded-full bg-white">
                 {t('jobs.remote')}
+              </Badge>
+            )}
+            {/* Badge Boosté */}
+            {isBoosted && (
+              <Badge className="bg-purple-100 text-purple-700 border border-purple-200">
+                🚀 {t('jobs.boosted')}
               </Badge>
             )}
           </div>
@@ -606,7 +615,7 @@ const JobsPage = () => {
   const [searchParams] = useSearchParams();
   const { user, isCompany } = useAuth();
   const navigate = useNavigate();
-  const { prefs } = usePreferences();
+  const { prefs } = usePreferencesContext(); // ✅ Utilisation du contexte
   const { cities: filteredCities } = useCities(prefs.country);
 
   const [countryId, setCountryId] = useState(null);
@@ -634,6 +643,7 @@ const JobsPage = () => {
 
   const [sortBy, setSortBy] = useState('recent');
 
+  // Résolution du countryId
   useEffect(() => {
     if (prefs.country) {
       supabase
@@ -642,68 +652,35 @@ const JobsPage = () => {
         .eq('code', prefs.country)
         .single()
         .then(({ data }) => {
-          if (data) setCountryId(data.id);
+          setCountryId(data?.id || null);
         });
+    } else {
+      setCountryId(null);
     }
   }, [prefs.country]);
 
+  // Chargement des jobs (même sans countryId)
   useEffect(() => {
-    if (!countryId) return;
-    const loadFilterOptions = async () => {
-      try {
-        const { data: contractData } = await supabase
-          .from('jobs')
-          .select('contract_type')
-          .eq('status', 'active')
-          .eq('country_id', countryId);
-
-        if (contractData) {
-          const uniqueTypes = [...new Set(contractData.map((j) => j.contract_type).filter(Boolean))];
-          setAvailableContractTypes(
-            uniqueTypes.map((type) => ({ value: type, label: CONTRACT_TYPES[type]?.label || type }))
-          );
-        }
-
-        const { data: expData } = await supabase
-          .from('jobs')
-          .select('experience_level')
-          .eq('status', 'active')
-          .eq('country_id', countryId);
-
-        if (expData) {
-          const uniqueExp = [...new Set(expData.map((j) => j.experience_level).filter(Boolean))];
-          setAvailableExperienceLevels(
-            uniqueExp.map((exp) => ({ value: exp, label: EXPERIENCE_LEVELS[exp]?.label || exp }))
-          );
-        }
-      } catch (err) {
-        setAvailableContractTypes(
-          Object.entries(CONTRACT_TYPES).map(([k, v]) => ({ value: k, label: v.label }))
-        );
-        setAvailableExperienceLevels(
-          Object.entries(EXPERIENCE_LEVELS).map(([k, v]) => ({ value: k, label: v.label }))
-        );
-      }
-    };
-    loadFilterOptions();
-  }, [countryId]);
-
-  useEffect(() => {
-    if (!countryId) return;
     const fetchJobs = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('jobs')
           .select(`
             id, title, description, contract_type, experience_level, salary_min, salary_max,
             is_remote, is_urgent, is_featured, skills_required, created_at, status, category_id,
+            boosted_until,
             company:companies(name, logo_url, is_verified, owner_id),
             city:cities(name)
           `)
-          .eq('status', 'active')
-          .eq('country_id', countryId)
-          .order('is_featured', { ascending: false })
+          .eq('status', 'active');
+
+        if (countryId) {
+          query = query.eq('country_id', countryId);
+        }
+
+        const { data, error } = await query
+          .order('boosted_until', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
           .limit(50);
 
@@ -717,6 +694,44 @@ const JobsPage = () => {
     };
 
     fetchJobs();
+  }, [countryId]);
+
+  // Chargement des options de filtres (même sans countryId)
+  useEffect(() => {
+    const loadFilterOptions = async () => {
+      try {
+        let query = supabase
+          .from('jobs')
+          .select('contract_type, experience_level')
+          .eq('status', 'active');
+
+        if (countryId) {
+          query = query.eq('country_id', countryId);
+        }
+
+        const { data } = await query;
+        if (data) {
+          const uniqueTypes = [...new Set(data.map((j) => j.contract_type).filter(Boolean))];
+          setAvailableContractTypes(
+            uniqueTypes.map((type) => ({ value: type, label: CONTRACT_TYPES[type]?.label || type }))
+          );
+          const uniqueExp = [...new Set(data.map((j) => j.experience_level).filter(Boolean))];
+          setAvailableExperienceLevels(
+            uniqueExp.map((exp) => ({ value: exp, label: EXPERIENCE_LEVELS[exp]?.label || exp }))
+          );
+        }
+      } catch {
+        // Fallback si erreur
+        setAvailableContractTypes(
+          Object.entries(CONTRACT_TYPES).map(([k, v]) => ({ value: k, label: v.label }))
+        );
+        setAvailableExperienceLevels(
+          Object.entries(EXPERIENCE_LEVELS).map(([k, v]) => ({ value: k, label: v.label }))
+        );
+      }
+    };
+
+    loadFilterOptions();
   }, [countryId]);
 
   useEffect(() => {
@@ -762,13 +777,26 @@ const JobsPage = () => {
       }
     }
 
-    if (sortBy === 'recent') {
-      result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    } else if (sortBy === 'salary') {
-      result.sort((a, b) => (b.salary_max || 0) - (a.salary_max || 0));
-    }
+    // --- Tri unique avec priorités ---
+    result.sort((a, b) => {
+      // 1. Boost actif : les offres boostées et non expirées arrivent en premier
+      const aBoost = a.boosted_until && new Date(a.boosted_until) > new Date() ? 1 : 0;
+      const bBoost = b.boosted_until && new Date(b.boosted_until) > new Date() ? 1 : 0;
+      if (bBoost !== aBoost) return bBoost - aBoost;
 
-    result.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
+      // 2. Offre « À la une » (is_featured)
+      if ((b.is_featured ? 1 : 0) !== (a.is_featured ? 1 : 0)) {
+        return (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0);
+      }
+
+      // 3. Tri par pertinence selon le choix de l'utilisateur
+      if (sortBy === 'recent') {
+        return new Date(b.created_at) - new Date(a.created_at);
+      } else if (sortBy === 'salary') {
+        return (b.salary_max || 0) - (a.salary_max || 0);
+      }
+      return 0;
+    });
 
     return result;
   }, [jobs, filters, sortBy, categories]);
@@ -990,7 +1018,7 @@ const JobsPage = () => {
               </div>
             )}
 
-            {loading || !countryId ? (
+            {loading ? (
               <div className="space-y-4">
                 {[...Array(4)].map((_, i) => (
                   <JobCardSkeleton key={i} />

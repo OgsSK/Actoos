@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 // Ajout des nouveaux hooks
-import { usePreferences } from '../hooks/usePreferences';
+import { usePreferences } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import {
   Bell,
@@ -29,7 +29,7 @@ const JobAlertsPage = () => {
   const { user } = useAuth();
 
   // Récupération des préférences et des villes filtrées par pays
-  const { prefs } = usePreferences();
+  const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
 
   const [alerts, setAlerts] = useState([]);

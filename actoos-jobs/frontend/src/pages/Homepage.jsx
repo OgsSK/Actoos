@@ -3,14 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
-import { usePreferences } from '../hooks/usePreferences';
+import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
-import {
-  fetchCategories,
-  fetchActiveJobsCount,
-  fetchVerifiedCompaniesCount,
-  fetchCandidatesCount,
-} from '../lib/data';
+import { fetchCategories } from '../lib/data';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -223,8 +218,8 @@ const CategoriesSection = () => {
   );
 };
 
-// ---------- Recent Jobs Section (modifiée avec countryId) ----------
-const RecentJobsSection = ({ countryId }) => {  // 👈 Accepte countryId
+// ---------- Recent Jobs Section ----------
+const RecentJobsSection = ({ countryId }) => {
   const { t } = useTranslation();
   const { user, isCompany, isCandidate } = useAuth();
   const [jobs, setJobs] = useState([]);
@@ -251,27 +246,46 @@ const RecentJobsSection = ({ countryId }) => {  // 👈 Accepte countryId
   };
 
   useEffect(() => {
-    if (!countryId) return; // attendre que countryId soit chargé
-
     const fetchJobs = async () => {
       try {
         let query = supabase
           .from('jobs')
-          .select(`id, title, contract_type, salary_min, salary_max, created_at, is_urgent, company:companies(name, logo_url, owner_id), city:cities(name)`)
+          .select(`id, title, contract_type, salary_min, salary_max, created_at, is_urgent, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
           .eq('status', 'active')
-          .eq('country_id', countryId)   // 👈 Filtre pays
+          .order('boosted_until', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
           .limit(6);
 
+        if (countryId) {
+          query = query.eq('country_id', countryId);
+        }
+
         const { data, error } = await query;
         if (error) throw error;
-        const formattedJobs = (data || []).map((job) => ({ id: job.id, title: job.title, company: job.company?.name || t('home.jobs.unknownCompany'), company_logo: job.company?.logo_url, owner_id: job.company?.owner_id, location: job.city?.name || t('home.jobs.unknownLocation'), contract_type: job.contract_type, salary_min: job.salary_min, salary_max: job.salary_max, created_at: job.created_at, urgent: job.is_urgent }));
+        const formattedJobs = (data || []).map((job) => ({
+          id: job.id,
+          title: job.title,
+          company: job.company?.name || t('home.jobs.unknownCompany'),
+          company_logo: job.company?.logo_url,
+          owner_id: job.company?.owner_id,
+          location: job.city?.name || t('home.jobs.unknownLocation'),
+          contract_type: job.contract_type,
+          salary_min: job.salary_min,
+          salary_max: job.salary_max,
+          created_at: job.created_at,
+          urgent: job.is_urgent,
+          boosted_until: job.boosted_until,
+        }));
         setJobs(formattedJobs);
-      } catch (error) { console.error('Error fetching jobs:', error); }
-      finally { setLoading(false); }
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+      } finally {
+        setLoading(false);
+      }
     };
+
     fetchJobs();
-  }, [countryId, t]); // recharge quand le pays change
+  }, [countryId, t]);
 
   return (
     <section className="py-20 bg-slate-50">
@@ -315,6 +329,7 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   const isOwner = user?.id && job.owner_id === user.id;
   const isCompany = user?.user_metadata?.role === 'company' || user?.app_metadata?.role === 'company' || user?.user_metadata?.account_type === 'company';
+  const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
 
   const handleSaveClick = (e) => {
     e.preventDefault(); e.stopPropagation();
@@ -330,7 +345,19 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
         <CardContent className="p-5 pt-3">
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">{job.company_logo ? <img src={job.company_logo} alt={job.company} className="w-10 h-10 object-contain" /> : <Building2 className="w-7 h-7 text-slate-400 group-hover:text-blue-500" />}</div>
-            <div className="flex-1 min-w-0"><h3 className="font-semibold text-slate-900 group-hover:text-blue-600 line-clamp-1">{job.title}</h3><p className="text-slate-600 text-sm mt-1">{job.company}</p><div className="flex items-center gap-3 mt-3 text-sm text-slate-500"><span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{job.location}</span><Badge className={`${contractInfo.color} border-0 rounded-full`}>{contractInfo.label}</Badge></div></div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 line-clamp-1">{job.title}</h3>
+              <p className="text-slate-600 text-sm mt-1">{job.company}</p>
+              <div className="flex items-center gap-3 mt-3 text-sm text-slate-500">
+                <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{job.location}</span>
+                <Badge className={`${contractInfo.color} border-0 rounded-full`}>{contractInfo.label}</Badge>
+                {isBoosted && (
+                  <Badge className="bg-purple-100 text-purple-700 border border-purple-200">
+                    🚀 {t('home.jobs.boosted')}
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
             <div className="text-sm">
@@ -353,25 +380,41 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
   );
 };
 
-// ---------- Companies Section ----------
-const CompaniesSection = () => {
+// ---------- Companies Section (avec filtrage par pays) ----------
+const CompaniesSection = ({ countryId }) => {
   const { t } = useTranslation();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const fetchCompanies = async () => {
-      const { data } = await supabase.from('companies').select('id, name, logo_url, industry').eq('is_verified', true).limit(8);
+      setLoading(true);
+      let query = supabase
+        .from('companies')
+        .select('id, name, logo_url, industry, subscription_plan')
+        .eq('is_verified', true)
+        .limit(8);
+
+      if (countryId) {
+        query = query.eq('country_id', countryId);
+      }
+
+      const { data } = await query;
       setCompanies(data || []);
       setLoading(false);
     };
     fetchCompanies();
-  }, []);
+  }, [countryId]);
+
   if (loading || companies.length === 0) return null;
+
   return (
     <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-display">{t('home.companies.title')}</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-display">
+            {t('home.companies.title')}
+          </h2>
           <p className="text-slate-600 mt-3">{t('home.companies.subtitle')}</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
@@ -380,7 +423,17 @@ const CompaniesSection = () => {
               <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-3">
                 {c.logo_url ? <img src={c.logo_url} alt={c.name} className="w-10 h-10 object-contain" /> : <Building2 className="w-8 h-8 text-slate-400" />}
               </div>
-              <h3 className="font-medium text-slate-900 text-center">{c.name}</h3>
+              <h3 className="font-medium text-slate-900 text-center">
+                {c.name}
+                {c.subscription_plan === 'pro' && (
+                  <Badge className="ml-2 bg-blue-100 text-blue-700 border-blue-200">Pro</Badge>
+                )}
+                {c.subscription_plan === 'business' && (
+                  <Badge className="ml-2 bg-purple-100 text-purple-700 border-purple-200">
+                    ⭐ {t('common.premium')}
+                  </Badge>
+                )}
+              </h3>
               {c.industry && <p className="text-xs text-slate-500 mt-1">{c.industry}</p>}
             </Link>
           ))}
@@ -536,32 +589,70 @@ const Homepage = () => {
   const [activeJobs, setActiveJobs] = useState(null);
   const [companies, setCompanies] = useState(null);
   const [candidates, setCandidates] = useState(null);
-  const [countryId, setCountryId] = useState(null); // 👈 État pour l'ID du pays
+  const [countryId, setCountryId] = useState(null);
+  const [countryLoading, setCountryLoading] = useState(true);
 
-  const { prefs } = usePreferences();
+  const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
 
-  // Récupération de l'ID du pays à partir des préférences
+  // Détermine l'ID du pays en fonction des préférences
   useEffect(() => {
     if (prefs.country) {
+      setCountryLoading(true);
       supabase
         .from('countries')
         .select('id')
         .eq('code', prefs.country)
         .single()
         .then(({ data }) => {
-          if (data) setCountryId(data.id);
+          setCountryId(data?.id || null);
+          setCountryLoading(false);
+        })
+        .catch(() => {
+          setCountryId(null);
+          setCountryLoading(false);
         });
+    } else {
+      setCountryId(null);
+      setCountryLoading(false);
     }
   }, [prefs.country]);
 
+  // Chargement des statistiques filtrées par pays si défini
   useEffect(() => {
+    if (countryLoading) return; // on attend que le pays soit résolu
+
     const loadStats = async () => {
-      const [jobsCount, compsCount, candsCount] = await Promise.all([fetchActiveJobsCount(), fetchVerifiedCompaniesCount(), fetchCandidatesCount()]);
-      setActiveJobs(jobsCount); setCompanies(compsCount); setCandidates(candsCount);
+      // Réinitialisation immédiate pour éviter d'afficher les anciens chiffres
+      setActiveJobs(null);
+      setCompanies(null);
+      setCandidates(null);
+
+      let queryJobs = supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('status', 'active');
+      let queryCompanies = supabase.from('companies').select('id', { count: 'exact', head: true }).eq('is_verified', true);
+      let queryCandidates = supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'candidate');
+
+      if (countryId) {
+        queryJobs = queryJobs.eq('country_id', countryId);
+        queryCompanies = queryCompanies.eq('country_id', countryId);
+        if (prefs.country) {
+          queryCandidates = queryCandidates.eq('preferences->>country', prefs.country);
+        }
+      }
+
+      const [jobsRes, compsRes, candsRes] = await Promise.all([
+        queryJobs,
+        queryCompanies,
+        queryCandidates,
+      ]);
+
+      setActiveJobs(jobsRes.count || 0);
+      setCompanies(compsRes.count || 0);
+      setCandidates(candsRes.count || 0);
     };
+
     loadStats();
-  }, []);
+  }, [countryId, countryLoading, prefs.country]);
 
   const stats = { activeJobs, companies, candidates };
 
@@ -569,8 +660,8 @@ const Homepage = () => {
     <div className="min-h-screen">
       <HeroSection stats={stats} popularSearches={[]} cities={filteredCities} />
       <CategoriesSection />
-      <RecentJobsSection countryId={countryId} /> {/* 👈 Passage de countryId */}
-      <CompaniesSection />
+      <RecentJobsSection countryId={countryId} />
+      <CompaniesSection countryId={countryId} />
       <HowItWorksSection />
       <CompanyCTASection stats={stats} />
       <WhyChooseSection />

@@ -95,18 +95,26 @@ const CandidatePublicProfilePage = () => {
                     {profile.phone && <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {profile.phone}</p>}
                     {profile.city && <p className="text-slate-600 flex items-center gap-2 mt-1"><MapPin className="w-4 h-4" /> {profile.city}</p>}
                     
-                    <div className="flex flex-wrap gap-3 mt-3">
-                      {profile.linkedin_url && (
-                        <a href={normalizeUrl(profile.linkedin_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
-                          <Globe className="w-4 h-4" /> {t('candidateProfile.linkedin')}
-                        </a>
-                      )}
-                      {profile.portfolio_url && (
-                        <a href={normalizeUrl(profile.portfolio_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
-                          <ExternalLink className="w-4 h-4" /> {t('candidateProfile.portfolio')}
-                        </a>
-                      )}
-                    </div>
+                    {/* Section remplacée : affichage des liens dynamiques */}
+                    {profile.links?.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-sm font-semibold text-slate-900 mb-3">{t('profile.links.title')}</h3>
+                        <div className="space-y-2">
+                          {profile.links.map((link, index) => (
+                            <a
+                              key={index}
+                              href={normalizeUrl(link.url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                            >
+                              <Globe className="w-4 h-4" />
+                              {link.label}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="mt-4">
                       <Button variant="outline" size="sm" onClick={handleReport} disabled={reporting}>

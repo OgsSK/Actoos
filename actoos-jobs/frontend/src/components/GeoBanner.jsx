@@ -7,7 +7,7 @@ const GeoBanner = () => {
   const { t } = useTranslation();
   const { detected, showBanner, applyDetected, dismissBanner } = useGeoDetect();
 
-  if (!showBanner || !detected) return null;
+if (!showBanner || !detected) return null;
 
   const countryName = t(`countries.${detected.country}`, detected.country);
 

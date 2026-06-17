@@ -1,5 +1,10 @@
 {
   "common": {
+    
+    "allCountries": "Alle landen",
+    "allCountriesShort": "Alle",
+    "premium": "Premium",
+    "pro": "Pro",
     "search": "Zoeken",
     "login": "Inloggen",
     "register": "Registreren",
@@ -20,95 +25,97 @@
     "hero": {
       "badge": "Waar talent zijn toekomst vindt",
       "titleLine1": "Vind de baan die",
-      "titleLine2": "je leven verandert",
-      "subtitle": "Duizenden kansen wachten op je. Solliciteer in één klik en bouw je carrière bij de beste bedrijven.",
-      "searchPlaceholder": "Functietitel, vaardigheden of bedrijf...",
+      "titleLine2": "uw leven verandert",
+      "subtitle": "Duizenden kansen wachten op u. Solliciteer met één klik en bouw uw carrière bij de beste bedrijven.",
+      "searchPlaceholder": "Functie, vaardigheden of bedrijf...",
       "allCities": "Alle steden",
       "searchButton": "Zoeken",
       "activeJobs": "Actieve vacatures",
       "companies": "Bedrijven",
       "candidates": "Kandidaten",
       "popularSearches": "Populaire zoekopdrachten:",
-      "searching": "Zoeken..."
+      "searching": "Bezig met zoeken..."
     },
     "categories": {
-      "title": "Blader per categorie",
-      "subtitle": "Vind kansen in jouw vakgebied"
+      "title": "Ontdek per categorie",
+      "subtitle": "Vind kansen in uw vakgebied"
     },
     "jobs": {
+      "boosted": "Uitgelicht",
       "title": "Recente vacatures",
-      "subtitle": "De laatst gepubliceerde kansen",
+      "subtitle": "De nieuwste gepubliceerde kansen",
       "viewAll": "Alle vacatures bekijken",
       "noJobsTitle": "Geen vacatures beschikbaar",
-      "noJobsText": "De eerste aanbiedingen komen binnenkort!",
+      "noJobsText": "De eerste vacatures komen binnenkort!",
       "postFirstJob": "Plaats de eerste vacature",
       "postJob": "Vacature plaatsen",
       "seeJobs": "Vacatures bekijken",
       "saveLogin": "Log in om deze vacature op te slaan",
-      "companyCannotSave": "Bedrijven kunnen geen vacatures toevoegen aan favorieten",
+      "companyCannotSave": "Bedrijven kunnen geen vacatures als favoriet opslaan",
       "saveSuccess": "Vacature opgeslagen",
-      "unsaveSuccess": "Vacature verwijderd uit favorieten",
-      "urgent": "🔥 Dringend - Solliciteer nu",
+      "unsaveSuccess": "Vacature uit favorieten verwijderd",
+      "urgent": "🔥 Urgent - Nu solliciteren",
       "salary": "Salaris",
       "unspecified": "Niet gespecificeerd",
       "unknownCompany": "Bedrijf",
       "unknownLocation": "Niet gespecificeerd",
-      "yourJob": "Jouw vacature"
+      "yourJob": "Uw vacature"
     },
     "companies": {
-      "title": "Bedrijven die aanwerven",
+      "title": "Bedrijven die werven",
       "subtitle": "Ontdek de bedrijven die vertrouwen op Actoos Jobs"
     },
     "how": {
       "title": "Hoe werkt het?",
-      "subtitle": "Vind je ideale baan in 4 eenvoudige stappen",
-      "step1Title": "Maak je profiel aan",
-      "step1Desc": "Registreer gratis en vul je profiel in enkele minuten in.",
-      "step2Title": "Zoek naar vacatures",
-      "step2Desc": "Blader door honderden aanbiedingen en gebruik onze geavanceerde filters.",
-      "step3Title": "Solliciteer in één klik",
-      "step3Desc": "Stuur je sollicitatie rechtstreeks naar recruiters.",
-      "step4Title": "Krijg de baan",
-      "step4Desc": "Volg je sollicitaties en bereid je voor op gesprekken."
+      "subtitle": "Vind uw ideale baan in 4 eenvoudige stappen",
+      "step1Title": "Maak uw profiel aan",
+      "step1Desc": "Registreer gratis en vul uw profiel in enkele minuten in.",
+      "step2Title": "Zoek vacatures",
+      "step2Desc": "Blader door honderden vacatures en gebruik onze geavanceerde filters.",
+      "step3Title": "Solliciteer met één klik",
+      "step3Desc": "Stuur uw sollicitatie rechtstreeks naar recruiters.",
+      "step4Title": "Bemachtig de baan",
+      "step4Desc": "Volg uw sollicitaties en bereid u voor op uw gesprekken."
     },
     "cta": {
       "badge": "Voor bedrijven",
-      "title": "Werk het beste talent aan",
-      "subtitle": "Plaats je vacatures, ontvang gekwalificeerde sollicitaties en vind je volgende medewerker in enkele dagen.",
+      "title": "Werf het beste talent",
+      "subtitle": "Plaats uw vacatures, ontvang gekwalificeerde sollicitaties en vind uw volgende medewerker binnen enkele dagen.",
       "feature1": "Onbeperkt vacatures plaatsen",
       "feature2": "Toegang tot een pool van gekwalificeerde kandidaten",
-      "feature3": "Tools voor sollicitatiebeheer",
+      "feature3": "Beheertools voor sollicitaties",
       "feature4": "Premium zichtbaarheid op het platform",
       "createAccount": "Bedrijfsaccount aanmaken",
       "publishJob": "Vacature plaatsen",
       "pricing": "Onze tarieven bekijken"
     },
     "why": {
-      "mainTitle": "Waarom kiezen voor Actoos Jobs?",
-      "mainSubtitle": "Het next-generation recruitmentplatform, gebouwd door gepassioneerde ingenieurs.",
+      "mainTitle": "Waarom Actoos Jobs kiezen?",
+      "mainSubtitle": "Het next-generation recruitmentplatform, gemaakt door gepassioneerde ingenieurs.",
       "title1": "100% gratis voor kandidaten",
-      "desc1": "Maak je profiel aan, solliciteer en word aangenomen zonder te betalen.",
-      "title2": "Onmiddellijke zichtbaarheid voor bedrijven",
-      "desc2": "Plaats je aanbiedingen en bereik duizenden gekwalificeerde kandidaten.",
+      "desc1": "Maak uw profiel aan, solliciteer en word aangenomen zonder iets te betalen.",
+      "title2": "Directe zichtbaarheid voor bedrijven",
+      "desc2": "Plaats uw vacatures en bereik duizenden gekwalificeerde kandidaten.",
       "title3": "Veilige en lokale gegevens",
-      "desc3": "Jouw informatie wordt veilig gehost en blijft vertrouwelijk.",
+      "desc3": "Uw informatie wordt veilig gehost en blijft vertrouwelijk.",
       "title4": "Slimme zoekmachine",
-      "desc4": "Vind de ideale aanbieding dankzij snelle zoekopdrachten en precieze filters.",
-      "title5": "Reactieve lokale ondersteuning",
-      "desc5": "Een reactief team dat klaarstaat om je te begeleiden.",
+      "desc4": "Vind de ideale vacature dankzij snel zoeken en nauwkeurige filters.",
+      "title5": "Lokale responsieve ondersteuning",
+      "desc5": "Een reactief team, klaar om u te begeleiden.",
       "title6": "Realtime statistieken",
-      "desc6": "Volg de prestaties van je aanbiedingen en sollicitaties live.",
-      "createAccount": "Gratis account aanmaken"
+      "desc6": "Volg uw sollicitaties en de prestaties van uw vacatures live.",
+      "createAccount": "Maak een gratis account aan"
     }
   },
   "jobs": {
+    "boosted": "Uitgelicht",
     "filters": "Filters",
     "resetFilters": "Filters resetten",
     "contractType": "Contracttype",
     "location": "Locatie",
     "salary": "Salaris",
-    "minSalary": "Minimumsalaris",
-    "maxSalary": "Maximumsalaris",
+    "minSalary": "Minimum salaris",
+    "maxSalary": "Maximum salaris",
     "remotePossible": "Thuiswerk mogelijk",
     "experience": "Ervaring",
     "category": "Categorie",
@@ -116,15 +123,15 @@
     "allCategories": "Alle categorieën",
     "sortRecent": "Meest recent",
     "sortSalary": "Salaris aflopend",
-    "allOffers": "Alle aanbiedingen",
-    "results": "{{count}} aanbieding(en) gevonden",
-    "noResults": "Geen aanbiedingen gevonden",
-    "noResultsHint": "Probeer uw zoekcriteria te wijzigen",
-    "viewOffer": "Aanbieding bekijken",
-    "yourOffer": "Uw aanbieding",
+    "allOffers": "Alle vacatures",
+    "results": "{{count}} vacature(s) gevonden",
+    "noResults": "Geen vacatures gevonden",
+    "noResultsHint": "Probeer uw zoekcriteria aan te passen",
+    "viewOffer": "Vacature bekijken",
+    "yourOffer": "Uw vacature",
     "verified": "Geverifieerd",
     "featured": "Uitgelicht",
-    "urgent": "Dringend",
+    "urgent": "Urgent",
     "remote": "Thuiswerk",
     "unspecified": "Niet gespecificeerd",
     "edit": "Bewerken",
@@ -132,219 +139,215 @@
     "pause": "Pauzeren",
     "reactivate": "Opnieuw activeren",
     "delete": "Verwijderen",
-    "deleteConfirm": "Deze aanbieding verwijderen?",
-    "deletedToast": "Aanbieding verwijderd",
+    "deleteConfirm": "Deze vacature verwijderen?",
+    "deletedToast": "Vacature verwijderd",
     "updateError": "Fout bij bijwerken",
     "deleteError": "Fout bij verwijderen",
-    "publishedToast": "Aanbieding gepubliceerd!",
+    "publishedToast": "Vacature gepubliceerd!",
     "statusUpdated": "Status bijgewerkt",
-    "loginToSave": "Log in om deze aanbieding op te slaan",
-    "companyCannotSave": "Bedrijven kunnen geen aanbiedingen opslaan",
-    "saveSuccess": "Aanbieding opgeslagen",
-    "unsaveSuccess": "Aanbieding verwijderd uit favorieten",
-    "searchPlaceholder": "Functietitel, vaardigheden of bedrijf...",
+    "loginToSave": "Log in om deze vacature op te slaan",
+    "companyCannotSave": "Bedrijven kunnen geen vacatures opslaan",
+    "saveSuccess": "Vacature opgeslagen",
+    "unsaveSuccess": "Vacature uit favorieten verwijderd",
+    "searchPlaceholder": "Functie, vaardigheden of bedrijf...",
     "resultsFor": "Resultaten voor \"{{query}}\"",
     "viewResults": "Bekijk de {{count}} resultaten"
   },
   "pricing": {
-    "badge": "Tarieven",
-    "title": "Plannen afgestemd op uw groei",
-    "subtitle": "Van incidentele werving tot geavanceerd beheer, kies de formule die bij uw behoeften past en evolueer eenvoudig.",
-    "monthly": "Maandelijks",
-    "annual": "Jaarlijks (-20%)",
+    "downgradeBlocked": "U heeft {{active}} actieve vacature(s). Het doelabonnement staat slechts {{limit}} vacature(s) toe. Deactiveer of verwijder de overtollige voordat u van abonnement wisselt.",
     "free": "Gratis",
     "pro": "Pro",
     "business": "Business",
-    "currentPlan": "Huidig plan",
-    "upgrade": "Upgraden naar",
-    "subscribe": "Abonneren",
-    "manage": "Mijn abonnement beheren",
-    "cancel": "Opzeggen",
+    "enterprise": "Enterprise",
+    "badge": "Tarieven",
+    "title": "Plannen ontworpen voor uw groei",
+    "subtitle": "Kies de formule die bij uw behoeften past en groei eenvoudig.",
     "perMonth": "/maand",
-    "perYear": "/ jaar",
-    "billedAnnually": "jaarlijks gefactureerd",
+    "perYear": "/jaar",
     "billedMonthly": "maandelijks gefactureerd",
-    "startTrial": "Gratis proefperiode",
-    "getStarted": "Aan de slag",
-    "contactSales": "Contact opnemen met verkoop",
-    "mostPopular": "Aanbevolen",
-    "features": "Functionaliteiten",
-    "included": "Inbegrepen",
-    "notIncluded": "Niet inbegrepen",
-    "choosePlan": "Kies dit plan",
-    "contactUs": "Neem contact met ons op",
-    "customPlan": "Plan op maat",
-    "comparePlans": "Plannen vergelijken",
-    "allPlansInclude": "Alle plannen omvatten",
-    "securePayment": "Veilige betaling",
-    "moneyBack": "Tevreden of geld terug binnen 30 dagen",
-    "upToDiscount": "Bespaar tot {{percent}}% met het jaarabonnement",
+    "billedAnnually": "jaarlijks gefactureerd",
+    "mostPopular": "Populairste",
+    "currentPlan": "Huidig plan",
     "toggle": {
       "monthly": "Maandelijks",
-      "annual": "Jaarlijks (-20%)",
+      "annual": "Jaarlijks",
       "savePercent": "-20%"
     },
     "plans": {
       "free": {
         "name": "Gratis",
-        "description": "Om het platform te ontdekken.",
-        "features": [
-          "3 actieve vacature",
-          "Onbeperkt sollicitaties",
-          "Bedrijfsprofiel",
-          "E-mailondersteuning"
-        ],
-        "limitations": [
-          "Geen statistieken",
-          "Geen uitlichting",
-          "Geen API"
-        ]
+        "description": "Om te starten en het platform te ontdekken.",
+        "features": {
+          "0": "{{count}} actieve vacatures",
+          "1": "{{count}} gebruiker",
+          "expiration": "Vervaldatum: {{days}} dagen",
+          "2": "Openbaar bedrijfsprofiel",
+          "3": "E-mailondersteuning"
+        },
+        "limitations": {
+          "0": "Geen statistieken",
+          "1": "Geen uitgelicht",
+          "2": "Geen API"
+        }
       },
       "pro": {
         "name": "Pro",
-        "description": "Voor KMO's en onafhankelijke recruiters.",
-        "features": [
-          "5 actieve vacatures",
-          "1 gebruiker (admin)",
-          "Basisstatistieken",
-          "Prioritaire ondersteuning",
-          "Geverifieerd bedrijfsprofiel"
-        ],
-        "limitations": [
-          "Geen uitlichting",
-          "Geen API",
-          "Geen export"
-        ]
+        "description": "Voor KMO's en regelmatige recruiters.",
+        "features": {
+          "0": "{{count}} actieve vacatures",
+          "1": "Tot {{count}} gebruikers",
+          "expiration": "Vervaldatum: {{days}} dagen",
+          "2": "Basisstatistieken",
+          "search": "Zoeken naar kandidaatprofielen",
+          "3": "Prioritaire ondersteuning",
+          "4": "Geverifieerd bedrijfsprofiel"
+        },
+        "limitations": {
+          "0": "Geen data-export",
+          "1": "Geen API"
+        }
       },
       "business": {
         "name": "Business",
-        "description": "Voor bedrijven die actief aanwerven.",
-        "features": [
-          "Onbeperkt actieve vacatures",
-          "Tot 5 gebruikers",
-          "Geavanceerde statistieken",
-          "Toegewijde ondersteuning",
-          "1 boost van 7 dagen/maand inbegrepen",
-          "Premium bedrijfsprofiel"
-        ],
-        "limitations": []
+        "description": "Voor grote recruiters en bureaus.",
+        "features": {
+          "0": "Onbeperkte vacatures",
+          "1": "Onbeperkte gebruikers",
+          "expiration": "Vervaldatum: {{days}} dagen",
+          "2": "Geavanceerde statistieken",
+          "export": "Export van sollicitaties (CSV)",
+          "api": "Recruitment API",
+          "3": "Toegewijde ondersteuning",
+          "4": "1 gratis uitgelichte vacature / maand",
+          "5": "Premium bedrijfsprofiel"
+        }
       }
     },
     "actions": {
-      "backToFree": "Terug naar het gratis plan",
-      "manageSubscription": "Mijn abonnement beheren",
+      "backToFree": "Terug naar gratis",
       "upgradeTo": "Upgraden naar {{plan}}",
       "downgradeTo": "Downgraden naar {{plan}}",
       "subscribeMonthly": "Abonneren (maandelijks)",
-      "subscribeAnnual": "Abonneren (jaarlijks -20%)"
+      "subscribeAnnual": "Abonneren (jaarlijks -20%)",
+      "manageSubscription": "Mijn abonnement beheren"
     },
     "comparison": {
+      "values": {
+    "expiration": "{{count}} dagen",
+    "boostPerMonth": "1 / maand"
+  },
       "title": "Gedetailleerde vergelijking",
-      "subtitle": "Belangrijkste functies per plan",
+      "subtitle": "Alle functies in één oogopslag",
       "featureColumn": "Functionaliteit",
       "freeColumn": "Gratis",
       "proColumn": "Pro",
       "businessColumn": "Business",
       "rows": {
-        "activeOffers": "Gelijktijdig actieve vacatures",
-        "candidates": "Ontvangen sollicitaties",
-        "verifiedProfile": "Geverifieerd bedrijfsprofiel",
-        "analytics": "Statistieken (weergaven, sollicitaties)",
-        "emailSupport": "E-mailondersteuning",
-        "freeBoost": "Maandelijkse boost inbegrepen"
+        "activeOffers": "Actieve vacatures",
+        "teamMembers": "Teamleden",
+        "expiration": "Publicatieduur",
+        "candidates": "Sollicitaties",
+        "verifiedProfile": "Geverifieerd profiel",
+        "analytics": "Statistieken",
+        "searchProfiles": "Profielen zoeken",
+        "export": "CSV-export",
+        "api": "API",
+        "prioritySupport": "Prioritaire ondersteuning",
+        "freeBoost": "Gratis uitgelichte boost",
+        "customBranding": "Personalisatie (branding)"
       }
     },
     "faq": {
       "title": "Veelgestelde vragen",
-      "subtitle": "Alles wat u moet weten over onze abonnementen",
+      "subtitle": "Alles over onze abonnementen",
       "items": [
         {
           "question": "Hoe werkt het abonnement?",
-          "answer": "U kiest een plan (Pro of Business) met maandelijkse of jaarlijkse facturering. Het abonnement wordt automatisch vernieuwd per periode. U kunt op elk moment opzeggen vanuit uw bedrijfsruimte, zonder kosten."
+          "answer": "U kiest een plan (Pro of Business) met maandelijkse of jaarlijkse facturering. Het abonnement wordt automatisch verlengd per periode. U kunt op elk moment annuleren vanuit uw bedrijfsruimte, zonder kosten."
         },
         {
-          "question": "Kan ik op elk moment van plan veranderen?",
-          "answer": "Ja, u kunt op elk moment overschakelen tussen plannen. Bij een upgrade betaalt u alleen het verschil naar rato van het resterende aantal dagen. Bij een downgrade wordt de wijziging van kracht bij de volgende vervaldatum."
+          "question": "Kan ik op elk moment van plan wisselen?",
+          "answer": "Ja, u kunt op elk moment overstappen naar een ander plan. Als u een upgrade uitvoert, betaalt u alleen het verschil naar rato van de resterende dagen. Bij een downgrade gaat de wijziging in bij de volgende factureringsdatum."
         },
         {
           "question": "Zijn er verborgen kosten of verplichtingen?",
-          "answer": "Geen verborgen kosten. De weergegeven prijzen zijn de uiteindelijke prijzen, inclusief alle belastingen. Er is geen verplichte duur: u kunt op elk moment annuleren. Het jaarabonnement biedt een korting van 20% ten opzichte van het maandtarief, maar u blijft vrij om vóór het einde van de jaarperiode op te zeggen (de opzegging wordt van kracht aan het einde van het lopende jaar)."
+          "answer": "Geen verborgen kosten. De getoonde prijzen zijn de eindprijzen, inclusief belastingen. Er is geen langdurige verplichting: u kunt op elk moment annuleren."
         },
         {
-          "question": "Kan ik mijn abonnement opzeggen?",
-          "answer": "Natuurlijk. Opzeggen kan met één klik vanuit uw bedrijfsruimte, onder 'Abonnement'. Uw abonnement blijft actief tot het einde van de betaalde periode. Er wordt geen restitutie verleend voor niet-gebruikte periodes, tenzij wettelijk anders bepaald."
+          "question": "Kan ik mijn abonnement annuleren?",
+          "answer": "Natuurlijk. Annulering gebeurt met één klik vanuit uw bedrijfsruimte, onder 'Abonnement'. Uw abonnement blijft actief tot het einde van de betaalde periode."
         },
         {
           "question": "Blijven mijn vacatures online na het einde van het abonnement?",
-          "answer": "Ja, uw actieve vacatures blijven gepubliceerd tot hun normale vervaldatum. U kunt alleen geen nieuwe plaatsen als u de limiet van uw nieuwe plan (of de gratis limiet) hebt bereikt."
+          "answer": "Ja, uw actieve vacatures blijven gepubliceerd tot hun normale vervaldatum. U kunt alleen geen nieuwe plaatsen als u de limiet van uw nieuwe plan hebt bereikt."
         },
         {
           "question": "Welke betaalmethoden worden geaccepteerd?",
-          "answer": "We accepteren internationale creditcards (Visa, Mastercard, American Express) via Stripe, een betalingsverwerker met PCI-DSS Level 1-certificering. We slaan nooit uw creditcardgegevens op onze servers op."
+          "answer": "Wij accepteren internationale bankkaarten (Visa, Mastercard, American Express) via Stripe, een PCI-DSS Level 1 gecertificeerde betalingsverwerker."
         },
         {
-          "question": "Hoe worden factureringsgegevens beheerd?",
-          "answer": "Uw factureringsgegevens (adres, betalingsgeschiedenis) worden veilig opgeslagen en nooit gedeeld met derden. U kunt uw facturen raadplegen en downloaden vanuit uw bedrijfsruimte."
+          "question": "Hoe worden facturatiegegevens behandeld?",
+          "answer": "Uw facturatiegegevens worden veilig opgeslagen en nooit gedeeld met derden."
         },
         {
-          "question": "Bieden jullie oplossingen voor grote groepen of specifieke behoeften?",
-          "answer": "Ja, we bieden Enterprise-plannen op maat. Neem contact op met ons verkoopteam via de contactpagina om uw behoeften te bespreken: onbeperkt aantal gebruikers, geavanceerde API-integratie, toegewijde ondersteuning, SLA, training, enz."
+          "question": "Bieden jullie oplossingen voor grote groepen?",
+          "answer": "Ja, wij bieden Enterprise-plannen op maat. Neem contact op met ons verkoopteam via de Contactpagina om uw behoeften te bespreken."
         },
         {
-          "question": "Kan ik het gratis plan onbeperkt gebruiken?",
-          "answer": "Het gratis plan stelt u in staat het platform te testen met 1 actieve vacature. Er is geen tijdslimiet. U kunt overstappen naar een betaald plan wanneer u meer functionaliteiten nodig hebt."
+          "question": "Kan ik het gratis plan voor onbepaalde tijd gebruiken?",
+          "answer": "Met het gratis plan kunt u het platform testen met 3 actieve vacatures. Het heeft geen tijdslimiet."
         },
         {
           "question": "Wat gebeurt er als ik mijn vacaturelimiet overschrijd?",
-          "answer": "Als u de limiet van uw plan bereikt, kunt u geen nieuwe vacatures plaatsen. U kunt oude vacatures archiveren of overstappen naar een hoger plan om uw quotum te verhogen."
+          "answer": "Als u de limiet van uw plan bereikt, kunt u geen nieuwe vacatures plaatsen. U kunt oude vacatures archiveren of upgraden naar een hoger plan."
         },
         {
-          "question": "Kan ik een terugbetaling krijgen?",
-          "answer": "Wij bieden een garantie van 14 dagen voor nieuwe abonnees. Als u niet tevreden bent, neem dan contact met ons op voor een volledige terugbetaling."
+          "question": "Kan ik restitutie krijgen?",
+          "answer": "Wij bieden een 14-dagen garantie voor nieuwe abonnees. Als u niet tevreden bent, neem dan contact met ons op voor volledige restitutie."
         }
       ]
     },
     "cta": {
       "title": "Een oplossing op maat?",
-      "subtitle": "Voor grote groepen en specifieke behoeften creëren we gepersonaliseerde aanbiedingen met toegewijde begeleiding.",
+      "subtitle": "Voor grote groepen creëren wij gepersonaliseerde aanbiedingen.",
       "button": "Neem contact op met ons team"
     },
-    "toast": {
-      "mustLogin": "U moet ingelogd zijn om te abonneren",
-      "boostsComingSoon": "Boosts zijn binnenkort beschikbaar",
-      "checkoutError": "Fout bij het aanmaken van de betalingssessie",
-      "mustLoginFree": "U moet ingelogd zijn om te beginnen",
-      "alreadyFree": "U zit al op het gratis plan",
-      "cancelToFree": "Om terug te keren naar het gratis plan, zeg uw abonnement op via uw bedrijfsruimte."
-    },
     "loginBanner": {
-      "message": "Log in om een abonnement af te sluiten",
+      "message": "Log in om u te abonneren op een plan",
       "button": "Inloggen"
+    },
+    "toast": {
+      "mustLogin": "U moet ingelogd zijn om u te abonneren",
+      "mustLoginFree": "Log in om het gratis plan te gebruiken",
+      "alreadyFree": "U zit al op het gratis plan",
+      "cancelToFree": "Zeg uw betaalde abonnement op om terug te keren naar gratis",
+      "checkoutError": "Fout bij doorverwijzen naar betaling"
     }
   },
   "jobDetail": {
-    "notFound": "Aanbieding niet gevonden",
-    "notFoundMessage": "Aanbieding niet gevonden.",
+    "boosted": "Uitgelicht",
+    "notFound": "Vacature niet gevonden",
+    "notFoundMessage": "Vacature niet gevonden.",
     "backToJobs": "Terug naar vacatures",
     "apply": "Solliciteren",
     "alreadyApplied": "Al gesolliciteerd",
-    "removedFromFavorites": "Verwijderd uit favorieten",
-    "savedToFavorites": "Aanbieding opgeslagen",
+    "removedFromFavorites": "Uit favorieten verwijderd",
+    "savedToFavorites": "Vacature opgeslagen",
     "errorSaving": "Fout bij opslaan",
-    "yourOffer": "Uw aanbieding",
+    "yourOffer": "Uw vacature",
     "unspecified": "Niet gespecificeerd",
     "descriptionTitle": "Functiebeschrijving",
     "missionsTitle": "Taken",
-    "profileTitle": "Gezocht profiel",
+    "profileTitle": "Gewenst profiel",
     "benefitsTitle": "Voordelen",
-    "pleaseLogin": "Gelieve in te loggen",
+    "pleaseLogin": "Log alstublieft in",
     "companyCannotApply": "Bedrijven kunnen niet solliciteren",
-    "alreadyAppliedMessage": "U heeft al gesolliciteerd",
+    "alreadyAppliedMessage": "U hebt al gesolliciteerd",
     "applicationSent": "Sollicitatie verzonden",
     "applicationError": "Fout bij verzenden sollicitatie",
-    "matchScore": "{{score}}% overeenkomst",
+    "matchScore": "{{score}}% match",
     "currency": "FCFA",
-    "companyCannotSaveFavorites": "Bedrijven kunnen geen favorieten toevoegen"
+    "companyCannotSaveFavorites": "Bedrijven kunnen geen favorieten opslaan"
   },
   "auth": {
     "login": {
@@ -360,36 +363,36 @@
       "submitButton": "Inloggen",
       "noAccount": "Nog geen account?",
       "createAccount": "Account aanmaken",
-      "legalPrefix": "Door in te loggen accepteert u onze",
+      "legalPrefix": "Door in te loggen gaat u akkoord met onze",
       "legalAnd": "en onze",
-      "cgu": "AV",
+      "cgu": "Algemene Voorwaarden",
       "privacy": "Privacybeleid",
-      "success": "Succesvol ingelogd!",
+      "success": "Inloggen gelukt!",
       "errorInvalid": "Ongeldig e-mailadres of wachtwoord",
       "errorGeneric": "Inlogfout",
       "errorGoogle": "Fout bij inloggen met Google",
-      "fillAllFields": "Vul alle velden in"
+      "fillAllFields": "Vul alstublieft alle velden in"
     }
   },
   "jobAlerts": {
     "title": "Vacature-alerts",
-    "subtitle": "Ontvang aanbiedingen die aan uw criteria voldoen",
+    "subtitle": "Ontvang vacatures die aan uw criteria voldoen",
     "newAlert": "Nieuwe alert",
     "createTitle": "Alert aanmaken",
     "editTitle": "Alert bewerken",
-    "createDescription": "Definieer uw criteria om e-mailmeldingen te ontvangen.",
+    "createDescription": "Stel uw criteria in om meldingen per e-mail te ontvangen.",
     "nameLabel": "Naam (optioneel)",
-    "namePlaceholder": "Bijv: Tech aanbiedingen in Brussel",
+    "namePlaceholder": "Bijv.: Tech vacatures in Bamako",
     "keywordsLabel": "Trefwoorden *",
-    "keywordsPlaceholder": "Bijv: ontwikkelaar, boekhouder, Brussel",
-    "keywordsHint": "Scheid woorden met spaties. Bijv: \"dev Brussel\"",
+    "keywordsPlaceholder": "Bijv.: ontwikkelaar, boekhouder, Bamako",
+    "keywordsHint": "Scheid woorden met spaties. Bijv.: \"dev Bamako\"",
     "categoryLabel": "Categorie",
     "allCategories": "Alle categorieën",
     "cityLabel": "Stad",
     "allCities": "Alle steden",
     "contractTypesLabel": "Contracttypes",
-    "salaryMinLabel": "Minimumsalaris (FCFA)",
-    "salaryMinPlaceholder": "Bijv: 300000",
+    "salaryMinLabel": "Minimum salaris (FCFA)",
+    "salaryMinPlaceholder": "Bijv.: 300000",
     "frequencyLabel": "Frequentie",
     "frequencies": {
       "instant": "Onmiddellijk",
@@ -401,7 +404,7 @@
     "editButton": "Bewerken",
     "alertActive": "Actief",
     "alertInactive": "Inactief",
-    "noAlerts": "U heeft nog geen alerts.",
+    "noAlerts": "U hebt nog geen alerts.",
     "createFirstAlert": "Mijn eerste alert aanmaken",
     "myAlerts": "Mijn alerts ({{count}})",
     "lastSent": "Laatst verzonden: {{date}}",
@@ -412,7 +415,7 @@
     "deleteConfirm": "Deze alert verwijderen?",
     "toasts": {
       "loadError": "Fout bij laden van alerts",
-      "addCriteria": "Voeg ten minste één criterium toe (trefwoorden, categorie, stad, salaris)",
+      "addCriteria": "Voeg minstens één criterium toe (trefwoorden, categorie, stad, salaris)",
       "editSuccess": "Alert bewerkt",
       "createSuccess": "Alert succesvol aangemaakt",
       "saveError": "Fout",
@@ -424,12 +427,12 @@
     }
   },
   "contractTypes": {
-    "cdi": "Onbepaalde duur",
-    "cdd": "Bepaalde duur",
+    "cdi": "Onbepaalde duur (CDI)",
+    "cdd": "Bepaalde duur (CDD)",
     "stage": "Stage",
     "freelance": "Freelance",
-    "interim": "Interim",
-    "alternance": "Werkstudie",
+    "interim": "Uitzendwerk",
+    "alternance": "Alternerend leren",
     "temps_partiel": "Deeltijds"
   },
   "myApplications": {
@@ -437,9 +440,9 @@
     "back": "Terug",
     "refresh": "Vernieuwen",
     "noApplications": "Geen sollicitaties.",
-    "jobDefault": "Aanbieding",
+    "jobDefault": "Vacature",
     "status": {
-      "pending": "In afwachting",
+      "pending": "In behandeling",
       "viewed": "Bekeken",
       "shortlisted": "Geselecteerd",
       "interview": "Gesprek",
@@ -453,64 +456,64 @@
     "unreadCount_one": "{{count}} ongelezen",
     "unreadCount_other": "{{count}} ongelezen",
     "markAllAsRead": "Alles als gelezen markeren",
-    "allReadSuccess": "Alle meldingen zijn als gelezen gemarkeerd",
+    "allReadSuccess": "Alle meldingen gemarkeerd als gelezen",
     "noNotifications": "Geen meldingen.",
-    "markAsRead": "Als gelezen markeren",
+    "markAsRead": "Markeer als gelezen",
     "delete": "Verwijderen"
   },
   "paymentCancel": {
     "title": "Betaling geannuleerd",
-    "message": "U heeft het betalingsproces geannuleerd. Er is geen bedrag in rekening gebracht.",
+    "message": "U hebt het betalingsproces geannuleerd. Er is geen bedrag afgeschreven.",
     "retry": "Opnieuw proberen",
-    "backHome": "Terug naar startpagina"
+    "backHome": "Terug naar home"
   },
   "paymentSuccess": {
     "error": {
       "title": "Fout",
-      "message": "Kon uw aankoop niet voltooien.",
+      "message": "Kan uw aankoop niet afronden.",
       "backToDashboard": "Terug naar dashboard"
     },
     "boost": {
       "title": "Boost geactiveerd!",
-      "message": "Uw aanbieding is nu uitgelicht met de <badge>{{packageName}}</badge>.",
-      "viewOffers": "Mijn aanbiedingen bekijken",
+      "message": "Uw vacature is nu uitgelicht met de <badge>{{packageName}}</badge>.",
+      "viewOffers": "Mijn vacatures bekijken",
       "backToDashboard": "Terug naar dashboard"
     },
     "subscription": {
       "title": "Betaling geslaagd!",
-      "message": "Uw abonnement <badge>{{packageName}}</badge> is nu actief.",
-      "goToDashboard": "Naar mijn ruimte"
+      "message": "Uw <badge>{{packageName}}</badge> abonnement is nu actief.",
+      "goToDashboard": "Naar mijn dashboard"
     },
     "amountPaidLabel": "Betaald bedrag:"
   },
   "privacyPolicy": {
     "title": "Privacybeleid",
     "back": "Terug",
-    "lastUpdate": "Laatste update: Mei 2026",
+    "lastUpdate": "Laatst bijgewerkt: mei 2026",
     "sections": {
       "intro": {
         "title": "Inleiding",
-        "content": "Bij Actoos Jobs nemen we de bescherming van uw persoonsgegevens zeer serieus. Dit privacybeleid legt uit hoe we uw informatie verzamelen, gebruiken en beschermen wanneer u ons platform gebruikt."
+        "content": "Bij Actoos Jobs nemen wij de bescherming van uw persoonlijke gegevens zeer serieus. Dit privacybeleid legt uit hoe wij uw gegevens verzamelen, gebruiken en beschermen wanneer u ons platform gebruikt."
       },
       "dataCollected": {
         "title": "Verzamelde gegevens",
-        "content": "We verzamelen de informatie die u ons rechtstreeks verstrekt, zoals uw naam, e-mailadres, CV en andere informatie met betrekking tot uw kandidaat- of bedrijfsprofiel."
+        "content": "Wij verzamelen de informatie die u rechtstreeks verstrekt, zoals uw naam, e-mailadres, cv en andere informatie met betrekking tot uw kandidaat- of bedrijfsprofiel."
       },
       "dataUsage": {
         "title": "Gebruik van gegevens",
-        "content": "Uw gegevens worden gebruikt om u in contact te brengen met werkgevers of kandidaten, onze diensten te verbeteren en u communicatie te sturen met betrekking tot uw account of onze aanbiedingen."
+        "content": "Uw gegevens worden gebruikt om u in contact te brengen met werkgevers of kandidaten, onze diensten te verbeteren en u communicaties te sturen met betrekking tot uw account of onze aanbiedingen."
       },
       "dataSharing": {
         "title": "Delen van gegevens",
-        "content": "We verkopen uw persoonsgegevens nooit. Ze kunnen worden gedeeld met recruiters in het kader van uw zoektocht naar werk, uitsluitend met uw toestemming."
+        "content": "Wij verkopen uw persoonlijke gegevens nooit. Ze kunnen worden gedeeld met recruiters in het kader van uw zoektocht naar werk, alleen met uw toestemming."
       },
       "security": {
         "title": "Beveiliging",
-        "content": "We implementeren technische en organisatorische beveiligingsmaatregelen om uw gegevens te beschermen tegen ongeoorloofde toegang."
+        "content": "Wij implementeren technische en organisatorische beveiligingsmaatregelen om uw gegevens te beschermen tegen ongeoorloofde toegang."
       },
       "yourRights": {
         "title": "Uw rechten",
-        "content": "In overeenstemming met de geldende regelgeving heeft u recht op toegang, rectificatie en verwijdering van uw gegevens. Om deze rechten uit te oefenen, neem contact met ons op via <a>{email}</a>."
+        "content": "In overeenstemming met de geldende regelgeving hebt u recht op inzage, rectificatie en verwijdering van uw gegevens. Om deze rechten uit te oefenen, neem contact met ons op via <a>{email}</a>."
       },
       "contact": {
         "title": "Contact",
@@ -523,75 +526,75 @@
     "title": "Account aanmaken",
     "chooseProfile": "Kies uw profieltype",
     "candidateTitle": "Ik zoek een baan",
-    "candidateDesc": "Maak uw profiel aan, solliciteer op aanbiedingen en volg uw sollicitaties.",
-    "companyTitle": "Ik werf aan",
-    "companyDesc": "Plaats vacatures, beheer sollicitaties en werk in teamverband.",
+    "candidateDesc": "Maak uw profiel aan, solliciteer op vacatures en volg uw sollicitaties.",
+    "companyTitle": "Ik werf",
+    "companyDesc": "Plaats vacatures, beheer sollicitaties en werk samen in teamverband.",
     "alreadyRegistered": "Al geregistreerd?",
     "loginLink": "Inloggen",
     "changeProfile": "← Profiel wijzigen",
-    "candidateFormTitle": "Inschrijving Kandidaat",
-    "companyFormTitle": "Inschrijving Bedrijf",
+    "candidateFormTitle": "Registratie Kandidaat",
+    "companyFormTitle": "Registratie Bedrijf",
     "firstNameLabel": "Voornaam *",
-    "firstNamePlaceholder": "Jan",
+    "firstNamePlaceholder": "Jean",
     "lastNameLabel": "Achternaam *",
-    "lastNamePlaceholder": "Jansen",
+    "lastNamePlaceholder": "Dupont",
     "companyNameLabel": "Bedrijfsnaam *",
     "companyNamePlaceholder": "Mijn Bedrijf BV",
     "emailLabel": "E-mailadres *",
     "emailPlaceholder": "uw@email.com",
     "passwordLabel": "Wachtwoord *",
     "passwordPlaceholder": "Min. 8 tekens",
-    "confirmPasswordLabel": "Bevestig wachtwoord *",
+    "confirmPasswordLabel": "Wachtwoord bevestigen *",
     "confirmPasswordPlaceholder": "Bevestig uw wachtwoord",
     "googleButton": "Doorgaan met Google",
     "orSeparator": "of",
     "submitButton": "Mijn account aanmaken",
-    "legalPrefix": "Door een account aan te maken accepteert u onze",
+    "legalPrefix": "Door een account aan te maken gaat u akkoord met onze",
     "legalAnd": "en onze",
-    "cgu": "AV",
+    "cgu": "Algemene Voorwaarden",
     "privacy": "Privacybeleid",
     "toasts": {
-      "fillAllFields": "Vul alle verplichte velden in",
-      "passwordLength": "Het wachtwoord moet minstens 8 tekens bevatten",
-      "passwordMismatch": "De wachtwoorden komen niet overeen",
+      "fillAllFields": "Vul alstublieft alle verplichte velden in",
+      "passwordLength": "Wachtwoord moet minstens 8 tekens bevatten",
+      "passwordMismatch": "Wachtwoorden komen niet overeen",
       "accountCreated": "Account aangemaakt! Controleer uw e-mail om uw registratie te bevestigen.",
       "emailAlreadyUsed": "Dit e-mailadres is al in gebruik",
-      "genericError": "Fout bij registratie",
+      "genericError": "Registratiefout",
       "googleError": "Fout bij inloggen met Google"
     }
   },
   "report": {
-    "button": "Melden",
-    "mustLogin": "Log in om te melden",
-    "sentSuccess": "Melding verzonden",
-    "sendError": "Fout bij verzenden melding",
-    "title": "Deze {{itemType}} melden",
+    "button": "Rapporteren",
+    "mustLogin": "Log in om te rapporteren",
+    "sentSuccess": "Rapport verzonden",
+    "sendError": "Fout bij verzenden rapport",
+    "title": "Rapporteer dit {{itemType}}",
     "itemTypes": {
-      "job": "deze aanbieding",
+      "job": "deze vacature",
       "company": "dit bedrijf",
       "user": "deze gebruiker",
-      "default": "dit element"
+      "default": "dit item"
     },
-    "reasonPlaceholder": "Reden van melding...",
+    "reasonPlaceholder": "Reden van rapport...",
     "reasonDefault": "Niet gespecificeerd",
     "cancel": "Annuleren",
-    "send": "Melding verzenden"
+    "send": "Rapport verzenden"
   },
   "resetPassword": {
     "title": "Nieuw wachtwoord",
     "description": "Kies een nieuw wachtwoord voor uw account.",
     "newPasswordLabel": "Nieuw wachtwoord",
-    "confirmPasswordLabel": "Bevestig wachtwoord",
+    "confirmPasswordLabel": "Wachtwoord bevestigen",
     "placeholder": "••••••••",
     "submitButton": "Wachtwoord bijwerken",
     "successTitle": "Wachtwoord gewijzigd",
     "successMessage": "Uw wachtwoord is succesvol gewijzigd. U kunt nu inloggen.",
     "loginButton": "Inloggen",
     "toasts": {
-      "passwordMismatch": "De wachtwoorden komen niet overeen",
-      "passwordLength": "Het wachtwoord moet minstens 8 tekens bevatten",
+      "passwordMismatch": "Wachtwoorden komen niet overeen",
+      "passwordLength": "Wachtwoord moet minstens 8 tekens bevatten",
       "updateSuccess": "Wachtwoord succesvol bijgewerkt!",
-      "updateError": "Fout bij bijwerken"
+      "updateError": "Fout bij bijwerken wachtwoord"
     }
   },
   "savedJobs": {
@@ -600,7 +603,7 @@
     "noSaved": "Geen opgeslagen vacatures."
   },
   "scheduleInterview": {
-    "title": "Gesprek plannen"
+    "title": "Een gesprek inplannen"
   },
   "unsubscribe": {
     "loading": "Verwerken...",
@@ -616,8 +619,8 @@
   },
   "interviewPrep": {
     "badge": "Nieuw",
-    "title": "Voorbereiding op gesprekken",
-    "description": "Voer een vacaturetekst en uw profiel in om waarschijnlijke vragen, modelantwoorden en persoonlijk advies te krijgen.",
+    "title": "Gespreksvoorbereiding",
+    "description": "Voer een vacature en uw profiel in om waarschijnlijke vragen, voorbeeldantwoorden en persoonlijke tips te krijgen.",
     "jobSection": "Vacature",
     "jobPlaceholder": "Plak hier de vacaturebeschrijving...",
     "profileSection": "Uw profiel",
@@ -627,12 +630,12 @@
       "empty": "Klik op Genereren om vragen te krijgen."
     },
     "answers": {
-      "title": "Modelantwoorden",
+      "title": "Voorbeeldantwoorden",
       "empty": "Genereer eerst de vragen."
     },
     "tips": {
-      "title": "Persoonlijk advies",
-      "empty": "Klik op Genereren voor advies."
+      "title": "Persoonlijke tips",
+      "empty": "Klik op Genereren voor tips."
     },
     "generateButton": "Genereren",
     "toast": {
@@ -643,15 +646,15 @@
   },
   "forgotPassword": {
     "title": "Wachtwoord vergeten?",
-    "description": "Voer uw e-mailadres in om een reset-link te ontvangen.",
+    "description": "Voer uw e-mailadres in om een resetlink te ontvangen.",
     "emailLabel": "E-mailadres",
     "emailPlaceholder": "uw@email.com",
     "submitButton": "Link verzenden",
     "backToLogin": "Terug naar inloggen",
-    "successMessage": "Als er een account gekoppeld is aan <strong>{{email}}</strong>, ontvangt u een e-mail met instructies om uw wachtwoord opnieuw in te stellen.",
+    "successMessage": "Als er een account is gekoppeld aan <strong>{{email}}</strong>, ontvangt u een e-mail met instructies om uw wachtwoord opnieuw in te stellen.",
     "toasts": {
-      "emptyEmail": "Voer uw e-mailadres in",
-      "sendError": "Fout bij verzenden van de link"
+      "emptyEmail": "Voer alstublieft uw e-mailadres in",
+      "sendError": "Fout bij verzenden link"
     }
   },
   "faq": {
@@ -667,15 +670,15 @@
         "questions": [
           {
             "q": "Wat is Actoos Jobs?",
-            "a": "Actoos Jobs is het toonaangevende rekruteringsplatform in Mali en West-Afrika. We verbinden gekwalificeerde kandidaten met lokale en internationale bedrijven. U kunt vacatures zoeken, eenvoudig solliciteren en uw sollicitaties volgen. Recruiters kunnen vacatures plaatsen, sollicitaties beheren en gesprekken plannen, allemaal gratis met een optie voor premium abonnement."
+            "a": "Actoos Jobs is het toonaangevende rekruteringsplatform in Mali en West-Afrika. Wij verbinden gekwalificeerde kandidaten met lokale en internationale bedrijven. U kunt vacatures zoeken, eenvoudig solliciteren en uw sollicitaties volgen. Recruiters kunnen vacatures plaatsen, sollicitaties beheren en gesprekken inplannen, allemaal gratis met een optie voor premium abonnement."
           },
           {
             "q": "Is registratie gratis?",
-            "a": "Ja, registratie en basisgebruik zijn volledig gratis voor kandidaten. Bedrijven kunnen ook gratis een account aanmaken en een beperkt aantal vacatures plaatsen. Betaalde plannen zijn beschikbaar voor geavanceerde functies (meer vacatures, grotere zichtbaarheid, enz.)."
+            "a": "Ja, registratie en basisgebruik zijn volledig gratis voor kandidaten. Bedrijven kunnen ook een gratis account aanmaken en een beperkt aantal vacatures plaatsen. Er zijn betaalde abonnementen beschikbaar voor geavanceerde functies (meer vacatures, verhoogde zichtbaarheid, enz.)."
           },
           {
             "q": "Hoe maak ik een account aan?",
-            "a": "Klik rechtsboven op 'Registreren'. U kunt kiezen voor een Kandidaat- of Bedrijfsaccount. Vul het formulier in met uw e-mail en een wachtwoord, of log snel in met Google. Uw account wordt onmiddellijk aangemaakt."
+            "a": "Klik op 'Registreren' rechtsboven op de site. U kunt een Kandidaat- of Bedrijfsaccount kiezen. Vul het formulier in met uw e-mailadres en wachtwoord, of log snel in met Google. Uw account wordt onmiddellijk aangemaakt."
           }
         ]
       },
@@ -684,23 +687,23 @@
         "questions": [
           {
             "q": "Hoe solliciteer ik op een vacature?",
-            "a": "Blader door de vacatures op de pagina 'Vacatures'. Klik op een aanbieding voor details en vervolgens op 'Solliciteren'. Als u uw profiel nog niet heeft aangevuld, vragen we u dit te doen om uw kansen te optimaliseren. Zodra uw sollicitatie is verzonden, wordt het bedrijf onmiddellijk op de hoogte gesteld."
+            "a": "Blader door vacatures op de pagina 'Vacatures'. Klik op een vacature voor details en vervolgens op 'Solliciteren'. Als u uw profiel nog niet hebt aangevuld, nodigen wij u uit dit te doen om uw kansen te optimaliseren. Zodra uw sollicitatie is verzonden, wordt het bedrijf onmiddellijk op de hoogte gesteld."
           },
           {
             "q": "Wat is de matchscore?",
-            "a": "Dit is een schatting van de overeenkomst tussen uw profiel en een aanbieding. Hoe hoger de score, hoe beter uw vaardigheden, ervaring en salarisvoorkeuren overeenkomen met wat de werkgever zoekt. Het helpt u de meest veelbelovende aanbiedingen te identificeren."
+            "a": "Het is een schatting van de overeenkomst tussen uw profiel en een vacature. Hoe hoger de score, hoe beter uw vaardigheden, ervaring en salarisverwachtingen overeenkomen met wat de werkgever zoekt. Het helpt u de meest veelbelovende vacatures te identificeren."
           },
           {
             "q": "Kan ik vacatures opslaan voor later?",
-            "a": "Absoluut. Klik op het hartje rechtsboven de aanbieding om deze aan uw favorieten toe te voegen. U vindt ze terug in uw dashboard onder 'Opgeslagen vacatures'."
+            "a": "Absoluut. Klik op het hartje rechtsboven in de vacature om het toe te voegen aan uw favorieten. Vind ze terug in uw dashboard, onder 'Opgeslagen vacatures'."
           },
           {
             "q": "Hoe werken vacature-alerts?",
-            "a": "Ga vanuit uw dashboard naar 'Vacature-alerts'. Definieer uw criteria (trefwoorden, stad, categorie, minimumsalaris, frequentie). U ontvangt een e-mail zodra een overeenkomstige vacature wordt gepubliceerd."
+            "a": "Ga vanuit uw dashboard naar 'Vacature-alerts'. Stel uw criteria in (trefwoorden, stad, categorie, minimum salaris, frequentie). U ontvangt een e-mail zodra er een overeenkomende vacature wordt gepubliceerd."
           },
           {
-            "q": "Wat moet ik doen bij technische problemen?",
-            "a": "U kunt contact met ons opnemen via het contactformulier (pagina Contact) of ongepaste inhoud rechtstreeks vanaf de vacature melden. Ons team reageert snel."
+            "q": "Wat moet ik doen bij een technisch probleem?",
+            "a": "U kunt contact met ons opnemen via het contactformulier (Contactpagina) of ongepaste inhoud direct vanuit de vacature melden. Ons team reageert snel."
           }
         ]
       },
@@ -709,61 +712,61 @@
         "questions": [
           {
             "q": "Hoe maak ik een bedrijfsprofiel aan?",
-            "a": "Nadat u een account van het type 'Bedrijf' heeft aangemaakt, gaat u naar uw dashboard en klikt u op 'Mijn bedrijf aanmaken'. Vul de gevraagde informatie in (naam, sector, beschrijving, logo, enz.). Uw bedrijf wordt ter validatie voorgelegd aan ons team. Na validatie kunt u vacatures plaatsen."
+            "a": "Na het aanmaken van een 'Bedrijf'-account gaat u naar uw dashboard en klikt u op 'Mijn bedrijf aanmaken'. Vul de gevraagde informatie in (naam, sector, beschrijving, logo, enz.). Uw bedrijf wordt ter validatie voorgelegd aan ons team. Na validatie kunt u vacatures plaatsen."
           },
           {
             "q": "Waarom is mijn bedrijf in afwachting van validatie?",
-            "a": "Om de kwaliteit en betrouwbaarheid van de aanbiedingen te garanderen, controleren we elk nieuw bedrijf handmatig. Dit duurt meestal minder dan 24 uur. U ontvangt een e-mail na validatie. In de tussentijd kunt u uw vacatures als concept voorbereiden."
+            "a": "Om de kwaliteit en betrouwbaarheid van de vacatures te garanderen, controleren wij elk nieuw bedrijf handmatig. Dit duurt doorgaans minder dan 24 uur. U wordt per e-mail op de hoogte gesteld bij validatie. Ondertussen kunt u uw vacatures als concept voorbereiden."
           },
           {
             "q": "Hoeveel vacatures kan ik plaatsen?",
-            "a": "Met het gratis plan kunt u 1 actieve vacature plaatsen. Met de Pro- en Business-plannen kunt u meer gelijktijdige vacatures plaatsen. U kunt altijd onbeperkt concepten opslaan. Raadpleeg de pagina 'Tarieven' voor meer details."
+            "a": "Met het gratis plan kunt u 1 actieve vacature plaatsen. Met de Pro- en Business-abonnementen kunt u meer vacatures tegelijk plaatsen. U kunt altijd onbeperkt concepten opslaan. Bekijk de 'Tarieven'-pagina voor meer details."
           },
           {
             "q": "Hoe beheer ik ontvangen sollicitaties?",
-            "a": "Ga in uw dashboard naar 'Sollicitaties'. U ziet alle sollicitaties gegroepeerd per vacature. U kunt de status wijzigen (bekeken, geselecteerd, gesprek, aangenomen, afgewezen). De kandidaat wordt automatisch per e-mail op de hoogte gesteld."
+            "a": "Ga in uw dashboard naar 'Sollicitaties'. U ziet alle sollicitaties gesorteerd per vacature. U kunt de status wijzigen (bekeken, geselecteerd, gesprek, aangenomen, afgewezen). De kandidaat wordt automatisch per e-mail op de hoogte gesteld."
           },
           {
-            "q": "Kan ik rechtstreeks via het platform een videogesprek plannen?",
-            "a": "Ja, op de detailpagina van een sollicitatie kunt u met één klik een Jitsi-videoconferentielink genereren en deze per e-mail naar de kandidaat sturen. U kunt ook onze AI-assistent gebruiken om gepersonaliseerde gespreksvragen voor te bereiden."
+            "q": "Kan ik een videogesprek rechtstreeks via het platform inplannen?",
+            "a": "Ja, op de detailpagina van een sollicitatie kunt u met één klik een Jitsi-videoconferentielink genereren en per e-mail naar de kandidaat sturen. U kunt ook onze AI-assistent gebruiken om gepersonaliseerde interviewvragen voor te bereiden."
           },
           {
-            "q": "Hoe zeg ik mijn betaalde abonnement op?",
-            "a": "Ga naar uw dashboard, in het gedeelte abonnement, en klik op 'Opzeggen'. U kunt de reden aangeven (optioneel). Uw abonnement wordt onmiddellijk teruggezet naar het gratis plan. Er worden geen verdere kosten in rekening gebracht."
+            "q": "Hoe kan ik mijn betaalde abonnement opzeggen?",
+            "a": "Ga in uw dashboard naar het abonnementsgedeelte en klik op 'Opzeggen'. U kunt de reden aangeven (optioneel). Uw abonnement wordt onmiddellijk teruggezet naar het gratis plan. U wordt niet langer gefactureerd."
           }
         ]
       },
       {
-        "name": "Abonnementen en Betalingen",
+        "name": "Abonnementen en betalingen",
         "questions": [
           {
             "q": "Welke betaalmethoden worden geaccepteerd?",
-            "a": "We accepteren creditcards (Visa, Mastercard) via onze partner Stripe. Alle betalingen zijn beveiligd en in CFA-frank (XOF)."
+            "a": "Wij accepteren bankkaarten (Visa, Mastercard) via onze partner Stripe. Alle betalingen zijn beveiligd en in CFA-frank (XOF)."
           },
           {
-            "q": "Kan ik op elk moment van plan veranderen?",
-            "a": "Ja, u kunt upgraden of downgraden. Het verschil wordt pro rata berekend. Jaarabonnementen bieden 20% korting."
+            "q": "Kan ik op elk moment van plan wisselen?",
+            "a": "Ja, u kunt upgraden of downgraden. Het verschil wordt pro rata berekend. Jaarlijkse abonnementen bieden 20% korting."
           },
           {
-            "q": "Wat gebeurt er na opzegging?",
-            "a": "Uw account blijft actief en uw gepubliceerde vacatures blijven online tot hun vervaldatum. U keert terug naar het gratis plan en verliest toegang tot premium functies (extra vacatures, boosts, enz.)."
+            "q": "Wat gebeurt er na een opzegging?",
+            "a": "Uw account blijft actief en uw geplaatste vacatures blijven online tot ze verlopen. U keert terug naar het gratis plan en verliest toegang tot premium functies (extra vacatures, boosts, enz.)."
           }
         ]
       },
       {
-        "name": "Beveiliging en vertrouwelijkheid",
+        "name": "Beveiliging en privacy",
         "questions": [
           {
             "q": "Zijn mijn persoonlijke gegevens beschermd?",
-            "a": "Ja. We hanteren een strikt privacybeleid. Uw informatie wordt nooit gedeeld zonder uw toestemming. Raadpleeg onze 'Privacybeleid'-pagina voor meer details."
+            "a": "Ja. Wij hanteren een strikt privacybeleid. Uw informatie wordt nooit gedeeld zonder uw toestemming. Zie onze 'Privacy'-pagina voor meer details."
           },
           {
-            "q": "Hoe meld ik een frauduleuze aanbieding of misbruik?",
-            "a": "Op elke vacature en elke bedrijfspagina vindt u een knop 'Melden'. Selecteer de reden en beschrijf het probleem. Ons moderatieteam bekijkt elke melding zo snel mogelijk."
+            "q": "Hoe meld ik een frauduleuze vacature of misbruik?",
+            "a": "Op elke vacature en elke bedrijfspagina vindt u een 'Rapporteren'-knop. Selecteer de reden en beschrijf het probleem. Ons moderatieteam beoordeelt elke melding zo snel mogelijk."
           },
           {
             "q": "Kan ik mijn account verwijderen?",
-            "a": "Ja, neem contact met ons op via het contactformulier en vermeld uw verzoek. We zullen uw account en alle bijbehorende gegevens verwijderen in overeenstemming met de regelgeving."
+            "a": "Ja, neem contact met ons op via het contactformulier en vermeld uw verzoek. Wij zullen uw account en alle bijbehorende gegevens verwijderen in overeenstemming met de regelgeving."
           }
         ]
       }
@@ -774,14 +777,14 @@
     "titleEdit": "Vacature bewerken",
     "back": "Terug",
     "save": "Opslaan",
-    "saveDraft": "Als concept opslaan",
-    "submitForValidation": "Indienen voor validatie",
-    "updateOffer": "Aanbieding bijwerken",
+    "saveDraft": "Opslaan als concept",
+    "submitForValidation": "Ter validatie indienen",
+    "updateOffer": "Vacature bijwerken",
     "validationRequired": "Bedrijfsvalidatie vereist",
-    "companyUnverified": "Uw bedrijf moet gevalideerd zijn voordat u een aanbieding kunt indienen.",
+    "companyUnverified": "Uw bedrijf moet gevalideerd zijn voordat u een vacature kunt indienen.",
     "unverifiedBanner": {
       "title": "Bedrijf in afwachting van validatie",
-      "description": "Uw bedrijf is nog niet geverifieerd. U kunt uw aanbiedingen als concept opslaan, maar ze worden niet gepubliceerd totdat de beheerder uw account heeft gevalideerd."
+      "description": "Uw bedrijf is nog niet geverifieerd. U kunt uw vacatures als concept opslaan, maar ze worden niet gepubliceerd totdat de beheerder uw account heeft gevalideerd."
     },
     "sections": {
       "basicInfo": "Basisinformatie",
@@ -797,37 +800,37 @@
       "contractType": "Contracttype *",
       "experienceLevel": "Ervaringsniveau",
       "positionsCount": "Aantal posities",
-      "urgent": "Dringende aanbieding",
+      "urgent": "Urgente vacature",
       "description": "Beschrijving *",
       "missions": "Taken / Verantwoordelijkheden",
-      "requirements": "Gezocht profiel / Vereisten",
-      "benefits": "Geboden voordelen",
-      "skillInput": "Vaardigheid toevoegen",
+      "requirements": "Gewenst profiel / Vereisten",
+      "benefits": "Aangeboden voordelen",
+      "skillInput": "Voeg een vaardigheid toe",
       "city": "Stad",
-      "address": "Exact adres",
+      "address": "Precies adres",
       "remote": "Thuiswerk mogelijk",
       "remoteType": "Type thuiswerk",
-      "salaryMin": "Minimumsalaris (FCFA/maand)",
-      "salaryMax": "Maximumsalaris (FCFA/maand)",
+      "salaryMin": "Minimum salaris (FCFA/maand)",
+      "salaryMax": "Maximum salaris (FCFA/maand)",
       "showSalary": "Salaris tonen aan kandidaten",
       "applicationDeadline": "Uiterste sollicitatiedatum",
       "startDate": "Gewenste startdatum"
     },
     "placeholders": {
-      "title": "Bijv: Full Stack Developer, Senior Accountant...",
+      "title": "Bijv.: Full Stack Developer, Senior Accountant...",
       "description": "Beschrijf de functie, context, team...",
       "missions": "• Taak 1\n• Taak 2\n• Taak 3...",
       "requirements": "• Vereist diploma\n• Technische vaardigheden\n• Persoonlijke kwaliteiten...",
       "benefits": "• Ziektekostenverzekering\n• Gedeeltelijk thuiswerk\n• Opleiding...",
-      "skill": "Bijv: React, Python, Excel...",
+      "skill": "Bijv.: React, Python, Excel...",
       "address": "Wijk, straat...",
-      "salaryMin": "Bijv: 300000",
-      "salaryMax": "Bijv: 500000"
+      "salaryMin": "Bijv.: 300000",
+      "salaryMax": "Bijv.: 500000"
     },
     "options": {
-      "selectCategory": "Selecteer",
-      "selectContract": "Selecteer",
-      "selectCity": "Selecteer",
+      "selectCategory": "Selecteren",
+      "selectContract": "Selecteren",
+      "selectCity": "Selecteren",
       "unspecified": "Niet gespecificeerd",
       "remoteFull": "100% thuiswerk",
       "remoteHybrid": "Hybride",
@@ -840,33 +843,33 @@
       "userNotIdentified": "Gebruiker niet geïdentificeerd",
       "noCompanySelected": "Geen bedrijf geselecteerd",
       "companyNotFound": "Bedrijf niet gevonden",
-      "fillRequiredFields": "Vul de verplichte velden in",
-      "companyNotVerified": "Uw bedrijf is nog niet geverifieerd. U kunt geen aanbieding indienen.",
-      "limitReached": "U heeft al {{total}} actieve of in afwachting zijnde aanbieding(en). Limiet van uw plan: {{limit}}.",
-      "submittedForValidation": "Aanbieding ingediend voor validatie! Ze zal zichtbaar zijn na goedkeuring.",
-      "offerUpdated": "Aanbieding succesvol bijgewerkt.",
+      "fillRequiredFields": "Vul alstublieft de verplichte velden in",
+      "companyNotVerified": "Uw bedrijf is nog niet geverifieerd. U kunt geen vacature indienen.",
+      "limitReached": "U hebt al {{total}} actieve of in behandeling zijnde vacature(s). Limiet van uw plan: {{limit}}.",
+      "submittedForValidation": "Vacature ter validatie ingediend! Deze wordt zichtbaar na goedkeuring.",
+      "offerUpdated": "Vacature succesvol bijgewerkt.",
       "draftSaved": "Concept opgeslagen",
       "saveError": "Fout bij opslaan",
-      "jobNotFound": "Aanbieding niet gevonden"
+      "jobNotFound": "Vacature niet gevonden"
     },
     "limitModal": {
-      "title": "Limiet aanbiedingen bereikt",
-      "message": "Uw plan {{plan}} staat maximaal {{max}} actieve aanbieding(en) toe. U heeft al {{current}} actieve aanbieding(en).",
-      "upgradeSuggestion": "Upgrade naar een hoger plan om meer aanbiedingen te plaatsen.",
+      "title": "Vacaturelimiet bereikt",
+      "message": "Uw {{plan}} plan staat u toe {{max}} actieve vacature(s) te publiceren. U hebt momenteel {{current}} actieve vacature(s).",
+      "upgradeSuggestion": "Om meer vacatures te plaatsen, upgrade naar een hoger plan.",
       "later": "Later",
       "seePlans": "Plannen bekijken"
     }
   },
   "experienceLevels": {
     "junior": "Junior",
-    "intermediate": "Gemiddeld",
+    "intermediate": "Medior",
     "senior": "Senior",
     "lead": "Lead",
     "manager": "Manager"
   },
   "createCompany": {
     "title": "Uw bedrijf aanmaken",
-    "subtitle": "Vul de informatie van uw bedrijf in om te beginnen met aanwerven",
+    "subtitle": "Vul de informatie van uw bedrijf in om te beginnen met werven",
     "back": "Terug",
     "logo": "Logo toevoegen",
     "uploading": "Uploaden...",
@@ -883,58 +886,58 @@
       "address": "Adres"
     },
     "placeholders": {
-      "name": "Bijv: Orange",
-      "description": "Stel uw bedrijf voor, missie, waarden...",
+      "name": "Bijv.: Orange",
+      "description": "Presenteer uw bedrijf, missie, waarden...",
       "website": "voorbeeld.com",
       "email": "recruitment@voorbeeld.com",
-      "phone": "+32 XX XX XX XX",
-      "year": "Bijv: 2010",
+      "phone": "+223 XX XX XX XX",
+      "year": "Bijv.: 2010",
       "address": "Wijk, straat..."
     },
     "options": {
-      "selectIndustry": "Selecteer",
-      "selectSize": "Selecteer",
-      "selectCity": "Selecteer"
+      "selectIndustry": "Selecteren",
+      "selectSize": "Selecteren",
+      "selectCity": "Selecteren"
     },
     "sizes": {
-      "1-10": "1-10 medewerkers",
-      "11-50": "11-50 medewerkers",
-      "51-200": "51-200 medewerkers",
-      "201-500": "201-500 medewerkers",
-      "500+": "500+ medewerkers"
+      "1-10": "1-10 werknemers",
+      "11-50": "11-50 werknemers",
+      "51-200": "51-200 werknemers",
+      "201-500": "201-500 werknemers",
+      "500+": "500+ werknemers"
     },
     "industries": [
       "Technologie",
-      "Financiën & Banken",
+      "Financiën & Bankwezen",
       "Telecommunicatie",
       "Handel & Distributie",
       "Industrie & Productie",
       "Landbouw",
-      "Bouw & Constructie",
+      "Bouw & Civiele Techniek",
       "Transport & Logistiek",
-      "Gezondheidszorg & Farmacie",
-      "Onderwijs & Opleiding",
+      "Gezondheid & Farmacie",
+      "Onderwijs & Training",
       "Toerisme & Horeca",
       "Zakelijke dienstverlening",
       "NGO & Humanitair",
       "Openbaar bestuur",
-      "Andere"
+      "Anders"
     ],
     "toasts": {
-      "imageRequired": "Selecteer een afbeelding",
+      "imageRequired": "Selecteer alstublieft een afbeelding",
       "imageTooBig": "Afbeelding mag niet groter zijn dan 2 MB",
       "logoUploaded": "Logo geüpload",
-      "uploadError": "Fout bij uploaden",
-      "fillRequired": "Vul de verplichte velden in",
+      "uploadError": "Uploadfout",
+      "fillRequired": "Vul alstublieft de verplichte velden in",
       "companyCreated": "Bedrijf succesvol aangemaakt! Doorverwijzen...",
-      "createError": "Fout bij aanmaken",
-      "notificationError": "Fout bij melding admin"
+      "createError": "Fout bij aanmaken bedrijf",
+      "notificationError": "Fout bij notificatie admin"
     },
     "submit": "Mijn bedrijf aanmaken"
   },
   "coverLetter": {
     "badge": "AI",
-    "title": "Motivatiebrief Generator",
+    "title": "Motivatiebrief generator",
     "subtitle": "Voer de vacature en uw profiel in om een gepersonaliseerde motivatiebrief te genereren.",
     "jobSection": "Vacature",
     "jobPlaceholder": "Plak de vacaturebeschrijving...",
@@ -946,7 +949,7 @@
     "copiedButton": "Gekopieerd!",
     "emptyState": "Uw brief verschijnt hier na generatie.",
     "toasts": {
-      "fillBothFields": "Vul beide velden in.",
+      "fillBothFields": "Vul alstublieft beide velden in.",
       "generated": "Brief gegenereerd!",
       "copied": "Gekopieerd naar klembord!",
       "error": "Fout"
@@ -955,7 +958,7 @@
   "cookies": {
     "title": "Cookiebeleid",
     "back": "Terug",
-    "lastUpdate": "Laatste update: Mei 2026",
+    "lastUpdate": "Laatst bijgewerkt: mei 2026",
     "contactEmail": "contact@actoos.com",
     "sections": {
       "whatIsCookie": {
@@ -963,37 +966,37 @@
         "content": "Een cookie is een klein tekstbestand dat op uw apparaat (computer, telefoon, tablet) wordt opgeslagen wanneer u een website bezoekt. Cookies stellen de site in staat uw apparaat te herkennen en bepaalde informatie over uw voorkeuren of eerdere acties te onthouden."
       },
       "cookieTypes": {
-        "title": "2. Soorten gebruikte cookies",
+        "title": "2. Gebruikte soorten cookies",
         "subsections": [
           {
             "title": "Essentiële cookies",
-            "content": "Noodzakelijk voor de werking van het Platform. Ze stellen u in staat basisfunctionaliteiten te gebruiken zoals veilig inloggen en navigeren tussen pagina's.",
+            "content": "Noodzakelijk voor de werking van het Platform. Ze maken het gebruik van basisfuncties zoals veilig inloggen en navigatie tussen pagina's mogelijk.",
             "duration": "Duur: Sessie"
           },
           {
             "title": "Voorkeurscookies",
-            "content": "Stellen ons in staat uw voorkeuren te onthouden (taal, regio, weergave-instellingen) om uw ervaring te personaliseren.",
+            "content": "Hiermee kunnen uw voorkeuren (taal, regio, weergave-instellingen) worden onthouden om uw ervaring te personaliseren.",
             "duration": "Duur: 1 jaar"
           },
           {
             "title": "Analytische cookies",
-            "content": "Helpen ons te begrijpen hoe bezoekers omgaan met onze site door anonieme informatie te verzamelen over bezochte pagina's en bestede tijd.",
+            "content": "Helpen ons te begrijpen hoe bezoekers omgaan met onze site door anonieme informatie te verzamelen over bezochte pagina's en de tijd die erop wordt doorgebracht.",
             "duration": "Duur: 2 jaar"
           },
           {
             "title": "Marketingcookies",
-            "content": "Gebruikt om bezoekers over websites te volgen en relevante en interessante advertenties voor de gebruiker weer te geven.",
+            "content": "Worden gebruikt om bezoekers op websites te volgen en relevante en interessante advertenties aan de gebruiker weer te geven.",
             "duration": "Duur: 6 maanden"
           }
         ]
       },
       "thirdParty": {
         "title": "3. Cookies van derden",
-        "content": "We gebruiken diensten van derden die cookies kunnen plaatsen:\n- Google Analytics - Verkeersanalyse\n- Supabase - Authenticatie en backenddiensten\n- Stripe - Betalingsverwerking (voor premium aanbiedingen)"
+        "content": "Wij gebruiken diensten van derden die cookies kunnen plaatsen:\n- Google Analytics - Verkeersanalyse\n- Supabase - Authenticatie en backend-diensten\n- Stripe - Betalingsverwerking (voor premium aanbiedingen)"
       },
       "manageCookies": {
-        "title": "4. Cookiebeheer",
-        "content": "U kunt cookies beheren en/of verwijderen zoals u wilt:\n- Via de instellingen van uw browser\n- Met behulp van onze cookie-toestemmingsbanner\n- Door browserextensies te installeren die cookies blokkeren\n\nOpmerking: Het uitschakelen van bepaalde cookies kan uw ervaring op het Platform beïnvloeden."
+        "title": "4. Cookies beheren",
+        "content": "U kunt cookies naar wens beheren en/of verwijderen:\n- Via uw browserinstellingen\n- Door onze cookietoestemmingsbanner te gebruiken\n- Door cookieblokkerende extensies te installeren\n\nOpmerking: Het uitschakelen van bepaalde cookies kan uw ervaring op het Platform beïnvloeden."
       },
       "browserSettings": {
         "title": "5. Browserinstellingen",
@@ -1001,7 +1004,7 @@
       },
       "changes": {
         "title": "6. Wijzigingen",
-        "content": "We kunnen dit cookiebeleid bijwerken om wijzigingen in onze praktijken of om andere operationele, wettelijke of regelgevende redenen weer te geven."
+        "content": "Wij kunnen dit cookiebeleid bijwerken om wijzigingen in onze praktijken weer te geven of om andere operationele, juridische of regelgevende redenen."
       },
       "contact": {
         "title": "7. Contact",
@@ -1011,7 +1014,7 @@
   },
   "contact": {
     "title": "Neem contact met ons op",
-    "subtitle": "Een vraag, een suggestie? We staan voor u klaar.",
+    "subtitle": "Een vraag, een suggestie? Wij staan voor u klaar.",
     "labels": {
       "name": "Volledige naam",
       "email": "E-mail",
@@ -1027,17 +1030,17 @@
     "sendButton": "Bericht verzenden",
     "success": {
       "title": "Bericht verzonden!",
-      "message": "We antwoorden u zo snel mogelijk."
+      "message": "Wij antwoorden zo spoedig mogelijk."
     },
     "toasts": {
-      "fillAllFields": "Vul alle velden in.",
+      "fillAllFields": "Vul alstublieft alle velden in.",
       "sent": "Bericht succesvol verzonden!",
       "error": "Fout bij verzenden."
     }
   },
   "companyTeam": {
     "invite": {
-      "title": "Lid uitnodigen",
+      "title": "Een lid uitnodigen",
       "placeholder": "E-mail of naam",
       "button": "Uitnodigen",
       "roleRecruiter": "Recruiter",
@@ -1058,7 +1061,7 @@
       "alreadyMember": "Deze gebruiker is al lid.",
       "memberAdded": "Lid succesvol toegevoegd.",
       "emailError": "Fout bij verzenden uitnodigingsmail",
-      "addError": "Fout bij toevoegen",
+      "addError": "Fout bij toevoegen lid",
       "roleUpdated": "Rol bijgewerkt",
       "memberRemoved": "Lid verwijderd",
       "removeConfirm": "Dit lid verwijderen?"
@@ -1066,12 +1069,12 @@
   },
   "companyProfile": {
     "back": "Terug",
-    "title": "Bedrijfsprofiel bewerken",
-    "subtitle": "Werk de informatie van uw bedrijf bij",
-    "logo": "Logo toevoegen",
+    "title": "Bedrijfsprofiel",
+    "subtitle": "Wijzig de gegevens van uw bedrijf",
     "uploading": "Uploaden...",
+    "logo": "Logo wijzigen",
     "labels": {
-      "name": "Bedrijfsnaam *",
+      "name": "Bedrijfsnaam",
       "description": "Beschrijving",
       "industry": "Sector",
       "size": "Bedrijfsgrootte",
@@ -1084,51 +1087,59 @@
       "address": "Adres"
     },
     "placeholders": {
-      "name": "Bijv: Orange België",
-      "description": "Stel uw bedrijf voor, missie, waarden...",
-      "website": "https://www.voorbeeld.com",
-      "email": "recruitment@voorbeeld.com",
-      "phone": "+32 XX XX XX XX",
-      "year": "Bijv: 2010",
-      "address": "Wijk, straat..."
+      "name": "Naam van uw bedrijf",
+      "description": "Beschrijf uw bedrijf in enkele zinnen",
+      "website": "https://www.mijnbedrijf.com",
+      "email": "contact@bedrijf.com",
+      "phone": "+223 00 00 00 00",
+      "year": "Bijv.: 2020",
+      "address": "Wijk, straat, gebouw..."
     },
     "options": {
-      "selectIndustry": "Selecteer",
-      "selectSize": "Selecteer",
-      "selectCountry": "Selecteer",
-      "selectCity": "Selecteer"
-    },
-    "sizes": {
-      "1-10": "1-10 medewerkers",
-      "11-50": "11-50 medewerkers",
-      "51-200": "51-200 medewerkers",
-      "201-500": "201-500 medewerkers",
-      "500+": "500+ medewerkers"
+      "selectIndustry": "Selecteer een sector",
+      "selectSize": "Selecteer een grootte",
+      "selectCity": "Selecteer een stad"
     },
     "submit": "Wijzigingen opslaan",
-    "noCompany": {
-      "title": "Geen bedrijf gevonden",
-      "message": "U heeft nog geen bedrijf aangemaakt of u bent niet gekoppeld aan een bestaand bedrijf.",
-      "createButton": "Mijn bedrijf aanmaken"
+    "deleteConfirm": "Weet u zeker dat u uw bedrijf definitief wilt verwijderen? Deze actie is onomkeerbaar.",
+    "deleteSection": {
+      "title": "Mijn bedrijf verwijderen",
+      "description": "Deze actie verwijdert definitief uw bedrijf, al zijn vacatures en bijbehorende gegevens.",
+      "button": "Mijn bedrijf verwijderen",
+      "deleting": "Verwijderen..."
     },
     "toasts": {
-      "imageRequired": "Selecteer een afbeelding",
+      "imageRequired": "Selecteer alstublieft een afbeelding",
       "imageTooBig": "Afbeelding mag niet groter zijn dan 2 MB",
       "logoUploaded": "Logo succesvol geüpload",
-      "uploadError": "Fout bij uploaden van logo",
+      "uploadError": "Fout bij uploaden logo",
       "nameRequired": "Bedrijfsnaam is verplicht",
-      "updateSuccess": "Bedrijfsprofiel succesvol bijgewerkt",
-      "updateError": "Fout bij bijwerken van profiel"
+      "updateSuccess": "Profiel succesvol bijgewerkt",
+      "updateError": "Fout bij bijwerken profiel",
+      "companyDeleted": "Bedrijf succesvol verwijderd",
+      "deleteError": "Fout bij verwijderen bedrijf"
+    },
+    "noCompany": {
+      "title": "Geen bedrijf gevonden",
+      "message": "U moet eerst een bedrijf aanmaken om toegang te krijgen tot deze pagina.",
+      "createButton": "Mijn bedrijf aanmaken"
+    },
+    "sizes": {
+      "1-10": "1-10 werknemers",
+      "11-50": "11-50 werknemers",
+      "51-200": "51-200 werknemers",
+      "201-500": "201-500 werknemers",
+      "500+": "Meer dan 500 werknemers"
     }
   },
   "companyJobs": {
-    "title": "Al mijn aanbiedingen",
+    "title": "Al mijn vacatures",
     "back": "Terug",
-    "newOffer": "Nieuwe aanbieding",
+    "newOffer": "Nieuwe vacature",
     "noJobs": {
-      "title": "Geen aanbiedingen",
-      "message": "U heeft nog geen aanbiedingen gepubliceerd.",
-      "createButton": "Aanbieding aanmaken"
+      "title": "Geen vacatures",
+      "message": "U hebt nog geen vacatures gepubliceerd.",
+      "createButton": "Een vacature aanmaken"
     },
     "status": {
       "draft": "Concept",
@@ -1150,16 +1161,16 @@
     "applications": "{{count}} sollicitaties",
     "confirmDelete": "Weet u zeker dat u \"{{title}}\" wilt verwijderen?",
     "toasts": {
-      "deleted": "Aanbieding verwijderd",
+      "deleted": "Vacature verwijderd",
       "deleteError": "Fout bij verwijderen",
-      "published": "Aanbieding gepubliceerd!",
+      "published": "Vacature gepubliceerd!",
       "statusUpdated": "Status bijgewerkt",
       "updateError": "Fout bij bijwerken",
       "boostActivated": "Gratis boost geactiveerd voor 7 dagen!",
       "boostError": "Fout bij activeren boost",
       "boostBusinessOnly": "Deze functie is voorbehouden aan het Business-plan",
       "boostAlreadyUsed": "Boost deze maand al gebruikt. Probeer opnieuw over {{days}} dag(en).",
-      "jobNotEligible": "De aanbieding komt niet in aanmerking",
+      "jobNotEligible": "Vacature komt niet in aanmerking",
       "companyNotFound": "Bedrijf niet gevonden"
     }
   },
@@ -1170,11 +1181,12 @@
     "yourCompany": "Uw bedrijf",
     "about": "Over",
     "jobs": "Vacatures",
-    "noJobs": "Geen actieve aanbiedingen op dit moment.",
-    "employees": "{{size}} medewerkers",
+    "noJobs": "Geen actieve vacatures op dit moment.",
+    "employees": "{{size}} werknemers",
     "website": "Website",
     "email": "E-mail"
   },
+  
   "companyDashboard": {
     "noCompany": {
       "title": "Maak uw eerste bedrijf aan",
@@ -1187,12 +1199,12 @@
       "newCompany": "Nieuw bedrijf"
     },
     "header": {
-      "title": "Recruiterruimte"
+      "title": "Werversruimte"
     },
     "profileButton": "Bedrijfsprofiel",
-    "newOfferButton": "Nieuwe aanbieding",
+    "newOfferButton": "Nieuwe vacature",
     "stats": {
-      "publishedJobs": "Gepubliceerde vacatures",
+      "publishedJobs": "Geplaatste vacatures",
       "totalApplications": "Totaal sollicitaties",
       "newApplications": "Nieuwe sollicitaties",
       "totalViews": "Totaal weergaven",
@@ -1200,10 +1212,10 @@
     },
     "jobsSection": {
       "title": "Mijn vacatures",
-      "totalOffers": "{{count}} aanbiedingen in totaal",
+      "totalOffers": "{{count}} vacatures in totaal",
       "viewAll": "Alles bekijken",
-      "noOffers": "Geen gepubliceerde aanbiedingen",
-      "publishButton": "Aanbieding publiceren"
+      "noOffers": "Geen geplaatste vacatures",
+      "publishButton": "Vacature plaatsen"
     },
     "applicationsSection": {
       "title": "Recente sollicitaties",
@@ -1213,22 +1225,24 @@
     },
     "companyProfileCard": {
       "title": "Bedrijfsprofiel",
-      "pendingValidation": "⏳ Uw bedrijf is in afwachting van validatie. U kunt uw aanbiedingen als concept voorbereiden. Na validatie kunt u ze ter publicatie indienen.",
+      "pendingValidation": "⏳ Uw bedrijf wacht op validatie. U kunt uw vacatures als concept voorbereiden. Zodra gevalideerd, kunt u ze indienen voor publicatie.",
       "employees": "{{size}} medewerkers",
       "founded": "Opgericht in {{year}}",
       "editProfile": "Profiel bewerken"
     },
     "subscriptionCard": {
-      "currentPlan": "Huidig plan: {{plan}}",
-      "changePlan": "Plan wijzigen",
-      "activeOffers": "Actieve aanbiedingen",
+      "currentPlan": "Huidig abonnement: {{plan}}",
+      "changePlan": "Abonnement wijzigen",
+      "activeOffers": "Actieve vacatures",
+      "teamMembers": "Teamleden",
       "unlimited": "Onbeperkt",
-      "activePlanMessage": "U zit momenteel op het {{plan}}-plan. U kunt uw abonnement beheren of opzeggen.",
+      "activePlanMessage": "U zit momenteel op het {{plan}}-abonnement. U kunt uw abonnement beheren of opzeggen.",
       "manageSubscription": "Mijn abonnement beheren",
       "cancelSubscription": "Abonnement opzeggen",
-      "freePlanMessage": "Upgrade naar een hoger plan om meer aanbiedingen te plaatsen en toegang te krijgen tot geavanceerde functies.",
-      "lastCancelReason": "Reden laatste opzegging:",
-      "cancelReasonQuote": "« {{reason}} »"
+      "freePlanMessage": "Upgrade naar een hoger abonnement om meer vacatures te plaatsen en toegang te krijgen tot geavanceerde functies.",
+      "lastCancelReason": "Reden van laatste opzegging:",
+      "cancelReasonQuote": "\"{{reason}}\"",
+      "freeBoostMessage": "🚀 U heeft recht op een gratis boost van 7 dagen per maand. Gebruik deze via het menu van uw actieve vacatures."
     },
     "adminMessages": {
       "title": "Berichten van de administratie"
@@ -1236,7 +1250,7 @@
     "status": {
       "draft": "Concept",
       "pending": "In validatie",
-      "active": "Gepubliceerd",
+      "active": "Geplaatst",
       "paused": "Gepauzeerd",
       "closed": "Gesloten",
       "expired": "Verlopen",
@@ -1261,8 +1275,9 @@
         "validationRequired": "Bedrijfsvalidatie vereist",
         "cancelSubmission": "Indiening annuleren",
         "pause": "Pauzeren",
-        "republish": "Opnieuw publiceren",
-        "delete": "Verwijderen"
+        "republish": "Opnieuw plaatsen",
+        "delete": "Verwijderen",
+        "freeBoost": "Gratis boost (7 dagen)"
       }
     },
     "cancelModal": {
@@ -1272,127 +1287,48 @@
       "reasonPlaceholder": "Vertel ons waarom u vertrekt...",
       "consequencesTitle": "⚠️ Gevolgen:",
       "consequences": [
-        "Uw plan wordt teruggezet naar het gratis plan",
+        "Uw abonnement wordt teruggezet naar Gratis",
         "Premium functies worden uitgeschakeld",
         "Deze actie is onmiddellijk"
       ],
       "cancelButton": "Annuleren",
       "confirmButton": "Opzegging bevestigen"
     },
+    "teamButton": "Team beheren",
     "toasts": {
       "loadError": "Fout bij laden dashboard",
-      "jobDeleted": "Aanbieding verwijderd",
-      "limitReached": "Limiet bereikt (maximaal {{limit}} aanbieding(en)).",
-      "offerPublished": "Aanbieding gepubliceerd",
+      "jobDeleted": "Vacature verwijderd",
+      "limitReached": "Limiet bereikt (max. {{limit}} vacature(s)).",
+      "offerPublished": "Vacature geplaatst",
       "statusUpdated": "Status bijgewerkt",
       "updateError": "Fout",
-      "companyNotVerified": "Uw bedrijf is nog niet geverifieerd. U kunt op dit moment geen aanbieding indienen.",
-      "limitReachedDetailed": "Limiet bereikt (maximaal {{limit}} aanbieding(en)). U heeft al {{total}} actieve of in afwachting zijnde aanbieding(en).",
-      "submittedForValidation": "Aanbieding ingediend voor validatie",
-      "submissionCancelled": "Indiening geannuleerd, aanbieding teruggezet naar concept",
+      "companyNotVerified": "Uw bedrijf is nog niet geverifieerd. U kunt momenteel geen vacature indienen.",
+      "limitReachedDetailed": "Limiet bereikt (max. {{limit}} vacature(s)). U heeft al {{total}} actieve of in behandeling zijnde vacature(s).",
+      "submittedForValidation": "Vacature ingediend voor validatie",
+      "submissionCancelled": "Indiening geannuleerd, vacature teruggezet naar concept",
       "submissionError": "Fout bij indiening",
       "subscriptionCancelled": "Abonnement succesvol opgezegd",
       "cancelError": "Fout bij opzegging",
       "deleteConfirm": "\"{{title}}\" verwijderen?",
-      "adminNotifyError": "Fout bij admin-melding vacature",
-      "companyNotVerifiedMenu": "Uw bedrijf is nog niet geverifieerd."
+      "adminNotifyError": "Fout bij admin job melding",
+      "companyNotVerifiedMenu": "Uw bedrijf is nog niet geverifieerd.",
+      "boostActivated": "Gratis boost geactiveerd voor 7 dagen!",
+      "boostAlreadyUsed": "U heeft uw gratis boost deze maand al gebruikt.",
+      "boostError": "Fout bij activeren van de boost."
     }
-  },
-  "companyApplications": {
-    "title": "Alle sollicitaties",
-    "back": "Terug",
-    "noApplications": "Geen sollicitaties.",
-    "deleteConfirm": "Deze sollicitatie definitief verwijderen?",
-    "deleteButton": "Verwijderen",
-    "status": {
-      "pending": "Nieuw",
-      "viewed": "Bekeken",
-      "shortlisted": "Geselecteerd",
-      "interview": "Gesprek",
-      "accepted": "Aangenomen",
-      "rejected": "Afgewezen"
-    },
-    "toasts": {
-      "deleted": "Sollicitatie verwijderd",
-      "deleteError": "Fout bij verwijderen"
-    }
-  },
-  "companiesPage": {
-    "title": "Bedrijven die aanwerven",
-    "subtitle": "Ontdek de bedrijven die aanwerven en bekijk hun vacatures.",
-    "searchPlaceholder": "Zoek een bedrijf...",
-    "allIndustries": "Alle sectoren",
-    "noCompanies": {
-      "title": "Geen bedrijven gevonden",
-      "hint": "Probeer uw zoekcriteria te wijzigen."
-    },
-    "viewProfile": "Profiel bekijken",
-    "offers": "{{count}} aanbiedingen",
-    "cta": {
-      "title": "Bent u een bedrijf?",
-      "subtitle": "Maak uw bedrijfsprofiel aan en plaats uw vacatures om het beste talent aan te trekken.",
-      "button": "Mijn bedrijfsprofiel aanmaken"
-    }
-  },
-  "cgu": {
-    "title": "Algemene Voorwaarden",
-    "back": "Terug",
-    "lastUpdate": "Laatste update: Mei 2026",
-    "contactEmail": "contact@actoos.com",
-    "sections": [
-      {
-        "title": "1. Doel",
-        "content": "Deze Algemene Voorwaarden (AV) hebben tot doel de modaliteiten en voorwaarden voor het gebruik van de diensten aangeboden door Actoos Jobs (hierna \"het Platform\") te definiëren, evenals de rechten en plichten van de partijen in dit kader."
-      },
-      {
-        "title": "2. Aanvaarding van de AV",
-        "content": "Het gebruik van het Platform impliceert de volledige en onvoorwaardelijke aanvaarding van deze AV. Door u te registreren op Actoos Jobs erkent u deze voorwaarden te hebben gelezen, begrepen en zonder voorbehoud te aanvaarden."
-      },
-      {
-        "title": "3. Beschrijving van de diensten",
-        "content": "Actoos Jobs is een internationaal platform dat werkgevers en kandidaten met elkaar in contact brengt. De aangeboden diensten omvatten:\n- Publicatie en raadpleging van vacatures\n- Aanmaken en beheren van kandidaat- en bedrijfsprofielen\n- Online sollicitatiesysteem\n- Tools voor sollicitatiebeheer voor werkgevers\n- Gepersonaliseerde vacature-alerts"
-      },
-      {
-        "title": "4. Registratie en gebruikersaccount",
-        "content": "Om toegang te krijgen tot bepaalde diensten moet de gebruiker een account aanmaken. Hij/zij verbindt zich ertoe nauwkeurige informatie te verstrekken en deze up-to-date te houden. De gebruiker is verantwoordelijk voor de vertrouwelijkheid van zijn/haar inloggegevens."
-      },
-      {
-        "title": "5. Verplichtingen van gebruikers",
-        "content": "Gebruikers verbinden zich ertoe:\n- Geen illegale, lasterlijke of discriminerende inhoud te publiceren\n- Zich niet voor te doen als een derde\n- Het Platform niet voor frauduleuze doeleinden te gebruiken\n- Intellectuele eigendomsrechten te respecteren\n- De werking van het Platform niet te verstoren"
-      },
-      {
-        "title": "6. Intellectuele eigendom",
-        "content": "Alle elementen van het Platform (teksten, afbeeldingen, logo's, enz.) worden beschermd door het intellectueel eigendomsrecht. Elke reproductie of ongeoorloofd gebruik is verboden."
-      },
-      {
-        "title": "7. Aansprakelijkheid",
-        "content": "Actoos Jobs kan niet aansprakelijk worden gesteld voor de inhoud die door gebruikers wordt gepubliceerd, noch voor de uitkomst van de via het Platform tot stand gebrachte contacten. Gebruikers blijven als enige verantwoordelijk voor hun interacties."
-      },
-      {
-        "title": "8. Wijziging van de AV",
-        "content": "Actoos Jobs behoudt zich het recht voor om deze AV op elk moment te wijzigen. Gebruikers worden op de hoogte gesteld van wijzigingen via e-mail of melding op het Platform."
-      },
-      {
-        "title": "9. Toepasselijk recht",
-        "content": "Deze AV zijn onderworpen aan het geldend recht. Elk geschil zal worden voorgelegd aan de bevoegde rechtbanken."
-      },
-      {
-        "title": "10. Contact",
-        "content": "Voor vragen over deze AV kunt u contact met ons opnemen via: <a>{{email}}</a>"
-      }
-    ]
-  },
+  
+},
   "candidateProfile": {
     "notFound": "Kandidaat niet gevonden.",
     "back": "Terug",
-    "reportButton": "Deze kandidaat melden",
-    "reportTitle": "Waarom meldt u deze kandidaat?",
-    "reportSent": "Melding verzonden. Bedankt!",
-    "reportError": "Fout bij verzenden melding",
-    "loginToReport": "Log in om te melden",
+    "reportButton": "Deze kandidaat rapporteren",
+    "reportTitle": "Waarom rapporteert u deze kandidaat?",
+    "reportSent": "Rapport verzonden. Bedankt!",
+    "reportError": "Fout bij verzenden rapport",
+    "loginToReport": "Log in om te rapporteren",
     "salaryExpectations": "Salarisverwachting: {{min}} - {{max}} FCFA",
     "skills": "Vaardigheden",
-    "experience": "Ervaring",
+    "experience": "Ervaringen",
     "education": "Opleiding",
     "downloadCV": "CV downloaden",
     "present": "heden",
@@ -1401,7 +1337,7 @@
   },
   "candidateProfilePage": {
     "title": "Mijn Profiel",
-    "subtitle": "Beheer uw professionele informatie",
+    "subtitle": "Beheer uw professionele gegevens",
     "back": "Terug",
     "save": "Opslaan",
     "saveChanges": "Wijzigingen opslaan",
@@ -1422,7 +1358,7 @@
       "firstName": "Voornaam *",
       "lastName": "Achternaam *",
       "phone": "Telefoon",
-      "phonePlaceholder": "+32 XX XX XX XX",
+      "phonePlaceholder": "+223 XX XX XX XX",
       "city": "Stad",
       "selectCity": "Selecteer een stad"
     },
@@ -1432,7 +1368,7 @@
       "title": "Professionele titel *",
       "bio": "Over mij",
       "experienceLevel": "Ervaringsniveau",
-      "selectLevel": "Selecteer",
+      "selectLevel": "Selecteren",
       "yearsOfExperience": "Jaren ervaring",
       "available": "Ik ben onmiddellijk beschikbaar",
       "openToRemote": "Open voor thuiswerk"
@@ -1445,23 +1381,23 @@
       "change": "Wijzigen",
       "delete": "Verwijderen",
       "deleteConfirm": "Uw CV verwijderen?",
-      "uploadTitle": "Upload uw CV",
+      "uploadTitle": "Uw CV uploaden",
       "uploadHint": "PDF of Word, max 5 MB",
-      "chooseFile": "Bestand kiezen",
+      "chooseFile": "Kies een bestand",
       "analyzeButton": "Mijn CV analyseren (AI)",
       "uploadError": "Fout bij uploaden CV",
       "uploadedToast": "CV geüpload",
       "deletedToast": "CV verwijderd",
       "deleteError": "Fout bij verwijderen CV",
-      "invalidFormat": "Niet-ondersteund formaat. Gebruik PDF of Word.",
-      "fileTooLarge": "Het bestand is te groot (max 5 MB)"
+      "invalidFormat": "Ondersteund formaat niet. Gebruik PDF of Word.",
+      "fileTooLarge": "Bestand is te groot (max 5 MB)"
     },
     "documents": {
       "sectionTitle": "Documenten",
-      "sectionDesc": "Diploma's, attesten, certificeringen...",
+      "sectionDesc": "Diploma's, certificaten, attesten...",
       "typeDiploma": "Diploma",
       "typeCertificate": "Certificaat / Attest",
-      "typeOther": "Andere",
+      "typeOther": "Anders",
       "addButton": "Document toevoegen",
       "addedToast": "Document toegevoegd",
       "uploadError": "Fout bij uploaden document",
@@ -1473,7 +1409,7 @@
     "skills": {
       "sectionTitle": "Vaardigheden",
       "sectionDesc": "Voeg uw kernvaardigheden toe",
-      "placeholder": "Bijv: React, Python...",
+      "placeholder": "Bijv.: React, Python...",
       "add": "Toevoegen",
       "empty": "Geen vaardigheden toegevoegd.",
       "addedToast": "{{count}} vaardigheid(en) toegevoegd!",
@@ -1481,7 +1417,7 @@
     },
     "experience": {
       "sectionTitle": "Werkervaring",
-      "sectionDesc": "Uw professionele parcours",
+      "sectionDesc": "Uw professionele achtergrond",
       "add": "Toevoegen",
       "edit": "Bewerken",
       "delete": "Verwijderen",
@@ -1491,19 +1427,19 @@
       "modalEditTitle": "Ervaring bewerken",
       "jobTitle": "Functie *",
       "company": "Bedrijf *",
-      "location": "Plaats",
+      "location": "Locatie",
       "startDate": "Startdatum *",
       "endDate": "Einddatum",
-      "currentlyWorking": "Ik werk hier momenteel",
+      "currentlyWorking": "Ik bekleed deze functie momenteel",
       "description": "Beschrijving",
       "cancel": "Annuleren",
       "save": "Opslaan",
       "saveNew": "Toevoegen",
-      "fillRequired": "Vul alle verplichte velden in"
+      "fillRequired": "Vul alstublieft alle verplichte velden in"
     },
     "education": {
       "sectionTitle": "Opleiding",
-      "sectionDesc": "Uw diploma's en certificeringen",
+      "sectionDesc": "Uw diploma's en certificaten",
       "add": "Toevoegen",
       "edit": "Bewerken",
       "delete": "Verwijderen",
@@ -1511,13 +1447,13 @@
       "modalAddTitle": "Opleiding toevoegen",
       "modalEditTitle": "Opleiding bewerken",
       "degree": "Diploma *",
-      "school": "Onderwijsinstelling *",
+      "school": "Instelling *",
       "field": "Studierichting",
-      "year": "Jaar van behalen *",
+      "year": "Afstudeerjaar *",
       "cancel": "Annuleren",
       "save": "Opslaan",
       "saveNew": "Toevoegen",
-      "fillRequired": "Vul alle verplichte velden in"
+      "fillRequired": "Vul alstublieft alle verplichte velden in"
     },
     "links": {
       "sectionTitle": "Links",
@@ -1528,78 +1464,78 @@
     "salary": {
       "sectionTitle": "Salarisverwachting",
       "sectionDesc": "Gewenste salarisrange (FCFA/maand)",
-      "minSalary": "Minimumsalaris",
-      "maxSalary": "Maximumsalaris"
+      "minSalary": "Minimum salaris",
+      "maxSalary": "Maximum salaris"
     },
     "cvAnalysis": {
       "title": "Analyse van uw CV",
-      "description": "Plak de tekst van uw CV hieronder om suggesties voor verbetering te krijgen.",
+      "description": "Plak de tekst van uw CV hieronder om verbetersuggesties te krijgen.",
       "placeholder": "Plak hier de inhoud van uw CV...",
       "suggestions": "Suggesties:",
       "close": "Sluiten",
       "analyze": "Analyseren",
-      "analyzing": "Analyse bezig...",
+      "analyzing": "Analyseren...",
       "doneToast": "Analyse voltooid",
       "errorToast": "Fout bij AI-analyse",
-      "emptyText": "Plak de tekst van uw CV"
+      "emptyText": "Plak alstublieft de tekst van uw CV"
     },
     "report": {
-      "button": "Melden",
-      "title": "Waarom meldt u deze kandidaat?",
-      "loginRequired": "Log in om te melden",
-      "sent": "Melding verzonden. Bedankt!",
-      "error": "Fout bij verzenden melding"
+      "button": "Rapporteren",
+      "title": "Waarom rapporteert u deze kandidaat?",
+      "loginRequired": "Log in om te rapporteren",
+      "sent": "Rapport verzonden. Bedankt!",
+      "error": "Fout bij verzenden rapport"
     },
     "toasts": {
       "profileUpdated": "Profiel succesvol bijgewerkt!",
       "saveError": "Fout bij opslaan profiel",
-      "fillRequired": "Vul alle verplichte velden in"
+      "fillRequired": "Vul alstublieft alle verplichte velden in"
     }
   },
   "blog": {
     "badge": "Blog",
-    "title": "Tips en hulpmiddelen voor uw carrière",
-    "subtitle": "Ontdek onze beste adviezen om uw zoektocht naar werk te stimuleren, gesprekken te laten slagen en uw carrière te ontwikkelen.",
+    "title": "Advies en hulpmiddelen voor uw carrière",
+    "subtitle": "Vind onze beste tips om uw zoektocht naar werk te boosten, uw sollicitatiegesprekken te laten slagen en uw carrière te ontwikkelen.",
     "allCategories": "Alle",
-    "noArticles": "Geen artikels op dit moment.",
+    "noArticles": "Nog geen artikelen.",
     "readMore": "Artikel lezen",
     "newsletter": {
       "title": "Blijf op de hoogte",
-      "subtitle": "Ontvang onze laatste artikels en carrièretips rechtstreeks in uw mailbox.",
+      "subtitle": "Ontvang onze nieuwste artikelen en carrièretips rechtstreeks in uw inbox.",
       "placeholder": "Uw e-mail",
       "subscribeButton": "Inschrijven",
-      "privacyNote": "Door u in te schrijven aanvaardt u ons privacybeleid.",
+      "privacyNote": "Door u in te schrijven, gaat u akkoord met ons privacybeleid.",
       "subscribedTitle": "U bent ingeschreven!",
-      "subscribedMessage": "Bedankt voor uw interesse. Tot binnenkort in uw mailbox.",
+      "subscribedMessage": "Bedankt voor uw interesse. Tot snel in uw inbox.",
       "toasts": {
-        "emailRequired": "Voer uw e-mail in.",
+        "emailRequired": "Voer alstublieft uw e-mail in.",
         "subscribeSuccess": "Inschrijving geslaagd!",
-        "subscribeError": "Fout bij inschrijving."
+        "subscribeError": "Fout bij inschrijven."
       }
     },
-    "loadingError": "Kan artikels niet laden"
+    "loadingError": "Kan artikelen niet laden"
   },
   "blogArticle": {
     "notFoundTitle": "Artikel niet gevonden",
     "notFoundBack": "Terug naar blog",
     "back": "Terug naar blog",
-    "allArticles": "Alle artikels bekijken"
+    "allArticles": "Alle artikelen bekijken"
   },
   "authCallback": {
     "title": "Bezig met inloggen...",
-    "message": "Even geduld terwijl we uw authenticatie voltooien."
+    "message": "Even geduld terwijl we uw authenticatie afronden."
   },
   "applicationDetail": {
     "notFound": "Sollicitatie niet gevonden.",
     "back": "Terug naar sollicitaties",
     "viewFullProfile": "Volledig profiel bekijken",
-    "jobTitle": "Betreffende aanbieding",
+    "jobTitle": "Gerelateerde vacature",
     "coverLetter": "Motivatiebrief",
     "cv": "CV van kandidaat",
     "viewCV": "CV bekijken",
-    "receivedAt": "Sollicitatie ontvangen op {{date}}",
+    "receivedAt": "Sollicitatie ontvangen {{date}}",
     "changeStatus": "Status wijzigen",
-    "scheduleInterview": "Gesprek plannen",
+    "scheduleInterview": "Gesprek inplannen",
     "step1ChooseSlot": "1. Kies een tijdstip",
     "openCalendly": "Calendly openen",
     "sendEmail": "Per e-mail verzenden",
@@ -1607,21 +1543,21 @@
     "joinMeeting": "Deelnemen",
     "updateLink": "Bijwerken",
     "deleteLink": "Verwijderen",
-    "newRoomPlaceholder": "Nieuwe naam vergaderruimte",
-    "roomPlaceholder": "Naam van de ruimte (bijv: mijn-gesprek)",
-    "generateJitsiLink": "Jitsi-link genereren",
+    "newRoomPlaceholder": "Nieuwe kamernaam",
+    "roomPlaceholder": "Kamernaam (bijv.: mijn-gesprek)",
+    "generateJitsiLink": "Genereer een Jitsi-link",
     "prepareInterview": "Gesprek voorbereiden",
     "questions": "Vragen",
     "emptyQuestions": "Klik op Genereren om gepersonaliseerde vragen te krijgen.",
-    "answers": "Modelantwoorden",
-    "emptyAnswers": "Genereer eerst vragen en krijg vervolgens modelantwoorden om de kandidaat te evalueren.",
+    "answers": "Voorbeeldantwoorden",
+    "emptyAnswers": "Genereer eerst vragen en verkrijg vervolgens voorbeeldantwoorden om de kandidaat te evalueren.",
     "tips": "Tips",
-    "emptyTips": "Krijg tips om een gestructureerd en relevant gesprek te voeren.",
+    "emptyTips": "Verkrijg tips om een gestructureerd en relevant gesprek te voeren.",
     "generate": "Genereren",
     "saveNotes": "Opslaan in notities",
     "savedNotes": "Notities opgeslagen",
     "clickToEdit": "Klik op het potlood om te bewerken.",
-    "readMode": "Leesmodus",
+    "readMode": "Overschakelen naar leesmodus",
     "editMode": "Bewerken",
     "status": {
       "pending": "Nieuw",
@@ -1637,47 +1573,47 @@
       "linkUpdated": "Link bijgewerkt!",
       "linkDeleted": "Link verwijderd",
       "questionsGenerated": "Vragen gegenereerd!",
-      "answersGenerated": "Modelantwoorden gegenereerd!",
+      "answersGenerated": "Voorbeeldantwoorden gegenereerd!",
       "tipsGenerated": "Tips gegenereerd!",
       "needQuestionsFirst": "Genereer eerst vragen",
       "saveError": "Fout bij opslaan",
       "emailError": "Fout bij verzenden e-mail",
       "aiError": "AI-fout",
-      "rejectionPrompt": "Geef de reden voor afwijzing (optioneel):"
+      "rejectionPrompt": "Geef alstublieft de reden voor afwijzing aan (optioneel):"
     }
   },
   "applicationDetailCandidate": {
     "notFound": "Sollicitatie niet gevonden.",
     "back": "Terug naar mijn sollicitaties",
-    "jobDefault": "Aanbieding",
+    "jobDefault": "Vacature",
     "joinInterview": "Deelnemen aan gesprek",
     "prepareInterview": "Gesprek voorbereiden"
   },
   "about": {
     "hero": {
       "title": "Over Actoos Jobs",
-      "subtitle": "Het next-generation rekruteringsplatform, ontworpen om talent te verbinden met bedrijven die aanwerven, door het proces te vereenvoudigen en te moderniseren."
+      "subtitle": "Het next-generation recruitmentplatform, ontworpen om talenten te verbinden met bedrijven die werven, door het proces te vereenvoudigen en te moderniseren."
     },
     "mission": {
       "title": "Onze missie",
-      "content": "Rekrutering wereldwijd vereenvoudigen door een vlotte, transparante en efficiënte ervaring te bieden, of u nu kandidaat of recruiter bent. Wij geloven dat elk talent verdient ontdekt te worden."
+      "content": "Werving wereldwijd vereenvoudigen door een vlotte, transparante en efficiënte ervaring te bieden, of u nu kandidaat of recruiter bent. Wij geloven dat elk talent ontdekt moet worden."
     },
     "vision": {
       "title": "Onze visie",
-      "content": "De internationale referentie worden op het gebied van rekrutering, door technologie en kunstmatige intelligentie te gebruiken om duurzame en eerlijke professionele connecties te creëren."
+      "content": "De internationale referentie worden op het gebied van werving, door technologie en kunstmatige intelligentie te gebruiken om duurzame en eerlijke professionele connecties te creëren."
     },
     "values": {
       "title": "Onze waarden",
       "items": [
-        { "title": "Transparantie", "desc": "Publiceer en solliciteer in alle vertrouwen." },
-        { "title": "Innovatie", "desc": "Slimme tools voor moderne rekrutering." },
-        { "title": "Nabijheid", "desc": "Lokale ondersteuning, die naar u luistert." },
+        { "title": "Transparantie", "desc": "Plaats en solliciteer met vertrouwen." },
+        { "title": "Innovatie", "desc": "Slimme tools voor moderne werving." },
+        { "title": "Nabijheid", "desc": "Lokale ondersteuning, luisterend naar u." },
         { "title": "Prestatie", "desc": "Maximaliseer uw kansen om de juiste match te vinden." }
       ]
     },
     "team": {
       "title": "Het Actoos-team",
-      "content": "Opgericht door een team van gepassioneerde ingenieurs, wordt Actoos Jobs met zorg ontwikkeld om te voldoen aan de reële behoeften van de arbeidsmarkt. We combineren technische expertise met terreinkennis om een betrouwbare en innovatieve service te bieden."
+      "content": "Actoos Jobs is opgericht door een team van gepassioneerde ingenieurs en met zorg ontwikkeld om te voldoen aan de werkelijke behoeften van de arbeidsmarkt. Wij combineren technische expertise met veldkennis om een betrouwbare en innovatieve service te bieden."
     }
   },
   "candidateDashboard": {
@@ -1703,21 +1639,21 @@
     },
     "savedJobs": {
       "title": "Opgeslagen vacatures",
-      "description": "De aanbiedingen die u interesseren",
+      "description": "De vacatures die u interesseren",
       "viewAll": "Alles bekijken",
       "empty": "Geen opgeslagen vacatures",
       "browseJobs": "Vacatures bekijken",
       "unspecifiedLocation": "Niet gespecificeerd"
     },
     "adminMessages": {
-      "title": "Berichten van de administratie",
+      "title": "Berichten van de beheerder",
       "description": "Belangrijke communicatie van het Actoos-team"
     },
     "profileCompletion": {
       "title": "Profielvolledigheid",
-      "completeProfile": "Mijn profiel vervolledigen",
+      "completeProfile": "Mijn profiel aanvullen",
       "messages": {
-        "low": "Vervolledig uw profiel om meer recruiters aan te trekken",
+        "low": "Vul uw profiel aan om meer recruiters aan te trekken",
         "medium": "Goed begin! Voeg meer details toe",
         "high": "Uitstekend! Uw profiel is bijna compleet"
       }
@@ -1725,56 +1661,56 @@
     "quickActions": {
       "title": "Snelle acties",
       "updateCV": "Mijn CV bijwerken",
-      "updateCVDesc": "Upload uw meest recente CV",
-      "createAlert": "Alert aanmaken",
-      "createAlertDesc": "Ontvang aanbiedingen per e-mail",
+      "updateCVDesc": "Upload uw laatste CV",
+      "createAlert": "Een alert aanmaken",
+      "createAlertDesc": "Ontvang vacatures per e-mail",
       "settings": "Instellingen",
       "settingsDesc": "Beheer uw account"
     },
     "dailyTip": {
       "title": "Tip van de dag",
       "low": [
-        "Voeg een profielfoto toe: profielen met foto krijgen meer contacten.",
+        "Voeg een profielfoto toe: profielen met een foto krijgen meer contact.",
         "Vermeld uw professionele titel om in zoekopdrachten te verschijnen.",
-        "Vervolledig uw CV om met één klik te solliciteren.",
-        "Vermeld uw kernvaardigheden om gemakkelijker gevonden te worden."
+        "Vul uw CV aan om met één klik te solliciteren.",
+        "Geef uw kernvaardigheden aan om gemakkelijker gevonden te worden."
       ],
       "high": [
         "Werk uw CV regelmatig bij om uw laatste ervaringen weer te geven.",
         "Activeer vacature-alerts om niets te missen.",
-        "Voeg voorbeelden van realisaties toe aan uw ervaringen.",
+        "Voeg voorbeelden van prestaties toe aan uw ervaringen.",
         "Deel uw profiel op LinkedIn om uw zichtbaarheid te vergroten."
       ]
     }
   },
   "footer": {
     "brand": {
-      "tagline": "Het next-generation rekruteringsplatform. Vind uw ideale baan of werf het beste talent aan."
+      "tagline": "Het next-generation recruitmentplatform. Vind uw ideale baan of werf het beste talent."
     },
     "sections": {
       "candidates": {
         "title": "Kandidaten",
         "links": {
-          "search": "Zoek een baan",
+          "search": "Een baan zoeken",
           "createAccount": "Mijn account aanmaken",
-          "dashboard": "Mijn kandidaatruimte",
+          "dashboard": "Mijn kandidaatomgeving",
           "careerTips": "Carrièretips"
         }
       },
       "companies": {
         "title": "Bedrijven",
         "links": {
-          "publishOffer": "Vacature plaatsen",
-          "dashboard": "Recruiterruimte",
+          "publishOffer": "Een vacature plaatsen",
+          "dashboard": "Recruiteromgeving",
           "pricing": "Tarieven"
         }
       },
       "info": {
         "title": "Informatie",
         "links": {
-          "about": "Over ons",
+          "about": "Over",
           "faq": "FAQ",
-          "cgu": "AV",
+          "cgu": "Algemene Voorwaarden",
           "privacy": "Privacy",
           "cookies": "Cookies"
         }
@@ -1782,7 +1718,7 @@
     },
     "contact": {
       "title": "Een vraag?",
-      "description": "Ons team staat klaar om u te helpen. Raadpleeg onze FAQ of neem rechtstreeks contact met ons op.",
+      "description": "Ons team staat voor u klaar. Raadpleeg onze FAQ of neem rechtstreeks contact met ons op.",
       "email": "contact@actoos.com",
       "phone": "+32 465 74 36 61",
       "button": "Neem contact op"
@@ -1818,10 +1754,10 @@
     }
   },
   "cookieBanner": {
-    "title": "We gebruiken cookies",
-    "description": "Om uw ervaring te verbeteren, het verkeer te analyseren en inhoud te personaliseren. U kunt alle cookies accepteren of uw voorkeuren aanpassen.",
+    "title": "Wij gebruiken cookies",
+    "description": "Om uw ervaring te verbeteren, verkeer te analyseren en inhoud te personaliseren. U kunt alle cookies accepteren of uw voorkeuren aanpassen.",
     "customize": "Aanpassen",
-    "rejectAll": "Weigeren",
+    "rejectAll": "Alles weigeren",
     "acceptAll": "Alles accepteren",
     "settings": {
       "title": "Cookie-instellingen",
@@ -1861,10 +1797,10 @@
     },
     "changePassword": {
       "title": "Wachtwoord wijzigen",
-      "description": "Gebruik minstens 8 tekens",
+      "description": "Gebruik minimaal 8 tekens",
       "newPasswordLabel": "Nieuw wachtwoord",
       "newPasswordPlaceholder": "••••••••",
-      "confirmPasswordLabel": "Bevestig wachtwoord",
+      "confirmPasswordLabel": "Wachtwoord bevestigen",
       "confirmPasswordPlaceholder": "••••••••",
       "submit": "Bijwerken"
     },
@@ -1877,8 +1813,8 @@
       "title": "Accounttype wijzigen",
       "currentRoleCandidate": "Kandidaat",
       "currentRoleCompany": "Bedrijf",
-      "descriptionCandidate": "U bent momenteel <strong>Kandidaat</strong>. U kunt een overstap naar een <strong>Bedrijfsaccount</strong> aanvragen.",
-      "descriptionCompany": "U bent momenteel <strong>Bedrijf</strong>. U kunt een overstap naar een <strong>Kandidaataccount</strong> aanvragen.",
+      "descriptionCandidate": "U bent momenteel <strong>Kandidaat</strong>. U kunt verzoeken om over te schakelen naar een <strong>Bedrijf</strong>-account.",
+      "descriptionCompany": "U bent momenteel <strong>Bedrijf</strong>. U kunt verzoeken om over te schakelen naar een <strong>Kandidaat</strong>-account.",
       "requestButton": "Wijziging aanvragen",
       "modal": {
         "title": "Rolwijziging aanvragen",
@@ -1888,7 +1824,7 @@
         "reasonLabel": "Bericht (optioneel)",
         "reasonPlaceholder": "Leg uit waarom u van rol wilt veranderen...",
         "cancel": "Annuleren",
-        "submit": "Aanvraag indienen"
+        "submit": "Aanvraag verzenden"
       }
     },
     "dangerZone": {
@@ -1898,13 +1834,13 @@
       "confirm": "Uw account definitief verwijderen? Deze actie is onomkeerbaar, al uw gegevens worden gewist."
     },
     "toasts": {
-      "passwordMismatch": "De wachtwoorden komen niet overeen",
-      "passwordLength": "Het wachtwoord moet minstens 8 tekens bevatten",
+      "passwordMismatch": "Wachtwoorden komen niet overeen",
+      "passwordLength": "Wachtwoord moet minimaal 8 tekens bevatten",
       "passwordUpdated": "Wachtwoord succesvol bijgewerkt",
       "passwordError": "Fout bij wijzigen wachtwoord",
-      "fillAllFields": "Vul alle velden in",
+      "fillAllFields": "Vul alstublieft alle velden in",
       "wrongPassword": "Huidig wachtwoord onjuist",
-      "emailConfirmationSent": "Er is een bevestigingsmail naar het nieuwe adres gestuurd. Controleer uw inbox.",
+      "emailConfirmationSent": "Er is een bevestigingsmail verzonden naar het nieuwe adres. Controleer alstublieft uw inbox.",
       "emailError": "Fout bij wijzigen e-mail",
       "logoutError": "Fout bij uitloggen",
       "accountDeleted": "Uw account is definitief verwijderd.",
@@ -1917,9 +1853,9 @@
     "recipientsTitle": "{{role}}",
     "searchPlaceholder": "Zoeken...",
     "composeTitle": "Bericht opstellen",
-    "composeDescription": "{{count}} ontvanger(s) geselecteerd",
-    "subjectPlaceholder": "Onderwerp van bericht",
-    "contentPlaceholder": "Inhoud van bericht (HTML toegestaan)...",
+    "composeDescription": "{{count}} geselecteerde ontvanger(s)",
+    "subjectPlaceholder": "Onderwerp bericht",
+    "contentPlaceholder": "Inhoud bericht (HTML toegestaan)...",
     "durationLabel": "Weergaveduur:",
     "durationValuePlaceholder": "Waarde",
     "durationUnits": {
@@ -1929,7 +1865,7 @@
     },
     "sendButton": "Verzenden",
     "toasts": {
-      "fillRequired": "Selecteer ten minste één ontvanger en vul onderwerp en inhoud in.",
+      "fillRequired": "Selecteer alstublieft ten minste één ontvanger en vul onderwerp en inhoud in.",
       "partialError": "Fouten: {{errors}}",
       "sentSuccess": "Bericht verzonden naar {{count}} gebruiker(s).",
       "sendError": "Fout bij verzenden.",
@@ -1942,12 +1878,12 @@
   },
   "messageManager": {
     "title": "Alle verzonden berichten ({{count}})",
-    "noMessages": "Nog geen verzonden berichten.",
-    "loadingError": "Fout bij laden van berichten",
+    "noMessages": "Nog geen berichten verzonden.",
+    "loadingError": "Fout bij laden berichten",
     "unknownRecipient": "Onbekend",
     "sentAt": "Verzonden op {{date}}",
     "modifiedAt": "Gewijzigd op {{date}}",
-    "expiresAt": "Verloopt op {{date}}",
+    "expiresAt": "Vervalt op {{date}}",
     "edit": {
       "subjectPlaceholder": "Onderwerp",
       "save": "Opslaan",
@@ -1960,103 +1896,94 @@
     }
   },
   "geoBanner": {
-    "message": "Het lijkt erop dat u zich in <strong>{{country}}</strong> bevindt. Wilt u de aangepaste aanbiedingen en prijzen zien?",
+    "message": "Het lijkt erop dat u zich in <strong>{{country}}</strong> bevindt. Wilt u aangepaste vacatures en prijzen weergeven?",
     "yes": "Ja",
-    "close": "Sluiten",
-    "countries": {
-      "BE": "België",
-      "FR": "Frankrijk",
-      "SN": "Senegal",
-      "CI": "Ivoorkust",
-      "MA": "Marokko",
-      "DE": "Duitsland",
-      "US": "Verenigde Staten",
-      "ML": "Mali"
-    }
+    "close": "Sluiten"
+    
   },
   "userMessages": {
     "loading": "Berichten laden...",
     "noMessages": "Geen berichten",
     "new": "Nieuw",
-    "markAsRead": "Als gelezen markeren",
-    "markedAsReadToast": "Bericht als gelezen gemarkeerd",
+    "markAsRead": "Markeer als gelezen",
+    "markedAsReadToast": "Bericht gemarkeerd als gelezen",
     "delete": "Verwijderen",
     "deletedToast": "Bericht verwijderd",
     "deleteDisabledTitle": "Markeer het bericht als gelezen voordat u het verwijdert",
     "modifiedAt": "Gewijzigd op {{date}}",
-    "expiresAt": "Verloopt op {{date}}"
+    "expiresAt": "Vervalt op {{date}}"
   },
   "blogArticles": {
     "items": [
       {
         "id": 1,
-        "title": "Hoe schrijf je een CV dat opvalt in 2026",
-        "excerpt": "Ontdek de beste praktijken voor een modern en effectief CV dat de aandacht van recruiters trekt.",
-        "content": "<h2>Inleiding</h2><p>Een goed geschreven CV is uw paspoort voor een gesprek. Hier zijn de gouden regels voor 2026.</p><h3>1. Personaliseer uw CV voor elke aanbieding</h3><p>Pas de titel, vaardigheden en ervaring aan op basis van de advertentie.</p><h3>2. Verzorg de vorm</h3><p>Gebruik een luchtige lay-out, een leesbaar lettertype en PDF-formaat.</p><h3>3. Zet uw realisaties in de kijker</h3><p>Kwantificeer uw resultaten: \"Omzetstijging van 20%\".</p><p>Pas deze tips toe en u vergroot uw kansen om opgemerkt te worden.</p>",
-        "category": "CV Tips",
+        "title": "Hoe schrijf je een opvallend CV in 2026",
+        "excerpt": "Ontdek de beste praktijken voor het maken van een modern en effectief CV dat de aandacht van recruiters trekt.",
+        "content": "<h2>Inleiding</h2><p>Een goed geschreven CV is uw paspoort voor een sollicitatiegesprek. Hier zijn de gouden regels voor 2026.</p><h3>1. Personaliseer uw CV voor elke vacature</h3><p>Pas titel, vaardigheden en ervaring aan op basis van de advertentie.</p><h3>2. Besteed aandacht aan de vorm</h3><p>Gebruik een luchtige lay-out, een leesbaar lettertype en PDF-formaat.</p><h3>3. Benadruk uw prestaties</h3><p>Kwantificeer uw resultaten: \"Omzet met 20% verhoogd\".</p><p>Pas deze tips toe en u vergroot uw kansen om opgemerkt te worden.</p>",
+        "category": "CV-tips",
         "readTime": "5 min",
         "author": "Actoos Team",
-        "date": "25 Mei 2026",
+        "date": "25 mei 2026",
         "icon": "FileText",
         "color": "blue"
       },
       {
         "id": 2,
-        "title": "De 10 fouten die u moet vermijden tijdens een sollicitatiegesprek",
-        "excerpt": "Bereid u optimaal voor op uw gesprekken door deze veelgemaakte fouten te vermijden.",
-        "content": "<h2>De fatale fouten in een gesprek</h2><p>Hier zijn de valkuilen om een goede indruk te maken.</p><h3>1. Te laat komen</h3><p>Voorzie een marge van 15 minuten.</p><h3>2. Zich niet informeren over het bedrijf</h3><p>Toon dat u hun activiteit en waarden kent.</p><h3>3. Alleen over uzelf praten</h3><p>Stel relevante vragen over de functie.</p><p>Door deze fouten te vermijden, slaagt u voor uw gesprek.</p>",
+        "title": "De 10 fouten die u moet vermijden in een sollicitatiegesprek",
+        "excerpt": "Bereid u zo goed mogelijk voor op uw gesprekken door deze veelgemaakte fouten te vermijden.",
+        "content": "<h2>Fatale fouten in een gesprek</h2><p>Hier zijn de valkuilen die u moet vermijden om een goede indruk te maken.</p><h3>1. Te laat komen</h3><p>Zorg voor een marge van 15 minuten.</p><h3>2. Het bedrijf niet onderzoeken</h3><p>Toon dat u hun activiteiten en waarden kent.</p><h3>3. Alleen over uzelf praten</h3><p>Stel relevante vragen over de functie.</p><p>Door deze fouten te vermijden, slaagt u in uw gesprek.</p>",
         "category": "Gesprek",
         "readTime": "7 min",
         "author": "Actoos Team",
-        "date": "23 Mei 2026",
+        "date": "23 mei 2026",
         "icon": "Target",
         "color": "red"
       },
       {
         "id": 3,
         "title": "Onderhandelen over uw salaris: complete gids",
-        "excerpt": "Leer hoe u met vertrouwen kunt onderhandelen over uw salaris en krijg de verloning die u verdient.",
-        "content": "<h2>Waarom onderhandelen?</h2><p>Salarisonderhandeling is een cruciale stap. Hier leest u hoe u het aanpakt.</p><h3>1. Ken uw marktwaarde</h3><p>Gebruik tools zoals Glassdoor of PayScale.</p><h3>2. Wacht op het juiste moment</h3><p>Breng het onderwerp ter sprake nadat u uw waarde hebt bewezen.</p><h3>3. Stel een vork voor</h3><p>Geef een realistische vork en onderbouw deze.</p><p>Met deze tips maximaliseert u uw verloning.</p>",
+        "excerpt": "Leer hoe u met vertrouwen over uw salaris kunt onderhandelen en de beloning krijgt die u verdient.",
+        "content": "<h2>Waarom onderhandelen?</h2><p>Salarisonderhandeling is een cruciale stap. Hier leest u hoe u het aanpakt.</p><h3>1. Ken uw marktwaarde</h3><p>Gebruik tools zoals Glassdoor of PayScale.</p><h3>2. Wacht op het juiste moment</h3><p>Breng het onderwerp ter sprake nadat u uw waarde hebt bewezen.</p><h3>3. Stel een bereik voor</h3><p>Geef een realistisch bereik en onderbouw het.</p><p>Met deze tips maximaliseert u uw beloning.</p>",
         "category": "Salaris",
         "readTime": "8 min",
         "author": "Actoos Team",
-        "date": "20 Mei 2026",
+        "date": "20 mei 2026",
         "icon": "TrendingUp",
         "color": "green"
       },
       {
         "id": 4,
-        "title": "Carrièreswitch: waar te beginnen?",
-        "excerpt": "Wilt u van carrière veranderen? Hier zijn de belangrijkste stappen voor een geslaagde omscholing.",
-        "content": "<h2>Competentiebalans</h2><p>Identificeer uw sterke punten en aspiraties.</p><h3>1. Maak de balans op van uw situatie</h3><p>Wat motiveert u echt?</p><h3>2. Scholen</h3><p>Verken de beschikbare opleidingen, online of klassikaal.</p><h3>3. Netwerken</h3><p>Ontmoet professionals uit de beoogde sector.</p><p>Een geslaagde omscholing vereist tijd en methode.</p>",
+        "title": "Carrièreverandering: waar te beginnen?",
+        "excerpt": "Wilt u van carrière veranderen? Hier zijn de belangrijkste stappen voor een succesvolle professionele omschakeling.",
+        "content": "<h2>Vaardighedentest</h2><p>Identificeer uw sterke punten en ambities.</p><h3>1. Maak de balans op van uw situatie</h3><p>Wat motiveert u echt?</p><h3>2. Volg een opleiding</h3><p>Verken beschikbare trainingen, online of op locatie.</p><h3>3. Netwerk</h3><p>Ontmoet professionals uit de beoogde sector.</p><p>Een succesvolle carrièreverandering kost tijd en methode.</p>",
         "category": "Carrière",
         "readTime": "10 min",
         "author": "Actoos Team",
-        "date": "18 Mei 2026",
+        "date": "18 mei 2026",
         "icon": "Lightbulb",
         "color": "yellow"
       },
       {
         "id": 5,
-        "title": "Sectoren die aanwerven in 2026",
+        "title": "Sectoren die werven in 2026",
         "excerpt": "Ontdek de meest dynamische sectoren en de meest gevraagde beroepen dit jaar.",
-        "content": "<h2>Top groeisectoren</h2><ul><li>Technologie (AI, cybersecurity)</li><li>Gezondheidszorg (thuiszorg, telegeneeskunde)</li><li>Hernieuwbare energie</li><li>Logistiek en e-commerce</li></ul><p>Deze sectoren bieden wereldwijd veel kansen.</p>",
+        "content": "<h2>Top groeisectoren</h2><ul><li>Technologie (AI, cybersecurity)</li><li>Gezondheidszorg (thuiszorg, telegeneeskunde)</li><li>Hernieuwbare energie</li><li>Logistiek en e-commerce</li></ul><p>Deze sectoren bieden vele kansen over de hele wereld.</p>",
         "category": "Arbeidsmarkt",
         "readTime": "6 min",
         "author": "Actoos Team",
-        "date": "15 Mei 2026",
+        "date": "15 mei 2026",
         "icon": "Briefcase",
         "color": "purple"
       },
       {
         "id": 6,
-        "title": "Uw professioneel netwerk efficiënt ontwikkelen",
-        "excerpt": "Networking is essentieel voor uw carrière. Hier leest u hoe u uw netwerk opbouwt en onderhoudt.",
-        "content": "<h2>Het belang van een netwerk</h2><p>Een goed netwerk opent deuren. Hier leest u hoe u het ontwikkelt.</p><h3>1. Neem deel aan evenementen</h3><p>Conferenties, meetups, professionele beurzen.</p><h3>2. Gebruik LinkedIn</h3><p>Optimaliseer uw profiel en reageer regelmatig.</p><h3>3. Geef voordat u ontvangt</h3><p>Help anderen, deel bronnen.</p>",
-        "category": "Networking",
+        "title": "Effectief uw professionele netwerk ontwikkelen",
+        "excerpt": "Netwerken is essentieel voor uw carrière. Hier leest u hoe u uw netwerk opbouwt en onderhoudt.",
+        "content": "<h2>Het belang van netwerken</h2><p>Een goed netwerk opent deuren. Hier leest u hoe u het ontwikkelt.</p><h3>1. Woon evenementen bij</h3><p>Conferenties, meetups, beurzen.</p><h3>2. Gebruik LinkedIn</h3><p>Optimaliseer uw profiel en communiceer regelmatig.</p><h3>3. Geven voor ontvangen</h3><p>Help anderen, deel bronnen.</p>",
+        "category": "Netwerken",
         "readTime": "5 min",
         "author": "Actoos Team",
-        "date": "12 Mei 2026",
+        "date": "12 mei 2026",
         "icon": "Users",
         "color": "indigo"
       }
@@ -2078,53 +2005,53 @@
     "emails": {
       "contactSubject": "[Contact] {subject}",
       "contactBody": "<h2>Nieuw bericht van {name}</h2><p><strong>E-mail:</strong> {email}</p><p><strong>Onderwerp:</strong> {subject}</p><p><strong>Bericht:</strong></p><p>{message}</p>",
-      "newsletterWelcomeSubject": "Welkom bij de Actoos Jobs nieuwsbrief",
+      "newsletterWelcomeSubject": "Welkom bij de Actoos Jobs-nieuwsbrief",
       "newsletterWelcomeBody": "<h1>Bedankt voor uw inschrijving!</h1><p>U ontvangt onze laatste tips en vacatures.</p>",
       "newsletterUnsubscribeSuccess": "U bent succesvol uitgeschreven.",
-      "newsletterAlreadyUnsubscribed": "Adres niet gevonden of reeds uitgeschreven.",
+      "newsletterAlreadyUnsubscribed": "Adres niet gevonden of al uitgeschreven.",
       "interviewInviteSubject": "Gesprek voor de functie: {job_title}",
-      "interviewInviteBody": "<h2>Beste {candidate_name},</h2><p>U bent uitgenodigd voor een gesprek voor de functie <strong>{job_title}</strong>{company_info}.</p><p>Hier is de videoconferentielink:</p><p><a href=\"{meeting_link}\">{meeting_link}</a></p><p>Tot binnenkort,</p><p>Het Actoos Jobs team</p>",
+      "interviewInviteBody": "<h2>Hallo {candidate_name},</h2><p>U bent uitgenodigd voor een gesprek voor de functie <strong>{job_title}</strong>{company_info}.</p><p>Hier is de videoconferentielink:</p><p><a href=\"{meeting_link}\">{meeting_link}</a></p><p>Tot snel,</p><p>Het Actoos Jobs-team</p>",
       "newApplicationSubject": "Nieuwe sollicitatie voor {job_title}",
-      "newApplicationBody": "<h2>Beste {recruiter_name},</h2><p><strong>{candidate_name}</strong> heeft zojuist gesolliciteerd op uw aanbieding <strong>{job_title}</strong>.</p><p>Bekijk de sollicitatie op <a href=\"https://jobs.actoos.com/dashboard/entreprise/candidatures\">Actoos Jobs</a>.</p>",
+      "newApplicationBody": "<h2>Hallo {recruiter_name},</h2><p><strong>{candidate_name}</strong> heeft zojuist gesolliciteerd op uw vacature <strong>{job_title}</strong>.</p><p>Bekijk de sollicitatie op <a href=\"https://jobs.actoos.com/dashboard/entreprise/candidatures\">Actoos Jobs</a>.</p>",
       "statusChangeSubject": "Uw sollicitatie - {job_title}",
       "statusChangeTemplate_viewed": "Uw sollicitatie voor de functie **{job_title}**{company_info} is bekeken door de recruiter.",
       "statusChangeTemplate_shortlisted": "Gefeliciteerd! Uw sollicitatie voor de functie **{job_title}**{company_info} is geselecteerd.",
-      "statusChangeTemplate_interview": "U bent uitgenodigd voor een gesprek voor de functie **{job_title}**{company_info}. De recruiter zal contact met u opnemen voor een datum.",
-      "statusChangeTemplate_accepted": "Uw sollicitatie voor de functie **{job_title}**{company_info} is aanvaard.",
-      "statusChangeTemplate_rejected": "Uw sollicitatie voor de functie **{job_title}**{company_info} is helaas niet weerhouden.",
+      "statusChangeTemplate_interview": "U bent uitgenodigd voor een gesprek voor de functie **{job_title}**{company_info}. De recruiter neemt contact met u op om een datum af te spreken.",
+      "statusChangeTemplate_accepted": "Uw sollicitatie voor de functie **{job_title}**{company_info} is geaccepteerd.",
+      "statusChangeTemplate_rejected": "Helaas is uw sollicitatie voor de functie **{job_title}**{company_info} niet geselecteerd.",
       "statusChangeTemplate_default": "Uw sollicitatie voor de functie **{job_title}**{company_info} is bijgewerkt: {new_status}.",
       "alertSubject": "Vacature-alert: {keywords}",
-      "alertBody": "<h2>Nieuwe aanbiedingen die overeenkomen met uw alert</h2><p>Hier zijn de gevonden aanbiedingen voor uw criteria:</p>{job_links}<p>Veel succes met zoeken!</p>",
+      "alertBody": "<h2>Nieuwe vacatures die overeenkomen met uw alert</h2><p>Hier zijn de gevonden vacatures voor uw criteria:</p>{job_links}<p>Veel succes met zoeken!</p>",
       "companyVerifiedSubject": "Uw bedrijf is gevalideerd",
-      "companyVerifiedBody": "<h2>Gefeliciteerd {owner_first_name}!</h2><p>Uw bedrijf <strong>{company_name}</strong> is gevalideerd door ons team. U kunt nu aanbiedingen publiceren en sollicitaties ontvangen.</p><p><a href=\"https://jobs.actoos.com/dashboard/entreprise\">Naar mijn recruiterruimte</a></p>",
+      "companyVerifiedBody": "<h2>Gefeliciteerd {owner_first_name}!</h2><p>Uw bedrijf <strong>{company_name}</strong> is gevalideerd door ons team. U kunt nu vacatures plaatsen en sollicitaties ontvangen.</p><p><a href=\"https://jobs.actoos.com/dashboard/entreprise\">Toegang tot mijn recruiteromgeving</a></p>",
       "newCompanyAdminSubject": "Nieuw bedrijf te valideren: {company_name}",
-      "newCompanyAdminBody": "<h2>Nieuw bedrijf in afwachting van validatie</h2><p><strong>Bedrijf:</strong> {company_name}</p><p><strong>Eigenaar:</strong> {owner_name} ({owner_email})</p><p><a href=\"https://jobs.actoos.com/admin\">Naar admin dashboard</a></p>",
-      "newJobAdminSubject": "Nieuwe aanbieding te valideren: {job_title}",
-      "newJobAdminBody": "<h2>Nieuwe aanbieding in afwachting van validatie</h2><p><strong>Aanbieding:</strong> {job_title}</p><p><strong>Bedrijf:</strong> {company_name} ({company_email})</p><p><a href=\"https://jobs.actoos.com/admin\">Naar admin dashboard</a></p>",
+      "newCompanyAdminBody": "<h2>Nieuw bedrijf in afwachting van validatie</h2><p><strong>Bedrijf:</strong> {company_name}</p><p><strong>Eigenaar:</strong> {owner_name} ({owner_email})</p><p><a href=\"https://jobs.actoos.com/admin\">Toegang tot admin-dashboard</a></p>",
+      "newJobAdminSubject": "Nieuwe vacature te valideren: {job_title}",
+      "newJobAdminBody": "<h2>Nieuwe vacature in afwachting van validatie</h2><p><strong>Vacature:</strong> {job_title}</p><p><strong>Bedrijf:</strong> {company_name} ({company_email})</p><p><a href=\"https://jobs.actoos.com/admin\">Toegang tot admin-dashboard</a></p>",
       "companyDeletedSubject": "Uw bedrijf is verwijderd",
-      "companyDeletedBody": "<h2>Beste {owner_first_name},</h2><p>Uw bedrijf <strong>{company_name}</strong> is verwijderd door de beheerder.</p><p>Als u denkt dat dit een vergissing is, neem dan contact op met onze support.</p>",
+      "companyDeletedBody": "<h2>Hallo {owner_first_name},</h2><p>Uw bedrijf <strong>{company_name}</strong> is verwijderd door de beheerder.</p><p>Als u denkt dat dit een fout is, neem dan contact op met onze support.</p>",
       "userDeletedSubject": "Uw account is verwijderd",
-      "userDeletedBody": "<h2>Beste {user_first_name},</h2><p>Uw account op Actoos Jobs is verwijderd door de beheerder.</p><p>Als u denkt dat dit een vergissing is, neem dan contact op met onze support.</p>",
+      "userDeletedBody": "<h2>Hallo {user_first_name},</h2><p>Uw account op Actoos Jobs is verwijderd door de beheerder.</p><p>Als u denkt dat dit een fout is, neem dan contact op met onze support.</p>",
       "companyRejectedSubject": "Uw bedrijf is afgewezen",
       "companyRejectedBody": "<h2>Sorry {owner_first_name}</h2><p>Uw bedrijf <strong>{company_name}</strong> is niet gevalideerd.</p><p><strong>Reden:</strong> {reason}</p>",
       "companySuspendedSubject": "Uw bedrijf is geschorst",
       "companySuspendedBody": "<h2>Belangrijke informatie</h2><p>Uw bedrijf <strong>{company_name}</strong> is geschorst{duration_text}.{reason_text}</p>",
-      "jobSuspendedSubject": "Uw aanbieding is geschorst",
-      "jobSuspendedBody": "<h2>Uw aanbieding \"{job_title}\" is geschorst</h2><p><strong>Reden:</strong> {reason}</p>",
-      "jobDeletedSubject": "Uw aanbieding is verwijderd",
-      "jobDeletedBody": "<h2>Uw aanbieding \"{job_title}\" is verwijderd door de beheerder</h2><p><strong>Reden:</strong> {reason}</p>",
+      "jobSuspendedSubject": "Uw vacature is geschorst",
+      "jobSuspendedBody": "<h2>Uw vacature \"{job_title}\" is geschorst</h2><p><strong>Reden:</strong> {reason}</p>",
+      "jobDeletedSubject": "Uw vacature is verwijderd",
+      "jobDeletedBody": "<h2>Uw vacature \"{job_title}\" is verwijderd door de beheerder</h2><p><strong>Reden:</strong> {reason}</p>",
       "userSuspendedSubject": "Uw account is geschorst",
-      "userSuspendedBody": "<h2>Beste {first_name},</h2><p>Uw account op Actoos Jobs is geschorst{duration_text}.{reason_text}</p><p>Als u vragen hebt, neem dan contact met ons op.</p>",
+      "userSuspendedBody": "<h2>Hallo {first_name},</h2><p>Uw account op Actoos Jobs is geschorst{duration_text}.{reason_text}</p><p>Als u vragen heeft, neem dan contact met ons op.</p>",
       "userBannedSubject": "Uw account is verbannen",
-      "userBannedBody": "<h2>Beste {first_name},</h2><p>Uw account op Actoos Jobs is definitief verbannen.</p><p><strong>Reden:</strong> {reason}</p>",
+      "userBannedBody": "<h2>Hallo {first_name},</h2><p>Uw account op Actoos Jobs is permanent verbannen.</p><p><strong>Reden:</strong> {reason}</p>",
       "userReactivatedSubject": "Uw account is opnieuw geactiveerd",
-      "userReactivatedBody": "<h2>Beste {first_name},</h2><p>Uw account op Actoos Jobs is opnieuw geactiveerd.</p>",
-      "roleChangeApprovedSubject": "Uw aanvraag voor rolwijziging is goedgekeurd",
-      "roleChangeApprovedBody": "<h2>Beste {user_first},</h2><p>Uw aanvraag om <strong>{requested_role}</strong> te worden is goedgekeurd.</p><p>Log opnieuw in om toegang te krijgen tot uw nieuwe ruimte.</p>",
-      "roleChangeRejectedSubject": "Uw aanvraag voor rolwijziging is afgewezen",
-      "roleChangeRejectedBody": "<h2>Beste {user_first},</h2><p>Uw aanvraag om <strong>{requested_role}</strong> te worden is afgewezen.</p><p>Reden: {msg}</p>",
-      "adminMessageSubject": "Nieuw bericht van de administratie",
-      "adminMessageBody": "<h2>Beste {greeting},</h2><p>{content}</p><p>Bekijk uw berichten op <a href=\"https://jobs.actoos.com\">Actoos Jobs</a>.</p>",
+      "userReactivatedBody": "<h2>Hallo {first_name},</h2><p>Uw account op Actoos Jobs is opnieuw geactiveerd.</p>",
+      "roleChangeApprovedSubject": "Uw rolwijzigingsverzoek is goedgekeurd",
+      "roleChangeApprovedBody": "<h2>Hallo {user_first},</h2><p>Uw verzoek om <strong>{requested_role}</strong> te worden, is goedgekeurd.</p><p>Log uit en opnieuw in om toegang te krijgen tot uw nieuwe ruimte.</p>",
+      "roleChangeRejectedSubject": "Uw rolwijzigingsverzoek is afgewezen",
+      "roleChangeRejectedBody": "<h2>Hallo {user_first},</h2><p>Uw verzoek om <strong>{requested_role}</strong> te worden, is afgewezen.</p><p>Reden: {msg}</p>",
+      "adminMessageSubject": "Nieuw bericht van de beheerder",
+      "adminMessageBody": "<h2>Hallo {greeting},</h2><p>{content}</p><p>Bekijk uw berichten op <a href=\"https://jobs.actoos.com\">Actoos Jobs</a>.</p>",
       "freeBoostActivated": "Gratis boost geactiveerd voor 7 dagen"
     },
     "errors": {
@@ -2132,38 +2059,38 @@
       "notAuthenticated": "Niet geauthenticeerd",
       "invalidToken": "Ongeldige token",
       "candidateNotFound": "Kandidaat niet gevonden",
-      "jobNotFound": "Aanbieding niet gevonden",
+      "jobNotFound": "Vacature niet gevonden",
       "companyNotFound": "Bedrijf niet gevonden",
       "applicationNotFound": "Sollicitatie niet gevonden",
       "unauthorized": "U bent niet gemachtigd om deze actie uit te voeren",
       "blogNotFound": "Artikel niet gevonden",
-      "blogGenerationFailed": "Generatie door AI mislukt",
-      "aiAllModelsFailed": "Alle AI-modellen zijn mislukt",
+      "blogGenerationFailed": "AI-generatie mislukt",
+      "aiAllModelsFailed": "Alle AI-modellen faalden",
       "aiInvalidAgent": "Ongeldige AI-agent",
       "aiNotConfigured": "OpenRouter API-sleutel niet geconfigureerd",
-      "emailNotConfigured": "E-maildienst niet geconfigureerd",
-      "paymentRequired": "Betaling niet uitgevoerd",
-      "limitReached": "Limiet aanbiedingen bereikt",
+      "emailNotConfigured": "E-mailservice niet geconfigureerd",
+      "paymentRequired": "Betaling niet voltooid",
+      "limitReached": "Vacaturelimiet bereikt",
       "boostAlreadyUsed": "Boost deze maand al gebruikt",
       "boostBusinessOnly": "Voorbehouden aan het Business-plan",
-      "roleAdminNotRequestable": "De admin-rol kan niet worden aangevraagd",
-      "requestAlreadyPending": "U heeft al een aanvraag in behandeling",
-      "requestAlreadyProcessed": "Aanvraag reeds behandeld"
+      "roleAdminNotRequestable": "Rol admin kan niet worden aangevraagd",
+      "requestAlreadyPending": "U heeft al een lopende aanvraag",
+      "requestAlreadyProcessed": "Aanvraag al verwerkt"
     }
   },
   "adminDashboard": {
     "title": "Administratie",
-    "subtitle": "Beheer aanbiedingen, bedrijven en gebruikers",
+    "subtitle": "Beheer vacatures, bedrijven en gebruikers",
     "refresh": "Vernieuwen",
     "dataRefreshed": "Gegevens vernieuwd",
-    "unauthorized": "Toegang niet toegestaan",
+    "unauthorized": "Ongeautoriseerde toegang",
     "loadingError": "Fout bij laden van gegevens",
     "tabs": {
       "overview": "Overzicht",
-      "jobs": "Moderatie aanbiedingen",
-      "companies": "Validatie bedrijven",
+      "jobs": "Vacaturemoderatie",
+      "companies": "Bedrijfsvalidatie",
       "users": "Gebruikers",
-      "reports": "Meldingen",
+      "reports": "Rapporten",
       "subscriptions": "Abonnementen",
       "newsletter": "Nieuwsbrief",
       "blog": "Blog",
@@ -2172,8 +2099,8 @@
       "roleRequests": "Rolverzoeken"
     },
     "stats": {
-      "pendingJobs": "Aanbiedingen in afwachting",
-      "activeJobs": "Actieve aanbiedingen",
+      "pendingJobs": "Vacatures in afwachting",
+      "activeJobs": "Actieve vacatures",
       "pendingCompanies": "Bedrijven in afwachting",
       "verifiedCompanies": "Geverifieerde bedrijven",
       "candidates": "Kandidaten",
@@ -2181,49 +2108,49 @@
       "trend": "+{{trend}}% deze maand"
     },
     "overview": {
-      "pendingJobsTitle": "Aanbiedingen in afwachting",
+      "pendingJobsTitle": "Vacatures in afwachting",
       "pendingJobsDesc": "Te modereren",
-      "noPendingJobs": "Geen aanbiedingen in afwachting",
+      "noPendingJobs": "Geen vacatures in afwachting",
       "pendingCompaniesTitle": "Bedrijven in afwachting",
       "pendingCompaniesDesc": "Te valideren",
       "noPendingCompanies": "Geen bedrijven in afwachting",
       "viewAll": "Alles bekijken"
     },
     "jobs": {
-      "searchPlaceholder": "Zoek een aanbieding...",
+      "searchPlaceholder": "Zoek een vacature...",
       "filterAll": "Alle statussen",
       "filterPending": "In afwachting",
       "filterDraft": "Concept",
       "filterActive": "Actief",
       "filterSuspended": "Geschorst",
       "filterRejected": "Afgewezen",
-      "noJobs": "Geen aanbiedingen",
-      "noJobsFound": "Geen aanbiedingen gevonden",
-      "publishedBy": "Gepubliceerd op {{date}} door {{email}}",
+      "noJobs": "Geen vacatures",
+      "noJobsFound": "Geen vacatures gevonden",
+      "publishedBy": "Gepubliceerd {{date}} door {{email}}",
       "showDetails": "Details weergeven",
       "hideDetails": "Details verbergen",
       "detailsError": "Kan details niet laden",
       "detailsDescription": "Beschrijving:",
-      "detailsRequirements": "Gezocht profiel:",
+      "detailsRequirements": "Gewenst profiel:",
       "detailsMissions": "Taken:",
       "detailsBenefits": "Voordelen:",
       "detailsSkills": "Vaardigheden:",
       "detailsExperience": "Ervaring:",
       "detailsSalary": "Salaris:",
-      "detailsPositions": "Aantal posities:",
+      "detailsPositions": "Posities:",
       "detailsDeadline": "Uiterste datum:",
       "detailsRemote": "Thuiswerk:",
-      "detailsUrgent": "Dringend:",
+      "detailsUrgent": "Urgent:",
       "detailsYes": "Ja",
       "detailsNo": "Nee",
       "detailsUnspecified": "Niet gespecificeerd",
       "approve": "Goedkeuren",
       "reject": "Afwijzen",
-      "publish": "Aanbieding publiceren",
+      "publish": "Vacature publiceren",
       "suspend": "Schorsen",
       "reactivate": "Opnieuw activeren",
       "delete": "Verwijderen",
-      "viewJob": "Aanbieding bekijken",
+      "viewJob": "Vacature bekijken",
       "status": {
         "pending": "In afwachting",
         "active": "Actief",
@@ -2232,17 +2159,17 @@
         "draft": "Concept"
       },
       "companyNotVerified": "Het bedrijf is nog niet geverifieerd.",
-      "approveLimitReached": "Dit bedrijf heeft de limiet van {{limit}} actieve aanbieding(en) al bereikt.",
+      "approveLimitReached": "Dit bedrijf heeft zijn limiet van {{limit}} actieve vacature(s) al bereikt.",
       "approveCompanyFirst": "Het bedrijf is nog niet geverifieerd. Valideer eerst het bedrijf.",
-      "rejectConfirm": "Deze aanbieding afwijzen?",
-      "approvedToast": "Aanbieding goedgekeurd",
-      "rejectedToast": "Aanbieding afgewezen",
-      "suspendedToast": "Aanbieding geschorst en e-mail verzonden",
-      "deletedToast": "Aanbieding verwijderd en e-mail verzonden",
-      "approveError": "Fout bij goedkeuring",
+      "rejectConfirm": "Deze vacature afwijzen?",
+      "approvedToast": "Vacature goedgekeurd",
+      "rejectedToast": "Vacature afgewezen",
+      "suspendedToast": "Vacature geschorst en e-mail verzonden",
+      "deletedToast": "Vacature verwijderd en e-mail verzonden",
+      "approveError": "Fout bij goedkeuren",
       "genericError": "Fout",
-      "suspendModalTitle": "Aanbieding schorsen",
-      "deleteModalTitle": "Aanbieding verwijderen",
+      "suspendModalTitle": "Vacature schorsen",
+      "deleteModalTitle": "Vacature verwijderen",
       "reasonLabel": "Reden (optioneel)",
       "cancel": "Annuleren",
       "confirm": "Bevestigen"
@@ -2254,11 +2181,11 @@
       "filterVerified": "Geverifieerd",
       "noCompanies": "Geen bedrijven",
       "noCompaniesFound": "Geen bedrijven gevonden",
-      "employees": "{{size}} medewerkers",
-      "offersCount": "{{count}} aanbiedingen",
-      "createdAt": "Aangemaakt op {{date}}",
+      "employees": "{{size}} werknemers",
+      "offersCount": "{{count}} vacatures",
+      "createdAt": "Aangemaakt {{date}}",
       "viewSite": "Site bekijken",
-      "viewOffers": "Aanbiedingen bekijken ({{count}})",
+      "viewOffers": "Vacatures bekijken ({{count}})",
       "validate": "Valideren",
       "reject": "Afwijzen",
       "suspend": "Schorsen",
@@ -2270,16 +2197,16 @@
       "validatedToast": "Bedrijf gevalideerd en e-mail verzonden",
       "rejectedToast": "Bedrijf afgewezen en e-mail verzonden",
       "deletedToast": "Bedrijf verwijderd",
-      "validateError": "Fout bij validatie",
+      "validateError": "Fout bij valideren",
       "genericError": "Fout",
       "rejectModalTitle": "Bedrijf afwijzen",
       "deleteModalTitle": "Bedrijf verwijderen",
-      "deleteWarning": "⚠️ Deze actie is onomkeerbaar. Alle aanbiedingen en bijbehorende gegevens worden verwijderd.",
-      "deleteConfirm": "Het bedrijf \"{{name}}\" definitief verwijderen?",
+      "deleteWarning": "⚠️ Deze actie is onomkeerbaar. Alle vacatures en bijbehorende gegevens worden verwijderd.",
+      "deleteConfirm": "Bedrijf \"{{name}}\" definitief verwijderen?",
       "cancel": "Annuleren",
       "confirm": "Bevestigen",
       "suspendModalTitle": "Bedrijf schorsen",
-      "suspendWarning": "⚠️ Schorsing maakt het bedrijf onzichtbaar voor het publiek en verhindert het plaatsen van aanbiedingen.",
+      "suspendWarning": "⚠️ De schorsing maakt het bedrijf onzichtbaar voor het publiek en verhindert het plaatsen van vacatures.",
       "suspendDurationLabel": "Schorsingsduur",
       "suspendReasonLabel": "Reden (optioneel)",
       "durationIndefinite": "Onbepaald",
@@ -2310,7 +2237,7 @@
       },
       "banConfirm": "Deze gebruiker definitief verbannen?",
       "deleteConfirm": "Deze gebruiker definitief verwijderen? Deze actie is onomkeerbaar.",
-      "roleUpdated": "Rol bijgewerkt. De gebruiker moet opnieuw inloggen om de nieuwe ruimte te zien.",
+      "roleUpdated": "Rol bijgewerkt. De gebruiker moet uitloggen en opnieuw inloggen om zijn/haar nieuwe ruimte te zien.",
       "roleUpdateError": "Fout bij wijzigen rol",
       "suspendedToast": "Account geschorst",
       "reactivatedToast": "Account opnieuw geactiveerd",
@@ -2328,36 +2255,36 @@
       "confirm": "Schorsen"
     },
     "reports": {
-      "title": "Meldingen",
-      "description": "Bekijk en behandel meldingen",
-      "noReports": "Geen meldingen",
+      "title": "Rapporten",
+      "description": "Bekijk en verwerk rapporten",
+      "noReports": "Geen rapporten",
       "badges": {
-        "job": "📋 Aanbieding",
+        "job": "📋 Vacature",
         "company": "🏢 Bedrijf",
         "candidate": "👤 Kandidaat"
       },
-      "reportedBy": "Gemeld door {{email}}",
+      "reportedBy": "Gerapporteerd door {{email}}",
       "reason": "Reden: {{reason}}",
       "status": {
         "pending": "In afwachting",
         "reviewed": "Bekeken",
         "resolved": "Opgelost"
       },
-      "markReviewed": "Als bekeken markeren",
-      "markResolved": "Opgelost",
-      "suspendJob": "Aanbieding schorsen",
+      "markReviewed": "Markeren als bekeken",
+      "markResolved": "Oplossen",
+      "suspendJob": "Vacature schorsen",
       "suspendCompany": "Bedrijf schorsen",
-      "deleteJob": "Aanbieding verwijderen",
+      "deleteJob": "Vacature verwijderen",
       "deleteCompany": "Bedrijf verwijderen",
       "banUser": "Gebruiker verbannen",
       "banError": "Kan de te verbannen gebruiker niet vinden",
       "banConfirm": "Deze gebruiker definitief verbannen?",
       "bannedToast": "Gebruiker verbannen en e-mail verzonden",
-      "suspendedToast": "Aanbieding geschorst en e-mail verzonden",
+      "suspendedToast": "Vacature geschorst en e-mail verzonden",
       "companySuspendedToast": "Bedrijf geschorst en e-mail verzonden",
-      "deletedToast": "Aanbieding verwijderd en e-mail verzonden",
+      "deletedToast": "Vacature verwijderd en e-mail verzonden",
       "companyDeletedToast": "Bedrijf verwijderd en e-mail verzonden",
-      "updatedToast": "Melding bijgewerkt"
+      "updatedToast": "Rapport bijgewerkt"
     },
     "subscriptions": {
       "title": "Actieve / opgezegde abonnementen",
@@ -2374,18 +2301,18 @@
         "cancellationReason": "Reden opzegging"
       },
       "cancelledFrom": "Plan na opzegging:",
-      "toFrom": "← sinds"
+      "toFrom": "← van"
     },
     "newsletter": {
       "sendTitle": "Nieuwsbrief verzenden",
       "sendDescription": "Stuur een e-mail naar alle abonnees",
       "subjectLabel": "Onderwerp",
-      "subjectPlaceholder": "Onderwerp van de e-mail",
+      "subjectPlaceholder": "Onderwerp e-mail",
       "contentLabel": "Inhoud (HTML)",
       "contentPlaceholder": "<h1>Titel</h1><p>Uw bericht...</p>",
       "sendButton": "Nieuwsbrief verzenden",
       "subscribersTitle": "Abonnees ({{count}})",
-      "subscribersDescription": "Lijst van ingeschreven nieuwsbriefontvangers",
+      "subscribersDescription": "Lijst van nieuwsbriefabonnees",
       "noSubscribers": "Nog geen abonnees.",
       "table": {
         "email": "E-mail",
@@ -2399,18 +2326,18 @@
       "activate": "Activeren",
       "deactivate": "Deactiveren",
       "reactivate": "Opnieuw activeren",
-      "fillRequired": "Vul onderwerp en inhoud in.",
+      "fillRequired": "Vul alstublieft onderwerp en inhoud in.",
       "sentToast": "Nieuwsbrief verzonden",
       "networkError": "Netwerkfout",
       "toggledToast": "Status abonnee bijgewerkt"
     },
     "blog": {
-      "generateTitle": "Artikel genereren met AI",
-      "generateDescription": "Creëer inhoud geoptimaliseerd voor uw publiek",
+      "generateTitle": "Een artikel genereren met AI",
+      "generateDescription": "Creëer geoptimaliseerde inhoud voor uw publiek",
       "titleLabel": "Titel *",
-      "titlePlaceholder": "Bijv: Hoe slaagt u voor uw sollicitatiegesprek",
+      "titlePlaceholder": "Bijv.: Hoe slaagt u in uw sollicitatiegesprek",
       "keywordsLabel": "Trefwoorden",
-      "keywordsPlaceholder": "Bijv: rekrutering, carrière, tips",
+      "keywordsPlaceholder": "Bijv.: werving, carrière, tips",
       "audienceLabel": "Doelgroep",
       "audienceAll": "Alle",
       "audienceCandidates": "Kandidaten",
@@ -2418,7 +2345,7 @@
       "categoryLabel": "Categorie",
       "categories": {
         "carriere": "Carrière",
-        "recrutement": "Rekrutering",
+        "recrutement": "Werving",
         "technologie": "Technologie",
         "entrepreneuriat": "Ondernemerschap",
         "conseils": "Tips"
@@ -2428,9 +2355,9 @@
       "readTimeLabel": "Leestijd",
       "readTimePlaceholder": "5 min",
       "generateButton": "Artikel genereren",
-      "articlesTitle": "Artikels ({{count}})",
-      "articlesDescription": "Beheer de blogartikels",
-      "noArticles": "Nog geen artikels.",
+      "articlesTitle": "Artikelen ({{count}})",
+      "articlesDescription": "Blogartikelen beheren",
+      "noArticles": "Nog geen artikelen.",
       "save": "Opslaan",
       "cancel": "Annuleren",
       "deleteConfirm": "Dit artikel verwijderen?",
@@ -2444,15 +2371,15 @@
       "audienceLabel2": "Doelgroep"
     },
     "roleRequests": {
-      "title": "Aanvragen voor rolwijziging",
-      "description": "Beheer de aanvragen van gebruikers",
-      "noRequests": "Geen aanvragen in afwachting",
+      "title": "Rolverzoeken",
+      "description": "Beheer verzoeken van gebruikers",
+      "noRequests": "Geen lopende verzoeken",
       "from": "Van",
       "to": "→",
       "approve": "Goedkeuren",
       "reject": "Afwijzen",
-      "approvedToast": "Aanvraag goedgekeurd",
-      "rejectedToast": "Aanvraag afgewezen"
+      "approvedToast": "Verzoek goedgekeurd",
+      "rejectedToast": "Verzoek afgewezen"
     },
     "roleLabels": {
       "candidate": "Kandidaat",
@@ -2463,54 +2390,19 @@
   },
   "categories": {
     "ong-humanitaire": "NGO & Humanitair",
-    "tech": "Technologie en IT",
-    "marketing": "Marketing en Communicatie",
-    "finance": "Financiën en Boekhouding",
+    "tech": "Technologie & IT",
+    "marketing": "Marketing & Communicatie",
+    "finance": "Financiën & Boekhouding",
     "rh": "Human Resources",
-    "commerce": "Handel en Verkoop",
-    "sante": "Gezondheidszorg en Medisch",
-    "education": "Onderwijs en Opleiding",
-    "btp": "Bouw en Constructie",
-    "transport": "Transport en Logistiek",
-    "agriculture": "Landbouw en Milieu",
-    "tourisme": "Toerisme en Horeca",
-    "juridique": "Juridisch en Recht",
-    "autre": "Andere"
-  },
-  "contracts": {
-    "cdi": "Onbepaalde duur",
-    "cdd": "Bepaalde duur",
-    "stage": "Stage",
-    "alternance": "Werkstudie",
-    "freelance": "Freelance",
-    "interim": "Interim",
-    "job_etudiant": "Studentenjob",
-    "extra": "Extra",
-    "saisonnier": "Seizoenswerk",
-    "benevolat": "Vrijwilligerswerk"
-  },
-  "experienceLevels": {
-    "junior": "Junior (0-2 jaar)",
-    "intermediaire": "Gemiddeld (2-5 jaar)",
-    "senior": "Senior (5-10 jaar)",
-    "expert": "Expert (10+ jaar)"
-  },
-  "industries": {
-    "tech": "Technologie",
-    "finance": "Financiën & Banken",
-    "telecom": "Telecommunicatie",
-    "commerce": "Handel & Distributie",
-    "manufacturing": "Industrie & Productie",
-    "agriculture": "Landbouw",
-    "construction": "Bouw & Constructie",
+    "commerce": "Handel & Verkoop",
+    "sante": "Gezondheid & Medisch",
+    "education": "Onderwijs & Training",
+    "btp": "Bouw & Civiele Techniek",
     "transport": "Transport & Logistiek",
-    "health": "Gezondheidszorg & Farmacie",
-    "education": "Onderwijs & Opleiding",
-    "tourism": "Toerisme & Horeca",
-    "services": "Zakelijke dienstverlening",
-    "ngo": "NGO & Humanitair",
-    "public": "Openbaar bestuur",
-    "other": "Andere"
+    "agriculture": "Landbouw & Milieu",
+    "tourisme": "Toerisme & Horeca",
+    "juridique": "Juridisch & Recht",
+    "autre": "Anders"
   },
   "countries": {
     "ML": "Mali",
@@ -2522,69 +2414,165 @@
     "US": "Verenigde Staten",
     "MA": "Marokko"
   },
-  "companyProfile": {
-  "back": "Terug",
-  "title": "Bedrijfsprofiel",
-  "subtitle": "Bewerk uw bedrijfsinformatie",
-  "uploading": "Uploaden…",
-  "logo": "Logo wijzigen",
-  "labels": {
-    "name": "Bedrijfsnaam",
-    "description": "Beschrijving",
-    "industry": "Sector",
-    "size": "Bedrijfsgrootte",
-    "website": "Website",
-    "email": "Contact e-mail",
-    "phone": "Telefoon",
-    "foundedYear": "Oprichtingsjaar",
-    "country": "Land",
-    "city": "Stad",
-    "address": "Adres"
+  "acceptInvitation": {
+    "invalidTitle": "Ongeldige uitnodiging",
+    "invalidMessage": "Deze uitnodigingslink is ongeldig of verlopen.",
+    "title": "Uitnodiging accepteren",
+    "subtitle": "Maak uw account aan om lid te worden van het bedrijf.",
+    "firstName": "Voornaam",
+    "lastName": "Achternaam",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "passwordMinLength": "Minimaal 6 tekens",
+    "submit": "Mijn account aanmaken en accepteren",
+    "fillAllFields": "Vul alstublieft alle velden in.",
+    "accountCreated": "Uw account is aangemaakt en u bent lid geworden van het bedrijf!",
+    "error": "Er is een fout opgetreden."
   },
-  "placeholders": {
-    "name": "Naam van uw bedrijf",
-    "description": "Beschrijf uw bedrijf in enkele zinnen",
-    "website": "https://www.mijnbedrijf.nl",
-    "email": "contact@bedrijf.nl",
-    "phone": "+31 20 0000000",
-    "year": "Bijv. 2020",
-    "address": "Straat, wijk, gebouw…"
+  "team": {
+    "removeTitle": "Lid verwijderen",
+    "removeMessageGeneric": "Weet u zeker dat u dit lid wilt verwijderen? Deze actie is onomkeerbaar.",
+    "leaveTitle": "Bedrijf verlaten",
+    "leaveMessage": "Weet u zeker dat u dit bedrijf wilt verlaten?",
+    "title": "Teambeheer",
+    "subtitle": "Bedrijf: {{company}}",
+    "inviteButton": "Lid uitnodigen",
+    "membersList": "Teamleden",
+    "noMembers": "Nog geen leden.",
+    "memberLimitReached": "Limiet van {{limit}} leden bereikt. Upgrade naar een hoger abonnement.",
+    "owner": "Eigenaar",
+    "leave": "Bedrijf verlaten",
+    "leaveConfirm": "Weet u zeker dat u dit bedrijf wilt verlaten?",
+    "removeConfirm": "{{name}} uit het team verwijderen?",
+    "status": { "pending": "In afwachting" },
+    "invite": {
+      "title": "Lid uitnodigen",
+      "email": "E-mailadres",
+      "emailRequired": "E-mail is verplicht.",
+      "role": "Rol",
+      "send": "Uitnodiging verzenden",
+      "cancel": "Annuleren"
+    },
+    "toasts": {
+      "loadError": "Fout bij laden team.",
+      "inviteSuccess": "Uitnodiging verzonden.",
+      "inviteError": "Fout bij verzenden uitnodiging.",
+      "roleUpdated": "Rol bijgewerkt.",
+      "roleError": "Fout bij bijwerken rol.",
+      "memberRemoved": "Lid verwijderd.",
+      "removeError": "Fout bij verwijderen lid.",
+      "leaveSuccess": "U heeft het bedrijf verlaten.",
+      "leaveError": "Fout bij verlaten bedrijf."
+    }
+},
+
+  "companiesPage": {
+    "title": "Bedrijven",
+    "subtitle": "Ontdek bedrijven die personeel zoeken via Actoos",
+    "searchPlaceholder": "Zoek een bedrijf...",
+    "allIndustries": "Alle sectoren",
+    "offers": "{{count}} vacature(s)",
+    "viewProfile": "Profiel bekijken",
+    "noCompanies": {
+      "title": "Geen bedrijven gevonden",
+      "hint": "Probeer uw filters of zoekopdracht aan te passen."
+    },
+    "cta": {
+      "title": "Werft uw bedrijf aan?",
+      "subtitle": "Word lid van Actoos en plaats gratis uw vacatures",
+      "button": "Bedrijfsaccount aanmaken"
+    }
   },
-  "options": {
-    "selectIndustry": "Selecteer een sector",
-    "selectSize": "Selecteer een grootte",
-    "selectCity": "Selecteer een stad"
+  
+  "time": {
+    "justNow": "Zojuist",
+    "minutesAgo": "{{count}} min geleden",
+    "hoursAgo": "{{count}} u geleden",
+    "today": "Vandaag",
+    "yesterday": "Gisteren",
+    "daysAgo": "{{count}} dag(en) geleden",
+    "weeksAgo": "{{count}} wk geleden",
+    "monthsAgo": "{{count}} maand(en) geleden",
+    "yearsAgo": "{{count}} jaar geleden"
   },
-  "submit": "Wijzigingen opslaan",
-  "deleteConfirm": "Weet u zeker dat u uw bedrijf permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
-  "deleteSection": {
-    "title": "Mijn bedrijf verwijderen",
-    "description": "Hiermee wordt uw bedrijf, al zijn aanbiedingen en bijbehorende gegevens permanent verwijderd.",
-    "button": "Mijn bedrijf verwijderen",
-    "deleting": "Verwijderen…"
-  },
-  "toasts": {
-    "imageRequired": "Selecteer een afbeelding",
-    "imageTooBig": "Afbeelding mag niet groter zijn dan 2 MB",
-    "logoUploaded": "Logo succesvol geüpload",
-    "uploadError": "Fout bij uploaden logo",
-    "nameRequired": "Bedrijfsnaam is verplicht",
-    "updateSuccess": "Profiel succesvol bijgewerkt",
-    "updateError": "Fout bij bijwerken profiel",
-    "companyDeleted": "Bedrijf succesvol verwijderd",
-    "deleteError": "Fout bij verwijderen bedrijf"
-  },
-  "noCompany": {
-    "title": "Geen bedrijf gevonden",
-    "message": "U moet eerst een bedrijf aanmaken om deze pagina te kunnen bekijken.",
-    "createButton": "Mijn bedrijf aanmaken"
-  },
-  "sizes": {
-    "1-10": "1-10 werknemers",
-    "11-50": "11-50 werknemers",
-    "51-200": "51-200 werknemers",
-    "201-500": "201-500 werknemers",
-    "500+": "Meer dan 500 werknemers"
+  "profile": {
+  "links": {
+    "title": "Links & netwerken",
+    "addLink": "Link toevoegen",
+    "namePlaceholder": "Naam (bijv. GitHub)",
+    "urlPlaceholder": "https://...",
+    "sectionTitle": "Links",
+    "sectionDesc": "Portfolio & sociale netwerken",
+    "linkedin": "LinkedIn",
+    "portfolio": "Portfolio / Website"
   }
+},
+"companyApplications": {
+    "back": "Terug",
+    "title": "Sollicitaties",
+    "deleteButton": "Verwijderen",
+    "noApplications": "Geen sollicitaties op dit moment.",
+    "deleteConfirm": "Verwijdering bevestigen?",
+    "toasts": {
+      "deleted": "Sollicitatie verwijderd.",
+      "deleteError": "Fout bij verwijderen."
+    }
+  },
+  "countries": {
+  "ZA": "Zuid-Afrika",
+  "DZ": "Algerije",
+  "DE": "Duitsland",
+  "SA": "Saoedi-Arabië",
+  "AR": "Argentinië",
+  "AT": "Oostenrijk",
+  "BE": "België",
+  "BJ": "Benin",
+  "BR": "Brazilië",
+  "BF": "Burkina Faso",
+  "CM": "Kameroen",
+  "CI": "Ivoorkust",
+  "EG": "Egypte",
+  "AE": "Verenigde Arabische Emiraten",
+  "ES": "Spanje",
+  "US": "Verenigde Staten",
+  "FR": "Frankrijk",
+  "GN": "Guinee",
+  "IT": "Italië",
+  "LU": "Luxemburg",
+  "MG": "Madagaskar",
+  "ML": "Mali",
+  "MA": "Marokko",
+  "NG": "Nigeria",
+  "NL": "Nederland",
+  "PT": "Portugal",
+  "CD": "Democratische Republiek Congo",
+  "UK": "Verenigd Koninkrijk",
+  "SN": "Senegal",
+  "CH": "Zwitserland",
+  "TG": "Togo",
+  "TN": "Tunesië"
+},
+"currencies": {
+  "XOF": "CFA-Franc (XOF)",
+  "EUR": "Euro (€)",
+  "USD": "Amerikaanse Dollar ($)",
+  "MAD": "Marokkaanse Dirham (MAD)",
+  "GBP": "Britse Pond (£)",
+  "BRL": "Braziliaanse Real (R$)",
+  "ARS": "Argentijnse Peso (AR$)",
+  "NGN": "Nigeriaanse Naira (₦)",
+  "ZAR": "Zuid-Afrikaanse Rand (R)",
+  "SAR": "Saoedi-Riyal (﷼)",
+  "AED": "VAE-Dirham (د.إ)",
+  "EGP": "Egyptisch Pond (ج.م)",
+  "DZD": "Algerijnse Dinar (د.ج)",
+  "TND": "Tunesische Dinar (د.ت)",
+  "CHF": "Zwitserse Frank (CHF)",
+  "XAF": "CFA-Franc BEAC (XAF)",
+  "GNF": "Guinese Franc (FG)",
+  "CDF": "Congolese Franc (FC)",
+  "MGA": "Malagassische Ariary (Ar)"
 }
+
+
 }

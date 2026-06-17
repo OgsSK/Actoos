@@ -1,4 +1,4 @@
-const API_URL = 'https://actoos-jobs-api.onrender.com';
+ const API_URL = 'https://actoos-jobs-api.onrender.com';
 //const API_URL = 'http://localhost:8001';
 
 export async function apiFetch(endpoint, options = {}) {
@@ -9,7 +9,9 @@ export async function apiFetch(endpoint, options = {}) {
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Erreur réseau' }));
-    throw new Error(error.detail || 'Une erreur est survenue');
+    const err = new Error(error.detail || 'Une erreur est survenue');
+    err.status = response.status;   // ← statut HTTP séparé
+    throw err;
   }
   return response.json();
 }

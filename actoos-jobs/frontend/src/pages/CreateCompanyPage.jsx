@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { toast } from 'sonner';
-import { usePreferences } from '../hooks/usePreferences';
+import { usePreferences } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import {
   Building2, Globe, Mail, Phone, MapPin, Users, Calendar,
@@ -23,7 +23,7 @@ const CreateCompanyPage = () => {
   const logoInputRef = useRef(null);
 
   // Préférences utilisateur
-  const { prefs } = usePreferences();
+  const { prefs } = usePreferencesContext();
 
   // Pays sélectionné : initialisé avec le pays des préférences (fallback 'ML')
   const [selectedCountry, setSelectedCountry] = useState(prefs.country || 'ML');
@@ -249,7 +249,7 @@ const CreateCompanyPage = () => {
                     setForm({ ...form, name: e.target.value });
                     if (errors.name) setErrors(prev => ({ ...prev, name: false }));
                   }}
-                  placeholder={t('createCompany.placeholders.name')}
+                  placeholder="Ex: ACME Corporation"   
                   required
                   className={errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}
                   data-testid="company-name-input"
@@ -310,7 +310,7 @@ const CreateCompanyPage = () => {
                   <Input
                     value={form.website}
                     onChange={(e) => setForm({ ...form, website: e.target.value })}
-                    placeholder={t('createCompany.placeholders.website')}
+                    placeholder="https://www.monentreprise.com"   
                     data-testid="company-website-input"
                   />
                 </div>
@@ -321,7 +321,7 @@ const CreateCompanyPage = () => {
                   <Input
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder={t('createCompany.placeholders.email')}
+                    placeholder="contact@monentreprise.com"   
                     type="email"
                     data-testid="company-email-input"
                   />
@@ -336,7 +336,7 @@ const CreateCompanyPage = () => {
                   <Input
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder={t('createCompany.placeholders.phone')}
+                    placeholder="+1 (555) 000-0000"   
                     data-testid="company-phone-input"
                   />
                 </div>
@@ -347,7 +347,7 @@ const CreateCompanyPage = () => {
                   <Input
                     value={form.founded_year}
                     onChange={(e) => setForm({ ...form, founded_year: e.target.value })}
-                    placeholder={t('createCompany.placeholders.year')}
+                    placeholder="Ex: 2020"   
                     type="number"
                     min="1900"
                     max={new Date().getFullYear()}

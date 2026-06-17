@@ -9,7 +9,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import AIAssistant from '../components/AIAssistant';
 import { toast } from 'sonner';
-import { usePreferences } from '../hooks/usePreferences';
+import { usePreferences } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import {
   Briefcase, MapPin, DollarSign, Calendar, Users,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { apiFetch } from '../lib/api';
+import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
 
 const CreateJobPage = () => {
   const { t } = useTranslation();
@@ -25,7 +26,7 @@ const CreateJobPage = () => {
   const { user, activeCompanyId } = useAuth();
   const navigate = useNavigate();
 
-  const { prefs } = usePreferences();
+  const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
 
   const [loading, setLoading] = useState(false);
@@ -161,14 +162,6 @@ const CreateJobPage = () => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
   };
 
-  // ✅ Limite gratuite passée à 3 pour le lancement
-  const getPlanLimit = () => {
-    const plan = company?.subscription_plan || 'free';
-    if (plan === 'business' || plan === 'enterprise') return Infinity;
-    if (plan === 'pro') return 5;
-    return 3; // au lieu de 1
-  };
-
   const countActiveJobs = async (excludeId = null) => {
     let query = supabase
       .from('jobs')
@@ -231,7 +224,7 @@ const CreateJobPage = () => {
             .eq('company_id', company.id)
             .eq('status', 'pending');
           const totalActiveAndPending = (activeCount || 0) + (pendingCount || 0);
-          const limit = getPlanLimit();
+          const limit = getPlanLimit(company?.subscription_plan || 'free', 'jobs'); // ← corrigé
           if (totalActiveAndPending >= limit) {
             toast.error(t('createJob.toasts.limitReached', { total: totalActiveAndPending, limit }));
             setSaving(false);
@@ -277,15 +270,13 @@ const CreateJobPage = () => {
 
       if (id) {
         if (finalStatus === 'active' && form.status !== 'active') {
-          jobData.published_at = new Date().toISOString();
-          jobData.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+          jobData.expires_at = new Date(Date.now() + getExpirationDays(company) * 24 * 60 * 60 * 1000).toISOString();
         }
         const { error } = await supabase.from('jobs').update(jobData).eq('id', id);
         if (error) throw error;
       } else {
         if (finalStatus === 'active') {
-          jobData.published_at = new Date().toISOString();
-          jobData.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+          jobData.expires_at = new Date(Date.now() + getExpirationDays(company) * 24 * 60 * 60 * 1000).toISOString();
         }
         const { error } = await supabase.from('jobs').insert(jobData);
         if (error) throw error;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { usePreferences } from '../hooks/usePreferences';
+import { usePreferences } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api'; // ← Import pour l'API
@@ -27,7 +27,7 @@ const COMPANY_SIZE_KEYS = ['1-10', '11-50', '51-200', '201-500', '500+'];
 const CompanyProfilePage = () => {
   const { t } = useTranslation();
   const { user, activeCompanyId } = useAuth();
-  const { prefs } = usePreferences();
+  const { prefs } = usePreferencesContext();
   const navigate = useNavigate();
   const logoInputRef = React.useRef(null);
 

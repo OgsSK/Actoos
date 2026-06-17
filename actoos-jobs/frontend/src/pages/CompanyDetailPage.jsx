@@ -132,8 +132,19 @@ const CompanyDetailPage = () => {
               </div>
 
               <div className="flex-1 min-w-0">
+                {/* Section modifiée : ajout des badges Pro et Premium */}
                 <h1 className="text-3xl font-bold text-slate-900 break-words">
                   {company.name}
+                  {company.subscription_plan === 'pro' && (
+                    <Badge className="ml-3 bg-blue-100 text-blue-700 border-blue-200">
+                      Pro
+                    </Badge>
+                  )}
+                  {company.subscription_plan === 'business' && (
+                    <Badge className="ml-3 bg-purple-100 text-purple-700 border-purple-200">
+                      ⭐ {t('common.premium')}
+                    </Badge>
+                  )}
                 </h1>
 
                 {company.industry && (

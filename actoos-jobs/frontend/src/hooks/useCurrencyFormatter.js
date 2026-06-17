@@ -1,4 +1,4 @@
-import { usePreferences } from './usePreferences';
+import { usePreferencesContext } from '../contexts/PreferencesContext';
 
 const RATES = {
   XOF: 1, EUR: 655.957, USD: 603.5, MAD: 60.5,
@@ -17,8 +17,9 @@ const SYMBOLS = {
   SAR: '﷼', AED: 'د.إ', EGP: 'ج.م', DZD: 'د.ج', TND: 'د.ت',
   CHF: 'CHF', XAF: 'FCFA', GNF: 'FG', CDF: 'FC', MGA: 'Ar'
 };
+
 export const useCurrencyFormatter = () => {
-  const { prefs } = usePreferences();
+  const { prefs } = usePreferencesContext();
 
   const format = (amountInXOF) => {
     if (amountInXOF == null) return { value: '', symbol: '' };
@@ -26,7 +27,6 @@ export const useCurrencyFormatter = () => {
     const rate = RATES[currency] || 1;
     const converted = amountInXOF / rate;
 
-    // On formate le nombre sans symbole
     const formattedValue = new Intl.NumberFormat('fr-FR', {
       maximumFractionDigits: 0,
     }).format(converted);

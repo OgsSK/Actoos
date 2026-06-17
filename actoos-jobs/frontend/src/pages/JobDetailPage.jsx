@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { apiFetch } from '../lib/api';
-import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter'; // 👈 Import ajouté
+import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -29,7 +29,7 @@ const JobDetailPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const { user, isAdmin } = useAuth();
-  const { format } = useCurrencyFormatter(); // 👈 Hook de formatage
+  const { format } = useCurrencyFormatter();
 
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -230,6 +230,8 @@ const JobDetailPage = () => {
   }
 
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
+  // Détermine si le boost est actif
+  const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -270,8 +272,13 @@ const JobDetailPage = () => {
                   {job.salary_min && job.salary_max && (
                     <Badge variant="outline" className="flex items-center gap-1">
                       <Banknote className="w-3 h-3" />
-                      {/* ✅ Conversion avec le hook useCurrencyFormatter */}
                       {format(job.salary_min)} – {format(job.salary_max)}
+                    </Badge>
+                  )}
+                  {/* Badge Boosté ajouté ici */}
+                  {isBoosted && (
+                    <Badge className="bg-purple-100 text-purple-700 border border-purple-200">
+                      🚀 {t('jobDetail.boosted')}
                     </Badge>
                   )}
                 </div>

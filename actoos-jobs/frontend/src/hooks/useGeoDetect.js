@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { usePreferences } from './usePreferences';
+import { usePreferencesContext } from '../contexts/PreferencesContext';
 
 export const useGeoDetect = () => {
-  const { prefs, updatePrefs } = usePreferences();
+  const { prefs, updatePrefs } = usePreferencesContext();
   const [detected, setDetected] = useState(null);
   const [showBanner, setShowBanner] = useState(false);
 
@@ -31,7 +31,7 @@ export const useGeoDetect = () => {
       updatePrefs('currency', detected.currency);
       localStorage.setItem('actoos_country_chosen', 'true');
       setShowBanner(false);
-      // Plus de window.location.reload()
+      window.location.href = window.location.pathname + '?t=' + Date.now();
     }
   };
 

@@ -4,12 +4,14 @@ import { Toaster } from 'sonner';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PreferencesProvider } from './contexts/PreferencesContext'; // ← Ajouté
 import Header from './components/Header';
 import Footer from './components/Footer';
 import GeoBanner from './components/GeoBanner';
 import CookieBanner from './components/CookieBanner';
 import { Card, CardContent } from './components/ui/card';
 import { Target, Eye, Shield, Zap, Heart, TrendingUp, Loader2 } from 'lucide-react';
+import AcceptInvitationPage from './pages/AcceptInvitationPage';
 import './index.css';
 
 // ---------- Lazy-loaded pages ----------
@@ -55,6 +57,7 @@ const CookiesPage = lazy(() => import('./pages/CookiesPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+// const TeamManagementPage = lazy(() => import('./pages/TeamManagementPage')); // ← Désactivé temporairement
 
 // ---------- Scroll to top on route change ----------
 const ScrollToTop = () => {
@@ -135,6 +138,7 @@ const AppContent = () => {
             <Route path="/emplois/:id" element={<JobDetailPage />} />
             <Route path="/entreprises" element={<CompaniesPage />} />
             <Route path="/entreprises/inscription" element={<RegisterPage />} />
+            <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
             <Route path="/tarifs" element={<PricingPage />} />
             <Route path="/paiement/succes" element={<PaymentSuccess />} />
             <Route path="/paiement/annule" element={<PaymentCancel />} />
@@ -182,6 +186,8 @@ const AppContent = () => {
             <Route path="/dashboard/entreprise/offres" element={<ProtectedRoute><CompanyJobsPage /></ProtectedRoute>} />
             <Route path="/dashboard/entreprise/candidatures" element={<ProtectedRoute><CompanyApplicationsPage /></ProtectedRoute>} />
             <Route path="/dashboard/entreprise/candidatures/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
+            {/* Route vers la gestion d'équipe désactivée */}
+            {/* <Route path="/dashboard/entreprise/equipe" element={<ProtectedRoute><TeamManagementPage /></ProtectedRoute>} /> */}
 
             {/* ---------- Protected route - Voir profil candidat (recruteur) ---------- */}
             <Route path="/candidat/:id" element={<ProtectedRoute><CandidatePublicProfilePage /></ProtectedRoute>} />
@@ -221,7 +227,9 @@ function App() {
     <I18nextProvider i18n={i18n}>
       <Router>
         <AuthProvider>
-          <AppContent />
+          <PreferencesProvider>
+            <AppContent />
+          </PreferencesProvider>
         </AuthProvider>
       </Router>
     </I18nextProvider>

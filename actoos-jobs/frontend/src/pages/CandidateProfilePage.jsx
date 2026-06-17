@@ -9,6 +9,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import AIAssistant from '../components/AIAssistant';
+import EditableLinks from '../components/EditableLinks';
 import { toast } from 'sonner';
 import {
   User, Briefcase, FileText, GraduationCap, Award,
@@ -436,8 +437,6 @@ const CandidateProfilePage = () => {
     years_of_experience: 0,
     is_available: true,
     is_open_to_remote: false,
-    linkedin_url: '',
-    portfolio_url: '',
     desired_salary_min: '',
     desired_salary_max: '',
   });
@@ -446,6 +445,7 @@ const CandidateProfilePage = () => {
   const [newSkill, setNewSkill] = useState('');
   const [experiences, setExperiences] = useState([]);
   const [education, setEducation] = useState([]);
+  const [links, setLinks] = useState([]); // ← liens dynamiques
 
   const [cvUrl, setCvUrl] = useState('');
   const [uploadingCV, setUploadingCV] = useState(false);
@@ -462,6 +462,7 @@ const CandidateProfilePage = () => {
   const [showEduModal, setShowEduModal] = useState(false);
   const [editingEdu, setEditingEdu] = useState(null);
 
+  // Chargement des villes (indépendant de l'utilisateur)
   useEffect(() => {
     const fetchCities = async () => {
       const { data } = await supabase
@@ -472,9 +473,17 @@ const CandidateProfilePage = () => {
       setCities(data || []);
     };
     fetchCities();
-    fetchDocuments();
   }, []);
 
+  // Chargement des données liées à l'utilisateur (documents + liens) -> se déclenche lorsque user devient disponible
+  useEffect(() => {
+    if (user) {
+      fetchDocuments();
+      fetchLinks();  // ← chargement explicite des liens depuis la BDD
+    }
+  }, [user]);
+
+  // Mise à jour depuis le profil (informations personnelles et candidate profile)
   useEffect(() => {
     if (profile) {
       setPersonalInfo({
@@ -493,8 +502,6 @@ const CandidateProfilePage = () => {
         years_of_experience: cp.years_of_experience || 0,
         is_available: cp.is_available ?? true,
         is_open_to_remote: cp.is_open_to_remote || false,
-        linkedin_url: cp.linkedin_url || '',
-        portfolio_url: cp.portfolio_url || '',
         desired_salary_min: cp.desired_salary_min || '',
         desired_salary_max: cp.desired_salary_max || '',
       });
@@ -503,8 +510,25 @@ const CandidateProfilePage = () => {
       setExperiences(cp.experience || []);
       setEducation(cp.education || []);
       setCvUrl(cp.cv_url || '');
+      // Les liens ne sont plus chargés depuis cp.links ici pour éviter un écrasement
     }
   }, [profile]);
+
+  // Fonction de récupération explicite des liens depuis candidate_profiles
+  const fetchLinks = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('candidate_profiles')
+        .select('links')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error) throw error;
+      setLinks(data?.links || []);
+    } catch (err) {
+      console.error('Erreur chargement liens:', err);
+    }
+  };
 
   const fetchDocuments = async () => {
     if (!user) return;
@@ -745,19 +769,19 @@ const CandidateProfilePage = () => {
         years_of_experience: candidateInfo.years_of_experience,
         is_available: candidateInfo.is_available,
         is_open_to_remote: candidateInfo.is_open_to_remote,
-        linkedin_url: candidateInfo.linkedin_url,
-        portfolio_url: candidateInfo.portfolio_url,
         desired_salary_min: candidateInfo.desired_salary_min ? parseInt(candidateInfo.desired_salary_min) : null,
         desired_salary_max: candidateInfo.desired_salary_max ? parseInt(candidateInfo.desired_salary_max) : null,
         skills,
         experience: experiences,
         education,
+        links, // ← sauvegarde du tableau de liens
       }, { onConflict: 'user_id' });
 
       if (error) throw error;
 
       toast.success(t('candidateProfilePage.toasts.profileUpdated'));
       await refreshProfile();
+      await fetchLinks(); // rechargement pour garantir la cohérence
     } catch (error) {
       console.error('Erreur sauvegarde profil:', error);
       toast.error(error.message || t('candidateProfilePage.toasts.saveError'));
@@ -792,6 +816,7 @@ const CandidateProfilePage = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Photo */}
           <Card>
             <CardContent className="p-6 flex items-center gap-6">
               <div className="relative w-24 h-24">
@@ -828,6 +853,7 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* Informations personnelles */}
           <Card>
             <CardContent className="p-6">
               <SectionHeader icon={User} title={t('candidateProfilePage.personalInfo.sectionTitle')} description={t('candidateProfilePage.personalInfo.sectionDesc')} />
@@ -877,6 +903,7 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* Profil professionnel */}
           <Card>
             <CardContent className="p-6">
               <SectionHeader icon={Briefcase} title={t('candidateProfilePage.professionalProfile.sectionTitle')} description={t('candidateProfilePage.professionalProfile.sectionDesc')} />
@@ -968,6 +995,7 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* CV */}
           <Card>
             <CardContent className="p-6">
               <SectionHeader icon={FileText} title={t('candidateProfilePage.cv.sectionTitle')} description={t('candidateProfilePage.cv.sectionDesc')} />
@@ -1014,6 +1042,7 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* Documents */}
           <Card>
             <CardContent className="p-6">
               <SectionHeader icon={File} title={t('candidateProfilePage.documents.sectionTitle')} description={t('candidateProfilePage.documents.sectionDesc')} />
@@ -1086,6 +1115,7 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* Compétences */}
           <Card>
             <CardContent className="p-6">
               <SectionHeader icon={Award} title={t('candidateProfilePage.skills.sectionTitle')} description={t('candidateProfilePage.skills.sectionDesc')} />
@@ -1130,6 +1160,7 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* Expériences */}
           <Card>
             <CardContent className="p-6">
               <SectionHeader
@@ -1174,6 +1205,7 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* Éducation */}
           <Card>
             <CardContent className="p-6">
               <SectionHeader
@@ -1218,32 +1250,19 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* Liens dynamiques (EditableLinks) */}
           <Card>
             <CardContent className="p-6">
-              <SectionHeader icon={Globe} title={t('candidateProfilePage.links.sectionTitle')} description={t('candidateProfilePage.links.sectionDesc')} />
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Link className="w-4 h-4 inline mr-1" />{t('candidateProfilePage.links.linkedin')}
-                  </label>
-                  <Input
-                    value={candidateInfo.linkedin_url}
-                    onChange={(e) => setCandidateInfo({ ...candidateInfo, linkedin_url: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Globe className="w-4 h-4 inline mr-1" />{t('candidateProfilePage.links.portfolio')}
-                  </label>
-                  <Input
-                    value={candidateInfo.portfolio_url}
-                    onChange={(e) => setCandidateInfo({ ...candidateInfo, portfolio_url: e.target.value })}
-                  />
-                </div>
-              </div>
+              <SectionHeader
+                icon={Link}
+                title={t('candidateProfilePage.links.sectionTitle')}
+                description={t('candidateProfilePage.links.sectionDesc')}
+              />
+              <EditableLinks links={links} onChange={setLinks} />
             </CardContent>
           </Card>
 
+          {/* Salaire souhaité */}
           <Card>
             <CardContent className="p-6">
               <SectionHeader icon={Briefcase} title={t('candidateProfilePage.salary.sectionTitle')} description={t('candidateProfilePage.salary.sectionDesc')} />

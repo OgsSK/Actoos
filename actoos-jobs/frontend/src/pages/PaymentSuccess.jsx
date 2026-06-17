@@ -81,7 +81,8 @@ const PaymentSuccess = () => {
             <>
               <Zap className="w-8 h-8 text-blue-500 mx-auto mb-2" />
               <h2 className="text-xl font-bold text-slate-900 mb-2">{t('paymentSuccess.boost.title')}</h2>
-              <p className="text-slate-600 mb-4">
+              {/* Correction : <p> remplacé par <div> car il contient un <Badge> (élément bloc) */}
+              <div className="text-slate-600 mb-4">
                 <Trans
                   i18nKey="paymentSuccess.boost.message"
                   values={{ packageName }}
@@ -89,7 +90,7 @@ const PaymentSuccess = () => {
                     badge: <Badge className="bg-blue-100 text-blue-700" />
                   }}
                 />
-              </p>
+              </div>
               {amount > 0 && (
                 <p className="text-sm text-slate-500 mb-6">
                   {t('paymentSuccess.amountPaidLabel')}{' '}
@@ -112,7 +113,8 @@ const PaymentSuccess = () => {
           ) : (
             <>
               <h2 className="text-xl font-bold text-slate-900 mb-2">{t('paymentSuccess.subscription.title')}</h2>
-              <p className="text-slate-600 mb-4">
+              {/* Correction : <p> remplacé par <div> car il contient un <Badge> */}
+              <div className="text-slate-600 mb-4">
                 <Trans
                   i18nKey="paymentSuccess.subscription.message"
                   values={{ packageName }}
@@ -120,7 +122,7 @@ const PaymentSuccess = () => {
                     badge: <Badge className="bg-blue-100 text-blue-700" />
                   }}
                 />
-              </p>
+              </div>
               {amount > 0 && (
                 <p className="text-sm text-slate-500 mb-6">
                   {t('paymentSuccess.amountPaidLabel')}{' '}

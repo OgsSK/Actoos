@@ -45,12 +45,12 @@ const CompaniesPage = () => {
     try {
       let query = supabase
         .from('companies')
-        .select(`*,
-          city:cities(name)
-        `)
+        .select(`*, city:cities(name)`)
         .eq('is_active', true)
         .eq('is_verified', true)
-        .order('created_at', { ascending: false });
+        // Tri : Business en premier, puis Pro, puis Free, puis ordre alphabétique
+        .order('subscription_plan', { ascending: false })
+        .order('name');
 
       if (searchQuery) {
         query = query.ilike('name', `%${searchQuery}%`);
@@ -161,10 +161,21 @@ const CompaniesPage = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      {/* Section modifiée : badges Pro et Premium */}
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-slate-900 truncate">
                           {company.name}
                         </h3>
+                        {company.subscription_plan === 'pro' && (
+                          <Badge className="ml-2 bg-blue-100 text-blue-700 border-blue-200">
+                            Pro
+                          </Badge>
+                        )}
+                        {company.subscription_plan === 'business' && (
+                          <Badge className="ml-2 bg-purple-100 text-purple-700 border-purple-200">
+                            ⭐ {t('common.premium')}
+                          </Badge>
+                        )}
                         {company.is_verified && (
                           <CheckCircle className="w-4 h-4 text-blue-500 shrink-0" />
                         )}

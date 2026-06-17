@@ -10,7 +10,8 @@ import httpx
 import base64
 from pathlib import Path
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import uuid
 
 env_path = Path(__file__).parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -53,6 +54,18 @@ BOOST_PACKAGES = {
     "featured": {"amount": 49990, "name": "À la une (30 jours)", "days": 30},
 }
 payment_transactions = {}
+
+# Limites des plans
+PLAN_LIMITS_CONFIG = {
+    "free": {"jobs": 3, "members": 1, "expiration_days": 15},
+    "pro": {"jobs": 25, "members": 5, "expiration_days": 30},
+    "business": {"jobs": float("inf"), "members": float("inf"), "expiration_days": 60},
+    "enterprise": {"jobs": float("inf"), "members": float("inf"), "expiration_days": 90},
+}
+
+def get_plan_limit_static(plan, attribute):
+    plan_data = PLAN_LIMITS_CONFIG.get(plan, PLAN_LIMITS_CONFIG["free"])
+    return plan_data.get(attribute, PLAN_LIMITS_CONFIG["free"][attribute])
 
 # ----- Modèles -----
 class CheckoutRequest(BaseModel):
@@ -218,6 +231,31 @@ class SendRoleChangeEmailRequest(BaseModel):
     action: str
     requested_role: str
     admin_message: Optional[str] = None
+
+# ----- Modèles pour la gestion d'équipe (v2 – sans token) -----
+class TeamInviteRequest(BaseModel):
+    company_id: str
+    email: str
+    role: str = "recruiter"       # admin, recruiter, viewer
+    inviter_id: str               # ID de l'utilisateur qui invite
+
+class TeamUpdateRoleRequest(BaseModel):
+    user_id: str                  # ID de l'utilisateur qui fait la modification
+    company_id: Optional[str] = None  # ← désormais optionnel
+    role: str                     # nouveau rôle
+
+class TeamRemoveRequest(BaseModel):
+    user_id: str                  # ID de l'utilisateur qui retire
+    company_id: str
+
+class TeamLeaveRequest(BaseModel):
+    user_id: str                  # ID du membre qui quitte
+    company_id: str
+
+# Modèle pour l'acceptation d'invitation (inchangé, pas de token d'auth)
+class AcceptInvitationRequest(BaseModel):
+    token: str
+    user_id: str
 
 def clean_subject(text: str, max_length: int = 50) -> str:
     cleaned = text.replace('\n', ' ').replace('\r', ' ')
@@ -450,6 +488,59 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
     if checkout_request.metadata:
         metadata.update(checkout_request.metadata)
 
+    # ========== VÉRIFICATION DOWNGRADE ==========
+    user_id = checkout_request.user_id
+    if user_id and package_id in SUBSCRIPTION_PLANS:
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        if supabase_url and supabase_key:
+            headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+            company_resp = httpx.get(
+                f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id,subscription_plan",
+                headers=headers
+            )
+            companies = company_resp.json()
+            if companies:
+                company = companies[0]
+                current_plan = company.get("subscription_plan", "free")
+
+                target_plan = "free"
+                if "pro" in package_id:
+                    target_plan = "pro"
+                elif "business" in package_id:
+                    target_plan = "business"
+
+                plan_rank = {"free": 0, "pro": 1, "business": 2, "enterprise": 3}
+                if plan_rank.get(target_plan, 0) < plan_rank.get(current_plan, 0):
+                    # Compter les offres actives
+                    jobs_resp = httpx.get(
+                        f"{supabase_url}/rest/v1/jobs?company_id=eq.{company['id']}&status=eq.active&select=id",
+                        headers={**headers, "Prefer": "count=exact"}
+                    )
+                    active_jobs = 0
+                    if "content-range" in jobs_resp.headers:
+                        active_jobs = int(jobs_resp.headers["content-range"].split("/")[1])
+
+                    target_limit = get_plan_limit_static(target_plan, "jobs")
+
+                    if active_jobs > target_limit:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"DOWNGRADE_BLOCKED:{active_jobs}:{target_limit}"
+                        )
+    # ========== FIN VÉRIFICATION DOWNGRADE ==========
+
+    # ✅ Langue Stripe – détection de la locale supportée
+    STRIPE_LOCALES = {
+        'ar', 'bg', 'cs', 'da', 'de', 'el', 'en', 'es', 'et', 'fi', 'fil',
+        'fr', 'he', 'hr', 'hu', 'id', 'it', 'ja', 'ko', 'lt', 'lv', 'ms',
+        'mt', 'nb', 'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sv', 'th',
+        'tr', 'vi', 'zh'
+    }
+
+    user_language = get_user_language(checkout_request.user_email or "")
+    stripe_locale = user_language if user_language in STRIPE_LOCALES else 'auto'
+
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -458,6 +549,7 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
             success_url=success_url,
             cancel_url=cancel_url,
             metadata=metadata,
+            locale=stripe_locale,
         )
         payment_transactions[session.id] = {
             "session_id": session.id,
@@ -471,7 +563,6 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
         return {"url": session.url, "session_id": session.id}
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 @app.get("/api/checkout/status/{session_id}")
 async def get_checkout_status(session_id: str):
     if not stripe.api_key:
@@ -583,12 +674,32 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
             raise HTTPException(status_code=404, detail="Entreprise non trouvée")
         company = companies[0]
         previous_plan = company.get("subscription_plan", "free")
+
+        # ✅ Vérification downgrade vers Gratuit
+        if previous_plan != "free":
+            jobs_resp = httpx.get(
+                f"{supabase_url}/rest/v1/jobs?company_id=eq.{company['id']}&status=eq.active&select=id",
+                headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}", "Prefer": "count=exact"}
+            )
+            active_jobs = 0
+            if "content-range" in jobs_resp.headers:
+                active_jobs = int(jobs_resp.headers["content-range"].split("/")[1])
+
+            free_limit = get_plan_limit_static("free", "jobs")
+            if active_jobs > free_limit:
+                print(f"[DOWNGRADE] Blocage : active={active_jobs}, limit={free_limit}")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"DOWNGRADE_BLOCKED:{active_jobs}:{free_limit}"
+                )
+
         subscription_id = company.get("stripe_subscription_id")
         if subscription_id and not subscription_id.startswith("sub_test"):
             try:
                 stripe.Subscription.delete(subscription_id)
             except stripe.error.InvalidRequestError as e:
                 print(f"Stripe subscription already deleted or invalid: {e}")
+
         httpx.patch(
             f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
             json={
@@ -603,7 +714,6 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
         return {"success": True, "message": "Abonnement résilié avec succès."}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 # ----- Portail client Stripe -----
 @app.post("/api/stripe/portal")
 async def stripe_portal(request: Request):
@@ -939,12 +1049,12 @@ async def get_candidate_public_profile(candidate_id: str):
             "preferred_contract_types": profile.get("preferred_contract_types") or [],
             "is_available": profile.get("is_available", True),
             "is_open_to_remote": profile.get("is_open_to_remote", False),
+            "links": profile.get("links") or [],          # ← AJOUTÉ
         }
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/api/notify-status-change")
 async def notify_status_change(req: NotifyStatusChangeRequest):
     if not resend.api_key:
@@ -1081,6 +1191,360 @@ async def send_job_alerts():
 
     return {"success": True, "message": f"Emails envoyés pour {count_sent}/{len(alerts)} alerte(s)."}
 
+# =============== GESTION D'ÉQUIPE (v2 – sans token) ===============
+
+@app.get("/api/team/members")
+async def get_team_members_v2(company_id: str, user_id: str):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Vérification des droits
+    owner_check = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id",
+        headers=headers
+    )
+    is_owner = len(owner_check.json()) > 0
+    if not is_owner:
+        member_check = httpx.get(
+            f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&user_id=eq.{user_id}&role=eq.admin&select=id",
+            headers=headers
+        )
+        if len(member_check.json()) == 0:
+            raise HTTPException(status_code=403, detail="Accès refusé")
+
+    members_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&select=id,user:users(id,email,first_name,last_name,avatar_url),role,status,invitation_token",
+        headers=headers
+    )
+    raw_members = members_resp.json()
+
+    clean_members = []
+    for m in raw_members:
+        user_obj = m.get("user")
+        if isinstance(user_obj, list) and len(user_obj) > 0:
+            user_obj = user_obj[0]
+        if not isinstance(user_obj, dict):
+            user_obj = {}
+
+        clean_members.append({
+            "id": str(m.get("id") or ""),
+            "role": str(m.get("role") or "viewer"),
+            "status": str(m.get("status") or "active"),
+            "user_id": str(m.get("user_id") or ""),
+            "invitation_token": str(m.get("invitation_token") or ""),
+            "invitation_email": str(m.get("invitation_email") or ""),
+            "user": {
+                "id": str(user_obj.get("id") or ""),
+                "email": str(user_obj.get("email") or ""),
+                "first_name": str(user_obj.get("first_name") or ""),
+                "last_name": str(user_obj.get("last_name") or ""),
+                "avatar_url": str(user_obj.get("avatar_url") or ""),
+            }
+        })
+
+    return clean_members
+
+
+@app.post("/api/team/invite")
+async def invite_team_member_v2(req: TeamInviteRequest):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Vérifier les droits de l'inviteur (inviter_id dans le body)
+    inviter_id = req.inviter_id
+    owner_check = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&owner_id=eq.{inviter_id}&select=id,name",
+        headers=headers
+    )
+    companies = owner_check.json()
+    is_owner = len(companies) > 0
+    company_name = companies[0]["name"] if is_owner else ""
+
+    if not is_owner:
+        member_check = httpx.get(
+            f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&user_id=eq.{inviter_id}&role=eq.admin&select=id",
+            headers=headers
+        )
+        if len(member_check.json()) == 0:
+            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent inviter des membres")
+        # récupérer le nom de l'entreprise si pas owner
+        comp_info = httpx.get(
+            f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&select=name",
+            headers=headers
+        )
+        comp_json = comp_info.json()
+        company_name = comp_json[0]["name"] if comp_json else ""
+
+    # Vérifier les limites du plan
+    plan_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&select=subscription_plan",
+        headers=headers
+    )
+    plan = plan_resp.json()[0].get("subscription_plan", "free")
+    max_members = get_plan_limit_static(plan, "members")
+
+    count_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&select=id",
+        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}", "Prefer": "count=exact"}
+    )
+    current_count = 0
+    if "content-range" in count_resp.headers:
+        current_count = int(count_resp.headers["content-range"].split("/")[1])
+    if current_count >= max_members:
+        raise HTTPException(status_code=400, detail=f"Limite de {max_members} membres atteinte. Passez au plan supérieur.")
+
+    # Chercher l'utilisateur par email
+    user_to_invite = httpx.get(
+        f"{supabase_url}/rest/v1/users?email=eq.{req.email}&select=id,email,first_name,last_name",
+        headers=headers
+    )
+    users = user_to_invite.json()
+
+    if users:
+        # Utilisateur existant
+        invited_user = users[0]
+        # Vérifier s'il est déjà membre
+        existing = httpx.get(
+            f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&user_id=eq.{invited_user['id']}&select=id",
+            headers=headers
+        )
+        if len(existing.json()) > 0:
+            raise HTTPException(status_code=400, detail="Cet utilisateur est déjà membre de l'entreprise")
+
+        valid_roles = ["admin", "recruiter", "viewer"]
+        if req.role not in valid_roles:
+            req.role = "recruiter"
+
+        insert_resp = httpx.post(
+            f"{supabase_url}/rest/v1/company_members",
+            json={
+                "company_id": req.company_id,
+                "user_id": invited_user["id"],
+                "role": req.role,
+                "status": "active"
+            },
+            headers={**headers, "Prefer": "return=representation"}
+        )
+        if insert_resp.status_code not in (200, 201):
+            raise HTTPException(status_code=500, detail=f"Erreur ajout membre : {insert_resp.text}")
+
+        # (Optionnel : envoyer un email de bienvenue)
+        return {"success": True, "member": insert_resp.json()}
+    else:
+        # Utilisateur inexistant → invitation par email
+        import uuid
+        token_str = str(uuid.uuid4())
+
+        valid_roles = ["admin", "recruiter", "viewer"]
+        if req.role not in valid_roles:
+            req.role = "recruiter"
+
+        insert_resp = httpx.post(
+            f"{supabase_url}/rest/v1/company_members",
+            json={
+                "company_id": req.company_id,
+                "user_id": None,
+                "role": req.role,
+                "status": "pending",
+                "invitation_token": token_str
+            },
+            headers={**headers, "Prefer": "return=representation"}
+        )
+        if insert_resp.status_code not in (200, 201):
+            raise HTTPException(status_code=500, detail=f"Erreur création invitation : {insert_resp.text}")
+
+        # Envoi de l'email d'invitation
+        invitation_link = f"https://jobs.actoos.com/invitation?token={token_str}"
+        lang = get_user_language(req.email)  # on détecte la langue de l'invité
+        if lang == 'en':
+            subject = f"You've been invited to join {company_name} on Actoos Jobs"
+            html = f"""
+            <h2>Hello!</h2>
+            <p>You have been invited to join <strong>{company_name}</strong> on Actoos Jobs as a {req.role}.</p>
+            <p>Click the link below to create your account and accept the invitation:</p>
+            <p><a href="{invitation_link}">{invitation_link}</a></p>
+            <p>This invitation will expire in 7 days.</p>
+            """
+        else:
+            subject = f"Invitation à rejoindre {company_name} sur Actoos Jobs"
+            html = f"""
+            <h2>Bonjour !</h2>
+            <p>Vous avez été invité(e) à rejoindre <strong>{company_name}</strong> sur Actoos Jobs en tant que {req.role}.</p>
+            <p>Cliquez sur le lien ci-dessous pour créer votre compte et accepter l'invitation :</p>
+            <p><a href="{invitation_link}">{invitation_link}</a></p>
+            <p>Cette invitation expire dans 7 jours.</p>
+            """
+        try:
+            resend.Emails.send({
+                "from": "Actoos Jobs <noreply@actoos.com>",
+                "to": [req.email],
+                "subject": subject,
+                "html": html
+            })
+        except Exception as e:
+            print(f"Erreur envoi email invitation: {e}")
+
+        return {"success": True, "message": "Invitation envoyée par email."}
+
+
+@app.post("/api/team/accept-invitation")
+async def accept_invitation_v2(request: Request):
+    """Accepte une invitation après inscription – inchangé (utilise le token de l'URL)."""
+    data = await request.json()
+    token = data.get("token")
+    user_id = data.get("user_id")
+
+    if not token or not user_id:
+        raise HTTPException(status_code=400, detail="Token et user_id requis")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    inv_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_members?invitation_token=eq.{token}&status=eq.pending&select=id,company_id,role",
+        headers=headers
+    )
+    invitations = inv_resp.json()
+    if not invitations:
+        raise HTTPException(status_code=404, detail="Invitation introuvable ou déjà utilisée.")
+
+    invitation = invitations[0]
+
+    update_resp = httpx.patch(
+        f"{supabase_url}/rest/v1/company_members?id=eq.{invitation['id']}",
+        json={
+            "user_id": user_id,
+            "status": "active",
+            "invitation_token": None
+        },
+        headers=headers
+    )
+    if update_resp.status_code != 200:
+        raise HTTPException(status_code=500, detail="Erreur lors de l'activation du membre.")
+
+    return {"success": True, "company_id": invitation["company_id"]}
+
+
+@app.put("/api/team/members/{member_id}/role")
+async def update_member_role_v2(member_id: str, req: TeamUpdateRoleRequest):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Récupérer le membre pour obtenir son company_id si non fourni
+    member_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}&select=company_id,user_id",
+        headers=headers
+    )
+    members = member_resp.json()
+    if not members:
+        raise HTTPException(status_code=404, detail="Membre non trouvé")
+    company_id = req.company_id or members[0]["company_id"]
+
+    # AJOUT : Interdire la modification du rôle du propriétaire
+    is_owner_target = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{members[0]['user_id']}&select=id",
+        headers=headers
+    )
+    if len(is_owner_target.json()) > 0:
+        raise HTTPException(status_code=403, detail="Impossible de modifier le rôle du propriétaire")
+
+    # Vérifier les droits de l'utilisateur qui fait la modification
+    owner_check = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{req.user_id}&select=id",
+        headers=headers
+    )
+    is_owner = len(owner_check.json()) > 0
+    if not is_owner:
+        admin_check = httpx.get(
+            f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&user_id=eq.{req.user_id}&role=eq.admin&select=id",
+            headers=headers
+        )
+        if len(admin_check.json()) == 0:
+            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent changer les rôles")
+
+    valid_roles = ["admin", "recruiter", "viewer"]
+    if req.role not in valid_roles:
+        raise HTTPException(status_code=400, detail="Rôle invalide")
+
+    httpx.patch(
+        f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}",
+        json={"role": req.role},
+        headers=headers
+    )
+    return {"success": True}
+
+
+@app.delete("/api/team/members/{member_id}")
+async def remove_team_member_v2(member_id: str, req: TeamRemoveRequest):
+    """Retire un membre de l'entreprise (admin ou propriétaire)."""
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Récupérer les infos du membre
+    member_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}&select=company_id,user_id",
+        headers=headers
+    )
+    members = member_resp.json()
+    if not members:
+        raise HTTPException(status_code=404, detail="Membre non trouvé")
+    target_company_id = members[0]["company_id"]
+
+    # Vérifier les droits de l'utilisateur qui retire
+    owner_check = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{target_company_id}&owner_id=eq.{req.user_id}&select=id",
+        headers=headers
+    )
+    is_owner = len(owner_check.json()) > 0
+    if not is_owner:
+        admin_check = httpx.get(
+            f"{supabase_url}/rest/v1/company_members?company_id=eq.{target_company_id}&user_id=eq.{req.user_id}&role=eq.admin&select=id",
+            headers=headers
+        )
+        if len(admin_check.json()) == 0:
+            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent retirer des membres")
+
+    httpx.delete(
+        f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}",
+        headers=headers
+    )
+    return {"success": True}
+
+
+@app.post("/api/team/leave")
+async def leave_company_v2(req: TeamLeaveRequest):
+    """Un membre quitte l'entreprise de son propre chef."""
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Vérifier que l'utilisateur est bien membre de cette entreprise
+    member_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&user_id=eq.{req.user_id}&select=id",
+        headers=headers
+    )
+    if len(member_resp.json()) == 0:
+        raise HTTPException(status_code=404, detail="Vous n'êtes pas membre de cette entreprise")
+
+    # Empêcher le propriétaire de se retirer lui-même
+    owner_check = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&owner_id=eq.{req.user_id}&select=id",
+        headers=headers
+    )
+    if len(owner_check.json()) > 0:
+        raise HTTPException(status_code=400, detail="Le propriétaire ne peut pas quitter l'entreprise. Veuillez transférer la propriété d'abord.")
+
+    httpx.delete(
+        f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&user_id=eq.{req.user_id}",
+        headers=headers
+    )
+    return {"success": True}
+
 # ----- Admin -----
 @app.delete("/api/applications/{application_id}")
 async def delete_application(application_id: str, request: Request):
@@ -1192,18 +1656,6 @@ async def notify_admin_new_company(req: NewCompanyNotificationRequest):
         return {"success": True, "message": "Notification envoyée à l'administrateur"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Email service not configured")
-    try:
-        resend.Emails.send({
-            "from": "Actoos Jobs <noreply@actoos.com>",
-            "to": ["contact@actoos.com"],
-            "subject": f"Nouvelle entreprise à valider : {req.company_name}",
-            "html": f"<h2>Nouvelle entreprise en attente de validation</h2><p><strong>Entreprise :</strong> {req.company_name}</p><p><strong>Propriétaire :</strong> {req.owner_name} ({req.owner_email})</p><p><a href=\"https://jobs.actoos.com/admin\">Accéder au dashboard admin</a></p>"
-        })
-        return {"success": True, "message": "Notification envoyée à l'administrateur"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/notify-admin-new-job")
 async def notify_admin_new_job(req: NotifyAdminNewJobRequest):
@@ -1211,7 +1663,7 @@ async def notify_admin_new_job(req: NotifyAdminNewJobRequest):
         raise HTTPException(status_code=500, detail="Email service not configured")
     try:
         admin_email = "contact@actoos.com"
-        lang = get_user_language(admin_email)  # détecter la langue de l'admin
+        lang = get_user_language(admin_email)
         if lang == 'en':
             subject = f"New job to validate: {req.job_title}"
             html = f"""
@@ -1228,25 +1680,11 @@ async def notify_admin_new_job(req: NotifyAdminNewJobRequest):
                 <p><strong>Entreprise :</strong> {req.company_name} ({req.company_email})</p>
                 <p><a href="https://jobs.actoos.com/admin">Accéder au dashboard admin</a></p>
             """
-
         resend.Emails.send({
             "from": "Actoos Jobs <noreply@actoos.com>",
             "to": [admin_email],
             "subject": subject,
             "html": html
-        })
-        return {"success": True, "message": "Notification envoyée à l'administrateur"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Email service not configured")
-    try:
-        resend.Emails.send({
-            "from": "Actoos Jobs <noreply@actoos.com>",
-            "to": ["contact@actoos.com"],
-            "subject": f"Nouvelle offre à valider : {req.job_title}",
-            "html": f"<h2>Nouvelle offre en attente de validation</h2><p><strong>Offre :</strong> {req.job_title}</p><p><strong>Entreprise :</strong> {req.company_name} ({req.company_email})</p><p><a href=\"https://jobs.actoos.com/admin\">Accéder au dashboard admin</a></p>"
         })
         return {"success": True, "message": "Notification envoyée à l'administrateur"}
     except Exception as e:
@@ -1287,7 +1725,6 @@ async def admin_delete_company(company_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.delete("/api/company/delete")
 async def delete_own_company(request: Request):
     data = await request.json()
@@ -1321,7 +1758,7 @@ async def delete_own_company(request: Request):
     # Envoyer un email de confirmation
     owner = company.get("owner")
     if isinstance(owner, list) and len(owner) > 0:
-        owner = owner[0]  # au cas où la relation renvoie un tableau
+        owner = owner[0]
 
     owner_email = owner.get("email") if owner else None
     if owner_email and resend.api_key:
@@ -1347,7 +1784,6 @@ async def delete_own_company(request: Request):
             print(f"Email error: {e}")
 
     return {"success": True, "message": "Entreprise supprimée"}
-
 
 @app.delete("/api/admin/delete-user/{user_id}")
 async def admin_delete_user(user_id: str):
@@ -2043,6 +2479,7 @@ async def activate_free_boost(request: Request):
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
 
+    # 1. Récupérer l'entreprise
     company_resp = httpx.get(
         f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id,subscription_plan,last_free_boost_at",
         headers=headers
@@ -2055,13 +2492,15 @@ async def activate_free_boost(request: Request):
     if company["subscription_plan"] != "business":
         raise HTTPException(status_code=403, detail="Réservé au plan Business")
 
-    now = datetime.utcnow()
+    # 2. Vérifier la fréquence mensuelle (maintenant compatible fuseau horaire)
+    now = datetime.now(timezone.utc)          # ← datetime OFFSET-AWARE
     last_boost = company.get("last_free_boost_at")
     if last_boost:
         last_boost_dt = datetime.fromisoformat(last_boost.replace("Z", "+00:00"))
         if now - last_boost_dt < timedelta(days=30):
-            raise HTTPException(status_code=400, detail="Boost déjà utilisé ce mois")
+            raise HTTPException(status_code=429, detail="BOOST_ALREADY_USED")
 
+    # 3. Vérifier l'offre
     job_resp = httpx.get(
         f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=id,status,company_id",
         headers=headers
@@ -2070,13 +2509,13 @@ async def activate_free_boost(request: Request):
     if not jobs or jobs[0]["status"] != "active" or jobs[0]["company_id"] != company["id"]:
         raise HTTPException(status_code=404, detail="Offre non trouvée ou non active")
 
+    # 4. Appliquer le boost
     boosted_until = now + timedelta(days=7)
     httpx.patch(
         f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}",
         json={"boosted_until": boosted_until.isoformat()},
         headers=headers
     )
-
     httpx.patch(
         f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
         json={"last_free_boost_at": now.isoformat()},

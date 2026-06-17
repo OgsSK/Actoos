@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
@@ -27,6 +27,7 @@ const RegisterPage = () => {
   const { t } = useTranslation();
   const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [step, setStep] = useState(1);
   const [role, setRole] = useState('candidate');
@@ -42,6 +43,19 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // 🔥 Synchronisation avec l'URL (type=entreprise)
+  useEffect(() => {
+    const type = searchParams.get('type');
+    if (type === 'entreprise') {
+      setStep(2);
+      setRole('company');
+    } else {
+      // Revenir à l'écran de choix si le paramètre n'est plus présent
+      setStep(1);
+      setRole('candidate');
+    }
+  }, [searchParams]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
