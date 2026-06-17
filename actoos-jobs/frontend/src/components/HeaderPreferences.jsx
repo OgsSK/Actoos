@@ -46,7 +46,7 @@ const HeaderPreferences = ({ isMobile = false, isTransparent = false }) => {
   const selectClasses = cn(
     'bg-transparent text-slate-600 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all',
     isMobile
-      ? 'px-1.5 py-0.5 text-xs border-slate-300 max-w-[90px] truncate'
+      ? 'px-1.5 py-0.5 text-xs border-slate-300 max-w-[70px]' // réduit pour mobile
       : 'px-2 py-1'
   );
 
