@@ -485,42 +485,7 @@
     },
     "amountPaidLabel": "Montante pago:"
   },
-  "privacyPolicy": {
-    "title": "Política de Privacidade",
-    "back": "Voltar",
-    "lastUpdate": "Última atualização: maio de 2026",
-    "sections": {
-      "intro": {
-        "title": "Introdução",
-        "content": "Na Actoos Jobs, levamos muito a sério a proteção dos seus dados pessoais. Esta política de privacidade explica como recolhemos, utilizamos e protegemos as suas informações quando utiliza a nossa plataforma."
-      },
-      "dataCollected": {
-        "title": "Dados recolhidos",
-        "content": "Recolhemos as informações que nos fornece diretamente, como o seu nome, endereço de email, CV e quaisquer outras informações relacionadas com o seu perfil de candidato ou empresa."
-      },
-      "dataUsage": {
-        "title": "Utilização dos dados",
-        "content": "Os seus dados são utilizados para o conectar com empregadores ou candidatos, melhorar os nossos serviços e enviar-lhe comunicações relacionadas com a sua conta ou as nossas ofertas."
-      },
-      "dataSharing": {
-        "title": "Partilha de dados",
-        "content": "Nunca vendemos os seus dados pessoais. Eles podem ser partilhados com recrutadores no âmbito da sua procura de emprego, apenas com o seu consentimento."
-      },
-      "security": {
-        "title": "Segurança",
-        "content": "Implementamos medidas de segurança técnicas e organizacionais para proteger os seus dados contra acessos não autorizados."
-      },
-      "yourRights": {
-        "title": "Os seus direitos",
-        "content": "De acordo com a regulamentação em vigor, tem o direito de acesso, retificação e eliminação dos seus dados. Para exercer estes direitos, contacte-nos em <a>{email}</a>."
-      },
-      "contact": {
-        "title": "Contacto",
-        "content": "Para qualquer questão relativa a esta política, escreva-nos para <a>{email}</a>."
-      }
-    },
-    "contactEmail": "contact@actoos.com"
-  },
+ 
   "register": {
     "title": "Criar uma conta",
     "chooseProfile": "Escolha o seu tipo de perfil",
@@ -954,63 +919,7 @@
       "error": "Erro"
     }
   },
-  "cookies": {
-    "title": "Política de Cookies",
-    "back": "Voltar",
-    "lastUpdate": "Última atualização: maio de 2026",
-    "contactEmail": "contact@actoos.com",
-    "sections": {
-      "whatIsCookie": {
-        "title": "1. O que é um cookie?",
-        "content": "Um cookie é um pequeno ficheiro de texto armazenado no seu dispositivo (computador, telefone, tablet) quando visita um site. Os cookies permitem que o site reconheça o seu dispositivo e memorize certas informações sobre as suas preferências ou ações passadas."
-      },
-      "cookieTypes": {
-        "title": "2. Tipos de cookies utilizados",
-        "subsections": [
-          {
-            "title": "Cookies essenciais",
-            "content": "Necessários ao funcionamento da Plataforma. Permitem utilizar as funcionalidades básicas como a ligação segura e a navegação entre páginas.",
-            "duration": "Duração: Sessão"
-          },
-          {
-            "title": "Cookies de preferência",
-            "content": "Permitem memorizar as suas preferências (idioma, região, configurações de visualização) para personalizar a sua experiência.",
-            "duration": "Duração: 1 ano"
-          },
-          {
-            "title": "Cookies analíticos",
-            "content": "Ajudam-nos a compreender como os visitantes interagem com o nosso site, recolhendo informações anónimas sobre as páginas visitadas e o tempo gasto.",
-            "duration": "Duração: 2 anos"
-          },
-          {
-            "title": "Cookies de marketing",
-            "content": "Utilizados para rastrear os visitantes nos sites e apresentar anúncios relevantes e interessantes para o utilizador.",
-            "duration": "Duração: 6 meses"
-          }
-        ]
-      },
-      "thirdParty": {
-        "title": "3. Cookies de terceiros",
-        "content": "Utilizamos serviços de terceiros que podem instalar cookies:\n- Google Analytics - Análise de tráfego\n- Supabase - Autenticação e serviços backend\n- Stripe - Processamento de pagamentos (para ofertas premium)"
-      },
-      "manageCookies": {
-        "title": "4. Gerir cookies",
-        "content": "Pode controlar e/ou eliminar os cookies como desejar:\n- Através das definições do seu navegador\n- Utilizando o nosso banner de consentimento de cookies\n- Instalando extensões de bloqueio de cookies\n\nNota: A desativação de certos cookies pode afetar a sua experiência na Plataforma."
-      },
-      "browserSettings": {
-        "title": "5. Definições do navegador",
-        "content": "Eis como gerir os cookies nos principais navegadores:\n- Chrome: Definições > Privacidade e segurança > Cookies\n- Firefox: Opções > Privacidade e segurança > Cookies\n- Safari: Preferências > Privacidade > Cookies\n- Edge: Definições > Privacidade > Cookies"
-      },
-      "changes": {
-        "title": "6. Modificações",
-        "content": "Podemos atualizar esta política de cookies para refletir alterações nas nossas práticas ou por outras razões operacionais, legais ou regulamentares."
-      },
-      "contact": {
-        "title": "7. Contacto",
-        "content": "Para qualquer questão sobre a nossa utilização de cookies, contacte-nos em: <a>{{email}}</a>"
-      }
-    }
-  },
+  
   "contact": {
     "title": "Contacte-nos",
     "subtitle": "Uma pergunta, uma sugestão? Estamos à sua escuta.",
@@ -2571,7 +2480,269 @@
   "GNF": "Franco guineense (FG)",
   "CDF": "Franco congolês (FC)",
   "MGA": "Ariary malgaxe (Ar)"
-}
+},
+"cgu": {
+    "back": "Voltar",
+    "title": "Condições Gerais de Utilização",
+    "subtitle": "As regras que enquadram a utilização da nossa plataforma.",
+    "lastUpdate": "Última atualização: 1 de janeiro de 2025",
+    "contactEmail": "contact@actoos.com",
+    "contact": "Contacto",
+    "contactText": "Para qualquer questão relativa a estas CGU, pode escrever-nos para: <a>{{email}}</a>",
+    "sections": [
+      {
+        "title": "1. Objeto",
+        "content": "As presentes Condições Gerais de Utilização (doravante « CGU ») têm por objeto definir as modalidades de disponibilização do sítio web Actoos e dos seus serviços associados, bem como as condições de acesso e utilização do serviço pelo Utilizador.\n\nQualquer utilização do sítio implica a aceitação sem reservas e o cumprimento da totalidade das presentes CGU. Estas constituem o contrato entre o serviço e o Utilizador."
+      },
+      {
+        "title": "2. Acesso ao serviço",
+        "content": "O acesso ao sítio Actoos é gratuito e aberto a qualquer pessoa com ligação à Internet. Os custos de acesso e comunicação são da exclusiva responsabilidade do Utilizador.\n\nO sítio está acessível 24 horas por dia, 7 dias por semana, exceto por interrupção programada ou motivo de força maior. A Actoos reserva-se o direito de suspender temporariamente o acesso para operações de manutenção, sem aviso prévio."
+      },
+      {
+        "title": "3. Inscrição e conta de utilizador",
+        "content": "Para aceder a determinadas funcionalidades (publicação de ofertas, candidatura, mensagens), o Utilizador deve criar uma conta pessoal fornecendo informações exatas e atualizadas. O Utilizador é o único responsável pela confidencialidade do seu nome de utilizador e palavra-passe.\n\nQualquer utilização fraudulenta da conta deve ser imediatamente comunicada a <a>{{email}}</a>. A Actoos não poderá ser responsabilizada por perdas ou danos resultantes da utilização não autorizada da conta."
+      },
+      {
+        "title": "4. Compromissos dos utilizadores",
+        "content": "O Utilizador compromete-se a:\n• Não publicar conteúdo ilegal, difamatório, discriminatório ou contrário à ordem pública.\n• Não usurpar a identidade de terceiros ou prestar informações falsas.\n• Não perturbar o bom funcionamento do sítio (vírus, spam, pirataria, etc.).\n• Respeitar os direitos de propriedade intelectual da Actoos e de terceiros.\n\nQualquer incumprimento poderá implicar a suspensão ou eliminação imediata da conta, sem prejuízo de procedimento judicial."
+      },
+      {
+        "title": "5. Ofertas de emprego e candidaturas",
+        "content": "Os empregadores são responsáveis pelo conteúdo das ofertas de emprego que publicam (título, descrição, salário, etc.). A Actoos reserva-se o direito de moderar ou retirar qualquer oferta que não cumpra a legislação em vigor ou as presentes CGU.\n\nOs candidatos são responsáveis pelas informações que fornecem (CV, carta de apresentação). A Actoos não garante a exatidão das ofertas nem a obtenção de uma resposta favorável a uma candidatura. Não se estabelece qualquer relação contratual de trabalho entre o Utilizador e a Actoos através da publicação ou consulta de uma oferta."
+      },
+      {
+        "title": "6. Assinaturas e pagamentos",
+        "content": "Determinados serviços são oferecidos por assinatura paga (planos Pro, Business). Os preços podem ser consultados na página dedicada e podem ser alterados mediante aviso prévio razoável. O pagamento é efetuado online por cartão bancário através de um fornecedor seguro. A Actoos não armazena quaisquer dados bancários.\n\nO Utilizador pode cancelar a sua assinatura a qualquer momento. As condições de reembolso são especificadas no momento da subscrição. Em caso de falta de pagamento, a Actoos reserva-se o direito de suspender o acesso às funcionalidades pagas."
+      },
+      {
+        "title": "7. Propriedade intelectual",
+        "content": "Todos os elementos do sítio (textos, logótipos, gráficos, código-fonte, base de dados) são propriedade exclusiva da Actoos ou dos seus parceiros e estão protegidos pelas leis de propriedade intelectual. Qualquer reprodução, modificação, adaptação ou exploração não autorizada é estritamente proibida.\n\nAs marcas e logótipos que figuram no sítio estão registados e protegidos. O Utilizador não dispõe de qualquer direito sobre estes elementos para além da simples consulta do sítio."
+      },
+      {
+        "title": "8. Dados pessoais",
+        "content": "Os dados pessoais recolhidos são tratados em conformidade com a nossa Política de Privacidade, acessível a qualquer momento no sítio. De acordo com a lei de proteção de dados e o RGPD, o Utilizador tem o direito de acesso, retificação e eliminação dos seus dados. Para exercer estes direitos, contacte-nos através de <a>{{email}}</a>."
+      },
+      {
+        "title": "9. Responsabilidade e limitações",
+        "content": "A Actoos envidará todos os esforços para assegurar um serviço de qualidade, mas não poderá ser responsabilizada em caso de interrupção do serviço, perda de dados ou danos indiretos resultantes da utilização do sítio. O sítio pode conter hiperligações para sítios de terceiros, cujo conteúdo a Actoos não controla e pelos quais declina qualquer responsabilidade.\n\nO Utilizador utiliza o sítio por sua conta e risco. A Actoos não poderá ser responsabilizada pelas consequências de uma má interpretação de uma oferta ou candidatura."
+      },
+      {
+        "title": "10. Alteração das CGU",
+        "content": "A Actoos reserva-se o direito de modificar as presentes CGU a qualquer momento. Os utilizadores serão informados por qualquer meio adequado (email, notificação no sítio). A versão modificada entrará em vigor a partir da sua publicação online. A continuação da utilização do sítio após essa data vale como aceitação das novas CGU."
+      },
+      {
+        "title": "11. Lei aplicável e jurisdição",
+        "content": "As presentes CGU são regidas pela lei aplicável na sede social da Actoos. Em caso de litígio, as partes esforçar-se-ão por encontrar uma solução amigável antes de qualquer ação judicial. Na falta desta, o litígio será submetido aos tribunais competentes."
+      }
+    ]
+  },
+"cookies": {
+      "back": "Voltar",
+      "title": "Política de Cookies",
+      "subtitle": "Descubra como usamos cookies para melhorar a sua experiência.",
+      "lastUpdate": "Última atualização: 1 de janeiro de 2025",
+      "contact": "Contacto",
+      "contactEmail": "contact@actoos.com",
+      "contactText": "Pode contactar-nos a qualquer momento se tiver dúvidas sobre a nossa política de cookies: <a>{{email}}</a>",
+      "sections": {
+        "whatIsCookie": {
+          "title": "1. O que é um cookie?",
+          "content": "Um cookie é um pequeno ficheiro de texto armazenado no seu dispositivo (computador, tablet, telemóvel) quando consulta um site. Permite guardar informações relativas à sua navegação e melhorar a sua experiência de utilizador. Os cookies não contêm vírus e não permitem aceder a informações pessoais não autorizadas."
+        },
+        "cookieTypes": {
+          "title": "2. Tipos de cookies utilizados",
+          "subsections": [
+            {
+              "title": "Cookies estritamente necessários",
+              "content": "São indispensáveis ao bom funcionamento do site. Sem eles, algumas funcionalidades (início de sessão, segurança, carrinho) não poderiam ser garantidas. Estes cookies não armazenam dados pessoais identificáveis.\n\nExemplos: cookie de sessão, cookie de preferência de consentimento.",
+              "duration": "Duração: sessão ou 12 meses (cookie de consentimento)."
+            },
+            {
+              "title": "Cookies de desempenho e análise",
+              "content": "Ajudam-nos a compreender como os utilizadores interagem com o site, recolhendo dados anónimos sobre as páginas visitadas, o tempo gasto e os possíveis erros. Estes cookies permitem-nos melhorar continuamente os nossos serviços.\n\nUtilizamos o Google Analytics com anonimização de IP.",
+              "duration": "Duração: máximo de 13 meses."
+            },
+            {
+              "title": "Cookies de funcionalidade",
+              "content": "Permitem memorizar as suas preferências (idioma, país, moeda, credenciais) para personalizar a sua experiência. O site instala-os apenas se tiver escolhido estas opções.\n\nExemplos: cookie de idioma, cookie de país, cookie de moeda.",
+              "duration": "Duração: até 12 meses."
+            },
+            {
+              "title": "Cookies de segmentação e publicidade",
+              "content": "Atualmente, a Actoos não utiliza cookies publicitários de terceiros. Se isso mudasse, seria informado e ser-lhe-ia solicitado consentimento explícito antes de qualquer ativação."
+            }
+          ]
+        },
+        "thirdParty": {
+          "title": "3. Cookies de terceiros",
+          "content": "Alguns serviços que utilizamos (alojamento, análise de audiência, vídeos incorporados) podem depositar os seus próprios cookies. Não temos controlo direto sobre estes cookies. Convidamo-lo a consultar a política de privacidade desses serviços terceiros para saber mais. Atualmente, apenas o Google Analytics pode depositar cookies de terceiros."
+        },
+        "manageCookies": {
+          "title": "4. Gestão de cookies",
+          "content": "Na sua primeira visita ao nosso site, um banner informa-o sobre a utilização de cookies e permite-lhe personalizar as suas escolhas. Pode alterar as suas preferências a qualquer momento clicando no link «Configurações de cookies» disponível no final de cada página, ou usando as configurações do seu navegador (ver secção seguinte).\n\nOs cookies estritamente necessários não podem ser desativados, pois são essenciais para o funcionamento do site."
+        },
+        "browserSettings": {
+          "title": "5. Configurações do navegador",
+          "content": "Também pode controlar os cookies diretamente nas configurações do seu navegador:\n• Google Chrome: Configurações > Privacidade e segurança > Cookies e outros dados de sites.\n• Mozilla Firefox: Opções > Privacidade e segurança > Cookies e dados de sites.\n• Safari: Preferências > Privacidade > Cookies e dados de websites.\n• Microsoft Edge: Configurações > Cookies e permissões do site > Cookies e dados armazenados.\n\nA desativação total dos cookies pode causar um funcionamento degradado do site."
+        },
+        "changes": {
+          "title": "6. Atualização desta política",
+          "content": "Podemos modificar esta política de cookies a qualquer momento. As alterações entram em vigor a partir da sua publicação nesta página. Aconselhamo-lo a consultá-la regularmente."
+        },
+        "contact": {
+          "title": "7. Contacto",
+          "content": "Para qualquer questão ou pedido de informação adicional sobre a nossa política de cookies, pode escrever-nos para o seguinte endereço: <a>{{email}}</a>"
+        }
+      }
+    },
+    "privacyPolicy": {
+      "back": "Voltar",
+      "title": "Política de Privacidade",
+      "subtitle": "Como recolhemos, utilizamos e protegemos os seus dados pessoais.",
+      "lastUpdate": "Última atualização: 1 de janeiro de 2025",
+      "contact": "Contacto",
+      "contactEmail": "contact@actoos.com",
+      "contactText": "Para qualquer questão sobre a proteção dos seus dados, pode escrever-nos para: <a>{{email}}</a>",
+      "sections": [
+        {
+          "title": "1. Introdução",
+          "content": "A presente política de privacidade descreve como a Actoos recolhe, utiliza e protege as informações pessoais que nos fornece ao utilizar a nossa plataforma. Comprometemo-nos a cumprir a regulamentação em vigor, nomeadamente o Regulamento Geral de Proteção de Dados (RGPD) e a lei de proteção de dados aplicável."
+        },
+        {
+          "title": "2. Dados recolhidos",
+          "content": "Recolhemos os seguintes dados:\n• Dados de identificação: nome, apelido, endereço de e-mail, número de telefone (opcional).\n• Dados profissionais: CV, cartas de apresentação, experiência, competências.\n• Dados de navegação: endereço IP, páginas consultadas, duração da visita.\n\nEstes dados são recolhidos aquando da criação da sua conta, da submissão de uma candidatura ou oferta, ou da simples navegação no site."
+        },
+        {
+          "title": "3. Utilização dos dados",
+          "content": "Os seus dados são utilizados para:\n• Permitir o bom funcionamento do serviço (criação de conta, publicação de ofertas, contacto entre recrutadores e candidatos).\n• Melhorar a experiência do utilizador (análise de navegação, personalização de conteúdo).\n• Enviar comunicações relativas ao serviço (alertas de emprego, newsletters) se tiver dado o seu consentimento.\n• Cumprir as nossas obrigações legais."
+        },
+        {
+          "title": "4. Partilha de dados",
+          "content": "Os seus dados pessoais são estritamente confidenciais e nunca são vendidos a terceiros. Podem ser partilhados com:\n• Recrutadores, quando se candidata a uma oferta (as informações do seu CV público são-lhes acessíveis).\n• Os nossos prestadores de serviços técnicos (alojamento, envio de e-mails) vinculados por contratos de confidencialidade.\n• As autoridades competentes, se a lei o exigir.\n\nPode alterar a visibilidade do seu perfil a qualquer momento nas suas definições."
+        },
+        {
+          "title": "5. Segurança dos dados",
+          "content": "Implementamos medidas técnicas e organizacionais adequadas para proteger os seus dados contra acessos não autorizados, alteração, divulgação ou destruição: encriptação de dados sensíveis, acesso restrito aos dados por parte dos nossos colaboradores, auditorias de segurança regulares."
+        },
+        {
+          "title": "6. Conservação dos dados",
+          "content": "Os seus dados são conservados durante toda a duração da sua conta. Se eliminar a sua conta, os seus dados são eliminados no prazo máximo de 30 dias, salvo obrigação legal de conservação (ex: faturas, comprovativos contratuais). Os CV e as candidaturas são eliminados assim que a conta associada é eliminada."
+        },
+        {
+          "title": "7. Os seus direitos",
+          "content": "Em conformidade com o RGPD, dispõe dos seguintes direitos:\n• Direito de acesso: obter uma cópia dos seus dados pessoais.\n• Direito de retificação: corrigir dados inexatos ou incompletos.\n• Direito ao apagamento: solicitar a eliminação dos seus dados (dentro dos limites legais).\n• Direito de oposição: recusar o tratamento dos seus dados por motivos legítimos.\n• Direito à portabilidade: receber os seus dados num formato estruturado.\n\nPara exercer estes direitos, contacte-nos através de <a>{{email}}</a>."
+        },
+        {
+          "title": "8. Cookies",
+          "content": "O site utiliza cookies para melhorar a navegação e analisar a audiência. Pode gerir as suas preferências a qualquer momento através do banner de cookies. Os cookies estritamente necessários ao funcionamento do site não podem ser desativados."
+        },
+        {
+          "title": "9. Alterações à política",
+          "content": "Reservamo-nos o direito de modificar a presente política de privacidade a qualquer momento. Os utilizadores serão informados das alterações significativas por e-mail ou através de uma notificação no site. Convidamo-lo a consultar esta página regularmente."
+        }
+      ]
+    },
+   "faq": {
+    "title": "Perguntas Frequentes",
+    "subtitle": "Tudo o que precisa de saber sobre a Actoos, de forma simples.",
+    "searchPlaceholder": "Pesquisar uma pergunta…",
+    "allCategories": "Todas as categorias",
+    "categories": [
+      {
+        "name": "Geral",
+        "questions": [
+          {
+            "q": "O que é a Actoos?",
+            "a": "A Actoos é uma plataforma de recrutamento online que liga empresas e candidatos à escala internacional. Simplificamos a procura de emprego e a publicação de ofertas, independentemente do país ou região."
+          },
+          {
+            "q": "A inscrição é gratuita?",
+            "a": "Sim, a inscrição como candidato ou empresa é totalmente gratuita. Existem opções pagas (Pro, Business) disponíveis para empresas que pretendem mais funcionalidades."
+          },
+          {
+            "q": "Quem pode utilizar a Actoos?",
+            "a": "Qualquer pessoa à procura de emprego ou qualquer empresa/recrutador que pretenda contratar. A plataforma é multilingue e acessível em todo o mundo."
+          }
+        ]
+      },
+      {
+        "name": "Candidatos",
+        "questions": [
+          {
+            "q": "Como me candidato a uma oferta?",
+            "a": "Crie uma conta de candidato, preencha o seu perfil e carregue o seu CV. Poderá depois candidatar-se às ofertas do seu interesse com um único clique."
+          },
+          {
+            "q": "O meu perfil é visível por todas as empresas?",
+            "a": "Você tem o controlo: o seu perfil pode ser público (visível para recrutadores) ou privado (visível apenas quando se candidata). Faça a gestão nas suas definições de privacidade."
+          },
+          {
+            "q": "Como melhorar as minhas hipóteses de ser contratado?",
+            "a": "Preencha o seu perfil a 100%, adicione uma fotografia profissional, detalhe as suas experiências e competências, e personalize as suas cartas de apresentação."
+          }
+        ]
+      },
+      {
+        "name": "Empresas",
+        "questions": [
+          {
+            "q": "Como publicar uma oferta de emprego?",
+            "a": "Crie uma conta de empresa, faça verificar a sua identidade e utilize o formulário de publicação. A sua oferta ficará visível para milhares de candidatos."
+          },
+          {
+            "q": "Quanto custa a publicação?",
+            "a": "O plano Gratuito oferece uma primeira publicação. Os planos Pro e Business dão acesso a mais ofertas simultâneas, impulsos e maior visibilidade. Consulte a página de Preços para mais detalhes."
+          },
+          {
+            "q": "Posso gerir várias empresas com uma só conta?",
+            "a": "Sim, pode criar ou aderir a várias empresas e alternar entre elas a partir do seu painel."
+          }
+        ]
+      },
+      {
+        "name": "Pagamentos e Subscrições",
+        "questions": [
+          {
+            "q": "Quais os métodos de pagamento aceites?",
+            "a": "Aceitamos cartões de crédito (Visa, Mastercard) através de um parceiro de pagamento seguro. Os preços são geralmente apresentados em Francos CFA (XOF) ou na sua moeda local."
+          },
+          {
+            "q": "Como cancelar a minha subscrição?",
+            "a": "Pode cancelar a sua subscrição a qualquer momento no seu painel, na secção Subscrição. O cancelamento produz efeitos no final do período em curso."
+          },
+          {
+            "q": "Posso mudar de plano (mensal → anual)?",
+            "a": "Sim, pode fazer o upgrade, downgrade ou alterar o ciclo de faturação a qualquer momento. Os ajustes de preço são calculados automaticamente."
+          }
+        ]
+      },
+      {
+        "name": "Apoio e Contacto",
+        "questions": [
+          {
+            "q": "Como contactar o apoio?",
+            "a": "Escreva-nos para contact@actoos.com ou utilize o formulário de contacto no site. Respondemos no prazo de 24 horas úteis."
+          },
+          {
+            "q": "Esqueci-me da minha palavra-passe. O que devo fazer?",
+            "a": "Clique em 'Esqueci a palavra-passe' na página de início de sessão. Receberá um e-mail para a redefinir."
+          },
+          {
+            "q": "Como denunciar um problema ou uma oferta fraudulenta?",
+            "a": "Utilize o botão de denúncia (bandeira) presente em cada oferta ou perfil. A nossa equipa de moderação analisa todas as denúncias rapidamente."
+          }
+        ]
+      }
+    ],
+    "noResults": "Nenhum resultado para \"{{search}}\".",
+    "noResultsHint": "Tente com outras palavras-chave ou navegue pelas categorias.",
+    "contactBlock": {
+      "title": "Não encontra a sua resposta?",
+      "description": "A nossa equipa está disponível para ajudar.",
+      "button": "Contacte-nos"
+    }
+  } 
+  
 
 
 }

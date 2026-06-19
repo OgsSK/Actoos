@@ -486,42 +486,7 @@
     },
     "amountPaidLabel": "Betaald bedrag:"
   },
-  "privacyPolicy": {
-    "title": "Privacybeleid",
-    "back": "Terug",
-    "lastUpdate": "Laatst bijgewerkt: mei 2026",
-    "sections": {
-      "intro": {
-        "title": "Inleiding",
-        "content": "Bij Actoos Jobs nemen wij de bescherming van uw persoonlijke gegevens zeer serieus. Dit privacybeleid legt uit hoe wij uw gegevens verzamelen, gebruiken en beschermen wanneer u ons platform gebruikt."
-      },
-      "dataCollected": {
-        "title": "Verzamelde gegevens",
-        "content": "Wij verzamelen de informatie die u rechtstreeks verstrekt, zoals uw naam, e-mailadres, cv en andere informatie met betrekking tot uw kandidaat- of bedrijfsprofiel."
-      },
-      "dataUsage": {
-        "title": "Gebruik van gegevens",
-        "content": "Uw gegevens worden gebruikt om u in contact te brengen met werkgevers of kandidaten, onze diensten te verbeteren en u communicaties te sturen met betrekking tot uw account of onze aanbiedingen."
-      },
-      "dataSharing": {
-        "title": "Delen van gegevens",
-        "content": "Wij verkopen uw persoonlijke gegevens nooit. Ze kunnen worden gedeeld met recruiters in het kader van uw zoektocht naar werk, alleen met uw toestemming."
-      },
-      "security": {
-        "title": "Beveiliging",
-        "content": "Wij implementeren technische en organisatorische beveiligingsmaatregelen om uw gegevens te beschermen tegen ongeoorloofde toegang."
-      },
-      "yourRights": {
-        "title": "Uw rechten",
-        "content": "In overeenstemming met de geldende regelgeving hebt u recht op inzage, rectificatie en verwijdering van uw gegevens. Om deze rechten uit te oefenen, neem contact met ons op via <a>{email}</a>."
-      },
-      "contact": {
-        "title": "Contact",
-        "content": "Voor vragen over dit beleid kunt u ons schrijven op <a>{email}</a>."
-      }
-    },
-    "contactEmail": "contact@actoos.com"
-  },
+  
   "register": {
     "title": "Account aanmaken",
     "chooseProfile": "Kies uw profieltype",
@@ -955,63 +920,7 @@
       "error": "Fout"
     }
   },
-  "cookies": {
-    "title": "Cookiebeleid",
-    "back": "Terug",
-    "lastUpdate": "Laatst bijgewerkt: mei 2026",
-    "contactEmail": "contact@actoos.com",
-    "sections": {
-      "whatIsCookie": {
-        "title": "1. Wat is een cookie?",
-        "content": "Een cookie is een klein tekstbestand dat op uw apparaat (computer, telefoon, tablet) wordt opgeslagen wanneer u een website bezoekt. Cookies stellen de site in staat uw apparaat te herkennen en bepaalde informatie over uw voorkeuren of eerdere acties te onthouden."
-      },
-      "cookieTypes": {
-        "title": "2. Gebruikte soorten cookies",
-        "subsections": [
-          {
-            "title": "Essentiële cookies",
-            "content": "Noodzakelijk voor de werking van het Platform. Ze maken het gebruik van basisfuncties zoals veilig inloggen en navigatie tussen pagina's mogelijk.",
-            "duration": "Duur: Sessie"
-          },
-          {
-            "title": "Voorkeurscookies",
-            "content": "Hiermee kunnen uw voorkeuren (taal, regio, weergave-instellingen) worden onthouden om uw ervaring te personaliseren.",
-            "duration": "Duur: 1 jaar"
-          },
-          {
-            "title": "Analytische cookies",
-            "content": "Helpen ons te begrijpen hoe bezoekers omgaan met onze site door anonieme informatie te verzamelen over bezochte pagina's en de tijd die erop wordt doorgebracht.",
-            "duration": "Duur: 2 jaar"
-          },
-          {
-            "title": "Marketingcookies",
-            "content": "Worden gebruikt om bezoekers op websites te volgen en relevante en interessante advertenties aan de gebruiker weer te geven.",
-            "duration": "Duur: 6 maanden"
-          }
-        ]
-      },
-      "thirdParty": {
-        "title": "3. Cookies van derden",
-        "content": "Wij gebruiken diensten van derden die cookies kunnen plaatsen:\n- Google Analytics - Verkeersanalyse\n- Supabase - Authenticatie en backend-diensten\n- Stripe - Betalingsverwerking (voor premium aanbiedingen)"
-      },
-      "manageCookies": {
-        "title": "4. Cookies beheren",
-        "content": "U kunt cookies naar wens beheren en/of verwijderen:\n- Via uw browserinstellingen\n- Door onze cookietoestemmingsbanner te gebruiken\n- Door cookieblokkerende extensies te installeren\n\nOpmerking: Het uitschakelen van bepaalde cookies kan uw ervaring op het Platform beïnvloeden."
-      },
-      "browserSettings": {
-        "title": "5. Browserinstellingen",
-        "content": "Hier leest u hoe u cookies beheert in de belangrijkste browsers:\n- Chrome: Instellingen > Privacy en beveiliging > Cookies\n- Firefox: Opties > Privacy en beveiliging > Cookies\n- Safari: Voorkeuren > Privacy > Cookies\n- Edge: Instellingen > Privacy > Cookies"
-      },
-      "changes": {
-        "title": "6. Wijzigingen",
-        "content": "Wij kunnen dit cookiebeleid bijwerken om wijzigingen in onze praktijken weer te geven of om andere operationele, juridische of regelgevende redenen."
-      },
-      "contact": {
-        "title": "7. Contact",
-        "content": "Voor vragen over ons gebruik van cookies kunt u contact met ons opnemen via: <a>{{email}}</a>"
-      }
-    }
-  },
+  
   "contact": {
     "title": "Neem contact met ons op",
     "subtitle": "Een vraag, een suggestie? Wij staan voor u klaar.",
@@ -2572,7 +2481,269 @@
   "GNF": "Guinese Franc (FG)",
   "CDF": "Congolese Franc (FC)",
   "MGA": "Malagassische Ariary (Ar)"
-}
+},
+"cgu": {
+    "back": "Terug",
+    "title": "Algemene Gebruiksvoorwaarden",
+    "subtitle": "De regels die het gebruik van ons platform beheersen.",
+    "lastUpdate": "Laatste update: 1 januari 2025",
+    "contactEmail": "contact@actoos.com",
+    "contact": "Contact",
+    "contactText": "Voor vragen over deze AV kunt u ons schrijven op: <a>{{email}}</a>",
+    "sections": [
+      {
+        "title": "1. Doel",
+        "content": "Deze Algemene Gebruiksvoorwaarden (hierna \"AGB\") hebben tot doel de voorwaarden voor het aanbieden van de Actoos-website en de bijbehorende diensten vast te leggen, alsook de toegangs- en gebruiksvoorwaarden voor de Gebruiker.\n\nElk gebruik van de website impliceert de onvoorwaardelijke aanvaarding en naleving van deze AGB. Zij vormen de overeenkomst tussen de dienst en de Gebruiker."
+      },
+      {
+        "title": "2. Toegang tot de dienst",
+        "content": "De toegang tot de Actoos-website is gratis en staat open voor iedereen met een internetverbinding. De toegangs- en communicatiekosten zijn uitsluitend voor rekening van de Gebruiker.\n\nDe website is 24/7 toegankelijk, behalve bij geplande onderbrekingen of overmacht. Actoos behoudt zich het recht voor de toegang zonder voorafgaande kennisgeving tijdelijk te onderbreken voor onderhoudswerkzaamheden."
+      },
+      {
+        "title": "3. Registratie en gebruikersaccount",
+        "content": "Om toegang te krijgen tot bepaalde functies (plaatsen van vacatures, solliciteren, berichten) moet de Gebruiker een persoonlijk account aanmaken en hierbij juiste en actuele informatie verstrekken. De Gebruiker is als enige verantwoordelijk voor de vertrouwelijkheid van zijn gebruikersnaam en wachtwoord.\n\nElk frauduleus gebruik van het account moet onmiddellijk worden gemeld aan <a>{{email}}</a>. Actoos kan niet aansprakelijk worden gesteld voor verlies of schade als gevolg van onbevoegd gebruik van het account."
+      },
+      {
+        "title": "4. Verplichtingen van de gebruikers",
+        "content": "De Gebruiker verbindt zich ertoe:\n• Geen inhoud te publiceren die illegaal, lasterlijk, discriminerend of in strijd met de openbare orde is.\n• Zich niet voor te doen als een derde of onjuiste informatie te verstrekken.\n• De goede werking van de website niet te verstoren (virussen, spam, hacking, enz.).\n• De intellectuele eigendomsrechten van Actoos en derden te respecteren.\n\nElke inbreuk kan leiden tot onmiddellijke schorsing of verwijdering van het account, onverminderd gerechtelijke stappen."
+      },
+      {
+        "title": "5. Vacatures en sollicitaties",
+        "content": "Werkgevers zijn verantwoordelijk voor de inhoud van de door hen geplaatste vacatures (functietitel, beschrijving, salaris, enz.). Actoos behoudt zich het recht voor om vacatures die niet voldoen aan de geldende wetgeving of deze AGB, te modereren of te verwijderen.\n\nSollicitanten zijn verantwoordelijk voor de door hen verstrekte informatie (cv, motivatiebrief). Actoos garandeert noch de juistheid van de vacatures, noch een gunstig gevolg aan een sollicitatie. Er ontstaat geen contractuele arbeidsrelatie tussen de Gebruiker en Actoos door het plaatsen of raadplegen van een vacature."
+      },
+      {
+        "title": "6. Abonnementen en betalingen",
+        "content": "Sommige diensten worden aangeboden via een betaald abonnement (Pro, Business plannen). De tarieven zijn te raadplegen op de desbetreffende pagina en kunnen met een redelijke opzegtermijn worden gewijzigd. De betaling gebeurt online met bankkaart via een beveiligde provider. Actoos slaat geen bankgegevens op.\n\nDe Gebruiker kan zijn abonnement op elk moment opzeggen. De terugbetalingsvoorwaarden worden bij de inschrijving gespecificeerd. Bij wanbetaling behoudt Actoos zich het recht voor de toegang tot de betaalde functies te schorsen."
+      },
+      {
+        "title": "7. Intellectuele eigendom",
+        "content": "Alle elementen van de website (teksten, logo's, grafische vormgeving, broncode, databank) zijn de exclusieve eigendom van Actoos of haar partners en zijn beschermd door de wetten op de intellectuele eigendom. Elke ongeoorloofde reproductie, wijziging, aanpassing of exploitatie is strikt verboden.\n\nDe merken en logo's op de website zijn gedeponeerd en beschermd. De Gebruiker heeft geen enkel recht op deze elementen buiten de loutere raadpleging van de website."
+      },
+      {
+        "title": "8. Persoonsgegevens",
+        "content": "De verzamelde persoonsgegevens worden verwerkt overeenkomstig ons Privacybeleid, dat op elk moment op de website kan worden geraadpleegd. In overeenstemming met de wetgeving inzake gegevensbescherming en de AVG heeft de Gebruiker het recht op inzage, rectificatie en verwijdering van zijn gegevens. Om deze rechten uit te oefenen, kunt u contact met ons opnemen via <a>{{email}}</a>."
+      },
+      {
+        "title": "9. Aansprakelijkheid en beperkingen",
+        "content": "Actoos stelt alles in het werk om een kwaliteitsdienst te garanderen, maar kan niet aansprakelijk worden gesteld in geval van onderbreking van de dienstverlening, gegevensverlies of indirecte schade als gevolg van het gebruik van de website. De website kan hyperlinks bevatten naar websites van derden, waarover Actoos geen controle heeft en waarvoor het geen enkele verantwoordelijkheid aanvaardt.\n\nDe Gebruiker gebruikt de website op eigen risico. Actoos kan niet aansprakelijk worden gesteld voor de gevolgen van een verkeerde interpretatie van een vacature of sollicitatie."
+      },
+      {
+        "title": "10. Wijziging van de AGB",
+        "content": "Actoos behoudt zich het recht voor deze AGB op elk moment te wijzigen. Gebruikers zullen hiervan op gepaste wijze op de hoogte worden gesteld (e-mail, melding op de website). De gewijzigde versie treedt in werking zodra deze online wordt geplaatst. Voortgezet gebruik van de website na die datum geldt als aanvaarding van de nieuwe AGB."
+      },
+      {
+        "title": "11. Toepasselijk recht en jurisdictie",
+        "content": "Op deze AGB is het recht van toepassing van de statutaire zetel van Actoos. In geval van een geschil zullen partijen trachten een minnelijke oplossing te vinden alvorens gerechtelijke stappen te ondernemen. Bij gebreke daaraan wordt het geschil voorgelegd aan de bevoegde rechtbanken."
+      }
+    ]
+  },
+"cookies": {
+      "back": "Terug",
+      "title": "Cookiebeleid",
+      "subtitle": "Ontdek hoe wij cookies gebruiken om uw ervaring te verbeteren.",
+      "lastUpdate": "Laatste update: 1 januari 2025",
+      "contact": "Contact",
+      "contactEmail": "contact@actoos.com",
+      "contactText": "U kunt op elk moment contact met ons opnemen voor vragen over ons cookiebeleid: <a>{{email}}</a>",
+      "sections": {
+        "whatIsCookie": {
+          "title": "1. Wat is een cookie?",
+          "content": "Een cookie is een klein tekstbestand dat op uw apparaat (computer, tablet, mobiel) wordt geplaatst wanneer u een website bezoekt. Het slaat informatie op over uw navigatie en verbetert uw gebruikerservaring. Cookies bevatten geen virussen en geven geen toegang tot niet-toegestane persoonlijke informatie."
+        },
+        "cookieTypes": {
+          "title": "2. Soorten cookies die we gebruiken",
+          "subsections": [
+            {
+              "title": "Strikt noodzakelijke cookies",
+              "content": "Deze zijn onmisbaar voor de goede werking van de site. Zonder deze cookies kunnen bepaalde functies (inloggen, beveiliging, winkelwagen) niet worden gegarandeerd. Deze cookies slaan geen identificeerbare persoonsgegevens op.\n\nVoorbeelden: sessiecookie, cookie voor toestemmingsvoorkeur.",
+              "duration": "Duur: sessie of 12 maanden (toestemmingscookie)."
+            },
+            {
+              "title": "Prestatie- en analysecookies",
+              "content": "Deze helpen ons te begrijpen hoe gebruikers met de site omgaan door anonieme gegevens te verzamelen over bezochte pagina's, tijdsduur en eventuele fouten. Deze cookies stellen ons in staat onze diensten voortdurend te verbeteren.\n\nWij gebruiken Google Analytics met IP-anonimisering.",
+              "duration": "Duur: maximaal 13 maanden."
+            },
+            {
+              "title": "Functionaliteitscookies",
+              "content": "Deze stellen ons in staat uw voorkeuren (taal, land, valuta, inloggegevens) te onthouden om uw ervaring te personaliseren. De site installeert deze alleen als u voor deze opties heeft gekozen.\n\nVoorbeelden: taalcookie, landcookie, valutacookie.",
+              "duration": "Duur: tot 12 maanden."
+            },
+            {
+              "title": "Targeting- en advertentiecookies",
+              "content": "Momenteel gebruikt Actoos geen advertentiecookies van derden. Als dit zou veranderen, wordt u geïnformeerd en wordt u om uitdrukkelijke toestemming gevraagd voordat deze worden geactiveerd."
+            }
+          ]
+        },
+        "thirdParty": {
+          "title": "3. Cookies van derden",
+          "content": "Sommige diensten die wij gebruiken (hosting, analyse van het publiek, ingesloten video's) kunnen hun eigen cookies plaatsen. Wij hebben geen directe controle over deze cookies. Wij raden u aan het privacybeleid van deze externe diensten te raadplegen voor meer informatie. Momenteel kan alleen Google Analytics cookies van derden plaatsen."
+        },
+        "manageCookies": {
+          "title": "4. Cookies beheren",
+          "content": "Bij uw eerste bezoek aan onze site informeert een banner u over het gebruik van cookies en kunt u uw keuzes aanpassen. U kunt uw voorkeuren op elk moment wijzigen door te klikken op de link 'Cookie-instellingen' onderaan elke pagina, of door uw browserinstellingen te gebruiken (zie volgende sectie).\n\nStrikt noodzakelijke cookies kunnen niet worden uitgeschakeld omdat ze essentieel zijn voor de werking van de site."
+        },
+        "browserSettings": {
+          "title": "5. Browserinstellingen",
+          "content": "U kunt cookies ook rechtstreeks beheren via de instellingen van uw browser:\n• Google Chrome: Instellingen > Privacy en beveiliging > Cookies en andere sitegegevens.\n• Mozilla Firefox: Opties > Privacy & Beveiliging > Cookies en sitegegevens.\n• Safari: Voorkeuren > Privacy > Cookies en websitegegevens.\n• Microsoft Edge: Instellingen > Cookies en sitemachtigingen > Cookies en opgeslagen gegevens.\n\nHet volledig uitschakelen van cookies kan de werking van de site nadelig beïnvloeden."
+        },
+        "changes": {
+          "title": "6. Wijzigingen in dit beleid",
+          "content": "Wij kunnen dit cookiebeleid op elk moment wijzigen. Wijzigingen worden van kracht zodra ze op deze pagina worden gepubliceerd. Wij raden u aan deze pagina regelmatig te raadplegen."
+        },
+        "contact": {
+          "title": "7. Contact",
+          "content": "Voor vragen of meer informatie over ons cookiebeleid kunt u ons schrijven op het volgende adres: <a>{{email}}</a>"
+        }
+      }
+    },
+    "privacyPolicy": {
+      "back": "Terug",
+      "title": "Privacybeleid",
+      "subtitle": "Hoe wij uw persoonsgegevens verzamelen, gebruiken en beschermen.",
+      "lastUpdate": "Laatste update: 1 januari 2025",
+      "contact": "Contact",
+      "contactEmail": "contact@actoos.com",
+      "contactText": "Voor vragen over de bescherming van uw gegevens kunt u ons schrijven op: <a>{{email}}</a>",
+      "sections": [
+        {
+          "title": "1. Inleiding",
+          "content": "Dit privacybeleid beschrijft hoe Actoos de persoonlijke informatie verzamelt, gebruikt en beschermt die u verstrekt wanneer u ons platform gebruikt. Wij verplichten ons de geldende regelgeving na te leven, met name de Algemene Verordening Gegevensbescherming (AVG) en de toepasselijke wetgeving inzake gegevensbescherming."
+        },
+        {
+          "title": "2. Verzamelde gegevens",
+          "content": "Wij verzamelen de volgende gegevens:\n• Identificatiegegevens: naam, voornaam, e-mailadres, telefoonnummer (optioneel).\n• Beroepsgegevens: cv, motivatiebrieven, ervaring, vaardigheden.\n• Navigatiegegevens: IP-adres, bezochte pagina's, duur van het bezoek.\n\nDeze gegevens worden verzameld bij het aanmaken van uw account, het indienen van een sollicitatie of vacature, of gewoon bij het surfen op de site."
+        },
+        {
+          "title": "3. Gebruik van gegevens",
+          "content": "Uw gegevens worden gebruikt voor:\n• De goede werking van de dienst mogelijk te maken (account aanmaken, vacatures plaatsen, recruiters en kandidaten met elkaar in contact brengen).\n• De gebruikerservaring te verbeteren (navigatie-analyse, personalisatie van inhoud).\n• Het versturen van dienstgerelateerde communicatie (jobalerts, nieuwsbrieven) als u daarvoor toestemming hebt gegeven.\n• Te voldoen aan onze wettelijke verplichtingen."
+        },
+        {
+          "title": "4. Delen van gegevens",
+          "content": "Uw persoonsgegevens zijn strikt vertrouwelijk en worden nooit aan derden verkocht. Ze kunnen worden gedeeld met:\n• Recruiters, wanneer u solliciteert op een vacature (uw openbare cv-gegevens zijn voor hen toegankelijk).\n• Onze technische dienstverleners (hosting, e-mailverzending) die gebonden zijn aan geheimhoudingsovereenkomsten.\n• De bevoegde autoriteiten, indien de wet dit vereist.\n\nU kunt de zichtbaarheid van uw profiel op elk moment wijzigen in uw instellingen."
+        },
+        {
+          "title": "5. Gegevensbeveiliging",
+          "content": "Wij treffen passende technische en organisatorische maatregelen om uw gegevens te beschermen tegen ongeoorloofde toegang, wijziging, openbaarmaking of vernietiging: versleuteling van gevoelige gegevens, beperkte toegang tot gegevens door onze medewerkers, regelmatige veiligheidsaudits."
+        },
+        {
+          "title": "6. Bewaring van gegevens",
+          "content": "Uw gegevens worden bewaard gedurende de gehele looptijd van uw account. Als u uw account verwijdert, worden uw gegevens binnen maximaal 30 dagen verwijderd, tenzij er een wettelijke bewaarplicht bestaat (bijv. facturen, contractuele bewijsstukken). Cv's en sollicitaties worden verwijderd zodra het bijbehorende account wordt verwijderd."
+        },
+        {
+          "title": "7. Uw rechten",
+          "content": "In overeenstemming met de AVG heeft u de volgende rechten:\n• Recht op inzage: een kopie van uw persoonsgegevens verkrijgen.\n• Recht op rectificatie: onjuiste of onvolledige gegevens corrigeren.\n• Recht op wissen: verzoeken om verwijdering van uw gegevens (binnen de wettelijke grenzen).\n• Recht van bezwaar: weigeren van de verwerking van uw gegevens om legitieme redenen.\n• Recht op overdraagbaarheid: uw gegevens ontvangen in een gestructureerd formaat.\n\nOm deze rechten uit te oefenen, kunt u contact met ons opnemen via <a>{{email}}</a>."
+        },
+        {
+          "title": "8. Cookies",
+          "content": "De site maakt gebruik van cookies om de navigatie te verbeteren en het publiek te analyseren. U kunt uw voorkeuren op elk moment beheren via de cookiebanner. Strikt noodzakelijke cookies voor de werking van de site kunnen niet worden uitgeschakeld."
+        },
+        {
+          "title": "9. Wijzigingen van het beleid",
+          "content": "Wij behouden ons het recht voor om dit privacybeleid op elk moment te wijzigen. Gebruikers worden via e-mail of via een melding op de site op de hoogte gesteld van ingrijpende wijzigingen. Wij raden u aan deze pagina regelmatig te raadplegen."
+        }
+      ]
+    },
+    "faq": {
+    "title": "Veelgestelde vragen",
+    "subtitle": "Alles wat u moet weten over Actoos, eenvoudig uitgelegd.",
+    "searchPlaceholder": "Zoek een vraag…",
+    "allCategories": "Alle categorieën",
+    "categories": [
+      {
+        "name": "Algemeen",
+        "questions": [
+          {
+            "q": "Wat is Actoos?",
+            "a": "Actoos is een online wervingsplatform dat bedrijven en kandidaten wereldwijd met elkaar verbindt. Wij vereenvoudigen het zoeken naar werk en het plaatsen van vacatures, ongeacht het land of de regio."
+          },
+          {
+            "q": "Is registratie gratis?",
+            "a": "Ja, registratie als kandidaat of bedrijf is volledig gratis. Er zijn betaalde opties (Pro, Business) beschikbaar voor bedrijven die meer functies willen."
+          },
+          {
+            "q": "Wie kan Actoos gebruiken?",
+            "a": "Iedereen die op zoek is naar een baan en elk bedrijf/recruiter die wil aanwerven. Het platform is meertalig en wereldwijd toegankelijk."
+          }
+        ]
+      },
+      {
+        "name": "Kandidaten",
+        "questions": [
+          {
+            "q": "Hoe solliciteer ik op een vacature?",
+            "a": "Maak een kandidaataccount aan, vul uw profiel in en upload uw cv. Vervolgens kunt u met één klik solliciteren op de vacatures die u interesseren."
+          },
+          {
+            "q": "Is mijn profiel zichtbaar voor alle bedrijven?",
+            "a": "U heeft de controle: uw profiel kan openbaar zijn (zichtbaar voor recruiters) of privé (alleen zichtbaar wanneer u solliciteert). Beheer dit in uw privacy-instellingen."
+          },
+          {
+            "q": "Hoe kan ik mijn kansen om aangenomen te worden vergroten?",
+            "a": "Vul uw profiel 100% in, voeg een professionele foto toe, vermeld gedetailleerd uw ervaring en vaardigheden, en personaliseer uw motivatiebrieven."
+          }
+        ]
+      },
+      {
+        "name": "Bedrijven",
+        "questions": [
+          {
+            "q": "Hoe plaats ik een vacature?",
+            "a": "Maak een bedrijfsaccount aan, laat uw identiteit verifiëren en gebruik het plaatsingsformulier. Uw vacature is zichtbaar voor duizenden kandidaten."
+          },
+          {
+            "q": "Wat kost plaatsen?",
+            "a": "Het Gratis abonnement biedt een eerste plaatsing. De Pro- en Business-abonnementen geven toegang tot meer gelijktijdige vacatures, boosts en meer zichtbaarheid. Zie de Prijzenpagina voor details."
+          },
+          {
+            "q": "Kan ik meerdere bedrijven beheren met één account?",
+            "a": "Ja, u kunt meerdere bedrijven aanmaken of er lid van worden en tussen deze schakelen via uw dashboard."
+          }
+        ]
+      },
+      {
+        "name": "Betalingen & Abonnementen",
+        "questions": [
+          {
+            "q": "Welke betaalmethoden worden geaccepteerd?",
+            "a": "Wij accepteren bankkaarten (Visa, Mastercard) via een beveiligde betalingspartner. Prijzen worden meestal weergegeven in CFA-francs (XOF) of uw lokale valuta."
+          },
+          {
+            "q": "Hoe zeg ik mijn abonnement op?",
+            "a": "U kunt uw abonnement op elk moment opzeggen via uw dashboard, in het onderdeel Abonnement. De opzegging wordt van kracht aan het einde van de lopende periode."
+          },
+          {
+            "q": "Kan ik van abonnement wisselen (maandelijks → jaarlijks)?",
+            "a": "Ja, u kunt op elk moment upgraden, downgraden of de betalingscyclus wijzigen. Prijsaanpassingen worden automatisch berekend."
+          }
+        ]
+      },
+      {
+        "name": "Ondersteuning & Contact",
+        "questions": [
+          {
+            "q": "Hoe neem ik contact op met de ondersteuning?",
+            "a": "Stuur ons een e-mail naar contact@actoos.com of gebruik het contactformulier op de site. Wij antwoorden binnen 24 werkuren."
+          },
+          {
+            "q": "Ik ben mijn wachtwoord vergeten. Wat moet ik doen?",
+            "a": "Klik op 'Wachtwoord vergeten' op de inlogpagina. U ontvangt een e-mail om het opnieuw in te stellen."
+          },
+          {
+            "q": "Hoe meld ik een probleem of een frauduleuze aanbieding?",
+            "a": "Gebruik de meldingsknop (vlag) op elke aanbieding of elk profiel. Ons moderatieteam bekijkt alle meldingen snel."
+          }
+        ]
+      }
+    ],
+    "noResults": "Geen resultaten voor \"{{search}}\".",
+    "noResultsHint": "Probeer andere trefwoorden of doorzoek de categorieën.",
+    "contactBlock": {
+      "title": "Vindt u uw antwoord niet?",
+      "description": "Ons team staat klaar om u te helpen.",
+      "button": "Neem contact met ons op"
+    }
+  }
+  
 
 
 }

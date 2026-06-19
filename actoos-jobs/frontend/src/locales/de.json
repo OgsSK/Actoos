@@ -954,63 +954,7 @@
       "error": "Fehler"
     }
   },
-  "cookies": {
-    "title": "Cookie-Richtlinie",
-    "back": "Zurück",
-    "lastUpdate": "Letzte Aktualisierung: Mai 2026",
-    "contactEmail": "contact@actoos.com",
-    "sections": {
-      "whatIsCookie": {
-        "title": "1. Was ist ein Cookie?",
-        "content": "Ein Cookie ist eine kleine Textdatei, die auf Ihrem Gerät (Computer, Telefon, Tablet) gespeichert wird, wenn Sie eine Website besuchen. Cookies ermöglichen es der Website, Ihr Gerät zu erkennen und bestimmte Informationen über Ihre Präferenzen oder vergangenen Aktionen zu speichern."
-      },
-      "cookieTypes": {
-        "title": "2. Verwendete Cookie-Typen",
-        "subsections": [
-          {
-            "title": "Essentielle Cookies",
-            "content": "Notwendig für den Betrieb der Plattform. Sie ermöglichen grundlegende Funktionen wie die sichere Anmeldung und die Navigation zwischen den Seiten.",
-            "duration": "Dauer: Sitzung"
-          },
-          {
-            "title": "Präferenz-Cookies",
-            "content": "Sie ermöglichen das Speichern Ihrer Präferenzen (Sprache, Region, Anzeigeeinstellungen), um Ihre Erfahrung zu personalisieren.",
-            "duration": "Dauer: 1 Jahr"
-          },
-          {
-            "title": "Analyse-Cookies",
-            "content": "Sie helfen uns zu verstehen, wie Besucher mit unserer Website interagieren, indem sie anonyme Informationen über besuchte Seiten und die Verweildauer sammeln.",
-            "duration": "Dauer: 2 Jahre"
-          },
-          {
-            "title": "Marketing-Cookies",
-            "content": "Sie werden verwendet, um Besucher auf Websites zu verfolgen und relevante und interessante Werbung anzuzeigen.",
-            "duration": "Dauer: 6 Monate"
-          }
-        ]
-      },
-      "thirdParty": {
-        "title": "3. Cookies von Drittanbietern",
-        "content": "Wir nutzen Dienste von Drittanbietern, die Cookies setzen können:\n- Google Analytics – Verkehrsanalyse\n- Supabase – Authentifizierung und Backend-Dienste\n- Stripe – Zahlungsabwicklung (für Premium-Angebote)"
-      },
-      "manageCookies": {
-        "title": "4. Cookies verwalten",
-        "content": "Sie können Cookies nach Belieben steuern und/oder löschen:\n- Über Ihre Browsereinstellungen\n- Über unser Cookie-Zustimmungsbanner\n- Durch die Installation von Cookie-Blocker-Erweiterungen\n\nHinweis: Das Deaktivieren bestimmter Cookies kann Ihre Erfahrung auf der Plattform beeinträchtigen."
-      },
-      "browserSettings": {
-        "title": "5. Browsereinstellungen",
-        "content": "So verwalten Sie Cookies in den wichtigsten Browsern:\n- Chrome: Einstellungen > Datenschutz und Sicherheit > Cookies\n- Firefox: Optionen > Datenschutz & Sicherheit > Cookies\n- Safari: Einstellungen > Datenschutz > Cookies\n- Edge: Einstellungen > Datenschutz > Cookies"
-      },
-      "changes": {
-        "title": "6. Änderungen",
-        "content": "Wir können diese Cookie-Richtlinie aktualisieren, um Änderungen in unseren Praktiken oder aus anderen betrieblichen, rechtlichen oder regulatorischen Gründen widerzuspiegeln."
-      },
-      "contact": {
-        "title": "7. Kontakt",
-        "content": "Bei Fragen zu unserer Verwendung von Cookies kontaktieren Sie uns unter: <a>{{email}}</a>"
-      }
-    }
-  },
+  
   "contact": {
     "title": "Kontaktieren Sie uns",
     "subtitle": "Eine Frage, ein Vorschlag? Wir sind für Sie da.",
@@ -2571,7 +2515,270 @@
   "GNF": "Guinea-Franc (FG)",
   "CDF": "Kongolesischer Franc (FC)",
   "MGA": "Madagassischer Ariary (Ar)"
-}
+},
+"cgu": {
+    "back": "Zurück",
+    "title": "Allgemeine Nutzungsbedingungen",
+    "subtitle": "Die Regeln, die die Nutzung unserer Plattform regeln.",
+    "lastUpdate": "Letzte Aktualisierung: 1. Januar 2025",
+    "contactEmail": "contact@actoos.com",
+    "contact": "Kontakt",
+    "contactText": "Bei Fragen zu diesen AGB können Sie uns schreiben an: <a>{{email}}</a>",
+    "sections": [
+      {
+        "title": "1. Zweck",
+        "content": "Die vorliegenden Allgemeinen Nutzungsbedingungen (nachfolgend „AGB“) haben den Zweck, die Bereitstellungsmodalitäten der Actoos-Website und ihrer zugehörigen Dienste sowie die Zugangs- und Nutzungsbedingungen durch den Nutzer festzulegen.\n\nJede Nutzung der Website setzt die vorbehaltlose Annahme und Einhaltung dieser AGB voraus. Sie bilden den Vertrag zwischen dem Dienst und dem Nutzer."
+      },
+      {
+        "title": "2. Zugang zum Dienst",
+        "content": "Der Zugang zur Actoos-Website ist kostenlos und steht jeder Person mit einer Internetverbindung offen. Die Zugangs- und Kommunikationskosten trägt ausschließlich der Nutzer.\n\nDie Website ist rund um die Uhr (24/7) zugänglich, außer bei geplanten Unterbrechungen oder höherer Gewalt. Actoos behält sich das Recht vor, den Zugang für Wartungsarbeiten ohne Vorankündigung vorübergehend zu unterbrechen."
+      },
+      {
+        "title": "3. Registrierung und Benutzerkonto",
+        "content": "Um bestimmte Funktionen zu nutzen (Veröffentlichen von Angeboten, Bewerbung, Nachrichten), muss der Nutzer ein persönliches Konto erstellen und dabei genaue und aktuelle Informationen angeben. Der Nutzer ist allein für die Vertraulichkeit seiner Anmeldedaten verantwortlich.\n\nJede betrügerische Nutzung des Kontos ist unverzüglich an <a>{{email}}</a> zu melden. Actoos haftet nicht für Verluste oder Schäden, die aus einer unbefugten Nutzung des Kontos entstehen."
+      },
+      {
+        "title": "4. Verpflichtungen der Nutzer",
+        "content": "Der Nutzer verpflichtet sich:\n• Keine illegalen, diffamierenden, diskriminierenden oder gegen die öffentliche Ordnung verstoßenden Inhalte zu veröffentlichen.\n• Sich nicht als Dritter auszugeben oder falsche Angaben zu machen.\n• Das ordnungsgemäße Funktionieren der Seite nicht zu stören (Viren, Spam, Hacking usw.).\n• Die geistigen Eigentumsrechte von Actoos und Dritten zu respektieren.\n\nJeder Verstoß kann zur sofortigen Sperrung oder Löschung des Kontos führen, unbeschadet rechtlicher Schritte."
+      },
+      {
+        "title": "5. Stellenangebote und Bewerbungen",
+        "content": "Arbeitgeber sind für den Inhalt der von ihnen veröffentlichten Stellenangebote verantwortlich (Titel, Beschreibung, Gehalt usw.). Actoos behält sich das Recht vor, Angebote, die nicht den geltenden Gesetzen oder diesen AGB entsprechen, zu moderieren oder zu entfernen.\n\nBewerber sind für die von ihnen gemachten Angaben (Lebenslauf, Anschreiben) verantwortlich. Actoos übernimmt keine Gewähr für die Richtigkeit der Angebote oder den Erhalt einer positiven Rückmeldung auf eine Bewerbung. Durch die Einstellung oder Einsichtnahme eines Angebots entsteht kein Arbeitsverhältnis zwischen dem Nutzer und Actoos."
+      },
+      {
+        "title": "6. Abonnements und Zahlungen",
+        "content": "Bestimmte Dienste werden als kostenpflichtige Abonnements angeboten (Pro-, Business-Tarife). Die Preise sind auf der entsprechenden Seite einsehbar und können mit angemessener Ankündigung geändert werden. Die Zahlung erfolgt online per Kreditkarte über einen sicheren Anbieter. Actoos speichert keine Bankdaten.\n\nDer Nutzer kann sein Abonnement jederzeit kündigen. Die Rückerstattungsbedingungen werden bei Vertragsabschluss angegeben. Bei Zahlungsverzug behält sich Actoos das Recht vor, den Zugang zu den kostenpflichtigen Funktionen zu sperren."
+      },
+      {
+        "title": "7. Geistiges Eigentum",
+        "content": "Sämtliche Elemente der Website (Texte, Logos, Grafiken, Quellcode, Datenbank) sind das ausschließliche Eigentum von Actoos oder seiner Partner und sind gesetzlich geschützt. Jede nicht autorisierte Vervielfältigung, Veränderung, Anpassung oder Nutzung ist strengstens untersagt.\n\nDie auf der Website erscheinenden Marken und Logos sind eingetragen und geschützt. Der Nutzer hat keinerlei Rechte an diesen Elementen über die einfache Ansicht der Website hinaus."
+      },
+      {
+        "title": "8. Personenbezogene Daten",
+        "content": "Die erhobenen personenbezogenen Daten werden gemäß unserer Datenschutzerklärung verarbeitet, die jederzeit auf der Website einsehbar ist. Gemäß den Datenschutzgesetzen und der DSGVO hat der Nutzer das Recht auf Auskunft, Berichtigung und Löschung seiner Daten. Um diese Rechte auszuüben, kontaktieren Sie uns unter <a>{{email}}</a>."
+      },
+      {
+        "title": "9. Haftung und Haftungsbeschränkungen",
+        "content": "Actoos bemüht sich um einen qualitativ hochwertigen Dienst, haftet jedoch nicht für Dienstunterbrechungen, Datenverluste oder indirekte Schäden, die aus der Nutzung der Website entstehen. Die Website kann Hyperlinks zu Websites Dritter enthalten, auf deren Inhalt Actoos keinen Einfluss hat und für die jegliche Haftung abgelehnt wird.\n\nDer Nutzer nutzt die Website auf eigenes Risiko. Actoos haftet nicht für Folgen einer Fehlinterpretation eines Angebots oder einer Bewerbung."
+      },
+      {
+        "title": "10. Änderung der AGB",
+        "content": "Actoos behält sich das Recht vor, diese AGB jederzeit zu ändern. Die Nutzer werden auf geeignetem Wege (E-Mail, Benachrichtigung auf der Website) informiert. Die geänderte Fassung tritt mit ihrer Veröffentlichung in Kraft. Die weitere Nutzung der Website nach diesem Datum gilt als Annahme der neuen AGB."
+      },
+      {
+        "title": "11. Anwendbares Recht und Gerichtsstand",
+        "content": "Diese AGB unterliegen dem am Sitz von Actoos geltenden Recht. Im Streitfall werden die Parteien versuchen, eine gütliche Einigung zu erzielen. Andernfalls wird der Streit vor den zuständigen Gerichten verhandelt."
+      }
+    ]
+  },
+
+"cookies": {
+      "back": "Zurück",
+      "title": "Cookie-Richtlinie",
+      "subtitle": "Erfahren Sie, wie wir Cookies verwenden, um Ihre Erfahrung zu verbessern.",
+      "lastUpdate": "Letzte Aktualisierung: 1. Januar 2025",
+      "contact": "Kontakt",
+      "contactEmail": "contact@actoos.com",
+      "contactText": "Sie können uns jederzeit bei Fragen zu unserer Cookie-Richtlinie kontaktieren: <a>{{email}}</a>",
+      "sections": {
+        "whatIsCookie": {
+          "title": "1. Was ist ein Cookie?",
+          "content": "Ein Cookie ist eine kleine Textdatei, die auf Ihrem Endgerät (Computer, Tablet, Handy) beim Besuch einer Website abgelegt wird. Es speichert Informationen über Ihre Navigation und verbessert Ihre Nutzererfahrung. Cookies enthalten keine Viren und ermöglichen keinen Zugriff auf nicht autorisierte persönliche Informationen."
+        },
+        "cookieTypes": {
+          "title": "2. Verwendete Cookie-Arten",
+          "subsections": [
+            {
+              "title": "Unbedingt erforderliche Cookies",
+              "content": "Diese sind für den reibungslosen Betrieb der Website unerlässlich. Ohne sie könnten bestimmte Funktionen (Anmeldung, Sicherheit, Warenkorb) nicht gewährleistet werden. Diese Cookies speichern keine personenbezogenen Daten.\n\nBeispiele: Session-Cookie, Consent-Präferenz-Cookie.",
+              "duration": "Dauer: Sitzung oder 12 Monate (Consent-Cookie)."
+            },
+            {
+              "title": "Leistungs- und Analyse-Cookies",
+              "content": "Sie helfen uns zu verstehen, wie Nutzer mit der Website interagieren, indem sie anonyme Daten über besuchte Seiten, Verweildauer und mögliche Fehler sammeln. Diese Cookies ermöglichen es uns, unsere Dienste kontinuierlich zu verbessern.\n\nWir verwenden Google Analytics mit IP-Anonymisierung.",
+              "duration": "Dauer: maximal 13 Monate."
+            },
+            {
+              "title": "Funktionalitäts-Cookies",
+              "content": "Sie ermöglichen es, Ihre Präferenzen (Sprache, Land, Währung, Anmeldedaten) zu speichern, um Ihre Erfahrung zu personalisieren. Die Website installiert sie nur, wenn Sie diese Optionen gewählt haben.\n\nBeispiele: Sprach-Cookie, Länder-Cookie, Währungs-Cookie.",
+              "duration": "Dauer: bis zu 12 Monate."
+            },
+            {
+              "title": "Targeting- und Werbe-Cookies",
+              "content": "Derzeit verwendet Actoos keine Werbe-Cookies von Drittanbietern. Sollte sich dies ändern, würden Sie informiert und es würde eine ausdrückliche Zustimmung vor der Aktivierung eingeholt werden."
+            }
+          ]
+        },
+        "thirdParty": {
+          "title": "3. Cookies von Drittanbietern",
+          "content": "Einige von uns genutzte Dienste (Hosting, Reichweitenanalyse, eingebettete Videos) können eigene Cookies setzen. Wir haben keine direkte Kontrolle über diese Cookies. Wir empfehlen Ihnen, die Datenschutzrichtlinien dieser Drittanbieter zu lesen. Derzeit kann nur Google Analytics Drittanbieter-Cookies setzen."
+        },
+        "manageCookies": {
+          "title": "4. Verwaltung von Cookies",
+          "content": "Bei Ihrem ersten Besuch auf unserer Website informiert Sie ein Banner über die Verwendung von Cookies und ermöglicht Ihnen, Ihre Auswahl zu personalisieren. Sie können Ihre Präferenzen jederzeit ändern, indem Sie auf den Link „Cookie-Einstellungen“ am Ende jeder Seite klicken oder Ihre Browsereinstellungen verwenden (siehe nächster Abschnitt).\n\nUnbedingt erforderliche Cookies können nicht deaktiviert werden, da sie für den Betrieb der Website unerlässlich sind."
+        },
+        "browserSettings": {
+          "title": "5. Browsereinstellungen",
+          "content": "Sie können Cookies auch direkt über Ihre Browsereinstellungen steuern:\n• Google Chrome: Einstellungen > Datenschutz und Sicherheit > Cookies und andere Websitedaten.\n• Mozilla Firefox: Einstellungen > Datenschutz & Sicherheit > Cookies und Website-Daten.\n• Safari: Einstellungen > Datenschutz > Cookies und Website-Daten.\n• Microsoft Edge: Einstellungen > Cookies und Site-Berechtigungen > Cookies und gespeicherte Daten.\n\nDas vollständige Deaktivieren von Cookies kann die Funktionalität der Website beeinträchtigen."
+        },
+        "changes": {
+          "title": "6. Aktualisierung dieser Richtlinie",
+          "content": "Wir können diese Cookie-Richtlinie jederzeit ändern. Änderungen treten mit ihrer Veröffentlichung auf dieser Seite in Kraft. Wir empfehlen Ihnen, sie regelmäßig zu lesen."
+        },
+        "contact": {
+          "title": "7. Kontakt",
+          "content": "Bei Fragen oder für weitere Informationen zu unserer Cookie-Richtlinie können Sie uns an folgende Adresse schreiben: <a>{{email}}</a>"
+        }
+      }
+    },
+ "privacyPolicy": {
+      "back": "Zurück",
+      "title": "Datenschutzrichtlinie",
+      "subtitle": "Wie wir Ihre personenbezogenen Daten erfassen, nutzen und schützen.",
+      "lastUpdate": "Letzte Aktualisierung: 1. Januar 2025",
+      "contact": "Kontakt",
+      "contactEmail": "contact@actoos.com",
+      "contactText": "Bei Fragen zum Schutz Ihrer Daten können Sie uns schreiben an: <a>{{email}}</a>",
+      "sections": [
+        {
+          "title": "1. Einleitung",
+          "content": "Diese Datenschutzrichtlinie beschreibt, wie Actoos die personenbezogenen Daten erfasst, nutzt und schützt, die Sie bei der Nutzung unserer Plattform angeben. Wir verpflichten uns zur Einhaltung der geltenden Vorschriften, insbesondere der Datenschutz-Grundverordnung (DSGVO) und des Bundesdatenschutzgesetzes."
+        },
+        {
+          "title": "2. Erhobene Daten",
+          "content": "Wir erheben folgende Daten:\n• Identifikationsdaten: Name, Vorname, E-Mail-Adresse, Telefonnummer (optional).\n• Berufliche Daten: Lebenslauf, Anschreiben, Erfahrungen, Kompetenzen.\n• Navigationsdaten: IP-Adresse, besuchte Seiten, Besuchsdauer.\n\nDiese Daten werden bei der Erstellung Ihres Kontos, der Einreichung einer Bewerbung oder eines Angebots oder bei der einfachen Navigation auf der Website erhoben."
+        },
+        {
+          "title": "3. Nutzung der Daten",
+          "content": "Ihre Daten werden genutzt, um:\n• Den reibungslosen Betrieb des Dienstes zu ermöglichen (Kontoerstellung, Veröffentlichung von Stellenangeboten, Kontaktvermittlung zwischen Personalvermittlern und Kandidaten).\n• Die Nutzererfahrung zu verbessern (Navigationsanalyse, Personalisierung von Inhalten).\n• Ihnen dienstbezogene Mitteilungen zu senden (Job-Alarme, Newsletter), sofern Sie eingewilligt haben.\n• Unseren gesetzlichen Verpflichtungen nachzukommen."
+        },
+        {
+          "title": "4. Weitergabe von Daten",
+          "content": "Ihre personenbezogenen Daten sind streng vertraulich und werden niemals an Dritte verkauft. Sie können weitergegeben werden an:\n• Personalvermittler, wenn Sie sich auf ein Angebot bewerben (Ihre öffentlichen Lebenslaufdaten sind für sie einsehbar).\n• Unsere technischen Dienstleister (Hosting, E-Mail-Versand), die durch Vertraulichkeitsvereinbarungen gebunden sind.\n• Die zuständigen Behörden, sofern gesetzlich vorgeschrieben.\n\nSie können die Sichtbarkeit Ihres Profils jederzeit in Ihren Einstellungen ändern."
+        },
+        {
+          "title": "5. Datensicherheit",
+          "content": "Wir setzen geeignete technische und organisatorische Maßnahmen ein, um Ihre Daten vor unbefugtem Zugriff, Veränderung, Offenlegung oder Zerstörung zu schützen: Verschlüsselung sensibler Daten, eingeschränkter Datenzugriff durch unsere Mitarbeiter, regelmäßige Sicherheitsaudits."
+        },
+        {
+          "title": "6. Datenspeicherung",
+          "content": "Ihre Daten werden für die gesamte Dauer Ihres Kontos gespeichert. Wenn Sie Ihr Konto löschen, werden Ihre Daten innerhalb von maximal 30 Tagen gelöscht, es sei denn, gesetzliche Aufbewahrungspflichten bestehen (z. B. Rechnungen, Vertragsnachweise). Lebensläufe und Bewerbungen werden mit der Löschung des zugehörigen Kontos entfernt."
+        },
+        {
+          "title": "7. Ihre Rechte",
+          "content": "Gemäß der DSGVO haben Sie folgende Rechte:\n• Auskunftsrecht: Erhalt einer Kopie Ihrer personenbezogenen Daten.\n• Berichtigungsrecht: Korrektur unrichtiger oder unvollständiger Daten.\n• Recht auf Löschung: Beantragung der Löschung Ihrer Daten (im Rahmen der gesetzlichen Grenzen).\n• Widerspruchsrecht: Ablehnung der Verarbeitung Ihrer Daten aus berechtigten Gründen.\n• Recht auf Datenübertragbarkeit: Erhalt Ihrer Daten in einem strukturierten Format.\n\nUm diese Rechte auszuüben, kontaktieren Sie uns unter <a>{{email}}</a>."
+        },
+        {
+          "title": "8. Cookies",
+          "content": "Die Website verwendet Cookies, um die Navigation zu verbessern und die Reichweite zu analysieren. Sie können Ihre Präferenzen jederzeit über das Cookie-Banner verwalten. Für den Betrieb der Website unbedingt erforderliche Cookies können nicht deaktiviert werden."
+        },
+        {
+          "title": "9. Änderungen der Richtlinie",
+          "content": "Wir behalten uns das Recht vor, diese Datenschutzrichtlinie jederzeit zu ändern. Nutzer werden über wesentliche Änderungen per E-Mail oder durch einen Hinweis auf der Website informiert. Wir empfehlen Ihnen, diese Seite regelmäßig aufzurufen."
+        }
+      ]
+    },
+    "faq": {
+    "title": "Häufig gestellte Fragen",
+    "subtitle": "Alles, was Sie über Actoos wissen müssen – einfach erklärt.",
+    "searchPlaceholder": "Frage suchen…",
+    "allCategories": "Alle Kategorien",
+    "categories": [
+      {
+        "name": "Allgemein",
+        "questions": [
+          {
+            "q": "Was ist Actoos?",
+            "a": "Actoos ist eine Online-Rekrutierungsplattform, die Unternehmen und Kandidaten weltweit zusammenbringt. Wir vereinfachen die Stellensuche und die Veröffentlichung von Angeboten, unabhängig von Land oder Region."
+          },
+          {
+            "q": "Ist die Anmeldung kostenlos?",
+            "a": "Ja, die Anmeldung als Kandidat oder Unternehmen ist völlig kostenlos. Kostenpflichtige Optionen (Pro, Business) stehen für Unternehmen zur Verfügung, die mehr Funktionen wünschen."
+          },
+          {
+            "q": "Wer kann Actoos nutzen?",
+            "a": "Jeder, der einen Job sucht, sowie Unternehmen/Recruiter, die einstellen möchten. Die Plattform ist mehrsprachig und weltweit zugänglich."
+          }
+        ]
+      },
+      {
+        "name": "Kandidaten",
+        "questions": [
+          {
+            "q": "Wie bewerbe ich mich auf ein Angebot?",
+            "a": "Erstellen Sie ein Kandidatenkonto, vervollständigen Sie Ihr Profil und laden Sie Ihren Lebenslauf hoch. Sie können sich dann mit einem Klick auf die für Sie interessanten Angebote bewerben."
+          },
+          {
+            "q": "Ist mein Profil für alle Unternehmen sichtbar?",
+            "a": "Sie haben die Kontrolle: Ihr Profil kann öffentlich (für Recruiter sichtbar) oder privat (nur sichtbar, wenn Sie sich bewerben) sein. Verwalten Sie dies in Ihren Datenschutzeinstellungen."
+          },
+          {
+            "q": "Wie kann ich meine Chancen auf eine Einstellung verbessern?",
+            "a": "Vervollständigen Sie Ihr Profil zu 100 %, fügen Sie ein professionelles Foto hinzu, geben Sie Details zu Ihren Erfahrungen und Fähigkeiten an und personalisieren Sie Ihre Anschreiben."
+          }
+        ]
+      },
+      {
+        "name": "Unternehmen",
+        "questions": [
+          {
+            "q": "Wie veröffentliche ich eine Stellenanzeige?",
+            "a": "Erstellen Sie ein Firmenkonto, lassen Sie Ihre Identität überprüfen und nutzen Sie dann das Veröffentlichungsformular. Ihre Anzeige ist für Tausende von Kandidaten sichtbar."
+          },
+          {
+            "q": "Wie viel kostet die Veröffentlichung?",
+            "a": "Der Gratis-Tarif bietet eine erste Veröffentlichung. Die Pro- und Business-Tarife bieten Zugang zu mehr gleichzeitigen Angeboten, Boosts und erhöhter Sichtbarkeit. Einzelheiten finden Sie auf der Preisseite."
+          },
+          {
+            "q": "Kann ich mit einem einzigen Konto mehrere Unternehmen verwalten?",
+            "a": "Ja, Sie können mehrere Unternehmen erstellen oder ihnen beitreten und über Ihr Dashboard zwischen ihnen wechseln."
+          }
+        ]
+      },
+      {
+        "name": "Zahlungen & Abonnements",
+        "questions": [
+          {
+            "q": "Welche Zahlungsmittel werden akzeptiert?",
+            "a": "Wir akzeptieren Kreditkarten (Visa, Mastercard) über einen sicheren Zahlungspartner. Die Preise werden in der Regel in CFA-Francs (XOF) oder Ihrer lokalen Währung angezeigt."
+          },
+          {
+            "q": "Wie kündige ich mein Abonnement?",
+            "a": "Sie können Ihr Abonnement jederzeit in Ihrem Dashboard unter „Abonnement“ kündigen. Die Kündigung wird zum Ende des laufenden Zeitraums wirksam."
+          },
+          {
+            "q": "Kann ich den Tarif wechseln (monatlich → jährlich)?",
+            "a": "Ja, Sie können jederzeit upgraden, downgraden oder den Abrechnungszyklus ändern. Preisänderungen werden automatisch berechnet."
+          }
+        ]
+      },
+      {
+        "name": "Support & Kontakt",
+        "questions": [
+          {
+            "q": "Wie kontaktiere ich den Support?",
+            "a": "Schreiben Sie uns an contact@actoos.com oder nutzen Sie das Kontaktformular auf der Website. Wir antworten innerhalb von 24 Werktagen."
+          },
+          {
+            "q": "Ich habe mein Passwort vergessen. Was tun?",
+            "a": "Klicken Sie auf der Anmeldeseite auf „Passwort vergessen“. Sie erhalten eine E-Mail, um es zurückzusetzen."
+          },
+          {
+            "q": "Wie melde ich ein Problem oder ein betrügerisches Angebot?",
+            "a": "Nutzen Sie die Meldeschaltfläche (Flagge) bei jedem Angebot oder Profil. Unser Moderationsteam prüft alle Meldungen schnellstmöglich."
+          }
+        ]
+      }
+    ],
+    "noResults": "Keine Ergebnisse für \"{{search}}\".",
+    "noResultsHint": "Versuchen Sie es mit anderen Stichwörtern oder durchsuchen Sie die Kategorien.",
+    "contactBlock": {
+      "title": "Sie finden Ihre Antwort nicht?",
+      "description": "Unser Team ist für Sie da.",
+      "button": "Kontaktieren Sie uns"
+    }
+  }
+  
 
 
 }
