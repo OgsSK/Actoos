@@ -86,6 +86,7 @@ export default function ContactPage() {
           </span>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-950 mb-6">
             {t[language].contactPageTitle}
+            <span className="text-[#D4AF37]">.</span>
           </h1>
           <p className="text-slate-500 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
             {t[language].contactPageSubtitle}
@@ -117,21 +118,21 @@ export default function ContactPage() {
                 name="name"
                 placeholder={t[language].contactPlaceholderName}
                 required
-                className="w-full border rounded-xl px-4 py-3 text-sm"
+                className="w-full border rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37]"
               />
               <input
                 type="email"
                 name="email"
                 placeholder={t[language].contactPlaceholderEmail}
                 required
-                className="w-full border rounded-xl px-4 py-3 text-sm"
+                className="w-full border rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37]"
               />
               <textarea
                 name="message"
                 placeholder={t[language].contactPlaceholderMessage}
                 rows={5}
                 required
-                className="w-full border rounded-xl px-4 py-3 text-sm"
+                className="w-full border rounded-xl px-4 py-3 text-sm outline-none focus:border-[#D4AF37]"
               />
               <button
                 type="submit"

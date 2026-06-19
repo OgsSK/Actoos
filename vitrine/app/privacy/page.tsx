@@ -24,7 +24,6 @@ export default function PrivacyPage() {
             </div>
           </a>
           <div className="flex items-center space-x-6">
-            {/* Sélecteur de langue */}
             <div className="flex items-center space-x-4 text-[11px] font-black uppercase tracking-widest text-slate-400">
               <button
                 onClick={() => setLanguage('fr')}
@@ -54,32 +53,18 @@ export default function PrivacyPage() {
       <main className="pt-32 pb-20 px-6 max-w-4xl mx-auto">
         <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">
           {t[language].privacyTitle}
+          <span className="text-[#D4AF37]">.</span>
         </h1>
         <p className="text-slate-400 text-sm mb-12">{t[language].privacyLastUpdate}</p>
 
         <div className="prose prose-slate max-w-none">
-          {/* Section 1 */}
           <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection1 }} />
-
-          {/* Section 2 */}
           <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection2 }} />
-
-          {/* Section 3 */}
           <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection3 }} />
-
-          {/* Section 4 */}
           <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection4 }} />
-
-          {/* Section 5 */}
           <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection5 }} />
-
-          {/* Section 6 */}
           <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection6 }} />
-
-          {/* Section 7 */}
           <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection7 }} />
-
-          {/* Section 8 */}
           <section className="mb-12" dangerouslySetInnerHTML={{ __html: t[language].privacySection8 }} />
         </div>
       </main>

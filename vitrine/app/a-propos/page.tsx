@@ -38,7 +38,7 @@ export default function AboutPage() {
                 EN
               </button>
             </div>
-            <a 
+            <a
               href="/"
               className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-bold"
             >
@@ -57,6 +57,7 @@ export default function AboutPage() {
           </span>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-950 mb-6">
             {t[language].aboutTitle}
+            <span className="text-[#D4AF37]">.</span>
           </h1>
           <p className="text-slate-500 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
             {t[language].aboutIntro}

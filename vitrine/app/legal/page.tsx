@@ -24,7 +24,6 @@ export default function LegalPage() {
             </div>
           </a>
           <div className="flex items-center space-x-6">
-            {/* Sélecteur de langue */}
             <div className="flex items-center space-x-4 text-[11px] font-black uppercase tracking-widest text-slate-400">
               <button
                 onClick={() => setLanguage('fr')}
@@ -54,6 +53,7 @@ export default function LegalPage() {
       <main className="pt-32 pb-20 px-6 max-w-4xl mx-auto">
         <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">
           {t[language].legalTitle}
+          <span className="text-[#D4AF37]">.</span>
         </h1>
         <p className="text-slate-400 text-sm mb-12">{t[language].legalLastUpdate}</p>
 
