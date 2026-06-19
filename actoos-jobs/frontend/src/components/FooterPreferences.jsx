@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
-import { supabase } from '../lib/supabase';
+import { useCountries } from '../contexts/CountriesContext'; // ← Nouveau
 import { Globe, ChevronDown } from 'lucide-react';
 
 const selectClass =
@@ -10,23 +10,7 @@ const selectClass =
 const FooterPreferences = () => {
   const { t } = useTranslation();
   const { prefs, updatePrefs } = usePreferencesContext();
-  const [countries, setCountries] = useState([]);
-  const [availableCurrencies, setAvailableCurrencies] = useState([]);
-
-  useEffect(() => {
-    let alive = true;
-    supabase
-      .from('countries')
-      .select('code, name, currency')
-      .order('name')
-      .then(({ data }) => {
-        if (!alive) return;
-        const rows = data || [];
-        setCountries(rows);
-        setAvailableCurrencies([...new Set(rows.map(c => c.currency).filter(Boolean))]);
-      });
-    return () => { alive = false; };
-  }, []);
+  const { countries, availableCurrencies } = useCountries(); // ← Données centralisées
 
   const handleCountryChange = (e) => {
     const newValue = e.target.value === '' ? null : e.target.value;

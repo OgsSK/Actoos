@@ -12,6 +12,13 @@ from pathlib import Path
 import json
 from datetime import datetime, timedelta, timezone
 import uuid
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, Response
+import os
+
+
+
+
 
 env_path = Path(__file__).parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -22,6 +29,9 @@ print(f"   SUPABASE_URL présente : {'oui' if os.getenv('SUPABASE_URL') else 'no
 print(f"   SUPABASE_SERVICE_ROLE_KEY présente : {'oui' if os.getenv('SUPABASE_SERVICE_ROLE_KEY') else 'non'}")
 
 app = FastAPI(title="Actoos Jobs API")
+
+BUILD_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
+
 
 ALLOWED_ORIGINS = ["http://localhost:3000", "https://jobs.actoos.com"]
 app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -2784,6 +2794,29 @@ async def checkout_complete(request: Request):
         "currency": currency,
         "isBoost": is_boost
     }
+
+# Routes spécifiques pour le SPA et les assets
+@app.get("/sw.js")
+async def sw_js():
+    return Response(content="", media_type="application/javascript")
+
+@app.get("/favicon.ico")
+async def favicon_ico():
+    favicon_path = os.path.join(BUILD_DIR, "favicon.png")
+    if os.path.isfile(favicon_path):
+        return FileResponse(favicon_path, media_type="image/png")
+    return Response(content="", media_type="image/x-icon")
+
+@app.get("/assets/fonts/{font_name}")
+async def fonts(font_name: str):
+    return Response(content="", media_type="font/woff2")
+
+# Montages statiques – doivent être placés après toutes les routes API
+if os.path.isdir(BUILD_DIR):
+    app.mount("/static", StaticFiles(directory=os.path.join(BUILD_DIR, "static")), name="static")
+    app.mount("/", StaticFiles(directory=BUILD_DIR, html=True), name="root")
+
+
 
 if __name__ == "__main__":
     import uvicorn

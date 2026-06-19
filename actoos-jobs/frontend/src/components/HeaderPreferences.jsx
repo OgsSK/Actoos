@@ -1,27 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
-import { supabase } from '../lib/supabase';
+import { useCountries } from '../contexts/CountriesContext'; // ← Nouveau
 import { Globe } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const HeaderPreferences = ({ isMobile = false, isTransparent = false }) => {
   const { t } = useTranslation();
   const { prefs, updatePrefs } = usePreferencesContext();
-  const [countries, setCountries] = useState([]);
-  const [availableCurrencies, setAvailableCurrencies] = useState([]);
-
-  useEffect(() => {
-    supabase
-      .from('countries')
-      .select('code, name, currency')
-      .order('name')
-      .then(({ data }) => {
-        setCountries(data || []);
-        const currencies = [...new Set(data?.map(c => c.currency).filter(Boolean))];
-        setAvailableCurrencies(currencies);
-      });
-  }, []);
+  const { countries, availableCurrencies } = useCountries(); // ← Récupère les données centralisées
 
   const handleCountryChange = (e) => {
     const newValue = e.target.value === '' ? null : e.target.value;
@@ -46,7 +33,7 @@ const HeaderPreferences = ({ isMobile = false, isTransparent = false }) => {
   const selectClasses = cn(
     'bg-transparent text-slate-600 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all',
     isMobile
-      ? 'px-1.5 py-0.5 text-xs border-slate-300 max-w-[70px]' // réduit pour mobile
+      ? 'px-1.5 py-0.5 text-xs border-slate-300 max-w-[70px]'
       : 'px-2 py-1'
   );
 

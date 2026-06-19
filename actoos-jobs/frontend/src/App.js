@@ -4,7 +4,8 @@ import { Toaster } from 'sonner';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { PreferencesProvider } from './contexts/PreferencesContext'; // ← Ajouté
+import { PreferencesProvider } from './contexts/PreferencesContext';
+import { CountriesProvider } from './contexts/CountriesContext'; // ← Ajouté
 import Header from './components/Header';
 import Footer from './components/Footer';
 import GeoBanner from './components/GeoBanner';
@@ -186,8 +187,6 @@ const AppContent = () => {
             <Route path="/dashboard/entreprise/offres" element={<ProtectedRoute><CompanyJobsPage /></ProtectedRoute>} />
             <Route path="/dashboard/entreprise/candidatures" element={<ProtectedRoute><CompanyApplicationsPage /></ProtectedRoute>} />
             <Route path="/dashboard/entreprise/candidatures/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
-            {/* Route vers la gestion d'équipe désactivée */}
-            {/* <Route path="/dashboard/entreprise/equipe" element={<ProtectedRoute><TeamManagementPage /></ProtectedRoute>} /> */}
 
             {/* ---------- Protected route - Voir profil candidat (recruteur) ---------- */}
             <Route path="/candidat/:id" element={<ProtectedRoute><CandidatePublicProfilePage /></ProtectedRoute>} />
@@ -228,7 +227,9 @@ function App() {
       <Router>
         <AuthProvider>
           <PreferencesProvider>
-            <AppContent />
+            <CountriesProvider>   {/* ← Nouveau provider */}
+              <AppContent />
+            </CountriesProvider>
           </PreferencesProvider>
         </AuthProvider>
       </Router>
