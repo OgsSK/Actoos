@@ -922,31 +922,45 @@
   },
   
   "contact": {
-    "title": "Neem contact met ons op",
-    "subtitle": "Een vraag, een suggestie? Wij staan voor u klaar.",
-    "labels": {
-      "name": "Volledige naam",
-      "email": "E-mail",
-      "subject": "Onderwerp",
-      "message": "Bericht"
+      "hero": {
+        "title": "Neem contact met ons op",
+        "subtitle": "Een vraag, een suggestie, of gewoon zin om te praten? Wij luisteren."
+      },
+      "form": {
+        "title": "Stuur ons een bericht"
+      },
+      "labels": {
+        "name": "Volledige naam",
+        "email": "E-mailadres",
+        "subject": "Onderwerp",
+        "message": "Uw bericht"
+      },
+      "placeholders": {
+        "name": "Uw naam",
+        "email": "email@example.com",
+        "subject": "Onderwerp van uw bericht",
+        "message": "Beschrijf uw verzoek, suggestie of vraag…"
+      },
+      "sendButton": "Bericht verzenden",
+      "success": {
+        "title": "Bericht succesvol verzonden!",
+        "message": "Bedankt voor uw bericht. We zullen zo snel mogelijk reageren."
+      },
+      "toasts": {
+        "fillAllFields": "Vul alle verplichte velden in.",
+        "sent": "Uw bericht is verzonden.",
+        "error": "Er is een fout opgetreden bij het verzenden. Probeer het opnieuw."
+      },
+      "info": {
+        "title": "Onze contactgegevens",
+        "email": "E-mail",
+        "phone": "Telefoon",
+        "address": "Adres",
+        "quickResponse": "Snel antwoord",
+        "quickResponseDesc": "Wij reageren binnen 24 werkuren."
+      }
     },
-    "placeholders": {
-      "name": "Uw naam",
-      "email": "u@voorbeeld.com",
-      "subject": "Onderwerp van uw bericht",
-      "message": "Schrijf hier uw bericht..."
-    },
-    "sendButton": "Bericht verzenden",
-    "success": {
-      "title": "Bericht verzonden!",
-      "message": "Wij antwoorden zo spoedig mogelijk."
-    },
-    "toasts": {
-      "fillAllFields": "Vul alstublieft alle velden in.",
-      "sent": "Bericht succesvol verzonden!",
-      "error": "Fout bij verzenden."
-    }
-  },
+  
   "companyTeam": {
     "invite": {
       "title": "Een lid uitnodigen",

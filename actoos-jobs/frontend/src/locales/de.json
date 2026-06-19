@@ -956,31 +956,44 @@
   },
   
   "contact": {
-    "title": "Kontaktieren Sie uns",
-    "subtitle": "Eine Frage, ein Vorschlag? Wir sind für Sie da.",
-    "labels": {
-      "name": "Vollständiger Name",
-      "email": "E-Mail",
-      "subject": "Betreff",
-      "message": "Nachricht"
+      "hero": {
+        "title": "Kontaktieren Sie uns",
+        "subtitle": "Eine Frage, eine Anregung oder einfach Lust auf Austausch? Wir sind für Sie da."
+      },
+      "form": {
+        "title": "Senden Sie uns eine Nachricht"
+      },
+      "labels": {
+        "name": "Vollständiger Name",
+        "email": "E-Mail-Adresse",
+        "subject": "Betreff",
+        "message": "Ihre Nachricht"
+      },
+      "placeholders": {
+        "name": "Ihr Name",
+        "email": "email@example.com",
+        "subject": "Betreff Ihrer Nachricht",
+        "message": "Beschreiben Sie Ihre Anfrage, Anregung oder Frage…"
+      },
+      "sendButton": "Nachricht senden",
+      "success": {
+        "title": "Nachricht erfolgreich gesendet!",
+        "message": "Vielen Dank für Ihre Kontaktaufnahme. Wir werden uns schnellstmöglich bei Ihnen melden."
+      },
+      "toasts": {
+        "fillAllFields": "Bitte füllen Sie alle Pflichtfelder aus.",
+        "sent": "Ihre Nachricht wurde gesendet.",
+        "error": "Beim Senden ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+      },
+      "info": {
+        "title": "Unsere Kontaktdaten",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "address": "Adresse",
+        "quickResponse": "Schnelle Antwort",
+        "quickResponseDesc": "Wir antworten innerhalb von 24 Werktagen."
+      }
     },
-    "placeholders": {
-      "name": "Ihr Name",
-      "email": "sie@beispiel.com",
-      "subject": "Betreff Ihrer Nachricht",
-      "message": "Schreiben Sie hier Ihre Nachricht..."
-    },
-    "sendButton": "Nachricht senden",
-    "success": {
-      "title": "Nachricht gesendet!",
-      "message": "Wir werden Ihnen schnellstmöglich antworten."
-    },
-    "toasts": {
-      "fillAllFields": "Bitte füllen Sie alle Felder aus.",
-      "sent": "Nachricht erfolgreich gesendet!",
-      "error": "Fehler beim Senden."
-    }
-  },
   "companyTeam": {
     "invite": {
       "title": "Mitglied einladen",

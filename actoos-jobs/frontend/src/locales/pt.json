@@ -920,32 +920,45 @@
     }
   },
   
-  "contact": {
-    "title": "Contacte-nos",
-    "subtitle": "Uma pergunta, uma sugestão? Estamos à sua escuta.",
-    "labels": {
-      "name": "Nome completo",
-      "email": "Email",
-      "subject": "Assunto",
-      "message": "Mensagem"
+ "contact": {
+      "hero": {
+        "title": "Contacte-nos",
+        "subtitle": "Uma pergunta, uma sugestão ou simplesmente vontade de conversar? Estamos ao seu dispor."
+      },
+      "form": {
+        "title": "Envie-nos uma mensagem"
+      },
+      "labels": {
+        "name": "Nome completo",
+        "email": "Endereço de email",
+        "subject": "Assunto",
+        "message": "A sua mensagem"
+      },
+      "placeholders": {
+        "name": "O seu nome",
+        "email": "email@example.com",
+        "subject": "Assunto da sua mensagem",
+        "message": "Descreva o seu pedido, sugestão ou pergunta…"
+      },
+      "sendButton": "Enviar mensagem",
+      "success": {
+        "title": "Mensagem enviada com sucesso!",
+        "message": "Obrigado pelo seu contacto. Responderemos o mais rapidamente possível."
+      },
+      "toasts": {
+        "fillAllFields": "Por favor, preencha todos os campos obrigatórios.",
+        "sent": "A sua mensagem foi enviada.",
+        "error": "Ocorreu um erro ao enviar. Por favor, tente novamente."
+      },
+      "info": {
+        "title": "Os nossos contactos",
+        "email": "Email",
+        "phone": "Telefone",
+        "address": "Morada",
+        "quickResponse": "Resposta rápida",
+        "quickResponseDesc": "Respondemos em menos de 24 horas úteis."
+      }
     },
-    "placeholders": {
-      "name": "O seu nome",
-      "email": "voce@exemplo.com",
-      "subject": "Assunto da sua mensagem",
-      "message": "Escreva aqui a sua mensagem..."
-    },
-    "sendButton": "Enviar mensagem",
-    "success": {
-      "title": "Mensagem enviada!",
-      "message": "Responderemos o mais brevemente possível."
-    },
-    "toasts": {
-      "fillAllFields": "Por favor, preencha todos os campos.",
-      "sent": "Mensagem enviada com sucesso!",
-      "error": "Erro ao enviar."
-    }
-  },
   "companyTeam": {
     "invite": {
       "title": "Convidar um membro",

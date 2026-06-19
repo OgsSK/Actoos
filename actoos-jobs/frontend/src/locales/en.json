@@ -921,31 +921,44 @@
   },
   
   "contact": {
-    "title": "Contact us",
-    "subtitle": "A question, a suggestion? We are here to listen.",
-    "labels": {
-      "name": "Full name",
-      "email": "Email",
-      "subject": "Subject",
-      "message": "Message"
+      "hero": {
+        "title": "Contact us",
+        "subtitle": "A question, a suggestion, or simply want to get in touch? We're here to listen."
+      },
+      "form": {
+        "title": "Send us a message"
+      },
+      "labels": {
+        "name": "Full name",
+        "email": "Email address",
+        "subject": "Subject",
+        "message": "Your message"
+      },
+      "placeholders": {
+        "name": "Your name",
+        "email": "email@example.com",
+        "subject": "Subject of your message",
+        "message": "Describe your request, suggestion or question…"
+      },
+      "sendButton": "Send message",
+      "success": {
+        "title": "Message sent successfully!",
+        "message": "Thank you for contacting us. We will get back to you as soon as possible."
+      },
+      "toasts": {
+        "fillAllFields": "Please fill in all required fields.",
+        "sent": "Your message has been sent.",
+        "error": "An error occurred while sending. Please try again."
+      },
+      "info": {
+        "title": "Our contact details",
+        "email": "Email",
+        "phone": "Phone",
+        "address": "Address",
+        "quickResponse": "Quick response",
+        "quickResponseDesc": "We reply within 24 business hours."
+      }
     },
-    "placeholders": {
-      "name": "Your name",
-      "email": "you@example.com",
-      "subject": "Subject of your message",
-      "message": "Write your message here..."
-    },
-    "sendButton": "Send message",
-    "success": {
-      "title": "Message sent!",
-      "message": "We will respond as soon as possible."
-    },
-    "toasts": {
-      "fillAllFields": "Please fill in all fields.",
-      "sent": "Message sent successfully!",
-      "error": "Error sending."
-    }
-  },
   "companyTeam": {
     "invite": {
       "title": "Invite a member",

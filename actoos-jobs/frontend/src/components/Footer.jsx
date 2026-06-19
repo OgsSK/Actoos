@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, Phone } from 'lucide-react';
 import FooterPreferences from '../components/FooterPreferences';
 
 const Footer = () => {
@@ -102,32 +101,15 @@ const Footer = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <a
-                href={`mailto:${t('footer.contact.email')}`}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2.5 text-sm text-slate-200 transition hover:border-slate-500 hover:text-white"
-              >
-                <Mail className="h-4 w-4 text-slate-400" />
-                <span className="whitespace-nowrap">{t('footer.contact.email')}</span>
-              </a>
-
-              <a
-                href={`tel:${t('footer.contact.phone').replace(/\s/g, '')}`}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2.5 text-sm text-slate-200 transition hover:border-slate-500 hover:text-white"
-              >
-                <Phone className="h-4 w-4 text-slate-400" />
-                <span className="whitespace-nowrap">{t('footer.contact.phone')}</span>
-              </a>
-            </div>
-
-            <FooterPreferences />
-
+            {/* Bouton de contact uniquement */}
             <Link
               to="/contact"
               className="inline-flex w-full items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 sm:w-auto"
             >
               {t('footer.contact.button')}
             </Link>
+
+            <FooterPreferences />
           </div>
         </div>
 

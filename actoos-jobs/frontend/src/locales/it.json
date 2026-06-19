@@ -921,31 +921,44 @@
   },
   
   "contact": {
-    "title": "Contattaci",
-    "subtitle": "Una domanda, un suggerimento? Siamo a tua disposizione.",
-    "labels": {
-      "name": "Nome completo",
-      "email": "Email",
-      "subject": "Oggetto",
-      "message": "Messaggio"
+      "hero": {
+        "title": "Contattaci",
+        "subtitle": "Una domanda, un suggerimento o semplicemente voglia di scambiare due chiacchiere? Siamo a tua disposizione."
+      },
+      "form": {
+        "title": "Inviaci un messaggio"
+      },
+      "labels": {
+        "name": "Nome completo",
+        "email": "Indirizzo email",
+        "subject": "Oggetto",
+        "message": "Il tuo messaggio"
+      },
+      "placeholders": {
+        "name": "Il tuo nome",
+        "email": "email@example.com",
+        "subject": "Oggetto del tuo messaggio",
+        "message": "Descrivi la tua richiesta, suggerimento o domanda…"
+      },
+      "sendButton": "Invia messaggio",
+      "success": {
+        "title": "Messaggio inviato con successo!",
+        "message": "Grazie per averci contattato. Ti risponderemo al più presto."
+      },
+      "toasts": {
+        "fillAllFields": "Si prega di compilare tutti i campi obbligatori.",
+        "sent": "Il tuo messaggio è stato inviato.",
+        "error": "Si è verificato un errore durante l'invio. Riprova."
+      },
+      "info": {
+        "title": "I nostri recapiti",
+        "email": "Email",
+        "phone": "Telefono",
+        "address": "Indirizzo",
+        "quickResponse": "Risposta rapida",
+        "quickResponseDesc": "Rispondiamo entro 24 ore lavorative."
+      }
     },
-    "placeholders": {
-      "name": "Il tuo nome",
-      "email": "tu@esempio.com",
-      "subject": "Oggetto del tuo messaggio",
-      "message": "Scrivi qui il tuo messaggio..."
-    },
-    "sendButton": "Invia messaggio",
-    "success": {
-      "title": "Messaggio inviato!",
-      "message": "Ti risponderemo al più presto."
-    },
-    "toasts": {
-      "fillAllFields": "Per favore, compila tutti i campi.",
-      "sent": "Messaggio inviato con successo!",
-      "error": "Errore durante l'invio."
-    }
-  },
   "companyTeam": {
     "invite": {
       "title": "Invita un membro",
