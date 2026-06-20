@@ -95,42 +95,42 @@ const PricingPage = () => {
     fetchCompany();
   }, [user]);
 
-const handleCheckout = async (packageId) => {
-  if (!user) {
-    toast.error(t('pricing.toast.mustLogin'));
-    return;
-  }
-  setCheckoutLoading(packageId);
-  try {
-    const result = await apiFetch('/api/checkout/session', {
-      method: 'POST',
-      body: JSON.stringify({
-        package_id: packageId,
-        origin_url: window.location.origin,
-        user_email: user.email,
-        user_id: user.id,
-      }),
-    });
-    window.location.href = result.url;
-  } catch (err) {
-    const msg = err.message || '';
-    if (msg.includes('DOWNGRADE_BLOCKED:')) {
-      const numbers = msg.match(/\d+/g);
-      if (numbers && numbers.length >= 3) {
-        toast.error(t('pricing.downgradeBlocked', {
-          active: numbers[numbers.length - 2],
-          limit: numbers[numbers.length - 1]
-        }));
-      } else {
-        toast.error(t('pricing.downgradeBlocked', { active: '?', limit: '?' }));
-      }
-    } else {
-      toast.error(err.message || t('pricing.toast.checkoutError'));
+  const handleCheckout = async (packageId) => {
+    if (!user) {
+      toast.error(t('pricing.toast.mustLogin'));
+      return;
     }
-  } finally {
-    setCheckoutLoading(null);
-  }
-};
+    setCheckoutLoading(packageId);
+    try {
+      const result = await apiFetch('/api/checkout/session', {
+        method: 'POST',
+        body: JSON.stringify({
+          package_id: packageId,
+          origin_url: window.location.origin,
+          user_email: user.email,
+          user_id: user.id,
+        }),
+      });
+      window.location.href = result.url;
+    } catch (err) {
+      const msg = err.message || '';
+      if (msg.includes('DOWNGRADE_BLOCKED:')) {
+        const numbers = msg.match(/\d+/g);
+        if (numbers && numbers.length >= 3) {
+          toast.error(t('pricing.downgradeBlocked', {
+            active: numbers[numbers.length - 2],
+            limit: numbers[numbers.length - 1]
+          }));
+        } else {
+          toast.error(t('pricing.downgradeBlocked', { active: '?', limit: '?' }));
+        }
+      } else {
+        toast.error(err.message || t('pricing.toast.checkoutError'));
+      }
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
 
   const handlePortal = () => {
     window.location.href = '/dashboard/entreprise';
@@ -200,10 +200,10 @@ const handleCheckout = async (packageId) => {
     },
   ];
 
-  const proMonthly = subscriptions.pro_monthly?.amount || 49000;
-  const proAnnual = subscriptions.pro_annual?.amount || 470400;
-  const businessMonthly = subscriptions.business_monthly?.amount || 149000;
-  const businessAnnual = subscriptions.business_annual?.amount || 1430400;
+  const proMonthly = subscriptions?.pro_monthly?.amount || 49000;
+  const proAnnual = subscriptions?.pro_annual?.amount || 470400;
+  const businessMonthly = subscriptions?.business_monthly?.amount || 149000;
+  const businessAnnual = subscriptions?.business_annual?.amount || 1430400;
 
   const currentPlan = company?.subscription_plan || 'free';
 
@@ -221,7 +221,6 @@ const handleCheckout = async (packageId) => {
 
   const faqItems = t('pricing.faq.items', { returnObjects: true }) || [];
 
-  // ---------- Tableau comparatif dynamique et traduit ----------
   const comparisonRows = [
     {
       key: 'activeOffers',
@@ -326,41 +325,38 @@ const handleCheckout = async (packageId) => {
                   <CardDescription className="text-slate-500 mt-2">{t(plan.descKey)}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-8">
-                  <div className="text-center mb-8">
+                  <div className="text-center mb-6">
                     {plan.id === 'free' ? (
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-5xl font-bold text-slate-900">{format(0).value}</span>
-                        <span className="text-lg text-slate-500 ml-1">{format(0).symbol}</span>
-                        <span className="text-slate-400">{t('pricing.perMonth')}</span>
-                      </div>
+                      <>
+                        <div className="text-3xl font-extrabold text-slate-900">
+                          {format(0)}
+                        </div>
+                        <div className="text-sm text-slate-400 mt-1">{t('pricing.perMonth')}</div>
+                      </>
+                    ) : annual ? (
+                      <>
+                        <div className="text-3xl font-extrabold text-slate-900">
+                          {format(annualMonthlyEquivalent)}
+                          <span className="text-lg font-normal text-slate-500 ml-1">/mois</span>
+                        </div>
+                        <div className="text-sm text-slate-500 mt-1">
+                          {t('pricing.billedAnnually')} ({format(annualPrice)})
+                        </div>
+                        <div className="mt-2">
+                          <Badge className="bg-green-50 text-green-700 border-0 rounded-full text-xs">
+                            {t('pricing.toggle.savePercent')}
+                          </Badge>
+                        </div>
+                      </>
                     ) : (
                       <>
-                        {annual ? (
-                          <>
-                            <div className="flex items-baseline justify-center gap-1">
-                              <span className="text-5xl font-bold text-slate-900">{format(annualMonthlyEquivalent).value}</span>
-                              <span className="text-lg text-slate-500 ml-1">{format(annualMonthlyEquivalent).symbol}</span>
-                              <span className="text-slate-400">{t('pricing.perMonth')}</span>
-                            </div>
-                            <div className="mt-1 text-sm text-slate-500">{format(annualPrice).value} {format(annualPrice).symbol} {t('pricing.billedAnnually')}</div>
-                            <div className="mt-2 flex items-center justify-center gap-2">
-                              <span className="text-sm text-slate-500">{format(annualPrice).value} {format(annualPrice).symbol} {t('pricing.perYear')}</span>
-                              <Badge className="bg-green-50 text-green-700 border-0 rounded-full text-xs">{t('pricing.toggle.savePercent')}</Badge>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-baseline justify-center gap-1">
-                              <span className="text-5xl font-bold text-slate-900">{format(monthlyPrice).value}</span>
-                              <span className="text-lg text-slate-500 ml-1">{format(monthlyPrice).symbol}</span>
-                              <span className="text-slate-400">{t('pricing.perMonth')}</span>
-                            </div>
-                            <div className="mt-1 text-sm text-slate-500">{format(monthlyPrice).value} {format(monthlyPrice).symbol} {t('pricing.billedMonthly')}</div>
-                            <div className="mt-2 flex items-center justify-center gap-2">
-                              <span className="text-sm text-slate-500">{format(monthlyPrice).value} {format(monthlyPrice).symbol} {t('pricing.perMonth')}</span>
-                            </div>
-                          </>
-                        )}
+                        <div className="text-3xl font-extrabold text-slate-900">
+                          {format(monthlyPrice)}
+                          <span className="text-lg font-normal text-slate-500 ml-1">/mois</span>
+                        </div>
+                        <div className="text-sm text-slate-500 mt-1">
+                          {t('pricing.billedMonthly')}
+                        </div>
                       </>
                     )}
                   </div>
