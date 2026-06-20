@@ -1128,9 +1128,7 @@
       "member": "(عضو)",
       "newCompany": "شركة جديدة"
     },
-    "header": {
-      "title": "مساحة التوظيف"
-    },
+    
     "profileButton": "ملف الشركة",
     "newOfferButton": "عرض جديد",
     "stats": {
@@ -1613,48 +1611,7 @@
       ]
     }
   },
-  "footer": {
-    "brand": {
-      "tagline": "منصة التوظيف من الجيل الجديد. اعثر على وظيفتك المثالية أو وظّف أفضل المواهب."
-    },
-    "sections": {
-      "candidates": {
-        "title": "المرشحون",
-        "links": {
-          "search": "ابحث عن وظيفة",
-          "createAccount": "إنشاء حسابي",
-          "dashboard": "مساحتي كمرشح",
-          "careerTips": "نصائح مهنية"
-        }
-      },
-      "companies": {
-        "title": "الشركات",
-        "links": {
-          "publishOffer": "نشر وظيفة",
-          "dashboard": "مساحة مسؤول التوظيف",
-          "pricing": "الأسعار"
-        }
-      },
-      "info": {
-        "title": "معلومات",
-        "links": {
-          "about": "حول",
-          "faq": "الأسئلة الشائعة",
-          "cgu": "شروط الاستخدام",
-          "privacy": "الخصوصية",
-          "cookies": "ملفات تعريف الارتباط"
-        }
-      }
-    },
-    "contact": {
-      "title": "هل لديك سؤال؟",
-      "description": "فريقنا هنا لمساعدتك. راجع الأسئلة الشائعة أو اتصل بنا مباشرة.",
-      "email": "contact@actoos.com",
-      "phone": "+32 465 74 36 61",
-      "button": "اتصل بنا"
-    },
-    "copyright": "© {{year}} Actoos Jobs. جميع الحقوق محفوظة."
-  },
+
   "header": {
     "brand": "Actoos Jobs",
     "nav": {
@@ -2330,22 +2287,23 @@
       "unknown": "غير معروف"
     }
   },
-  "categories": {
-    "ong-humanitaire": "منظمات غير حكومية وإنسانية",
-    "tech": "التكنولوجيا وتكنولوجيا المعلومات",
-    "marketing": "التسويق والاتصالات",
-    "finance": "المالية والمحاسبة",
-    "rh": "الموارد البشرية",
-    "commerce": "التجارة والمبيعات",
-    "sante": "الصحة والطب",
-    "education": "التعليم والتدريب",
-    "btp": "البناء والهندسة المدنية",
-    "transport": "النقل والخدمات اللوجستية",
-    "agriculture": "الزراعة والبيئة",
-    "tourisme": "السياحة والضيافة",
-    "juridique": "القانون والحقوق",
-    "autre": "أخرى"
-  },
+ "categories": {
+  "administration": "الإدارة",
+  "agriculture": "الزراعة والبيئة",
+  "autre": "أخرى",
+  "btp": "البناء والهندسة المدنية",
+  "commerce": "التجارة والمبيعات",
+  "education": "التعليم والتكوين",
+  "finance": "المالية والمحاسبة",
+  "juridique": "القانون والحقوق",
+  "marketing": "التسويق والاتصال",
+  "ong-humanitaire": "المنظمات غير الحكومية والإنسانية",
+  "rh": "الموارد البشرية",
+  "sante": "الصحة والطب",
+  "tech": "التكنولوجيا وتكنولوجيا المعلومات",
+  "tourisme": "السياحة والضيافة",
+  "transport": "النقل والخدمات اللوجستية"
+},
   "countries": {
     "ML": "مالي",
     "SN": "السنغال",
@@ -2775,8 +2733,72 @@
       "description": "فريقنا متاح لمساعدتك.",
       "button": "اتصل بنا"
     }
+  },
+  "footer": {
+  "tagline": "منصة التوظيف من الجيل الجديد. اعثر على وظيفتك المثالية أو استقطب أفضل المواهب.",
+  "copyright": "© {{year}} Actoos Jobs. جميع الحقوق محفوظة.",
+  "sections": {
+    "candidates": {
+      "title": "المرشحون",
+      "links": {
+        "search": "ابحث عن وظيفة",
+        "createAccount": "إنشاء حسابي",
+        "dashboard": "مساحة المرشح",
+        "careerTips": "نصائح مهنية"
+      }
+    },
+    "companies": {
+      "title": "الشركات",
+      "links": {
+        "publishOffer": "نشر عرض",
+        "dashboard": "مساحة المجند",
+        "pricing": "الأسعار"
+      }
+    },
+    "info": {
+      "title": "معلومات",
+      "links": {
+        "about": "حول",
+        "faq": "الأسئلة الشائعة",
+        "cgu": "الشروط",
+        "privacy": "الخصوصية",
+        "cookies": "ملفات تعريف الارتباط"
+      }
+    }
+  },
+  "contact": {
+    "title": "هل لديك سؤال؟",
+    "description": "فريقنا هنا لمساعدتك. راجع الأسئلة الشائعة أو اتصل بنا مباشرة.",
+    "button": "اتصل بنا"
   }
-  
+},
+"header": {
+  "brand": "Actoos Jobs",
+  "tagline": "سوق المواهب",
+  "nav": {
+    "jobs": "الوظائف",
+    "companies": "الشركات",
+    "pricing": "الأسعار",
+    "blog": "المدونة"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "companySpace": "مساحة الشركة"
+  },
+  "user": {
+    "defaultName": "مستخدم",
+    "defaultUser": "مستخدم",
+    "dashboard": "لوحة التحكم",
+    "profile": "الملف الشخصي",
+    "createAlert": "تنبيهات الوظائف",
+    "settings": "الإعدادات",
+    "admin": "الإدارة",
+    "plan": "الخطة: {{plan}}",
+    "companySpace": "مساحة الشركة",
+    "logout": "تسجيل الخروج"
+  }
+}
 
 
 }

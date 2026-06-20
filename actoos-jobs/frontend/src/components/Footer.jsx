@@ -17,7 +17,7 @@ const Footer = () => {
               Actoos <span className="text-blue-500">Jobs</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-6 text-slate-400">
-              La plateforme de recrutement nouvelle génération. Trouvez votre emploi idéal ou recrutez les meilleurs talents.
+              {t('footer.tagline')}
             </p>
           </div>
 
@@ -101,7 +101,6 @@ const Footer = () => {
           </div>
 
           <div className="space-y-4">
-            {/* Bouton de contact uniquement */}
             <Link
               to="/contact"
               className="inline-flex w-full items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 sm:w-auto"
@@ -114,7 +113,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-8 border-t border-slate-800 pt-6 text-sm text-slate-500">
-          <p>© {new Date().getFullYear()} Actoos Jobs. Tous droits réservés.</p>
+          <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
         </div>
       </div>
     </footer>

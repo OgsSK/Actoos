@@ -1129,9 +1129,7 @@
       "member": "(lid)",
       "newCompany": "Nieuw bedrijf"
     },
-    "header": {
-      "title": "Werversruimte"
-    },
+
     "profileButton": "Bedrijfsprofiel",
     "newOfferButton": "Nieuwe vacature",
     "stats": {
@@ -1614,48 +1612,7 @@
       ]
     }
   },
-  "footer": {
-    "brand": {
-      "tagline": "Het next-generation recruitmentplatform. Vind uw ideale baan of werf het beste talent."
-    },
-    "sections": {
-      "candidates": {
-        "title": "Kandidaten",
-        "links": {
-          "search": "Een baan zoeken",
-          "createAccount": "Mijn account aanmaken",
-          "dashboard": "Mijn kandidaatomgeving",
-          "careerTips": "Carrièretips"
-        }
-      },
-      "companies": {
-        "title": "Bedrijven",
-        "links": {
-          "publishOffer": "Een vacature plaatsen",
-          "dashboard": "Recruiteromgeving",
-          "pricing": "Tarieven"
-        }
-      },
-      "info": {
-        "title": "Informatie",
-        "links": {
-          "about": "Over",
-          "faq": "FAQ",
-          "cgu": "Algemene Voorwaarden",
-          "privacy": "Privacy",
-          "cookies": "Cookies"
-        }
-      }
-    },
-    "contact": {
-      "title": "Een vraag?",
-      "description": "Ons team staat voor u klaar. Raadpleeg onze FAQ of neem rechtstreeks contact met ons op.",
-      "email": "contact@actoos.com",
-      "phone": "+32 465 74 36 61",
-      "button": "Neem contact op"
-    },
-    "copyright": "© {{year}} Actoos Jobs. Alle rechten voorbehouden."
-  },
+
   "header": {
     "brand": "Actoos Jobs",
     "nav": {
@@ -2332,21 +2289,22 @@
     }
   },
   "categories": {
-    "ong-humanitaire": "NGO & Humanitair",
-    "tech": "Technologie & IT",
-    "marketing": "Marketing & Communicatie",
-    "finance": "Financiën & Boekhouding",
-    "rh": "Human Resources",
-    "commerce": "Handel & Verkoop",
-    "sante": "Gezondheid & Medisch",
-    "education": "Onderwijs & Training",
-    "btp": "Bouw & Civiele Techniek",
-    "transport": "Transport & Logistiek",
-    "agriculture": "Landbouw & Milieu",
-    "tourisme": "Toerisme & Horeca",
-    "juridique": "Juridisch & Recht",
-    "autre": "Anders"
-  },
+  "administration": "Administratie",
+  "agriculture": "Landbouw & Milieu",
+  "autre": "Overige",
+  "btp": "Bouw & Civiele Techniek",
+  "commerce": "Handel & Verkoop",
+  "education": "Onderwijs & Opleiding",
+  "finance": "Financiën & Boekhouding",
+  "juridique": "Juridisch & Recht",
+  "marketing": "Marketing & Communicatie",
+  "ong-humanitaire": "NGO & Humanitair",
+  "rh": "Human Resources",
+  "sante": "Gezondheid & Medisch",
+  "tech": "Technologie & IT",
+  "tourisme": "Toerisme & Horeca",
+  "transport": "Transport & Logistiek"
+},
   "countries": {
     "ML": "Mali",
     "SN": "Senegal",
@@ -2776,7 +2734,73 @@
       "description": "Ons team staat klaar om u te helpen.",
       "button": "Neem contact met ons op"
     }
+  },
+  "footer": {
+  "tagline": "Het recruitmentplatform van de nieuwe generatie. Vind uw droombaan of werf het beste talent.",
+  "copyright": "© {{year}} Actoos Jobs. Alle rechten voorbehouden.",
+  "sections": {
+    "candidates": {
+      "title": "Kandidaten",
+      "links": {
+        "search": "Zoek een baan",
+        "createAccount": "Mijn account aanmaken",
+        "dashboard": "Mijn kandidaatruimte",
+        "careerTips": "Carrièretips"
+      }
+    },
+    "companies": {
+      "title": "Bedrijven",
+      "links": {
+        "publishOffer": "Plaats een aanbieding",
+        "dashboard": "Recruiterruimte",
+        "pricing": "Prijzen"
+      }
+    },
+    "info": {
+      "title": "Informatie",
+      "links": {
+        "about": "Over ons",
+        "faq": "FAQ",
+        "cgu": "Voorwaarden",
+        "privacy": "Privacy",
+        "cookies": "Cookies"
+      }
+    }
+  },
+  "contact": {
+    "title": "Een vraag?",
+    "description": "Ons team staat voor u klaar. Bekijk onze FAQ of neem direct contact met ons op.",
+    "button": "Contact opnemen"
   }
+},
+"header": {
+  "brand": "Actoos Jobs",
+  "tagline": "Talentmarktplaats",
+  "nav": {
+    "jobs": "Vacatures",
+    "companies": "Bedrijven",
+    "pricing": "Prijzen",
+    "blog": "Blog"
+  },
+  "auth": {
+    "login": "Inloggen",
+    "register": "Registreren",
+    "companySpace": "Bedrijfsruimte"
+  },
+  "user": {
+    "defaultName": "Gebruiker",
+    "defaultUser": "Gebruiker",
+    "dashboard": "Dashboard",
+    "profile": "Profiel",
+    "createAlert": "Vacature-alerts",
+    "settings": "Instellingen",
+    "admin": "Beheer",
+    "plan": "Abonnement: {{plan}}",
+    "companySpace": "Bedrijfsruimte",
+    "logout": "Uitloggen"
+  }
+}
+    
   
 
 

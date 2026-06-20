@@ -124,7 +124,9 @@ const Header = ({ user, onLogout }) => {
               >
                 {t('header.brand')}
               </span>
-              <span className={subtitleClasses}>Talent marketplace</span>
+              <span className={subtitleClasses}>
+                {t('header.tagline')}
+              </span>
             </div>
           </Link>
 
@@ -471,7 +473,7 @@ const Header = ({ user, onLogout }) => {
                         {t('header.user.plan', { plan: profile?.subscription_plan || 'free' })}
                       </p>
                       <p className="text-xs text-blue-500/80">
-                        {t('header.user.companySpace', 'Espace entreprise')}
+                        {t('header.user.companySpace', { defaultValue: t('header.auth.companySpace') })}
                       </p>
                     </div>
                   )}

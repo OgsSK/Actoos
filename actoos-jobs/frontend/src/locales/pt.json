@@ -1127,9 +1127,7 @@
       "member": "(membro)",
       "newCompany": "Nova empresa"
     },
-    "header": {
-      "title": "Espaço recrutador"
-    },
+    
     "profileButton": "Perfil da empresa",
     "newOfferButton": "Nova oferta",
     "stats": {
@@ -1612,48 +1610,7 @@
       ]
     }
   },
-  "footer": {
-    "brand": {
-      "tagline": "A plataforma de recrutamento de nova geração. Encontre o seu emprego ideal ou recrute os melhores talentos."
-    },
-    "sections": {
-      "candidates": {
-        "title": "Candidatos",
-        "links": {
-          "search": "Procurar um emprego",
-          "createAccount": "Criar a minha conta",
-          "dashboard": "O meu espaço candidato",
-          "careerTips": "Conselhos de carreira"
-        }
-      },
-      "companies": {
-        "title": "Empresas",
-        "links": {
-          "publishOffer": "Publicar uma oferta",
-          "dashboard": "Espaço recrutador",
-          "pricing": "Preços"
-        }
-      },
-      "info": {
-        "title": "Informações",
-        "links": {
-          "about": "Sobre",
-          "faq": "Perguntas Frequentes",
-          "cgu": "CGU",
-          "privacy": "Privacidade",
-          "cookies": "Cookies"
-        }
-      }
-    },
-    "contact": {
-      "title": "Uma pergunta?",
-      "description": "A nossa equipa está aqui para o ajudar. Consulte a nossa FAQ ou contacte-nos diretamente.",
-      "email": "contact@actoos.com",
-      "phone": "+32 465 74 36 61",
-      "button": "Contacte-nos"
-    },
-    "copyright": "© {{year}} Actoos Jobs. Todos os direitos reservados."
-  },
+  
   "header": {
     "brand": "Actoos Jobs",
     "nav": {
@@ -2329,22 +2286,23 @@
       "unknown": "Desconhecido"
     }
   },
-  "categories": {
-    "ong-humanitaire": "ONG e Humanitário",
-    "tech": "Tecnologia e TI",
-    "marketing": "Marketing e Comunicação",
-    "finance": "Finanças e Contabilidade",
-    "rh": "Recursos Humanos",
-    "commerce": "Comércio e Vendas",
-    "sante": "Saúde e Medicina",
-    "education": "Educação e Formação",
-    "btp": "Construção e Engenharia Civil",
-    "transport": "Transporte e Logística",
-    "agriculture": "Agricultura e Ambiente",
-    "tourisme": "Turismo e Hotelaria",
-    "juridique": "Jurídico e Direito",
-    "autre": "Outro"
-  },
+ "categories": {
+  "administration": "Administração",
+  "agriculture": "Agricultura e Ambiente",
+  "autre": "Outro",
+  "btp": "Construção e Engenharia Civil",
+  "commerce": "Comércio e Vendas",
+  "education": "Educação e Formação",
+  "finance": "Finanças e Contabilidade",
+  "juridique": "Jurídico e Direito",
+  "marketing": "Marketing e Comunicação",
+  "ong-humanitaire": "ONG e Humanitário",
+  "rh": "Recursos Humanos",
+  "sante": "Saúde e Medicina",
+  "tech": "Tecnologia e TI",
+  "tourisme": "Turismo e Hotelaria",
+  "transport": "Transporte e Logística"
+},
   "countries": {
     "ML": "Mali",
     "SN": "Senegal",
@@ -2774,6 +2732,70 @@
       "description": "A nossa equipa está disponível para ajudar.",
       "button": "Contacte-nos"
     }
+  },
+  "footer": {
+  "tagline": "A plataforma de recrutamento de nova geração. Encontre o emprego dos seus sonhos ou contrate os melhores talentos.",
+  "copyright": "© {{year}} Actoos Jobs. Todos os direitos reservados.",
+  "sections": {
+    "candidates": {
+      "title": "Candidatos",
+      "links": {
+        "search": "Procurar emprego",
+        "createAccount": "Criar minha conta",
+        "dashboard": "Meu espaço candidato",
+        "careerTips": "Dicas de carreira"
+      }
+    },
+    "companies": {
+      "title": "Empresas",
+      "links": {
+        "publishOffer": "Publicar oferta",
+        "dashboard": "Espaço recrutador",
+        "pricing": "Preços"
+      }
+    },
+    "info": {
+      "title": "Informações",
+      "links": {
+        "about": "Sobre",
+        "faq": "FAQ",
+        "cgu": "Termos",
+        "privacy": "Privacidade",
+        "cookies": "Cookies"
+      }
+    }
+  },
+  "contact": {
+    "title": "Uma pergunta?",
+    "description": "Nossa equipe está aqui para ajudar. Consulte nossa FAQ ou entre em contato diretamente.",
+    "button": "Entrar em contato"
   }
-
+},
+"header": {
+  "brand": "Actoos Jobs",
+  "tagline": "Mercado de talentos",
+  "nav": {
+    "jobs": "Vagas",
+    "companies": "Empresas",
+    "pricing": "Preços",
+    "blog": "Blog"
+  },
+  "auth": {
+    "login": "Entrar",
+    "register": "Inscrever-se",
+    "companySpace": "Espaço Empresa"
+  },
+  "user": {
+    "defaultName": "Usuário",
+    "defaultUser": "Usuário",
+    "dashboard": "Painel",
+    "profile": "Perfil",
+    "createAlert": "Alertas de vagas",
+    "settings": "Configurações",
+    "admin": "Administração",
+    "plan": "Plano: {{plan}}",
+    "companySpace": "Espaço empresa",
+    "logout": "Sair"
+  }
+}  
 }

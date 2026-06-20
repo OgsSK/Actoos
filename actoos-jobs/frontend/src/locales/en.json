@@ -1127,9 +1127,7 @@
       "member": "(member)",
       "newCompany": "New company"
     },
-    "header": {
-      "title": "Recruiter space"
-    },
+    
     "profileButton": "Company profile",
     "newOfferButton": "New offer",
     "stats": {
@@ -1612,48 +1610,7 @@
       ]
     }
   },
-  "footer": {
-    "brand": {
-      "tagline": "The next-generation recruitment platform. Find your ideal job or recruit the best talents."
-    },
-    "sections": {
-      "candidates": {
-        "title": "Candidates",
-        "links": {
-          "search": "Search for a job",
-          "createAccount": "Create my account",
-          "dashboard": "My candidate space",
-          "careerTips": "Career tips"
-        }
-      },
-      "companies": {
-        "title": "Companies",
-        "links": {
-          "publishOffer": "Post a job",
-          "dashboard": "Recruiter space",
-          "pricing": "Pricing"
-        }
-      },
-      "info": {
-        "title": "Information",
-        "links": {
-          "about": "About",
-          "faq": "FAQ",
-          "cgu": "Terms of Service",
-          "privacy": "Privacy",
-          "cookies": "Cookies"
-        }
-      }
-    },
-    "contact": {
-      "title": "A question?",
-      "description": "Our team is here to help you. Check our FAQ or contact us directly.",
-      "email": "contact@actoos.com",
-      "phone": "+32 465 74 36 61",
-      "button": "Contact us"
-    },
-    "copyright": "© {{year}} Actoos Jobs. All rights reserved."
-  },
+  
   "header": {
     "brand": "Actoos Jobs",
     "nav": {
@@ -2331,21 +2288,22 @@
     }
   },
   "categories": {
-    "ong-humanitaire": "NGO & Humanitarian",
-    "tech": "Technology & IT",
-    "marketing": "Marketing & Communication",
-    "finance": "Finance & Accounting",
-    "rh": "Human Resources",
-    "commerce": "Commerce & Sales",
-    "sante": "Health & Medical",
-    "education": "Education & Training",
-    "btp": "Construction & Civil Engineering",
-    "transport": "Transport & Logistics",
-    "agriculture": "Agriculture & Environment",
-    "tourisme": "Tourism & Hospitality",
-    "juridique": "Legal & Law",
-    "autre": "Other"
-  },
+  "administration": "Administration",
+  "agriculture": "Agriculture & Environment",
+  "autre": "Other",
+  "btp": "Construction & Civil Engineering",
+  "commerce": "Commerce & Sales",
+  "education": "Education & Training",
+  "finance": "Finance & Accounting",
+  "juridique": "Legal & Law",
+  "marketing": "Marketing & Communication",
+  "ong-humanitaire": "NGO & Humanitarian",
+  "rh": "Human Resources",
+  "sante": "Health & Medical",
+  "tech": "Technology & IT",
+  "tourisme": "Tourism & Hospitality",
+  "transport": "Transport & Logistics"
+},
   "countries": {
     "ML": "Mali",
     "SN": "Senegal",
@@ -2775,8 +2733,72 @@
       "description": "Our team is available to help.",
       "button": "Contact us"
     }
+  },
+  "footer": {
+  "tagline": "The next-generation recruitment platform. Find your dream job or hire the best talent.",
+  "copyright": "© {{year}} Actoos Jobs. All rights reserved.",
+  "sections": {
+    "candidates": {
+      "title": "Candidates",
+      "links": {
+        "search": "Search for a job",
+        "createAccount": "Create my account",
+        "dashboard": "My candidate space",
+        "careerTips": "Career tips"
+      }
+    },
+    "companies": {
+      "title": "Companies",
+      "links": {
+        "publishOffer": "Post a job",
+        "dashboard": "Recruiter space",
+        "pricing": "Pricing"
+      }
+    },
+    "info": {
+      "title": "Information",
+      "links": {
+        "about": "About",
+        "faq": "FAQ",
+        "cgu": "Terms",
+        "privacy": "Privacy",
+        "cookies": "Cookies"
+      }
+    }
+  },
+  "contact": {
+    "title": "A question?",
+    "description": "Our team is here to help. Check our FAQ or contact us directly.",
+    "button": "Contact us"
   }
-
+},
+"header": {
+  "brand": "Actoos Jobs",
+  "tagline": "Talent marketplace",
+  "nav": {
+    "jobs": "Jobs",
+    "companies": "Companies",
+    "pricing": "Pricing",
+    "blog": "Blog"
+  },
+  "auth": {
+    "login": "Sign in",
+    "register": "Sign up",
+    "companySpace": "Company Space"
+  },
+  "user": {
+    "defaultName": "User",
+    "defaultUser": "User",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "createAlert": "Job Alerts",
+    "settings": "Settings",
+    "admin": "Administration",
+    "plan": "Plan: {{plan}}",
+    "companySpace": "Company space",
+    "logout": "Log out"
+  }
+}
   
 
 }

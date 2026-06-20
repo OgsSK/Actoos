@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
-import { usePreferencesContext } from '../contexts/PreferencesContext';
+import { usePreferences } from '../hooks/usePreferences'; // Correction : plus de PreferencesContext
 import { useCities } from '../hooks/useCities';
 import { fetchCategories } from '../lib/data';
 import { useAuth } from '../contexts/AuthContext';
@@ -275,7 +275,7 @@ const RecentJobsSection = ({ countryId }) => {
           created_at: job.created_at,
           urgent: job.is_urgent,
           is_remote: job.is_remote,
-          remote_type: job.remote_type, // ajouté
+          remote_type: job.remote_type,
           boosted_until: job.boosted_until,
         }));
         setJobs(formattedJobs);
@@ -340,7 +340,6 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
     if (onSave) onSave(job.id);
   };
 
-  // Libellé du télétravail selon le type
   const getRemoteLabel = () => {
     if (!job.is_remote) return null;
     switch (job.remote_type) {
@@ -614,10 +613,9 @@ const Homepage = () => {
   const [countryId, setCountryId] = useState(null);
   const [countryLoading, setCountryLoading] = useState(true);
 
-  const { prefs } = usePreferencesContext();
+  const { prefs } = usePreferences(); // Correction : utilisation du hook standard
   const { cities: filteredCities } = useCities(prefs.country);
 
-  // Détermine l'ID du pays en fonction des préférences
   useEffect(() => {
     if (prefs.country) {
       setCountryLoading(true);
@@ -640,12 +638,10 @@ const Homepage = () => {
     }
   }, [prefs.country]);
 
-  // Chargement des statistiques filtrées par pays si défini
   useEffect(() => {
-    if (countryLoading) return; // on attend que le pays soit résolu
+    if (countryLoading) return;
 
     const loadStats = async () => {
-      // Réinitialisation immédiate pour éviter d'afficher les anciens chiffres
       setActiveJobs(null);
       setCompanies(null);
       setCandidates(null);
