@@ -106,6 +106,10 @@
     }
   },
   "jobs": {
+    "remote": "Télétravail",
+      "remoteFull": "100% télétravail",
+      "remoteHybrid": "Hybride",
+      "remoteOccasional": "Occasionnel",
     "boosted": "Boosté",
     "filters": "Filtres",
     "resetFilters": "Réinitialiser les filtres",
@@ -130,7 +134,6 @@
     "verified": "Vérifié",
     "featured": "Mise en avant",
     "urgent": "Urgent",
-    "remote": "Télétravail",
     "unspecified": "Non spécifié",
     "edit": "Modifier",
     "publish": "Publier",
@@ -659,8 +662,8 @@
       "address": "Adresse précise",
       "remote": "Télétravail possible",
       "remoteType": "Type de télétravail",
-      "salaryMin": "Salaire minimum (FCFA/mois)",
-      "salaryMax": "Salaire maximum (FCFA/mois)",
+      "salaryMin": "Salaire minimum ",
+      "salaryMax": "Salaire maximum ",
       "showSalary": "Afficher le salaire aux candidats",
       "applicationDeadline": "Date limite de candidature",
       "startDate": "Date de début souhaitée"

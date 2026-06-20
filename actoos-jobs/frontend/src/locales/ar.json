@@ -40,6 +40,10 @@
       "subtitle": "اعثر على فرص في مجال خبرتك"
     },
     "jobs": {
+       "remote": "العمل عن بعد",
+      "remoteFull": "عن بعد بالكامل",
+      "remoteHybrid": "هجين",
+      "remoteOccasional": "عرضي",
       "boosted": "معزز",
       "title": "وظائف حديثة",
       "subtitle": "أحدث الفرص المنشورة",
@@ -107,6 +111,10 @@
     }
   },
   "jobs": {
+    "remote": "العمل عن بعد",
+      "remoteFull": "عن بعد بالكامل",
+      "remoteHybrid": "هجين",
+      "remoteOccasional": "عرضي",
     "boosted": "معزز",
     "filters": "فلاتر",
     "resetFilters": "إعادة ضبط الفلاتر",

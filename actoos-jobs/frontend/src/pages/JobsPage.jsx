@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { usePreferencesContext } from '../contexts/PreferencesContext'; // ✅ Correction de l'import
+import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 import useCachedData from '../hooks/useCachedData';
@@ -32,7 +32,17 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 
-// -------------------- Local UI components (inchangés) --------------------
+// ----------------------------------------------------------------------
+// Taux de conversion vers XOF (identiques à ceux de useCurrencyFormatter)
+// ----------------------------------------------------------------------
+const RATES = {
+  XOF: 1, EUR: 655.957, USD: 603.5, MAD: 60.5,
+  GBP: 754.2, BRL: 115.3, ARS: 0.72, NGN: 0.4, ZAR: 32.5,
+  SAR: 160.9, AED: 164.3, EGP: 19.5, DZD: 4.48, TND: 194.5,
+  CHF: 722.3, XAF: 1, GNF: 0.07, CDF: 0.22, MGA: 0.15
+};
+
+// -------------------- Local UI components (identiques à l'original) --------------------
 const Button = React.forwardRef(
   ({ children, className = '', variant = 'default', size = 'default', type = 'button', ...props }, ref) => {
     const base =
@@ -102,17 +112,25 @@ const removeAccents = (str = '') => {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 };
 
-// -------------------- Salary Input (filtre au blur) --------------------
-const SalaryInput = ({ placeholder, value, onApply }) => {
+// -------------------- Salary Input (conversion en XOF au blur) --------------------
+const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   const [local, setLocal] = useState('');
 
+  // Affiche la valeur actuelle convertie dans la devise de l'utilisateur
   useEffect(() => {
-    setLocal(value || '');
-  }, [value]);
+    if (value != null && conversionRate) {
+      const displayValue = Math.round(value / conversionRate);
+      setLocal(displayValue.toString());
+    } else {
+      setLocal('');
+    }
+  }, [value, conversionRate]);
 
   const handleBlur = () => {
     const num = local ? parseInt(local, 10) : null;
-    onApply(isNaN(num) ? null : num);
+    // Convertit en XOF pour le stockage
+    const xofVal = num != null ? Math.round(num * conversionRate) : null;
+    onApply(xofVal);
   };
 
   return (
@@ -129,7 +147,7 @@ const SalaryInput = ({ placeholder, value, onApply }) => {
   );
 };
 
-// -------------------- Job Card --------------------
+// -------------------- Job Card (avec badge télétravail amélioré) --------------------
 const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
@@ -265,6 +283,21 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
   // Détermine si l'offre est boostée et que le boost n'a pas expiré
   const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
 
+  // Libellé du télétravail selon le type
+  const getRemoteLabel = () => {
+    if (!job.is_remote) return null;
+    switch (job.remote_type) {
+      case 'full':
+        return t('jobs.remoteFull', '100% télétravail');
+      case 'partial':
+        return t('jobs.remoteHybrid', 'Hybride');
+      case 'occasional':
+        return t('jobs.remoteOccasional', 'Occasionnel');
+      default:
+        return t('jobs.remote', 'Télétravail');
+    }
+  };
+
   return (
     <Card
       className={cn(
@@ -289,7 +322,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
             )}
             {job.is_remote && (
               <Badge className="border border-green-500 text-green-600 rounded-full bg-white">
-                {t('jobs.remote')}
+                {getRemoteLabel()}
               </Badge>
             )}
             {/* Badge Boosté */}
@@ -427,7 +460,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
   );
 };
 
-// -------------------- Filters Sidebar (avec SalaryInput et traductions) --------------------
+// -------------------- Filters Sidebar (avec conversion des salaires) --------------------
 const FiltersSidebar = ({
   filters,
   onChange,
@@ -436,6 +469,7 @@ const FiltersSidebar = ({
   contractTypes,
   experienceLevels,
   onReset,
+  conversionRate,
 }) => {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState({
@@ -553,6 +587,7 @@ const FiltersSidebar = ({
               placeholder="Ex: 100000"
               value={filters.salary_min}
               onApply={(val) => onChange({ ...filters, salary_min: val })}
+              conversionRate={conversionRate}
             />
           </div>
           <div>
@@ -561,6 +596,7 @@ const FiltersSidebar = ({
               placeholder="Ex: 500000"
               value={filters.salary_max}
               onApply={(val) => onChange({ ...filters, salary_max: val })}
+              conversionRate={conversionRate}
             />
           </div>
         </div>
@@ -615,18 +651,17 @@ const JobsPage = () => {
   const [searchParams] = useSearchParams();
   const { user, isCompany } = useAuth();
   const navigate = useNavigate();
-  const { prefs } = usePreferencesContext(); // ✅ Utilisation du contexte
+  const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
+  const { format } = useCurrencyFormatter();
 
   const [countryId, setCountryId] = useState(null);
-
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const { data: categories } = useCachedData('job_categories', 'id, slug, name, icon', 'name');
-
   const [availableContractTypes, setAvailableContractTypes] = useState([]);
   const [availableExperienceLevels, setAvailableExperienceLevels] = useState([]);
 
@@ -636,12 +671,15 @@ const JobsPage = () => {
     contract_types: searchParams.get('contract')?.split(',').filter(Boolean) || [],
     experience_levels: [],
     category: searchParams.get('category') || null,
-    salary_min: null,
-    salary_max: null,
+    salary_min: null,     // stocké en XOF
+    salary_max: null,     // stocké en XOF
     remote: false,
   });
 
   const [sortBy, setSortBy] = useState('recent');
+
+  // Taux de conversion de la devise affichée vers XOF
+  const conversionRate = RATES[prefs.currency] || 1;
 
   // Résolution du countryId
   useEffect(() => {
@@ -651,15 +689,13 @@ const JobsPage = () => {
         .select('id')
         .eq('code', prefs.country)
         .single()
-        .then(({ data }) => {
-          setCountryId(data?.id || null);
-        });
+        .then(({ data }) => setCountryId(data?.id || null));
     } else {
       setCountryId(null);
     }
   }, [prefs.country]);
 
-  // Chargement des jobs (même sans countryId)
+  // Chargement des jobs
   useEffect(() => {
     const fetchJobs = async () => {
       setLoading(true);
@@ -668,7 +704,7 @@ const JobsPage = () => {
           .from('jobs')
           .select(`
             id, title, description, contract_type, experience_level, salary_min, salary_max,
-            is_remote, is_urgent, is_featured, skills_required, created_at, status, category_id,
+            is_remote, remote_type, is_urgent, is_featured, skills_required, created_at, status, category_id,
             boosted_until,
             company:companies(name, logo_url, is_verified, owner_id),
             city:cities(name)
@@ -696,7 +732,7 @@ const JobsPage = () => {
     fetchJobs();
   }, [countryId]);
 
-  // Chargement des options de filtres (même sans countryId)
+  // Chargement des options de filtres (inchangé)
   useEffect(() => {
     const loadFilterOptions = async () => {
       try {
@@ -721,7 +757,6 @@ const JobsPage = () => {
           );
         }
       } catch {
-        // Fallback si erreur
         setAvailableContractTypes(
           Object.entries(CONTRACT_TYPES).map(([k, v]) => ({ value: k, label: v.label }))
         );
@@ -734,6 +769,7 @@ const JobsPage = () => {
     loadFilterOptions();
   }, [countryId]);
 
+  // Chargement des favoris
   useEffect(() => {
     if (user) {
       supabase
@@ -746,6 +782,7 @@ const JobsPage = () => {
     }
   }, [user]);
 
+  // Filtrage et tri
   const filteredJobs = useMemo(() => {
     let result = [...jobs];
 
@@ -777,19 +814,16 @@ const JobsPage = () => {
       }
     }
 
-    // --- Tri unique avec priorités ---
+    // Tri
     result.sort((a, b) => {
-      // 1. Boost actif : les offres boostées et non expirées arrivent en premier
       const aBoost = a.boosted_until && new Date(a.boosted_until) > new Date() ? 1 : 0;
       const bBoost = b.boosted_until && new Date(b.boosted_until) > new Date() ? 1 : 0;
       if (bBoost !== aBoost) return bBoost - aBoost;
 
-      // 2. Offre « À la une » (is_featured)
       if ((b.is_featured ? 1 : 0) !== (a.is_featured ? 1 : 0)) {
         return (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0);
       }
 
-      // 3. Tri par pertinence selon le choix de l'utilisateur
       if (sortBy === 'recent') {
         return new Date(b.created_at) - new Date(a.created_at);
       } else if (sortBy === 'salary') {
@@ -801,17 +835,16 @@ const JobsPage = () => {
     return result;
   }, [jobs, filters, sortBy, categories]);
 
+  // Gestion des favoris
   const handleSaveJob = async (jobId) => {
     if (!user) {
       toast.error(t('jobs.loginToSave'));
       return;
     }
-
     if (isCompany) {
       toast.error(t('jobs.companyCannotSave'));
       return;
     }
-
     if (savedJobs.includes(jobId)) {
       await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', jobId);
       setSavedJobs((prev) => prev.filter((id) => id !== jobId));
@@ -823,6 +856,7 @@ const JobsPage = () => {
     }
   };
 
+  // Réinitialisation des filtres
   const resetFilters = () =>
     setFilters({
       keyword: '',
@@ -850,8 +884,24 @@ const JobsPage = () => {
     navigate(`/dashboard/entreprise/offres/${job.id}/modifier`);
   };
 
+  // Badge de salaire dynamique (affiche la devise courante)
+  const salaryBadge = (filters.salary_min || filters.salary_max) ? (
+    <Badge className="gap-1 rounded-full bg-slate-100 text-slate-700">
+      {filters.salary_min ? format(filters.salary_min) : '0'} –{' '}
+      {filters.salary_max ? format(filters.salary_max) : '∞'}
+      <button
+        onClick={() =>
+          setFilters((prev) => ({ ...prev, salary_min: null, salary_max: null }))
+        }
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </Badge>
+  ) : null;
+
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
+      {/* Barre de recherche */}
       <div className="bg-white border-b border-slate-200 sticky top-16 lg:top-20 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -906,6 +956,7 @@ const JobsPage = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex gap-8">
+          {/* Sidebar filtres desktop */}
           <div className="hidden lg:block w-72 shrink-0">
             <div className="bg-white rounded-3xl border border-slate-200 p-4 sticky top-36">
               <FiltersSidebar
@@ -916,6 +967,7 @@ const JobsPage = () => {
                 contractTypes={availableContractTypes}
                 experienceLevels={availableExperienceLevels}
                 onReset={resetFilters}
+                conversionRate={conversionRate}
               />
             </div>
           </div>
@@ -941,6 +993,7 @@ const JobsPage = () => {
               </select>
             </div>
 
+            {/* Badges de filtres actifs */}
             {activeFiltersCount > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
                 {filters.city && (
@@ -993,19 +1046,8 @@ const JobsPage = () => {
                   </Badge>
                 )}
 
-                {(filters.salary_min || filters.salary_max) && (
-                  <Badge className="gap-1 rounded-full bg-slate-100 text-slate-700">
-                    {filters.salary_min ? `${filters.salary_min.toLocaleString()} FCFA` : '0'} -{' '}
-                    {filters.salary_max ? `${filters.salary_max.toLocaleString()} FCFA` : '∞'}
-                    <button
-                      onClick={() =>
-                        setFilters((prev) => ({ ...prev, salary_min: null, salary_max: null }))
-                      }
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
-                )}
+                {/* Badge salaire dynamique */}
+                {salaryBadge}
 
                 {filters.remote && (
                   <Badge className="gap-1 rounded-full bg-slate-100 text-slate-700">
@@ -1018,6 +1060,7 @@ const JobsPage = () => {
               </div>
             )}
 
+            {/* Liste des offres */}
             {loading ? (
               <div className="space-y-4">
                 {[...Array(4)].map((_, i) => (
@@ -1052,6 +1095,7 @@ const JobsPage = () => {
         </div>
       </div>
 
+      {/* Filtres mobiles */}
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
@@ -1075,6 +1119,7 @@ const JobsPage = () => {
                 contractTypes={availableContractTypes}
                 experienceLevels={availableExperienceLevels}
                 onReset={resetFilters}
+                conversionRate={conversionRate}
               />
             </div>
 

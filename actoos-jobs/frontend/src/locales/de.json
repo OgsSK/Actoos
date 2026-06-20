@@ -40,6 +40,10 @@
       "subtitle": "Finde Möglichkeiten in deinem Fachgebiet"
     },
     "jobs": {
+        "remote": "Homeoffice",
+      "remoteFull": "100% Homeoffice",
+      "remoteHybrid": "Hybrid",
+      "remoteOccasional": "Gelegentlich",
       "boosted": "Geboostet",
       "title": "Aktuelle Stellen",
       "subtitle": "Die neuesten veröffentlichten Möglichkeiten",
@@ -107,6 +111,10 @@
     }
   },
   "jobs": {
+    "remote": "Homeoffice",
+      "remoteFull": "100% Homeoffice",
+      "remoteHybrid": "Hybrid",
+      "remoteOccasional": "Gelegentlich",
     "boosted": "Geboostet",
     "filters": "Filter",
     "resetFilters": "Filter zurücksetzen",
@@ -2791,7 +2799,6 @@
       "button": "Kontaktieren Sie uns"
     }
   }
-  
 
 
 }

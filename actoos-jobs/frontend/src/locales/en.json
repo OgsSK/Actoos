@@ -40,6 +40,10 @@
       "subtitle": "Find opportunities in your field of expertise"
     },
     "jobs": {
+       "remote": "Remote",
+      "remoteFull": "100% remote",
+      "remoteHybrid": "Hybrid",
+      "remoteOccasional": "Occasional",
       "boosted": "Boosted",
       "title": "Recent jobs",
       "subtitle": "The latest posted opportunities",
@@ -107,6 +111,10 @@
     }
   },
   "jobs": {
+    "remote": "Remote",
+      "remoteFull": "100% remote",
+      "remoteHybrid": "Hybrid",
+      "remoteOccasional": "Occasional",
     "boosted": "Boosted",
     "filters": "Filters",
     "resetFilters": "Reset filters",

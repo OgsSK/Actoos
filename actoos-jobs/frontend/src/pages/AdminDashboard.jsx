@@ -45,6 +45,8 @@ import {
   Save,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
+// ✅ Ajout de l'import depuis planLimits
+import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
 
 // ---------- Stats Card ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) => {
@@ -774,11 +776,7 @@ const AdminDashboard = () => {
 
   const [roleRequests, setRoleRequests] = useState([]);
 
-  const getPlanLimit = (plan) => {
-    if (plan === 'business' || plan === 'enterprise') return Infinity;
-    if (plan === 'pro') return 5;
-    return 1;
-  };
+  // ✅ Suppression de la définition locale de getPlanLimit. On utilise l'import.
 
   const roleLabel = (role) => t(`adminDashboard.roleLabels.${role}`, { defaultValue: role || t('adminDashboard.roleLabels.unknown') });
 

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
+import { usePreferencesContext } from '../contexts/PreferencesContext'; // ← ajouté pour le log
 import DashboardSkeleton from '../components/DashboardSkeleton';
 import {
   Building2, Briefcase, Users, Eye, FileText, Plus, Settings,
@@ -46,7 +47,7 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
   );
 };
 
-// ---------- CompanyJobCard (inchangé) ----------
+// ---------- CompanyJobCard (avec logs de débogage) ----------
 const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForReview, onCancelSubmission, isCompanyVerified, isBusinessPlan, onFreeBoost }) => {
   const { t } = useTranslation();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -54,6 +55,12 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const { format } = useCurrencyFormatter();
+  const { prefs } = usePreferencesContext(); // ← pour le log
+
+  // ----- LOG DE DÉBOGAGE -----
+  console.log('Devise active :', prefs?.currency, '– Salaire brut :', job.salary_min, '– Formaté :', format(job.salary_min));
+  // ----- FIN LOG -----
+
   const statusLabel = t(`companyDashboard.status.${job.status}`, { defaultValue: job.status });
   const statusColors = { draft: 'bg-slate-100 text-slate-700', pending: 'bg-yellow-100 text-yellow-700', active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', closed: 'bg-red-100 text-red-700', expired: 'bg-slate-100 text-slate-700', rejected: 'bg-red-100 text-red-700' };
   const statusColor = statusColors[job.status] || 'bg-slate-100 text-slate-700';
@@ -114,7 +121,12 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
           <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-slate-500">
             <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.city?.name || t('companyDashboard.jobCard.unspecifiedLocation')}</span>
             <Badge className={cn(contractInfo.color, 'border-0 text-xs')}>{contractInfo.label}</Badge>
-            {job.salary_min && job.salary_max && <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{format(job.salary_min)} – {format(job.salary_max)}</span>}
+            {job.salary_min && job.salary_max && (
+              <span className="flex items-center gap-1">
+                <Banknote className="w-3 h-3" />
+                {format(job.salary_min)} – {format(job.salary_max)}
+              </span>
+            )}
             <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{t('companyDashboard.jobCard.views', { count: job.views_count || 0 })}</span>
             <span className="flex items-center gap-1"><FileText className="w-3 h-3" />{t('companyDashboard.jobCard.applications', { count: job.applications_count || 0 })}</span>
           </div>

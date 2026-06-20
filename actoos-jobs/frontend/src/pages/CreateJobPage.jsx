@@ -20,6 +20,14 @@ import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { apiFetch } from '../lib/api';
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
 
+// Taux de conversion vers XOF (identiques à ceux de useCurrencyFormatter)
+const RATES = {
+  XOF: 1, EUR: 655.957, USD: 603.5, MAD: 60.5,
+  GBP: 754.2, BRL: 115.3, ARS: 0.72, NGN: 0.4, ZAR: 32.5,
+  SAR: 160.9, AED: 164.3, EGP: 19.5, DZD: 4.48, TND: 194.5,
+  CHF: 722.3, XAF: 1, GNF: 0.07, CDF: 0.22, MGA: 0.15
+};
+
 const CreateJobPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -27,6 +35,7 @@ const CreateJobPage = () => {
   const navigate = useNavigate();
 
   const { prefs } = usePreferencesContext();
+  const currency = prefs.currency || 'XOF';   // devise d'affichage
   const { cities: filteredCities } = useCities(prefs.country);
 
   const [loading, setLoading] = useState(false);
@@ -45,8 +54,8 @@ const CreateJobPage = () => {
     category_id: '',
     contract_type: 'cdi',
     experience_level: '',
-    salary_min: '',
-    salary_max: '',
+    salary_min: '',   // en devise d'affichage
+    salary_max: '',   // en devise d'affichage
     is_salary_visible: true,
     city_id: '',
     address: '',
@@ -121,6 +130,11 @@ const CreateJobPage = () => {
 
       if (error) throw error;
 
+      // Convertir les salaires stockés en FCFA vers la devise d'affichage
+      const rate = RATES[currency] || 1;
+      const displaySalaryMin = data.salary_min ? Math.round(data.salary_min / rate) : '';
+      const displaySalaryMax = data.salary_max ? Math.round(data.salary_max / rate) : '';
+
       setForm({
         title: data.title || '',
         description: data.description || '',
@@ -130,8 +144,8 @@ const CreateJobPage = () => {
         category_id: data.category_id || '',
         contract_type: data.contract_type || 'cdi',
         experience_level: data.experience_level || '',
-        salary_min: data.salary_min || '',
-        salary_max: data.salary_max || '',
+        salary_min: displaySalaryMin,   // en devise
+        salary_max: displaySalaryMax,   // en devise
         is_salary_visible: data.is_salary_visible ?? true,
         city_id: data.city_id || '',
         address: data.address || '',
@@ -160,22 +174,6 @@ const CreateJobPage = () => {
 
   const handleRemoveSkill = (skill) => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
-  };
-
-  const countActiveJobs = async (excludeId = null) => {
-    let query = supabase
-      .from('jobs')
-      .select('id', { count: 'exact', head: true })
-      .eq('company_id', company.id)
-      .eq('status', 'active');
-
-    if (excludeId) {
-      query = query.neq('id', excludeId);
-    }
-
-    const { count, error } = await query;
-    if (error) return 0;
-    return count || 0;
   };
 
   const handleSave = async (publish = false) => {
@@ -239,6 +237,12 @@ const CreateJobPage = () => {
         }
       }
 
+      // Conversion devise -> FCFA
+      const toXOF = (amount) => {
+        const num = parseInt(amount);
+        return isNaN(num) ? null : Math.round(num * RATES[currency] || 1);
+      };
+
       const jobData = {
         company_id: company.id,
         posted_by: user.id,
@@ -251,9 +255,9 @@ const CreateJobPage = () => {
         category_id: form.category_id,
         contract_type: form.contract_type,
         experience_level: form.experience_level || null,
-        salary_min: form.salary_min ? parseInt(form.salary_min) : null,
-        salary_max: form.salary_max ? parseInt(form.salary_max) : null,
-        salary_currency: 'XOF',
+        salary_min: toXOF(form.salary_min),
+        salary_max: toXOF(form.salary_max),
+        salary_currency: 'XOF',                // toujours stocké en FCFA
         is_salary_visible: form.is_salary_visible,
         city_id: form.city_id || null,
         country_id: countryId,
@@ -394,6 +398,7 @@ const CreateJobPage = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Informations de base */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -512,6 +517,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Description */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.description')}</h2>
@@ -599,6 +605,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Compétences */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.skills')}</h2>
@@ -636,6 +643,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Localisation */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -695,6 +703,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Rémunération */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -704,7 +713,9 @@ const CreateJobPage = () => {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.salaryMin')}</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {t('createJob.labels.salaryMin')}
+                  </label>
                   <Input
                     type="number"
                     value={form.salary_min}
@@ -714,7 +725,9 @@ const CreateJobPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.salaryMax')}</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {t('createJob.labels.salaryMax')}
+                  </label>
                   <Input
                     type="number"
                     value={form.salary_max}
@@ -737,6 +750,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Dates */}
           <Card>
             <CardContent className="p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -768,6 +782,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Boutons finaux */}
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
@@ -792,6 +807,7 @@ const CreateJobPage = () => {
         </div>
       </div>
 
+      {/* Modal de limite d'offres */}
       {showLimitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 text-center">

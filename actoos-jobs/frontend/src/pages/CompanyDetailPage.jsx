@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter'; // ← ajouté
 
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -30,6 +31,7 @@ const CompanyDetailPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const { user, isAdmin } = useAuth();
+  const { format } = useCurrencyFormatter(); // ← hook utilisé
 
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
@@ -132,7 +134,6 @@ const CompanyDetailPage = () => {
               </div>
 
               <div className="flex-1 min-w-0">
-                {/* Section modifiée : ajout des badges Pro et Premium */}
                 <h1 className="text-3xl font-bold text-slate-900 break-words">
                   {company.name}
                   {company.subscription_plan === 'pro' && (
@@ -259,7 +260,7 @@ const CompanyDetailPage = () => {
                             {job.salary_min && job.salary_max && (
                               <span className="flex items-center gap-1">
                                 <Banknote className="w-4 h-4" />
-                                {job.salary_min.toLocaleString('fr-FR')} - {job.salary_max.toLocaleString('fr-FR')} FCFA
+                                {format(job.salary_min)} – {format(job.salary_max)}
                               </span>
                             )}
                           </div>

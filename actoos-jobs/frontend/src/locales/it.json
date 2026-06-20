@@ -40,6 +40,10 @@
       "subtitle": "Trova opportunità nel tuo campo di competenza"
     },
     "jobs": {
+      "remote": "Lavoro da remoto",
+      "remoteFull": "100% remoto",
+      "remoteHybrid": "Ibrido",
+      "remoteOccasional": "Occasionale",
       "boosted": "In evidenza",
       "title": "Offerte recenti",
       "subtitle": "Le ultime opportunità pubblicate",
@@ -107,6 +111,10 @@
     }
   },
   "jobs": {
+    "remote": "Lavoro da remoto",
+      "remoteFull": "100% remoto",
+      "remoteHybrid": "Ibrido",
+      "remoteOccasional": "Occasionale",
     "boosted": "In evidenza",
     "filters": "Filtri",
     "resetFilters": "Ripristina filtri",
@@ -2755,7 +2763,5 @@
       "button": "Contattaci"
     }
   }
-  
-
 
 }

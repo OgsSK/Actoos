@@ -41,6 +41,10 @@
       "subtitle": "Vind kansen in uw vakgebied"
     },
     "jobs": {
+      "remote": "Thuiswerk",
+      "remoteFull": "100% thuiswerk",
+      "remoteHybrid": "Hybride",
+      "remoteOccasional": "Incidenteel",
       "boosted": "Uitgelicht",
       "title": "Recente vacatures",
       "subtitle": "De nieuwste gepubliceerde kansen",
@@ -108,6 +112,10 @@
     }
   },
   "jobs": {
+    "remote": "Thuiswerk",
+      "remoteFull": "100% thuiswerk",
+      "remoteHybrid": "Hybride",
+      "remoteOccasional": "Incidenteel",
     "boosted": "Uitgelicht",
     "filters": "Filters",
     "resetFilters": "Filters resetten",

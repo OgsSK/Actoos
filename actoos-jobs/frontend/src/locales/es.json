@@ -40,6 +40,10 @@
       "subtitle": "Encuentra oportunidades en tu área de especialización"
     },
     "jobs": {
+      "remote": "Teletrabajo",
+      "remoteFull": "100% teletrabajo",
+      "remoteHybrid": "Híbrido",
+      "remoteOccasional": "Ocasional",
       "boosted": "Destacado",
       "title": "Ofertas recientes",
       "subtitle": "Las últimas oportunidades publicadas",
@@ -107,7 +111,10 @@
     }
   },
   "jobs": {
-    
+    "remote": "Teletrabajo",
+      "remoteFull": "100% teletrabajo",
+      "remoteHybrid": "Híbrido",
+      "remoteOccasional": "Ocasional",
     "boosted": "Destacado",
     "filters": "Filtros",
     "resetFilters": "Restablecer filtros",
@@ -2756,7 +2763,6 @@
       "button": "Contáctenos"
     }
   }
-  
 
 
 }

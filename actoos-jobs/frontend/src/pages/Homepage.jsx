@@ -250,7 +250,7 @@ const RecentJobsSection = ({ countryId }) => {
       try {
         let query = supabase
           .from('jobs')
-          .select(`id, title, contract_type, salary_min, salary_max, created_at, is_urgent, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
+          .select(`id, title, contract_type, salary_min, salary_max, created_at, is_urgent, is_remote, remote_type, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
           .eq('status', 'active')
           .order('boosted_until', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
@@ -274,6 +274,8 @@ const RecentJobsSection = ({ countryId }) => {
           salary_max: job.salary_max,
           created_at: job.created_at,
           urgent: job.is_urgent,
+          is_remote: job.is_remote,
+          remote_type: job.remote_type, // ajouté
           boosted_until: job.boosted_until,
         }));
         setJobs(formattedJobs);
@@ -322,7 +324,7 @@ const RecentJobsSection = ({ countryId }) => {
   );
 };
 
-// ---------- Job Card ----------
+// ---------- Job Card (avec badge télétravail amélioré) ----------
 const JobCard = ({ job, user, onSave, isSaved }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
@@ -336,6 +338,21 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
     if (!user) { toast.error(t('home.jobs.saveLogin')); return; }
     if (isCompany) { toast.error(t('home.jobs.companyCannotSave')); return; }
     if (onSave) onSave(job.id);
+  };
+
+  // Libellé du télétravail selon le type
+  const getRemoteLabel = () => {
+    if (!job.is_remote) return null;
+    switch (job.remote_type) {
+      case 'full':
+        return t('home.jobs.remoteFull', '100% télétravail');
+      case 'partial':
+        return t('home.jobs.remoteHybrid', 'Hybride');
+      case 'occasional':
+        return t('home.jobs.remoteOccasional', 'Occasionnel');
+      default:
+        return t('home.jobs.remote', 'Télétravail');
+    }
   };
 
   return (
@@ -354,6 +371,11 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
                 {isBoosted && (
                   <Badge className="bg-purple-100 text-purple-700 border border-purple-200">
                     🚀 {t('home.jobs.boosted')}
+                  </Badge>
+                )}
+                {job.is_remote && (
+                  <Badge className="border border-green-500 text-green-600 rounded-full bg-white">
+                    {getRemoteLabel()}
                   </Badge>
                 )}
               </div>
