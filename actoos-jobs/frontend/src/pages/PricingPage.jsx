@@ -34,13 +34,14 @@ const PricingPage = () => {
   const { user } = useAuth();
   const { format } = useCurrencyFormatter();
   const [pricing, setPricing] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);          // ← uniquement pour les prix
   const [checkoutLoading, setCheckoutLoading] = useState(null);
   const [faqOpen, setFaqOpen] = useState(null);
   const [annual, setAnnual] = useState(false);
-  const [company, setCompany] = useState(null);
+  const [company, setCompany] = useState(null);           // chargé en arrière‑plan
   const [companyLoading, setCompanyLoading] = useState(true);
 
+  // Chargement des prix (indépendant de l’utilisateur)
   useEffect(() => {
     const loadPricing = async () => {
       const cached = localStorage.getItem(PRICING_CACHE_KEY);
@@ -75,24 +76,24 @@ const PricingPage = () => {
     loadPricing();
   }, []);
 
+  // Chargement de l’entreprise (non‑bloquant)
   useEffect(() => {
-    const fetchCompany = async () => {
-      if (!user) {
-        setCompany(null);
-        setCompanyLoading(false);
-        return;
-      }
-      setCompanyLoading(true);
-      const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('owner_id', user.id)
-        .maybeSingle();
-      if (!error && data) setCompany(data);
-      else setCompany(null);
+    if (!user) {
+      setCompany(null);
       setCompanyLoading(false);
-    };
-    fetchCompany();
+      return;
+    }
+    setCompanyLoading(true);
+    supabase
+      .from('companies')
+      .select('*')
+      .eq('owner_id', user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!error && data) setCompany(data);
+        else setCompany(null);
+        setCompanyLoading(false);
+      });
   }, [user]);
 
   const handleCheckout = async (packageId) => {
@@ -136,7 +137,8 @@ const PricingPage = () => {
     window.location.href = '/dashboard/entreprise';
   };
 
-  if (loading || companyLoading) {
+  // --- Si les prix ne sont pas encore chargés, seul le spinner des prix s’affiche ---
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white pt-20">
         <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
@@ -205,7 +207,9 @@ const PricingPage = () => {
   const businessMonthly = subscriptions?.business_monthly?.amount || 149000;
   const businessAnnual = subscriptions?.business_annual?.amount || 1430400;
 
+  // Plan actuel (déterminé dès que l’entreprise est chargée, sinon 'free')
   const currentPlan = company?.subscription_plan || 'free';
+  const isCompanyLoading = companyLoading; // pour l’affichage du spinner local
 
   const handleFreePlan = () => {
     if (!user) {
@@ -312,11 +316,17 @@ const PricingPage = () => {
                     {plan.badge.text}
                   </div>
                 )}
-                {isCurrentPlan && (
+                {/* Pendentif “Plan actuel” avec loader si entreprise en cours de chargement */}
+                {isCompanyLoading ? (
+                  <div className="absolute top-4 left-4 bg-slate-100 text-slate-500 text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Chargement...
+                  </div>
+                ) : isCurrentPlan ? (
                   <div className="absolute top-4 left-4 bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
                     {t('pricing.currentPlan')}
                   </div>
-                )}
+                ) : null}
                 <CardHeader className="text-center pt-10 pb-0">
                   <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <plan.icon className="w-7 h-7 text-blue-600" />
@@ -421,6 +431,7 @@ const PricingPage = () => {
         </div>
       </div>
 
+      {/* Le reste du fichier (tableau comparatif, FAQ, CTA) est inchangé */}
       {/* Tableau comparatif */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="text-center mb-12">
