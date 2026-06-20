@@ -45,7 +45,7 @@ import {
   Save,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
-// ✅ Ajout de l'import depuis planLimits
+// ✅ Correction : import des fonctions partagées
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
 
 // ---------- Stats Card ----------
@@ -776,7 +776,7 @@ const AdminDashboard = () => {
 
   const [roleRequests, setRoleRequests] = useState([]);
 
-  // ✅ Suppression de la définition locale de getPlanLimit. On utilise l'import.
+  // ✅ La fonction getPlanLimit est importée, plus de définition locale
 
   const roleLabel = (role) => t(`adminDashboard.roleLabels.${role}`, { defaultValue: role || t('adminDashboard.roleLabels.unknown') });
 
@@ -1489,7 +1489,8 @@ const AdminDashboard = () => {
   });
 
   // ---------- Render ----------
-  if (authLoading || loading) {
+  // ✅ Affiche la page immédiatement, sauf si l'authentification n'est pas prête
+  if (authLoading) {
     return (
       <div className="min-h-screen pt-20 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -1591,12 +1592,20 @@ const AdminDashboard = () => {
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {jobs.filter((j) => j.status === 'pending' || j.status === 'draft').slice(0, 5).map((job) => (
-                  <JobModerationCard key={job.id} job={job} onApprove={handleApproveJob} onReject={handleRejectJob} onSuspend={handleSuspendJob} onDelete={handleDeleteJob} />
-                ))}
-                {jobs.filter((j) => j.status === 'pending' || j.status === 'draft').length === 0 && (
-                  <p className="text-center text-slate-500 py-8">{t('adminDashboard.overview.noPendingJobs')}</p>
+              <CardContent>
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                  </div>
+                ) : (
+                  <>
+                    {jobs.filter((j) => j.status === 'pending' || j.status === 'draft').slice(0, 5).map((job) => (
+                      <JobModerationCard key={job.id} job={job} onApprove={handleApproveJob} onReject={handleRejectJob} onSuspend={handleSuspendJob} onDelete={handleDeleteJob} />
+                    ))}
+                    {jobs.filter((j) => j.status === 'pending' || j.status === 'draft').length === 0 && (
+                      <p className="text-center text-slate-500 py-8">{t('adminDashboard.overview.noPendingJobs')}</p>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -1612,12 +1621,20 @@ const AdminDashboard = () => {
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {companies.filter((c) => c.is_verified !== true).slice(0, 5).map((company) => (
-                  <CompanyValidationCard key={company.id} company={company} onApprove={handleApproveCompany} onReject={handleRejectCompany} onDelete={handleDeleteCompany} onViewJobs={handleViewCompanyJobs} onSuspendWithDuration={(company) => setCompanySuspendModal({ open: true, companyId: company.id })} />
-                ))}
-                {companies.filter((c) => c.is_verified !== true).length === 0 && (
-                  <p className="text-center text-slate-500 py-8">{t('adminDashboard.overview.noPendingCompanies')}</p>
+              <CardContent>
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                  </div>
+                ) : (
+                  <>
+                    {companies.filter((c) => c.is_verified !== true).slice(0, 5).map((company) => (
+                      <CompanyValidationCard key={company.id} company={company} onApprove={handleApproveCompany} onReject={handleRejectCompany} onDelete={handleDeleteCompany} onViewJobs={handleViewCompanyJobs} onSuspendWithDuration={(company) => setCompanySuspendModal({ open: true, companyId: company.id })} />
+                    ))}
+                    {companies.filter((c) => c.is_verified !== true).length === 0 && (
+                      <p className="text-center text-slate-500 py-8">{t('adminDashboard.overview.noPendingCompanies')}</p>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -1654,20 +1671,28 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {filteredJobs.length > 0 ? (
-                filteredJobs.map((job) => (
-                  <JobModerationCard key={job.id} job={job} onApprove={handleApproveJob} onReject={handleRejectJob} onSuspend={handleSuspendJob} onDelete={handleDeleteJob} />
-                ))
-              ) : (
-                <p className="text-center text-slate-500 py-12">
-                  {searchQuery ? t('adminDashboard.jobs.noJobsFound') : t('adminDashboard.jobs.noJobs')}
-                </p>
-              )}
-              {jobsHasMore && filteredJobs.length === jobsPage * ITEMS_PER_PAGE && (
-                <div className="text-center mt-4">
-                  <Button onClick={loadMoreJobs}>{t('adminDashboard.jobs.loadMore')}</Button>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                 </div>
+              ) : (
+                <>
+                  {filteredJobs.length > 0 ? (
+                    filteredJobs.map((job) => (
+                      <JobModerationCard key={job.id} job={job} onApprove={handleApproveJob} onReject={handleRejectJob} onSuspend={handleSuspendJob} onDelete={handleDeleteJob} />
+                    ))
+                  ) : (
+                    <p className="text-center text-slate-500 py-12">
+                      {searchQuery ? t('adminDashboard.jobs.noJobsFound') : t('adminDashboard.jobs.noJobs')}
+                    </p>
+                  )}
+                  {!loading && jobsHasMore && filteredJobs.length === jobsPage * ITEMS_PER_PAGE && (
+                    <div className="text-center mt-4">
+                      <Button onClick={loadMoreJobs}>{t('adminDashboard.jobs.loadMore')}</Button>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -1700,20 +1725,28 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {filteredCompanies.length > 0 ? (
-                filteredCompanies.map((company) => (
-                  <CompanyValidationCard key={company.id} company={company} onApprove={handleApproveCompany} onReject={handleRejectCompany} onDelete={handleDeleteCompany} onViewJobs={handleViewCompanyJobs} onSuspendWithDuration={(company) => setCompanySuspendModal({ open: true, companyId: company.id })} />
-                ))
-              ) : (
-                <p className="text-center text-slate-500 py-12">
-                  {searchQuery ? t('adminDashboard.companies.noCompaniesFound') : t('adminDashboard.companies.noCompanies')}
-                </p>
-              )}
-              {companiesHasMore && filteredCompanies.length === companiesPage * ITEMS_PER_PAGE && (
-                <div className="text-center mt-4">
-                  <Button onClick={loadMoreCompanies}>{t('adminDashboard.companies.loadMore')}</Button>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                 </div>
+              ) : (
+                <>
+                  {filteredCompanies.length > 0 ? (
+                    filteredCompanies.map((company) => (
+                      <CompanyValidationCard key={company.id} company={company} onApprove={handleApproveCompany} onReject={handleRejectCompany} onDelete={handleDeleteCompany} onViewJobs={handleViewCompanyJobs} onSuspendWithDuration={(company) => setCompanySuspendModal({ open: true, companyId: company.id })} />
+                    ))
+                  ) : (
+                    <p className="text-center text-slate-500 py-12">
+                      {searchQuery ? t('adminDashboard.companies.noCompaniesFound') : t('adminDashboard.companies.noCompanies')}
+                    </p>
+                  )}
+                  {!loading && companiesHasMore && filteredCompanies.length === companiesPage * ITEMS_PER_PAGE && (
+                    <div className="text-center mt-4">
+                      <Button onClick={loadMoreCompanies}>{t('adminDashboard.companies.loadMore')}</Button>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -1729,63 +1762,70 @@ const AdminDashboard = () => {
               <CardDescription>{t('adminDashboard.users.description')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {users.map((u) => (
-                  <div key={u.id} className="flex flex-col gap-4 p-4 bg-white border border-slate-200 rounded-2xl">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-900 truncate">{u.first_name} {u.last_name}</p>
-                        <p className="text-sm text-slate-500 truncate">{u.email}</p>
-                        <Badge className={cn(
-                          'mt-1',
-                          u.is_banned ? 'bg-red-100 text-red-700' : u.is_active ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                        )}>
-                          {u.is_banned ? t('adminDashboard.users.status.banned') : u.is_active ? t('adminDashboard.users.status.active') : t('adminDashboard.users.status.suspended')}
-                        </Badge>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {users.length > 0 ? (
+                    users.map((u) => (
+                      <div key={u.id} className="flex flex-col gap-4 p-4 bg-white border border-slate-200 rounded-2xl">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900 truncate">{u.first_name} {u.last_name}</p>
+                            <p className="text-sm text-slate-500 truncate">{u.email}</p>
+                            <Badge className={cn(
+                              'mt-1',
+                              u.is_banned ? 'bg-red-100 text-red-700' : u.is_active ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                            )}>
+                              {u.is_banned ? t('adminDashboard.users.status.banned') : u.is_active ? t('adminDashboard.users.status.active') : t('adminDashboard.users.status.suspended')}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                            <select
+                              value={u.role}
+                              onChange={(e) => handleToggleUserRole(u.id, e.target.value)}
+                              className="border border-slate-200 rounded-xl px-3 py-2 text-sm w-full sm:w-auto min-h-[44px] bg-white"
+                            >
+                              <option value="candidate">{t('adminDashboard.users.roles.candidate')}</option>
+                              <option value="company">{t('adminDashboard.users.roles.company')}</option>
+                              <option value="admin">{t('adminDashboard.users.roles.admin')}</option>
+                            </select>
+                            <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]" onClick={() => setSuspendModal({ open: true, userId: u.id })} disabled={!u.is_active}>
+                              <UserX className="w-4 h-4 mr-1" />
+                              {t('adminDashboard.users.actions.suspend')}
+                            </Button>
+                            {!u.is_active && (
+                              <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]" onClick={() => handleToggleUserActive(u.id, u.is_active)}>
+                                <UserCheck className="w-4 h-4 mr-1" />
+                                {t('adminDashboard.users.actions.reactivate')}
+                              </Button>
+                            )}
+                            {!u.is_banned && (
+                              <Button size="sm" variant="outline" className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleBanUser(u.id)}>
+                                <Ban className="w-4 h-4 mr-1" />
+                                {t('adminDashboard.users.actions.ban')}
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline" className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleDeleteUser(u.id)}>
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              {t('adminDashboard.users.actions.delete')}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                        <select
-                          value={u.role}
-                          onChange={(e) => handleToggleUserRole(u.id, e.target.value)}
-                          className="border border-slate-200 rounded-xl px-3 py-2 text-sm w-full sm:w-auto min-h-[44px] bg-white"
-                        >
-                          <option value="candidate">{t('adminDashboard.users.roles.candidate')}</option>
-                          <option value="company">{t('adminDashboard.users.roles.company')}</option>
-                          <option value="admin">{t('adminDashboard.users.roles.admin')}</option>
-                        </select>
-                        <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]" onClick={() => setSuspendModal({ open: true, userId: u.id })} disabled={!u.is_active}>
-                          <UserX className="w-4 h-4 mr-1" />
-                          {t('adminDashboard.users.actions.suspend')}
-                        </Button>
-                        {!u.is_active && (
-                          <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]" onClick={() => handleToggleUserActive(u.id, u.is_active)}>
-                            <UserCheck className="w-4 h-4 mr-1" />
-                            {t('adminDashboard.users.actions.reactivate')}
-                          </Button>
-                        )}
-                        {!u.is_banned && (
-                          <Button size="sm" variant="outline" className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleBanUser(u.id)}>
-                            <Ban className="w-4 h-4 mr-1" />
-                            {t('adminDashboard.users.actions.ban')}
-                          </Button>
-                        )}
-                        <Button size="sm" variant="outline" className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleDeleteUser(u.id)}>
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          {t('adminDashboard.users.actions.delete')}
-                        </Button>
-                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-slate-500 py-8">{t('adminDashboard.users.noUsers')}</p>
+                  )}
+                  {!loading && usersHasMore && users.length === usersPage * ITEMS_PER_PAGE && (
+                    <div className="text-center mt-4">
+                      <Button onClick={loadMoreUsers}>{t('adminDashboard.users.loadMore')}</Button>
                     </div>
-                  </div>
-                ))}
-                {users.length === 0 && (
-                  <p className="text-center text-slate-500 py-8">{t('adminDashboard.users.noUsers')}</p>
-                )}
-                {usersHasMore && users.length === usersPage * ITEMS_PER_PAGE && (
-                  <div className="text-center mt-4">
-                    <Button onClick={loadMoreUsers}>{t('adminDashboard.users.loadMore')}</Button>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -1800,69 +1840,75 @@ const AdminDashboard = () => {
               <CardDescription>{t('adminDashboard.reports.description')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {reports.length === 0 ? (
-                  <p className="text-center text-slate-500 py-8">{t('adminDashboard.reports.noReports')}</p>
-                ) : (
-                  reports.map((report) => {
-                    const isJobReport = report.reported_item_type === 'job';
-                    const isCompanyReport = report.reported_item_type === 'company';
-                    const isCandidateReport = report.reported_item_type === 'candidate';
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {reports.length === 0 ? (
+                    <p className="text-center text-slate-500 py-8">{t('adminDashboard.reports.noReports')}</p>
+                  ) : (
+                    reports.map((report) => {
+                      const isJobReport = report.reported_item_type === 'job';
+                      const isCompanyReport = report.reported_item_type === 'company';
+                      const isCandidateReport = report.reported_item_type === 'candidate';
 
-                    return (
-                      <div key={report.id} className="flex flex-col gap-4 p-4 bg-white border border-slate-200 rounded-2xl">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <Badge className={
-                              isJobReport ? 'bg-blue-100 text-blue-700' :
-                              isCompanyReport ? 'bg-purple-100 text-purple-700' :
-                              'bg-yellow-100 text-yellow-700'
-                            }>
-                              {isJobReport ? t('adminDashboard.reports.badges.job') : isCompanyReport ? t('adminDashboard.reports.badges.company') : t('adminDashboard.reports.badges.candidate')}
+                      return (
+                        <div key={report.id} className="flex flex-col gap-4 p-4 bg-white border border-slate-200 rounded-2xl">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Badge className={
+                                isJobReport ? 'bg-blue-100 text-blue-700' :
+                                isCompanyReport ? 'bg-purple-100 text-purple-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }>
+                                {isJobReport ? t('adminDashboard.reports.badges.job') : isCompanyReport ? t('adminDashboard.reports.badges.company') : t('adminDashboard.reports.badges.candidate')}
+                              </Badge>
+                              <p className="font-semibold text-slate-900 truncate">
+                                {t('adminDashboard.reports.reportedBy', { email: report.reporter?.email || 'Anonyme' })}
+                              </p>
+                            </div>
+                            <p className="text-sm text-slate-500 mt-1">{t('adminDashboard.reports.reason', { reason: report.reason })}</p>
+                            <Badge className={cn(
+                              'mt-2',
+                              report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                              report.status === 'reviewed' ? 'bg-blue-100 text-blue-700' :
+                              'bg-green-100 text-green-700'
+                            )}>
+                              {report.status === 'pending' ? t('adminDashboard.reports.status.pending') : report.status === 'reviewed' ? t('adminDashboard.reports.status.reviewed') : t('adminDashboard.reports.status.resolved')}
                             </Badge>
-                            <p className="font-semibold text-slate-900 truncate">
-                              {t('adminDashboard.reports.reportedBy', { email: report.reporter?.email || 'Anonyme' })}
-                            </p>
                           </div>
-                          <p className="text-sm text-slate-500 mt-1">{t('adminDashboard.reports.reason', { reason: report.reason })}</p>
-                          <Badge className={cn(
-                            'mt-2',
-                            report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                            report.status === 'reviewed' ? 'bg-blue-100 text-blue-700' :
-                            'bg-green-100 text-green-700'
-                          )}>
-                            {report.status === 'pending' ? t('adminDashboard.reports.status.pending') : report.status === 'reviewed' ? t('adminDashboard.reports.status.reviewed') : t('adminDashboard.reports.status.resolved')}
-                          </Badge>
+                          <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:justify-end">
+                            <Button size="sm" variant="outline" className="min-h-[44px]" onClick={() => handleUpdateReportStatus(report.id, 'reviewed')} disabled={report.status !== 'pending'}>
+                              {t('adminDashboard.reports.markReviewed')}
+                            </Button>
+                            <Button size="sm" variant="outline" className="min-h-[44px]" onClick={() => handleUpdateReportStatus(report.id, 'resolved')} disabled={report.status === 'resolved'}>
+                              {t('adminDashboard.reports.markResolved')}
+                            </Button>
+                            {!isCandidateReport && (
+                              <>
+                                <Button size="sm" variant="outline" className="text-yellow-600 hover:bg-yellow-50 min-h-[44px]" onClick={() => handleSuspendReportedItem(report)}>
+                                  <Ban className="w-4 h-4 mr-1" />
+                                  {isJobReport ? t('adminDashboard.reports.suspendJob') : t('adminDashboard.reports.suspendCompany')}
+                                </Button>
+                                <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleDeleteReportedItem(report)}>
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  {isJobReport ? t('adminDashboard.reports.deleteJob') : t('adminDashboard.reports.deleteCompany')}
+                                </Button>
+                              </>
+                            )}
+                            <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleBanReportedUser(report)}>
+                              <UserX className="w-4 h-4 mr-1" />
+                              {t('adminDashboard.reports.banUser')}
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:justify-end">
-                          <Button size="sm" variant="outline" className="min-h-[44px]" onClick={() => handleUpdateReportStatus(report.id, 'reviewed')} disabled={report.status !== 'pending'}>
-                            {t('adminDashboard.reports.markReviewed')}
-                          </Button>
-                          <Button size="sm" variant="outline" className="min-h-[44px]" onClick={() => handleUpdateReportStatus(report.id, 'resolved')} disabled={report.status === 'resolved'}>
-                            {t('adminDashboard.reports.markResolved')}
-                          </Button>
-                          {!isCandidateReport && (
-                            <>
-                              <Button size="sm" variant="outline" className="text-yellow-600 hover:bg-yellow-50 min-h-[44px]" onClick={() => handleSuspendReportedItem(report)}>
-                                <Ban className="w-4 h-4 mr-1" />
-                                {isJobReport ? t('adminDashboard.reports.suspendJob') : t('adminDashboard.reports.suspendCompany')}
-                              </Button>
-                              <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleDeleteReportedItem(report)}>
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                {isJobReport ? t('adminDashboard.reports.deleteJob') : t('adminDashboard.reports.deleteCompany')}
-                              </Button>
-                            </>
-                          )}
-                          <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleBanReportedUser(report)}>
-                            <UserX className="w-4 h-4 mr-1" />
-                            {t('adminDashboard.reports.banUser')}
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -1878,48 +1924,54 @@ const AdminDashboard = () => {
                 <CardDescription>{t('adminDashboard.subscriptions.description')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="border-b bg-slate-50">
-                      <tr>
-                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.company')}</th>
-                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.plan')}</th>
-                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.previousPlan')}</th>
-                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.stripeSubId')}</th>
-                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.expiration')}</th>
-                        <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.cancellationReason')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {companies.map((c) => (
-                        <tr key={c.id} className="border-b border-slate-100">
-                          <td className="py-3 px-4 font-medium">{c.name}</td>
-                          <td className="py-3 px-4">
-                            <Badge className={
-                              c.subscription_plan === 'pro' ? 'bg-blue-100 text-blue-700' :
-                              c.subscription_plan === 'business' ? 'bg-purple-100 text-purple-700' :
-                              'bg-slate-100 text-slate-700'
-                            }>
-                              {c.subscription_plan || 'free'}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4 text-xs text-slate-500">
-                            {c.previous_subscription_plan ? (
-                              <Badge className="bg-amber-100 text-amber-700">{c.previous_subscription_plan}</Badge>
-                            ) : '-'}
-                          </td>
-                          <td className="py-3 px-4 text-xs text-slate-500">{c.stripe_subscription_id || '-'}</td>
-                          <td className="py-3 px-4">
-                            {c.subscription_expires_at ? new Date(c.subscription_expires_at).toLocaleDateString('fr-FR') : '-'}
-                          </td>
-                          <td className="py-3 px-4 text-xs text-slate-500 max-w-[200px] truncate" title={c.cancellation_reason}>
-                            {c.cancellation_reason || '-'}
-                          </td>
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="border-b bg-slate-50">
+                        <tr>
+                          <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.company')}</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.plan')}</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.previousPlan')}</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.stripeSubId')}</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.expiration')}</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('adminDashboard.subscriptions.table.cancellationReason')}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {companies.map((c) => (
+                          <tr key={c.id} className="border-b border-slate-100">
+                            <td className="py-3 px-4 font-medium">{c.name}</td>
+                            <td className="py-3 px-4">
+                              <Badge className={
+                                c.subscription_plan === 'pro' ? 'bg-blue-100 text-blue-700' :
+                                c.subscription_plan === 'business' ? 'bg-purple-100 text-purple-700' :
+                                'bg-slate-100 text-slate-700'
+                              }>
+                                {c.subscription_plan || 'free'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-xs text-slate-500">
+                              {c.previous_subscription_plan ? (
+                                <Badge className="bg-amber-100 text-amber-700">{c.previous_subscription_plan}</Badge>
+                              ) : '-'}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-slate-500">{c.stripe_subscription_id || '-'}</td>
+                            <td className="py-3 px-4">
+                              {c.subscription_expires_at ? new Date(c.subscription_expires_at).toLocaleDateString('fr-FR') : '-'}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-slate-500 max-w-[200px] truncate" title={c.cancellation_reason}>
+                              {c.cancellation_reason || '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

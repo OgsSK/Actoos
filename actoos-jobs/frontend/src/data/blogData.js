@@ -1,4 +1,4 @@
-import i18n from './i18n'; // ou le chemin vers votre instance i18next
+import i18n from '../i18n';   // correct  // au lieu de './i18n' // ou le chemin vers votre instance i18next
 
 export const getBlogArticles = () => {
   const articles = i18n.t('blogArticles.items', { returnObjects: true }) || [];
