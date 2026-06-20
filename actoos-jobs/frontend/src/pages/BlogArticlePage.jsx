@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { apiFetch } from '../lib/api';
+import { useBlogPosts } from '../hooks/useBlogPosts'; // ← même hook que la liste
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Clock, User, FileText, Target, TrendingUp, Lightbulb, Briefcase, Users, Loader2 } from 'lucide-react';
@@ -18,23 +18,13 @@ const colorClasses = {
 
 const BlogArticlePage = () => {
   const { t } = useTranslation();
-  const { id } = useParams(); // id = slug
-  const [article, setArticle] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { id } = useParams(); // id = slug ou ID numérique
+  const { posts, loading } = useBlogPosts('all'); // récupère tous les articles (locaux ou API selon le contexte)
 
-  useEffect(() => {
-    const fetchArticle = async () => {
-      try {
-        const data = await apiFetch(`/api/blog/posts/${id}`);
-        setArticle(data);
-      } catch (err) {
-        setArticle(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchArticle();
-  }, [id]);
+  // Cherche l'article correspondant (par slug d'abord, puis par id numérique)
+  const article = posts.find(
+    p => p.slug === id || p.id === parseInt(id)
+  );
 
   if (loading) {
     return (

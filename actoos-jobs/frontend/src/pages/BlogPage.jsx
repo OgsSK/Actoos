@@ -13,6 +13,17 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// ----- Petite fonction pour créer un slug depuis un titre -----
+const slugify = (text) => {
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')               // sépare les accents
+    .replace(/[\u0300-\u036f]/g, '') // supprime les accents
+    .replace(/[^a-z0-9]+/g, '-')    // remplace tout ce qui n'est pas alphanum par un tiret
+    .replace(/^-+|-+$/g, '');       // supprime les tirets en début/fin
+};
+
 // ----- Icônes et couleurs -----
 const iconMap = {
   FileText,
@@ -100,11 +111,8 @@ const BlogPage = () => {
   const { user, isCompany } = useAuth();
   const [activeCategory, setActiveCategory] = useState(t('blog.allCategories'));
 
-  // Audience basée sur le rôle de l'utilisateur connecté
-  const audience = user ? (isCompany ? 'company' : 'candidate') : 'all';
-
-  // Hook avec cache (30 min) – retourne { posts, loading }
-  const { posts, loading } = useBlogPosts(audience);
+  // ✅ CORRECTION : toujours charger tous les articles (audience = 'all')
+  const { posts, loading } = useBlogPosts('all');
 
   // Mélange déterministique pour varier l'affichage chaque jour (optionnel)
   const shuffled = useMemo(() => {
@@ -120,7 +128,7 @@ const BlogPage = () => {
   // Catégories extraites des articles
   const categories = [t('blog.allCategories'), ...new Set(posts.map((a) => a.category))];
 
-  // Filtrage par catégorie
+  // Filtrage par catégorie (tag)
   const filteredArticles =
     activeCategory === t('blog.allCategories')
       ? shuffled
@@ -146,7 +154,7 @@ const BlogPage = () => {
         </div>
       </div>
 
-      {/* Catégories */}
+      {/* Filtres de catégories */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-wrap gap-2 justify-center">
           {categories.map((cat) => (
@@ -173,8 +181,10 @@ const BlogPage = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredArticles.map((article) => {
               const Icon = iconMap[article.icon] || FileText;
+              // Utilisation du slug garanti par useBlogPosts (ou généré en fallback)
+              const slug = article.slug || slugify(article.title);
               return (
-                <Link to={`/blog/${article.slug}`} key={article.id} className="group">
+                <Link to={`/blog/${slug}`} key={article.id} className="group">
                   <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
                     <div
                       className={`h-2 ${colorClasses[article.color]?.split(' ')[0] || 'bg-blue-500'}`}

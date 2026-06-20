@@ -890,7 +890,15 @@ AGENT_PROMPTS = {
     "interview-answers": "Pour chaque question d'entretien fournie, propose une réponse type structurée et convaincante. Utilise la méthode STAR quand c'est pertinent. Retourne les questions et les réponses.",
     "interview-tips": "Donne des conseils personnalisés pour réussir l'entretien ciblant ce poste spécifique. Inclus des recommandations sur la tenue, le langage corporel, les questions à poser, et les points à mettre en avant. Maximum 5 conseils. Retourne une liste à puces.",
     "cv-analysis": "Tu es un expert en recrutement et en rédaction de CV. Analyse le CV suivant et donne 3 à 5 suggestions concrètes pour l'améliorer, sans le réécrire. Mentionne les points faibles, les incohérences, et les éléments manquants. Sois constructif. Retourne uniquement les suggestions, sous forme de liste à puces.",
-    "blog-post": "Tu es un rédacteur professionnel spécialisé en emploi et recrutement en Afrique. Rédige un article de blog complet sur le sujet donné. Structure la réponse en HTML avec des titres <h2>, des paragraphes <p>, des listes <ul>. Fournis également un extrait (2 phrases) et une catégorie pertinente. Format de réponse JSON : {\"title\":\"...\", \"excerpt\":\"...\", \"content\":\"...\", \"category\":\"...\"}",
+    "blog-post": (
+        "Tu es un rédacteur professionnel spécialisé en emploi et recrutement à l'international. "
+        "Rédige un article de blog complet sur le sujet donné. "
+        "Ne mentionne aucun pays, aucune ville, aucun continent, aucune région, aucune devise spécifique. "
+        "Si un exemple géographique est nécessaire, utilise 'un pays' ou 'une région' sans précision. "
+        "Structure la réponse en HTML avec des titres <h2>, des paragraphes <p>, des listes <ul>. "
+        "Fournis également un extrait (2 phrases) et une catégorie pertinente. "
+        "Format de réponse JSON : {\"title\":\"...\", \"excerpt\":\"...\", \"content\":\"...\", \"category\":\"...\"}"
+    ),
 }
 FALLBACK_MODELS = [
     "mistralai/mistral-7b-instruct:free",
@@ -2554,31 +2562,85 @@ async def get_blog_post(slug: str):
 async def generate_blog_post(req: BlogGenerateRequest):
     if not OPENROUTER_API_KEY:
         raise HTTPException(status_code=500, detail="OpenRouter API key not configured")
-    prompt = f"Titre : {req.title}\n"
-    if req.keywords:
-        prompt += f"Mots-clés : {req.keywords}\n"
-    prompt += f"Audience : {req.audience}\n"
-    messages = [{"role": "system", "content": AGENT_PROMPTS["blog-post"]}, {"role": "user", "content": prompt}]
+
+    # Construction du prompt utilisateur AVEC la règle absolue
+    prompt = (
+        f"Titre : {req.title}\n"
+        f"Mots-clés : {req.keywords or 'Aucun'}\n"
+        f"Audience : {req.audience}\n"
+        "RÈGLE ABSOLUE : Ne mentionne aucun pays, aucune ville, aucun continent, aucune région, aucune devise. "
+        "Si un exemple est nécessaire, utilise 'un pays' ou 'une région' sans précision.\n"
+        "Génère l'article au format JSON avec les clés : title, excerpt, content, category."
+    )
+
+    messages = [
+        {"role": "system", "content": AGENT_PROMPTS["blog-post"]},
+        {"role": "user", "content": prompt}
+    ]
+
     async with httpx.AsyncClient(timeout=60.0) as client:
         for model in FALLBACK_MODELS:
             try:
                 response = await client.post(
                     "https://openrouter.ai/api/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "HTTP-Referer": "https://jobs.actoos.com", "X-Title": "Actoos Jobs AI"},
-                    json={"model": model, "messages": messages, "temperature": 0.8, "max_tokens": 1500}
+                    headers={
+                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                        "HTTP-Referer": "https://jobs.actoos.com",
+                        "X-Title": "Actoos Jobs AI"
+                    },
+                    json={
+                        "model": model,
+                        "messages": messages,
+                        "temperature": 0.8,
+                        "max_tokens": 1500
+                    }
                 )
                 data = response.json()
                 if "choices" in data and len(data["choices"]) > 0:
                     text = data["choices"][0]["message"]["content"].strip()
                     try:
                         article = json.loads(text)
-                    except:
+                    except Exception:
                         article = {
                             "title": req.title,
                             "excerpt": req.keywords or "Article généré automatiquement",
                             "content": f"<p>{text}</p>",
                             "category": req.category
                         }
+
+                    # ===== NETTOYAGE AUTOMATIQUE DES RÉFÉRENCES GÉOGRAPHIQUES =====
+                    GEO_TERMS = [
+                        "Afrique", "Afrique de l'Ouest", "Mali", "Sénégal", "Côte d'Ivoire",
+                        "Bénin", "Togo", "Burkina Faso", "Niger", "Guinée", "Ghana", "Nigeria",
+                        "Cameroun", "Gabon", "Congo", "RDC", "Rwanda", "Burundi", "Kenya",
+                        "Tanzanie", "Ouganda", "Afrique du Sud", "Maroc", "Algérie", "Tunisie",
+                        "Libye", "Égypte", "Soudan", "Éthiopie", "Somalie",
+                        "Dakar", "Bamako", "Abidjan", "Lomé", "Cotonou", "Ouagadougou", "Niamey",
+                        "Conakry", "Accra", "Lagos", "Yaoundé", "Libreville", "Brazzaville",
+                        "Kinshasa", "Kigali", "Bujumbura", "Nairobi", "Dar es Salaam", "Kampala",
+                        "Johannesburg", "Le Cap", "Casablanca", "Alger", "Tunis", "Tripoli",
+                        "Le Caire", "Khartoum", "Addis Abeba", "Mogadiscio",
+                        "FCFA", "XOF", "franc CFA", "euro", "dollar", "€", "$", "MAD", "GBP",
+                        "BRL", "ARS", "NGN", "ZAR", "SAR", "AED", "EGP", "DZD", "TND", "CHF"
+                    ]
+
+                    import re  # assurez-vous que l'import est en haut du fichier
+                    for term in GEO_TERMS:
+                        # Remplace le mot entier, insensible à la casse
+                        article["title"] = re.sub(
+                            r'\b' + re.escape(term) + r'\b', 'notre plateforme', article["title"],
+                            flags=re.IGNORECASE
+                        )
+                        article["excerpt"] = re.sub(
+                            r'\b' + re.escape(term) + r'\b', 'notre plateforme', article["excerpt"],
+                            flags=re.IGNORECASE
+                        )
+                        article["content"] = re.sub(
+                            r'\b' + re.escape(term) + r'\b', 'notre plateforme', article["content"],
+                            flags=re.IGNORECASE
+                        )
+                    # ===== FIN DU NETTOYAGE =====
+
                     slug = req.title.lower().replace(" ", "-")[:80]
                     posts = load_blog_posts()
                     new_id = max([p.get("id", 0) for p in posts], default=0) + 1
@@ -2603,7 +2665,6 @@ async def generate_blog_post(req: BlogGenerateRequest):
                 print(f"Erreur modèle {model}: {e}")
                 continue
     raise HTTPException(status_code=502, detail="Échec de la génération par IA")
-
 @app.put("/api/admin/blog/{slug}")
 async def update_blog_post(slug: str, req: BlogUpdateRequest):
     posts = load_blog_posts()
