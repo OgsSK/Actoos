@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -18,10 +18,10 @@ const slugify = (text) => {
   return text
     .toString()
     .toLowerCase()
-    .normalize('NFD')               // sépare les accents
-    .replace(/[\u0300-\u036f]/g, '') // supprime les accents
-    .replace(/[^a-z0-9]+/g, '-')    // remplace tout ce qui n'est pas alphanum par un tiret
-    .replace(/^-+|-+$/g, '');       // supprime les tirets en début/fin
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 };
 
 // ----- Icônes et couleurs -----
@@ -107,12 +107,19 @@ const NewsletterSection = () => {
 
 // ----- Page principale du blog -----
 const BlogPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, isCompany } = useAuth();
-  const [activeCategory, setActiveCategory] = useState(t('blog.allCategories'));
+  
+  // Catégorie active = catégorie d'origine (français) ou "Tous" (traduit)
+  const [activeCategory, setActiveCategory] = useState(null); // sera initialisé après
 
   // ✅ CORRECTION : toujours charger tous les articles (audience = 'all')
   const { posts, loading } = useBlogPosts('all');
+
+  // Initialiser activeCategory avec la valeur "Tous" au premier rendu et après changement de langue
+  useEffect(() => {
+    setActiveCategory(t('blog.allCategories'));
+  }, [i18n.language, t]);
 
   // Mélange déterministique pour varier l'affichage chaque jour (optionnel)
   const shuffled = useMemo(() => {
@@ -125,14 +132,29 @@ const BlogPage = () => {
     );
   }, [posts]);
 
-  // Catégories extraites des articles
-  const categories = [t('blog.allCategories'), ...new Set(posts.map((a) => a.category))];
+  // Liste des catégories d'origine (français) pour le filtrage interne
+  const originalCategories = useMemo(() => {
+    return [...new Set(posts.map((a) => a.category))];
+  }, [posts]);
 
-  // Filtrage par catégorie (tag)
-  const filteredArticles =
-    activeCategory === t('blog.allCategories')
-      ? shuffled
-      : shuffled.filter((a) => a.category === activeCategory);
+  // Catégories affichées (traduites) pour les boutons
+  const displayCategories = useMemo(() => {
+    return [t('blog.allCategories'), ...originalCategories.map(cat => t(`blog.categories.${cat}`, cat))];
+  }, [originalCategories, t]);
+
+  // Retrouver la catégorie d'origine à partir de la catégorie traduite sélectionnée
+  const getOriginalCategory = (displayCat) => {
+    if (displayCat === t('blog.allCategories')) return null; // "Tous"
+    const entry = Object.entries(t('blog.categories', { returnObjects: true }) || {}).find(([key, val]) => val === displayCat);
+    return entry ? entry[0] : displayCat; // fallback: on utilise la chaîne elle-même
+  };
+
+  // Filtrage : comparer avec la catégorie d'origine (français)
+  const filteredArticles = useMemo(() => {
+    if (!activeCategory || activeCategory === t('blog.allCategories')) return shuffled;
+    const originalCat = getOriginalCategory(activeCategory);
+    return shuffled.filter((a) => a.category === originalCat);
+  }, [shuffled, activeCategory, t]);
 
   // Affichage du loader
   if (loading) {
@@ -157,14 +179,14 @@ const BlogPage = () => {
       {/* Filtres de catégories */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-wrap gap-2 justify-center">
-          {categories.map((cat) => (
+          {displayCategories.map((displayCat) => (
             <Button
-              key={cat}
-              variant={activeCategory === cat ? 'default' : 'ghost'}
+              key={displayCat}
+              variant={activeCategory === displayCat ? 'default' : 'ghost'}
               className="rounded-full"
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => setActiveCategory(displayCat)}
             >
-              {cat}
+              {displayCat}
             </Button>
           ))}
         </div>
@@ -181,8 +203,9 @@ const BlogPage = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredArticles.map((article) => {
               const Icon = iconMap[article.icon] || FileText;
-              // Utilisation du slug garanti par useBlogPosts (ou généré en fallback)
               const slug = article.slug || slugify(article.title);
+              // Afficher la catégorie traduite dans le badge
+              const displayCategory = t(`blog.categories.${article.category}`, article.category);
               return (
                 <Link to={`/blog/${slug}`} key={article.id} className="group">
                   <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden">
@@ -199,7 +222,7 @@ const BlogPage = () => {
                           <Icon className="w-5 h-5" />
                         </div>
                         <Badge variant="outline" className="text-xs">
-                          {article.category}
+                          {displayCategory}
                         </Badge>
                       </div>
                       <h2 className="text-lg font-semibold text-slate-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">

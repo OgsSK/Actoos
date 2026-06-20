@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+// src/hooks/useBlogPosts.js
+import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { getBlogArticles } from '../data/blogData';
 
-// Fonction pour générer un slug si absent
 const slugify = (text) => {
   return text
     .toString()
@@ -19,20 +19,20 @@ const ensureSlug = (article) => ({
 });
 
 export const useBlogPosts = (audience = 'all') => {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadPosts = useCallback(() => {
+    setLoading(true);
     if (!user) {
-      // ===== DÉCONNECTÉ : uniquement les articles locaux =====
-      const localArticles = getBlogArticles().map(ensureSlug);
-      setPosts(localArticles);
+      const rawArticles = t('blogArticles.items', { returnObjects: true }) || [];
+      setPosts(rawArticles.map(ensureSlug));
       setLoading(false);
       return;
     }
 
-    // ===== CONNECTÉ : API avec timeout de 2 secondes =====
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000);
 
@@ -47,18 +47,16 @@ export const useBlogPosts = (audience = 'all') => {
       })
       .then((data) => {
         if (Array.isArray(data)) {
-          const enriched = data.map(ensureSlug);
-          setPosts(enriched);
+          setPosts(data.map(ensureSlug));
         } else {
-          // Fallback local si réponse invalide
-          setPosts(getBlogArticles().map(ensureSlug));
+          setPosts([]);
         }
         setLoading(false);
       })
       .catch(() => {
-        // Timeout ou erreur réseau → articles locaux
         clearTimeout(timeoutId);
-        setPosts(getBlogArticles().map(ensureSlug));
+        const rawArticles = t('blogArticles.items', { returnObjects: true }) || [];
+        setPosts(rawArticles.map(ensureSlug));
         setLoading(false);
       });
 
@@ -66,7 +64,19 @@ export const useBlogPosts = (audience = 'all') => {
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [audience, user]);
+  }, [user, audience, t]);
+
+  useEffect(() => {
+    // Chargement initial
+    loadPosts();
+
+    // Recharger à chaque changement de langue
+    const handleLanguageChanged = () => {
+      loadPosts();
+    };
+    i18n.on('languageChanged', handleLanguageChanged);
+    return () => i18n.off('languageChanged', handleLanguageChanged);
+  }, [loadPosts, i18n]);
 
   return { posts, loading };
 };
