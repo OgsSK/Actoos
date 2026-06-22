@@ -5,7 +5,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PreferencesProvider } from './contexts/PreferencesContext';
-import { CountriesProvider } from './contexts/CountriesContext'; // ← Ajouté
+import { CountriesProvider } from './contexts/CountriesContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import GeoBanner from './components/GeoBanner';
@@ -58,7 +58,6 @@ const CookiesPage = lazy(() => import('./pages/CookiesPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
-// const TeamManagementPage = lazy(() => import('./pages/TeamManagementPage')); // ← Désactivé temporairement
 
 // ---------- Scroll to top on route change ----------
 const ScrollToTop = () => {
@@ -188,8 +187,8 @@ const AppContent = () => {
             <Route path="/dashboard/entreprise/candidatures" element={<ProtectedRoute><CompanyApplicationsPage /></ProtectedRoute>} />
             <Route path="/dashboard/entreprise/candidatures/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
 
-            {/* ---------- Protected route - Voir profil candidat (recruteur) ---------- */}
-            <Route path="/candidat/:id" element={<ProtectedRoute><CandidatePublicProfilePage /></ProtectedRoute>} />
+            {/* ---------- Voir profil candidat (public) ---------- */}
+            <Route path="/candidat/:id" element={<CandidatePublicProfilePage />} />
 
             {/* ---------- Admin routes ---------- */}
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
@@ -227,7 +226,7 @@ function App() {
       <Router>
         <AuthProvider>
           <PreferencesProvider>
-            <CountriesProvider>   {/* ← Nouveau provider */}
+            <CountriesProvider>
               <AppContent />
             </CountriesProvider>
           </PreferencesProvider>
