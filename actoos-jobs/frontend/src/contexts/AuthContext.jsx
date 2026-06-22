@@ -132,6 +132,9 @@ export const AuthProvider = ({ children }) => {
   }, [handleSession]);
 
   const signUp = async ({ email, password, role = 'candidate', firstName, lastName, language }) => {
+    // Nettoyer la langue pour ne garder que le code principal (ex: "en-US" -> "en")
+    const cleanLanguage = language ? language.split('-')[0] : 'fr';
+    
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { 
@@ -139,7 +142,7 @@ export const AuthProvider = ({ children }) => {
           role, 
           first_name: firstName, 
           last_name: lastName,
-          language            // ← ajouté
+          language: cleanLanguage   // ← stockage du code langue propre
         } 
       },
     });

@@ -108,7 +108,7 @@ const RegisterPage = () => {
         role: role,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        language: i18n.language,   // ← ajouté
+        language: i18n.language?.split('-')[0] || 'fr',  // ← ajouté
       });
 
       toast.success(t('register.toasts.accountCreated'));
