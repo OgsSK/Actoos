@@ -24,23 +24,95 @@ const UnsubscribePage = () => {
     })();
   }, [email]);
 
-  // Textes directement en dur, basés sur la langue
-  const isEnglish = i18n.language?.startsWith('en');
+  // Langue active (ex: 'en', 'fr', 'es', 'pt', 'ar', 'it', 'de', 'nl')
+  const lang = i18n.language?.split('-')[0] || 'fr';
 
-  const texts = {
-    loading: isEnglish ? 'Processing...' : 'Traitement en cours...',
-    successTitle: isEnglish ? 'Unsubscribed successfully' : 'Désabonné avec succès',
-    successMessage: isEnglish ? 'You have been successfully unsubscribed.' : 'Vous avez été désabonné avec succès.',
-    errorTitle: isEnglish ? 'Error' : 'Erreur',
-    errorNoEmail: isEnglish ? 'No email address provided.' : 'Aucune adresse email fournie.',
-    errorAlreadyUnsubscribed: isEnglish ? 'Address not found or already unsubscribed.' : 'Adresse non trouvée ou déjà désabonnée.',
-    errorNetwork: isEnglish ? 'Network error, please try again.' : 'Erreur réseau, veuillez réessayer.',
+  // Dictionnaire de traductions
+  const translations = {
+    loading: {
+      fr: 'Traitement en cours...',
+      en: 'Processing...',
+      es: 'Procesando...',
+      pt: 'Processando...',
+      ar: 'جارٍ المعالجة...',
+      it: 'Elaborazione in corso...',
+      de: 'Wird bearbeitet...',
+      nl: 'Verwerken...',
+    },
+    successTitle: {
+      fr: 'Désabonné avec succès',
+      en: 'Unsubscribed successfully',
+      es: 'Desinscrito con éxito',
+      pt: 'Desinscrito com sucesso',
+      ar: 'تم إلغاء الاشتراك بنجاح',
+      it: 'Disiscritto con successo',
+      de: 'Erfolgreich abgemeldet',
+      nl: 'Succesvol uitgeschreven',
+    },
+    successMessage: {
+      fr: 'Vous avez été désabonné avec succès.',
+      en: 'You have been successfully unsubscribed.',
+      es: 'Has sido desinscrito con éxito.',
+      pt: 'Você foi desinscrito com sucesso.',
+      ar: 'تم إلغاء اشتراكك بنجاح.',
+      it: 'Sei stato disiscritto con successo.',
+      de: 'Sie wurden erfolgreich abgemeldet.',
+      nl: 'U bent succesvol uitgeschreven.',
+    },
+    errorTitle: {
+      fr: 'Erreur',
+      en: 'Error',
+      es: 'Error',
+      pt: 'Erro',
+      ar: 'خطأ',
+      it: 'Errore',
+      de: 'Fehler',
+      nl: 'Fout',
+    },
+    errorNoEmail: {
+      fr: 'Aucune adresse email fournie.',
+      en: 'No email address provided.',
+      es: 'No se proporcionó dirección de correo.',
+      pt: 'Nenhum endereço de email fornecido.',
+      ar: 'لم يتم تقديم عنوان بريد إلكتروني.',
+      it: 'Nessun indirizzo email fornito.',
+      de: 'Keine E-Mail-Adresse angegeben.',
+      nl: 'Geen e-mailadres opgegeven.',
+    },
+    errorAlreadyUnsubscribed: {
+      fr: 'Adresse non trouvée ou déjà désabonnée.',
+      en: 'Address not found or already unsubscribed.',
+      es: 'Dirección no encontrada o ya desinscrita.',
+      pt: 'Endereço não encontrado ou já desinscrito.',
+      ar: 'العنوان غير موجود أو تم إلغاء الاشتراك بالفعل.',
+      it: 'Indirizzo non trovato o già disiscritto.',
+      de: 'Adresse nicht gefunden oder bereits abgemeldet.',
+      nl: 'Adres niet gevonden of al uitgeschreven.',
+    },
+    errorNetwork: {
+      fr: 'Erreur réseau, veuillez réessayer.',
+      en: 'Network error, please try again.',
+      es: 'Error de red, inténtelo de nuevo.',
+      pt: 'Erro de rede, tente novamente.',
+      ar: 'خطأ في الشبكة، يرجى المحاولة مرة أخرى.',
+      it: 'Errore di rete, riprova.',
+      de: 'Netzwerkfehler, bitte versuchen Sie es erneut.',
+      nl: 'Netwerkfout, probeer opnieuw.',
+    },
+  };
+
+  // Récupère la traduction ou retourne le français par défaut
+  const tLocal = (key) => {
+    if (translations[key] && translations[key][lang]) {
+      return translations[key][lang];
+    }
+    return translations[key]?.fr || key;
   };
 
   return (
     <div className="min-h-screen pt-20 flex items-center justify-center bg-slate-50">
       <div className="max-w-md w-full mx-4 p-8 bg-white rounded-2xl shadow text-center">
-        {status === 'loading' && <p className="text-slate-600">{texts.loading}</p>}
+        {status === 'loading' && <p className="text-slate-600">{tLocal('loading')}</p>}
         {status === 'success' && (
           <>
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -48,8 +120,8 @@ const UnsubscribePage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">{texts.successTitle}</h1>
-            <p className="text-slate-600">{texts.successMessage}</p>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">{tLocal('successTitle')}</h1>
+            <p className="text-slate-600">{tLocal('successMessage')}</p>
           </>
         )}
         {status === 'error' && (
@@ -59,9 +131,9 @@ const UnsubscribePage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">{texts.errorTitle}</h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">{tLocal('errorTitle')}</h1>
             <p className="text-slate-600">
-              {email ? texts.errorAlreadyUnsubscribed : texts.errorNoEmail}
+              {email ? tLocal('errorAlreadyUnsubscribed') : tLocal('errorNoEmail')}
             </p>
           </>
         )}
