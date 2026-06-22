@@ -396,7 +396,12 @@ Profil candidat :
                     <p className="text-slate-600 flex items-center gap-2 mt-1"><Mail className="w-4 h-4" /> {candidate?.email}</p>
                     {candidate?.phone && <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {candidate.phone}</p>}
                     {candidate?.city?.name && <p className="text-slate-600 flex items-center gap-2 mt-1"><MapPin className="w-4 h-4" /> {candidate.city.name}</p>}
-                    <Link to={`/candidat/${candidate.id}`} className="inline-flex items-center gap-1 mt-3 text-blue-600 hover:underline text-sm"><ExternalLink className="w-4 h-4" /> {t('applicationDetail.viewFullProfile')}</Link>
+                    {/* Lien protégé : n'apparaît que si candidate.id existe */}
+                    {candidate?.id && (
+                      <Link to={`/candidat/${candidate.id}`} className="inline-flex items-center gap-1 mt-3 text-blue-600 hover:underline text-sm">
+                        <ExternalLink className="w-4 h-4" /> {t('applicationDetail.viewFullProfile')}
+                      </Link>
+                    )}
                   </div>
                 </div>
                 {candidateProfile && (

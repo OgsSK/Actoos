@@ -20,7 +20,6 @@ import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { apiFetch } from '../lib/api';
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
 
-// Taux de conversion vers XOF (identiques à ceux de useCurrencyFormatter)
 const RATES = {
   XOF: 1, EUR: 655.957, USD: 603.5, MAD: 60.5,
   GBP: 754.2, BRL: 115.3, ARS: 0.72, NGN: 0.4, ZAR: 32.5,
@@ -35,7 +34,7 @@ const CreateJobPage = () => {
   const navigate = useNavigate();
 
   const { prefs } = usePreferencesContext();
-  const currency = prefs.currency || 'XOF';   // devise d'affichage
+  const currency = prefs.currency || 'XOF';
   const { cities: filteredCities } = useCities(prefs.country);
 
   const [loading, setLoading] = useState(false);
@@ -54,8 +53,8 @@ const CreateJobPage = () => {
     category_id: '',
     contract_type: 'cdi',
     experience_level: '',
-    salary_min: '',   // en devise d'affichage
-    salary_max: '',   // en devise d'affichage
+    salary_min: '',
+    salary_max: '',
     is_salary_visible: true,
     city_id: '',
     address: '',
@@ -130,7 +129,6 @@ const CreateJobPage = () => {
 
       if (error) throw error;
 
-      // Convertir les salaires stockés en FCFA vers la devise d'affichage
       const rate = RATES[currency] || 1;
       const displaySalaryMin = data.salary_min ? Math.round(data.salary_min / rate) : '';
       const displaySalaryMax = data.salary_max ? Math.round(data.salary_max / rate) : '';
@@ -144,8 +142,8 @@ const CreateJobPage = () => {
         category_id: data.category_id || '',
         contract_type: data.contract_type || 'cdi',
         experience_level: data.experience_level || '',
-        salary_min: displaySalaryMin,   // en devise
-        salary_max: displaySalaryMax,   // en devise
+        salary_min: displaySalaryMin,
+        salary_max: displaySalaryMax,
         is_salary_visible: data.is_salary_visible ?? true,
         city_id: data.city_id || '',
         address: data.address || '',
@@ -237,7 +235,6 @@ const CreateJobPage = () => {
         }
       }
 
-      // Conversion devise -> FCFA
       const toXOF = (amount) => {
         const num = parseInt(amount);
         return isNaN(num) ? null : Math.round(num * RATES[currency] || 1);
@@ -257,7 +254,7 @@ const CreateJobPage = () => {
         experience_level: form.experience_level || null,
         salary_min: toXOF(form.salary_min),
         salary_max: toXOF(form.salary_max),
-        salary_currency: 'XOF',                // toujours stocké en FCFA
+        salary_currency: 'XOF',
         is_salary_visible: form.is_salary_visible,
         city_id: form.city_id || null,
         country_id: countryId,
@@ -351,44 +348,46 @@ const CreateJobPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20" data-testid="create-job-page">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20" data-testid="create-job-page">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        {/* Bannière entreprise non vérifiée */}
         {isUnverified && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <div>
+            <div className="text-sm">
               <p className="text-amber-800 font-medium">{t('createJob.unverifiedBanner.title')}</p>
-              <p className="text-amber-600 text-sm">{t('createJob.unverifiedBanner.description')}</p>
+              <p className="text-amber-600">{t('createJob.unverifiedBanner.description')}</p>
             </div>
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/dashboard/entreprise')} className="-ml-2" type="button">
+        {/* En‑tête */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="ghost" onClick={() => navigate('/dashboard/entreprise')} className="-ml-2 shrink-0" type="button">
               <ChevronLeft className="w-4 h-4 mr-1" />
-              {t('createJob.back')}
+              <span className="hidden sm:inline">{t('createJob.back')}</span>
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
                 {id ? t('createJob.titleEdit') : t('createJob.titleNew')}
               </h1>
-              <p className="text-slate-600">{company?.name}</p>
+              <p className="text-sm text-slate-600">{company?.name}</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button">
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button" className="flex-1 sm:flex-none">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               {t('createJob.save')}
             </Button>
             <Button
               onClick={() => handleSave(true)}
               disabled={isPublishDisabled()}
-              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed flex-1 sm:flex-none"
               data-testid="publish-job-btn"
               type="button"
             >
@@ -398,10 +397,10 @@ const CreateJobPage = () => {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Informations de base */}
           <Card>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-blue-600" />
                 {t('createJob.sections.basicInfo')}
@@ -431,7 +430,7 @@ const CreateJobPage = () => {
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.category')}</label>
                   <select
@@ -471,7 +470,7 @@ const CreateJobPage = () => {
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     <GraduationCap className="w-4 h-4 inline mr-1" />
@@ -520,7 +519,7 @@ const CreateJobPage = () => {
 
           {/* Description */}
           <Card>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.description')}</h2>
 
               <div>
@@ -608,18 +607,19 @@ const CreateJobPage = () => {
 
           {/* Compétences */}
           <Card>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.skills')}</h2>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   value={newSkill}
                   onChange={(e) => setNewSkill(e.target.value)}
                   placeholder={t('createJob.placeholders.skill')}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
                   data-testid="job-skill-input"
+                  className="flex-1"
                 />
-                <Button type="button" onClick={handleAddSkill} disabled={!newSkill.trim()}>
+                <Button type="button" onClick={handleAddSkill} disabled={!newSkill.trim()} className="w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-1" />
                   {t('createJob.skills.add')}
                 </Button>
@@ -646,13 +646,13 @@ const CreateJobPage = () => {
 
           {/* Localisation */}
           <Card>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-blue-600" />
                 {t('createJob.sections.location')}
               </h2>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.city')}</label>
                   <select
@@ -677,7 +677,7 @@ const CreateJobPage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -692,7 +692,7 @@ const CreateJobPage = () => {
                   <select
                     value={form.remote_type}
                     onChange={(e) => setForm({ ...form, remote_type: e.target.value })}
-                    className="h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                    className="h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm w-full sm:w-auto"
                   >
                     <option value="">{t('createJob.labels.remoteType')}</option>
                     <option value="full">{t('createJob.options.remoteFull')}</option>
@@ -706,13 +706,13 @@ const CreateJobPage = () => {
 
           {/* Rémunération */}
           <Card>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-blue-600" />
                 {t('createJob.sections.salary')}
               </h2>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     {t('createJob.labels.salaryMin')}
@@ -753,13 +753,13 @@ const CreateJobPage = () => {
 
           {/* Dates */}
           <Card>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-600" />
                 {t('createJob.sections.dates')}
               </h2>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.applicationDeadline')}</label>
                   <Input
@@ -784,15 +784,15 @@ const CreateJobPage = () => {
           </Card>
 
           {/* Boutons finaux */}
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2 sm:pt-4">
+            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button" className="w-full sm:w-auto">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               {t('createJob.saveDraft')}
             </Button>
             <Button
               onClick={() => handleSave(true)}
               disabled={isPublishDisabled()}
-              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto"
               data-testid="publish-job-btn-bottom"
               type="button"
             >
@@ -811,21 +811,21 @@ const CreateJobPage = () => {
       {/* Modal de limite d'offres */}
       {showLimitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 text-center">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 sm:p-8 text-center">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
               <Briefcase className="w-8 h-8 text-blue-600" />
             </div>
             <h2 className="text-xl font-bold text-slate-900 mb-4">
               {t('createJob.limitModal.title')}
             </h2>
-            <p className="text-slate-600 mb-6">
+            <p className="text-slate-600 mb-6 text-sm sm:text-base">
               {t('createJob.limitModal.message', {
                 plan: limitInfo.currentPlan === 'free' ? t('pricing.free') : limitInfo.currentPlan,
                 max: limitInfo.maxActiveJobs,
                 current: limitInfo.activeJobs
               })}
             </p>
-            <p className="text-sm text-slate-500 mb-8">
+            <p className="text-sm text-slate-500 mb-6 sm:mb-8">
               {t('createJob.limitModal.upgradeSuggestion')}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -838,7 +838,7 @@ const CreateJobPage = () => {
                 {t('createJob.limitModal.later')}
               </Button>
               <Link to="/tarifs" onClick={() => setShowLimitModal(false)}>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl" type="button">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl w-full sm:w-auto" type="button">
                   {t('createJob.limitModal.seePlans')}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
