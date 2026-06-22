@@ -537,6 +537,15 @@ export const t: Record<string, Record<string, string>> = {
     adminMeetingLink: "Lien visioconférence",
     adminCancelAppointment: "Annuler ce rendez-vous",
     adminCancelAppointmentConfirm: "Annuler ce rendez-vous ?",
+      // Admin actions supplémentaires
+    adminResetDecision: "Remettre en décision",
+    adminResetDecisionConfirm: "Remettre ce projet en attente de décision ?",
+    adminDeletePermanently: "Supprimer définitivement",
+    adminDeletePermanentlyConfirm: "Supprimer ce projet définitivement ? Cette action est irréversible.",
+  
+  
+  
+  
   },
 
   en: {
@@ -1073,5 +1082,17 @@ export const t: Record<string, Record<string, string>> = {
     adminMeetingLink: "Meeting link",
     adminCancelAppointment: "Cancel this appointment",
     adminCancelAppointmentConfirm: "Cancel this appointment?",
-  }
+      // Admin additional actions
+    adminResetDecision: "Reset to decision",
+    adminResetDecisionConfirm: "Put this project back into decision queue?",
+    adminDeletePermanently: "Delete permanently",
+    adminDeletePermanentlyConfirm: "Delete this project permanently? This action is irreversible.",
+  },
+  // Section paiement
+paymentSuccessTitle: { fr: "Paiement réussi !", en: "Payment successful!" },
+paymentSuccessMessage: { fr: "Votre paiement a bien été enregistré. L'équipe Actoos vous contactera pour la suite.", en: "Your payment has been recorded. The Actoos team will contact you shortly." },
+paymentSessionId: { fr: "ID de session", en: "Session ID" },
+paymentCancelTitle: { fr: "Paiement annulé", en: "Payment cancelled" },
+paymentCancelMessage: { fr: "Le paiement n'a pas été finalisé. Vous pouvez réessayer plus tard.", en: "Payment was not completed. You can try again later." },
+backToHome: { fr: "Retour à l'accueil", en: "Back to home" },
 };

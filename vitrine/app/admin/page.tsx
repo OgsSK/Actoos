@@ -368,6 +368,47 @@ export default function AdminPage() {
     }
   };
 
+  // Nouvelle fonction : remettre un projet en décision (statut nouveau)
+  const handleResetDecision = async (projet: any) => {
+    if (!confirm(t[language].adminResetDecisionConfirm)) return;
+    setActionLoading(projet.id);
+    try {
+      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: projet.id, status: 'nouveau' }),
+      });
+      setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, status: 'nouveau' } : p));
+    } catch (err) {
+      alert(t[language].adminError);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Nouvelle fonction : supprimer définitivement un projet via l'Edge Function delete-project
+  const handleDeletePermanently = async (projet: any) => {
+    if (!confirm(t[language].adminDeletePermanentlyConfirm)) return;
+    setActionLoading(projet.id);
+    try {
+      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-project', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: projet.id }),
+      });
+      if (res.ok) {
+        setProjets(prev => prev.filter(p => p.id !== projet.id));
+      } else {
+        const data = await res.json();
+        alert(data.error || t[language].adminError);
+      }
+    } catch (err) {
+      alert(t[language].adminError);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleAddAdminComment = async () => {
     if (!adminComment.trim() || !selectedProject) return;
     setCommentSending(true);
@@ -443,7 +484,8 @@ export default function AdminPage() {
     avgMaturity: activeProjets.length > 0 ? Math.round(activeProjets.reduce((sum, p) => sum + (p.brief?.maturityScore || 0), 0) / activeProjets.length) : 0,
     avgPriority: activeProjets.length > 0 ? Math.round(activeProjets.reduce((sum, p) => sum + (p.brief?.priorityScore || 0), 0) / activeProjets.length) : 0,
   };
-  const pendingDecisions = activeProjets.filter(p => p.status !== 'gagné' && p.status !== 'perdu').length;
+  // Correction : seuls les projets "nouveau" sont en attente de décision
+  const pendingDecisions = activeProjets.filter(p => p.status === 'nouveau').length;
   const pendingProjects = activeProjets.filter(p => p.status === 'gagné' || p.status === 'en_cours' || p.status === 'livré').length;
   const archivedCount = archivedProjets.length;
 
@@ -750,13 +792,22 @@ export default function AdminPage() {
                     <span className="text-xs text-slate-400">{projet.brief?.sector || '-'}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
-                    <select value={projet.status || 'nouveau'} onChange={e => updateStatus(projet.id, e.target.value)} className="text-xs border rounded-lg px-2 py-1 outline-none bg-white">
-                      <option value="nouveau">{getStatusLabel('nouveau', language)}</option>
+                    <select
+                      value={projet.status || 'nouveau'}
+                      onChange={e => updateStatus(projet.id, e.target.value)}
+                      className="text-xs border rounded-lg px-2 py-1 outline-none bg-white"
+                    >
+                      {projet.status === 'nouveau' && (
+                        <option value="nouveau">{getStatusLabel('nouveau', language)}</option>
+                      )}
                       <option value="contacté">{getStatusLabel('contacté', language)}</option>
                       <option value="devis_envoyé">{getStatusLabel('devis_envoyé', language)}</option>
                       <option value="en_cours">{getStatusLabel('en_cours', language)}</option>
                       <option value="livré">{getStatusLabel('livré', language)}</option>
                       <option value="terminé">{getStatusLabel('terminé', language)}</option>
+                      {projet.status === 'perdu' && (
+                        <option value="perdu">{getStatusLabel('perdu', language)}</option>
+                      )}
                     </select>
                     <div className="flex items-center gap-1">
                       <button onClick={() => relancer(projet)} title={t[language].adminFollowUp} className="p-2 rounded-lg hover:bg-amber-50 text-amber-600"><RefreshCw size={14} /></button>
@@ -784,6 +835,23 @@ export default function AdminPage() {
                       <button onClick={() => createPaymentLink(projet)} title={t[language].adminPaymentLink} className="p-2 rounded-lg hover:bg-green-50 text-green-600"><DollarSign size={14} /></button>
                       <button onClick={() => openEmailForm(projet)} title={t[language].adminSendEmail} className="p-2 rounded-lg hover:bg-indigo-50 text-indigo-600"><Mail size={14} /></button>
                       <button onClick={() => setSelectedProject(projet)} title={t[language].adminViewDetails} className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"><EyeIcon size={14} /></button>
+
+                      {/* Nouveaux boutons */}
+                      <button
+                        onClick={() => handleResetDecision(projet)}
+                        disabled={projet.status === 'en_cours' || projet.status === 'livré'}
+                        title={t[language].adminResetDecision}
+                        className="p-2 rounded-lg hover:bg-purple-50 text-purple-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <RefreshCw size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDeletePermanently(projet)}
+                        title={t[language].adminDeletePermanently}
+                        className="p-2 rounded-lg hover:bg-red-100 text-red-600"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -795,7 +863,8 @@ export default function AdminPage() {
         {/* ========== DÉCISION ========== */}
         {activeTab === 'decision' && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {activeProjets.filter(p => p.status !== 'gagné' && p.status !== 'perdu').map(projet => (
+            {/* Correction : affiche uniquement les projets "nouveau" */}
+            {activeProjets.filter(p => p.status === 'nouveau').map(projet => (
               <div key={projet.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
                 <h3 className="font-bold text-lg mb-1">{projet.brief?.projectName || t[language].adminUntitled}</h3>
                 <p className="text-sm text-slate-500 mb-3">{projet.client_name} · {projet.client_email}</p>
@@ -806,7 +875,7 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
-            {activeProjets.filter(p => p.status !== 'gagné' && p.status !== 'perdu').length === 0 && (
+            {activeProjets.filter(p => p.status === 'nouveau').length === 0 && (
               <div className="col-span-full text-center py-12 text-slate-400">{t[language].adminNoDecision}</div>
             )}
           </div>
