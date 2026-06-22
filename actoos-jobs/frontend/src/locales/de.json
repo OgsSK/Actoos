@@ -382,6 +382,7 @@
     }
   },
   "jobAlerts": {
+    "back": "Zurück",
     "title": "Job-Alarme",
     "subtitle": "Erhalte Stellen, die deinen Kriterien entsprechen",
     "newAlert": "Neuer Alarm",
@@ -612,45 +613,8 @@
   "scheduleInterview": {
     "title": "Vorstellungsgespräch planen"
   },
-  "unsubscribe": {
-    "loading": "Verarbeitung...",
-    "error": {
-      "noEmail": "Keine E-Mail-Adresse angegeben.",
-      "generic": "Ein Fehler ist aufgetreten.",
-      "network": "Netzwerkfehler.",
-      "title": "Fehler"
-    },
-    "success": {
-      "title": "Abbestellung bestätigt"
-    }
-  },
-  "interviewPrep": {
-    "badge": "Neu",
-    "title": "Vorbereitung auf Vorstellungsgespräche",
-    "description": "Geben Sie eine Stellenausschreibung und Ihr Profil ein, um wahrscheinliche Fragen, Musterantworten und personalisierte Tipps zu erhalten.",
-    "jobSection": "Stellenangebot",
-    "jobPlaceholder": "Fügen Sie die Stellenbeschreibung hier ein...",
-    "profileSection": "Ihr Profil",
-    "profilePlaceholder": "Fassen Sie Ihr Profil zusammen: Fähigkeiten, Erfahrung, Ausbildung...",
-    "questions": {
-      "title": "Wahrscheinliche Fragen",
-      "empty": "Klicken Sie auf Generieren, um Fragen zu erhalten."
-    },
-    "answers": {
-      "title": "Musterantworten",
-      "empty": "Generieren Sie zuerst die Fragen."
-    },
-    "tips": {
-      "title": "Personalisierte Tipps",
-      "empty": "Klicken Sie auf Generieren, um Tipps zu erhalten."
-    },
-    "generateButton": "Generieren",
-    "toast": {
-      "needJobDescription": "Bitte geben Sie zuerst eine Stellenbeschreibung ein.",
-      "success": "Erfolgreich generiert!",
-      "error": "Fehler beim Generieren."
-    }
-  },
+ 
+
   "forgotPassword": {
     "title": "Passwort vergessen?",
     "description": "Geben Sie Ihre E-Mail-Adresse ein, um einen Link zum Zurücksetzen zu erhalten.",
@@ -1152,6 +1116,9 @@
   },
   
   "companyDashboard": {
+     "header": {
+    "title": "Recruiter-Bereich"
+  },
     "noCompany": {
       "title": "Erstellen Sie Ihr erstes Unternehmen",
       "subtitle": "Um Stellenangebote zu veröffentlichen und Bewerbungen zu erhalten, erstellen Sie zunächst Ihr Unternehmensprofil.",
@@ -1488,61 +1455,59 @@
     "message": "Bitte warten Sie, während wir Ihre Authentifizierung abschließen."
   },
   "applicationDetail": {
-    "notFound": "Bewerbung nicht gefunden.",
-    "back": "Zurück zu den Bewerbungen",
+    "back": "Zurück zu Bewerbungen",
+    "notFound": "Bewerbung nicht gefunden",
     "viewFullProfile": "Vollständiges Profil anzeigen",
-    "jobTitle": "Betreffende Stelle",
+    "jobTitle": "Verknüpfte Stelle",
     "coverLetter": "Anschreiben",
-    "cv": "Lebenslauf des Kandidaten",
-    "viewCV": "Lebenslauf anzeigen",
-    "receivedAt": "Bewerbung erhalten {{date}}",
-    "changeStatus": "Status ändern",
-    "scheduleInterview": "Vorstellungsgespräch planen",
-    "step1ChooseSlot": "1. Wählen Sie einen Zeitraum",
-    "openCalendly": "Calendly öffnen",
-    "sendEmail": "Per E-Mail senden",
-    "step2CreateLink": "2. Erstellen Sie einen Videokonferenz-Link",
-    "joinMeeting": "Beitreten",
-    "updateLink": "Aktualisieren",
-    "deleteLink": "Löschen",
-    "newRoomPlaceholder": "Neuer Raumname",
-    "roomPlaceholder": "Raumname (Bsp.: mein-gespraech)",
-    "generateJitsiLink": "Jitsi-Link generieren",
-    "prepareInterview": "Vorstellungsgespräch vorbereiten",
-    "questions": "Fragen",
-    "emptyQuestions": "Klicken Sie auf Generieren, um personalisierte Fragen zu erhalten.",
-    "answers": "Musterantworten",
-    "emptyAnswers": "Generieren Sie zuerst Fragen, dann erhalten Sie Musterantworten zur Bewertung des Kandidaten.",
-    "tips": "Tipps",
-    "emptyTips": "Erhalten Sie Tipps für ein strukturiertes und relevantes Vorstellungsgespräch.",
-    "generate": "Generieren",
-    "saveNotes": "In Notizen speichern",
-    "savedNotes": "Notizen gespeichert",
-    "clickToEdit": "Klicken Sie auf den Stift, um zu bearbeiten.",
-    "readMode": "In den Lesemodus wechseln",
-    "editMode": "Bearbeiten",
+    "cv": "Lebenslauf",
+    "viewCV": "Lebenslauf ansehen",
+    "interviewNotes": "Interview-Notizen",
+    "generateQuestions": "Fragen generieren",
+    "generateAnswers": "Antworten generieren",
+    "generateTips": "Tipps generieren",
+    "receivedAt": "Eingegangen am {{date}}",
     "status": {
-      "pending": "Neu",
+      "pending": "Ausstehend",
       "viewed": "Angesehen",
-      "shortlisted": "Vorgemerkt",
-      "interview": "Vorstellungsgespräch",
-      "accepted": "Akzeptiert",
+      "shortlisted": "Vorausgewählt",
+      "interview": "Interview",
+      "accepted": "Angenommen",
       "rejected": "Abgelehnt"
     },
+    "changeStatus": "Status ändern",
+    "scheduleInterview": "Interview planen",
+    "step1ChooseSlot": "Zeitfenster wählen (Calendly)",
+    "openCalendly": "Calendly öffnen",
+    "sendEmail": "Per E-Mail senden",
+    "step2CreateLink": "Jitsi-Link erstellen",
+    "joinMeeting": "Meeting beitreten",
+    "updateLink": "Aktualisieren",
+    "deleteLink": "Löschen",
+    "generateJitsiLink": "Jitsi-Link generieren",
+    "newRoomPlaceholder": "Neuer Raumname (optional)",
+    "roomPlaceholder": "Raumname (optional)",
     "toasts": {
+      "questionsGenerated": "Inhalt generiert",
+      "noteSaved": "Notiz gespeichert",
+      "noteDeleted": "Notiz gelöscht",
+      "emailSent": "E-Mail gesendet",
       "statusUpdated": "Status aktualisiert",
       "updateError": "Fehler beim Aktualisieren",
-      "linkUpdated": "Link aktualisiert!",
-      "linkDeleted": "Link gelöscht",
-      "questionsGenerated": "Fragen generiert!",
-      "answersGenerated": "Musterantworten generiert!",
-      "tipsGenerated": "Tipps generiert!",
-      "needQuestionsFirst": "Generieren Sie zuerst die Fragen",
-      "saveError": "Fehler beim Speichern",
-      "emailError": "Fehler beim Senden der E-Mail",
-      "aiError": "KI-Fehler",
-      "rejectionPrompt": "Bitte geben Sie den Grund für die Ablehnung an (optional):"
+      "rejectionPrompt": "Ablehnungsgrund (optional)",
+      "linkUpdated": "Link aktualisiert",
+      "linkDeleted": "Link gelöscht"
     }
+  },
+  "notes": {
+    "personal": "Persönliche Notizen",
+    "questions": "Interview-Fragen",
+    "answers": "Musterantworten",
+    "tips": "Tipps für den Recruiter"
+  },
+  "common": {
+    "delete": "Löschen",
+    "savedAt": "Gespeichert um {{time}}"
   },
   "applicationDetailCandidate": {
     "notFound": "Bewerbung nicht gefunden.",
@@ -1698,78 +1663,7 @@
       "save": "Speichern"
     }
   },
-  "settings": {
-    "title": "Einstellungen",
-    "subtitle": "Verwalten Sie Ihr Konto",
-    "back": "Zurück",
-    "myProfile": "Mein Profil",
-    "accountInfo": {
-      "title": "Kontoinformationen",
-      "description": "{{email}}"
-    },
-    "changeEmail": {
-      "title": "E-Mail-Adresse ändern",
-      "description": "Eine Bestätigungs-E-Mail wird an die neue Adresse gesendet",
-      "newEmailLabel": "Neue E-Mail",
-      "newEmailPlaceholder": "neu@email.com",
-      "currentPasswordLabel": "Aktuelles Passwort (zur Überprüfung)",
-      "currentPasswordPlaceholder": "••••••••",
-      "submit": "E-Mail ändern"
-    },
-    "changePassword": {
-      "title": "Passwort ändern",
-      "description": "Verwenden Sie mindestens 8 Zeichen",
-      "newPasswordLabel": "Neues Passwort",
-      "newPasswordPlaceholder": "••••••••",
-      "confirmPasswordLabel": "Passwort bestätigen",
-      "confirmPasswordPlaceholder": "••••••••",
-      "submit": "Aktualisieren"
-    },
-    "logout": {
-      "title": "Abmelden",
-      "description": "Sie werden zur Startseite weitergeleitet",
-      "button": "Abmelden"
-    },
-    "roleChange": {
-      "title": "Kontotyp ändern",
-      "currentRoleCandidate": "Kandidat",
-      "currentRoleCompany": "Unternehmen",
-      "descriptionCandidate": "Sie sind derzeit <strong>Kandidat</strong>. Sie können beantragen, zu einem <strong>Unternehmens</strong>-Konto zu wechseln.",
-      "descriptionCompany": "Sie sind derzeit <strong>Unternehmen</strong>. Sie können beantragen, zu einem <strong>Kandidaten</strong>-Konto zu wechseln.",
-      "requestButton": "Änderung beantragen",
-      "modal": {
-        "title": "Rollenwechsel beantragen",
-        "roleLabel": "Gewünschte neue Rolle",
-        "roleCompany": "Unternehmen",
-        "roleCandidate": "Kandidat",
-        "reasonLabel": "Nachricht (optional)",
-        "reasonPlaceholder": "Erklären Sie, warum Sie die Rolle wechseln möchten...",
-        "cancel": "Abbrechen",
-        "submit": "Antrag senden"
-      }
-    },
-    "dangerZone": {
-      "title": "Gefahrenzone",
-      "description": "Löschen Sie Ihr Konto und alle Ihre Daten. Diese Aktion ist unumkehrbar.",
-      "button": "Mein Konto löschen",
-      "confirm": "Ihr Konto endgültig löschen? Diese Aktion ist unumkehrbar, alle Ihre Daten werden gelöscht."
-    },
-    "toasts": {
-      "passwordMismatch": "Die Passwörter stimmen nicht überein",
-      "passwordLength": "Das Passwort muss mindestens 8 Zeichen lang sein",
-      "passwordUpdated": "Passwort erfolgreich aktualisiert",
-      "passwordError": "Fehler beim Ändern des Passworts",
-      "fillAllFields": "Bitte füllen Sie alle Felder aus",
-      "wrongPassword": "Aktuelles Passwort ist falsch",
-      "emailConfirmationSent": "Eine Bestätigungs-E-Mail wurde an die neue Adresse gesendet. Bitte überprüfen Sie Ihren Posteingang.",
-      "emailError": "Fehler beim Ändern der E-Mail",
-      "logoutError": "Abmeldefehler",
-      "accountDeleted": "Ihr Konto wurde endgültig gelöscht.",
-      "deleteError": "Netzwerkfehler beim Löschen.",
-      "roleRequestSent": "Ihr Antrag wurde gesendet. Der Administrator wird ihn prüfen.",
-      "roleRequestError": "Netzwerkfehler"
-    }
-  },
+
   "messageSender": {
     "recipientsTitle": "{{role}}",
     "searchPlaceholder": "Suchen...",
@@ -2011,316 +1905,7 @@
       "requestAlreadyProcessed": "Antrag bereits bearbeitet"
     }
   },
-  "adminDashboard": {
-    "title": "Administration",
-    "subtitle": "Verwalten Sie Stellen, Unternehmen und Benutzer",
-    "refresh": "Aktualisieren",
-    "dataRefreshed": "Daten aktualisiert",
-    "unauthorized": "Unbefugter Zugriff",
-    "loadingError": "Fehler beim Laden der Daten",
-    "tabs": {
-      "overview": "Übersicht",
-      "jobs": "Stellenmoderation",
-      "companies": "Unternehmensvalidierung",
-      "users": "Benutzer",
-      "reports": "Meldungen",
-      "subscriptions": "Abonnements",
-      "newsletter": "Newsletter",
-      "blog": "Blog",
-      "messageCompanies": "Nachrichten Unternehmen",
-      "messageCandidates": "Nachrichten Kandidaten",
-      "roleRequests": "Rollenanträge"
-    },
-    "stats": {
-      "pendingJobs": "Ausstehende Stellen",
-      "activeJobs": "Aktive Stellen",
-      "pendingCompanies": "Ausstehende Unternehmen",
-      "verifiedCompanies": "Verifizierte Unternehmen",
-      "candidates": "Kandidaten",
-      "applications": "Bewerbungen",
-      "trend": "+{{trend}} % diesen Monat"
-    },
-    "overview": {
-      "pendingJobsTitle": "Ausstehende Stellen",
-      "pendingJobsDesc": "Zu moderieren",
-      "noPendingJobs": "Keine ausstehenden Stellen",
-      "pendingCompaniesTitle": "Ausstehende Unternehmen",
-      "pendingCompaniesDesc": "Zu validieren",
-      "noPendingCompanies": "Keine ausstehenden Unternehmen",
-      "viewAll": "Alle anzeigen"
-    },
-    "jobs": {
-      "searchPlaceholder": "Stelle suchen...",
-      "filterAll": "Alle Status",
-      "filterPending": "Ausstehend",
-      "filterDraft": "Entwurf",
-      "filterActive": "Aktiv",
-      "filterSuspended": "Gesperrt",
-      "filterRejected": "Abgelehnt",
-      "noJobs": "Keine Stellen",
-      "noJobsFound": "Keine Stellen gefunden",
-      "publishedBy": "Veröffentlicht {{date}} von {{email}}",
-      "showDetails": "Details anzeigen",
-      "hideDetails": "Details ausblenden",
-      "detailsError": "Details können nicht geladen werden",
-      "detailsDescription": "Beschreibung:",
-      "detailsRequirements": "Gesuchtes Profil:",
-      "detailsMissions": "Aufgaben:",
-      "detailsBenefits": "Leistungen:",
-      "detailsSkills": "Fähigkeiten:",
-      "detailsExperience": "Erfahrung:",
-      "detailsSalary": "Gehalt:",
-      "detailsPositions": "Positionen:",
-      "detailsDeadline": "Frist:",
-      "detailsRemote": "Homeoffice:",
-      "detailsUrgent": "Dringend:",
-      "detailsYes": "Ja",
-      "detailsNo": "Nein",
-      "detailsUnspecified": "Nicht angegeben",
-      "approve": "Genehmigen",
-      "reject": "Ablehnen",
-      "publish": "Stelle veröffentlichen",
-      "suspend": "Sperren",
-      "reactivate": "Reaktivieren",
-      "delete": "Löschen",
-      "viewJob": "Stelle anzeigen",
-      "status": {
-        "pending": "Ausstehend",
-        "active": "Aktiv",
-        "suspended": "Gesperrt",
-        "rejected": "Abgelehnt",
-        "draft": "Entwurf"
-      },
-      "companyNotVerified": "Das Unternehmen ist noch nicht verifiziert.",
-      "approveLimitReached": "Dieses Unternehmen hat sein Limit von {{limit}} aktive(n) Stelle(n) bereits erreicht.",
-      "approveCompanyFirst": "Das Unternehmen ist noch nicht verifiziert. Bitte validieren Sie zuerst das Unternehmen.",
-      "rejectConfirm": "Diese Stelle ablehnen?",
-      "approvedToast": "Stelle genehmigt",
-      "rejectedToast": "Stelle abgelehnt",
-      "suspendedToast": "Stelle gesperrt und E-Mail gesendet",
-      "deletedToast": "Stelle gelöscht und E-Mail gesendet",
-      "approveError": "Fehler bei der Genehmigung",
-      "genericError": "Fehler",
-      "suspendModalTitle": "Stelle sperren",
-      "deleteModalTitle": "Stelle löschen",
-      "reasonLabel": "Grund (optional)",
-      "cancel": "Abbrechen",
-      "confirm": "Bestätigen"
-    },
-    "companies": {
-      "searchPlaceholder": "Unternehmen suchen...",
-      "filterAll": "Alle Status",
-      "filterUnverified": "Nicht verifiziert",
-      "filterVerified": "Verifiziert",
-      "noCompanies": "Keine Unternehmen",
-      "noCompaniesFound": "Keine Unternehmen gefunden",
-      "employees": "{{size}} Mitarbeiter",
-      "offersCount": "{{count}} Stellen",
-      "createdAt": "Erstellt {{date}}",
-      "viewSite": "Website anzeigen",
-      "viewOffers": "Stellen anzeigen ({{count}})",
-      "validate": "Validieren",
-      "reject": "Ablehnen",
-      "suspend": "Sperren",
-      "deleteCompany": "Unternehmen löschen",
-      "status": {
-        "verified": "Verifiziert",
-        "unverified": "Nicht verifiziert"
-      },
-      "validatedToast": "Unternehmen validiert und E-Mail gesendet",
-      "rejectedToast": "Unternehmen abgelehnt und E-Mail gesendet",
-      "deletedToast": "Unternehmen gelöscht",
-      "validateError": "Fehler bei der Validierung",
-      "genericError": "Fehler",
-      "rejectModalTitle": "Unternehmen ablehnen",
-      "deleteModalTitle": "Unternehmen löschen",
-      "deleteWarning": "⚠️ Diese Aktion ist unumkehrbar. Alle Stellen und zugehörigen Daten werden gelöscht.",
-      "deleteConfirm": "Das Unternehmen \"{{name}}\" endgültig löschen?",
-      "cancel": "Abbrechen",
-      "confirm": "Bestätigen",
-      "suspendModalTitle": "Unternehmen sperren",
-      "suspendWarning": "⚠️ Die Sperrung macht das Unternehmen öffentlich unsichtbar und verhindert die Veröffentlichung von Stellen.",
-      "suspendDurationLabel": "Dauer der Sperrung",
-      "suspendReasonLabel": "Grund (optional)",
-      "durationIndefinite": "Unbegrenzt",
-      "duration1day": "1 Tag",
-      "duration7days": "7 Tage",
-      "duration30days": "30 Tage",
-      "suspendedToast": "Unternehmen gesperrt"
-    },
-    "users": {
-      "title": "Benutzerverwaltung",
-      "description": "Rollen ändern, sperren, bannen oder Konten löschen",
-      "noUsers": "Keine Benutzer gefunden",
-      "roles": {
-        "candidate": "Kandidat",
-        "company": "Unternehmen",
-        "admin": "Admin"
-      },
-      "status": {
-        "active": "Aktiv",
-        "suspended": "Gesperrt",
-        "banned": "Gebannt"
-      },
-      "actions": {
-        "suspend": "Sperren",
-        "reactivate": "Reaktivieren",
-        "ban": "Bannen",
-        "delete": "Löschen"
-      },
-      "banConfirm": "Diesen Benutzer endgültig bannen?",
-      "deleteConfirm": "Diesen Benutzer endgültig löschen? Diese Aktion ist unumkehrbar.",
-      "roleUpdated": "Rolle aktualisiert. Der Benutzer muss sich ab- und wieder anmelden, um seinen neuen Bereich zu sehen.",
-      "roleUpdateError": "Fehler beim Rollenwechsel",
-      "suspendedToast": "Konto gesperrt",
-      "reactivatedToast": "Konto reaktiviert",
-      "bannedToast": "Benutzer gebannt",
-      "deletedToast": "Benutzer endgültig gelöscht",
-      "deleteError": "Fehler beim Löschen",
-      "suspendModalTitle": "Konto sperren",
-      "suspendDurationLabel": "Dauer der Sperrung",
-      "suspendReasonLabel": "Grund (optional)",
-      "durationIndefinite": "Unbegrenzt",
-      "duration1day": "1 Tag",
-      "duration7days": "7 Tage",
-      "duration30days": "30 Tage",
-      "cancel": "Abbrechen",
-      "confirm": "Sperren"
-    },
-    "reports": {
-      "title": "Meldungen",
-      "description": "Prüfen und bearbeiten Sie Meldungen",
-      "noReports": "Keine Meldungen",
-      "badges": {
-        "job": "📋 Stelle",
-        "company": "🏢 Unternehmen",
-        "candidate": "👤 Kandidat"
-      },
-      "reportedBy": "Gemeldet von {{email}}",
-      "reason": "Grund: {{reason}}",
-      "status": {
-        "pending": "Ausstehend",
-        "reviewed": "Geprüft",
-        "resolved": "Gelöst"
-      },
-      "markReviewed": "Als geprüft markieren",
-      "markResolved": "Lösen",
-      "suspendJob": "Stelle sperren",
-      "suspendCompany": "Unternehmen sperren",
-      "deleteJob": "Stelle löschen",
-      "deleteCompany": "Unternehmen löschen",
-      "banUser": "Benutzer bannen",
-      "banError": "Der zu bannende Benutzer konnte nicht gefunden werden",
-      "banConfirm": "Diesen Benutzer endgültig bannen?",
-      "bannedToast": "Benutzer gebannt und E-Mail gesendet",
-      "suspendedToast": "Stelle gesperrt und E-Mail gesendet",
-      "companySuspendedToast": "Unternehmen gesperrt und E-Mail gesendet",
-      "deletedToast": "Stelle gelöscht und E-Mail gesendet",
-      "companyDeletedToast": "Unternehmen gelöscht und E-Mail gesendet",
-      "updatedToast": "Meldung aktualisiert"
-    },
-    "subscriptions": {
-      "title": "Aktive / gekündigte Abonnements",
-      "description": "Übersicht über alle Unternehmensabonnements",
-      "cancellationsTitle": "Letzte Kündigungen",
-      "cancellationsDescription": "Unternehmen, die ihren kostenpflichtigen Plan gekündigt haben",
-      "noCancellations": "Keine Kündigungen registriert.",
-      "table": {
-        "company": "Unternehmen",
-        "plan": "Plan",
-        "previousPlan": "Vorheriger Plan",
-        "stripeSubId": "Stripe Sub ID",
-        "expiration": "Ablauf",
-        "cancellationReason": "Kündigungsgrund"
-      },
-      "cancelledFrom": "Plan nach Kündigung:",
-      "toFrom": "← von"
-    },
-    "newsletter": {
-      "sendTitle": "Newsletter versenden",
-      "sendDescription": "Senden Sie eine E-Mail an alle Abonnenten",
-      "subjectLabel": "Betreff",
-      "subjectPlaceholder": "Betreff der E-Mail",
-      "contentLabel": "Inhalt (HTML)",
-      "contentPlaceholder": "<h1>Titel</h1><p>Ihre Nachricht...</p>",
-      "sendButton": "Newsletter senden",
-      "subscribersTitle": "Abonnenten ({{count}})",
-      "subscribersDescription": "Liste der Newsletter-Abonnenten",
-      "noSubscribers": "Noch keine Abonnenten.",
-      "table": {
-        "email": "E-Mail",
-        "status": "Status",
-        "actions": "Aktionen",
-        "subscribed": "Anmeldung",
-        "unsubscribed": "Abmeldung"
-      },
-      "statusActive": "Aktiv",
-      "statusUnsubscribed": "Abgemeldet",
-      "activate": "Aktivieren",
-      "deactivate": "Deaktivieren",
-      "reactivate": "Reaktivieren",
-      "fillRequired": "Bitte füllen Sie Betreff und Inhalt aus.",
-      "sentToast": "Newsletter gesendet",
-      "networkError": "Netzwerkfehler",
-      "toggledToast": "Abonnentenstatus aktualisiert"
-    },
-    "blog": {
-      "generateTitle": "Artikel mit KI generieren",
-      "generateDescription": "Erstellen Sie optimierte Inhalte für Ihre Zielgruppe",
-      "titleLabel": "Titel *",
-      "titlePlaceholder": "Bsp.: Wie man ein Vorstellungsgespräch erfolgreich meistert",
-      "keywordsLabel": "Schlüsselwörter",
-      "keywordsPlaceholder": "Bsp.: Recruiting, Karriere, Tipps",
-      "audienceLabel": "Zielgruppe",
-      "audienceAll": "Alle",
-      "audienceCandidates": "Kandidaten",
-      "audienceRecruiters": "Personalvermittler",
-      "categoryLabel": "Kategorie",
-      "categories": {
-        "carriere": "Karriere",
-        "recrutement": "Recruiting",
-        "technologie": "Technologie",
-        "entrepreneuriat": "Unternehmertum",
-        "conseils": "Tipps"
-      },
-      "authorLabel": "Autor",
-      "authorPlaceholder": "Actoos-Team",
-      "readTimeLabel": "Lesezeit",
-      "readTimePlaceholder": "5 Min.",
-      "generateButton": "Artikel generieren",
-      "articlesTitle": "Artikel ({{count}})",
-      "articlesDescription": "Blog-Artikel verwalten",
-      "noArticles": "Noch keine Artikel.",
-      "save": "Speichern",
-      "cancel": "Abbrechen",
-      "deleteConfirm": "Diesen Artikel löschen?",
-      "generatedToast": "Artikel erfolgreich generiert",
-      "updatedToast": "Artikel aktualisiert",
-      "deletedToast": "Artikel gelöscht",
-      "generateError": "Fehler bei der Generierung",
-      "updateError": "Fehler bei der Aktualisierung",
-      "deleteError": "Fehler beim Löschen",
-      "titleRequired": "Ein Titel ist erforderlich, um einen Artikel zu generieren",
-      "audienceLabel2": "Zielgruppe"
-    },
-    "roleRequests": {
-      "title": "Anträge auf Rollenwechsel",
-      "description": "Verwalten Sie Benutzeranträge",
-      "noRequests": "Keine ausstehenden Anträge",
-      "from": "Von",
-      "to": "→",
-      "approve": "Genehmigen",
-      "reject": "Ablehnen",
-      "approvedToast": "Antrag genehmigt",
-      "rejectedToast": "Antrag abgelehnt"
-    },
-    "roleLabels": {
-      "candidate": "Kandidat",
-      "company": "Unternehmen",
-      "admin": "Admin",
-      "unknown": "Unbekannt"
-    }
-  },
+
   "categories": {
   "administration": "Verwaltung",
   "agriculture": "Landwirtschaft & Umwelt",
@@ -2833,7 +2418,454 @@
     "companySpace": "Firmenbereich",
     "logout": "Abmelden"
   }
-}
+},
+"settings": {
+  "back": "Zurück",
+  "myProfile": "Mein Profil",
+  "title": "Einstellungen",
+  "subtitle": "Verwalten Sie Ihre Kontoinformationen",
+  "accountInfo": {
+    "title": "Kontoinformationen",
+    "description": "Angemeldet als {{email}}"
+  },
+  "countryAndCurrency": "🌍 Land & Währung",
+  "country": "Land",
+  "selectCountry": "Land auswählen",
+  "currency": "Währung",
+  "selectCurrency": "Währung auswählen",
+  "allCountries": "Alle Länder",
+  "changeEmail": {
+    "title": "E-Mail ändern",
+    "description": "Aktualisieren Sie Ihre Login-E-Mail-Adresse",
+    "newEmailLabel": "Neue E-Mail",
+    "newEmailPlaceholder": "neu@email.com",
+    "currentPasswordLabel": "Aktuelles Passwort",
+    "currentPasswordPlaceholder": "Ihr aktuelles Passwort",
+    "submit": "E-Mail aktualisieren"
+  },
+  "changePassword": {
+    "title": "Passwort ändern",
+    "description": "Verwenden Sie ein starkes und einzigartiges Passwort",
+    "newPasswordLabel": "Neues Passwort",
+    "newPasswordPlaceholder": "Mindestens 8 Zeichen",
+    "confirmPasswordLabel": "Passwort bestätigen",
+    "confirmPasswordPlaceholder": "Passwort wiederholen",
+    "submit": "Passwort aktualisieren"
+  },
+  "logout": {
+    "title": "Abmeldung",
+    "description": "Sie können sich jederzeit von Ihrem Konto abmelden.",
+    "button": "Abmelden"
+  },
+  "roleChange": {
+    "title": "Rolle wechseln",
+    "descriptionCandidate": "Sie sind derzeit <strong>Kandidat</strong>. Sie können beantragen, <strong>Recruiter</strong> zu werden.",
+    "descriptionCompany": "Sie sind derzeit <strong>Recruiter</strong>. Sie können beantragen, <strong>Kandidat</strong> zu werden.",
+    "requestButton": "Rollenwechsel beantragen",
+    "modal": {
+      "title": "Antrag auf Rollenwechsel",
+      "roleLabel": "Gewünschte neue Rolle",
+      "roleCandidate": "Kandidat",
+      "roleCompany": "Recruiter (Unternehmen)",
+      "reasonLabel": "Grund für den Antrag (optional)",
+      "reasonPlaceholder": "Erklären Sie, warum Sie die Rolle wechseln möchten...",
+      "cancel": "Abbrechen",
+      "submit": "Antrag senden"
+    }
+  },
+  "dangerZone": {
+    "title": "Gefahrenzone",
+    "description": "Das Löschen Ihres Kontos ist endgültig und unumkehrbar. Alle Ihre Daten werden gelöscht.",
+    "button": "Mein Konto löschen",
+    "confirm": "Sind Sie sicher, dass Sie Ihr Konto endgültig löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden."
+  },
+  "toasts": {
+    "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+    "passwordLength": "Das Passwort muss mindestens 8 Zeichen enthalten.",
+    "passwordUpdated": "Passwort erfolgreich aktualisiert.",
+    "passwordError": "Fehler beim Aktualisieren des Passworts.",
+    "fillAllFields": "Bitte füllen Sie alle Felder aus.",
+    "wrongPassword": "Falsches Passwort.",
+    "emailConfirmationSent": "Eine Bestätigungs-E-Mail wurde an Ihre neue Adresse gesendet.",
+    "emailError": "Fehler beim Aktualisieren der E-Mail.",
+    "logoutError": "Fehler beim Abmelden.",
+    "accountDeleted": "Ihr Konto wurde endgültig gelöscht.",
+    "deleteError": "Fehler beim Löschen des Kontos.",
+    "roleRequestSent": "Antrag auf Rollenwechsel erfolgreich gesendet.",
+    "roleRequestError": "Fehler beim Senden des Antrags."
+  }
+},
+"aiAssistant": {
+  "improve": "Mit KI verbessern",
+  "improvedVersion": "Verbesserte Version",
+  "apply": "Anwenden",
+  "cancel": "Abbrechen",
+  "emptyText": "Bitte geben Sie einen Text zum Verbessern ein.",
+  "improvedSuccess": "Text erfolgreich verbessert!",
+  "improveError": "Fehler bei der KI-Verbesserung.",
+  "appliedSuccess": "Text angewendet!"
+},
+"common": {
+    "delete": "Löschen",
+    "savedAt": "Gespeichert um {{time}}"
+  },
+  "interviewPrep": {
+    "back": "Zurück",
+    "badge": "Interview-Vorbereitung",
+    "title": "Bereiten Sie Ihr Vorstellungsgespräch vor",
+    "description": "Geben Sie eine Stellenbeschreibung und Ihr Profil ein, um wahrscheinliche Fragen, Musterantworten und persönliche Tipps zu erhalten.",
+    "jobSection": "Stellenbeschreibung",
+    "profileSection": "Ihr Profil",
+    "jobPlaceholder": "Fügen Sie die Stellenbeschreibung ein…",
+    "profilePlaceholder": "Beschreiben Sie Ihre Fähigkeiten, Erfahrungen, Motivation…",
+    "results": "Ergebnisse",
+    "tabs": {
+      "questions": "Fragen",
+      "answers": "Antworten",
+      "tips": "Tipps"
+    },
+    "questions": { "title": "Wahrscheinliche Fragen" },
+    "answers": { "title": "Musterantworten" },
+    "tips": { "title": "Persönliche Tipps" },
+    "empty": "Erst Inhalt generieren…",
+    "generateButton": "Generieren",
+    "saveAll": "Alles speichern",
+    "toasts": {
+      "needJobDescription": "Bitte geben Sie die Stellenbeschreibung ein.",
+      "generated": "Inhalt erfolgreich generiert!",
+      "saved": "Fortschritt gespeichert.",
+      "noteDeleted": "Inhalt gelöscht.",
+      "error": "Fehler bei der Generierung."
+    }
+  },
+  "adminDashboard": {
+      "title": "Verwaltung",
+      "subtitle": "Verwalten Sie Ihre Plattform",
+      "refresh": "Aktualisieren",
+      "loadingError": "Ladefehler",
+      "dataRefreshed": "Daten aktualisiert",
+      "unauthorized": "Unberechtigter Zugriff",
+      "stats": {
+        "pendingJobs": "Ausstehende Stellen",
+        "activeJobs": "Aktive Stellen",
+        "pendingCompanies": "Zu validierende Unternehmen",
+        "verifiedCompanies": "Verifizierte Unternehmen",
+        "candidates": "Kandidaten",
+        "applications": "Bewerbungen",
+        "trend": "{{trend}}%"
+      },
+      "tabs": {
+        "overview": "Übersicht",
+        "jobs": "Stellen",
+        "companies": "Unternehmen",
+        "users": "Benutzer",
+        "reports": "Meldungen",
+        "subscriptions": "Abonnements",
+        "newsletter": "Newsletter",
+        "blog": "Blog",
+        "messageCompanies": "Unternehmen Nachrichten",
+        "messageCandidates": "Kandidaten Nachrichten",
+        "roleRequests": "Rollenanfragen"
+      },
+      "overview": {
+        "pendingJobsTitle": "Ausstehende Stellenangebote",
+        "pendingJobsDesc": "Genehmigen Sie Angebote, damit sie veröffentlicht werden können",
+        "pendingCompaniesTitle": "Zu validierende Unternehmen",
+        "pendingCompaniesDesc": "Überprüfen Sie Unternehmen, bevor Sie sie aktivieren",
+        "viewAll": "Alle anzeigen",
+        "noPendingJobs": "Keine ausstehenden Angebote",
+        "noPendingCompanies": "Keine zu validierenden Unternehmen"
+      },
+      "jobs": {
+        "reactivatedToast": "Angebot erfolgreich reaktiviert",
+        "searchPlaceholder": "Stellenangebot suchen...",
+        "filterAll": "Alle",
+        "filterPending": "Ausstehend",
+        "filterDraft": "Entwurf",
+        "filterActive": "Aktiv",
+        "filterSuspended": "Ausgesetzt",
+        "filterRejected": "Abgelehnt",
+        "noJobs": "Keine Stellenangebote gefunden",
+        "noJobsFound": "Kein Stellenangebot entspricht der Suche",
+        "loadMore": "Mehr laden",
+        "detailsError": "Fehler beim Laden der Details",
+        "showDetails": "Details anzeigen",
+        "hideDetails": "Details ausblenden",
+        "detailsDescription": "Beschreibung:",
+        "detailsRequirements": "Gesuchtes Profil:",
+        "detailsMissions": "Aufgaben:",
+        "detailsBenefits": "Vorteile:",
+        "detailsSkills": "Kompetenzen:",
+        "detailsExperience": "Erfahrung:",
+        "detailsSalary": "Gehalt:",
+        "detailsPositions": "Stellen:",
+        "detailsDeadline": "Frist:",
+        "detailsRemote": "Homeoffice:",
+        "detailsUrgent": "Dringend:",
+        "detailsYes": "Ja",
+        "detailsNo": "Nein",
+        "detailsUnspecified": "Nicht angegeben",
+        "publishedBy": "Veröffentlicht am {{date}} von {{email}}",
+        "status": {
+          "pending": "Ausstehend",
+          "active": "Aktiv",
+          "suspended": "Ausgesetzt",
+          "rejected": "Abgelehnt"
+        },
+        "companyNotVerified": "Unternehmen nicht verifiziert",
+        "approve": "Genehmigen",
+        "reject": "Ablehnen",
+        "publish": "Veröffentlichen",
+        "suspend": "Aussetzen",
+        "reactivate": "Reaktivieren",
+        "delete": "Löschen",
+        "approveCompanyFirst": "Das Unternehmen muss zuerst verifiziert werden",
+        "approveLimitReached": "Das Unternehmen hat sein Plan-Limit erreicht ({{limit}} Angebote)",
+        "approvedToast": "Angebot erfolgreich genehmigt",
+        "rejectedToast": "Angebot abgelehnt",
+        "suspendedToast": "Angebot ausgesetzt",
+        "deletedToast": "Angebot gelöscht",
+        "approveError": "Fehler bei der Genehmigung",
+        "rejectConfirm": "Ablehnung bestätigen?",
+        "genericError": "Fehler",
+        "suspendModalTitle": "Angebot aussetzen",
+        "deleteModalTitle": "Angebot löschen",
+        "reasonLabel": "Grund",
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
+        "viewJob": "Angebot ansehen"
+      },
+      "companies": {
+        "searchPlaceholder": "Unternehmen suchen...",
+        "filterAll": "Alle",
+        "filterUnverified": "Nicht verifiziert",
+        "filterVerified": "Verifiziert",
+        "noCompanies": "Keine Unternehmen gefunden",
+        "noCompaniesFound": "Kein Unternehmen entspricht der Suche",
+        "loadMore": "Mehr laden",
+        "employees": "{{size}} Mitarbeiter",
+        "createdAt": "Erstellt am {{date}}",
+        "offersCount": "{{count}} Angebot(e)",
+        "validate": "Validieren",
+        "reject": "Ablehnen",
+        "suspend": "Aussetzen",
+        "deleteCompany": "Löschen",
+        "viewSite": "Website ansehen",
+        "viewOffers": "Angebote ansehen ({{count}})",
+        "validatedToast": "Unternehmen erfolgreich validiert",
+        "rejectedToast": "Unternehmen abgelehnt",
+        "suspendedToast": "Unternehmen ausgesetzt",
+        "deletedToast": "Unternehmen gelöscht",
+        "validateError": "Validierungsfehler",
+        "genericError": "Fehler",
+        "rejectModalTitle": "Unternehmen ablehnen",
+        "deleteModalTitle": "Unternehmen löschen",
+        "deleteWarning": "Die Angebote und Mitglieder dieses Unternehmens werden ebenfalls gelöscht.",
+        "deleteConfirm": "Unternehmen {{name}} löschen?",
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
+        "suspendModalTitle": "Unternehmen aussetzen",
+        "suspendWarning": "Alle Angebote dieses Unternehmens werden ausgeblendet.",
+        "suspendDurationLabel": "Aussetzungsdauer",
+        "durationIndefinite": "Unbefristet",
+        "duration1day": "1 Tag",
+        "duration7days": "7 Tage",
+        "duration30days": "30 Tage",
+        "suspendReasonLabel": "Grund",
+        "status": {
+          "unverified": "Nicht verifiziert",
+          "verified": "Verifiziert"
+        }
+      },
+      "users": {
+        "title": "Benutzer",
+        "description": "Benutzerkonten verwalten",
+        "noUsers": "Keine Benutzer",
+        "loadMore": "Mehr laden",
+        "roleUpdated": "Rolle aktualisiert",
+        "roleUpdateError": "Fehler bei der Rollenaktualisierung",
+        "suspendedToast": "Benutzer gesperrt",
+        "reactivatedToast": "Benutzer reaktiviert",
+        "bannedToast": "Benutzer gesperrt (Bann)",
+        "deletedToast": "Benutzer gelöscht",
+        "deleteError": "Löschfehler",
+        "banConfirm": "Bann bestätigen?",
+        "deleteConfirm": "Endgültig löschen?",
+        "suspendModalTitle": "Benutzer aussetzen",
+        "suspendDurationLabel": "Dauer",
+        "durationIndefinite": "Unbefristet",
+        "duration1day": "1 Tag",
+        "duration7days": "7 Tage",
+        "duration30days": "30 Tage",
+        "suspendReasonLabel": "Grund",
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
+        "status": {
+          "active": "Aktiv",
+          "suspended": "Ausgesetzt",
+          "banned": "Gesperrt (Bann)"
+        },
+        "roles": {
+          "candidate": "Kandidat",
+          "company": "Unternehmen",
+          "admin": "Admin"
+        },
+        "actions": {
+          "suspend": "Aussetzen",
+          "reactivate": "Reaktivieren",
+          "ban": "Bannen",
+          "delete": "Löschen"
+        }
+      },
+      "reports": {
+        "title": "Meldungen",
+        "description": "Benutzermeldungen bearbeiten",
+        "noReports": "Keine Meldungen",
+        "reportedBy": "Gemeldet von {{email}}",
+        "reason": "Grund: {{reason}}",
+        "badges": {
+          "job": "Stelle",
+          "company": "Unternehmen",
+          "candidate": "Kandidat"
+        },
+        "status": {
+          "pending": "Ausstehend",
+          "reviewed": "Überprüft",
+          "resolved": "Erledigt"
+        },
+        "markReviewed": "Als überprüft markieren",
+        "markResolved": "Als erledigt markieren",
+        "suspendJob": "Stelle aussetzen",
+        "suspendCompany": "Unternehmen aussetzen",
+        "deleteJob": "Stelle löschen",
+        "deleteCompany": "Unternehmen löschen",
+        "banUser": "Benutzer bannen",
+        "suspendedToast": "Element ausgesetzt",
+        "companySuspendedToast": "Unternehmen ausgesetzt",
+        "deletedToast": "Element gelöscht",
+        "companyDeletedToast": "Unternehmen gelöscht",
+        "bannedToast": "Benutzer gebannt",
+        "banError": "Der zu bannende Benutzer wurde nicht gefunden",
+        "banConfirm": "Bann bestätigen?",
+        "updatedToast": "Status aktualisiert"
+      },
+      "subscriptions": {
+        "title": "Abonnements",
+        "description": "Unternehmensabonnements verwalten",
+        "cancellationsTitle": "Kündigungen",
+        "cancellationsDescription": "Kündigungshistorie",
+        "noCancellations": "Keine Kündigungen",
+        "cancelledFrom": "Gekündigt von",
+        "toFrom": "zu",
+        "table": {
+          "company": "Unternehmen",
+          "plan": "Tarif",
+          "previousPlan": "Vorheriger Tarif",
+          "stripeSubId": "Stripe-ID",
+          "expiration": "Ablauf",
+          "cancellationReason": "Kündigungsgrund"
+        }
+      },
+      "newsletter": {
+        "sendTitle": "Newsletter versenden",
+        "sendDescription": "Eine E-Mail an alle Abonnenten senden",
+        "subjectLabel": "Betreff",
+        "subjectPlaceholder": "Newsletter-Titel",
+        "contentLabel": "HTML-Inhalt",
+        "contentPlaceholder": "<p>Ihre Nachricht...</p>",
+        "sendButton": "Newsletter senden",
+        "fillRequired": "Bitte Betreff und Inhalt ausfüllen",
+        "networkError": "Netzwerkfehler",
+        "sentSuccess": "Newsletter an {{count}}/{{total}} Abonnenten gesendet.",
+        "subscribersTitle": "Abonnenten ({{count}})",
+        "subscribersDescription": "Liste der Newsletter-Abonnenten",
+        "noSubscribers": "Keine Abonnenten",
+        "table": {
+          "email": "E-Mail",
+          "status": "Status",
+          "actions": "Aktionen",
+          "subscribed": "Angemeldet am",
+          "unsubscribed": "Abgemeldet am"
+        },
+        "statusActive": "Aktiv",
+        "statusUnsubscribed": "Abgemeldet",
+        "deactivate": "Deaktivieren",
+        "reactivate": "Reaktivieren",
+        "toggledToast": "Abonnent aktualisiert"
+      },
+      "blog": {
+        "generateTitle": "Artikel generieren",
+        "generateDescription": "Die KI schreibt einen Blogartikel",
+        "titleLabel": "Titel",
+        "titlePlaceholder": "Titel des Artikels",
+        "keywordsLabel": "Schlüsselwörter",
+        "keywordsPlaceholder": "Durch Kommas getrennt",
+        "audienceLabel": "Zielgruppe",
+        "audienceAll": "Alle",
+        "audienceCandidates": "Kandidaten",
+        "audienceRecruiters": "Personalvermittler",
+        "categoryLabel": "Kategorie",
+        "categories": {
+          "carriere": "Karriere",
+          "recrutement": "Personalbeschaffung",
+          "technologie": "Technologie",
+          "entrepreneuriat": "Unternehmertum",
+          "conseils": "Ratschläge"
+        },
+        "authorLabel": "Autor",
+        "authorPlaceholder": "Actoos Team",
+        "readTimeLabel": "Lesezeit",
+        "readTimePlaceholder": "5 Min.",
+        "generateButton": "Generieren",
+        "titleRequired": "Titel ist erforderlich",
+        "generatedToast": "Artikel erfolgreich generiert",
+        "generateError": "Generierungsfehler",
+        "articlesTitle": "Artikel ({{count}})",
+        "articlesDescription": "Ihre Blogartikel verwalten",
+        "noArticles": "Keine Artikel",
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "updatedToast": "Artikel aktualisiert",
+        "updateError": "Aktualisierungsfehler",
+        "deleteConfirm": "Artikel löschen?",
+        "deletedToast": "Artikel gelöscht",
+        "deleteError": "Löschfehler"
+      },
+      "messages": {
+        "sentSuccess": "Nachricht an {{count}}/{{total}} Personen gesendet",
+        "sendError": "Sendefehler"
+      },
+      "roleRequests": {
+        "title": "Anfragen zur Rollenänderung",
+        "description": "Anfragen genehmigen oder ablehnen",
+        "noRequests": "Keine Anfragen",
+        "from": "von",
+        "to": "zu",
+        "approve": "Genehmigen",
+        "reject": "Ablehnen",
+        "approvedToast": "Anfrage genehmigt",
+        "rejectedToast": "Anfrage abgelehnt"
+      },
+      "roleLabels": {
+        "candidate": "Kandidat",
+        "company": "Unternehmen",
+        "admin": "Admin",
+        "unknown": "Unbekannt"
+      }
+    },
+    "unsubscribe": {
+      "loading": "Wird bearbeitet...",
+      "success": {
+        "title": "Erfolgreich abgemeldet",
+        "message": "Sie wurden erfolgreich abgemeldet."
+      },
+      "error": {
+        "noEmail": "Keine E-Mail-Adresse angegeben.",
+        "alreadyUnsubscribed": "Adresse nicht gefunden oder bereits abgemeldet.",
+        "network": "Netzwerkfehler, bitte versuchen Sie es erneut.",
+        "title": "Fehler"
+      }
+    }
 
 
 }

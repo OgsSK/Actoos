@@ -97,21 +97,21 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-const handleSession = useCallback(async (authUser) => {
-  if (!authUser) {
-    setUser(null);
-    setProfile(null);
-    setLoading(false);
-    return;
-  }
-  const baseProfile = buildBaseProfile(authUser);
-  setUser(authUser);
-  setProfile(baseProfile);   // ← profil de base disponible immédiatement
-  setLoading(false);         // ← on libère l’affichage tout de suite
-  // L’enrichissement se fait en arrière‑plan, sans bloquer la page
-  const enriched = await enrichProfile(authUser, baseProfile);
-  setProfile(enriched);
-}, [buildBaseProfile, enrichProfile]);
+  const handleSession = useCallback(async (authUser) => {
+    if (!authUser) {
+      setUser(null);
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+    const baseProfile = buildBaseProfile(authUser);
+    setUser(authUser);
+    setProfile(baseProfile);   // ← profil de base disponible immédiatement
+    setLoading(false);         // ← on libère l’affichage tout de suite
+    // L’enrichissement se fait en arrière‑plan, sans bloquer la page
+    const enriched = await enrichProfile(authUser, baseProfile);
+    setProfile(enriched);
+  }, [buildBaseProfile, enrichProfile]);
 
   useEffect(() => {
     let mounted = true;
@@ -131,10 +131,17 @@ const handleSession = useCallback(async (authUser) => {
     };
   }, [handleSession]);
 
-  const signUp = async ({ email, password, role = 'candidate', firstName, lastName }) => {
+  const signUp = async ({ email, password, role = 'candidate', firstName, lastName, language }) => {
     const { data, error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { role, first_name: firstName, last_name: lastName } },
+      options: { 
+        data: { 
+          role, 
+          first_name: firstName, 
+          last_name: lastName,
+          language            // ← ajouté
+        } 
+      },
     });
     if (error) throw error;
     if (data.user) {

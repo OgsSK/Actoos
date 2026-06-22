@@ -34,14 +34,13 @@ const PricingPage = () => {
   const { user } = useAuth();
   const { format } = useCurrencyFormatter();
   const [pricing, setPricing] = useState(null);
-  const [loading, setLoading] = useState(true);          // ← uniquement pour les prix
+  const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(null);
   const [faqOpen, setFaqOpen] = useState(null);
   const [annual, setAnnual] = useState(false);
-  const [company, setCompany] = useState(null);           // chargé en arrière‑plan
+  const [company, setCompany] = useState(null);
   const [companyLoading, setCompanyLoading] = useState(true);
 
-  // Chargement des prix (indépendant de l’utilisateur)
   useEffect(() => {
     const loadPricing = async () => {
       const cached = localStorage.getItem(PRICING_CACHE_KEY);
@@ -76,7 +75,6 @@ const PricingPage = () => {
     loadPricing();
   }, []);
 
-  // Chargement de l’entreprise (non‑bloquant)
   useEffect(() => {
     if (!user) {
       setCompany(null);
@@ -137,7 +135,6 @@ const PricingPage = () => {
     window.location.href = '/dashboard/entreprise';
   };
 
-  // --- Si les prix ne sont pas encore chargés, seul le spinner des prix s’affiche ---
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white pt-20">
@@ -207,9 +204,7 @@ const PricingPage = () => {
   const businessMonthly = subscriptions?.business_monthly?.amount || 149000;
   const businessAnnual = subscriptions?.business_annual?.amount || 1430400;
 
-  // Plan actuel (déterminé dès que l’entreprise est chargée, sinon 'free')
   const currentPlan = company?.subscription_plan || 'free';
-  const isCompanyLoading = companyLoading; // pour l’affichage du spinner local
 
   const handleFreePlan = () => {
     if (!user) {
@@ -226,36 +221,11 @@ const PricingPage = () => {
   const faqItems = t('pricing.faq.items', { returnObjects: true }) || [];
 
   const comparisonRows = [
-    {
-      key: 'activeOffers',
-      free: `${PLAN_LIMITS.free.jobs}`,
-      pro: `${PLAN_LIMITS.pro.jobs}`,
-      business: '∞',
-    },
-    {
-      key: 'expiration',
-      free: t('pricing.comparison.values.expiration', { count: PLAN_LIMITS.free.expirationDays }),
-      pro: t('pricing.comparison.values.expiration', { count: PLAN_LIMITS.pro.expirationDays }),
-      business: t('pricing.comparison.values.expiration', { count: PLAN_LIMITS.business.expirationDays }),
-    },
-    {
-      key: 'candidates',
-      free: '✓',
-      pro: '✓',
-      business: '✓',
-    },
-    {
-      key: 'verifiedProfile',
-      free: '-',
-      pro: '✓',
-      business: '✓',
-    },
-    {
-      key: 'freeBoost',
-      free: '-',
-      pro: '-',
-      business: t('pricing.comparison.values.boostPerMonth'),
-    },
+    { key: 'activeOffers', free: PLAN_LIMITS.free.jobs, pro: PLAN_LIMITS.pro.jobs, business: '∞' },
+    { key: 'expiration', free: `${PLAN_LIMITS.free.expirationDays} jours`, pro: `${PLAN_LIMITS.pro.expirationDays} jours`, business: `${PLAN_LIMITS.business.expirationDays} jours` },
+    { key: 'candidates', free: '✓', pro: '✓', business: '✓' },
+    { key: 'verifiedProfile', free: '-', pro: '✓', business: '✓' },
+    { key: 'freeBoost', free: '-', pro: '-', business: '1 / mois' },
   ];
 
   return (
@@ -316,8 +286,7 @@ const PricingPage = () => {
                     {plan.badge.text}
                   </div>
                 )}
-                {/* Pendentif “Plan actuel” avec loader si entreprise en cours de chargement */}
-                {isCompanyLoading ? (
+                {companyLoading ? (
                   <div className="absolute top-4 left-4 bg-slate-100 text-slate-500 text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
                     <Loader2 className="w-3 h-3 animate-spin" />
                     Chargement...
@@ -431,34 +400,37 @@ const PricingPage = () => {
         </div>
       </div>
 
-      {/* Le reste du fichier (tableau comparatif, FAQ, CTA) est inchangé */}
-      {/* Tableau comparatif */}
+      {/* Tableau comparatif – version mobile améliorée */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-slate-900 font-display">{t('pricing.comparison.title')}</h2>
           <p className="text-slate-600 mt-2">{t('pricing.comparison.subtitle')}</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="text-left py-4 px-6 text-slate-600 font-medium">{t('pricing.comparison.featureColumn')}</th>
-                <th className="py-4 px-6 text-slate-900 font-bold">{t('pricing.comparison.freeColumn')}</th>
-                <th className="py-4 px-6 text-slate-900 font-bold">{t('pricing.comparison.proColumn')}</th>
-                <th className="py-4 px-6 text-blue-600 font-bold">{t('pricing.comparison.businessColumn')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comparisonRows.map((row, i) => (
-                <tr key={i} className="border-b border-slate-100 last:border-0">
-                  <td className="py-4 px-6 text-slate-700">{t(`pricing.comparison.rows.${row.key}`)}</td>
-                  <td className="py-4 px-6 text-slate-600">{row.free}</td>
-                  <td className="py-4 px-6 text-slate-600">{row.pro}</td>
-                  <td className="py-4 px-6 text-blue-600 font-medium">{row.business}</td>
+
+        {/* Conteneur scrollable pour mobile */}
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm min-w-[600px] sm:min-w-0">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="text-left py-4 px-4 sm:px-6 text-slate-600 font-medium sticky left-0 bg-slate-50 z-10">{t('pricing.comparison.featureColumn')}</th>
+                  <th className="py-4 px-4 sm:px-6 text-slate-900 font-bold text-center">{t('pricing.comparison.freeColumn')}</th>
+                  <th className="py-4 px-4 sm:px-6 text-slate-900 font-bold text-center">{t('pricing.comparison.proColumn')}</th>
+                  <th className="py-4 px-4 sm:px-6 text-blue-600 font-bold text-center">{t('pricing.comparison.businessColumn')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row, i) => (
+                  <tr key={i} className="border-b border-slate-100 last:border-0">
+                    <td className="py-4 px-4 sm:px-6 text-slate-700 sticky left-0 bg-white">{t(`pricing.comparison.rows.${row.key}`)}</td>
+                    <td className="py-4 px-4 sm:px-6 text-slate-600 text-center">{typeof row.free === 'boolean' ? (row.free ? '✓' : '-') : row.free}</td>
+                    <td className="py-4 px-4 sm:px-6 text-slate-600 text-center">{typeof row.pro === 'boolean' ? (row.pro ? '✓' : '-') : row.pro}</td>
+                    <td className="py-4 px-4 sm:px-6 text-blue-600 font-medium text-center">{typeof row.business === 'boolean' ? (row.business ? '✓' : '-') : row.business}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

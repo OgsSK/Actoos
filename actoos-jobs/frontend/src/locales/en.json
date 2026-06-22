@@ -382,6 +382,7 @@
     }
   },
   "jobAlerts": {
+    "back": "Back",
     "title": "Job alerts",
     "subtitle": "Receive jobs matching your criteria",
     "newAlert": "New alert",
@@ -577,45 +578,8 @@
   "scheduleInterview": {
     "title": "Schedule an interview"
   },
-  "unsubscribe": {
-    "loading": "Processing...",
-    "error": {
-      "noEmail": "No email address provided.",
-      "generic": "An error occurred.",
-      "network": "Network error.",
-      "title": "Error"
-    },
-    "success": {
-      "title": "Unsubscription confirmed"
-    }
-  },
-  "interviewPrep": {
-    "badge": "New",
-    "title": "Interview preparation",
-    "description": "Enter a job offer and your profile to get likely questions, sample answers, and personalized tips.",
-    "jobSection": "Job offer",
-    "jobPlaceholder": "Paste the job description here...",
-    "profileSection": "Your profile",
-    "profilePlaceholder": "Summarize your profile: skills, experience, education...",
-    "questions": {
-      "title": "Likely questions",
-      "empty": "Click Generate to get questions."
-    },
-    "answers": {
-      "title": "Sample answers",
-      "empty": "Generate the questions first."
-    },
-    "tips": {
-      "title": "Personalized tips",
-      "empty": "Click Generate for tips."
-    },
-    "generateButton": "Generate",
-    "toast": {
-      "needJobDescription": "Please enter a job description first.",
-      "success": "Generated successfully!",
-      "error": "Error generating."
-    }
-  },
+ 
+  
   "forgotPassword": {
     "title": "Forgot password?",
     "description": "Enter your email address to receive a reset link.",
@@ -1117,6 +1081,9 @@
   },
   
   "companyDashboard": {
+    "header": {
+    "title": "Recruiter Space"
+  },
     "noCompany": {
       "title": "Create your first company",
       "subtitle": "To post job offers and receive applications, start by creating your company profile.",
@@ -1452,62 +1419,60 @@
     "title": "Logging in...",
     "message": "Please wait while we finalize your authentication."
   },
-  "applicationDetail": {
-    "notFound": "Application not found.",
+ "applicationDetail": {
     "back": "Back to applications",
+    "notFound": "Application not found",
     "viewFullProfile": "View full profile",
-    "jobTitle": "Related job",
+    "jobTitle": "Linked job",
     "coverLetter": "Cover letter",
-    "cv": "Candidate CV",
+    "cv": "CV",
     "viewCV": "View CV",
-    "receivedAt": "Application received {{date}}",
-    "changeStatus": "Change status",
-    "scheduleInterview": "Schedule interview",
-    "step1ChooseSlot": "1. Choose a time slot",
-    "openCalendly": "Open Calendly",
-    "sendEmail": "Send by email",
-    "step2CreateLink": "2. Create a video conference link",
-    "joinMeeting": "Join",
-    "updateLink": "Update",
-    "deleteLink": "Delete",
-    "newRoomPlaceholder": "New room name",
-    "roomPlaceholder": "Room name (e.g.: my-interview)",
-    "generateJitsiLink": "Generate a Jitsi link",
-    "prepareInterview": "Prepare interview",
-    "questions": "Questions",
-    "emptyQuestions": "Click Generate to get personalized questions.",
-    "answers": "Sample answers",
-    "emptyAnswers": "First generate questions, then get sample answers to evaluate the candidate.",
-    "tips": "Tips",
-    "emptyTips": "Get tips to conduct a structured and relevant interview.",
-    "generate": "Generate",
-    "saveNotes": "Save to notes",
-    "savedNotes": "Notes saved",
-    "clickToEdit": "Click the pencil to edit.",
-    "readMode": "Switch to read mode",
-    "editMode": "Edit",
+    "interviewNotes": "Interview notes",
+    "generateQuestions": "Generate questions",
+    "generateAnswers": "Generate answers",
+    "generateTips": "Generate tips",
+    "receivedAt": "Received on {{date}}",
     "status": {
-      "pending": "New",
+      "pending": "Pending",
       "viewed": "Viewed",
       "shortlisted": "Shortlisted",
       "interview": "Interview",
       "accepted": "Accepted",
       "rejected": "Rejected"
     },
+    "changeStatus": "Change status",
+    "scheduleInterview": "Schedule interview",
+    "step1ChooseSlot": "Choose a slot (Calendly)",
+    "openCalendly": "Open Calendly",
+    "sendEmail": "Send email",
+    "step2CreateLink": "Create Jitsi link",
+    "joinMeeting": "Join meeting",
+    "updateLink": "Update",
+    "deleteLink": "Delete",
+    "generateJitsiLink": "Generate Jitsi link",
+    "newRoomPlaceholder": "New room name (optional)",
+    "roomPlaceholder": "Room name (optional)",
     "toasts": {
+      "questionsGenerated": "Content generated",
+      "noteSaved": "Note saved",
+      "noteDeleted": "Note deleted",
+      "emailSent": "Email sent",
       "statusUpdated": "Status updated",
-      "updateError": "Error updating",
-      "linkUpdated": "Link updated!",
-      "linkDeleted": "Link deleted",
-      "questionsGenerated": "Questions generated!",
-      "answersGenerated": "Sample answers generated!",
-      "tipsGenerated": "Tips generated!",
-      "needQuestionsFirst": "Generate questions first",
-      "saveError": "Error saving",
-      "emailError": "Error sending email",
-      "aiError": "AI error",
-      "rejectionPrompt": "Please indicate the reason for rejection (optional):"
+      "updateError": "Update error",
+      "rejectionPrompt": "Rejection reason (optional)",
+      "linkUpdated": "Link updated",
+      "linkDeleted": "Link deleted"
     }
+  },
+  "notes": {
+    "personal": "Personal notes",
+    "questions": "Interview questions",
+    "answers": "Sample answers",
+    "tips": "Recruiter tips"
+  },
+  "common": {
+    "delete": "Delete",
+    "savedAt": "Saved at {{time}}"
   },
   "applicationDetailCandidate": {
     "notFound": "Application not found.",
@@ -1663,78 +1628,7 @@
       "save": "Save"
     }
   },
-  "settings": {
-    "title": "Settings",
-    "subtitle": "Manage your account",
-    "back": "Back",
-    "myProfile": "My profile",
-    "accountInfo": {
-      "title": "Account information",
-      "description": "{{email}}"
-    },
-    "changeEmail": {
-      "title": "Change email address",
-      "description": "A confirmation email will be sent to the new address",
-      "newEmailLabel": "New email",
-      "newEmailPlaceholder": "new@email.com",
-      "currentPasswordLabel": "Current password (for verification)",
-      "currentPasswordPlaceholder": "••••••••",
-      "submit": "Change email"
-    },
-    "changePassword": {
-      "title": "Change password",
-      "description": "Use at least 8 characters",
-      "newPasswordLabel": "New password",
-      "newPasswordPlaceholder": "••••••••",
-      "confirmPasswordLabel": "Confirm password",
-      "confirmPasswordPlaceholder": "••••••••",
-      "submit": "Update"
-    },
-    "logout": {
-      "title": "Log out",
-      "description": "You will be redirected to the home page",
-      "button": "Logout"
-    },
-    "roleChange": {
-      "title": "Change account type",
-      "currentRoleCandidate": "Candidate",
-      "currentRoleCompany": "Company",
-      "descriptionCandidate": "You are currently a <strong>Candidate</strong>. You can request to switch to a <strong>Company</strong> account.",
-      "descriptionCompany": "You are currently a <strong>Company</strong>. You can request to switch to a <strong>Candidate</strong> account.",
-      "requestButton": "Request change",
-      "modal": {
-        "title": "Request role change",
-        "roleLabel": "Desired new role",
-        "roleCompany": "Company",
-        "roleCandidate": "Candidate",
-        "reasonLabel": "Message (optional)",
-        "reasonPlaceholder": "Explain why you want to change role...",
-        "cancel": "Cancel",
-        "submit": "Send request"
-      }
-    },
-    "dangerZone": {
-      "title": "Danger zone",
-      "description": "Delete your account and all your data. This action is irreversible.",
-      "button": "Delete my account",
-      "confirm": "Permanently delete your account? This action is irreversible, all your data will be erased."
-    },
-    "toasts": {
-      "passwordMismatch": "Passwords do not match",
-      "passwordLength": "Password must be at least 8 characters",
-      "passwordUpdated": "Password successfully updated",
-      "passwordError": "Error changing password",
-      "fillAllFields": "Please fill in all fields",
-      "wrongPassword": "Incorrect current password",
-      "emailConfirmationSent": "A confirmation email has been sent to the new address. Please check your inbox.",
-      "emailError": "Error changing email",
-      "logoutError": "Logout error",
-      "accountDeleted": "Your account has been permanently deleted.",
-      "deleteError": "Network error during deletion.",
-      "roleRequestSent": "Your request has been sent. The administrator will review it.",
-      "roleRequestError": "Network error"
-    }
-  },
+  
   "messageSender": {
     "recipientsTitle": "{{role}}",
     "searchPlaceholder": "Search...",
@@ -1976,317 +1870,7 @@
       "requestAlreadyProcessed": "Request already processed"
     }
   },
-  "adminDashboard": {
-    "title": "Administration",
-    "subtitle": "Manage jobs, companies, and users",
-    "refresh": "Refresh",
-    "dataRefreshed": "Data refreshed",
-    "unauthorized": "Unauthorized access",
-    "loadingError": "Error loading data",
-    "tabs": {
-      "overview": "Overview",
-      "jobs": "Job moderation",
-      "companies": "Company validation",
-      "users": "Users",
-      "reports": "Reports",
-      "subscriptions": "Subscriptions",
-      "newsletter": "Newsletter",
-      "blog": "Blog",
-      "messageCompanies": "Company messages",
-      "messageCandidates": "Candidate messages",
-      "roleRequests": "Role requests"
-    },
-    "stats": {
-      "pendingJobs": "Pending jobs",
-      "activeJobs": "Active jobs",
-      "pendingCompanies": "Pending companies",
-      "verifiedCompanies": "Verified companies",
-      "candidates": "Candidates",
-      "applications": "Applications",
-      "trend": "+{{trend}}% this month"
-    },
-    "overview": {
-      "pendingJobsTitle": "Pending jobs",
-      "pendingJobsDesc": "To moderate",
-      "noPendingJobs": "No pending jobs",
-      "pendingCompaniesTitle": "Pending companies",
-      "pendingCompaniesDesc": "To validate",
-      "noPendingCompanies": "No pending companies",
-      "viewAll": "View all"
-    },
-    "jobs": {
 
-      "searchPlaceholder": "Search a job...",
-      "filterAll": "All statuses",
-      "filterPending": "Pending",
-      "filterDraft": "Draft",
-      "filterActive": "Active",
-      "filterSuspended": "Suspended",
-      "filterRejected": "Rejected",
-      "noJobs": "No jobs",
-      "noJobsFound": "No jobs found",
-      "publishedBy": "Published {{date}} by {{email}}",
-      "showDetails": "Show details",
-      "hideDetails": "Hide details",
-      "detailsError": "Unable to load details",
-      "detailsDescription": "Description:",
-      "detailsRequirements": "Desired profile:",
-      "detailsMissions": "Missions:",
-      "detailsBenefits": "Benefits:",
-      "detailsSkills": "Skills:",
-      "detailsExperience": "Experience:",
-      "detailsSalary": "Salary:",
-      "detailsPositions": "Positions:",
-      "detailsDeadline": "Deadline:",
-      "detailsRemote": "Remote:",
-      "detailsUrgent": "Urgent:",
-      "detailsYes": "Yes",
-      "detailsNo": "No",
-      "detailsUnspecified": "Not specified",
-      "approve": "Approve",
-      "reject": "Reject",
-      "publish": "Publish job",
-      "suspend": "Suspend",
-      "reactivate": "Reactivate",
-      "delete": "Delete",
-      "viewJob": "View job",
-      "status": {
-        "pending": "Pending",
-        "active": "Active",
-        "suspended": "Suspended",
-        "rejected": "Rejected",
-        "draft": "Draft"
-      },
-      "companyNotVerified": "The company is not yet verified.",
-      "approveLimitReached": "This company has already reached its limit of {{limit}} active job(s).",
-      "approveCompanyFirst": "The company is not yet verified. Please validate the company first.",
-      "rejectConfirm": "Reject this job?",
-      "approvedToast": "Job approved",
-      "rejectedToast": "Job rejected",
-      "suspendedToast": "Job suspended and email sent",
-      "deletedToast": "Job deleted and email sent",
-      "approveError": "Error approving",
-      "genericError": "Error",
-      "suspendModalTitle": "Suspend job",
-      "deleteModalTitle": "Delete job",
-      "reasonLabel": "Reason (optional)",
-      "cancel": "Cancel",
-      "confirm": "Confirm"
-    },
-    "companies": {
-      "searchPlaceholder": "Search a company...",
-      "filterAll": "All statuses",
-      "filterUnverified": "Unverified",
-      "filterVerified": "Verified",
-      "noCompanies": "No companies",
-      "noCompaniesFound": "No companies found",
-      "employees": "{{size}} employees",
-      "offersCount": "{{count}} jobs",
-      "createdAt": "Created {{date}}",
-      "viewSite": "View site",
-      "viewOffers": "View jobs ({{count}})",
-      "validate": "Validate",
-      "reject": "Reject",
-      "suspend": "Suspend",
-      "deleteCompany": "Delete company",
-      "status": {
-        "verified": "Verified",
-        "unverified": "Unverified"
-      },
-      "validatedToast": "Company validated and email sent",
-      "rejectedToast": "Company rejected and email sent",
-      "deletedToast": "Company deleted",
-      "validateError": "Error validating",
-      "genericError": "Error",
-      "rejectModalTitle": "Reject company",
-      "deleteModalTitle": "Delete company",
-      "deleteWarning": "⚠️ This action is irreversible. All jobs and associated data will be deleted.",
-      "deleteConfirm": "Permanently delete the company \"{{name}}\"?",
-      "cancel": "Cancel",
-      "confirm": "Confirm",
-      "suspendModalTitle": "Suspend company",
-      "suspendWarning": "⚠️ The suspension will make the company invisible publicly and prevent job posting.",
-      "suspendDurationLabel": "Suspension duration",
-      "suspendReasonLabel": "Reason (optional)",
-      "durationIndefinite": "Indefinite",
-      "duration1day": "1 day",
-      "duration7days": "7 days",
-      "duration30days": "30 days",
-      "suspendedToast": "Company suspended"
-    },
-    "users": {
-      "title": "User management",
-      "description": "Modify roles, suspend, ban, or delete accounts",
-      "noUsers": "No users found",
-      "roles": {
-        "candidate": "Candidate",
-        "company": "Company",
-        "admin": "Admin"
-      },
-      "status": {
-        "active": "Active",
-        "suspended": "Suspended",
-        "banned": "Banned"
-      },
-      "actions": {
-        "suspend": "Suspend",
-        "reactivate": "Reactivate",
-        "ban": "Ban",
-        "delete": "Delete"
-      },
-      "banConfirm": "Permanently ban this user?",
-      "deleteConfirm": "Permanently delete this user? This action is irreversible.",
-      "roleUpdated": "Role updated. The user must log out and log back in to see their new space.",
-      "roleUpdateError": "Error changing role",
-      "suspendedToast": "Account suspended",
-      "reactivatedToast": "Account reactivated",
-      "bannedToast": "User banned",
-      "deletedToast": "User permanently deleted",
-      "deleteError": "Error deleting",
-      "suspendModalTitle": "Suspend account",
-      "suspendDurationLabel": "Suspension duration",
-      "suspendReasonLabel": "Reason (optional)",
-      "durationIndefinite": "Indefinite",
-      "duration1day": "1 day",
-      "duration7days": "7 days",
-      "duration30days": "30 days",
-      "cancel": "Cancel",
-      "confirm": "Suspend"
-    },
-    "reports": {
-      "title": "Reports",
-      "description": "Examine and process reports",
-      "noReports": "No reports",
-      "badges": {
-        "job": "📋 Job",
-        "company": "🏢 Company",
-        "candidate": "👤 Candidate"
-      },
-      "reportedBy": "Reported by {{email}}",
-      "reason": "Reason: {{reason}}",
-      "status": {
-        "pending": "Pending",
-        "reviewed": "Reviewed",
-        "resolved": "Resolved"
-      },
-      "markReviewed": "Mark as reviewed",
-      "markResolved": "Resolve",
-      "suspendJob": "Suspend job",
-      "suspendCompany": "Suspend company",
-      "deleteJob": "Delete job",
-      "deleteCompany": "Delete company",
-      "banUser": "Ban user",
-      "banError": "Unable to find the user to ban",
-      "banConfirm": "Permanently ban this user?",
-      "bannedToast": "User banned and email sent",
-      "suspendedToast": "Job suspended and email sent",
-      "companySuspendedToast": "Company suspended and email sent",
-      "deletedToast": "Job deleted and email sent",
-      "companyDeletedToast": "Company deleted and email sent",
-      "updatedToast": "Report updated"
-    },
-    "subscriptions": {
-      "title": "Active / cancelled subscriptions",
-      "description": "Overview of all company subscriptions",
-      "cancellationsTitle": "Latest cancellations",
-      "cancellationsDescription": "Companies that have cancelled their paid plan",
-      "noCancellations": "No cancellations recorded.",
-      "table": {
-        "company": "Company",
-        "plan": "Plan",
-        "previousPlan": "Previous plan",
-        "stripeSubId": "Stripe Sub ID",
-        "expiration": "Expiration",
-        "cancellationReason": "Cancellation reason"
-      },
-      "cancelledFrom": "Plan after cancellation:",
-      "toFrom": "← from"
-    },
-    "newsletter": {
-      "sendTitle": "Send a newsletter",
-      "sendDescription": "Send an email to all subscribers",
-      "subjectLabel": "Subject",
-      "subjectPlaceholder": "Email subject",
-      "contentLabel": "Content (HTML)",
-      "contentPlaceholder": "<h1>Title</h1><p>Your message...</p>",
-      "sendButton": "Send newsletter",
-      "subscribersTitle": "Subscribers ({{count}})",
-      "subscribersDescription": "List of newsletter subscribers",
-      "noSubscribers": "No subscribers yet.",
-      "table": {
-        "email": "Email",
-        "status": "Status",
-        "actions": "Actions",
-        "subscribed": "Subscription",
-        "unsubscribed": "Unsubscription"
-      },
-      "statusActive": "Active",
-      "statusUnsubscribed": "Unsubscribed",
-      "activate": "Activate",
-      "deactivate": "Deactivate",
-      "reactivate": "Reactivate",
-      "fillRequired": "Please fill in the subject and content.",
-      "sentToast": "Newsletter sent",
-      "networkError": "Network error",
-      "toggledToast": "Subscriber status updated"
-    },
-    "blog": {
-      "generateTitle": "Generate an article with AI",
-      "generateDescription": "Create optimized content for your audience",
-      "titleLabel": "Title *",
-      "titlePlaceholder": "E.g.: How to ace your job interview",
-      "keywordsLabel": "Keywords",
-      "keywordsPlaceholder": "E.g.: recruitment, career, tips",
-      "audienceLabel": "Audience",
-      "audienceAll": "All",
-      "audienceCandidates": "Candidates",
-      "audienceRecruiters": "Recruiters",
-      "categoryLabel": "Category",
-      "categories": {
-        "carriere": "Career",
-        "recrutement": "Recruitment",
-        "technologie": "Technology",
-        "entrepreneuriat": "Entrepreneurship",
-        "conseils": "Tips"
-      },
-      "authorLabel": "Author",
-      "authorPlaceholder": "Actoos Team",
-      "readTimeLabel": "Reading time",
-      "readTimePlaceholder": "5 min",
-      "generateButton": "Generate article",
-      "articlesTitle": "Articles ({{count}})",
-      "articlesDescription": "Manage blog articles",
-      "noArticles": "No articles yet.",
-      "save": "Save",
-      "cancel": "Cancel",
-      "deleteConfirm": "Delete this article?",
-      "generatedToast": "Article generated successfully",
-      "updatedToast": "Article updated",
-      "deletedToast": "Article deleted",
-      "generateError": "Error generating",
-      "updateError": "Error updating",
-      "deleteError": "Error deleting",
-      "titleRequired": "Title is required to generate an article",
-      "audienceLabel2": "Audience"
-    },
-    "roleRequests": {
-      "title": "Role change requests",
-      "description": "Manage user requests",
-      "noRequests": "No pending requests",
-      "from": "From",
-      "to": "→",
-      "approve": "Approve",
-      "reject": "Reject",
-      "approvedToast": "Request approved",
-      "rejectedToast": "Request rejected"
-    },
-    "roleLabels": {
-      "candidate": "Candidate",
-      "company": "Company",
-      "admin": "Admin",
-      "unknown": "Unknown"
-    }
-  },
   "categories": {
   "administration": "Administration",
   "agriculture": "Agriculture & Environment",
@@ -2798,7 +2382,456 @@
     "companySpace": "Company space",
     "logout": "Log out"
   }
-}
+},
+"settings": {
+  "back": "Back",
+  "myProfile": "My Profile",
+  "title": "Settings",
+  "subtitle": "Manage your account information",
+  "accountInfo": {
+    "title": "Account information",
+    "description": "Logged in as {{email}}"
+  },
+  "countryAndCurrency": "🌍 Country & currency",
+  "country": "Country",
+  "selectCountry": "Select a country",
+  "currency": "Currency",
+  "selectCurrency": "Select a currency",
+  "allCountries": "All countries",
+  "changeEmail": {
+    "title": "Change email",
+    "description": "Update your login email address",
+    "newEmailLabel": "New email",
+    "newEmailPlaceholder": "new@email.com",
+    "currentPasswordLabel": "Current password",
+    "currentPasswordPlaceholder": "Your current password",
+    "submit": "Update email"
+  },
+  "changePassword": {
+    "title": "Change password",
+    "description": "Use a strong and unique password",
+    "newPasswordLabel": "New password",
+    "newPasswordPlaceholder": "At least 8 characters",
+    "confirmPasswordLabel": "Confirm password",
+    "confirmPasswordPlaceholder": "Repeat the password",
+    "submit": "Update password"
+  },
+  "logout": {
+    "title": "Logout",
+    "description": "You can log out of your account at any time.",
+    "button": "Log out"
+  },
+  "roleChange": {
+    "title": "Change role",
+    "descriptionCandidate": "You are currently a <strong>candidate</strong>. You can request to become a <strong>recruiter</strong>.",
+    "descriptionCompany": "You are currently a <strong>recruiter</strong>. You can request to become a <strong>candidate</strong>.",
+    "requestButton": "Request a role change",
+    "modal": {
+      "title": "Role change request",
+      "roleLabel": "Desired new role",
+      "roleCandidate": "Candidate",
+      "roleCompany": "Recruiter (Company)",
+      "reasonLabel": "Reason for request (optional)",
+      "reasonPlaceholder": "Explain why you want to change role...",
+      "cancel": "Cancel",
+      "submit": "Send request"
+    }
+  },
+  "dangerZone": {
+    "title": "Danger zone",
+    "description": "Deleting your account is permanent and irreversible. All your data will be erased.",
+    "button": "Delete my account",
+    "confirm": "Are you sure you want to permanently delete your account? This action cannot be undone."
+  },
+  "toasts": {
+    "passwordMismatch": "Passwords do not match.",
+    "passwordLength": "Password must be at least 8 characters.",
+    "passwordUpdated": "Password updated successfully.",
+    "passwordError": "Error updating password.",
+    "fillAllFields": "Please fill in all fields.",
+    "wrongPassword": "Incorrect password.",
+    "emailConfirmationSent": "A confirmation email has been sent to your new address.",
+    "emailError": "Error updating email.",
+    "logoutError": "Error logging out.",
+    "accountDeleted": "Your account has been permanently deleted.",
+    "deleteError": "Error deleting account.",
+    "roleRequestSent": "Role change request sent successfully.",
+    "roleRequestError": "Error sending request."
+  }
+},
+"aiAssistant": {
+  "improve": "Improve with AI",
+  "improvedVersion": "Improved version",
+  "apply": "Apply",
+  "cancel": "Cancel",
+  "emptyText": "Please enter some text to improve.",
+  "improvedSuccess": "Text improved successfully!",
+  "improveError": "Error during AI improvement.",
+  "appliedSuccess": "Text applied!"
+},
+
+  "common": {
+    "delete": "Delete",
+    "savedAt": "Saved at {{time}}"
+  },
+  "interviewPrep": {
+    "back": "Back",
+    "badge": "Interview Prep",
+    "title": "Prepare your interview",
+    "description": "Enter a job offer and your profile to get likely questions, sample answers, and personalized tips.",
+    "jobSection": "Job description",
+    "profileSection": "Your profile",
+    "jobPlaceholder": "Paste the job description…",
+    "profilePlaceholder": "Describe your skills, experience, motivations…",
+    "results": "Results",
+    "tabs": {
+      "questions": "Questions",
+      "answers": "Answers",
+      "tips": "Tips"
+    },
+    "questions": { "title": "Likely questions" },
+    "answers": { "title": "Sample answers" },
+    "tips": { "title": "Personalized tips" },
+    "empty": "Generate content first…",
+    "generateButton": "Generate",
+    "saveAll": "Save all",
+    "toasts": {
+      "needJobDescription": "Please enter the job description.",
+      "generated": "Content generated successfully!",
+      "saved": "Progress saved.",
+      "noteDeleted": "Content cleared.",
+      "error": "Error during generation."
+    }
+  },
+  "adminDashboard": {
+      "title": "Administration",
+      "subtitle": "Manage your platform",
+      "refresh": "Refresh",
+      "loadingError": "Loading error",
+      "dataRefreshed": "Data refreshed",
+      "unauthorized": "Unauthorized access",
+      "stats": {
+        "pendingJobs": "Pending jobs",
+        "activeJobs": "Active jobs",
+        "pendingCompanies": "Companies to validate",
+        "verifiedCompanies": "Verified companies",
+        "candidates": "Candidates",
+        "applications": "Applications",
+        "trend": "{{trend}}%"
+      },
+      "tabs": {
+        "overview": "Overview",
+        "jobs": "Jobs",
+        "companies": "Companies",
+        "users": "Users",
+        "reports": "Reports",
+        "subscriptions": "Subscriptions",
+        "newsletter": "Newsletter",
+        "blog": "Blog",
+        "messageCompanies": "Message companies",
+        "messageCandidates": "Message candidates",
+        "roleRequests": "Role requests"
+      },
+      "overview": {
+        "pendingJobsTitle": "Pending job offers",
+        "pendingJobsDesc": "Approve offers so they can be published",
+        "pendingCompaniesTitle": "Companies to validate",
+        "pendingCompaniesDesc": "Verify companies before activating them",
+        "viewAll": "View all",
+        "noPendingJobs": "No pending offers",
+        "noPendingCompanies": "No companies to validate"
+      },
+      "jobs": {
+        "reactivatedToast": "Offer reactivated successfully",
+        "searchPlaceholder": "Search a job offer...",
+        "filterAll": "All",
+        "filterPending": "Pending",
+        "filterDraft": "Draft",
+        "filterActive": "Active",
+        "filterSuspended": "Suspended",
+        "filterRejected": "Rejected",
+        "noJobs": "No job offers found",
+        "noJobsFound": "No job offer matches the search",
+        "loadMore": "Load more",
+        "detailsError": "Error loading details",
+        "showDetails": "Show details",
+        "hideDetails": "Hide details",
+        "detailsDescription": "Description:",
+        "detailsRequirements": "Profile sought:",
+        "detailsMissions": "Missions:",
+        "detailsBenefits": "Benefits:",
+        "detailsSkills": "Skills:",
+        "detailsExperience": "Experience:",
+        "detailsSalary": "Salary:",
+        "detailsPositions": "Positions:",
+        "detailsDeadline": "Deadline:",
+        "detailsRemote": "Remote:",
+        "detailsUrgent": "Urgent:",
+        "detailsYes": "Yes",
+        "detailsNo": "No",
+        "detailsUnspecified": "Unspecified",
+        "publishedBy": "Published {{date}} by {{email}}",
+        "status": {
+          "pending": "Pending",
+          "active": "Active",
+          "suspended": "Suspended",
+          "rejected": "Rejected"
+        },
+        "companyNotVerified": "Company not verified",
+        "approve": "Approve",
+        "reject": "Reject",
+        "publish": "Publish",
+        "suspend": "Suspend",
+        "reactivate": "Reactivate",
+        "delete": "Delete",
+        "approveCompanyFirst": "The company must be verified first",
+        "approveLimitReached": "The company has reached its plan limit ({{limit}} offers)",
+        "approvedToast": "Offer approved successfully",
+        "rejectedToast": "Offer rejected",
+        "suspendedToast": "Offer suspended",
+        "deletedToast": "Offer deleted",
+        "approveError": "Approval error",
+        "rejectConfirm": "Confirm rejection?",
+        "genericError": "Error",
+        "suspendModalTitle": "Suspend offer",
+        "deleteModalTitle": "Delete offer",
+        "reasonLabel": "Reason",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "viewJob": "View offer"
+      },
+      "companies": {
+        "searchPlaceholder": "Search a company...",
+        "filterAll": "All",
+        "filterUnverified": "Unverified",
+        "filterVerified": "Verified",
+        "noCompanies": "No companies found",
+        "noCompaniesFound": "No company matches the search",
+        "loadMore": "Load more",
+        "employees": "{{size}} employees",
+        "createdAt": "Created on {{date}}",
+        "offersCount": "{{count}} offer(s)",
+        "validate": "Validate",
+        "reject": "Reject",
+        "suspend": "Suspend",
+        "deleteCompany": "Delete",
+        "viewSite": "View site",
+        "viewOffers": "View offers ({{count}})",
+        "validatedToast": "Company validated successfully",
+        "rejectedToast": "Company rejected",
+        "suspendedToast": "Company suspended",
+        "deletedToast": "Company deleted",
+        "validateError": "Validation error",
+        "genericError": "Error",
+        "rejectModalTitle": "Reject company",
+        "deleteModalTitle": "Delete company",
+        "deleteWarning": "The offers and members of this company will also be deleted.",
+        "deleteConfirm": "Delete company {{name}}?",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "suspendModalTitle": "Suspend company",
+        "suspendWarning": "All offers from this company will be hidden.",
+        "suspendDurationLabel": "Suspension duration",
+        "durationIndefinite": "Indefinite",
+        "duration1day": "1 day",
+        "duration7days": "7 days",
+        "duration30days": "30 days",
+        "suspendReasonLabel": "Reason",
+        "status": {
+          "unverified": "Unverified",
+          "verified": "Verified"
+        }
+      },
+      "users": {
+        "title": "Users",
+        "description": "Manage user accounts",
+        "noUsers": "No users",
+        "loadMore": "Load more",
+        "roleUpdated": "Role updated",
+        "roleUpdateError": "Role update error",
+        "suspendedToast": "User suspended",
+        "reactivatedToast": "User reactivated",
+        "bannedToast": "User banned",
+        "deletedToast": "User deleted",
+        "deleteError": "Deletion error",
+        "banConfirm": "Confirm ban?",
+        "deleteConfirm": "Delete permanently?",
+        "suspendModalTitle": "Suspend user",
+        "suspendDurationLabel": "Duration",
+        "durationIndefinite": "Indefinite",
+        "duration1day": "1 day",
+        "duration7days": "7 days",
+        "duration30days": "30 days",
+        "suspendReasonLabel": "Reason",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "status": {
+          "active": "Active",
+          "suspended": "Suspended",
+          "banned": "Banned"
+        },
+        "roles": {
+          "candidate": "Candidate",
+          "company": "Company",
+          "admin": "Admin"
+        },
+        "actions": {
+          "suspend": "Suspend",
+          "reactivate": "Reactivate",
+          "ban": "Ban",
+          "delete": "Delete"
+        }
+      },
+      "reports": {
+        "title": "Reports",
+        "description": "Handle user reports",
+        "noReports": "No reports",
+        "reportedBy": "Reported by {{email}}",
+        "reason": "Reason: {{reason}}",
+        "badges": {
+          "job": "Job",
+          "company": "Company",
+          "candidate": "Candidate"
+        },
+        "status": {
+          "pending": "Pending",
+          "reviewed": "Reviewed",
+          "resolved": "Resolved"
+        },
+        "markReviewed": "Mark as reviewed",
+        "markResolved": "Mark as resolved",
+        "suspendJob": "Suspend offer",
+        "suspendCompany": "Suspend company",
+        "deleteJob": "Delete offer",
+        "deleteCompany": "Delete company",
+        "banUser": "Ban user",
+        "suspendedToast": "Element suspended",
+        "companySuspendedToast": "Company suspended",
+        "deletedToast": "Element deleted",
+        "companyDeletedToast": "Company deleted",
+        "bannedToast": "User banned",
+        "banError": "Could not find the user to ban",
+        "banConfirm": "Confirm ban?",
+        "updatedToast": "Status updated"
+      },
+      "subscriptions": {
+        "title": "Subscriptions",
+        "description": "Manage company subscriptions",
+        "cancellationsTitle": "Cancellations",
+        "cancellationsDescription": "Cancellation history",
+        "noCancellations": "No cancellations",
+        "cancelledFrom": "Cancelled from",
+        "toFrom": "to",
+        "table": {
+          "company": "Company",
+          "plan": "Plan",
+          "previousPlan": "Previous plan",
+          "stripeSubId": "Stripe ID",
+          "expiration": "Expiration",
+          "cancellationReason": "Cancellation reason"
+        }
+      },
+      "newsletter": {
+        "sendTitle": "Send a newsletter",
+        "sendDescription": "Send an email to all subscribers",
+        "subjectLabel": "Subject",
+        "subjectPlaceholder": "Newsletter title",
+        "contentLabel": "HTML content",
+        "contentPlaceholder": "<p>Your message...</p>",
+        "sendButton": "Send newsletter",
+        "fillRequired": "Please fill in subject and content",
+        "networkError": "Network error",
+        "sentSuccess": "Newsletter sent to {{count}}/{{total}} subscribers.",
+        "subscribersTitle": "Subscribers ({{count}})",
+        "subscribersDescription": "List of newsletter subscribers",
+        "noSubscribers": "No subscribers",
+        "table": {
+          "email": "Email",
+          "status": "Status",
+          "actions": "Actions",
+          "subscribed": "Subscribed on",
+          "unsubscribed": "Unsubscribed on"
+        },
+        "statusActive": "Active",
+        "statusUnsubscribed": "Unsubscribed",
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate",
+        "toggledToast": "Subscriber updated"
+      },
+      "blog": {
+        "generateTitle": "Generate an article",
+        "generateDescription": "AI will write a blog article",
+        "titleLabel": "Title",
+        "titlePlaceholder": "Article title",
+        "keywordsLabel": "Keywords",
+        "keywordsPlaceholder": "Separated by commas",
+        "audienceLabel": "Audience",
+        "audienceAll": "All",
+        "audienceCandidates": "Candidates",
+        "audienceRecruiters": "Recruiters",
+        "categoryLabel": "Category",
+        "categories": {
+          "carriere": "Career",
+          "recrutement": "Recruitment",
+          "technologie": "Technology",
+          "entrepreneuriat": "Entrepreneurship",
+          "conseils": "Advice"
+        },
+        "authorLabel": "Author",
+        "authorPlaceholder": "Actoos Team",
+        "readTimeLabel": "Reading time",
+        "readTimePlaceholder": "5 min",
+        "generateButton": "Generate",
+        "titleRequired": "Title is required",
+        "generatedToast": "Article generated successfully",
+        "generateError": "Generation error",
+        "articlesTitle": "Articles ({{count}})",
+        "articlesDescription": "Manage your blog articles",
+        "noArticles": "No articles",
+        "save": "Save",
+        "cancel": "Cancel",
+        "updatedToast": "Article updated",
+        "updateError": "Update error",
+        "deleteConfirm": "Delete article?",
+        "deletedToast": "Article deleted",
+        "deleteError": "Deletion error"
+      },
+      "messages": {
+        "sentSuccess": "Message sent to {{count}}/{{total}} people",
+        "sendError": "Error sending"
+      },
+      "roleRequests": {
+        "title": "Role change requests",
+        "description": "Approve or deny requests",
+        "noRequests": "No requests",
+        "from": "from",
+        "to": "to",
+        "approve": "Approve",
+        "reject": "Reject",
+        "approvedToast": "Request approved",
+        "rejectedToast": "Request rejected"
+      },
+      "roleLabels": {
+        "candidate": "Candidate",
+        "company": "Company",
+        "admin": "Admin",
+        "unknown": "Unknown"
+      }
+    },
+    "unsubscribe": {
+      "loading": "Processing...",
+      "success": {
+        "title": "Unsubscribed successfully",
+        "message": "You have been unsubscribed successfully."
+      },
+      "error": {
+        "noEmail": "No email address provided.",
+        "alreadyUnsubscribed": "Address not found or already unsubscribed.",
+        "network": "Network error, please try again.",
+        "title": "Error"
+      }
+    }
+
   
 
 }

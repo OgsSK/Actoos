@@ -17,7 +17,7 @@ import { slugify } from '../lib/utils';
 import { apiFetch } from '../lib/api';
 
 const CreateCompanyPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const logoInputRef = useRef(null);
@@ -163,14 +163,15 @@ const CreateCompanyPage = () => {
       });
 
       toast.success(t('createCompany.toasts.companyCreated'));
-
+console.log("Langue envoyée pour notif admin :", i18n.language);
       try {
         await apiFetch('/api/notify-admin-new-company', {
           method: 'POST',
           body: JSON.stringify({
             company_name: form.name,
             owner_email: user.email,
-            owner_name: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`
+            owner_name: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`,
+            language: i18n.language,
           })
         });
       } catch (e) {

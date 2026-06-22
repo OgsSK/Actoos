@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Mail, Loader2 } from 'lucide-react';
 
 const MessageSender = ({ role }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [users, setUsers] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [subject, setSubject] = useState('');
@@ -63,7 +63,8 @@ const MessageSender = ({ role }) => {
           subject,
           content,
           expire_value: expireValue || 0,
-          expire_unit: expireValue ? expireUnit : null
+          expire_unit: expireValue ? expireUnit : null,
+          language: i18n.language,
         })
       });
       if (res.success) {

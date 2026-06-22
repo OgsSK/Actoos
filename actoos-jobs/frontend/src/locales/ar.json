@@ -382,6 +382,7 @@
     }
   },
   "jobAlerts": {
+    "back": "رجوع",
     "title": "تنبيهات الوظائف",
     "subtitle": "استقبل وظائف تطابق معاييرك",
     "newAlert": "تنبيه جديد",
@@ -578,45 +579,8 @@
   "scheduleInterview": {
     "title": "جدولة مقابلة"
   },
-  "unsubscribe": {
-    "loading": "جارٍ المعالجة...",
-    "error": {
-      "noEmail": "لم يتم تقديم أي عنوان بريد إلكتروني.",
-      "generic": "حدث خطأ.",
-      "network": "خطأ في الشبكة.",
-      "title": "خطأ"
-    },
-    "success": {
-      "title": "تم تأكيد إلغاء الاشتراك"
-    }
-  },
-  "interviewPrep": {
-    "badge": "جديد",
-    "title": "التحضير للمقابلات",
-    "description": "أدخل عرض وظيفة وملفك الشخصي للحصول على أسئلة محتملة وإجابات نموذجية ونصائح مخصصة.",
-    "jobSection": "عرض الوظيفة",
-    "jobPlaceholder": "الصق وصف الوظيفة هنا...",
-    "profileSection": "ملفك الشخصي",
-    "profilePlaceholder": "لخص ملفك الشخصي: المهارات، الخبرة، التكوين...",
-    "questions": {
-      "title": "الأسئلة المحتملة",
-      "empty": "انقر على 'توليد' للحصول على الأسئلة."
-    },
-    "answers": {
-      "title": "الإجابات النموذجية",
-      "empty": "قم بتوليد الأسئلة أولاً."
-    },
-    "tips": {
-      "title": "نصائح مخصصة",
-      "empty": "انقر على 'توليد' للحصول على نصائح."
-    },
-    "generateButton": "توليد",
-    "toast": {
-      "needJobDescription": "الرجاء إدخال وصف وظيفة أولاً.",
-      "success": "تم التوليد بنجاح!",
-      "error": "خطأ أثناء التوليد."
-    }
-  },
+ 
+  
   "forgotPassword": {
     "title": "نسيت كلمة المرور؟",
     "description": "أدخل عنوان بريدك الإلكتروني لاستلام رابط إعادة التعيين.",
@@ -1118,6 +1082,9 @@
   },
   
   "companyDashboard": {
+     "header": {
+    "title": "مساحة المجند"
+  },
     "noCompany": {
       "title": "أنشئ شركتك الأولى",
       "subtitle": "لنشر عروض العمل واستقبال الطلبات، ابدأ بإنشاء ملف شركتك.",
@@ -1454,61 +1421,59 @@
     "message": "يرجى الانتظار بينما ننهي عملية المصادقة الخاصة بك."
   },
   "applicationDetail": {
-    "notFound": "الطلب غير موجود.",
     "back": "العودة إلى الطلبات",
-    "viewFullProfile": "عرض الملف الشخصي الكامل",
-    "jobTitle": "الوظيفة المعنية",
-    "coverLetter": "رسالة التغطية",
-    "cv": "السيرة الذاتية للمرشح",
+    "notFound": "الطلب غير موجود",
+    "viewFullProfile": "عرض الملف الكامل",
+    "jobTitle": "الوظيفة المرتبطة",
+    "coverLetter": "رسالة التحفيز",
+    "cv": "السيرة الذاتية",
     "viewCV": "عرض السيرة الذاتية",
-    "receivedAt": "تم استلام الطلب {{date}}",
+    "interviewNotes": "ملاحظات المقابلة",
+    "generateQuestions": "توليد أسئلة",
+    "generateAnswers": "توليد إجابات",
+    "generateTips": "توليد نصائح",
+    "receivedAt": "تم الاستلام بتاريخ {{date}}",
+    "status": {
+      "pending": "قيد الانتظار",
+      "viewed": "تمت المشاهدة",
+      "shortlisted": "مُختارة مبدئياً",
+      "interview": "مقابلة",
+      "accepted": "مقبولة",
+      "rejected": "مرفوضة"
+    },
     "changeStatus": "تغيير الحالة",
     "scheduleInterview": "جدولة مقابلة",
-    "step1ChooseSlot": "1. اختر موعداً",
+    "step1ChooseSlot": "اختيار موعد (Calendly)",
     "openCalendly": "فتح Calendly",
-    "sendEmail": "إرسال عبر البريد الإلكتروني",
-    "step2CreateLink": "2. أنشئ رابط مؤتمر فيديو",
-    "joinMeeting": "انضمام",
+    "sendEmail": "إرسال عبر البريد",
+    "step2CreateLink": "إنشاء رابط Jitsi",
+    "joinMeeting": "الانضمام إلى الاجتماع",
     "updateLink": "تحديث",
     "deleteLink": "حذف",
-    "newRoomPlaceholder": "اسم الغرفة الجديد",
-    "roomPlaceholder": "اسم الغرفة (مثال: مقابلتي)",
     "generateJitsiLink": "إنشاء رابط Jitsi",
-    "prepareInterview": "تحضير المقابلة",
-    "questions": "الأسئلة",
-    "emptyQuestions": "انقر على 'توليد' للحصول على أسئلة مخصصة.",
-    "answers": "الإجابات النموذجية",
-    "emptyAnswers": "قم بتوليد الأسئلة أولاً ثم احصل على إجابات نموذجية لتقييم المرشح.",
-    "tips": "نصائح",
-    "emptyTips": "احصل على نصائح لإجراء مقابلة منظمة وذات صلة.",
-    "generate": "توليد",
-    "saveNotes": "حفظ في الملاحظات",
-    "savedNotes": "تم حفظ الملاحظات",
-    "clickToEdit": "انقر على القلم للتعديل.",
-    "readMode": "التبديل إلى وضع القراءة",
-    "editMode": "تعديل",
-    "status": {
-      "pending": "جديد",
-      "viewed": "تمت المشاهدة",
-      "shortlisted": "مُختار مبدئياً",
-      "interview": "مقابلة",
-      "accepted": "مقبول",
-      "rejected": "مرفوض"
-    },
+    "newRoomPlaceholder": "اسم الغرفة الجديد (اختياري)",
+    "roomPlaceholder": "اسم الغرفة (اختياري)",
     "toasts": {
+      "questionsGenerated": "تم إنشاء المحتوى",
+      "noteSaved": "تم حفظ الملاحظة",
+      "noteDeleted": "تم حذف الملاحظة",
+      "emailSent": "تم إرسال البريد",
       "statusUpdated": "تم تحديث الحالة",
-      "updateError": "خطأ أثناء التحديث",
-      "linkUpdated": "تم تحديث الرابط!",
-      "linkDeleted": "تم حذف الرابط",
-      "questionsGenerated": "تم توليد الأسئلة!",
-      "answersGenerated": "تم توليد الإجابات النموذجية!",
-      "tipsGenerated": "تم توليد النصائح!",
-      "needQuestionsFirst": "قم بتوليد الأسئلة أولاً",
-      "saveError": "خطأ أثناء الحفظ",
-      "emailError": "خطأ أثناء إرسال البريد الإلكتروني",
-      "aiError": "خطأ في الذكاء الاصطناعي",
-      "rejectionPrompt": "يرجى ذكر سبب الرفض (اختياري):"
+      "updateError": "خطأ في التحديث",
+      "rejectionPrompt": "سبب الرفض (اختياري)",
+      "linkUpdated": "تم تحديث الرابط",
+      "linkDeleted": "تم حذف الرابط"
     }
+  },
+  "notes": {
+    "personal": "ملاحظات شخصية",
+    "questions": "أسئلة المقابلة",
+    "answers": "إجابات نموذجية",
+    "tips": "نصائح للمُوَظِّف"
+  },
+  "common": {
+    "delete": "حذف",
+    "savedAt": "تم الحفظ في {{time}}"
   },
   "applicationDetailCandidate": {
     "notFound": "الطلب غير موجود.",
@@ -1664,78 +1629,7 @@
       "save": "حفظ"
     }
   },
-  "settings": {
-    "title": "الإعدادات",
-    "subtitle": "أدر حسابك",
-    "back": "رجوع",
-    "myProfile": "ملفي الشخصي",
-    "accountInfo": {
-      "title": "معلومات الحساب",
-      "description": "{{email}}"
-    },
-    "changeEmail": {
-      "title": "تغيير عنوان البريد الإلكتروني",
-      "description": "سيتم إرسال بريد إلكتروني للتأكيد إلى العنوان الجديد",
-      "newEmailLabel": "البريد الإلكتروني الجديد",
-      "newEmailPlaceholder": "new@email.com",
-      "currentPasswordLabel": "كلمة المرور الحالية (للتحقق)",
-      "currentPasswordPlaceholder": "••••••••",
-      "submit": "تغيير البريد الإلكتروني"
-    },
-    "changePassword": {
-      "title": "تغيير كلمة المرور",
-      "description": "استخدم 8 أحرف على الأقل",
-      "newPasswordLabel": "كلمة المرور الجديدة",
-      "newPasswordPlaceholder": "••••••••",
-      "confirmPasswordLabel": "تأكيد كلمة المرور",
-      "confirmPasswordPlaceholder": "••••••••",
-      "submit": "تحديث"
-    },
-    "logout": {
-      "title": "تسجيل الخروج",
-      "description": "سيتم توجيهك إلى الصفحة الرئيسية",
-      "button": "تسجيل الخروج"
-    },
-    "roleChange": {
-      "title": "تغيير نوع الحساب",
-      "currentRoleCandidate": "مرشح",
-      "currentRoleCompany": "شركة",
-      "descriptionCandidate": "أنت حالياً <strong>مرشح</strong>. يمكنك طلب التحول إلى حساب <strong>شركة</strong>.",
-      "descriptionCompany": "أنت حالياً <strong>شركة</strong>. يمكنك طلب التحول إلى حساب <strong>مرشح</strong>.",
-      "requestButton": "طلب التغيير",
-      "modal": {
-        "title": "طلب تغيير الدور",
-        "roleLabel": "الدور الجديد المطلوب",
-        "roleCompany": "شركة",
-        "roleCandidate": "مرشح",
-        "reasonLabel": "رسالة (اختياري)",
-        "reasonPlaceholder": "اشرح لماذا تريد تغيير الدور...",
-        "cancel": "إلغاء",
-        "submit": "إرسال الطلب"
-      }
-    },
-    "dangerZone": {
-      "title": "منطقة الخطر",
-      "description": "احذف حسابك وجميع بياناتك. هذا الإجراء لا رجعة فيه.",
-      "button": "حذف حسابي",
-      "confirm": "حذف حسابك نهائياً؟ هذا الإجراء لا رجعة فيه، سيتم مسح جميع بياناتك."
-    },
-    "toasts": {
-      "passwordMismatch": "كلمات المرور غير متطابقة",
-      "passwordLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل",
-      "passwordUpdated": "تم تحديث كلمة المرور بنجاح",
-      "passwordError": "خطأ أثناء تغيير كلمة المرور",
-      "fillAllFields": "الرجاء ملء جميع الحقول",
-      "wrongPassword": "كلمة المرور الحالية غير صحيحة",
-      "emailConfirmationSent": "تم إرسال بريد تأكيد إلى العنوان الجديد. يرجى التحقق من صندوق الوارد.",
-      "emailError": "خطأ أثناء تغيير البريد الإلكتروني",
-      "logoutError": "خطأ في تسجيل الخروج",
-      "accountDeleted": "تم حذف حسابك نهائياً.",
-      "deleteError": "خطأ في الشبكة أثناء الحذف.",
-      "roleRequestSent": "تم إرسال طلبك. سيقوم المسؤول بمراجعته.",
-      "roleRequestError": "خطأ في الشبكة"
-    }
-  },
+
   "messageSender": {
     "recipientsTitle": "{{role}}",
     "searchPlaceholder": "بحث...",
@@ -1977,316 +1871,7 @@
       "requestAlreadyProcessed": "تمت معالجة الطلب بالفعل"
     }
   },
-  "adminDashboard": {
-    "title": "الإدارة",
-    "subtitle": "أدر الوظائف والشركات والمستخدمين",
-    "refresh": "تحديث",
-    "dataRefreshed": "تم تحديث البيانات",
-    "unauthorized": "وصول غير مصرح به",
-    "loadingError": "خطأ أثناء تحميل البيانات",
-    "tabs": {
-      "overview": "نظرة عامة",
-      "jobs": "مراجعة الوظائف",
-      "companies": "التحقق من الشركات",
-      "users": "المستخدمون",
-      "reports": "البلاغات",
-      "subscriptions": "الاشتراكات",
-      "newsletter": "النشرة الإخبارية",
-      "blog": "المدونة",
-      "messageCompanies": "رسائل الشركات",
-      "messageCandidates": "رسائل المرشحين",
-      "roleRequests": "طلبات الدور"
-    },
-    "stats": {
-      "pendingJobs": "وظائف قيد الانتظار",
-      "activeJobs": "وظائف نشطة",
-      "pendingCompanies": "شركات قيد الانتظار",
-      "verifiedCompanies": "شركات تم التحقق منها",
-      "candidates": "مرشحون",
-      "applications": "طلبات",
-      "trend": "+{{trend}}% هذا الشهر"
-    },
-    "overview": {
-      "pendingJobsTitle": "وظائف قيد الانتظار",
-      "pendingJobsDesc": "للمراجعة",
-      "noPendingJobs": "لا توجد وظائف قيد الانتظار",
-      "pendingCompaniesTitle": "شركات قيد الانتظار",
-      "pendingCompaniesDesc": "للتحقق",
-      "noPendingCompanies": "لا توجد شركات قيد الانتظار",
-      "viewAll": "عرض الكل"
-    },
-    "jobs": {
-      "searchPlaceholder": "ابحث عن وظيفة...",
-      "filterAll": "جميع الحالات",
-      "filterPending": "قيد الانتظار",
-      "filterDraft": "مسودة",
-      "filterActive": "نشطة",
-      "filterSuspended": "معلقة",
-      "filterRejected": "مرفوضة",
-      "noJobs": "لا توجد وظائف",
-      "noJobsFound": "لم يتم العثور على وظائف",
-      "publishedBy": "نُشرت {{date}} من قبل {{email}}",
-      "showDetails": "إظهار التفاصيل",
-      "hideDetails": "إخفاء التفاصيل",
-      "detailsError": "تعذر تحميل التفاصيل",
-      "detailsDescription": "الوصف:",
-      "detailsRequirements": "الملف المطلوب:",
-      "detailsMissions": "المهام:",
-      "detailsBenefits": "المزايا:",
-      "detailsSkills": "المهارات:",
-      "detailsExperience": "الخبرة:",
-      "detailsSalary": "الراتب:",
-      "detailsPositions": "المناصب:",
-      "detailsDeadline": "آخر موعد:",
-      "detailsRemote": "عن بعد:",
-      "detailsUrgent": "عاجلة:",
-      "detailsYes": "نعم",
-      "detailsNo": "لا",
-      "detailsUnspecified": "غير محدد",
-      "approve": "موافقة",
-      "reject": "رفض",
-      "publish": "نشر الوظيفة",
-      "suspend": "تعليق",
-      "reactivate": "إعادة تفعيل",
-      "delete": "حذف",
-      "viewJob": "عرض الوظيفة",
-      "status": {
-        "pending": "قيد الانتظار",
-        "active": "نشطة",
-        "suspended": "معلقة",
-        "rejected": "مرفوضة",
-        "draft": "مسودة"
-      },
-      "companyNotVerified": "لم يتم التحقق من الشركة بعد.",
-      "approveLimitReached": "هذه الشركة بلغت بالفعل حدها الأقصى وهو {{limit}} وظيفة نشطة.",
-      "approveCompanyFirst": "لم يتم التحقق من الشركة بعد. يرجى التحقق من الشركة أولاً.",
-      "rejectConfirm": "رفض هذه الوظيفة؟",
-      "approvedToast": "تمت الموافقة على الوظيفة",
-      "rejectedToast": "تم رفض الوظيفة",
-      "suspendedToast": "تم تعليق الوظيفة وإرسال بريد إلكتروني",
-      "deletedToast": "تم حذف الوظيفة وإرسال بريد إلكتروني",
-      "approveError": "خطأ أثناء الموافقة",
-      "genericError": "خطأ",
-      "suspendModalTitle": "تعليق الوظيفة",
-      "deleteModalTitle": "حذف الوظيفة",
-      "reasonLabel": "السبب (اختياري)",
-      "cancel": "إلغاء",
-      "confirm": "تأكيد"
-    },
-    "companies": {
-      "searchPlaceholder": "ابحث عن شركة...",
-      "filterAll": "جميع الحالات",
-      "filterUnverified": "غير موثقة",
-      "filterVerified": "موثقة",
-      "noCompanies": "لا توجد شركات",
-      "noCompaniesFound": "لم يتم العثور على شركات",
-      "employees": "{{size}} موظف",
-      "offersCount": "{{count}} وظيفة",
-      "createdAt": "أُنشئت {{date}}",
-      "viewSite": "عرض الموقع",
-      "viewOffers": "عرض الوظائف ({{count}})",
-      "validate": "تحقق",
-      "reject": "رفض",
-      "suspend": "تعليق",
-      "deleteCompany": "حذف الشركة",
-      "status": {
-        "verified": "موثقة",
-        "unverified": "غير موثقة"
-      },
-      "validatedToast": "تم التحقق من الشركة وإرسال بريد إلكتروني",
-      "rejectedToast": "تم رفض الشركة وإرسال بريد إلكتروني",
-      "deletedToast": "تم حذف الشركة",
-      "validateError": "خطأ أثناء التحقق",
-      "genericError": "خطأ",
-      "rejectModalTitle": "رفض الشركة",
-      "deleteModalTitle": "حذف الشركة",
-      "deleteWarning": "⚠️ هذا الإجراء لا رجعة فيه. سيتم حذف جميع الوظائف والبيانات المرتبطة.",
-      "deleteConfirm": "حذف الشركة \"{{name}}\" نهائياً؟",
-      "cancel": "إلغاء",
-      "confirm": "تأكيد",
-      "suspendModalTitle": "تعليق الشركة",
-      "suspendWarning": "⚠️ التعليق سيجعل الشركة غير مرئية للعموم ويمنع نشر الوظائف.",
-      "suspendDurationLabel": "مدة التعليق",
-      "suspendReasonLabel": "السبب (اختياري)",
-      "durationIndefinite": "غير محدد",
-      "duration1day": "يوم واحد",
-      "duration7days": "7 أيام",
-      "duration30days": "30 يوماً",
-      "suspendedToast": "تم تعليق الشركة"
-    },
-    "users": {
-      "title": "إدارة المستخدمين",
-      "description": "تعديل الأدوار، تعليق، حظر أو حذف الحسابات",
-      "noUsers": "لم يتم العثور على مستخدمين",
-      "roles": {
-        "candidate": "مرشح",
-        "company": "شركة",
-        "admin": "مسؤول"
-      },
-      "status": {
-        "active": "نشط",
-        "suspended": "معلق",
-        "banned": "محظور"
-      },
-      "actions": {
-        "suspend": "تعليق",
-        "reactivate": "إعادة تفعيل",
-        "ban": "حظر",
-        "delete": "حذف"
-      },
-      "banConfirm": "حظر هذا المستخدم نهائياً؟",
-      "deleteConfirm": "حذف هذا المستخدم نهائياً؟ هذا الإجراء لا رجعة فيه.",
-      "roleUpdated": "تم تحديث الدور. يجب على المستخدم تسجيل الخروج ثم الدخول مرة أخرى لرؤية مساحته الجديدة.",
-      "roleUpdateError": "خطأ أثناء تغيير الدور",
-      "suspendedToast": "تم تعليق الحساب",
-      "reactivatedToast": "تم إعادة تفعيل الحساب",
-      "bannedToast": "تم حظر المستخدم",
-      "deletedToast": "تم حذف المستخدم نهائياً",
-      "deleteError": "خطأ أثناء الحذف",
-      "suspendModalTitle": "تعليق الحساب",
-      "suspendDurationLabel": "مدة التعليق",
-      "suspendReasonLabel": "السبب (اختياري)",
-      "durationIndefinite": "غير محدد",
-      "duration1day": "يوم واحد",
-      "duration7days": "7 أيام",
-      "duration30days": "30 يوماً",
-      "cancel": "إلغاء",
-      "confirm": "تعليق"
-    },
-    "reports": {
-      "title": "البلاغات",
-      "description": "فحص ومعالجة البلاغات",
-      "noReports": "لا توجد بلاغات",
-      "badges": {
-        "job": "📋 وظيفة",
-        "company": "🏢 شركة",
-        "candidate": "👤 مرشح"
-      },
-      "reportedBy": "أبلغ عنه {{email}}",
-      "reason": "السبب: {{reason}}",
-      "status": {
-        "pending": "قيد الانتظار",
-        "reviewed": "تمت المراجعة",
-        "resolved": "تم الحل"
-      },
-      "markReviewed": "وضع علامة كمراجع",
-      "markResolved": "حل",
-      "suspendJob": "تعليق الوظيفة",
-      "suspendCompany": "تعليق الشركة",
-      "deleteJob": "حذف الوظيفة",
-      "deleteCompany": "حذف الشركة",
-      "banUser": "حظر المستخدم",
-      "banError": "تعذر العثور على المستخدم المراد حظره",
-      "banConfirm": "حظر هذا المستخدم نهائياً؟",
-      "bannedToast": "تم حظر المستخدم وإرسال بريد إلكتروني",
-      "suspendedToast": "تم تعليق الوظيفة وإرسال بريد إلكتروني",
-      "companySuspendedToast": "تم تعليق الشركة وإرسال بريد إلكتروني",
-      "deletedToast": "تم حذف الوظيفة وإرسال بريد إلكتروني",
-      "companyDeletedToast": "تم حذف الشركة وإرسال بريد إلكتروني",
-      "updatedToast": "تم تحديث البلاغ"
-    },
-    "subscriptions": {
-      "title": "الاشتراكات النشطة / الملغاة",
-      "description": "نظرة عامة على جميع اشتراكات الشركات",
-      "cancellationsTitle": "آخر الإلغاءات",
-      "cancellationsDescription": "الشركات التي ألغت خطتها المدفوعة",
-      "noCancellations": "لم يتم تسجيل أي إلغاء.",
-      "table": {
-        "company": "الشركة",
-        "plan": "الخطة",
-        "previousPlan": "الخطة السابقة",
-        "stripeSubId": "Stripe Sub ID",
-        "expiration": "انتهاء الصلاحية",
-        "cancellationReason": "سبب الإلغاء"
-      },
-      "cancelledFrom": "الخطة بعد الإلغاء:",
-      "toFrom": "← من"
-    },
-    "newsletter": {
-      "sendTitle": "إرسال نشرة إخبارية",
-      "sendDescription": "أرسل بريداً إلكترونياً إلى جميع المشتركين",
-      "subjectLabel": "الموضوع",
-      "subjectPlaceholder": "موضوع البريد الإلكتروني",
-      "contentLabel": "المحتوى (HTML)",
-      "contentPlaceholder": "<h1>عنوان</h1><p>رسالتك...</p>",
-      "sendButton": "إرسال النشرة الإخبارية",
-      "subscribersTitle": "المشتركون ({{count}})",
-      "subscribersDescription": "قائمة المشتركين في النشرة الإخبارية",
-      "noSubscribers": "لا يوجد مشتركون حالياً.",
-      "table": {
-        "email": "البريد الإلكتروني",
-        "status": "الحالة",
-        "actions": "إجراءات",
-        "subscribed": "اشتراك",
-        "unsubscribed": "إلغاء اشتراك"
-      },
-      "statusActive": "نشط",
-      "statusUnsubscribed": "ملغى الاشتراك",
-      "activate": "تفعيل",
-      "deactivate": "إلغاء تفعيل",
-      "reactivate": "إعادة تفعيل",
-      "fillRequired": "يرجى ملء الموضوع والمحتوى.",
-      "sentToast": "تم إرسال النشرة الإخبارية",
-      "networkError": "خطأ في الشبكة",
-      "toggledToast": "تم تحديث حالة المشترك"
-    },
-    "blog": {
-      "generateTitle": "توليد مقال بالذكاء الاصطناعي",
-      "generateDescription": "أنشئ محتوى محسّناً لجمهورك",
-      "titleLabel": "العنوان *",
-      "titlePlaceholder": "مثال: كيف تنجح في مقابلة العمل",
-      "keywordsLabel": "الكلمات المفتاحية",
-      "keywordsPlaceholder": "مثال: توظيف، مسيرة مهنية، نصائح",
-      "audienceLabel": "الجمهور",
-      "audienceAll": "الكل",
-      "audienceCandidates": "المرشحون",
-      "audienceRecruiters": "مسؤولو التوظيف",
-      "categoryLabel": "الفئة",
-      "categories": {
-        "carriere": "المسار المهني",
-        "recrutement": "التوظيف",
-        "technologie": "التكنولوجيا",
-        "entrepreneuriat": "ريادة الأعمال",
-        "conseils": "نصائح"
-      },
-      "authorLabel": "الكاتب",
-      "authorPlaceholder": "فريق Actoos",
-      "readTimeLabel": "وقت القراءة",
-      "readTimePlaceholder": "5 دقائق",
-      "generateButton": "توليد المقال",
-      "articlesTitle": "المقالات ({{count}})",
-      "articlesDescription": "إدارة مقالات المدونة",
-      "noArticles": "لا توجد مقالات حالياً.",
-      "save": "حفظ",
-      "cancel": "إلغاء",
-      "deleteConfirm": "حذف هذا المقال؟",
-      "generatedToast": "تم توليد المقال بنجاح",
-      "updatedToast": "تم تحديث المقال",
-      "deletedToast": "تم حذف المقال",
-      "generateError": "خطأ أثناء التوليد",
-      "updateError": "خطأ أثناء التحديث",
-      "deleteError": "خطأ أثناء الحذف",
-      "titleRequired": "العنوان مطلوب لتوليد مقال",
-      "audienceLabel2": "الجمهور"
-    },
-    "roleRequests": {
-      "title": "طلبات تغيير الدور",
-      "description": "إدارة طلبات المستخدمين",
-      "noRequests": "لا توجد طلبات معلقة",
-      "from": "من",
-      "to": "→",
-      "approve": "موافقة",
-      "reject": "رفض",
-      "approvedToast": "تمت الموافقة على الطلب",
-      "rejectedToast": "تم رفض الطلب"
-    },
-    "roleLabels": {
-      "candidate": "مرشح",
-      "company": "شركة",
-      "admin": "مسؤول",
-      "unknown": "غير معروف"
-    }
-  },
+
  "categories": {
   "administration": "الإدارة",
   "agriculture": "الزراعة والبيئة",
@@ -2798,7 +2383,454 @@
     "companySpace": "مساحة الشركة",
     "logout": "تسجيل الخروج"
   }
-}
+},
+"settings": {
+  "back": "رجوع",
+  "myProfile": "ملفي الشخصي",
+  "title": "الإعدادات",
+  "subtitle": "إدارة معلومات حسابك",
+  "accountInfo": {
+    "title": "معلومات الحساب",
+    "description": "تم تسجيل الدخول باسم {{email}}"
+  },
+  "countryAndCurrency": "🌍 البلد والعملة",
+  "country": "البلد",
+  "selectCountry": "اختر بلداً",
+  "currency": "العملة",
+  "selectCurrency": "اختر عملة",
+  "allCountries": "جميع البلدان",
+  "changeEmail": {
+    "title": "تغيير البريد الإلكتروني",
+    "description": "تعديل عنوان بريدك الإلكتروني لتسجيل الدخول",
+    "newEmailLabel": "البريد الإلكتروني الجديد",
+    "newEmailPlaceholder": "جديد@email.com",
+    "currentPasswordLabel": "كلمة المرور الحالية",
+    "currentPasswordPlaceholder": "كلمة مرورك الحالية",
+    "submit": "تحديث البريد الإلكتروني"
+  },
+  "changePassword": {
+    "title": "تغيير كلمة المرور",
+    "description": "استخدم كلمة مرور قوية وفريدة",
+    "newPasswordLabel": "كلمة المرور الجديدة",
+    "newPasswordPlaceholder": "8 أحرف على الأقل",
+    "confirmPasswordLabel": "تأكيد كلمة المرور",
+    "confirmPasswordPlaceholder": "أعد كتابة كلمة المرور",
+    "submit": "تحديث كلمة المرور"
+  },
+  "logout": {
+    "title": "تسجيل الخروج",
+    "description": "يمكنك تسجيل الخروج من حسابك في أي وقت.",
+    "button": "تسجيل الخروج"
+  },
+  "roleChange": {
+    "title": "تغيير الدور",
+    "descriptionCandidate": "أنت حالياً <strong>مرشح</strong>. يمكنك طلب أن تصبح <strong>موظف توظيف</strong>.",
+    "descriptionCompany": "أنت حالياً <strong>موظف توظيف</strong>. يمكنك طلب أن تصبح <strong>مرشحاً</strong>.",
+    "requestButton": "طلب تغيير الدور",
+    "modal": {
+      "title": "طلب تغيير الدور",
+      "roleLabel": "الدور الجديد المطلوب",
+      "roleCandidate": "مرشح",
+      "roleCompany": "موظف توظيف (شركة)",
+      "reasonLabel": "سبب الطلب (اختياري)",
+      "reasonPlaceholder": "اشرح لماذا تريد تغيير دورك...",
+      "cancel": "إلغاء",
+      "submit": "إرسال الطلب"
+    }
+  },
+  "dangerZone": {
+    "title": "منطقة الخطر",
+    "description": "حذف حسابك نهائي ولا يمكن التراجع عنه. سيتم مسح جميع بياناتك.",
+    "button": "حذف حسابي",
+    "confirm": "هل أنت متأكد من رغبتك في حذف حسابك نهائياً؟ هذا الإجراء لا يمكن التراجع عنه."
+  },
+  "toasts": {
+    "passwordMismatch": "كلمات المرور غير متطابقة.",
+    "passwordLength": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.",
+    "passwordUpdated": "تم تحديث كلمة المرور بنجاح.",
+    "passwordError": "خطأ في تحديث كلمة المرور.",
+    "fillAllFields": "يرجى ملء جميع الحقول.",
+    "wrongPassword": "كلمة مرور غير صحيحة.",
+    "emailConfirmationSent": "تم إرسال بريد تأكيد إلى عنوانك الجديد.",
+    "emailError": "خطأ في تحديث البريد الإلكتروني.",
+    "logoutError": "خطأ في تسجيل الخروج.",
+    "accountDeleted": "تم حذف حسابك نهائياً.",
+    "deleteError": "خطأ في حذف الحساب.",
+    "roleRequestSent": "تم إرسال طلب تغيير الدور بنجاح.",
+    "roleRequestError": "خطأ في إرسال الطلب."
+  }
+},
+"aiAssistant": {
+  "improve": "تحسين باستخدام الذكاء الاصطناعي",
+  "improvedVersion": "النسخة المحسنة",
+  "apply": "تطبيق",
+  "cancel": "إلغاء",
+  "emptyText": "يرجى إدخال نص لتحسينه.",
+  "improvedSuccess": "تم تحسين النص بنجاح!",
+  "improveError": "خطأ أثناء التحسين بالذكاء الاصطناعي.",
+  "appliedSuccess": "تم تطبيق النص!"
+},
+"common": {
+    "delete": "حذف",
+    "savedAt": "تم الحفظ في {{time}}"
+  },
+  "interviewPrep": {
+    "back": "رجوع",
+    "badge": "التحضير للمقابلة",
+    "title": "تحضير مقابلتك",
+    "description": "أدخل عرض وظيفة وملفك الشخصي للحصول على أسئلة محتملة، نماذج إجابات، ونصائح مخصصة.",
+    "jobSection": "وصف الوظيفة",
+    "profileSection": "ملفك الشخصي",
+    "jobPlaceholder": "الصق وصف الوظيفة…",
+    "profilePlaceholder": "صف مهاراتك، خبراتك، دوافعك…",
+    "results": "النتائج",
+    "tabs": {
+      "questions": "أسئلة",
+      "answers": "إجابات",
+      "tips": "نصائح"
+    },
+    "questions": { "title": "أسئلة محتملة" },
+    "answers": { "title": "نماذج إجابات" },
+    "tips": { "title": "نصائح مخصصة" },
+    "empty": "قم بالتوليد أولاً…",
+    "generateButton": "توليد",
+    "saveAll": "حفظ الكل",
+    "toasts": {
+      "needJobDescription": "يرجى إدخال وصف الوظيفة.",
+      "generated": "تم إنشاء المحتوى بنجاح!",
+      "saved": "تم حفظ التقدم.",
+      "noteDeleted": "تم مسح المحتوى.",
+      "error": "خطأ أثناء التوليد."
+    }
+  },
+  "adminDashboard": {
+      "title": "الإدارة",
+      "subtitle": "أدر منصتك",
+      "refresh": "تحديث",
+      "loadingError": "خطأ في التحميل",
+      "dataRefreshed": "تم تحديث البيانات",
+      "unauthorized": "وصول غير مصرح به",
+      "stats": {
+        "pendingJobs": "عروض قيد الانتظار",
+        "activeJobs": "عروض نشطة",
+        "pendingCompanies": "شركات في انتظار التحقق",
+        "verifiedCompanies": "شركات محققة",
+        "candidates": "مرشحون",
+        "applications": "تقدمات",
+        "trend": "{{trend}}%"
+      },
+      "tabs": {
+        "overview": "نظرة عامة",
+        "jobs": "عروض العمل",
+        "companies": "الشركات",
+        "users": "المستخدمون",
+        "reports": "البلاغات",
+        "subscriptions": "الاشتراكات",
+        "newsletter": "النشرة البريدية",
+        "blog": "المدونة",
+        "messageCompanies": "رسائل للشركات",
+        "messageCandidates": "رسائل للمرشحين",
+        "roleRequests": "طلبات تغيير الدور"
+      },
+      "overview": {
+        "pendingJobsTitle": "عروض العمل في انتظار الموافقة",
+        "pendingJobsDesc": "وافق على العروض ليتم نشرها",
+        "pendingCompaniesTitle": "شركات في انتظار التحقق",
+        "pendingCompaniesDesc": "تحقق من الشركات قبل تفعيلها",
+        "viewAll": "عرض الكل",
+        "noPendingJobs": "لا توجد عروض قيد الانتظار",
+        "noPendingCompanies": "لا توجد شركات في انتظار التحقق"
+      },
+      "jobs": {
+        "reactivatedToast": "تمت إعادة تفعيل العرض بنجاح",
+        "searchPlaceholder": "ابحث عن عرض...",
+        "filterAll": "الكل",
+        "filterPending": "قيد الانتظار",
+        "filterDraft": "مسودة",
+        "filterActive": "نشطة",
+        "filterSuspended": "معلقة",
+        "filterRejected": "مرفوضة",
+        "noJobs": "لم يتم العثور على عروض",
+        "noJobsFound": "لا يوجد عرض يطابق البحث",
+        "loadMore": "تحميل المزيد",
+        "detailsError": "خطأ في تحميل التفاصيل",
+        "showDetails": "إظهار التفاصيل",
+        "hideDetails": "إخفاء التفاصيل",
+        "detailsDescription": "الوصف:",
+        "detailsRequirements": "الملف المطلوب:",
+        "detailsMissions": "المهام:",
+        "detailsBenefits": "المزايا:",
+        "detailsSkills": "المهارات:",
+        "detailsExperience": "الخبرة:",
+        "detailsSalary": "الراتب:",
+        "detailsPositions": "المناصب:",
+        "detailsDeadline": "الموعد النهائي:",
+        "detailsRemote": "عن بعد:",
+        "detailsUrgent": "عاجل:",
+        "detailsYes": "نعم",
+        "detailsNo": "لا",
+        "detailsUnspecified": "غير محدد",
+        "publishedBy": "نُشرت {{date}} بواسطة {{email}}",
+        "status": {
+          "pending": "قيد الانتظار",
+          "active": "نشطة",
+          "suspended": "معلقة",
+          "rejected": "مرفوضة"
+        },
+        "companyNotVerified": "الشركة غير محققة",
+        "approve": "موافقة",
+        "reject": "رفض",
+        "publish": "نشر",
+        "suspend": "تعليق",
+        "reactivate": "إعادة تفعيل",
+        "delete": "حذف",
+        "approveCompanyFirst": "يجب التحقق من الشركة أولاً",
+        "approveLimitReached": "وصلت الشركة إلى الحد الأقصى لباقتها ({{limit}} عروض)",
+        "approvedToast": "تمت الموافقة على العرض بنجاح",
+        "rejectedToast": "تم رفض العرض",
+        "suspendedToast": "تم تعليق العرض",
+        "deletedToast": "تم حذف العرض",
+        "approveError": "خطأ في الموافقة",
+        "rejectConfirm": "تأكيد الرفض؟",
+        "genericError": "خطأ",
+        "suspendModalTitle": "تعليق العرض",
+        "deleteModalTitle": "حذف العرض",
+        "reasonLabel": "السبب",
+        "cancel": "إلغاء",
+        "confirm": "تأكيد",
+        "viewJob": "عرض العرض"
+      },
+      "companies": {
+        "searchPlaceholder": "ابحث عن شركة...",
+        "filterAll": "الكل",
+        "filterUnverified": "غير محققة",
+        "filterVerified": "محققة",
+        "noCompanies": "لم يتم العثور على شركات",
+        "noCompaniesFound": "لا توجد شركة تطابق البحث",
+        "loadMore": "تحميل المزيد",
+        "employees": "{{size}} موظف",
+        "createdAt": "أُنشئت في {{date}}",
+        "offersCount": "{{count}} عرض",
+        "validate": "تحقق",
+        "reject": "رفض",
+        "suspend": "تعليق",
+        "deleteCompany": "حذف",
+        "viewSite": "عرض الموقع",
+        "viewOffers": "عرض العروض ({{count}})",
+        "validatedToast": "تم التحقق من الشركة بنجاح",
+        "rejectedToast": "تم رفض الشركة",
+        "suspendedToast": "تم تعليق الشركة",
+        "deletedToast": "تم حذف الشركة",
+        "validateError": "خطأ في التحقق",
+        "genericError": "خطأ",
+        "rejectModalTitle": "رفض الشركة",
+        "deleteModalTitle": "حذف الشركة",
+        "deleteWarning": "سيتم أيضًا حذف عروض وأعضاء هذه الشركة.",
+        "deleteConfirm": "حذف شركة {{name}}؟",
+        "cancel": "إلغاء",
+        "confirm": "تأكيد",
+        "suspendModalTitle": "تعليق الشركة",
+        "suspendWarning": "سيتم إخفاء جميع عروض هذه الشركة.",
+        "suspendDurationLabel": "مدة التعليق",
+        "durationIndefinite": "غير محدد",
+        "duration1day": "يوم واحد",
+        "duration7days": "7 أيام",
+        "duration30days": "30 يومًا",
+        "suspendReasonLabel": "السبب",
+        "status": {
+          "unverified": "غير محققة",
+          "verified": "محققة"
+        }
+      },
+      "users": {
+        "title": "المستخدمون",
+        "description": "إدارة حسابات المستخدمين",
+        "noUsers": "لا يوجد مستخدمون",
+        "loadMore": "تحميل المزيد",
+        "roleUpdated": "تم تحديث الدور",
+        "roleUpdateError": "خطأ في تحديث الدور",
+        "suspendedToast": "تم تعليق المستخدم",
+        "reactivatedToast": "تم إعادة تفعيل المستخدم",
+        "bannedToast": "تم حظر المستخدم",
+        "deletedToast": "تم حذف المستخدم",
+        "deleteError": "خطأ في الحذف",
+        "banConfirm": "تأكيد الحظر؟",
+        "deleteConfirm": "حذف نهائي؟",
+        "suspendModalTitle": "تعليق المستخدم",
+        "suspendDurationLabel": "المدة",
+        "durationIndefinite": "غير محددة",
+        "duration1day": "يوم واحد",
+        "duration7days": "7 أيام",
+        "duration30days": "30 يومًا",
+        "suspendReasonLabel": "السبب",
+        "cancel": "إلغاء",
+        "confirm": "تأكيد",
+        "status": {
+          "active": "نشط",
+          "suspended": "معلق",
+          "banned": "محظور"
+        },
+        "roles": {
+          "candidate": "مرشح",
+          "company": "شركة",
+          "admin": "مدير"
+        },
+        "actions": {
+          "suspend": "تعليق",
+          "reactivate": "إعادة تفعيل",
+          "ban": "حظر",
+          "delete": "حذف"
+        }
+      },
+      "reports": {
+        "title": "البلاغات",
+        "description": "معالجة بلاغات المستخدمين",
+        "noReports": "لا توجد بلاغات",
+        "reportedBy": "أبلغ عنه {{email}}",
+        "reason": "السبب: {{reason}}",
+        "badges": {
+          "job": "عرض",
+          "company": "شركة",
+          "candidate": "مرشح"
+        },
+        "status": {
+          "pending": "قيد الانتظار",
+          "reviewed": "تمت المراجعة",
+          "resolved": "تم الحل"
+        },
+        "markReviewed": "تعليم كمراجع",
+        "markResolved": "تعليم كتم الحل",
+        "suspendJob": "تعليق العرض",
+        "suspendCompany": "تعليق الشركة",
+        "deleteJob": "حذف العرض",
+        "deleteCompany": "حذف الشركة",
+        "banUser": "حظر المستخدم",
+        "suspendedToast": "تم تعليق العنصر",
+        "companySuspendedToast": "تم تعليق الشركة",
+        "deletedToast": "تم حذف العنصر",
+        "companyDeletedToast": "تم حذف الشركة",
+        "bannedToast": "تم حظر المستخدم",
+        "banError": "تعذر العثور على المستخدم المراد حظره",
+        "banConfirm": "تأكيد الحظر؟",
+        "updatedToast": "تم تحديث الحالة"
+      },
+      "subscriptions": {
+        "title": "الاشتراكات",
+        "description": "إدارة اشتراكات الشركات",
+        "cancellationsTitle": "الإلغاءات",
+        "cancellationsDescription": "سجل الإلغاءات",
+        "noCancellations": "لا توجد إلغاءات",
+        "cancelledFrom": "ألغيت من",
+        "toFrom": "إلى",
+        "table": {
+          "company": "الشركة",
+          "plan": "الخطة",
+          "previousPlan": "الخطة السابقة",
+          "stripeSubId": "معرف Stripe",
+          "expiration": "انتهاء الصلاحية",
+          "cancellationReason": "سبب الإلغاء"
+        }
+      },
+      "newsletter": {
+        "sendTitle": "إرسال نشرة بريدية",
+        "sendDescription": "أرسل بريدًا إلكترونيًا إلى جميع المشتركين",
+        "subjectLabel": "الموضوع",
+        "subjectPlaceholder": "عنوان النشرة",
+        "contentLabel": "محتوى HTML",
+        "contentPlaceholder": "<p>رسالتك...</p>",
+        "sendButton": "إرسال النشرة",
+        "fillRequired": "يرجى ملء الموضوع والمحتوى",
+        "networkError": "خطأ في الشبكة",
+        "sentSuccess": "تم إرسال النشرة إلى {{count}}/{{total}} مشترك.",
+        "subscribersTitle": "المشتركون ({{count}})",
+        "subscribersDescription": "قائمة المشتركين في النشرة البريدية",
+        "noSubscribers": "لا يوجد مشتركون",
+        "table": {
+          "email": "البريد الإلكتروني",
+          "status": "الحالة",
+          "actions": "إجراءات",
+          "subscribed": "تاريخ الاشتراك",
+          "unsubscribed": "تاريخ إلغاء الاشتراك"
+        },
+        "statusActive": "نشط",
+        "statusUnsubscribed": "ملغى الاشتراك",
+        "deactivate": "إلغاء تنشيط",
+        "reactivate": "إعادة تنشيط",
+        "toggledToast": "تم تحديث المشترك"
+      },
+      "blog": {
+        "generateTitle": "إنشاء مقال",
+        "generateDescription": "سيكتب الذكاء الاصطناعي مقالاً للمدونة",
+        "titleLabel": "العنوان",
+        "titlePlaceholder": "عنوان المقال",
+        "keywordsLabel": "الكلمات المفتاحية",
+        "keywordsPlaceholder": "مفصولة بفواصل",
+        "audienceLabel": "الجمهور",
+        "audienceAll": "الكل",
+        "audienceCandidates": "المرشحون",
+        "audienceRecruiters": "مسؤولو التوظيف",
+        "categoryLabel": "الفئة",
+        "categories": {
+          "carriere": "المسار المهني",
+          "recrutement": "التوظيف",
+          "technologie": "التكنولوجيا",
+          "entrepreneuriat": "ريادة الأعمال",
+          "conseils": "نصائح"
+        },
+        "authorLabel": "الكاتب",
+        "authorPlaceholder": "فريق Actoos",
+        "readTimeLabel": "وقت القراءة",
+        "readTimePlaceholder": "5 دقائق",
+        "generateButton": "إنشاء",
+        "titleRequired": "العنوان مطلوب",
+        "generatedToast": "تم إنشاء المقال بنجاح",
+        "generateError": "خطأ في الإنشاء",
+        "articlesTitle": "المقالات ({{count}})",
+        "articlesDescription": "أدر مقالات مدونتك",
+        "noArticles": "لا توجد مقالات",
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "updatedToast": "تم تحديث المقال",
+        "updateError": "خطأ في التحديث",
+        "deleteConfirm": "حذف المقال؟",
+        "deletedToast": "تم حذف المقال",
+        "deleteError": "خطأ في الحذف"
+      },
+      "messages": {
+        "sentSuccess": "تم إرسال الرسالة إلى {{count}}/{{total}} شخص",
+        "sendError": "خطأ في الإرسال"
+      },
+      "roleRequests": {
+        "title": "طلبات تغيير الدور",
+        "description": "الموافقة على الطلبات أو رفضها",
+        "noRequests": "لا توجد طلبات",
+        "from": "من",
+        "to": "إلى",
+        "approve": "موافقة",
+        "reject": "رفض",
+        "approvedToast": "تمت الموافقة على الطلب",
+        "rejectedToast": "تم رفض الطلب"
+      },
+      "roleLabels": {
+        "candidate": "مرشح",
+        "company": "شركة",
+        "admin": "مدير",
+        "unknown": "غير معروف"
+      }
+    },
+    "unsubscribe": {
+      "loading": "جارٍ المعالجة...",
+      "success": {
+        "title": "تم إلغاء الاشتراك بنجاح",
+        "message": "لقد تم إلغاء اشتراكك بنجاح."
+      },
+      "error": {
+        "noEmail": "لم يتم تقديم عنوان بريد إلكتروني.",
+        "alreadyUnsubscribed": "العنوان غير موجود أو تم إلغاء الاشتراك بالفعل.",
+        "network": "خطأ في الشبكة، يرجى المحاولة مرة أخرى.",
+        "title": "خطأ"
+      }
+    }
 
 
 }

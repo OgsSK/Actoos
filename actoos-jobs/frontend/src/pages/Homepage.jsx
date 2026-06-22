@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
-import { usePreferences } from '../hooks/usePreferences'; // Correction : plus de PreferencesContext
+import { usePreferencesContext } from '../contexts/PreferencesContext'; // ← Rétabli
 import { useCities } from '../hooks/useCities';
 import { fetchCategories } from '../lib/data';
 import { useAuth } from '../contexts/AuthContext';
@@ -613,7 +613,7 @@ const Homepage = () => {
   const [countryId, setCountryId] = useState(null);
   const [countryLoading, setCountryLoading] = useState(true);
 
-  const { prefs } = usePreferences(); // Correction : utilisation du hook standard
+  const { prefs } = usePreferencesContext(); // ← Contexte rétabli
   const { cities: filteredCities } = useCities(prefs.country);
 
   useEffect(() => {

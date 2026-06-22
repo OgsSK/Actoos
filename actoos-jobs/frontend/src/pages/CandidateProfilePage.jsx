@@ -411,7 +411,7 @@ const CvAnalysisModal = ({ isOpen, onClose, cvText, onTextChange, onAnalyze, ana
 
 // ---------- Main Component ----------
 const CandidateProfilePage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();   // ← ajout de i18n
   const { user, profile, updateProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -445,7 +445,7 @@ const CandidateProfilePage = () => {
   const [newSkill, setNewSkill] = useState('');
   const [experiences, setExperiences] = useState([]);
   const [education, setEducation] = useState([]);
-  const [links, setLinks] = useState([]); // ← liens dynamiques
+  const [links, setLinks] = useState([]);
 
   const [cvUrl, setCvUrl] = useState('');
   const [uploadingCV, setUploadingCV] = useState(false);
@@ -462,7 +462,6 @@ const CandidateProfilePage = () => {
   const [showEduModal, setShowEduModal] = useState(false);
   const [editingEdu, setEditingEdu] = useState(null);
 
-  // Chargement des villes (indépendant de l'utilisateur)
   useEffect(() => {
     const fetchCities = async () => {
       const { data } = await supabase
@@ -475,15 +474,13 @@ const CandidateProfilePage = () => {
     fetchCities();
   }, []);
 
-  // Chargement des données liées à l'utilisateur (documents + liens) -> se déclenche lorsque user devient disponible
   useEffect(() => {
     if (user) {
       fetchDocuments();
-      fetchLinks();  // ← chargement explicite des liens depuis la BDD
+      fetchLinks();
     }
   }, [user]);
 
-  // Mise à jour depuis le profil (informations personnelles et candidate profile)
   useEffect(() => {
     if (profile) {
       setPersonalInfo({
@@ -510,11 +507,9 @@ const CandidateProfilePage = () => {
       setExperiences(cp.experience || []);
       setEducation(cp.education || []);
       setCvUrl(cp.cv_url || '');
-      // Les liens ne sont plus chargés depuis cp.links ici pour éviter un écrasement
     }
   }, [profile]);
 
-  // Fonction de récupération explicite des liens depuis candidate_profiles
   const fetchLinks = async () => {
     if (!user) return;
     try {
@@ -694,7 +689,8 @@ const CandidateProfilePage = () => {
         body: JSON.stringify({
           agent_id: 'cv-analysis',
           text: cvText,
-          context: candidateInfo.title || ''
+          context: candidateInfo.title || '',
+          language: i18n.language,   // ← AJOUTÉ pour l'analyse multilingue
         })
       });
       setAnalysisResult(res.result);
@@ -774,14 +770,14 @@ const CandidateProfilePage = () => {
         skills,
         experience: experiences,
         education,
-        links, // ← sauvegarde du tableau de liens
+        links,
       }, { onConflict: 'user_id' });
 
       if (error) throw error;
 
       toast.success(t('candidateProfilePage.toasts.profileUpdated'));
       await refreshProfile();
-      await fetchLinks(); // rechargement pour garantir la cohérence
+      await fetchLinks();
     } catch (error) {
       console.error('Erreur sauvegarde profil:', error);
       toast.error(error.message || t('candidateProfilePage.toasts.saveError'));
@@ -1250,7 +1246,7 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Liens dynamiques (EditableLinks) */}
+          {/* Liens dynamiques */}
           <Card>
             <CardContent className="p-6">
               <SectionHeader

@@ -24,7 +24,7 @@ const GoogleIcon = () => (
 );
 
 const RegisterPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -108,6 +108,7 @@ const RegisterPage = () => {
         role: role,
         firstName: formData.firstName,
         lastName: formData.lastName,
+        language: i18n.language,   // ← ajouté
       });
 
       toast.success(t('register.toasts.accountCreated'));

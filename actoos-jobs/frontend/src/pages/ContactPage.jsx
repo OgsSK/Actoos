@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { apiFetch } from '../lib/api';
 
 const ContactPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -31,7 +31,10 @@ const ContactPage = () => {
     try {
       await apiFetch('/api/contact', {
         method: 'POST',
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          language: i18n.language,
+        }),
       });
       setSent(true);
       toast.success(t('contact.toasts.sent'));

@@ -45,7 +45,7 @@ const colorClasses = {
 
 // ----- Composant Newsletter (interne) -----
 const NewsletterSection = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
@@ -60,7 +60,10 @@ const NewsletterSection = () => {
     try {
       await apiFetch('/api/newsletter', {
         method: 'POST',
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          language: i18n.language,
+        }),
       });
       setSubscribed(true);
       toast.success(t('blog.newsletter.toasts.subscribeSuccess'));

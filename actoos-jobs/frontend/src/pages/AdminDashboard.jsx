@@ -45,7 +45,6 @@ import {
   Save,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
-// ✅ Correction : import des fonctions partagées
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
 
 // ---------- Stats Card ----------
@@ -104,8 +103,8 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) 
   );
 };
 
-// ---------- Job Moderation Card ----------
-const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) => {
+// ---------- Job Moderation Card (avec onReactivate) ----------
+const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete, onReactivate }) => {
   const { t } = useTranslation();
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -410,7 +409,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete }) =>
             size="sm"
             variant="outline"
             className="w-full sm:w-auto text-green-600 hover:bg-green-50 hover:text-green-700 min-h-[44px]"
-            onClick={() => onApprove(job)}
+            onClick={() => onReactivate(job)}
           >
             <Check className="w-4 h-4 mr-1" />
             {t('adminDashboard.jobs.reactivate')}
@@ -707,7 +706,7 @@ const TabButton = ({ active, onClick, children, count }) => (
 
 // ---------- Main Admin Dashboard ----------
 const AdminDashboard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -725,7 +724,6 @@ const AdminDashboard = () => {
     totalApplications: 0,
   });
 
-  // Pagination
   const ITEMS_PER_PAGE = 20;
   const [jobs, setJobs] = useState([]);
   const [jobsPage, setJobsPage] = useState(1);
@@ -776,11 +774,8 @@ const AdminDashboard = () => {
 
   const [roleRequests, setRoleRequests] = useState([]);
 
-  // ✅ La fonction getPlanLimit est importée, plus de définition locale
-
   const roleLabel = (role) => t(`adminDashboard.roleLabels.${role}`, { defaultValue: role || t('adminDashboard.roleLabels.unknown') });
 
-  // Initial auth check
   useEffect(() => {
     if (!authLoading && !isAdmin) {
       toast.error(t('adminDashboard.unauthorized'));
@@ -842,11 +837,9 @@ const AdminDashboard = () => {
     }
   }, [isAdmin, activeTab]);
 
-  // ---------- Chargement initial (page 1) ----------
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      // Jobs
       const { data: jobsData } = await supabase
         .from('jobs')
         .select(`*, company:companies(id, name, logo_url, is_verified, subscription_plan), city:cities(name), posted_by_user:users!jobs_posted_by_fkey(email)`)
@@ -856,7 +849,6 @@ const AdminDashboard = () => {
       setJobsPage(1);
       setJobsHasMore((jobsData || []).length === ITEMS_PER_PAGE);
 
-      // Companies
       const { data: companiesData } = await supabase
         .from('companies')
         .select(`*, city:cities(name), jobs:jobs(count)`)
@@ -870,7 +862,6 @@ const AdminDashboard = () => {
       setCompaniesPage(1);
       setCompaniesHasMore((companiesData || []).length === ITEMS_PER_PAGE);
 
-      // Users
       const { data: usersData } = await supabase
         .from('users')
         .select('*')
@@ -880,7 +871,6 @@ const AdminDashboard = () => {
       setUsersPage(1);
       setUsersHasMore((usersData || []).length === ITEMS_PER_PAGE);
 
-      // Reports (API)
       try {
         const reportsRes = await apiFetch('/api/admin/reports');
         if (reportsRes.success && Array.isArray(reportsRes.reports)) {
@@ -893,7 +883,6 @@ const AdminDashboard = () => {
         setReports([]);
       }
 
-      // Stats
       const pendingJobs = (jobsData || []).filter((j) => j.status === 'pending' || j.status === 'draft').length;
       const activeJobs = (jobsData || []).filter((j) => j.status === 'active').length;
       const pendingCompanies = companiesWithCount.filter((c) => c.is_verified === false).length;
@@ -924,7 +913,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // ---------- Charger plus ----------
   const loadMoreJobs = async () => {
     const nextPage = jobsPage + 1;
     const from = (nextPage - 1) * ITEMS_PER_PAGE;
@@ -1018,6 +1006,7 @@ const AdminDashboard = () => {
             action: action,
             requested_role: requestData.requested_role,
             admin_message: message || null,
+            language: i18n.language,
           }),
         });
       } catch (err) {
@@ -1087,6 +1076,23 @@ const AdminDashboard = () => {
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'active' } : j)));
       setStats((s) => ({ ...s, pendingJobs: Math.max(0, s.pendingJobs - 1), activeJobs: s.activeJobs + 1 }));
       toast.success(t('adminDashboard.jobs.approvedToast'));
+
+      // Envoyer l'email au recruteur
+      if (job.posted_by_user?.email) {
+        try {
+          await apiFetch('/api/notify-job-approved', {
+            method: 'POST',
+            body: JSON.stringify({
+              email: job.posted_by_user.email,
+              first_name: job.posted_by_user.first_name || 'Recruteur',
+              job_title: job.title,
+              language: i18n.language,
+            }),
+          });
+        } catch (emailError) {
+          console.error('Erreur envoi email validation offre:', emailError);
+        }
+      }
     } catch (error) {
       toast.error(t('adminDashboard.jobs.approveError'));
     }
@@ -1108,7 +1114,7 @@ const AdminDashboard = () => {
     try {
       await apiFetch('/api/admin/suspend-job', {
         method: 'POST',
-        body: JSON.stringify({ id: job.id, reason }),
+        body: JSON.stringify({ id: job.id, reason, language: i18n.language }),
       });
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'suspended' } : j)));
       setStats((s) => ({ ...s, activeJobs: Math.max(0, s.activeJobs - 1) }));
@@ -1122,11 +1128,65 @@ const AdminDashboard = () => {
     try {
       await apiFetch('/api/admin/delete-job', {
         method: 'POST',
-        body: JSON.stringify({ id: job.id, reason }),
+        body: JSON.stringify({ id: job.id, reason, language: i18n.language }),
       });
       setJobs((prev) => prev.filter((j) => j.id !== job.id));
       toast.success(t('adminDashboard.jobs.deletedToast'));
     } catch (error) {
+      toast.error(t('adminDashboard.jobs.genericError'));
+    }
+  };
+
+  // Réactivation d'offre suspendue (modifié pour utiliser l'API dédiée)
+  const handleReactivateJob = async (job) => {
+    if (!job.company?.is_verified) {
+      toast.error(t('adminDashboard.jobs.approveCompanyFirst'));
+      return;
+    }
+    const plan = job.company?.subscription_plan || 'free';
+    const limit = getPlanLimit(plan);
+    const { count: activeCount } = await supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', job.company_id)
+      .eq('status', 'active');
+
+    if (activeCount >= limit) {
+      toast.error(t('adminDashboard.jobs.approveLimitReached', { limit }));
+      return;
+    }
+
+    try {
+      // 1. Mise à jour via le backend (bypass RLS)
+      await apiFetch('/api/admin/reactivate-job', {
+        method: 'POST',
+        body: JSON.stringify({ id: job.id, language: i18n.language }),
+      });
+
+      // 2. Mise à jour locale de l'état
+      setJobs(prev => prev.map(j => (j.id === job.id ? { ...j, status: 'active', suspended_until: null } : j)));
+      setStats(s => ({ ...s, activeJobs: s.activeJobs + 1 }));
+
+      // 3. Envoi de l'email de réactivation
+      if (job.posted_by_user?.email) {
+        try {
+          await apiFetch('/api/notify-job-reactivated', {
+            method: 'POST',
+            body: JSON.stringify({
+              email: job.posted_by_user.email,
+              first_name: job.posted_by_user.first_name || 'Recruteur',
+              job_title: job.title,
+              language: i18n.language,
+            }),
+          });
+        } catch (emailError) {
+          console.error('Erreur email réactivation:', emailError);
+        }
+      }
+
+      toast.success(t('adminDashboard.jobs.reactivatedToast'));
+    } catch (error) {
+      console.error('Erreur réactivation :', error);
       toast.error(t('adminDashboard.jobs.genericError'));
     }
   };
@@ -1136,7 +1196,7 @@ const AdminDashboard = () => {
     try {
       await apiFetch('/api/admin/verify-company', {
         method: 'POST',
-        body: JSON.stringify({ id: company.id }),
+        body: JSON.stringify({ id: company.id, language: i18n.language }),
       });
       setCompanies((prev) => prev.map((c) => (c.id === company.id ? { ...c, is_verified: true } : c)));
       setStats((s) => ({
@@ -1154,7 +1214,7 @@ const AdminDashboard = () => {
     try {
       await apiFetch('/api/admin/reject-company', {
         method: 'POST',
-        body: JSON.stringify({ id: company.id, reason }),
+        body: JSON.stringify({ id: company.id, reason, language: i18n.language }),
       });
       setCompanies((prev) =>
         prev.map((c) => (c.id === company.id ? { ...c, is_verified: false, is_active: false } : c))
@@ -1169,7 +1229,7 @@ const AdminDashboard = () => {
   const handleDeleteCompany = async (company) => {
     if (!window.confirm(t('adminDashboard.companies.deleteConfirm', { name: company.name }))) return;
     try {
-      await apiFetch(`/api/admin/delete-company/${company.id}`, { method: 'DELETE' });
+      await apiFetch(`/api/admin/delete-company/${company.id}?language=${i18n.language}`, { method: 'DELETE' });
       setCompanies((prev) => prev.filter((c) => c.id !== company.id));
       toast.success(t('adminDashboard.companies.deletedToast'));
     } catch (error) {
@@ -1201,7 +1261,7 @@ const AdminDashboard = () => {
     try {
       await apiFetch('/api/admin/toggle-user-status', {
         method: 'POST',
-        body: JSON.stringify({ user_id: userId, is_active: !currentStatus }),
+        body: JSON.stringify({ user_id: userId, is_active: !currentStatus, language: i18n.language }),
       });
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_active: !currentStatus } : u)));
       toast.success(currentStatus ? t('adminDashboard.users.suspendedToast') : t('adminDashboard.users.reactivatedToast'));
@@ -1215,7 +1275,7 @@ const AdminDashboard = () => {
     try {
       await apiFetch('/api/admin/ban-user', {
         method: 'POST',
-        body: JSON.stringify({ user_id: userId, reason: 'Violation des règles' }),
+        body: JSON.stringify({ user_id: userId, reason: 'Violation des règles', language: i18n.language }),
       });
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_active: false, is_banned: true } : u)));
       toast.success(t('adminDashboard.users.bannedToast'));
@@ -1227,7 +1287,7 @@ const AdminDashboard = () => {
   const handleDeleteUser = async (userId) => {
     if (!window.confirm(t('adminDashboard.users.deleteConfirm'))) return;
     try {
-      await apiFetch(`/api/admin/delete-user/${userId}`, { method: 'DELETE' });
+      await apiFetch(`/api/admin/delete-user/${userId}?language=${i18n.language}`, { method: 'DELETE' });
       setUsers((prev) => prev.filter((u) => u.id !== userId));
       toast.success(t('adminDashboard.users.deletedToast'));
     } catch (error) {
@@ -1244,6 +1304,7 @@ const AdminDashboard = () => {
           user_id: suspendModal.userId,
           duration_days: suspendDuration === 0 ? null : suspendDuration,
           reason: suspendReason || null,
+          language: i18n.language,
         }),
       });
       if (res.success) {
@@ -1267,6 +1328,7 @@ const AdminDashboard = () => {
           id: companySuspendModal.companyId,
           reason: companySuspendReason || null,
           duration_days: companySuspendDuration === 0 ? null : companySuspendDuration,
+          language: i18n.language,
         }),
       });
       if (res.success) {
@@ -1302,13 +1364,13 @@ const AdminDashboard = () => {
       if (report.reported_item_type === 'job') {
         await apiFetch('/api/admin/suspend-job', {
           method: 'POST',
-          body: JSON.stringify({ id: report.reported_item_id, reason }),
+          body: JSON.stringify({ id: report.reported_item_id, reason, language: i18n.language }),
         });
         toast.success(t('adminDashboard.reports.suspendedToast'));
       } else {
         await apiFetch('/api/admin/suspend-company', {
           method: 'POST',
-          body: JSON.stringify({ id: report.reported_item_id, reason }),
+          body: JSON.stringify({ id: report.reported_item_id, reason, language: i18n.language }),
         });
         toast.success(t('adminDashboard.reports.companySuspendedToast'));
       }
@@ -1325,11 +1387,11 @@ const AdminDashboard = () => {
       if (report.reported_item_type === 'job') {
         await apiFetch('/api/admin/delete-job', {
           method: 'POST',
-          body: JSON.stringify({ id: report.reported_item_id, reason: 'Signalement traité' }),
+          body: JSON.stringify({ id: report.reported_item_id, reason: 'Signalement traité', language: i18n.language }),
         });
         toast.success(t('adminDashboard.reports.deletedToast'));
       } else {
-        await apiFetch(`/api/admin/delete-company/${report.reported_item_id}`, { method: 'DELETE' });
+        await apiFetch(`/api/admin/delete-company/${report.reported_item_id}?language=${i18n.language}`, { method: 'DELETE' });
         toast.success(t('adminDashboard.reports.companyDeletedToast'));
       }
       fetchInitialData();
@@ -1365,7 +1427,7 @@ const AdminDashboard = () => {
     try {
       await apiFetch('/api/admin/ban-user', {
         method: 'POST',
-        body: JSON.stringify({ user_id: userIdToBan, reason: 'Signalement traité' }),
+        body: JSON.stringify({ user_id: userIdToBan, reason: 'Signalement traité', language: i18n.language }),
       });
       toast.success(t('adminDashboard.reports.bannedToast'));
       fetchInitialData();
@@ -1399,10 +1461,13 @@ const AdminDashboard = () => {
     try {
       const res = await apiFetch('/api/admin/send-newsletter', {
         method: 'POST',
-        body: JSON.stringify(newsletter),
+        body: JSON.stringify({
+          ...newsletter,
+          language: i18n.language,
+        }),
       });
       if (res.success) {
-        toast.success(res.message);
+        toast.success(t('adminDashboard.newsletter.sentSuccess', { count: res.sent, total: res.total }));
         setNewsletter({ subject: '', content: '' });
       } else {
         toast.error(res.message || t('adminDashboard.jobs.genericError'));
@@ -1488,8 +1553,6 @@ const AdminDashboard = () => {
     return matchesSearch;
   });
 
-  // ---------- Render ----------
-  // ✅ Affiche la page immédiatement, sauf si l'authentification n'est pas prête
   if (authLoading) {
     return (
       <div className="min-h-screen pt-20 flex items-center justify-center">
@@ -1600,7 +1663,7 @@ const AdminDashboard = () => {
                 ) : (
                   <>
                     {jobs.filter((j) => j.status === 'pending' || j.status === 'draft').slice(0, 5).map((job) => (
-                      <JobModerationCard key={job.id} job={job} onApprove={handleApproveJob} onReject={handleRejectJob} onSuspend={handleSuspendJob} onDelete={handleDeleteJob} />
+                      <JobModerationCard key={job.id} job={job} onApprove={handleApproveJob} onReject={handleRejectJob} onSuspend={handleSuspendJob} onDelete={handleDeleteJob} onReactivate={handleReactivateJob} />
                     ))}
                     {jobs.filter((j) => j.status === 'pending' || j.status === 'draft').length === 0 && (
                       <p className="text-center text-slate-500 py-8">{t('adminDashboard.overview.noPendingJobs')}</p>
@@ -1680,7 +1743,7 @@ const AdminDashboard = () => {
                 <>
                   {filteredJobs.length > 0 ? (
                     filteredJobs.map((job) => (
-                      <JobModerationCard key={job.id} job={job} onApprove={handleApproveJob} onReject={handleRejectJob} onSuspend={handleSuspendJob} onDelete={handleDeleteJob} />
+                      <JobModerationCard key={job.id} job={job} onApprove={handleApproveJob} onReject={handleRejectJob} onSuspend={handleSuspendJob} onDelete={handleDeleteJob} onReactivate={handleReactivateJob} />
                     ))
                   ) : (
                     <p className="text-center text-slate-500 py-12">

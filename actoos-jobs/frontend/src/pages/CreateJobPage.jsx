@@ -29,7 +29,7 @@ const RATES = {
 };
 
 const CreateJobPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const { user, activeCompanyId } = useAuth();
   const navigate = useNavigate();
@@ -300,7 +300,8 @@ const CreateJobPage = () => {
               body: JSON.stringify({
                 job_title: form.title,
                 company_name: company.name,
-                company_email: company.email || user.email
+                company_email: company.email || user.email,
+                language: i18n.language,
               })
             });
           } catch (err) {

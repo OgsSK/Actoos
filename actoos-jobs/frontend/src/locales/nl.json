@@ -383,6 +383,7 @@
     }
   },
   "jobAlerts": {
+    "back": "Terug",
     "title": "Vacature-alerts",
     "subtitle": "Ontvang vacatures die aan uw criteria voldoen",
     "newAlert": "Nieuwe alert",
@@ -578,45 +579,8 @@
   "scheduleInterview": {
     "title": "Een gesprek inplannen"
   },
-  "unsubscribe": {
-    "loading": "Verwerken...",
-    "error": {
-      "noEmail": "Geen e-mailadres opgegeven.",
-      "generic": "Er is een fout opgetreden.",
-      "network": "Netwerkfout.",
-      "title": "Fout"
-    },
-    "success": {
-      "title": "Uitschrijving bevestigd"
-    }
-  },
-  "interviewPrep": {
-    "badge": "Nieuw",
-    "title": "Gespreksvoorbereiding",
-    "description": "Voer een vacature en uw profiel in om waarschijnlijke vragen, voorbeeldantwoorden en persoonlijke tips te krijgen.",
-    "jobSection": "Vacature",
-    "jobPlaceholder": "Plak hier de vacaturebeschrijving...",
-    "profileSection": "Uw profiel",
-    "profilePlaceholder": "Vat uw profiel samen: vaardigheden, ervaring, opleiding...",
-    "questions": {
-      "title": "Waarschijnlijke vragen",
-      "empty": "Klik op Genereren om vragen te krijgen."
-    },
-    "answers": {
-      "title": "Voorbeeldantwoorden",
-      "empty": "Genereer eerst de vragen."
-    },
-    "tips": {
-      "title": "Persoonlijke tips",
-      "empty": "Klik op Genereren voor tips."
-    },
-    "generateButton": "Genereren",
-    "toast": {
-      "needJobDescription": "Voer eerst een vacaturebeschrijving in.",
-      "success": "Succesvol gegenereerd!",
-      "error": "Fout bij genereren."
-    }
-  },
+  
+
   "forgotPassword": {
     "title": "Wachtwoord vergeten?",
     "description": "Voer uw e-mailadres in om een resetlink te ontvangen.",
@@ -1119,6 +1083,9 @@
   },
   
   "companyDashboard": {
+    "header": {
+    "title": "Recruiterruimte"
+  },
     "noCompany": {
       "title": "Maak uw eerste bedrijf aan",
       "subtitle": "Om vacatures te plaatsen en sollicitaties te ontvangen, begint u met het aanmaken van uw bedrijfsprofiel.",
@@ -1455,61 +1422,59 @@
     "message": "Even geduld terwijl we uw authenticatie afronden."
   },
   "applicationDetail": {
-    "notFound": "Sollicitatie niet gevonden.",
     "back": "Terug naar sollicitaties",
+    "notFound": "Sollicitatie niet gevonden",
     "viewFullProfile": "Volledig profiel bekijken",
-    "jobTitle": "Gerelateerde vacature",
+    "jobTitle": "Gekoppelde vacature",
     "coverLetter": "Motivatiebrief",
-    "cv": "CV van kandidaat",
+    "cv": "CV",
     "viewCV": "CV bekijken",
-    "receivedAt": "Sollicitatie ontvangen {{date}}",
-    "changeStatus": "Status wijzigen",
-    "scheduleInterview": "Gesprek inplannen",
-    "step1ChooseSlot": "1. Kies een tijdstip",
-    "openCalendly": "Calendly openen",
-    "sendEmail": "Per e-mail verzenden",
-    "step2CreateLink": "2. Maak een videoconferentielink",
-    "joinMeeting": "Deelnemen",
-    "updateLink": "Bijwerken",
-    "deleteLink": "Verwijderen",
-    "newRoomPlaceholder": "Nieuwe kamernaam",
-    "roomPlaceholder": "Kamernaam (bijv.: mijn-gesprek)",
-    "generateJitsiLink": "Genereer een Jitsi-link",
-    "prepareInterview": "Gesprek voorbereiden",
-    "questions": "Vragen",
-    "emptyQuestions": "Klik op Genereren om gepersonaliseerde vragen te krijgen.",
-    "answers": "Voorbeeldantwoorden",
-    "emptyAnswers": "Genereer eerst vragen en verkrijg vervolgens voorbeeldantwoorden om de kandidaat te evalueren.",
-    "tips": "Tips",
-    "emptyTips": "Verkrijg tips om een gestructureerd en relevant gesprek te voeren.",
-    "generate": "Genereren",
-    "saveNotes": "Opslaan in notities",
-    "savedNotes": "Notities opgeslagen",
-    "clickToEdit": "Klik op het potlood om te bewerken.",
-    "readMode": "Overschakelen naar leesmodus",
-    "editMode": "Bewerken",
+    "interviewNotes": "Interviewnotities",
+    "generateQuestions": "Genereer vragen",
+    "generateAnswers": "Genereer antwoorden",
+    "generateTips": "Genereer tips",
+    "receivedAt": "Ontvangen op {{date}}",
     "status": {
-      "pending": "Nieuw",
+      "pending": "In afwachting",
       "viewed": "Bekeken",
       "shortlisted": "Geselecteerd",
-      "interview": "Gesprek",
-      "accepted": "Aangenomen",
+      "interview": "Interview",
+      "accepted": "Geaccepteerd",
       "rejected": "Afgewezen"
     },
+    "changeStatus": "Status wijzigen",
+    "scheduleInterview": "Interview plannen",
+    "step1ChooseSlot": "Kies een tijdslot (Calendly)",
+    "openCalendly": "Open Calendly",
+    "sendEmail": "E-mail versturen",
+    "step2CreateLink": "Jitsi-link aanmaken",
+    "joinMeeting": "Deelnemen aan meeting",
+    "updateLink": "Bijwerken",
+    "deleteLink": "Verwijderen",
+    "generateJitsiLink": "Jitsi-link genereren",
+    "newRoomPlaceholder": "Nieuwe ruimtenaam (optioneel)",
+    "roomPlaceholder": "Ruimtenaam (optioneel)",
     "toasts": {
+      "questionsGenerated": "Inhoud gegenereerd",
+      "noteSaved": "Notitie opgeslagen",
+      "noteDeleted": "Notitie verwijderd",
+      "emailSent": "E-mail verzonden",
       "statusUpdated": "Status bijgewerkt",
       "updateError": "Fout bij bijwerken",
-      "linkUpdated": "Link bijgewerkt!",
-      "linkDeleted": "Link verwijderd",
-      "questionsGenerated": "Vragen gegenereerd!",
-      "answersGenerated": "Voorbeeldantwoorden gegenereerd!",
-      "tipsGenerated": "Tips gegenereerd!",
-      "needQuestionsFirst": "Genereer eerst vragen",
-      "saveError": "Fout bij opslaan",
-      "emailError": "Fout bij verzenden e-mail",
-      "aiError": "AI-fout",
-      "rejectionPrompt": "Geef alstublieft de reden voor afwijzing aan (optioneel):"
+      "rejectionPrompt": "Reden van afwijzing (optioneel)",
+      "linkUpdated": "Link bijgewerkt",
+      "linkDeleted": "Link verwijderd"
     }
+  },
+  "notes": {
+    "personal": "Persoonlijke notities",
+    "questions": "Interviewvragen",
+    "answers": "Voorbeeldantwoorden",
+    "tips": "Tips voor de recruiter"
+  },
+  "common": {
+    "delete": "Verwijderen",
+    "savedAt": "Opgeslagen om {{time}}"
   },
   "applicationDetailCandidate": {
     "notFound": "Sollicitatie niet gevonden.",
@@ -1665,78 +1630,7 @@
       "save": "Opslaan"
     }
   },
-  "settings": {
-    "title": "Instellingen",
-    "subtitle": "Beheer uw account",
-    "back": "Terug",
-    "myProfile": "Mijn profiel",
-    "accountInfo": {
-      "title": "Accountinformatie",
-      "description": "{{email}}"
-    },
-    "changeEmail": {
-      "title": "E-mailadres wijzigen",
-      "description": "Er wordt een bevestigingsmail naar het nieuwe adres gestuurd",
-      "newEmailLabel": "Nieuw e-mailadres",
-      "newEmailPlaceholder": "nieuw@email.com",
-      "currentPasswordLabel": "Huidig wachtwoord (ter verificatie)",
-      "currentPasswordPlaceholder": "••••••••",
-      "submit": "E-mail wijzigen"
-    },
-    "changePassword": {
-      "title": "Wachtwoord wijzigen",
-      "description": "Gebruik minimaal 8 tekens",
-      "newPasswordLabel": "Nieuw wachtwoord",
-      "newPasswordPlaceholder": "••••••••",
-      "confirmPasswordLabel": "Wachtwoord bevestigen",
-      "confirmPasswordPlaceholder": "••••••••",
-      "submit": "Bijwerken"
-    },
-    "logout": {
-      "title": "Uitloggen",
-      "description": "U wordt doorgestuurd naar de startpagina",
-      "button": "Uitloggen"
-    },
-    "roleChange": {
-      "title": "Accounttype wijzigen",
-      "currentRoleCandidate": "Kandidaat",
-      "currentRoleCompany": "Bedrijf",
-      "descriptionCandidate": "U bent momenteel <strong>Kandidaat</strong>. U kunt verzoeken om over te schakelen naar een <strong>Bedrijf</strong>-account.",
-      "descriptionCompany": "U bent momenteel <strong>Bedrijf</strong>. U kunt verzoeken om over te schakelen naar een <strong>Kandidaat</strong>-account.",
-      "requestButton": "Wijziging aanvragen",
-      "modal": {
-        "title": "Rolwijziging aanvragen",
-        "roleLabel": "Gewenste nieuwe rol",
-        "roleCompany": "Bedrijf",
-        "roleCandidate": "Kandidaat",
-        "reasonLabel": "Bericht (optioneel)",
-        "reasonPlaceholder": "Leg uit waarom u van rol wilt veranderen...",
-        "cancel": "Annuleren",
-        "submit": "Aanvraag verzenden"
-      }
-    },
-    "dangerZone": {
-      "title": "Gevarenzone",
-      "description": "Verwijder uw account en al uw gegevens. Deze actie is onomkeerbaar.",
-      "button": "Mijn account verwijderen",
-      "confirm": "Uw account definitief verwijderen? Deze actie is onomkeerbaar, al uw gegevens worden gewist."
-    },
-    "toasts": {
-      "passwordMismatch": "Wachtwoorden komen niet overeen",
-      "passwordLength": "Wachtwoord moet minimaal 8 tekens bevatten",
-      "passwordUpdated": "Wachtwoord succesvol bijgewerkt",
-      "passwordError": "Fout bij wijzigen wachtwoord",
-      "fillAllFields": "Vul alstublieft alle velden in",
-      "wrongPassword": "Huidig wachtwoord onjuist",
-      "emailConfirmationSent": "Er is een bevestigingsmail verzonden naar het nieuwe adres. Controleer alstublieft uw inbox.",
-      "emailError": "Fout bij wijzigen e-mail",
-      "logoutError": "Fout bij uitloggen",
-      "accountDeleted": "Uw account is definitief verwijderd.",
-      "deleteError": "Netwerkfout bij verwijderen.",
-      "roleRequestSent": "Uw aanvraag is verzonden. De beheerder zal deze beoordelen.",
-      "roleRequestError": "Netwerkfout"
-    }
-  },
+  
   "messageSender": {
     "recipientsTitle": "{{role}}",
     "searchPlaceholder": "Zoeken...",
@@ -1978,316 +1872,7 @@
       "requestAlreadyProcessed": "Aanvraag al verwerkt"
     }
   },
-  "adminDashboard": {
-    "title": "Administratie",
-    "subtitle": "Beheer vacatures, bedrijven en gebruikers",
-    "refresh": "Vernieuwen",
-    "dataRefreshed": "Gegevens vernieuwd",
-    "unauthorized": "Ongeautoriseerde toegang",
-    "loadingError": "Fout bij laden van gegevens",
-    "tabs": {
-      "overview": "Overzicht",
-      "jobs": "Vacaturemoderatie",
-      "companies": "Bedrijfsvalidatie",
-      "users": "Gebruikers",
-      "reports": "Rapporten",
-      "subscriptions": "Abonnementen",
-      "newsletter": "Nieuwsbrief",
-      "blog": "Blog",
-      "messageCompanies": "Berichten Bedrijven",
-      "messageCandidates": "Berichten Kandidaten",
-      "roleRequests": "Rolverzoeken"
-    },
-    "stats": {
-      "pendingJobs": "Vacatures in afwachting",
-      "activeJobs": "Actieve vacatures",
-      "pendingCompanies": "Bedrijven in afwachting",
-      "verifiedCompanies": "Geverifieerde bedrijven",
-      "candidates": "Kandidaten",
-      "applications": "Sollicitaties",
-      "trend": "+{{trend}}% deze maand"
-    },
-    "overview": {
-      "pendingJobsTitle": "Vacatures in afwachting",
-      "pendingJobsDesc": "Te modereren",
-      "noPendingJobs": "Geen vacatures in afwachting",
-      "pendingCompaniesTitle": "Bedrijven in afwachting",
-      "pendingCompaniesDesc": "Te valideren",
-      "noPendingCompanies": "Geen bedrijven in afwachting",
-      "viewAll": "Alles bekijken"
-    },
-    "jobs": {
-      "searchPlaceholder": "Zoek een vacature...",
-      "filterAll": "Alle statussen",
-      "filterPending": "In afwachting",
-      "filterDraft": "Concept",
-      "filterActive": "Actief",
-      "filterSuspended": "Geschorst",
-      "filterRejected": "Afgewezen",
-      "noJobs": "Geen vacatures",
-      "noJobsFound": "Geen vacatures gevonden",
-      "publishedBy": "Gepubliceerd {{date}} door {{email}}",
-      "showDetails": "Details weergeven",
-      "hideDetails": "Details verbergen",
-      "detailsError": "Kan details niet laden",
-      "detailsDescription": "Beschrijving:",
-      "detailsRequirements": "Gewenst profiel:",
-      "detailsMissions": "Taken:",
-      "detailsBenefits": "Voordelen:",
-      "detailsSkills": "Vaardigheden:",
-      "detailsExperience": "Ervaring:",
-      "detailsSalary": "Salaris:",
-      "detailsPositions": "Posities:",
-      "detailsDeadline": "Uiterste datum:",
-      "detailsRemote": "Thuiswerk:",
-      "detailsUrgent": "Urgent:",
-      "detailsYes": "Ja",
-      "detailsNo": "Nee",
-      "detailsUnspecified": "Niet gespecificeerd",
-      "approve": "Goedkeuren",
-      "reject": "Afwijzen",
-      "publish": "Vacature publiceren",
-      "suspend": "Schorsen",
-      "reactivate": "Opnieuw activeren",
-      "delete": "Verwijderen",
-      "viewJob": "Vacature bekijken",
-      "status": {
-        "pending": "In afwachting",
-        "active": "Actief",
-        "suspended": "Geschorst",
-        "rejected": "Afgewezen",
-        "draft": "Concept"
-      },
-      "companyNotVerified": "Het bedrijf is nog niet geverifieerd.",
-      "approveLimitReached": "Dit bedrijf heeft zijn limiet van {{limit}} actieve vacature(s) al bereikt.",
-      "approveCompanyFirst": "Het bedrijf is nog niet geverifieerd. Valideer eerst het bedrijf.",
-      "rejectConfirm": "Deze vacature afwijzen?",
-      "approvedToast": "Vacature goedgekeurd",
-      "rejectedToast": "Vacature afgewezen",
-      "suspendedToast": "Vacature geschorst en e-mail verzonden",
-      "deletedToast": "Vacature verwijderd en e-mail verzonden",
-      "approveError": "Fout bij goedkeuren",
-      "genericError": "Fout",
-      "suspendModalTitle": "Vacature schorsen",
-      "deleteModalTitle": "Vacature verwijderen",
-      "reasonLabel": "Reden (optioneel)",
-      "cancel": "Annuleren",
-      "confirm": "Bevestigen"
-    },
-    "companies": {
-      "searchPlaceholder": "Zoek een bedrijf...",
-      "filterAll": "Alle statussen",
-      "filterUnverified": "Niet geverifieerd",
-      "filterVerified": "Geverifieerd",
-      "noCompanies": "Geen bedrijven",
-      "noCompaniesFound": "Geen bedrijven gevonden",
-      "employees": "{{size}} werknemers",
-      "offersCount": "{{count}} vacatures",
-      "createdAt": "Aangemaakt {{date}}",
-      "viewSite": "Site bekijken",
-      "viewOffers": "Vacatures bekijken ({{count}})",
-      "validate": "Valideren",
-      "reject": "Afwijzen",
-      "suspend": "Schorsen",
-      "deleteCompany": "Bedrijf verwijderen",
-      "status": {
-        "verified": "Geverifieerd",
-        "unverified": "Niet geverifieerd"
-      },
-      "validatedToast": "Bedrijf gevalideerd en e-mail verzonden",
-      "rejectedToast": "Bedrijf afgewezen en e-mail verzonden",
-      "deletedToast": "Bedrijf verwijderd",
-      "validateError": "Fout bij valideren",
-      "genericError": "Fout",
-      "rejectModalTitle": "Bedrijf afwijzen",
-      "deleteModalTitle": "Bedrijf verwijderen",
-      "deleteWarning": "⚠️ Deze actie is onomkeerbaar. Alle vacatures en bijbehorende gegevens worden verwijderd.",
-      "deleteConfirm": "Bedrijf \"{{name}}\" definitief verwijderen?",
-      "cancel": "Annuleren",
-      "confirm": "Bevestigen",
-      "suspendModalTitle": "Bedrijf schorsen",
-      "suspendWarning": "⚠️ De schorsing maakt het bedrijf onzichtbaar voor het publiek en verhindert het plaatsen van vacatures.",
-      "suspendDurationLabel": "Schorsingsduur",
-      "suspendReasonLabel": "Reden (optioneel)",
-      "durationIndefinite": "Onbepaald",
-      "duration1day": "1 dag",
-      "duration7days": "7 dagen",
-      "duration30days": "30 dagen",
-      "suspendedToast": "Bedrijf geschorst"
-    },
-    "users": {
-      "title": "Gebruikersbeheer",
-      "description": "Rollen wijzigen, schorsen, verbannen of accounts verwijderen",
-      "noUsers": "Geen gebruikers gevonden",
-      "roles": {
-        "candidate": "Kandidaat",
-        "company": "Bedrijf",
-        "admin": "Admin"
-      },
-      "status": {
-        "active": "Actief",
-        "suspended": "Geschorst",
-        "banned": "Verbannen"
-      },
-      "actions": {
-        "suspend": "Schorsen",
-        "reactivate": "Opnieuw activeren",
-        "ban": "Verbannen",
-        "delete": "Verwijderen"
-      },
-      "banConfirm": "Deze gebruiker definitief verbannen?",
-      "deleteConfirm": "Deze gebruiker definitief verwijderen? Deze actie is onomkeerbaar.",
-      "roleUpdated": "Rol bijgewerkt. De gebruiker moet uitloggen en opnieuw inloggen om zijn/haar nieuwe ruimte te zien.",
-      "roleUpdateError": "Fout bij wijzigen rol",
-      "suspendedToast": "Account geschorst",
-      "reactivatedToast": "Account opnieuw geactiveerd",
-      "bannedToast": "Gebruiker verbannen",
-      "deletedToast": "Gebruiker definitief verwijderd",
-      "deleteError": "Fout bij verwijderen",
-      "suspendModalTitle": "Account schorsen",
-      "suspendDurationLabel": "Schorsingsduur",
-      "suspendReasonLabel": "Reden (optioneel)",
-      "durationIndefinite": "Onbepaald",
-      "duration1day": "1 dag",
-      "duration7days": "7 dagen",
-      "duration30days": "30 dagen",
-      "cancel": "Annuleren",
-      "confirm": "Schorsen"
-    },
-    "reports": {
-      "title": "Rapporten",
-      "description": "Bekijk en verwerk rapporten",
-      "noReports": "Geen rapporten",
-      "badges": {
-        "job": "📋 Vacature",
-        "company": "🏢 Bedrijf",
-        "candidate": "👤 Kandidaat"
-      },
-      "reportedBy": "Gerapporteerd door {{email}}",
-      "reason": "Reden: {{reason}}",
-      "status": {
-        "pending": "In afwachting",
-        "reviewed": "Bekeken",
-        "resolved": "Opgelost"
-      },
-      "markReviewed": "Markeren als bekeken",
-      "markResolved": "Oplossen",
-      "suspendJob": "Vacature schorsen",
-      "suspendCompany": "Bedrijf schorsen",
-      "deleteJob": "Vacature verwijderen",
-      "deleteCompany": "Bedrijf verwijderen",
-      "banUser": "Gebruiker verbannen",
-      "banError": "Kan de te verbannen gebruiker niet vinden",
-      "banConfirm": "Deze gebruiker definitief verbannen?",
-      "bannedToast": "Gebruiker verbannen en e-mail verzonden",
-      "suspendedToast": "Vacature geschorst en e-mail verzonden",
-      "companySuspendedToast": "Bedrijf geschorst en e-mail verzonden",
-      "deletedToast": "Vacature verwijderd en e-mail verzonden",
-      "companyDeletedToast": "Bedrijf verwijderd en e-mail verzonden",
-      "updatedToast": "Rapport bijgewerkt"
-    },
-    "subscriptions": {
-      "title": "Actieve / opgezegde abonnementen",
-      "description": "Overzicht van alle bedrijfsabonnementen",
-      "cancellationsTitle": "Laatste opzeggingen",
-      "cancellationsDescription": "Bedrijven die hun betaalde plan hebben opgezegd",
-      "noCancellations": "Geen opzeggingen geregistreerd.",
-      "table": {
-        "company": "Bedrijf",
-        "plan": "Plan",
-        "previousPlan": "Vorig plan",
-        "stripeSubId": "Stripe Sub ID",
-        "expiration": "Vervaldatum",
-        "cancellationReason": "Reden opzegging"
-      },
-      "cancelledFrom": "Plan na opzegging:",
-      "toFrom": "← van"
-    },
-    "newsletter": {
-      "sendTitle": "Nieuwsbrief verzenden",
-      "sendDescription": "Stuur een e-mail naar alle abonnees",
-      "subjectLabel": "Onderwerp",
-      "subjectPlaceholder": "Onderwerp e-mail",
-      "contentLabel": "Inhoud (HTML)",
-      "contentPlaceholder": "<h1>Titel</h1><p>Uw bericht...</p>",
-      "sendButton": "Nieuwsbrief verzenden",
-      "subscribersTitle": "Abonnees ({{count}})",
-      "subscribersDescription": "Lijst van nieuwsbriefabonnees",
-      "noSubscribers": "Nog geen abonnees.",
-      "table": {
-        "email": "E-mail",
-        "status": "Status",
-        "actions": "Acties",
-        "subscribed": "Ingeschreven",
-        "unsubscribed": "Uitgeschreven"
-      },
-      "statusActive": "Actief",
-      "statusUnsubscribed": "Uitgeschreven",
-      "activate": "Activeren",
-      "deactivate": "Deactiveren",
-      "reactivate": "Opnieuw activeren",
-      "fillRequired": "Vul alstublieft onderwerp en inhoud in.",
-      "sentToast": "Nieuwsbrief verzonden",
-      "networkError": "Netwerkfout",
-      "toggledToast": "Status abonnee bijgewerkt"
-    },
-    "blog": {
-      "generateTitle": "Een artikel genereren met AI",
-      "generateDescription": "Creëer geoptimaliseerde inhoud voor uw publiek",
-      "titleLabel": "Titel *",
-      "titlePlaceholder": "Bijv.: Hoe slaagt u in uw sollicitatiegesprek",
-      "keywordsLabel": "Trefwoorden",
-      "keywordsPlaceholder": "Bijv.: werving, carrière, tips",
-      "audienceLabel": "Doelgroep",
-      "audienceAll": "Alle",
-      "audienceCandidates": "Kandidaten",
-      "audienceRecruiters": "Recruiters",
-      "categoryLabel": "Categorie",
-      "categories": {
-        "carriere": "Carrière",
-        "recrutement": "Werving",
-        "technologie": "Technologie",
-        "entrepreneuriat": "Ondernemerschap",
-        "conseils": "Tips"
-      },
-      "authorLabel": "Auteur",
-      "authorPlaceholder": "Actoos Team",
-      "readTimeLabel": "Leestijd",
-      "readTimePlaceholder": "5 min",
-      "generateButton": "Artikel genereren",
-      "articlesTitle": "Artikelen ({{count}})",
-      "articlesDescription": "Blogartikelen beheren",
-      "noArticles": "Nog geen artikelen.",
-      "save": "Opslaan",
-      "cancel": "Annuleren",
-      "deleteConfirm": "Dit artikel verwijderen?",
-      "generatedToast": "Artikel succesvol gegenereerd",
-      "updatedToast": "Artikel bijgewerkt",
-      "deletedToast": "Artikel verwijderd",
-      "generateError": "Fout bij genereren",
-      "updateError": "Fout bij bijwerken",
-      "deleteError": "Fout bij verwijderen",
-      "titleRequired": "Titel is vereist om een artikel te genereren",
-      "audienceLabel2": "Doelgroep"
-    },
-    "roleRequests": {
-      "title": "Rolverzoeken",
-      "description": "Beheer verzoeken van gebruikers",
-      "noRequests": "Geen lopende verzoeken",
-      "from": "Van",
-      "to": "→",
-      "approve": "Goedkeuren",
-      "reject": "Afwijzen",
-      "approvedToast": "Verzoek goedgekeurd",
-      "rejectedToast": "Verzoek afgewezen"
-    },
-    "roleLabels": {
-      "candidate": "Kandidaat",
-      "company": "Bedrijf",
-      "admin": "Admin",
-      "unknown": "Onbekend"
-    }
-  },
+
   "categories": {
   "administration": "Administratie",
   "agriculture": "Landbouw & Milieu",
@@ -2799,7 +2384,454 @@
     "companySpace": "Bedrijfsruimte",
     "logout": "Uitloggen"
   }
-}
+},
+"settings": {
+  "back": "Terug",
+  "myProfile": "Mijn profiel",
+  "title": "Instellingen",
+  "subtitle": "Beheer uw accountgegevens",
+  "accountInfo": {
+    "title": "Accountinformatie",
+    "description": "Ingelogd als {{email}}"
+  },
+  "countryAndCurrency": "🌍 Land & valuta",
+  "country": "Land",
+  "selectCountry": "Selecteer een land",
+  "currency": "Valuta",
+  "selectCurrency": "Selecteer een valuta",
+  "allCountries": "Alle landen",
+  "changeEmail": {
+    "title": "E-mail wijzigen",
+    "description": "Update uw login e-mailadres",
+    "newEmailLabel": "Nieuwe e-mail",
+    "newEmailPlaceholder": "nieuw@email.com",
+    "currentPasswordLabel": "Huidig wachtwoord",
+    "currentPasswordPlaceholder": "Uw huidige wachtwoord",
+    "submit": "E-mail bijwerken"
+  },
+  "changePassword": {
+    "title": "Wachtwoord wijzigen",
+    "description": "Gebruik een sterk en uniek wachtwoord",
+    "newPasswordLabel": "Nieuw wachtwoord",
+    "newPasswordPlaceholder": "Minstens 8 tekens",
+    "confirmPasswordLabel": "Bevestig wachtwoord",
+    "confirmPasswordPlaceholder": "Herhaal het wachtwoord",
+    "submit": "Wachtwoord bijwerken"
+  },
+  "logout": {
+    "title": "Uitloggen",
+    "description": "U kunt zich op elk moment uitloggen bij uw account.",
+    "button": "Uitloggen"
+  },
+  "roleChange": {
+    "title": "Rol wijzigen",
+    "descriptionCandidate": "U bent momenteel <strong>kandidaat</strong>. U kunt verzoeken om <strong>recruiter</strong> te worden.",
+    "descriptionCompany": "U bent momenteel <strong>recruiter</strong>. U kunt verzoeken om <strong>kandidaat</strong> te worden.",
+    "requestButton": "Rolwijziging aanvragen",
+    "modal": {
+      "title": "Verzoek rolwijziging",
+      "roleLabel": "Gewenste nieuwe rol",
+      "roleCandidate": "Kandidaat",
+      "roleCompany": "Recruiter (Bedrijf)",
+      "reasonLabel": "Reden voor verzoek (optioneel)",
+      "reasonPlaceholder": "Leg uit waarom u van rol wilt veranderen...",
+      "cancel": "Annuleren",
+      "submit": "Verzoek verzenden"
+    }
+  },
+  "dangerZone": {
+    "title": "Gevarenzone",
+    "description": "Het verwijderen van uw account is definitief en onomkeerbaar. Al uw gegevens worden gewist.",
+    "button": "Mijn account verwijderen",
+    "confirm": "Weet u zeker dat u uw account definitief wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+  },
+  "toasts": {
+    "passwordMismatch": "Wachtwoorden komen niet overeen.",
+    "passwordLength": "Wachtwoord moet minimaal 8 tekens bevatten.",
+    "passwordUpdated": "Wachtwoord succesvol bijgewerkt.",
+    "passwordError": "Fout bij bijwerken wachtwoord.",
+    "fillAllFields": "Vul alstublieft alle velden in.",
+    "wrongPassword": "Onjuist wachtwoord.",
+    "emailConfirmationSent": "Er is een bevestigingsmail verzonden naar uw nieuwe adres.",
+    "emailError": "Fout bij bijwerken e-mail.",
+    "logoutError": "Fout bij uitloggen.",
+    "accountDeleted": "Uw account is definitief verwijderd.",
+    "deleteError": "Fout bij verwijderen account.",
+    "roleRequestSent": "Verzoek tot rolwijziging succesvol verzonden.",
+    "roleRequestError": "Fout bij verzenden verzoek."
+  }
+},
+"aiAssistant": {
+  "improve": "Verbeteren met AI",
+  "improvedVersion": "Verbeterde versie",
+  "apply": "Toepassen",
+  "cancel": "Annuleren",
+  "emptyText": "Voer een tekst in om te verbeteren.",
+  "improvedSuccess": "Tekst succesvol verbeterd!",
+  "improveError": "Fout bij het verbeteren met AI.",
+  "appliedSuccess": "Tekst toegepast!"
+},
+"common": {
+    "delete": "Verwijderen",
+    "savedAt": "Opgeslagen om {{time}}"
+  },
+  "interviewPrep": {
+    "back": "Terug",
+    "badge": "Sollicitatievoorbereiding",
+    "title": "Bereid uw sollicitatiegesprek voor",
+    "description": "Voer een vacature en uw profiel in om waarschijnlijke vragen, voorbeeldantwoorden en persoonlijke tips te krijgen.",
+    "jobSection": "Vacatureomschrijving",
+    "profileSection": "Uw profiel",
+    "jobPlaceholder": "Plak de vacatureomschrijving…",
+    "profilePlaceholder": "Beschrijf uw vaardigheden, ervaring, motivatie…",
+    "results": "Resultaten",
+    "tabs": {
+      "questions": "Vragen",
+      "answers": "Antwoorden",
+      "tips": "Tips"
+    },
+    "questions": { "title": "Waarschijnlijke vragen" },
+    "answers": { "title": "Voorbeeldantwoorden" },
+    "tips": { "title": "Persoonlijke tips" },
+    "empty": "Genereer eerst inhoud…",
+    "generateButton": "Genereren",
+    "saveAll": "Alles opslaan",
+    "toasts": {
+      "needJobDescription": "Voer de vacatureomschrijving in.",
+      "generated": "Inhoud succesvol gegenereerd!",
+      "saved": "Voortgang opgeslagen.",
+      "noteDeleted": "Inhoud gewist.",
+      "error": "Fout bij het genereren."
+    }
+  },
+  "adminDashboard": {
+      "title": "Beheer",
+      "subtitle": "Beheer uw platform",
+      "refresh": "Vernieuwen",
+      "loadingError": "Laadfout",
+      "dataRefreshed": "Gegevens vernieuwd",
+      "unauthorized": "Ongeautoriseerde toegang",
+      "stats": {
+        "pendingJobs": "Openstaande vacatures",
+        "activeJobs": "Actieve vacatures",
+        "pendingCompanies": "Te valideren bedrijven",
+        "verifiedCompanies": "Geverifieerde bedrijven",
+        "candidates": "Kandidaten",
+        "applications": "Sollicitaties",
+        "trend": "{{trend}}%"
+      },
+      "tabs": {
+        "overview": "Overzicht",
+        "jobs": "Vacatures",
+        "companies": "Bedrijven",
+        "users": "Gebruikers",
+        "reports": "Meldingen",
+        "subscriptions": "Abonnementen",
+        "newsletter": "Nieuwsbrief",
+        "blog": "Blog",
+        "messageCompanies": "Berichten naar bedrijven",
+        "messageCandidates": "Berichten naar kandidaten",
+        "roleRequests": "Rolverzoeken"
+      },
+      "overview": {
+        "pendingJobsTitle": "Vacatures in afwachting van validatie",
+        "pendingJobsDesc": "Keur vacatures goed zodat ze gepubliceerd kunnen worden",
+        "pendingCompaniesTitle": "Te valideren bedrijven",
+        "pendingCompaniesDesc": "Verifieer bedrijven voordat u ze activeert",
+        "viewAll": "Alles bekijken",
+        "noPendingJobs": "Geen openstaande vacatures",
+        "noPendingCompanies": "Geen te valideren bedrijven"
+      },
+      "jobs": {
+        "reactivatedToast": "Vacature succesvol opnieuw geactiveerd",
+        "searchPlaceholder": "Zoek een vacature...",
+        "filterAll": "Alle",
+        "filterPending": "In afwachting",
+        "filterDraft": "Concept",
+        "filterActive": "Actief",
+        "filterSuspended": "Opgeschort",
+        "filterRejected": "Afgewezen",
+        "noJobs": "Geen vacatures gevonden",
+        "noJobsFound": "Geen vacature komt overeen met de zoekopdracht",
+        "loadMore": "Meer laden",
+        "detailsError": "Fout bij laden details",
+        "showDetails": "Details weergeven",
+        "hideDetails": "Details verbergen",
+        "detailsDescription": "Omschrijving:",
+        "detailsRequirements": "Gezocht profiel:",
+        "detailsMissions": "Taken:",
+        "detailsBenefits": "Voordelen:",
+        "detailsSkills": "Vaardigheden:",
+        "detailsExperience": "Ervaring:",
+        "detailsSalary": "Salaris:",
+        "detailsPositions": "Functies:",
+        "detailsDeadline": "Deadline:",
+        "detailsRemote": "Thuiswerk:",
+        "detailsUrgent": "Dringend:",
+        "detailsYes": "Ja",
+        "detailsNo": "Nee",
+        "detailsUnspecified": "Niet gespecificeerd",
+        "publishedBy": "Gepubliceerd op {{date}} door {{email}}",
+        "status": {
+          "pending": "In afwachting",
+          "active": "Actief",
+          "suspended": "Opgeschort",
+          "rejected": "Afgewezen"
+        },
+        "companyNotVerified": "Bedrijf niet geverifieerd",
+        "approve": "Goedkeuren",
+        "reject": "Afwijzen",
+        "publish": "Publiceren",
+        "suspend": "Opschorten",
+        "reactivate": "Opnieuw activeren",
+        "delete": "Verwijderen",
+        "approveCompanyFirst": "Het bedrijf moet eerst geverifieerd zijn",
+        "approveLimitReached": "Het bedrijf heeft de limiet van zijn abonnement bereikt ({{limit}} vacatures)",
+        "approvedToast": "Vacature met succes goedgekeurd",
+        "rejectedToast": "Vacature afgewezen",
+        "suspendedToast": "Vacature opgeschort",
+        "deletedToast": "Vacature verwijderd",
+        "approveError": "Fout bij goedkeuring",
+        "rejectConfirm": "Afwijzing bevestigen?",
+        "genericError": "Fout",
+        "suspendModalTitle": "Vacature opschorten",
+        "deleteModalTitle": "Vacature verwijderen",
+        "reasonLabel": "Reden",
+        "cancel": "Annuleren",
+        "confirm": "Bevestigen",
+        "viewJob": "Vacature bekijken"
+      },
+      "companies": {
+        "searchPlaceholder": "Zoek een bedrijf...",
+        "filterAll": "Alle",
+        "filterUnverified": "Niet geverifieerd",
+        "filterVerified": "Geverifieerd",
+        "noCompanies": "Geen bedrijven gevonden",
+        "noCompaniesFound": "Geen bedrijf komt overeen met de zoekopdracht",
+        "loadMore": "Meer laden",
+        "employees": "{{size}} medewerkers",
+        "createdAt": "Aangemaakt op {{date}}",
+        "offersCount": "{{count}} vacature(s)",
+        "validate": "Valideren",
+        "reject": "Afwijzen",
+        "suspend": "Opschorten",
+        "deleteCompany": "Verwijderen",
+        "viewSite": "Site bekijken",
+        "viewOffers": "Vacatures bekijken ({{count}})",
+        "validatedToast": "Bedrijf met succes gevalideerd",
+        "rejectedToast": "Bedrijf afgewezen",
+        "suspendedToast": "Bedrijf opgeschort",
+        "deletedToast": "Bedrijf verwijderd",
+        "validateError": "Validatiefout",
+        "genericError": "Fout",
+        "rejectModalTitle": "Bedrijf afwijzen",
+        "deleteModalTitle": "Bedrijf verwijderen",
+        "deleteWarning": "De vacatures en leden van dit bedrijf worden eveneens verwijderd.",
+        "deleteConfirm": "Bedrijf {{name}} verwijderen?",
+        "cancel": "Annuleren",
+        "confirm": "Bevestigen",
+        "suspendModalTitle": "Bedrijf opschorten",
+        "suspendWarning": "Alle vacatures van dit bedrijf worden verborgen.",
+        "suspendDurationLabel": "Opschortingsduur",
+        "durationIndefinite": "Onbepaald",
+        "duration1day": "1 dag",
+        "duration7days": "7 dagen",
+        "duration30days": "30 dagen",
+        "suspendReasonLabel": "Reden",
+        "status": {
+          "unverified": "Niet geverifieerd",
+          "verified": "Geverifieerd"
+        }
+      },
+      "users": {
+        "title": "Gebruikers",
+        "description": "Beheer gebruikersaccounts",
+        "noUsers": "Geen gebruikers",
+        "loadMore": "Meer laden",
+        "roleUpdated": "Rol bijgewerkt",
+        "roleUpdateError": "Fout bij bijwerken rol",
+        "suspendedToast": "Gebruiker opgeschort",
+        "reactivatedToast": "Gebruiker opnieuw geactiveerd",
+        "bannedToast": "Gebruiker verbannen",
+        "deletedToast": "Gebruiker verwijderd",
+        "deleteError": "Verwijderfout",
+        "banConfirm": "Ban bevestigen?",
+        "deleteConfirm": "Definitief verwijderen?",
+        "suspendModalTitle": "Gebruiker opschorten",
+        "suspendDurationLabel": "Duur",
+        "durationIndefinite": "Onbepaald",
+        "duration1day": "1 dag",
+        "duration7days": "7 dagen",
+        "duration30days": "30 dagen",
+        "suspendReasonLabel": "Reden",
+        "cancel": "Annuleren",
+        "confirm": "Bevestigen",
+        "status": {
+          "active": "Actief",
+          "suspended": "Opgeschort",
+          "banned": "Verbannen"
+        },
+        "roles": {
+          "candidate": "Kandidaat",
+          "company": "Bedrijf",
+          "admin": "Admin"
+        },
+        "actions": {
+          "suspend": "Opschorten",
+          "reactivate": "Opnieuw activeren",
+          "ban": "Verbannen",
+          "delete": "Verwijderen"
+        }
+      },
+      "reports": {
+        "title": "Meldingen",
+        "description": "Behandel meldingen van gebruikers",
+        "noReports": "Geen meldingen",
+        "reportedBy": "Gemeld door {{email}}",
+        "reason": "Reden: {{reason}}",
+        "badges": {
+          "job": "Vacature",
+          "company": "Bedrijf",
+          "candidate": "Kandidaat"
+        },
+        "status": {
+          "pending": "In afwachting",
+          "reviewed": "Beoordeeld",
+          "resolved": "Opgelost"
+        },
+        "markReviewed": "Markeer als beoordeeld",
+        "markResolved": "Markeer als opgelost",
+        "suspendJob": "Vacature opschorten",
+        "suspendCompany": "Bedrijf opschorten",
+        "deleteJob": "Vacature verwijderen",
+        "deleteCompany": "Bedrijf verwijderen",
+        "banUser": "Gebruiker verbannen",
+        "suspendedToast": "Element opgeschort",
+        "companySuspendedToast": "Bedrijf opgeschort",
+        "deletedToast": "Element verwijderd",
+        "companyDeletedToast": "Bedrijf verwijderd",
+        "bannedToast": "Gebruiker verbannen",
+        "banError": "Kon de te verbannen gebruiker niet vinden",
+        "banConfirm": "Ban bevestigen?",
+        "updatedToast": "Status bijgewerkt"
+      },
+      "subscriptions": {
+        "title": "Abonnementen",
+        "description": "Beheer bedrijfsabonnementen",
+        "cancellationsTitle": "Opzeggingen",
+        "cancellationsDescription": "Opzeggeschiedenis",
+        "noCancellations": "Geen opzeggingen",
+        "cancelledFrom": "Opgezegd van",
+        "toFrom": "naar",
+        "table": {
+          "company": "Bedrijf",
+          "plan": "Abonnement",
+          "previousPlan": "Vorig abonnement",
+          "stripeSubId": "Stripe ID",
+          "expiration": "Vervaldatum",
+          "cancellationReason": "Opzegreden"
+        }
+      },
+      "newsletter": {
+        "sendTitle": "Nieuwsbrief versturen",
+        "sendDescription": "Stuur een e-mail naar alle abonnees",
+        "subjectLabel": "Onderwerp",
+        "subjectPlaceholder": "Titel van de nieuwsbrief",
+        "contentLabel": "HTML-inhoud",
+        "contentPlaceholder": "<p>Uw bericht...</p>",
+        "sendButton": "Nieuwsbrief versturen",
+        "fillRequired": "Vul onderwerp en inhoud in",
+        "networkError": "Netwerkfout",
+        "sentSuccess": "Nieuwsbrief verzonden naar {{count}}/{{total}} abonnees.",
+        "subscribersTitle": "Abonnees ({{count}})",
+        "subscribersDescription": "Lijst met abonnees op de nieuwsbrief",
+        "noSubscribers": "Geen abonnees",
+        "table": {
+          "email": "E-mail",
+          "status": "Status",
+          "actions": "Acties",
+          "subscribed": "Ingeschreven op",
+          "unsubscribed": "Uitgeschreven op"
+        },
+        "statusActive": "Actief",
+        "statusUnsubscribed": "Uitgeschreven",
+        "deactivate": "Deactiveren",
+        "reactivate": "Opnieuw activeren",
+        "toggledToast": "Abonnee bijgewerkt"
+      },
+      "blog": {
+        "generateTitle": "Artikel genereren",
+        "generateDescription": "De AI zal een blogartikel schrijven",
+        "titleLabel": "Titel",
+        "titlePlaceholder": "Titel van het artikel",
+        "keywordsLabel": "Trefwoorden",
+        "keywordsPlaceholder": "Gescheiden door komma's",
+        "audienceLabel": "Doelgroep",
+        "audienceAll": "Iedereen",
+        "audienceCandidates": "Kandidaten",
+        "audienceRecruiters": "Recruiters",
+        "categoryLabel": "Categorie",
+        "categories": {
+          "carriere": "Carrière",
+          "recrutement": "Werving",
+          "technologie": "Technologie",
+          "entrepreneuriat": "Ondernemerschap",
+          "conseils": "Advies"
+        },
+        "authorLabel": "Auteur",
+        "authorPlaceholder": "Actoos Team",
+        "readTimeLabel": "Leestijd",
+        "readTimePlaceholder": "5 min",
+        "generateButton": "Genereren",
+        "titleRequired": "Titel is verplicht",
+        "generatedToast": "Artikel met succes gegenereerd",
+        "generateError": "Generatiefout",
+        "articlesTitle": "Artikelen ({{count}})",
+        "articlesDescription": "Beheer uw blogartikelen",
+        "noArticles": "Geen artikelen",
+        "save": "Opslaan",
+        "cancel": "Annuleren",
+        "updatedToast": "Artikel bijgewerkt",
+        "updateError": "Bijwerkfout",
+        "deleteConfirm": "Artikel verwijderen?",
+        "deletedToast": "Artikel verwijderd",
+        "deleteError": "Verwijderfout"
+      },
+      "messages": {
+        "sentSuccess": "Bericht verzonden naar {{count}}/{{total}} personen",
+        "sendError": "Verzendfout"
+      },
+      "roleRequests": {
+        "title": "Verzoeken voor rolwijziging",
+        "description": "Keur verzoeken goed of af",
+        "noRequests": "Geen verzoeken",
+        "from": "van",
+        "to": "naar",
+        "approve": "Goedkeuren",
+        "reject": "Afwijzen",
+        "approvedToast": "Verzoek goedgekeurd",
+        "rejectedToast": "Verzoek afgewezen"
+      },
+      "roleLabels": {
+        "candidate": "Kandidaat",
+        "company": "Bedrijf",
+        "admin": "Admin",
+        "unknown": "Onbekend"
+      }
+    },
+     "unsubscribe": {
+      "loading": "Verwerken...",
+      "success": {
+        "title": "Succesvol afgemeld",
+        "message": "U bent succesvol afgemeld."
+      },
+      "error": {
+        "noEmail": "Geen e-mailadres opgegeven.",
+        "alreadyUnsubscribed": "Adres niet gevonden of al afgemeld.",
+        "network": "Netwerkfout, probeer opnieuw.",
+        "title": "Fout"
+      }
+    }
     
   
 

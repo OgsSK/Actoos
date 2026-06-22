@@ -1,36 +1,63 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from './ui/button';
 import { Loader2, Sparkles, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '../lib/api';
 
 const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
+  const { t, i18n } = useTranslation();   // ← ajout de t
   const [text, setText] = useState(initialText);
   const [improved, setImproved] = useState('');
   const [loading, setLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
 
-  // Synchronise l'état local avec la prop chaque fois qu'elle change
   useEffect(() => {
     setText(initialText);
   }, [initialText]);
 
   const handleImprove = async () => {
     if (!text.trim()) {
-      toast.error('Veuillez entrer du texte à améliorer.');
+      toast.error(t('aiAssistant.emptyText', 'Veuillez entrer du texte à améliorer.'));
       return;
     }
     setLoading(true);
+
+    const targetLang = i18n.language;
+    console.log('[AIAssistant] Langue cible :', targetLang);
+
     try {
-      const res = await apiFetch('/api/ai/agent', {
+      // 1. Amélioration en français (toujours)
+      const res1 = await apiFetch('/api/ai/agent', {
         method: 'POST',
-        body: JSON.stringify({ agent_id: agentId, text, context }),
+        body: JSON.stringify({
+          agent_id: agentId,
+          text,
+          context,
+          language: 'fr',
+        }),
       });
-      setImproved(res.result);
+
+      let improvedText = res1.result;
+
+      // 2. Traduction si la langue de l'utilisateur n'est pas le français
+      if (targetLang !== 'fr') {
+        const res2 = await apiFetch('/api/ai/agent', {
+          method: 'POST',
+          body: JSON.stringify({
+            agent_id: 'translator',
+            text: improvedText,
+            language: targetLang,
+          }),
+        });
+        improvedText = res2.result || improvedText;
+      }
+
+      setImproved(improvedText);
       setShowResult(true);
-      toast.success('Texte amélioré avec succès !');
+      toast.success(t('aiAssistant.improvedSuccess', 'Texte amélioré avec succès !'));
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de l\'amélioration IA.');
+      toast.error(err.message || t('aiAssistant.improveError', "Erreur lors de l'amélioration IA."));
     } finally {
       setLoading(false);
     }
@@ -40,7 +67,7 @@ const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
     if (onApply) onApply(improved);
     setShowResult(false);
     setImproved('');
-    toast.success('Texte appliqué !');
+    toast.success(t('aiAssistant.appliedSuccess', 'Texte appliqué !'));
   };
 
   return (
@@ -59,7 +86,7 @@ const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
           ) : (
             <Sparkles className="w-4 h-4 mr-2" />
           )}
-          Améliorer avec l'IA
+          {t('aiAssistant.improve', 'Améliorer avec l\'IA')}
         </Button>
       )}
 
@@ -68,7 +95,9 @@ const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-blue-600" />
-              <h3 className="font-semibold text-slate-900">Version améliorée</h3>
+              <h3 className="font-semibold text-slate-900">
+                {t('aiAssistant.improvedVersion', 'Version améliorée')}
+              </h3>
             </div>
             <button onClick={() => setShowResult(false)} className="text-slate-400 hover:text-slate-600">
               <X className="w-5 h-5" />
@@ -78,11 +107,11 @@ const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
           <div className="flex gap-2 mt-4">
             <Button size="sm" onClick={handleApply} className="bg-blue-600 hover:bg-blue-700 text-white ">
               <Check className="w-4 h-4 mr-2" />
-              Appliquer
+              {t('aiAssistant.apply', 'Appliquer')}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setShowResult(false)}>
               <X className="w-4 h-4 mr-2" />
-              Annuler
+              {t('aiAssistant.cancel', 'Annuler')}
             </Button>
           </div>
         </div>
