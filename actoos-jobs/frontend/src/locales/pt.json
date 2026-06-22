@@ -2473,35 +2473,7 @@
     "delete": "Excluir",
     "savedAt": "Salvo às {{time}}"
   },
-  "interviewPrep": {
-    "back": "Voltar",
-    "badge": "Preparação para entrevista",
-    "title": "Prepare sua entrevista",
-    "description": "Insira uma oferta de emprego e seu perfil para obter perguntas prováveis, respostas modelo e dicas personalizadas.",
-    "jobSection": "Descrição da vaga",
-    "profileSection": "Seu perfil",
-    "jobPlaceholder": "Cole a descrição da vaga…",
-    "profilePlaceholder": "Descreva suas habilidades, experiência, motivação…",
-    "results": "Resultados",
-    "tabs": {
-      "questions": "Perguntas",
-      "answers": "Respostas",
-      "tips": "Dicas"
-    },
-    "questions": { "title": "Perguntas prováveis" },
-    "answers": { "title": "Exemplos de respostas" },
-    "tips": { "title": "Dicas personalizadas" },
-    "empty": "Gere conteúdo primeiro…",
-    "generateButton": "Gerar",
-    "saveAll": "Salvar tudo",
-    "toasts": {
-      "needJobDescription": "Por favor, insira a descrição da vaga.",
-      "generated": "Conteúdo gerado com sucesso!",
-      "saved": "Progresso salvo.",
-      "noteDeleted": "Conteúdo apagado.",
-      "error": "Erro durante a geração."
-    }
-  },
+  
   "adminDashboard": {
       "title": "Administração",
       "subtitle": "Faça a gestão da sua plataforma",
@@ -2829,5 +2801,42 @@
         "network": "Erro de rede, tente novamente.",
         "title": "Erro"
       }
-    }  
+    },
+    "interviewPrep": {
+      "back": "Voltar",
+      "badge": "Preparação para entrevista",
+      "title": "Preparar uma entrevista",
+      "description": "Gere perguntas, respostas e conselhos personalizados para a sua entrevista.",
+      "saveAll": "Guardar tudo",
+      "jobSection": "Descrição do cargo",
+      "profileSection": "Perfil do candidato",
+      "results": "Resultados",
+      "tabs": {
+        "questions": "Perguntas",
+        "answers": "Respostas",
+        "tips": "Dicas"
+      },
+      "generateButton": "Gerar",
+      "jobPlaceholder": "Cole aqui a descrição do cargo...",
+      "profilePlaceholder": "Cole aqui o perfil do candidato (competências, experiências...)",
+      "empty": "Sem conteúdo de momento.",
+      "questions": {
+        "title": "Perguntas da entrevista"
+      },
+      "answers": {
+        "title": "Respostas sugeridas"
+      },
+      "tips": {
+        "title": "Dicas"
+      },
+      "toast": {
+        "generated": "Conteúdo gerado com sucesso.",
+        "error": "Erro durante a geração.",
+        "needJobDescription": "Por favor, preencha primeiro a descrição do cargo."
+      },
+      "toasts": {
+        "saved": "Guardado com sucesso.",
+        "noteDeleted": "Nota eliminada."
+      }
+    } 
 }

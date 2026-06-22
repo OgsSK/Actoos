@@ -2474,35 +2474,7 @@
     "delete": "Delete",
     "savedAt": "Saved at {{time}}"
   },
-  "interviewPrep": {
-    "back": "Back",
-    "badge": "Interview Prep",
-    "title": "Prepare your interview",
-    "description": "Enter a job offer and your profile to get likely questions, sample answers, and personalized tips.",
-    "jobSection": "Job description",
-    "profileSection": "Your profile",
-    "jobPlaceholder": "Paste the job description…",
-    "profilePlaceholder": "Describe your skills, experience, motivations…",
-    "results": "Results",
-    "tabs": {
-      "questions": "Questions",
-      "answers": "Answers",
-      "tips": "Tips"
-    },
-    "questions": { "title": "Likely questions" },
-    "answers": { "title": "Sample answers" },
-    "tips": { "title": "Personalized tips" },
-    "empty": "Generate content first…",
-    "generateButton": "Generate",
-    "saveAll": "Save all",
-    "toasts": {
-      "needJobDescription": "Please enter the job description.",
-      "generated": "Content generated successfully!",
-      "saved": "Progress saved.",
-      "noteDeleted": "Content cleared.",
-      "error": "Error during generation."
-    }
-  },
+  
   "adminDashboard": {
       "title": "Administration",
       "subtitle": "Manage your platform",
@@ -2830,7 +2802,44 @@
         "network": "Network error, please try again.",
         "title": "Error"
       }
-    }
+    },
+"interviewPrep": {
+  "back": "Back",
+  "badge": "Interview Preparation",
+  "title": "Prepare an Interview",
+  "description": "Generate personalized questions, answers and tips for your interview.",
+  "saveAll": "Save all",
+  "jobSection": "Job Description",
+  "profileSection": "Candidate Profile",
+  "results": "Results",
+  "tabs": {
+    "questions": "Questions",
+    "answers": "Answers",
+    "tips": "Tips"
+  },
+  "generateButton": "Generate",
+  "jobPlaceholder": "Paste the job description here...",
+  "profilePlaceholder": "Paste the candidate profile (skills, experience...)",
+  "empty": "No content yet.",
+  "questions": {
+    "title": "Interview Questions"
+  },
+  "answers": {
+    "title": "Suggested Answers"
+  },
+  "tips": {
+    "title": "Tips"
+  },
+  "toast": {
+    "generated": "Content generated successfully.",
+    "error": "Generation error.",
+    "needJobDescription": "Please enter the job description first."
+  },
+  "toasts": {
+    "saved": "Save successful.",
+    "noteDeleted": "Note deleted."
+  }
+}
 
   
 

@@ -2473,35 +2473,7 @@
     "delete": "Eliminar",
     "savedAt": "Guardado a las {{time}}"
   },
-  "interviewPrep": {
-    "back": "Volver",
-    "badge": "Preparación de entrevista",
-    "title": "Prepara tu entrevista",
-    "description": "Introduce una oferta de empleo y tu perfil para obtener preguntas probables, respuestas modelo y consejos personalizados.",
-    "jobSection": "Descripción del puesto",
-    "profileSection": "Tu perfil",
-    "jobPlaceholder": "Pega la descripción del puesto…",
-    "profilePlaceholder": "Describe tus habilidades, experiencia, motivación…",
-    "results": "Resultados",
-    "tabs": {
-      "questions": "Preguntas",
-      "answers": "Respuestas",
-      "tips": "Consejos"
-    },
-    "questions": { "title": "Preguntas probables" },
-    "answers": { "title": "Ejemplos de respuestas" },
-    "tips": { "title": "Consejos personalizados" },
-    "empty": "Genera primero el contenido…",
-    "generateButton": "Generar",
-    "saveAll": "Guardar todo",
-    "toasts": {
-      "needJobDescription": "Por favor, introduce la descripción del puesto.",
-      "generated": "¡Contenido generado con éxito!",
-      "saved": "Progreso guardado.",
-      "noteDeleted": "Contenido eliminado.",
-      "error": "Error durante la generación."
-    }
-  },
+  
   "adminDashboard": {
       "title": "Administración",
       "subtitle": "Gestione su plataforma",
@@ -2829,7 +2801,44 @@
         "network": "Error de red, inténtalo de nuevo.",
         "title": "Error"
       }
-    }  
+    },
+   "interviewPrep": {
+      "back": "Volver",
+      "badge": "Preparación de entrevista",
+      "title": "Preparar una entrevista",
+      "description": "Genere preguntas, respuestas y consejos personalizados para su entrevista.",
+      "saveAll": "Guardar todo",
+      "jobSection": "Descripción del puesto",
+      "profileSection": "Perfil del candidato",
+      "results": "Resultados",
+      "tabs": {
+        "questions": "Preguntas",
+        "answers": "Respuestas",
+        "tips": "Consejos"
+      },
+      "generateButton": "Generar",
+      "jobPlaceholder": "Pegue aquí la descripción del puesto...",
+      "profilePlaceholder": "Pegue aquí el perfil del candidato (habilidades, experiencia...)",
+      "empty": "Sin contenido por el momento.",
+      "questions": {
+        "title": "Preguntas de la entrevista"
+      },
+      "answers": {
+        "title": "Respuestas sugeridas"
+      },
+      "tips": {
+        "title": "Consejos"
+      },
+      "toast": {
+        "generated": "Contenido generado con éxito.",
+        "error": "Error durante la generación.",
+        "needJobDescription": "Por favor, complete primero la descripción del puesto."
+      },
+      "toasts": {
+        "saved": "Guardado con éxito.",
+        "noteDeleted": "Nota eliminada."
+      }
+    } 
 
 
 }

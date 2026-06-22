@@ -2475,35 +2475,7 @@
     "delete": "Verwijderen",
     "savedAt": "Opgeslagen om {{time}}"
   },
-  "interviewPrep": {
-    "back": "Terug",
-    "badge": "Sollicitatievoorbereiding",
-    "title": "Bereid uw sollicitatiegesprek voor",
-    "description": "Voer een vacature en uw profiel in om waarschijnlijke vragen, voorbeeldantwoorden en persoonlijke tips te krijgen.",
-    "jobSection": "Vacatureomschrijving",
-    "profileSection": "Uw profiel",
-    "jobPlaceholder": "Plak de vacatureomschrijving…",
-    "profilePlaceholder": "Beschrijf uw vaardigheden, ervaring, motivatie…",
-    "results": "Resultaten",
-    "tabs": {
-      "questions": "Vragen",
-      "answers": "Antwoorden",
-      "tips": "Tips"
-    },
-    "questions": { "title": "Waarschijnlijke vragen" },
-    "answers": { "title": "Voorbeeldantwoorden" },
-    "tips": { "title": "Persoonlijke tips" },
-    "empty": "Genereer eerst inhoud…",
-    "generateButton": "Genereren",
-    "saveAll": "Alles opslaan",
-    "toasts": {
-      "needJobDescription": "Voer de vacatureomschrijving in.",
-      "generated": "Inhoud succesvol gegenereerd!",
-      "saved": "Voortgang opgeslagen.",
-      "noteDeleted": "Inhoud gewist.",
-      "error": "Fout bij het genereren."
-    }
-  },
+  
   "adminDashboard": {
       "title": "Beheer",
       "subtitle": "Beheer uw platform",
@@ -2831,8 +2803,44 @@
         "network": "Netwerkfout, probeer opnieuw.",
         "title": "Fout"
       }
+    },
+    "interviewPrep": {
+      "back": "Terug",
+      "badge": "Voorbereiding sollicitatiegesprek",
+      "title": "Een sollicitatiegesprek voorbereiden",
+      "description": "Genereer gepersonaliseerde vragen, antwoorden en tips voor uw sollicitatiegesprek.",
+      "saveAll": "Alles opslaan",
+      "jobSection": "Functiebeschrijving",
+      "profileSection": "Kandidaatprofiel",
+      "results": "Resultaten",
+      "tabs": {
+        "questions": "Vragen",
+        "answers": "Antwoorden",
+        "tips": "Tips"
+      },
+      "generateButton": "Genereren",
+      "jobPlaceholder": "Plak hier de functiebeschrijving...",
+      "profilePlaceholder": "Plak hier het kandidaatprofiel (vaardigheden, ervaring...)",
+      "empty": "Geen inhoud op dit moment.",
+      "questions": {
+        "title": "Interviewvragen"
+      },
+      "answers": {
+        "title": "Voorgestelde antwoorden"
+      },
+      "tips": {
+        "title": "Tips"
+      },
+      "toast": {
+        "generated": "Inhoud succesvol gegenereerd.",
+        "error": "Fout bij het genereren.",
+        "needJobDescription": "Vul eerst de functiebeschrijving in."
+      },
+      "toasts": {
+        "saved": "Succesvol opgeslagen.",
+        "noteDeleted": "Notitie verwijderd."
+      }
     }
-    
   
 
 

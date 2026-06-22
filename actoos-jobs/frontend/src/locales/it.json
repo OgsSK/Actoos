@@ -2473,35 +2473,7 @@
     "delete": "Elimina",
     "savedAt": "Salvato alle {{time}}"
   },
-  "interviewPrep": {
-    "back": "Indietro",
-    "badge": "Preparazione colloquio",
-    "title": "Prepara il tuo colloquio",
-    "description": "Inserisci un'offerta di lavoro e il tuo profilo per ottenere domande probabili, risposte campione e consigli personalizzati.",
-    "jobSection": "Descrizione del lavoro",
-    "profileSection": "Il tuo profilo",
-    "jobPlaceholder": "Incolla la descrizione del lavoro…",
-    "profilePlaceholder": "Descrivi le tue competenze, esperienze, motivazioni…",
-    "results": "Risultati",
-    "tabs": {
-      "questions": "Domande",
-      "answers": "Risposte",
-      "tips": "Consigli"
-    },
-    "questions": { "title": "Domande probabili" },
-    "answers": { "title": "Esempi di risposte" },
-    "tips": { "title": "Consigli personalizzati" },
-    "empty": "Genera prima il contenuto…",
-    "generateButton": "Genera",
-    "saveAll": "Salva tutto",
-    "toasts": {
-      "needJobDescription": "Inserisci la descrizione del lavoro.",
-      "generated": "Contenuto generato con successo!",
-      "saved": "Progresso salvato.",
-      "noteDeleted": "Contenuto cancellato.",
-      "error": "Errore durante la generazione."
-    }
-  },
+  
   "adminDashboard": {
       "title": "Amministrazione",
       "subtitle": "Gestisci la tua piattaforma",
@@ -2828,6 +2800,43 @@
         "alreadyUnsubscribed": "Indirizzo non trovato o già disiscritto.",
         "network": "Errore di rete, riprova.",
         "title": "Errore"
+      }
+    },
+   "interviewPrep": {
+      "back": "Indietro",
+      "badge": "Preparazione al colloquio",
+      "title": "Preparare un colloquio",
+      "description": "Genera domande, risposte e consigli personalizzati per il tuo colloquio.",
+      "saveAll": "Salva tutto",
+      "jobSection": "Descrizione del lavoro",
+      "profileSection": "Profilo del candidato",
+      "results": "Risultati",
+      "tabs": {
+        "questions": "Domande",
+        "answers": "Risposte",
+        "tips": "Consigli"
+      },
+      "generateButton": "Genera",
+      "jobPlaceholder": "Incolla qui la descrizione del lavoro...",
+      "profilePlaceholder": "Incolla qui il profilo del candidato (competenze, esperienze...)",
+      "empty": "Nessun contenuto al momento.",
+      "questions": {
+        "title": "Domande del colloquio"
+      },
+      "answers": {
+        "title": "Risposte suggerite"
+      },
+      "tips": {
+        "title": "Consigli"
+      },
+      "toast": {
+        "generated": "Contenuto generato con successo.",
+        "error": "Errore durante la generazione.",
+        "needJobDescription": "Si prega di compilare prima la descrizione del lavoro."
+      },
+      "toasts": {
+        "saved": "Salvato con successo.",
+        "noteDeleted": "Nota eliminata."
       }
     }
 

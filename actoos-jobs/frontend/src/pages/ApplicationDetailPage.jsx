@@ -383,6 +383,7 @@ Profil candidat :
         <Link to="/dashboard/entreprise/candidatures"><Button variant="ghost" className="mb-6"><ChevronLeft className="w-4 h-4 mr-2" />{t('applicationDetail.back')}</Button></Link>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Colonne de gauche (profil + notes) */}
           <div className="md:col-span-2 space-y-6">
             <Card>
               <CardContent className="p-6 sm:p-8">
@@ -412,13 +413,14 @@ Profil candidat :
             {application.cover_letter && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.coverLetter')}</h2><p className="text-slate-600 whitespace-pre-wrap">{application.cover_letter}</p></CardContent></Card>}
             {candidateProfile?.cv_url && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.cv')}</h2><a href={candidateProfile.cv_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl hover:bg-blue-100"><FileText className="w-4 h-4" /> {t('applicationDetail.viewCV')}</a></CardContent></Card>}
 
+            {/* Bloc Notes avec onglets */}
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-blue-600" /> {t('applicationDetail.interviewNotes')}
                 </h3>
 
-                <div className="flex flex-wrap gap-1 mb-4 border-b border-slate-200 pb-px">
+                <div className="flex flex-wrap gap-2 mb-4 border-b border-slate-200 pb-px">
                   {TABS.map(tab => (
                     <button
                       key={tab.key}
@@ -489,53 +491,115 @@ Profil candidat :
             </Card>
           </div>
 
+          {/* Colonne de droite : statut et entretien */}
           <div className="space-y-6">
-            <Card><CardContent className="p-6 text-center"><Badge className={`${statusColor} text-sm px-4 py-2`}>{statusLabel}</Badge><p className="text-xs text-slate-500 mt-2">{t('applicationDetail.receivedAt', { date: formatRelative(application.created_at) })}</p></CardContent></Card>
+            <Card>
+              <CardContent className="p-6 text-center">
+                <Badge className={`${statusColor} text-sm px-4 py-2`}>{statusLabel}</Badge>
+                <p className="text-xs text-slate-500 mt-2">{t('applicationDetail.receivedAt', { date: formatRelative(application.created_at) })}</p>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">{t('applicationDetail.changeStatus')}</h3>
                 <div className="space-y-2">
                   {Object.entries(statusColors).map(([key]) => (
-                    <button key={key} onClick={() => handleStatusChange(key)} disabled={updating || application.status === key}
-                      className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${application.status === key ? 'bg-blue-50 text-blue-700 cursor-default' : 'hover:bg-slate-100 text-slate-700'}`}>
+                    <button
+                      key={key}
+                      onClick={() => handleStatusChange(key)}
+                      disabled={updating || application.status === key}
+                      className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                        application.status === key ? 'bg-blue-50 text-blue-700 cursor-default' : 'hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
                       {t(`applicationDetail.status.${key}`)}
                     </button>
                   ))}
                 </div>
               </CardContent>
             </Card>
+
+            {/* Section Entretien avec boutons améliorés */}
             <Card>
               <CardContent className="p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" /> {t('applicationDetail.scheduleInterview')}</h3>
-                <div className="mb-5">
-                  <div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span><h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step1ChooseSlot')}</h4></div>
-                  <div className="ml-8 flex flex-wrap gap-2">
-                    <a href="https://calendly.com/actoos/entretien" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm text-white hover:bg-blue-700"><Calendar className="w-4 h-4" /> {t('applicationDetail.openCalendly')}</a>
-                    <Button variant="outline" size="sm" onClick={() => handleSendEmail('calendly')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}</Button>
+                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-blue-600" /> {t('applicationDetail.scheduleInterview')}
+                </h3>
+                <div className="space-y-6">
+                  {/* Étape 1 */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span>
+                      <h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step1ChooseSlot')}</h4>
+                    </div>
+                    <div className="flex flex-wrap gap-2 ml-8">
+                      <a href="https://calendly.com/actoos/entretien" target="_blank" rel="noopener noreferrer"
+                         className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700">
+                        <Calendar className="w-4 h-4" /> {t('applicationDetail.openCalendly')}
+                      </a>
+                      <Button variant="outline" size="sm" onClick={() => handleSendEmail('calendly')} disabled={sendingEmail}>
+                        <Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="mb-5 pt-4 border-t border-slate-100">
-                  <div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span><h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step2CreateLink')}</h4></div>
-                  <div className="ml-8 space-y-3">
-                    {application.meeting_link ? (
-                      <>
-                        <div className="bg-blue-50 rounded-xl p-3 text-sm break-all"><a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">{application.meeting_link}</a></div>
-                        <div className="flex gap-2">
-                          <a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-green-700"><Video className="w-4 h-4" /> {t('applicationDetail.joinMeeting')}</a>
-                          <Button variant="outline" size="sm" onClick={() => handleSendEmail('jitsi')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}</Button>
-                        </div>
-                        <input type="text" placeholder={t('applicationDetail.newRoomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1" onClick={handleCreateMeeting} disabled={updating}><RefreshCw className="w-4 h-4 mr-1" /> {t('applicationDetail.updateLink')}</Button>
-                          <Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteMeeting} disabled={updating}><Trash2 className="w-4 h-4" /> {t('applicationDetail.deleteLink')}</Button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <input type="text" placeholder={t('applicationDetail.roomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
-                        <Button variant="outline" className="w-full" onClick={handleCreateMeeting} disabled={updating}>{updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Video className="w-4 h-4 mr-2" />} {t('applicationDetail.generateJitsiLink')}</Button>
-                      </>
-                    )}
+
+                  {/* Étape 2 */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span>
+                      <h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step2CreateLink')}</h4>
+                    </div>
+                    <div className="ml-8 space-y-3">
+                      {application.meeting_link ? (
+                        <>
+                          <div className="bg-blue-50 rounded-xl p-3 text-sm break-all">
+                            <a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
+                              {application.meeting_link}
+                            </a>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <a href={application.meeting_link} target="_blank" rel="noopener noreferrer"
+                               className="inline-flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-green-700">
+                              <Video className="w-4 h-4" /> {t('applicationDetail.joinMeeting')}
+                            </a>
+                            <Button variant="outline" size="sm" onClick={() => handleSendEmail('jitsi')} disabled={sendingEmail}>
+                              <Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}
+                            </Button>
+                          </div>
+                          <input type="text" placeholder={t('applicationDetail.newRoomPlaceholder')} value={customRoomName}
+                                 onChange={(e) => setCustomRoomName(e.target.value)}
+                                 className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
+                          <div className="flex flex-wrap gap-2">
+                            {/* Bouton "Mettre à jour" avec texte défilant si trop long */}
+                            <button
+                              type="button"
+                              disabled={updating}
+                              onClick={handleCreateMeeting}
+                              className="flex-1 min-w-0 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 overflow-hidden"
+                            >
+                              <RefreshCw className="w-4 h-4 shrink-0" />
+                              <span className="btn-marquee flex-1 min-w-0">
+                                <span>{t('applicationDetail.updateLink')}</span>
+                              </span>
+                            </button>
+                            <Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteMeeting} disabled={updating}>
+                              <Trash2 className="w-4 h-4" /> {t('applicationDetail.deleteLink')}
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <input type="text" placeholder={t('applicationDetail.roomPlaceholder')} value={customRoomName}
+                                 onChange={(e) => setCustomRoomName(e.target.value)}
+                                 className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
+                          <Button variant="outline" className="w-full" onClick={handleCreateMeeting} disabled={updating}>
+                            {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Video className="w-4 h-4 mr-2" />}
+                            {t('applicationDetail.generateJitsiLink')}
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>

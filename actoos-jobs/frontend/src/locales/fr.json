@@ -2353,35 +2353,7 @@
     "delete": "Supprimer",
     "savedAt": "Enregistré à {{time}}"
   },
-  "interviewPrep": {
-    "back": "Retour",
-    "badge": "Préparation entretien",
-    "title": "Préparer votre entretien",
-    "description": "Entrez une offre d'emploi et votre profil pour obtenir des questions probables, des réponses types et des conseils personnalisés.",
-    "jobSection": "Description du poste",
-    "profileSection": "Votre profil",
-    "jobPlaceholder": "Collez la description de l'offre…",
-    "profilePlaceholder": "Décrivez vos compétences, expériences, motivations…",
-    "results": "Résultats",
-    "tabs": {
-      "questions": "Questions",
-      "answers": "Réponses",
-      "tips": "Conseils"
-    },
-    "questions": { "title": "Questions probables" },
-    "answers": { "title": "Exemples de réponses" },
-    "tips": { "title": "Conseils personnalisés" },
-    "empty": "Générez d'abord le contenu…",
-    "generateButton": "Générer",
-    "saveAll": "Enregistrer tout",
-    "toasts": {
-      "needJobDescription": "Veuillez entrer la description du poste.",
-      "generated": "Contenu généré avec succès !",
-      "saved": "Progression sauvegardée.",
-      "noteDeleted": "Contenu effacé.",
-      "error": "Erreur lors de la génération."
-    }
-  },
+  
   
   "adminDashboard": {
     "title": "Administration",
@@ -2709,6 +2681,43 @@
     "alreadyUnsubscribed": "Adresse non trouvée ou déjà désabonnée.",
     "network": "Erreur réseau, veuillez réessayer.",
     "title": "Erreur"
+  }
+},
+"interviewPrep": {
+  "back": "Retour",
+  "badge": "Préparation d'entretien",
+  "title": "Préparer un entretien",
+  "description": "Générez des questions, des réponses et des conseils personnalisés pour votre entretien.",
+  "saveAll": "Sauvegarder tout",
+  "jobSection": "Description du poste",
+  "profileSection": "Profil du candidat",
+  "results": "Résultats",
+  "tabs": {
+    "questions": "Questions",
+    "answers": "Réponses",
+    "tips": "Conseils"
+  },
+  "generateButton": "Générer",
+  "jobPlaceholder": "Collez ici la description du poste...",
+  "profilePlaceholder": "Collez ici le profil du candidat (compétences, expériences...)",
+  "empty": "Aucun contenu pour le moment.",
+  "questions": {
+    "title": "Questions d'entretien"
+  },
+  "answers": {
+    "title": "Réponses suggérées"
+  },
+  "tips": {
+    "title": "Conseils"
+  },
+  "toast": {
+    "generated": "Contenu généré avec succès.",
+    "error": "Erreur lors de la génération.",
+    "needJobDescription": "Veuillez d'abord renseigner la description du poste."
+  },
+  "toasts": {
+    "saved": "Sauvegarde réussie.",
+    "noteDeleted": "Note supprimée."
   }
 }
 

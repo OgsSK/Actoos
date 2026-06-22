@@ -149,3 +149,22 @@ body {
 .dropdown-newgen {
   animation: dropdownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
+@keyframes marquee {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-100%); }
+}
+
+.btn-marquee {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.btn-marquee > span {
+  display: inline-block;
+  will-change: transform;
+}
+
+.btn-marquee:hover > span,
+.btn-marquee:focus > span {
+  animation: marquee 10s linear infinite;
+}

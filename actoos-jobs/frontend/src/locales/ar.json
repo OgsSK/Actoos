@@ -2474,35 +2474,7 @@
     "delete": "حذف",
     "savedAt": "تم الحفظ في {{time}}"
   },
-  "interviewPrep": {
-    "back": "رجوع",
-    "badge": "التحضير للمقابلة",
-    "title": "تحضير مقابلتك",
-    "description": "أدخل عرض وظيفة وملفك الشخصي للحصول على أسئلة محتملة، نماذج إجابات، ونصائح مخصصة.",
-    "jobSection": "وصف الوظيفة",
-    "profileSection": "ملفك الشخصي",
-    "jobPlaceholder": "الصق وصف الوظيفة…",
-    "profilePlaceholder": "صف مهاراتك، خبراتك، دوافعك…",
-    "results": "النتائج",
-    "tabs": {
-      "questions": "أسئلة",
-      "answers": "إجابات",
-      "tips": "نصائح"
-    },
-    "questions": { "title": "أسئلة محتملة" },
-    "answers": { "title": "نماذج إجابات" },
-    "tips": { "title": "نصائح مخصصة" },
-    "empty": "قم بالتوليد أولاً…",
-    "generateButton": "توليد",
-    "saveAll": "حفظ الكل",
-    "toasts": {
-      "needJobDescription": "يرجى إدخال وصف الوظيفة.",
-      "generated": "تم إنشاء المحتوى بنجاح!",
-      "saved": "تم حفظ التقدم.",
-      "noteDeleted": "تم مسح المحتوى.",
-      "error": "خطأ أثناء التوليد."
-    }
-  },
+
   "adminDashboard": {
       "title": "الإدارة",
       "subtitle": "أدر منصتك",
@@ -2830,7 +2802,45 @@
         "network": "خطأ في الشبكة، يرجى المحاولة مرة أخرى.",
         "title": "خطأ"
       }
+    },
+    "interviewPrep": {
+      "back": "رجوع",
+      "badge": "التحضير للمقابلة",
+      "title": "التحضير لمقابلة",
+      "description": "قم بإنشاء أسئلة وأجوبة ونصائح مخصصة لمقابلتك.",
+      "saveAll": "حفظ الكل",
+      "jobSection": "وصف الوظيفة",
+      "profileSection": "ملف المرشح",
+      "results": "النتائج",
+      "tabs": {
+        "questions": "الأسئلة",
+        "answers": "الإجابات",
+        "tips": "نصائح"
+      },
+      "generateButton": "إنشاء",
+      "jobPlaceholder": "الصق وصف الوظيفة هنا...",
+      "profilePlaceholder": "الصق ملف المرشح هنا (المهارات، الخبرات...)",
+      "empty": "لا يوجد محتوى حاليًا.",
+      "questions": {
+        "title": "أسئلة المقابلة"
+      },
+      "answers": {
+        "title": "الإجابات المقترحة"
+      },
+      "tips": {
+        "title": "نصائح"
+      },
+      "toast": {
+        "generated": "تم إنشاء المحتوى بنجاح.",
+        "error": "خطأ أثناء الإنشاء.",
+        "needJobDescription": "يرجى ملء وصف الوظيفة أولاً."
+      },
+      "toasts": {
+        "saved": "تم الحفظ بنجاح.",
+        "noteDeleted": "تم حذف الملاحظة."
+      }
     }
+
 
 
 }

@@ -2509,35 +2509,7 @@
     "delete": "Löschen",
     "savedAt": "Gespeichert um {{time}}"
   },
-  "interviewPrep": {
-    "back": "Zurück",
-    "badge": "Interview-Vorbereitung",
-    "title": "Bereiten Sie Ihr Vorstellungsgespräch vor",
-    "description": "Geben Sie eine Stellenbeschreibung und Ihr Profil ein, um wahrscheinliche Fragen, Musterantworten und persönliche Tipps zu erhalten.",
-    "jobSection": "Stellenbeschreibung",
-    "profileSection": "Ihr Profil",
-    "jobPlaceholder": "Fügen Sie die Stellenbeschreibung ein…",
-    "profilePlaceholder": "Beschreiben Sie Ihre Fähigkeiten, Erfahrungen, Motivation…",
-    "results": "Ergebnisse",
-    "tabs": {
-      "questions": "Fragen",
-      "answers": "Antworten",
-      "tips": "Tipps"
-    },
-    "questions": { "title": "Wahrscheinliche Fragen" },
-    "answers": { "title": "Musterantworten" },
-    "tips": { "title": "Persönliche Tipps" },
-    "empty": "Erst Inhalt generieren…",
-    "generateButton": "Generieren",
-    "saveAll": "Alles speichern",
-    "toasts": {
-      "needJobDescription": "Bitte geben Sie die Stellenbeschreibung ein.",
-      "generated": "Inhalt erfolgreich generiert!",
-      "saved": "Fortschritt gespeichert.",
-      "noteDeleted": "Inhalt gelöscht.",
-      "error": "Fehler bei der Generierung."
-    }
-  },
+  
   "adminDashboard": {
       "title": "Verwaltung",
       "subtitle": "Verwalten Sie Ihre Plattform",
@@ -2864,6 +2836,43 @@
         "alreadyUnsubscribed": "Adresse nicht gefunden oder bereits abgemeldet.",
         "network": "Netzwerkfehler, bitte versuchen Sie es erneut.",
         "title": "Fehler"
+      }
+    },
+    "interviewPrep": {
+      "back": "Zurück",
+      "badge": "Vorbereitung auf Vorstellungsgespräche",
+      "title": "Vorbereitung auf ein Vorstellungsgespräch",
+      "description": "Generieren Sie personalisierte Fragen, Antworten und Tipps für Ihr Vorstellungsgespräch.",
+      "saveAll": "Alles speichern",
+      "jobSection": "Stellenbeschreibung",
+      "profileSection": "Kandidatenprofil",
+      "results": "Ergebnisse",
+      "tabs": {
+        "questions": "Fragen",
+        "answers": "Antworten",
+        "tips": "Tipps"
+      },
+      "generateButton": "Generieren",
+      "jobPlaceholder": "Fügen Sie hier die Stellenbeschreibung ein...",
+      "profilePlaceholder": "Fügen Sie hier das Kandidatenprofil ein (Fähigkeiten, Erfahrungen...)",
+      "empty": "Derzeit kein Inhalt.",
+      "questions": {
+        "title": "Fragen im Vorstellungsgespräch"
+      },
+      "answers": {
+        "title": "Vorgeschlagene Antworten"
+      },
+      "tips": {
+        "title": "Tipps"
+      },
+      "toast": {
+        "generated": "Inhalt erfolgreich generiert.",
+        "error": "Fehler bei der Generierung.",
+        "needJobDescription": "Bitte geben Sie zuerst die Stellenbeschreibung ein."
+      },
+      "toasts": {
+        "saved": "Erfolgreich gespeichert.",
+        "noteDeleted": "Notiz gelöscht."
       }
     }
 
