@@ -1,8 +1,14 @@
- const API_URL = 'https://actoos-jobs-api.onrender.com';
-//const API_URL = 'http://localhost:8001';
+const getBaseUrl = () => {
+  // En développement (localhost), on utilise le backend local
+  if (window.location.hostname === 'localhost') {
+    return 'http://localhost:8001';
+  }
+  // En production, on appelle l'API sur son domaine dédié
+  return 'https://actoos-jobs-api.onrender.com';
+};
 
 export async function apiFetch(endpoint, options = {}) {
-  const url = `${API_URL}${endpoint}`;
+  const url = `${getBaseUrl()}${endpoint}`;
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
@@ -10,7 +16,7 @@ export async function apiFetch(endpoint, options = {}) {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Erreur réseau' }));
     const err = new Error(error.detail || 'Une erreur est survenue');
-    err.status = response.status;   // ← statut HTTP séparé
+    err.status = response.status;
     throw err;
   }
   return response.json();
