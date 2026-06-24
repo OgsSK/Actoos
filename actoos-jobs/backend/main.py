@@ -24,7 +24,11 @@ print(f"   SUPABASE_URL présente : {'oui' if os.getenv('SUPABASE_URL') else 'no
 print(f"   SUPABASE_SERVICE_ROLE_KEY présente : {'oui' if os.getenv('SUPABASE_SERVICE_ROLE_KEY') else 'non'}")
 
 app = FastAPI(title="Actoos Jobs API")
-
+# --- DIAGNOSTIC TEMPORAIRE ---
+print("Routes disponibles :")
+for route in app.routes:
+    print(f"  {route.path} {route.methods}")
+# --- FIN DIAGNOSTIC ---
 BUILD_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
 
 ALLOWED_ORIGINS = ["http://localhost:3000", "https://jobs.actoos.com"]
