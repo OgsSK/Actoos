@@ -1156,33 +1156,49 @@ async def send_job_alerts():
 async def get_candidate_public_profile(candidate_id: str):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    print(f"👉 GET /api/candidate/{candidate_id} – SUPABASE_URL={supabase_url} – KEY_SET={'oui' if supabase_key else 'non'}")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
+        # Requête pour l'utilisateur
+        user_query = f"{supabase_url}/rest/v1/users?id=eq.{candidate_id}&select=id,email,first_name,last_name,avatar_url,is_active,is_banned"
+        print(f"🔍 Requête users : {user_query}")
         user_resp = httpx.get(
-            f"{supabase_url}/rest/v1/users?id=eq.{candidate_id}&select=id,email,first_name,last_name,avatar_url,is_active,is_banned",
+            user_query,
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
+        print(f"📬 Réponse users – status={user_resp.status_code}, body={user_resp.text[:200]}")
         users = user_resp.json()
         if not users:
+            print("❌ Aucun utilisateur trouvé pour cet ID")
             raise HTTPException(status_code=404, detail="Candidat introuvable")
         user = users[0]
+
+        # Profil candidat
+        profile_query = f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{candidate_id}&select=*"
+        print(f"🔍 Requête candidate_profiles : {profile_query}")
         profile_resp = httpx.get(
-            f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{candidate_id}&select=*",
+            profile_query,
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
+        print(f"📬 Réponse candidate_profiles – status={profile_resp.status_code}, body={profile_resp.text[:200]}")
         profiles = profile_resp.json()
         profile = profiles[0] if profiles else {}
+
         city = None
         if profile.get("city_id"):
+            city_query = f"{supabase_url}/rest/v1/cities?id=eq.{profile['city_id']}&select=name"
+            print(f"🔍 Requête cities : {city_query}")
             city_resp = httpx.get(
-                f"{supabase_url}/rest/v1/cities?id=eq.{profile['city_id']}&select=name",
+                city_query,
                 headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
             )
-            cities = city_resp.json()
-            if cities:
-                city = cities[0]["name"]
-        return {
+            print(f"📬 Réponse cities – status={city_resp.status_code}, body={city_resp.text[:200]}")
+            cities_list = city_resp.json()
+            if cities_list:
+                city = cities_list[0]["name"]
+
+        result = {
             "id": user["id"],
             "email": user.get("email"),
             "first_name": user.get("first_name") or "",
@@ -1209,9 +1225,12 @@ async def get_candidate_public_profile(candidate_id: str):
             "is_open_to_remote": profile.get("is_open_to_remote", False),
             "links": profile.get("links") or [],
         }
+        print("✅ Candidat renvoyé avec succès")
+        return result
     except HTTPException:
         raise
     except Exception as e:
+        print(f"💥 Exception non gérée : {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/team/members")

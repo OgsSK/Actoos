@@ -34,8 +34,10 @@ export const AuthProvider = ({ children }) => {
         .select('is_active, is_banned')
         .eq('id', userId)
         .single();
+      console.log('🔍 checkAccountStatus - data:', data, 'error:', error);
       if (error) return true; // en cas d'erreur, on laisse passer
       if (!data.is_active) {
+        console.warn('⚠️ Compte suspendu détecté, redirection');
         await supabase.auth.signOut();
         setUser(null);
         setProfile(null);
@@ -43,6 +45,7 @@ export const AuthProvider = ({ children }) => {
         return false;
       }
       if (data.is_banned) {
+        console.warn('⚠️ Compte banni détecté, redirection');
         await supabase.auth.signOut();
         setUser(null);
         setProfile(null);
@@ -148,18 +151,8 @@ export const AuthProvider = ({ children }) => {
     setProfile(baseProfile);
     setLoading(false);
 
-    // Vérifier et lever automatiquement une suspension utilisateur expirée
-    try {
-      const suspensionCheck = await apiFetch('/api/auth/check-suspension', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: authUser.id }),
-      });
-      if (suspensionCheck.active && baseProfile.is_active === false) {
-        setProfile(prev => ({ ...prev, is_active: true }));
-      }
-    } catch (e) {
-      console.warn('Vérification suspension échouée:', e);
-    }
+    // Suppression de l'appel à /api/auth/check-suspension qui n'existe pas en production
+    // Cette vérification n'était pas indispensable et provoquait des erreurs 404.
 
     // Vérifier immédiatement le statut du compte
     const valid = await checkAccountStatus(authUser.id);

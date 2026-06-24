@@ -27,22 +27,27 @@ const CandidatePublicProfilePage = () => {
   const [reporting, setReporting] = useState(false);
   const [suspended, setSuspended] = useState(false);
 
+  console.log("CandidatePublicProfilePage - ID du candidat :", id);
+
   useEffect(() => {
     if (id) fetchProfile();
   }, [id]);
 
   const fetchProfile = async () => {
+    const url = `/api/candidate/${id}`;
+    console.log("🔍 Appel à :", url);
     try {
-      const data = await apiFetch(`/api/candidate/${id}`);
-      // Vérification : le profil candidat est-il suspendu ou banni ?
+      const data = await apiFetch(url);
+      console.log("✅ Réponse :", data);
       if (data.is_active === false || data.is_banned === true) {
+        console.log("⛔ Profil suspendu/banni");
         setSuspended(true);
         setProfile(null);
       } else {
         setProfile(data);
       }
     } catch (err) {
-      console.error('Erreur chargement profil candidat:', err);
+      console.error("❌ Erreur chargement profil candidat:", err);
       toast.error(t('candidateProfile.notFound'));
     } finally {
       setLoading(false);
@@ -50,6 +55,7 @@ const CandidatePublicProfilePage = () => {
   };
 
   const isCurrentUserRestricted = !currentUser || !currentProfile?.is_active || currentProfile?.is_banned;
+  console.log("Utilisateur courant restreint ?", isCurrentUserRestricted);
 
   const handleReport = async () => {
     if (!currentUser) {
