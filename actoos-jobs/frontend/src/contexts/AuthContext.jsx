@@ -108,7 +108,6 @@ export const AuthProvider = ({ children }) => {
     setProfile(baseProfile);
     setLoading(false);
 
-    // Enrichissement du profil en arrière‑plan
     const enriched = await enrichProfile(authUser, baseProfile);
     setProfile(enriched);
   }, [buildBaseProfile, enrichProfile]);

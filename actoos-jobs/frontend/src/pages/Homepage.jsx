@@ -660,57 +660,57 @@ const Homepage = () => {
     loadActiveCompanyIds();
   }, [countryId, countryLoading]);
 
+  // ---------- COMPTEURS CORRIGÉS ----------
   useEffect(() => {
-    if (countryLoading || activeCompanyIds.length === 0) {
-      // Si aucun ID d'entreprise valide, les compteurs restent à 0
-      if (!countryLoading && activeCompanyIds.length === 0) {
-        setActiveJobs(0);
-        setCompanies(0);
-        setCandidates(0);
-      }
-      return;
-    }
+    if (countryLoading) return;
 
     const loadStats = async () => {
       setActiveJobs(null);
       setCompanies(null);
       setCandidates(null);
 
-      // Compter les offres actives appartenant aux entreprises vérifiées et actives
-      const { count: jobsCount } = await supabase
-        .from('jobs')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'active')
-        .in('company_id', activeCompanyIds);
+      let jobsCount = 0;
+      let compsCount = 0;
+      let candsCount = 0;
 
-      // Compter les entreprises vérifiées et actives
+      // 1. Offres actives (seulement si des entreprises valides existent)
+      if (activeCompanyIds.length > 0) {
+        const { count } = await supabase
+          .from('jobs')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'active')
+          .in('company_id', activeCompanyIds);
+        jobsCount = count || 0;
+      }
+
+      // 2. Entreprises vérifiées et actives
       let queryCompanies = supabase
         .from('companies')
         .select('id', { count: 'exact', head: true })
         .eq('is_verified', true)
         .eq('is_active', true);
+      if (countryId) queryCompanies = queryCompanies.eq('country_id', countryId);
+      const { count: cCount } = await queryCompanies;
+      compsCount = cCount || 0;
 
-      if (countryId) {
-        queryCompanies = queryCompanies.eq('country_id', countryId);
-      }
-      const { count: compsCount } = await queryCompanies;
-
-      // Candidats actifs et non bannis
+      // 3. Candidats actifs et non bannis
       let queryCandidates = supabase
         .from('users')
         .select('id', { count: 'exact', head: true })
         .eq('role', 'candidate')
         .eq('is_active', true)
         .eq('is_banned', false);
-
       if (countryId && prefs.country) {
         queryCandidates = queryCandidates.eq('preferences->>country', prefs.country);
       }
-      const { count: candsCount } = await queryCandidates;
+      const { count: candCount } = await queryCandidates;
+      candsCount = candCount || 0;
 
-      setActiveJobs(jobsCount || 0);
-      setCompanies(compsCount || 0);
-      setCandidates(candsCount || 0);
+      console.log('Stats chargées :', { jobsCount, compsCount, candsCount });
+
+      setActiveJobs(jobsCount);
+      setCompanies(compsCount);
+      setCandidates(candsCount);
     };
 
     loadStats();

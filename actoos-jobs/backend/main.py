@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request, Query
+from fastapi import FastAPI, HTTPException, Request, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict
@@ -70,14 +70,48 @@ def get_plan_limit_static(plan, attribute):
     plan_data = PLAN_LIMITS_CONFIG.get(plan, PLAN_LIMITS_CONFIG["free"])
     return plan_data.get(attribute, PLAN_LIMITS_CONFIG["free"][attribute])
 
+# ----- NOUVELLE DÉPENDANCE : Vérification du compte actif/non banni -----
+async def get_current_active_user(request: Request) -> str:
+    """
+    Récupère l'utilisateur authentifié et vérifie qu'il est actif et non banni.
+    Retourne l'user_id.
+    """
+    auth_header = request.headers.get("authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    token = auth_header.replace("Bearer ", "")
+    user_resp = httpx.get(
+        f"{SUPABASE_URL}/auth/v1/user",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    if user_resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Token invalide ou expiré")
+    user_id = user_resp.json()["id"]
+
+    user_data = httpx.get(
+        f"{SUPABASE_URL}/rest/v1/users?id=eq.{user_id}&select=is_active,is_banned",
+        headers={
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"
+        }
+    ).json()
+    if not user_data:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+
+    user = user_data[0]
+    if not user.get("is_active", True):
+        raise HTTPException(status_code=403, detail="Votre compte est désactivé. Contactez le support.")
+    if user.get("is_banned", False):
+        raise HTTPException(status_code=403, detail="Votre compte a été banni.")
+    return user_id
+
 # ----- Modèles -----
 class CheckoutRequest(BaseModel):
     package_id: str
     origin_url: str
     job_id: Optional[str] = None
     user_email: Optional[str] = None
-    user_id: Optional[str] = None
-    metadata: Optional[Dict[str, str]] = None
+    metadata: Optional[Dict[str, str]] = None  # user_id retiré
 
 class ContactRequest(BaseModel):
     name: str
@@ -97,8 +131,7 @@ class AIAgentRequest(BaseModel):
     language: Optional[str] = "fr"
 
 class CancelSubscriptionRequest(BaseModel):
-    user_id: str
-    reason: Optional[str] = None
+    reason: Optional[str] = None  # user_id retiré
 
 class SendInterviewLinkRequest(BaseModel):
     email: str
@@ -115,10 +148,9 @@ class UploadRequest(BaseModel):
     file_data: str
 
 class UploadDocumentRequest(BaseModel):
-    user_id: str
     file_data: str
     filename: str
-    file_type: str = 'other'
+    file_type: str = 'other'  # user_id retiré
 
 class NotifyNewApplicationRequest(BaseModel):
     recruiter_email: str
@@ -152,10 +184,9 @@ class AdminVerifyCompanyRequest(BaseModel):
     language: Optional[str] = "fr"
 
 class ReportRequest(BaseModel):
-    reporter_id: str
     reported_item_type: str
     reported_item_id: str
-    reason: str
+    reason: str  # reporter_id retiré
 
 class AdminToggleUserStatusRequest(BaseModel):
     user_id: str
@@ -256,25 +287,20 @@ class TeamInviteRequest(BaseModel):
     company_id: str
     email: str
     role: str = "recruiter"
-    inviter_id: str
-    language: Optional[str] = "fr"
+    language: Optional[str] = "fr"  # inviter_id retiré
 
 class TeamUpdateRoleRequest(BaseModel):
-    user_id: str
     company_id: Optional[str] = None
-    role: str
+    role: str  # user_id retiré
 
 class TeamRemoveRequest(BaseModel):
-    user_id: str
-    company_id: str
+    company_id: str  # user_id retiré
 
 class TeamLeaveRequest(BaseModel):
-    user_id: str
-    company_id: str
+    company_id: str  # user_id retiré
 
 class AcceptInvitationRequest(BaseModel):
-    token: str
-    user_id: str
+    token: str  # user_id retiré (vient de l'auth)
 
 class AdminDeleteUserRequest(BaseModel):
     language: Optional[str] = "fr"
@@ -286,11 +312,9 @@ class AdminDeleteCompanyRequest(BaseModel):
     language: Optional[str] = "fr"
 
 class CompanyDeleteRequest(BaseModel):
-    user_id: str
     company_id: str
-    language: Optional[str] = "fr"
+    language: Optional[str] = "fr"  # user_id retiré
 
-# Nouveaux modèles pour les notifications de validation/réactivation d'offre
 class NotifyJobApprovedRequest(BaseModel):
     email: str
     first_name: str
@@ -645,7 +669,7 @@ async def get_currencies():
     return {"currencies": SUPPORTED_CURRENCIES, "default": "XOF"}
 
 @app.post("/api/checkout/session")
-async def create_checkout_session(request: Request, checkout_request: CheckoutRequest):
+async def create_checkout_session(request: Request, checkout_request: CheckoutRequest, user_id: str = Depends(get_current_active_user)):
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
     package_id = checkout_request.package_id
@@ -680,12 +704,10 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
         metadata["job_id"] = checkout_request.job_id
     if checkout_request.user_email:
         metadata["user_email"] = checkout_request.user_email
-    if checkout_request.user_id:
-        metadata["user_id"] = checkout_request.user_id
+    metadata["user_id"] = user_id  # Ajouté automatiquement depuis l'authentification
     if checkout_request.metadata:
         metadata.update(checkout_request.metadata)
-    user_id = checkout_request.user_id
-    if user_id and package_id in SUBSCRIPTION_PLANS:
+    if package_id in SUBSCRIPTION_PLANS:
         supabase_url = os.getenv("SUPABASE_URL")
         supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         if supabase_url and supabase_key:
@@ -833,7 +855,7 @@ async def stripe_webhook(request: Request):
         return {"received": True, "error": str(e)}
 
 @app.post("/api/subscription/cancel")
-async def cancel_subscription(req: CancelSubscriptionRequest):
+async def cancel_subscription(req: CancelSubscriptionRequest, user_id: str = Depends(get_current_active_user)):
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
     supabase_url = os.getenv("SUPABASE_URL")
@@ -842,7 +864,7 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
         raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
         company_resp = httpx.get(
-            f"{supabase_url}/rest/v1/companies?owner_id=eq.{req.user_id}&select=id,stripe_subscription_id,subscription_plan",
+            f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id,stripe_subscription_id,subscription_plan",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         companies = company_resp.json()
@@ -883,11 +905,7 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/stripe/portal")
-async def stripe_portal(request: Request):
-    data = await request.json()
-    user_id = data.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="ID utilisateur requis")
+async def stripe_portal(request: Request, user_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
@@ -1234,7 +1252,7 @@ async def get_candidate_public_profile(candidate_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/team/members")
-async def get_team_members_v2(company_id: str, user_id: str):
+async def get_team_members_v2(company_id: str, user_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -1280,11 +1298,10 @@ async def get_team_members_v2(company_id: str, user_id: str):
     return clean_members
 
 @app.post("/api/team/invite")
-async def invite_team_member_v2(req: TeamInviteRequest):
+async def invite_team_member_v2(req: TeamInviteRequest, inviter_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    inviter_id = req.inviter_id
     owner_check = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&owner_id=eq.{inviter_id}&select=id,name",
         headers=headers
@@ -1374,12 +1391,11 @@ async def invite_team_member_v2(req: TeamInviteRequest):
         return {"success": True, "message": "Invitation envoyée par email."}
 
 @app.post("/api/team/accept-invitation")
-async def accept_invitation_v2(request: Request):
+async def accept_invitation_v2(request: Request, user_id: str = Depends(get_current_active_user)):
     data = await request.json()
     token = data.get("token")
-    user_id = data.get("user_id")
-    if not token or not user_id:
-        raise HTTPException(status_code=400, detail="Token et user_id requis")
+    if not token:
+        raise HTTPException(status_code=400, detail="Token requis")
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -1401,7 +1417,7 @@ async def accept_invitation_v2(request: Request):
     return {"success": True, "company_id": invitation["company_id"]}
 
 @app.put("/api/team/members/{member_id}/role")
-async def update_member_role_v2(member_id: str, req: TeamUpdateRoleRequest):
+async def update_member_role_v2(member_id: str, req: TeamUpdateRoleRequest, current_user_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -1420,13 +1436,13 @@ async def update_member_role_v2(member_id: str, req: TeamUpdateRoleRequest):
     if len(is_owner_target.json()) > 0:
         raise HTTPException(status_code=403, detail="Impossible de modifier le rôle du propriétaire")
     owner_check = httpx.get(
-        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{req.user_id}&select=id",
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{current_user_id}&select=id",
         headers=headers
     )
     is_owner = len(owner_check.json()) > 0
     if not is_owner:
         admin_check = httpx.get(
-            f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&user_id=eq.{req.user_id}&role=eq.admin&select=id",
+            f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&user_id=eq.{current_user_id}&role=eq.admin&select=id",
             headers=headers
         )
         if len(admin_check.json()) == 0:
@@ -1442,7 +1458,7 @@ async def update_member_role_v2(member_id: str, req: TeamUpdateRoleRequest):
     return {"success": True}
 
 @app.delete("/api/team/members/{member_id}")
-async def remove_team_member_v2(member_id: str, req: TeamRemoveRequest):
+async def remove_team_member_v2(member_id: str, req: TeamRemoveRequest, current_user_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -1455,13 +1471,13 @@ async def remove_team_member_v2(member_id: str, req: TeamRemoveRequest):
         raise HTTPException(status_code=404, detail="Membre non trouvé")
     target_company_id = members[0]["company_id"]
     owner_check = httpx.get(
-        f"{supabase_url}/rest/v1/companies?id=eq.{target_company_id}&owner_id=eq.{req.user_id}&select=id",
+        f"{supabase_url}/rest/v1/companies?id=eq.{target_company_id}&owner_id=eq.{current_user_id}&select=id",
         headers=headers
     )
     is_owner = len(owner_check.json()) > 0
     if not is_owner:
         admin_check = httpx.get(
-            f"{supabase_url}/rest/v1/company_members?company_id=eq.{target_company_id}&user_id=eq.{req.user_id}&role=eq.admin&select=id",
+            f"{supabase_url}/rest/v1/company_members?company_id=eq.{target_company_id}&user_id=eq.{current_user_id}&role=eq.admin&select=id",
             headers=headers
         )
         if len(admin_check.json()) == 0:
@@ -1473,42 +1489,34 @@ async def remove_team_member_v2(member_id: str, req: TeamRemoveRequest):
     return {"success": True}
 
 @app.post("/api/team/leave")
-async def leave_company_v2(req: TeamLeaveRequest):
+async def leave_company_v2(req: TeamLeaveRequest, user_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     member_resp = httpx.get(
-        f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&user_id=eq.{req.user_id}&select=id",
+        f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&user_id=eq.{user_id}&select=id",
         headers=headers
     )
     if len(member_resp.json()) == 0:
         raise HTTPException(status_code=404, detail="Vous n'êtes pas membre de cette entreprise")
     owner_check = httpx.get(
-        f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&owner_id=eq.{req.user_id}&select=id",
+        f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&owner_id=eq.{user_id}&select=id",
         headers=headers
     )
     if len(owner_check.json()) > 0:
         raise HTTPException(status_code=400, detail="Le propriétaire ne peut pas quitter l'entreprise. Veuillez transférer la propriété d'abord.")
     httpx.delete(
-        f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&user_id=eq.{req.user_id}",
+        f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&user_id=eq.{user_id}",
         headers=headers
     )
     return {"success": True}
 
 @app.delete("/api/applications/{application_id}")
-async def delete_application(application_id: str, request: Request):
+async def delete_application(application_id: str, user_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
-    auth_header = request.headers.get("authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Non authentifié")
-    token = auth_header.replace("Bearer ", "")
-    user_resp = httpx.get(f"{supabase_url}/auth/v1/user", headers={"Authorization": f"Bearer {token}"})
-    if user_resp.status_code != 200:
-        raise HTTPException(status_code=401, detail="Token invalide")
-    user_id = user_resp.json().get("id")
     app_resp = httpx.get(
         f"{supabase_url}/rest/v1/applications?id=eq.{application_id}&select=job_id",
         headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -1629,13 +1637,12 @@ async def admin_delete_company(company_id: str, request: Request, language: str 
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/company/delete")
-async def delete_own_company(request: Request):
+async def delete_own_company(request: Request, user_id: str = Depends(get_current_active_user)):
     data = await request.json()
-    user_id = data.get("user_id")
     company_id = data.get("company_id")
     language = data.get("language", "fr")
-    if not user_id or not company_id:
-        raise HTTPException(status_code=400, detail="user_id et company_id sont requis")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="company_id requis")
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -1731,7 +1738,7 @@ async def admin_reject_company(req: AdminActionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------- NOUVELLE FONCTION UTILITAIRE ----------
+# ---------- FONCTION UTILITAIRE ----------
 def set_user_entities_status(user_id: str, active: bool):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
@@ -1783,7 +1790,7 @@ def set_user_entities_status(user_id: str, active: bool):
     except Exception as e:
         print(f"Erreur déconnexion sessions: {e}")
 
-# ---------- ENDPOINTS ADMIN MODIFIÉS ----------
+# ---------- ENDPOINTS ADMIN ----------
 @app.post("/api/admin/suspend-company")
 async def admin_suspend_company(req: AdminSuspendCompanyRequest):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -2112,20 +2119,11 @@ async def admin_restore_message(message_id: str):
     return {"success": True, "message": "Message restauré"}
 
 @app.post("/api/user/request-role-change")
-async def request_role_change(req: RoleChangeRequestRequest, request: Request):
+async def request_role_change(req: RoleChangeRequestRequest, user_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
-    auth_header = request.headers.get("authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Non authentifié")
-    token = auth_header.replace("Bearer ", "")
-    user_resp = httpx.get(f"{supabase_url}/auth/v1/user", headers={"Authorization": f"Bearer {token}"})
-    if user_resp.status_code != 200:
-        raise HTTPException(status_code=401, detail="Token invalide")
-    user_data = user_resp.json()
-    user_id = user_data.get("id")
     current_user = httpx.get(
         f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=role",
         headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -2218,7 +2216,7 @@ async def admin_handle_role_request(req: AdminHandleRoleRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/report")
-async def create_report(req: ReportRequest):
+async def create_report(req: ReportRequest, reporter_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
@@ -2226,7 +2224,7 @@ async def create_report(req: ReportRequest):
     try:
         response = httpx.post(
             f"{supabase_url}/rest/v1/reports",
-            json={"reporter_id": req.reporter_id, "reported_item_type": req.reported_item_type, "reported_item_id": req.reported_item_id, "reason": req.reason, "status": "pending"},
+            json={"reporter_id": reporter_id, "reported_item_type": req.reported_item_type, "reported_item_id": req.reported_item_id, "reason": req.reason, "status": "pending"},
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}", "Content-Type": "application/json", "Prefer": "return=minimal"}
         )
         if response.status_code not in (200, 201):
@@ -2307,7 +2305,6 @@ async def toggle_user_status(req: AdminToggleUserStatusRequest):
             json={"is_active": req.is_active, "suspended_until": None},
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
-        # Propagation (réactivation)
         if req.is_active:
             set_user_entities_status(req.user_id, True)
         else:
@@ -2486,12 +2483,11 @@ async def get_cancellations():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/boost/free")
-async def activate_free_boost(request: Request):
+async def activate_free_boost(request: Request, user_id: str = Depends(get_current_active_user)):
     data = await request.json()
     job_id = data.get("job_id")
-    user_id = data.get("user_id")
-    if not job_id or not user_id:
-        raise HTTPException(status_code=400, detail="job_id et user_id requis")
+    if not job_id:
+        raise HTTPException(status_code=400, detail="job_id requis")
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -2709,7 +2705,7 @@ def compute_match_score(job: dict, candidate_profile: dict) -> int:
     return min(100, int(score))
 
 @app.get("/api/jobs/{job_id}/match-score")
-async def get_match_score(job_id: str, user_id: str = Query(...)):
+async def get_match_score(job_id: str, user_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -2725,11 +2721,7 @@ async def get_match_score(job_id: str, user_id: str = Query(...)):
     return {"score": score}
 
 @app.delete("/api/user/delete-account")
-async def delete_own_account(request: Request):
-    data = await request.json()
-    user_id = data.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="ID utilisateur requis")
+async def delete_own_account(request: Request, user_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
@@ -2825,10 +2817,6 @@ if os.path.isdir(BUILD_DIR):
     app.mount("/static", StaticFiles(directory=os.path.join(BUILD_DIR, "static")), name="static")
     app.mount("/", StaticFiles(directory=BUILD_DIR, html=True), name="root")
 
-
-
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8001)))
-    
