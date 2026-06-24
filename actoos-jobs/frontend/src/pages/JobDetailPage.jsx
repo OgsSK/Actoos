@@ -28,7 +28,7 @@ import { CONTRACT_TYPES } from '../lib/utils';
 const JobDetailPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
-  const { user, isAdmin } = useAuth();
+  const { user, profile, isAdmin } = useAuth(); // ✅ ajout de `profile`
   const { format } = useCurrencyFormatter();
 
   const [job, setJob] = useState(null);
@@ -125,6 +125,15 @@ const JobDetailPage = () => {
     if (!user) {
       toast.error(t('jobDetail.pleaseLogin'));
       window.location.href = '/connexion';
+      return false;
+    }
+    // ✅ Vérification suspension/bannissement
+    if (!profile?.is_active) {
+      toast.error(t('jobDetail.accountSuspended'));
+      return false;
+    }
+    if (profile?.is_banned) {
+      toast.error(t('jobDetail.accountBanned'));
       return false;
     }
     return true;
@@ -230,7 +239,6 @@ const JobDetailPage = () => {
   }
 
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
-  // Détermine si le boost est actif
   const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
 
   return (
@@ -275,7 +283,6 @@ const JobDetailPage = () => {
                       {format(job.salary_min)} – {format(job.salary_max)}
                     </Badge>
                   )}
-                  {/* Badge Boosté ajouté ici */}
                   {isBoosted && (
                     <Badge className="bg-purple-100 text-purple-700 border border-purple-200">
                       🚀 {t('jobDetail.boosted')}
@@ -293,11 +300,21 @@ const JobDetailPage = () => {
                         ✅ {t('jobDetail.alreadyApplied')}
                       </Badge>
                     ) : (
-                      <Button onClick={handleApply} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto text-white">
+                      <Button
+                        onClick={handleApply}
+                        className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto text-white"
+                        disabled={!profile?.is_active || profile?.is_banned}
+                      >
                         {t('jobDetail.apply')}
                       </Button>
                     )}
-                    <Button variant="outline" size="icon" onClick={handleToggleSave} className="w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleToggleSave}
+                      className="w-full sm:w-auto"
+                      disabled={!profile?.is_active || profile?.is_banned}
+                    >
                       <Heart className={`w-5 h-5 ${isSaved ? 'fill-current text-red-500' : ''}`} />
                     </Button>
                   </>

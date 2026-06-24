@@ -30,7 +30,7 @@ const RATES = {
 const CreateJobPage = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
-  const { user, activeCompanyId } = useAuth();
+  const { user, profile, activeCompanyId, signOut } = useAuth();
   const navigate = useNavigate();
 
   const { prefs } = usePreferencesContext();
@@ -70,6 +70,15 @@ const CreateJobPage = () => {
 
   const [newSkill, setNewSkill] = useState('');
 
+  // Vérification du statut du compte utilisateur
+  useEffect(() => {
+    if (!user) return;
+    if (!profile?.is_active || profile?.is_banned) {
+      signOut();
+      navigate('/connexion?reason=suspended', { replace: true });
+    }
+  }, [user, profile, signOut, navigate]);
+
   useEffect(() => {
     fetchData();
     if (id) {
@@ -100,6 +109,13 @@ const CreateJobPage = () => {
 
       if (companyError || !comp) {
         toast.error(t('createJob.toasts.companyNotFound'));
+        navigate('/dashboard/entreprise');
+        return;
+      }
+
+      // Vérification que l'entreprise est active
+      if (!comp.is_active) {
+        toast.error(t('createJob.toasts.companySuspended'));
         navigate('/dashboard/entreprise');
         return;
       }
@@ -175,6 +191,12 @@ const CreateJobPage = () => {
   };
 
   const handleSave = async (publish = false) => {
+    // Vérification supplémentaire côté frontend
+    if (!company?.is_active) {
+      toast.error(t('createJob.toasts.companySuspended'));
+      return;
+    }
+
     const newErrors = {};
     if (!form.title.trim()) newErrors.title = true;
     if (!form.description.trim()) newErrors.description = true;
@@ -343,6 +365,7 @@ const CreateJobPage = () => {
   };
 
   const isPublishDisabled = () => {
+    if (!company?.is_active) return true;
     if (isUnverified) return true;
     return saving;
   };
@@ -365,6 +388,21 @@ const CreateJobPage = () => {
           </div>
         )}
 
+        {/* Bannière entreprise suspendue */}
+        {!company?.is_active && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="text-sm">
+              <p className="text-red-800 font-medium">{t('createJob.toasts.companySuspended')}</p>
+              <p className="text-red-600">{t('createJob.toasts.companySuspendedDesc')}</p>
+            </div>
+          </div>
+        )}
+
         {/* En‑tête */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
           <div className="flex items-center gap-2 sm:gap-4">
@@ -380,7 +418,7 @@ const CreateJobPage = () => {
             </div>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button" className="flex-1 sm:flex-none">
+            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving || !company?.is_active} type="button" className="flex-1 sm:flex-none">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               {t('createJob.save')}
             </Button>
@@ -420,6 +458,7 @@ const CreateJobPage = () => {
                   required
                   className={inputErrorClass('title')}
                   data-testid="job-title-input"
+                  disabled={!company?.is_active}
                 />
                 <div className="mt-2">
                   <AIAssistant
@@ -441,6 +480,7 @@ const CreateJobPage = () => {
                     }}
                     className={selectErrorClass('category_id', 'w-full h-10 px-3 py-2 border rounded-md bg-white')}
                     data-testid="job-category-select"
+                    disabled={!company?.is_active}
                   >
                     <option value="">{t('createJob.options.selectCategory')}</option>
                     {categories.map(cat => (
@@ -461,6 +501,7 @@ const CreateJobPage = () => {
                     className={selectErrorClass('contract_type', 'w-full h-10 px-3 py-2 border rounded-md bg-white')}
                     required
                     data-testid="job-contract-select"
+                    disabled={!company?.is_active}
                   >
                     <option value="">{t('createJob.options.selectContract')}</option>
                     {Object.entries(CONTRACT_TYPES).map(([key, val]) => (
@@ -481,6 +522,7 @@ const CreateJobPage = () => {
                     onChange={(e) => setForm({ ...form, experience_level: e.target.value })}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     data-testid="job-experience-select"
+                    disabled={!company?.is_active}
                   >
                     <option value="">{t('createJob.options.unspecified')}</option>
                     {Object.entries(EXPERIENCE_LEVELS).map(([key, val]) => (
@@ -499,6 +541,7 @@ const CreateJobPage = () => {
                     value={form.positions_count}
                     onChange={(e) => setForm({ ...form, positions_count: e.target.value })}
                     data-testid="job-positions-input"
+                    disabled={!company?.is_active}
                   />
                 </div>
               </div>
@@ -510,6 +553,7 @@ const CreateJobPage = () => {
                     checked={form.is_urgent}
                     onChange={(e) => setForm({ ...form, is_urgent: e.target.checked })}
                     className="rounded border-slate-300 text-red-600 focus:ring-red-500"
+                    disabled={!company?.is_active}
                   />
                   <span className="text-sm text-slate-600">{t('createJob.labels.urgent')}</span>
                 </label>
@@ -540,6 +584,7 @@ const CreateJobPage = () => {
                   placeholder={t('createJob.placeholders.description')}
                   required
                   data-testid="job-description-textarea"
+                  disabled={!company?.is_active}
                 />
                 <div className="mt-2">
                   <AIAssistant
@@ -560,6 +605,7 @@ const CreateJobPage = () => {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder={t('createJob.placeholders.missions')}
                   data-testid="job-responsibilities-textarea"
+                  disabled={!company?.is_active}
                 />
                 <div className="mt-2">
                   <AIAssistant
@@ -580,6 +626,7 @@ const CreateJobPage = () => {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder={t('createJob.placeholders.requirements')}
                   data-testid="job-requirements-textarea"
+                  disabled={!company?.is_active}
                 />
                 <div className="mt-2">
                   <AIAssistant
@@ -600,6 +647,7 @@ const CreateJobPage = () => {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder={t('createJob.placeholders.benefits')}
                   data-testid="job-benefits-textarea"
+                  disabled={!company?.is_active}
                 />
               </div>
             </CardContent>
@@ -618,8 +666,9 @@ const CreateJobPage = () => {
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
                   data-testid="job-skill-input"
                   className="flex-1"
+                  disabled={!company?.is_active}
                 />
-                <Button type="button" onClick={handleAddSkill} disabled={!newSkill.trim()} className="w-full sm:w-auto">
+                <Button type="button" onClick={handleAddSkill} disabled={!newSkill.trim() || !company?.is_active} className="w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-1" />
                   {t('createJob.skills.add')}
                 </Button>
@@ -634,6 +683,7 @@ const CreateJobPage = () => {
                         type="button"
                         onClick={() => handleRemoveSkill(skill)}
                         className="ml-1 hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                        disabled={!company?.is_active}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -660,6 +710,7 @@ const CreateJobPage = () => {
                     onChange={(e) => setForm({ ...form, city_id: e.target.value })}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     data-testid="job-city-select"
+                    disabled={!company?.is_active}
                   >
                     <option value="">{t('createJob.options.selectCity')}</option>
                     {filteredCities.map(city => (
@@ -673,6 +724,7 @@ const CreateJobPage = () => {
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
                     placeholder={t('createJob.placeholders.address')}
+                    disabled={!company?.is_active}
                   />
                 </div>
               </div>
@@ -684,6 +736,7 @@ const CreateJobPage = () => {
                     checked={form.is_remote}
                     onChange={(e) => setForm({ ...form, is_remote: e.target.checked })}
                     className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    disabled={!company?.is_active}
                   />
                   <span className="text-sm text-slate-600">{t('createJob.labels.remote')}</span>
                 </label>
@@ -693,6 +746,7 @@ const CreateJobPage = () => {
                     value={form.remote_type}
                     onChange={(e) => setForm({ ...form, remote_type: e.target.value })}
                     className="h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm w-full sm:w-auto"
+                    disabled={!company?.is_active}
                   >
                     <option value="">{t('createJob.labels.remoteType')}</option>
                     <option value="full">{t('createJob.options.remoteFull')}</option>
@@ -723,6 +777,7 @@ const CreateJobPage = () => {
                     onChange={(e) => setForm({ ...form, salary_min: e.target.value })}
                     placeholder={t('createJob.placeholders.salaryMin')}
                     data-testid="job-salary-min-input"
+                    disabled={!company?.is_active}
                   />
                 </div>
                 <div>
@@ -735,6 +790,7 @@ const CreateJobPage = () => {
                     onChange={(e) => setForm({ ...form, salary_max: e.target.value })}
                     placeholder={t('createJob.placeholders.salaryMax')}
                     data-testid="job-salary-max-input"
+                    disabled={!company?.is_active}
                   />
                 </div>
               </div>
@@ -745,6 +801,7 @@ const CreateJobPage = () => {
                   checked={form.is_salary_visible}
                   onChange={(e) => setForm({ ...form, is_salary_visible: e.target.checked })}
                   className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  disabled={!company?.is_active}
                 />
                 <span className="text-sm text-slate-600">{t('createJob.labels.showSalary')}</span>
               </label>
@@ -768,6 +825,7 @@ const CreateJobPage = () => {
                     onChange={(e) => setForm({ ...form, application_deadline: e.target.value })}
                     min={new Date().toISOString().split('T')[0]}
                     data-testid="job-deadline-input"
+                    disabled={!company?.is_active}
                   />
                 </div>
                 <div>
@@ -777,6 +835,7 @@ const CreateJobPage = () => {
                     value={form.start_date}
                     onChange={(e) => setForm({ ...form, start_date: e.target.value })}
                     data-testid="job-start-date-input"
+                    disabled={!company?.is_active}
                   />
                 </div>
               </div>
@@ -785,7 +844,7 @@ const CreateJobPage = () => {
 
           {/* Boutons finaux */}
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2 sm:pt-4">
-            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving} type="button" className="w-full sm:w-auto">
+            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving || !company?.is_active} type="button" className="w-full sm:w-auto">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               {t('createJob.saveDraft')}
             </Button>

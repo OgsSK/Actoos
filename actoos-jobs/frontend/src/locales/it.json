@@ -39,31 +39,7 @@
       "title": "Esplora per categoria",
       "subtitle": "Trova opportunità nel tuo campo di competenza"
     },
-    "jobs": {
-      "remote": "Lavoro da remoto",
-      "remoteFull": "100% remoto",
-      "remoteHybrid": "Ibrido",
-      "remoteOccasional": "Occasionale",
-      "boosted": "In evidenza",
-      "title": "Offerte recenti",
-      "subtitle": "Le ultime opportunità pubblicate",
-      "viewAll": "Vedi tutte le offerte",
-      "noJobsTitle": "Nessuna offerta disponibile",
-      "noJobsText": "Le prime offerte arriveranno presto!",
-      "postFirstJob": "Pubblica la prima offerta",
-      "postJob": "Pubblica un'offerta",
-      "seeJobs": "Vedi offerte",
-      "saveLogin": "Accedi per salvare questa offerta",
-      "companyCannotSave": "Le aziende non possono aggiungere offerte ai preferiti",
-      "saveSuccess": "Offerta salvata",
-      "unsaveSuccess": "Offerta rimossa dai preferiti",
-      "urgent": "🔥 Urgente - Candidati ora",
-      "salary": "Stipendio",
-      "unspecified": "Non specificato",
-      "unknownCompany": "Azienda",
-      "unknownLocation": "Non specificato",
-      "yourJob": "La tua offerta"
-    },
+
     "companies": {
       "title": "Aziende che assumono",
       "subtitle": "Scopri le aziende che si affidano a Actoos Jobs"
@@ -331,109 +307,80 @@
       "checkoutError": "Errore durante il reindirizzamento al pagamento"
     }
   },
-  "jobDetail": {
-    "boosted": "In evidenza",
-    "notFound": "Offerta non trovata",
-    "notFoundMessage": "Offerta non trovata.",
-    "backToJobs": "Torna alle offerte",
-    "apply": "Candidati",
-    "alreadyApplied": "Già candidato",
-    "removedFromFavorites": "Rimosso dai preferiti",
-    "savedToFavorites": "Offerta salvata",
-    "errorSaving": "Errore durante il salvataggio",
-    "yourOffer": "La tua offerta",
-    "unspecified": "Non specificato",
-    "descriptionTitle": "Descrizione della posizione",
-    "missionsTitle": "Missioni",
-    "profileTitle": "Profilo ricercato",
-    "benefitsTitle": "Benefici",
-    "pleaseLogin": "Per favore, accedi",
-    "companyCannotApply": "Le aziende non possono candidarsi",
-    "alreadyAppliedMessage": "Hai già inviato la candidatura",
-    "applicationSent": "Candidatura inviata",
-    "applicationError": "Errore durante l'invio della candidatura",
-    "matchScore": "{{score}}% di corrispondenza",
-    "currency": "FCFA",
-    "companyCannotSaveFavorites": "Le aziende non possono aggiungere ai preferiti"
-  },
-  "auth": {
-    "login": {
-      "title": "Accesso",
-      "description": "Accedi al tuo spazio personale",
-      "googleButton": "Continua con Google",
-      "orSeparator": "oppure",
-      "emailLabel": "Indirizzo email *",
-      "emailPlaceholder": "tuo@email.com",
-      "passwordLabel": "Password *",
-      "passwordPlaceholder": "••••••••",
-      "forgotPassword": "Password dimenticata?",
-      "submitButton": "Accedi",
-      "noAccount": "Non hai ancora un account?",
-      "createAccount": "Crea un account",
-      "legalPrefix": "Accedendo, accetti i nostri",
-      "legalAnd": "e la nostra",
-      "cgu": "CGU",
-      "privacy": "Politica sulla privacy",
-      "success": "Accesso effettuato con successo!",
-      "errorInvalid": "Email o password errati",
-      "errorGeneric": "Errore di accesso",
-      "errorGoogle": "Errore durante l'accesso con Google",
-      "fillAllFields": "Per favore, compila tutti i campi"
-    }
-  },
-  "jobAlerts": {
-    "back": "Indietro",
-    "title": "Avvisi di lavoro",
-    "subtitle": "Ricevi offerte corrispondenti ai tuoi criteri",
-    "newAlert": "Nuovo avviso",
-    "createTitle": "Crea avviso",
-    "editTitle": "Modifica avviso",
-    "createDescription": "Definisci i tuoi criteri per ricevere notifiche via email.",
-    "nameLabel": "Nome (opzionale)",
-    "namePlaceholder": "Es: Offerte tech a Bamako",
-    "keywordsLabel": "Parole chiave *",
-    "keywordsPlaceholder": "Es: sviluppatore, contabile, Bamako",
-    "keywordsHint": "Separa le parole con spazi. Es: \"dev Bamako\"",
-    "categoryLabel": "Categoria",
-    "allCategories": "Tutte le categorie",
-    "cityLabel": "Città",
-    "allCities": "Tutte le città",
-    "contractTypesLabel": "Tipi di contratto",
-    "salaryMinLabel": "Stipendio minimo (FCFA)",
-    "salaryMinPlaceholder": "Es: 300000",
-    "frequencyLabel": "Frequenza",
-    "frequencies": {
-      "instant": "Istantanea",
-      "daily": "Giornaliera",
-      "weekly": "Settimanale"
-    },
-    "cancel": "Annulla",
-    "createButton": "Crea avviso",
-    "editButton": "Modifica",
-    "alertActive": "Attivo",
-    "alertInactive": "Inattivo",
-    "noAlerts": "Non hai ancora nessun avviso.",
-    "createFirstAlert": "Crea il mio primo avviso",
-    "myAlerts": "I miei avvisi ({{count}})",
-    "lastSent": "Ultimo invio: {{date}}",
-    "activate": "Attiva",
-    "deactivate": "Disattiva",
-    "edit": "Modifica",
-    "delete": "Elimina",
-    "deleteConfirm": "Eliminare questo avviso?",
-    "toasts": {
-      "loadError": "Errore durante il caricamento degli avvisi",
-      "addCriteria": "Aggiungi almeno un criterio (parole chiave, categoria, città, stipendio)",
-      "editSuccess": "Avviso modificato",
-      "createSuccess": "Avviso creato con successo",
-      "saveError": "Errore",
-      "activateSuccess": "Avviso attivato",
-      "deactivateSuccess": "Avviso disattivato",
-      "toggleError": "Errore",
-      "deleteSuccess": "Avviso eliminato",
-      "deleteError": "Errore"
-    }
-  },
+
+  "login": {
+        "title": "Accedi",
+        "description": "Accedi al tuo account.",
+        "googleButton": "Continua con Google",
+        "orSeparator": "oppure",
+        "emailLabel": "Email",
+        "emailPlaceholder": "email@esempio.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "La tua password",
+        "forgotPassword": "Password dimenticata?",
+        "submitButton": "Accedi",
+        "noAccount": "Non hai un account?",
+        "createAccount": "Crea un account",
+        "legalPrefix": "Accedendo, accetti i nostri",
+        "cgu": "Termini di utilizzo",
+        "legalAnd": "e la nostra",
+        "privacy": "Informativa sulla privacy",
+        "success": "Accesso effettuato con successo!",
+        "errorInvalid": "Email o password errati.",
+        "errorGeneric": "Si è verificato un errore durante l'accesso.",
+        "errorGoogle": "Accesso Google fallito.",
+        "fillAllFields": "Si prega di compilare tutti i campi.",
+        "accountSuspended": "Il tuo account è attualmente sospeso. Contatta l'assistenza.",
+        "accountBanned": "Il tuo account è stato bannato permanentemente.",
+        "accountSuspendedMessage": "Il tuo account è sospeso. Contatta l'assistenza per maggiori informazioni.",
+        "accountBannedMessage": "Il tuo account è bannato. Non puoi più accedere alla piattaforma."
+      },
+      "signup": {
+        "title": "Crea un account",
+        "description": "Unisciti alla community Actoos Jobs.",
+        "googleButton": "Registrati con Google",
+        "orSeparator": "oppure",
+        "firstNameLabel": "Nome",
+        "lastNameLabel": "Cognome",
+        "emailLabel": "Email",
+        "passwordLabel": "Password",
+        "confirmPasswordLabel": "Conferma password",
+        "roleCandidate": "Cerco lavoro",
+        "roleCompany": "Sto assumendo",
+        "submitButton": "Crea il mio account",
+        "alreadyHaveAccount": "Hai già un account?",
+        "loginLink": "Accedi",
+        "legalConsent": "Creando un account, accetti i nostri",
+        "success": "Account creato con successo!",
+        "errorPasswordMismatch": "Le password non corrispondono.",
+        "errorPasswordLength": "La password deve contenere almeno 8 caratteri.",
+        "errorEmailTaken": "Questa email è già in uso.",
+        "errorGeneric": "Si è verificato un errore durante la registrazione.",
+        "fillAllFields": "Si prega di compilare tutti i campi obbligatori."
+      },
+      "forgotPassword": {
+        "title": "Password dimenticata",
+        "description": "Inserisci la tua email per ricevere un link di reimpostazione.",
+        "emailLabel": "Email",
+        "emailPlaceholder": "email@esempio.com",
+        "submitButton": "Invia link",
+        "backToLogin": "Torna all'accesso",
+        "success": "Se esiste un account con questa email, riceverai un link di reimpostazione.",
+        "error": "Si è verificato un errore. Riprova."
+      },
+      "resetPassword": {
+        "title": "Nuova password",
+        "description": "Imposta la tua nuova password.",
+        "passwordLabel": "Nuova password",
+        "confirmPasswordLabel": "Conferma password",
+        "submitButton": "Salva",
+        "success": "Password aggiornata con successo.",
+        "errorPasswordMismatch": "Le password non corrispondono.",
+        "errorPasswordLength": "La password deve contenere almeno 8 caratteri.",
+        "errorGeneric": "Si è verificato un errore."
+      }
+    ,
+  
   "contractTypes": {
     "cdi": "Tempo indeterminato",
     "cdd": "Tempo determinato",
@@ -536,23 +483,7 @@
       "googleError": "Errore durante l'accesso con Google"
     }
   },
-  "report": {
-    "button": "Segnala",
-    "mustLogin": "Accedi per segnalare",
-    "sentSuccess": "Segnalazione inviata",
-    "sendError": "Errore durante l'invio della segnalazione",
-    "title": "Segnala questo {{itemType}}",
-    "itemTypes": {
-      "job": "questa offerta",
-      "company": "questa azienda",
-      "user": "questo utente",
-      "default": "questo elemento"
-    },
-    "reasonPlaceholder": "Motivo della segnalazione...",
-    "reasonDefault": "Non specificato",
-    "cancel": "Annulla",
-    "send": "Invia segnalazione"
-  },
+  
   "resetPassword": {
     "title": "Nuova password",
     "description": "Scegli una nuova password per il tuo account.",
@@ -570,11 +501,7 @@
       "updateError": "Errore durante l'aggiornamento della password"
     }
   },
-  "savedJobs": {
-    "title": "Offerte salvate",
-    "back": "Indietro",
-    "noSaved": "Nessuna offerta salvata."
-  },
+  
   "scheduleInterview": {
     "title": "Pianifica un colloquio"
   },
@@ -707,94 +634,7 @@
       }
     ]
   },
-  "createJob": {
-    "titleNew": "Nuova offerta di lavoro",
-    "titleEdit": "Modifica offerta",
-    "back": "Indietro",
-    "save": "Salva",
-    "saveDraft": "Salva come bozza",
-    "submitForValidation": "Invia per convalida",
-    "updateOffer": "Aggiorna offerta",
-    "validationRequired": "Convalida azienda richiesta",
-    "companyUnverified": "La tua azienda deve essere convalidata prima di poter inviare un'offerta.",
-    "unverifiedBanner": {
-      "title": "Azienda in attesa di convalida",
-      "description": "La tua azienda non è ancora verificata. Puoi salvare le tue offerte come bozze, ma non saranno pubblicate fino a quando l'amministratore non avrà convalidato il tuo account."
-    },
-    "sections": {
-      "basicInfo": "Informazioni di base",
-      "description": "Descrizione della posizione",
-      "skills": "Competenze richieste",
-      "location": "Luogo",
-      "salary": "Retribuzione",
-      "dates": "Date"
-    },
-    "labels": {
-      "title": "Titolo della posizione *",
-      "category": "Categoria *",
-      "contractType": "Tipo di contratto *",
-      "experienceLevel": "Livello di esperienza",
-      "positionsCount": "Posti disponibili",
-      "urgent": "Offerta urgente",
-      "description": "Descrizione *",
-      "missions": "Missioni / Responsabilità",
-      "requirements": "Profilo ricercato / Requisiti",
-      "benefits": "Benefici offerti",
-      "skillInput": "Aggiungi una competenza",
-      "city": "Città",
-      "address": "Indirizzo preciso",
-      "remote": "Lavoro da remoto possibile",
-      "remoteType": "Tipo di lavoro da remoto",
-      "salaryMin": "Stipendio minimo (FCFA/mese)",
-      "salaryMax": "Stipendio massimo (FCFA/mese)",
-      "showSalary": "Mostra stipendio ai candidati",
-      "applicationDeadline": "Data limite per la candidatura",
-      "startDate": "Data di inizio desiderata"
-    },
-    "placeholders": {
-      "title": "Es: Sviluppatore Full Stack, Contabile Senior...",
-      "description": "Descrivi la posizione, il contesto, il team...",
-      "missions": "• Missione 1\n• Missione 2\n• Missione 3...",
-      "requirements": "• Titolo di studio richiesto\n• Competenze tecniche\n• Qualità personali...",
-      "benefits": "• Assicurazione sanitaria\n• Lavoro da remoto parziale\n• Formazione continua...",
-      "skill": "Es: React, Python, Excel...",
-      "address": "Quartiere, via...",
-      "salaryMin": "Es: 300000",
-      "salaryMax": "Es: 500000"
-    },
-    "options": {
-      "selectCategory": "Seleziona",
-      "selectContract": "Seleziona",
-      "selectCity": "Seleziona",
-      "unspecified": "Non specificato",
-      "remoteFull": "100% da remoto",
-      "remoteHybrid": "Ibrido",
-      "remoteOccasional": "Occasionale"
-    },
-    "skills": {
-      "add": "Aggiungi"
-    },
-    "toasts": {
-      "userNotIdentified": "Utente non identificato",
-      "noCompanySelected": "Nessuna azienda selezionata",
-      "companyNotFound": "Azienda non trovata",
-      "fillRequiredFields": "Per favore, compila i campi obbligatori",
-      "companyNotVerified": "La tua azienda non è ancora verificata. Non puoi inviare un'offerta.",
-      "limitReached": "Hai già {{total}} offerta/e attiva/e o in attesa. Limite del tuo piano: {{limit}}.",
-      "submittedForValidation": "Offerta inviata per la convalida! Sarà visibile dopo l'approvazione.",
-      "offerUpdated": "Offerta aggiornata con successo.",
-      "draftSaved": "Bozza salvata",
-      "saveError": "Errore durante il salvataggio",
-      "jobNotFound": "Offerta non trovata"
-    },
-    "limitModal": {
-      "title": "Limite offerte raggiunto",
-      "message": "Il tuo piano {{plan}} ti consente di pubblicare {{max}} offerta/e attiva/e. Attualmente hai {{current}} offerta/e attiva/e.",
-      "upgradeSuggestion": "Per pubblicare più offerte, passa a un piano superiore.",
-      "later": "Più tardi",
-      "seePlans": "Vedi piani"
-    }
-  },
+
   "experienceLevels": {
     "junior": "Junior",
     "intermediate": "Intermedio",
@@ -802,74 +642,7 @@
     "lead": "Lead",
     "manager": "Manager"
   },
-  "createCompany": {
-    "title": "Crea la tua azienda",
-    "subtitle": "Inserisci le informazioni della tua azienda per iniziare a reclutare",
-    "back": "Indietro",
-    "logo": "Aggiungi un logo",
-    "uploading": "Caricamento...",
-    "labels": {
-      "name": "Nome azienda *",
-      "description": "Descrizione",
-      "industry": "Settore di attività",
-      "size": "Dimensioni azienda",
-      "website": "Sito web",
-      "email": "Email di contatto",
-      "phone": "Telefono",
-      "foundedYear": "Anno di fondazione",
-      "city": "Città",
-      "address": "Indirizzo"
-    },
-    "placeholders": {
-      "name": "Es: Orange",
-      "description": "Presenta la tua azienda, la sua missione, i suoi valori...",
-      "website": "esempio.com",
-      "email": "recruitment@esempio.com",
-      "phone": "+223 XX XX XX XX",
-      "year": "Es: 2010",
-      "address": "Quartiere, via..."
-    },
-    "options": {
-      "selectIndustry": "Seleziona",
-      "selectSize": "Seleziona",
-      "selectCity": "Seleziona"
-    },
-    "sizes": {
-      "1-10": "1-10 dipendenti",
-      "11-50": "11-50 dipendenti",
-      "51-200": "51-200 dipendenti",
-      "201-500": "201-500 dipendenti",
-      "500+": "500+ dipendenti"
-    },
-    "industries": [
-      "Tecnologia",
-      "Finanza e Banche",
-      "Telecomunicazioni",
-      "Commercio e Distribuzione",
-      "Industria e Manifattura",
-      "Agricoltura",
-      "Edilizia e Ingegneria Civile",
-      "Trasporti e Logistica",
-      "Salute e Farmaceutica",
-      "Istruzione e Formazione",
-      "Turismo e Ospitalità",
-      "Servizi alle imprese",
-      "ONG e Umanitario",
-      "Pubblica Amministrazione",
-      "Altro"
-    ],
-    "toasts": {
-      "imageRequired": "Per favore, seleziona un'immagine",
-      "imageTooBig": "L'immagine non deve superare 2 MB",
-      "logoUploaded": "Logo caricato",
-      "uploadError": "Errore durante il caricamento",
-      "fillRequired": "Per favore, compila i campi obbligatori",
-      "companyCreated": "Azienda creata con successo! Reindirizzamento...",
-      "createError": "Errore durante la creazione dell'azienda",
-      "notificationError": "Errore notifica amministratore"
-    },
-    "submit": "Crea la mia azienda"
-  },
+  
   "coverLetter": {
     "badge": "IA",
     "title": "Generatore di lettera di presentazione",
@@ -959,258 +732,11 @@
       "removeConfirm": "Rimuovere questo membro?"
     }
   },
-  "companyProfile": {
-    "back": "Indietro",
-    "title": "Profilo aziendale",
-    "subtitle": "Modifica le informazioni della tua azienda",
-    "uploading": "Caricamento...",
-    "logo": "Cambia logo",
-    "labels": {
-      "name": "Nome azienda",
-      "description": "Descrizione",
-      "industry": "Settore di attività",
-      "size": "Dimensioni azienda",
-      "website": "Sito web",
-      "email": "Email di contatto",
-      "phone": "Telefono",
-      "foundedYear": "Anno di fondazione",
-      "country": "Paese",
-      "city": "Città",
-      "address": "Indirizzo"
-    },
-    "placeholders": {
-      "name": "Nome della tua azienda",
-      "description": "Descrivi la tua azienda in poche frasi",
-      "website": "https://www.miaazienda.com",
-      "email": "contatto@azienda.com",
-      "phone": "+223 00 00 00 00",
-      "year": "Es: 2020",
-      "address": "Quartiere, via, edificio..."
-    },
-    "options": {
-      "selectIndustry": "Seleziona un settore",
-      "selectSize": "Seleziona una dimensione",
-      "selectCity": "Seleziona una città"
-    },
-    "submit": "Salva modifiche",
-    "deleteConfirm": "Sei sicuro di voler eliminare definitivamente la tua azienda? Questa azione è irreversibile.",
-    "deleteSection": {
-      "title": "Elimina la mia azienda",
-      "description": "Questa azione eliminerà definitivamente la tua azienda, tutte le sue offerte e i dati associati.",
-      "button": "Elimina la mia azienda",
-      "deleting": "Eliminazione in corso..."
-    },
-    "toasts": {
-      "imageRequired": "Per favore, seleziona un'immagine",
-      "imageTooBig": "L'immagine non deve superare 2 MB",
-      "logoUploaded": "Logo caricato con successo",
-      "uploadError": "Errore durante il caricamento del logo",
-      "nameRequired": "Il nome dell'azienda è obbligatorio",
-      "updateSuccess": "Profilo aggiornato con successo",
-      "updateError": "Errore durante l'aggiornamento del profilo",
-      "companyDeleted": "Azienda eliminata con successo",
-      "deleteError": "Errore durante l'eliminazione dell'azienda"
-    },
-    "noCompany": {
-      "title": "Nessuna azienda trovata",
-      "message": "Devi prima creare un'azienda per accedere a questa pagina.",
-      "createButton": "Crea la mia azienda"
-    },
-    "sizes": {
-      "1-10": "1-10 dipendenti",
-      "11-50": "11-50 dipendenti",
-      "51-200": "51-200 dipendenti",
-      "201-500": "201-500 dipendenti",
-      "500+": "Più di 500 dipendenti"
-    }
-  },
-  "companyJobs": {
-    "title": "Tutte le mie offerte",
-    "back": "Indietro",
-    "newOffer": "Nuova offerta",
-    "noJobs": {
-      "title": "Nessuna offerta",
-      "message": "Non hai ancora pubblicato nessuna offerta.",
-      "createButton": "Crea un'offerta"
-    },
-    "status": {
-      "draft": "Bozza",
-      "active": "Pubblicata",
-      "paused": "In pausa",
-      "closed": "Chiusa",
-      "expired": "Scaduta",
-      "pending": "In convalida"
-    },
-    "menu": {
-      "edit": "Modifica",
-      "pause": "Metti in pausa",
-      "boost": "Usa il mio boost mensile",
-      "reactivate": "Riattiva",
-      "publish": "Pubblica",
-      "delete": "Elimina"
-    },
-    "views": "{{count}} visualizzazioni",
-    "applications": "{{count}} candidature",
-    "confirmDelete": "Sei sicuro di voler eliminare \"{{title}}\"?",
-    "toasts": {
-      "deleted": "Offerta eliminata",
-      "deleteError": "Errore durante l'eliminazione",
-      "published": "Offerta pubblicata!",
-      "statusUpdated": "Stato aggiornato",
-      "updateError": "Errore durante l'aggiornamento",
-      "boostActivated": "Boost gratuito attivato per 7 giorni!",
-      "boostError": "Errore durante l'attivazione del boost",
-      "boostBusinessOnly": "Questa funzionalità è riservata al piano Business",
-      "boostAlreadyUsed": "Boost già utilizzato questo mese. Riprova tra {{days}} giorno/i.",
-      "jobNotEligible": "L'offerta non è idonea",
-      "companyNotFound": "Azienda non trovata"
-    }
-  },
-  "companyDetail": {
-    "notFound": "Azienda non trovata",
-    "notFoundMessage": "Azienda non trovata.",
-    "back": "Indietro",
-    "yourCompany": "La tua azienda",
-    "about": "Chi siamo",
-    "jobs": "Offerte di lavoro",
-    "noJobs": "Nessuna offerta attiva al momento.",
-    "employees": "{{size}} dipendenti",
-    "website": "Sito web",
-    "email": "Email"
-  },
- 
-  "companyDashboard": {
-    "header": {
-    "title": "Spazio reclutatore"
-  },
-    "noCompany": {
-      "title": "Crea la tua prima azienda",
-      "subtitle": "Per pubblicare offerte e ricevere candidature, inizia creando il profilo della tua azienda.",
-      "createButton": "Crea la mia azienda"
-    },
-    "companySelector": {
-      "owner": "(proprietario)",
-      "member": "(membro)",
-      "newCompany": "Nuova azienda"
-    },
-   
-    "profileButton": "Profilo aziendale",
-    "newOfferButton": "Nuova offerta",
-    "stats": {
-      "publishedJobs": "Offerte pubblicate",
-      "totalApplications": "Totale candidature",
-      "newApplications": "Nuove candidature",
-      "totalViews": "Visualizzazioni totali",
-      "trend": "+{{trend}}% questo mese"
-    },
-    "jobsSection": {
-      "title": "Le mie offerte di lavoro",
-      "totalOffers": "{{count}} offerte in totale",
-      "viewAll": "Vedi tutto",
-      "noOffers": "Nessuna offerta pubblicata",
-      "publishButton": "Pubblica offerta"
-    },
-    "applicationsSection": {
-      "title": "Candidature recenti",
-      "newCount": "{{count}} nuove",
-      "viewAll": "Vedi tutto",
-      "noApplications": "Nessuna candidatura"
-    },
-    "companyProfileCard": {
-      "title": "Profilo aziendale",
-      "pendingValidation": "⏳ La tua azienda è in attesa di convalida. Puoi preparare le tue offerte come bozze. Una volta convalidata, potrai inviarle per la pubblicazione.",
-      "employees": "{{size}} dipendenti",
-      "founded": "Fondata nel {{year}}",
-      "editProfile": "Modifica profilo"
-    },
-    "subscriptionCard": {
-      "currentPlan": "Piano attuale: {{plan}}",
-      "changePlan": "Cambia piano",
-      "activeOffers": "Offerte attive",
-      "teamMembers": "Membri del team",
-      "unlimited": "Illimitato",
-      "activePlanMessage": "Al momento sei sul piano {{plan}}. Puoi gestire il tuo abbonamento o disdirlo.",
-      "manageSubscription": "Gestisci il mio abbonamento",
-      "cancelSubscription": "Disdici abbonamento",
-      "freePlanMessage": "Passa a un piano superiore per pubblicare più offerte e accedere a funzionalità avanzate.",
-      "lastCancelReason": "Motivo dell'ultima disdetta:",
-      "cancelReasonQuote": "\"{{reason}}\"",
-      "freeBoostMessage": "🚀 Hai diritto a un boost gratuito di 7 giorni al mese. Usalo dal menu delle tue offerte attive."
-    },
-    "adminMessages": {
-      "title": "Messaggi dell'amministrazione"
-    },
-    "status": {
-      "draft": "Bozza",
-      "pending": "In convalida",
-      "active": "Pubblicata",
-      "paused": "In pausa",
-      "closed": "Chiusa",
-      "expired": "Scaduta",
-      "rejected": "Rifiutata"
-    },
-    "applicationStatus": {
-      "pending": "Nuova",
-      "viewed": "Visualizzata",
-      "shortlisted": "Preselezionato",
-      "interview": "Colloquio",
-      "accepted": "Accettato",
-      "rejected": "Rifiutato"
-    },
-    "jobCard": {
-      "unspecifiedLocation": "Non specificato",
-      "views": "{{count}} visualizzazioni",
-      "applications": "{{count}} candidature",
-      "menu": {
-        "edit": "Modifica",
-        "viewApplications": "Vedi candidature",
-        "submitForValidation": "Invia per convalida",
-        "validationRequired": "Convalida aziendale richiesta",
-        "cancelSubmission": "Annulla invio",
-        "pause": "Metti in pausa",
-        "republish": "Ripubblica",
-        "delete": "Elimina",
-        "freeBoost": "Boost gratuito (7 giorni)"
-      }
-    },
-    "cancelModal": {
-      "title": "Disdici abbonamento",
-      "description": "Stai per disdire il tuo abbonamento. Questa azione è irreversibile.",
-      "reasonLabel": "Motivo della disdetta (facoltativo)",
-      "reasonPlaceholder": "Dicci perché te ne vai...",
-      "consequencesTitle": "⚠️ Conseguenze:",
-      "consequences": [
-        "Il tuo piano verrà declassato a Gratuito",
-        "Le funzionalità premium saranno disattivate",
-        "Questa azione è immediata"
-      ],
-      "cancelButton": "Annulla",
-      "confirmButton": "Conferma disdetta"
-    },
-    "teamButton": "Gestisci team",
-    "toasts": {
-      "loadError": "Errore di caricamento della dashboard",
-      "jobDeleted": "Offerta eliminata",
-      "limitReached": "Limite raggiunto ({{limit}} offerta/e max).",
-      "offerPublished": "Offerta pubblicata",
-      "statusUpdated": "Stato aggiornato",
-      "updateError": "Errore",
-      "companyNotVerified": "La tua azienda non è ancora stata verificata. Al momento non puoi inviare un'offerta.",
-      "limitReachedDetailed": "Limite raggiunto ({{limit}} offerta/e max). Hai già {{total}} offerta/e attiva/e o in sospeso.",
-      "submittedForValidation": "Offerta inviata per la convalida",
-      "submissionCancelled": "Invio annullato, offerta rimessa a bozza",
-      "submissionError": "Errore durante l'invio",
-      "subscriptionCancelled": "Abbonamento disdetto con successo",
-      "cancelError": "Errore durante la disdetta",
-      "deleteConfirm": "Eliminare \"{{title}}\"?",
-      "adminNotifyError": "Errore di notifica lavoro amministratore",
-      "companyNotVerifiedMenu": "La tua azienda non è ancora stata verificata.",
-      "boostActivated": "Boost gratuito attivato per 7 giorni!",
-      "boostAlreadyUsed": "Hai già utilizzato il tuo boost gratuito questo mese.",
-      "boostError": "Errore durante l'attivazione del boost."
-    }
   
-},
+  
+ 
+ 
+  
   "candidateProfile": {
     "notFound": "Candidato non trovato.",
     "back": "Indietro",
@@ -1228,163 +754,7 @@
     "linkedin": "LinkedIn",
     "portfolio": "Portfolio"
   },
-  "candidateProfilePage": {
-    "title": "Il Mio Profilo",
-    "subtitle": "Gestisci le tue informazioni professionali",
-    "back": "Indietro",
-    "save": "Salva",
-    "saveChanges": "Salva modifiche",
-    "photo": {
-      "title": "Foto del profilo",
-      "hint": "JPG, PNG (max 2 MB)",
-      "change": "Cambia",
-      "delete": "Elimina",
-      "deleteConfirm": "Eliminare la tua foto del profilo?",
-      "uploadError": "Errore caricamento foto",
-      "updated": "Foto aggiornata",
-      "deleted": "Foto eliminata",
-      "deleteError": "Errore durante l'eliminazione della foto"
-    },
-    "personalInfo": {
-      "sectionTitle": "Informazioni personali",
-      "sectionDesc": "Le tue informazioni di base",
-      "firstName": "Nome *",
-      "lastName": "Cognome *",
-      "phone": "Telefono",
-      "phonePlaceholder": "+223 XX XX XX XX",
-      "city": "Città",
-      "selectCity": "Seleziona una città"
-    },
-    "professionalProfile": {
-      "sectionTitle": "Profilo professionale",
-      "sectionDesc": "Il tuo titolo e presentazione",
-      "title": "Titolo professionale *",
-      "bio": "Su di me",
-      "experienceLevel": "Livello di esperienza",
-      "selectLevel": "Seleziona",
-      "yearsOfExperience": "Anni di esperienza",
-      "available": "Sono immediatamente disponibile",
-      "openToRemote": "Aperto al lavoro da remoto"
-    },
-    "cv": {
-      "sectionTitle": "Il mio CV",
-      "sectionDesc": "Carica il tuo CV principale (PDF o Word)",
-      "uploaded": "CV caricato",
-      "view": "Visualizza",
-      "change": "Cambia",
-      "delete": "Elimina",
-      "deleteConfirm": "Eliminare il tuo CV?",
-      "uploadTitle": "Carica il tuo CV",
-      "uploadHint": "PDF o Word, max 5 MB",
-      "chooseFile": "Scegli un file",
-      "analyzeButton": "Analizza il mio CV (IA)",
-      "uploadError": "Errore caricamento CV",
-      "uploadedToast": "CV caricato",
-      "deletedToast": "CV eliminato",
-      "deleteError": "Errore durante l'eliminazione del CV",
-      "invalidFormat": "Formato non supportato. Usa PDF o Word.",
-      "fileTooLarge": "Il file è troppo grande (max 5 MB)"
-    },
-    "documents": {
-      "sectionTitle": "Documenti",
-      "sectionDesc": "Diplomi, certificati, attestati...",
-      "typeDiploma": "Diploma",
-      "typeCertificate": "Certificato / Attestato",
-      "typeOther": "Altro",
-      "addButton": "Aggiungi un documento",
-      "addedToast": "Documento aggiunto",
-      "uploadError": "Errore caricamento documento",
-      "deleteConfirm": "Eliminare questo documento?",
-      "deletedToast": "Documento eliminato",
-      "deleteError": "Errore durante l'eliminazione del documento",
-      "empty": "Nessun documento aggiunto."
-    },
-    "skills": {
-      "sectionTitle": "Competenze",
-      "sectionDesc": "Aggiungi le tue competenze chiave",
-      "placeholder": "Es: React, Python...",
-      "add": "Aggiungi",
-      "empty": "Nessuna competenza aggiunta.",
-      "addedToast": "{{count}} competenza/e aggiunta/e!",
-      "noneFound": "Nessuna nuova competenza trovata."
-    },
-    "experience": {
-      "sectionTitle": "Esperienze professionali",
-      "sectionDesc": "Il tuo percorso professionale",
-      "add": "Aggiungi",
-      "edit": "Modifica",
-      "delete": "Elimina",
-      "empty": "Nessuna esperienza aggiunta",
-      "present": "Presente",
-      "modalAddTitle": "Aggiungi esperienza",
-      "modalEditTitle": "Modifica esperienza",
-      "jobTitle": "Posizione *",
-      "company": "Azienda *",
-      "location": "Luogo",
-      "startDate": "Data di inizio *",
-      "endDate": "Data di fine",
-      "currentlyWorking": "Attualmente ricopro questa posizione",
-      "description": "Descrizione",
-      "cancel": "Annulla",
-      "save": "Salva",
-      "saveNew": "Aggiungi",
-      "fillRequired": "Per favore, compila tutti i campi obbligatori"
-    },
-    "education": {
-      "sectionTitle": "Istruzione",
-      "sectionDesc": "I tuoi diplomi e certificazioni",
-      "add": "Aggiungi",
-      "edit": "Modifica",
-      "delete": "Elimina",
-      "empty": "Nessuna istruzione aggiunta",
-      "modalAddTitle": "Aggiungi istruzione",
-      "modalEditTitle": "Modifica istruzione",
-      "degree": "Titolo di studio *",
-      "school": "Istituto *",
-      "field": "Campo di studi",
-      "year": "Anno di conseguimento *",
-      "cancel": "Annulla",
-      "save": "Salva",
-      "saveNew": "Aggiungi",
-      "fillRequired": "Per favore, compila tutti i campi obbligatori"
-    },
-    "links": {
-      "sectionTitle": "Link",
-      "sectionDesc": "Portfolio e social network",
-      "linkedin": "LinkedIn",
-      "portfolio": "Portfolio / Sito web"
-    },
-    "salary": {
-      "sectionTitle": "Aspettative salariali",
-      "sectionDesc": "Fascia salariale desiderata (FCFA/mese)",
-      "minSalary": "Stipendio minimo",
-      "maxSalary": "Stipendio massimo"
-    },
-    "cvAnalysis": {
-      "title": "Analisi del tuo CV",
-      "description": "Incolla il testo del tuo CV qui sotto per ottenere suggerimenti di miglioramento.",
-      "placeholder": "Incolla qui il contenuto del tuo CV...",
-      "suggestions": "Suggerimenti:",
-      "close": "Chiudi",
-      "analyze": "Analizza",
-      "analyzing": "Analisi in corso...",
-      "doneToast": "Analisi completata",
-      "errorToast": "Errore analisi IA",
-      "emptyText": "Per favore, incolla il testo del tuo CV"
-    },
-    "report": {
-      "button": "Segnala",
-      "title": "Perché segnali questo candidato?",
-      "loginRequired": "Per favore, accedi per segnalare",
-      "sent": "Segnalazione inviata. Grazie!",
-      "error": "Errore durante l'invio della segnalazione"
-    },
-    "toasts": {
-      "profileUpdated": "Profilo aggiornato con successo!",
-      "saveError": "Errore durante il salvataggio del profilo",
-      "fillRequired": "Per favore, compila tutti i campi obbligatori"
-    }
-  },
+
   "blog": {
     "badge": "Blog",
     "title": "Consigli e risorse per la tua carriera",
@@ -1418,51 +788,7 @@
     "title": "Accesso in corso...",
     "message": "Attendi mentre completiamo la tua autenticazione."
   },
-  "applicationDetail": {
-    "back": "Torna alle candidature",
-    "notFound": "Candidatura non trovata",
-    "viewFullProfile": "Vedi profilo completo",
-    "jobTitle": "Offerta collegata",
-    "coverLetter": "Lettera di presentazione",
-    "cv": "CV",
-    "viewCV": "Visualizza CV",
-    "interviewNotes": "Note del colloquio",
-    "generateQuestions": "Genera domande",
-    "generateAnswers": "Genera risposte",
-    "generateTips": "Genera consigli",
-    "receivedAt": "Ricevuta il {{date}}",
-    "status": {
-      "pending": "In attesa",
-      "viewed": "Visualizzata",
-      "shortlisted": "Preselezionata",
-      "interview": "Colloquio",
-      "accepted": "Accettata",
-      "rejected": "Rifiutata"
-    },
-    "changeStatus": "Cambia stato",
-    "scheduleInterview": "Pianifica colloquio",
-    "step1ChooseSlot": "Scegli un orario (Calendly)",
-    "openCalendly": "Apri Calendly",
-    "sendEmail": "Invia via email",
-    "step2CreateLink": "Crea link Jitsi",
-    "joinMeeting": "Partecipa alla riunione",
-    "updateLink": "Aggiorna",
-    "deleteLink": "Elimina",
-    "generateJitsiLink": "Genera link Jitsi",
-    "newRoomPlaceholder": "Nuovo nome stanza (opzionale)",
-    "roomPlaceholder": "Nome stanza (opzionale)",
-    "toasts": {
-      "questionsGenerated": "Contenuto generato",
-      "noteSaved": "Nota salvata",
-      "noteDeleted": "Nota eliminata",
-      "emailSent": "Email inviata",
-      "statusUpdated": "Stato aggiornato",
-      "updateError": "Errore durante l'aggiornamento",
-      "rejectionPrompt": "Motivo del rifiuto (opzionale)",
-      "linkUpdated": "Link aggiornato",
-      "linkDeleted": "Link eliminato"
-    }
-  },
+  
   "notes": {
     "personal": "Note personali",
     "questions": "Domande per il colloquio",
@@ -1508,102 +834,9 @@
       "content": "Fondata da un team di ingegneri appassionati, Actoos Jobs è sviluppata con cura per rispondere alle reali esigenze del mercato del lavoro. Uniamo competenza tecnica e conoscenza del territorio per offrire un servizio affidabile e innovativo."
     }
   },
-  "candidateDashboard": {
-    "greeting": "Ciao, {{name}} 👋",
-    "activityPreview": "Ecco un riepilogo della tua attività",
-    "myProfile": "Il mio profilo",
-    "searchJobs": "Cerca",
-    "stats": {
-      "applications": "Candidature",
-      "savedJobs": "Offerte salvate",
-      "activeAlerts": "Avvisi attivi",
-      "completionRate": "Tasso di completamento",
-      "trend": "+{{trend}}% questo mese"
-    },
-    "applications": {
-      "title": "Le mie candidature",
-      "description": "Segui lo stato delle tue candidature",
-      "viewAll": "Vedi tutto",
-      "empty": "Nessuna candidatura per il momento",
-      "findJob": "Trova un lavoro",
-      "defaultJobTitle": "Offerta di lavoro",
-      "defaultCompany": "Azienda"
-    },
-    "savedJobs": {
-      "title": "Offerte salvate",
-      "description": "Le offerte che ti interessano",
-      "viewAll": "Vedi tutto",
-      "empty": "Nessuna offerta salvata",
-      "browseJobs": "Sfoglia offerte",
-      "unspecifiedLocation": "Non specificato"
-    },
-    "adminMessages": {
-      "title": "Messaggi dell'amministrazione",
-      "description": "Comunicazioni importanti dal team Actoos"
-    },
-    "profileCompletion": {
-      "title": "Completamento del profilo",
-      "completeProfile": "Completa il mio profilo",
-      "messages": {
-        "low": "Completa il tuo profilo per attrarre più reclutatori",
-        "medium": "Buon inizio! Aggiungi più dettagli",
-        "high": "Eccellente! Il tuo profilo è quasi completo"
-      }
-    },
-    "quickActions": {
-      "title": "Azioni rapide",
-      "updateCV": "Aggiorna il mio CV",
-      "updateCVDesc": "Carica il tuo ultimo CV",
-      "createAlert": "Crea un avviso",
-      "createAlertDesc": "Ricevi offerte via email",
-      "settings": "Impostazioni",
-      "settingsDesc": "Gestisci il tuo account"
-    },
-    "dailyTip": {
-      "title": "Consiglio del giorno",
-      "low": [
-        "Aggiungi una foto del profilo: i profili con foto ricevono più contatti.",
-        "Inserisci il tuo titolo professionale per apparire nelle ricerche.",
-        "Completa il tuo CV per candidarti con un clic.",
-        "Indica le tue competenze chiave per essere trovato più facilmente."
-      ],
-      "high": [
-        "Aggiorna regolarmente il tuo CV per riflettere le tue ultime esperienze.",
-        "Attiva gli avvisi di lavoro per non perdere nulla.",
-        "Aggiungi esempi di realizzazioni nelle tue esperienze.",
-        "Condividi il tuo profilo su LinkedIn per aumentare la tua visibilità."
-      ]
-    }
-  },
+
  
-  "header": {
-    "brand": "Actoos Jobs",
-    "nav": {
-      "jobs": "Lavori",
-      "companies": "Aziende",
-      "pricing": "Tariffe",
-      "blog": "Blog"
-    },
-    "user": {
-      "dashboard": "Dashboard",
-      "profile": "Il mio profilo",
-      "createAlert": "Crea avviso",
-      "settings": "Impostazioni",
-      "admin": "Amministrazione",
-      "plan": "Piano: {{plan}}",
-      "logout": "Esci",
-      "defaultName": "Account",
-      "defaultUser": "Utente"
-    },
-    "auth": {
-      "login": "Accedi",
-      "register": "Registrati",
-      "companySpace": "Spazio Azienda"
-    },
-    "mobile": {
-      "alerts": "Avvisi di lavoro"
-    }
-  },
+  
   "cookieBanner": {
     "title": "Utilizziamo i cookie",
     "description": "Per migliorare la tua esperienza, analizzare il traffico e personalizzare i contenuti. Puoi accettare tutti i cookie o personalizzare le tue preferenze.",
@@ -1991,17 +1224,7 @@
     "portfolio": "Portfolio / Sito web"
   }
 },
-"companyApplications": {
-    "back": "Indietro",
-    "title": "Candidature",
-    "deleteButton": "Elimina",
-    "noApplications": "Nessuna candidatura al momento.",
-    "deleteConfirm": "Confermare l'eliminazione?",
-    "toasts": {
-      "deleted": "Candidatura eliminata.",
-      "deleteError": "Errore durante l'eliminazione."
-    }
-  },
+
   "countries": {
   "ZA": "Sudafrica",
   "DZ": "Algeria",
@@ -2383,82 +1606,7 @@
     "logout": "Esci"
   }
 },
-"settings": {
-  "back": "Indietro",
-  "myProfile": "Mio profilo",
-  "title": "Impostazioni",
-  "subtitle": "Gestisci le informazioni del tuo account",
-  "accountInfo": {
-    "title": "Informazioni account",
-    "description": "Connesso come {{email}}"
-  },
-  "countryAndCurrency": "🌍 Paese e valuta",
-  "country": "Paese",
-  "selectCountry": "Seleziona un paese",
-  "currency": "Valuta",
-  "selectCurrency": "Seleziona una valuta",
-  "allCountries": "Tutti i paesi",
-  "changeEmail": {
-    "title": "Cambia email",
-    "description": "Modifica il tuo indirizzo email di accesso",
-    "newEmailLabel": "Nuova email",
-    "newEmailPlaceholder": "nuova@email.com",
-    "currentPasswordLabel": "Password attuale",
-    "currentPasswordPlaceholder": "La tua password attuale",
-    "submit": "Aggiorna email"
-  },
-  "changePassword": {
-    "title": "Cambia password",
-    "description": "Usa una password forte e unica",
-    "newPasswordLabel": "Nuova password",
-    "newPasswordPlaceholder": "Almeno 8 caratteri",
-    "confirmPasswordLabel": "Conferma password",
-    "confirmPasswordPlaceholder": "Ripeti la password",
-    "submit": "Aggiorna password"
-  },
-  "logout": {
-    "title": "Disconnessione",
-    "description": "Puoi disconnetterti dal tuo account in qualsiasi momento.",
-    "button": "Esci"
-  },
-  "roleChange": {
-    "title": "Cambia ruolo",
-    "descriptionCandidate": "Sei attualmente un <strong>candidato</strong>. Puoi richiedere di diventare <strong>recruiter</strong>.",
-    "descriptionCompany": "Sei attualmente un <strong>recruiter</strong>. Puoi richiedere di diventare <strong>candidato</strong>.",
-    "requestButton": "Richiedi cambio ruolo",
-    "modal": {
-      "title": "Richiesta cambio ruolo",
-      "roleLabel": "Nuovo ruolo desiderato",
-      "roleCandidate": "Candidato",
-      "roleCompany": "Recruiter (Azienda)",
-      "reasonLabel": "Motivo della richiesta (facoltativo)",
-      "reasonPlaceholder": "Spiega perché vuoi cambiare ruolo...",
-      "cancel": "Annulla",
-      "submit": "Invia richiesta"
-    }
-  },
-  "dangerZone": {
-    "title": "Zona pericolosa",
-    "description": "L'eliminazione del tuo account è definitiva e irreversibile. Tutti i tuoi dati saranno cancellati.",
-    "button": "Elimina il mio account",
-    "confirm": "Sei sicuro di voler eliminare definitivamente il tuo account? Questa azione è irreversibile."
-  },
-  "toasts": {
-    "passwordMismatch": "Le password non corrispondono.",
-    "passwordLength": "La password deve contenere almeno 8 caratteri.",
-    "passwordUpdated": "Password aggiornata con successo.",
-    "passwordError": "Errore durante l'aggiornamento della password.",
-    "fillAllFields": "Si prega di compilare tutti i campi.",
-    "wrongPassword": "Password errata.",
-    "emailConfirmationSent": "Un'email di conferma è stata inviata al tuo nuovo indirizzo.",
-    "emailError": "Errore durante l'aggiornamento dell'email.",
-    "logoutError": "Errore durante la disconnessione.",
-    "accountDeleted": "Il tuo account è stato eliminato definitivamente.",
-    "deleteError": "Errore durante l'eliminazione dell'account.",
-    "roleRequestSent": "Richiesta di cambio ruolo inviata con successo.",
-    "roleRequestError": "Errore durante l'invio della richiesta."
-  }
-},
+
 "aiAssistant": {
   "improve": "Migliora con l'IA",
   "improvedVersion": "Versione migliorata",
@@ -2476,19 +1624,19 @@
   
   "adminDashboard": {
       "title": "Amministrazione",
-      "subtitle": "Gestisci la tua piattaforma",
+      "subtitle": "Gestisci offerte, aziende e utenti della piattaforma.",
       "refresh": "Aggiorna",
-      "loadingError": "Errore di caricamento",
-      "dataRefreshed": "Dati aggiornati",
-      "unauthorized": "Accesso non autorizzato",
+      "dataRefreshed": "Dati aggiornati con successo.",
+      "unauthorized": "Accesso negato. Non hai i diritti di amministratore.",
+      "loadingError": "Errore durante il caricamento dei dati.",
       "stats": {
-        "pendingJobs": "Offerte in sospeso",
+        "trend": "{{trend}} questa settimana",
+        "pendingJobs": "Offerte da convalidare",
         "activeJobs": "Offerte attive",
         "pendingCompanies": "Aziende da convalidare",
-        "verifiedCompanies": "Aziende verificate",
+        "verifiedCompanies": "Aziende convalidate",
         "candidates": "Candidati",
-        "applications": "Candidature",
-        "trend": "{{trend}}%"
+        "applications": "Candidature"
       },
       "tabs": {
         "overview": "Panoramica",
@@ -2499,141 +1647,148 @@
         "subscriptions": "Abbonamenti",
         "newsletter": "Newsletter",
         "blog": "Blog",
-        "messageCompanies": "Messaggi alle aziende",
+        "messageCompanies": "Messaggi ai reclutatori",
         "messageCandidates": "Messaggi ai candidati",
         "roleRequests": "Richieste di ruolo"
       },
       "overview": {
-        "pendingJobsTitle": "Offerte di lavoro in attesa di convalida",
-        "pendingJobsDesc": "Approva le offerte affinché possano essere pubblicate",
-        "pendingCompaniesTitle": "Aziende da convalidare",
-        "pendingCompaniesDesc": "Verifica le aziende prima di attivarle",
+        "pendingJobsTitle": "Offerte in attesa di convalida",
+        "pendingJobsDesc": "Convalida o respingi le nuove offerte.",
         "viewAll": "Vedi tutto",
-        "noPendingJobs": "Nessuna offerta in sospeso",
-        "noPendingCompanies": "Nessuna azienda da convalidare"
+        "noPendingJobs": "Nessuna offerta in attesa.",
+        "pendingCompaniesTitle": "Aziende in attesa di convalida",
+        "pendingCompaniesDesc": "Convalida nuove aziende.",
+        "noPendingCompanies": "Nessuna azienda in attesa."
       },
       "jobs": {
-        "reactivatedToast": "Offerta riattivata con successo",
-        "searchPlaceholder": "Cerca un'offerta...",
-        "filterAll": "Tutte",
-        "filterPending": "In sospeso",
-        "filterDraft": "Bozza",
+        "searchPlaceholder": "Cerca un'offerta o un'azienda...",
+        "filterAll": "Tutte le offerte",
+        "filterPending": "In attesa",
+        "filterDraft": "Bozze",
         "filterActive": "Attive",
         "filterSuspended": "Sospese",
         "filterRejected": "Respinte",
-        "noJobs": "Nessuna offerta trovata",
-        "noJobsFound": "Nessuna offerta corrisponde alla ricerca",
+        "noJobs": "Nessuna offerta trovata.",
+        "noJobsFound": "Nessuna offerta corrisponde alla ricerca.",
         "loadMore": "Carica altro",
-        "detailsError": "Errore durante il caricamento dei dettagli",
+        "viewJob": "Vedi offerta",
         "showDetails": "Mostra dettagli",
         "hideDetails": "Nascondi dettagli",
-        "detailsDescription": "Descrizione:",
-        "detailsRequirements": "Profilo cercato:",
-        "detailsMissions": "Missioni:",
-        "detailsBenefits": "Benefici:",
-        "detailsSkills": "Competenze:",
-        "detailsExperience": "Esperienza:",
-        "detailsSalary": "Stipendio:",
-        "detailsPositions": "Posizioni:",
-        "detailsDeadline": "Scadenza:",
-        "detailsRemote": "Lavoro da remoto:",
-        "detailsUrgent": "Urgente:",
+        "detailsError": "Errore durante il caricamento dei dettagli.",
+        "detailsDescription": "Descrizione",
+        "detailsRequirements": "Profilo desiderato",
+        "detailsMissions": "Missioni",
+        "detailsBenefits": "Benefici",
+        "detailsSkills": "Competenze",
+        "detailsExperience": "Esperienza",
+        "detailsSalary": "Stipendio",
+        "detailsPositions": "Posizioni",
+        "detailsDeadline": "Scadenza",
+        "detailsRemote": "Lavoro da remoto",
+        "detailsUrgent": "Urgente",
+        "detailsUnspecified": "Non specificato",
         "detailsYes": "Sì",
         "detailsNo": "No",
-        "detailsUnspecified": "Non specificato",
         "publishedBy": "Pubblicato il {{date}} da {{email}}",
+        "companyNotVerified": "Azienda non convalidata",
+        "approve": "Convalida",
+        "reject": "Respingi",
+        "publish": "Pubblica",
+        "suspend": "Sospendi",
+        "delete": "Elimina",
+        "reactivate": "Riattiva",
+        "approveLimitReached": "L'azienda ha raggiunto il limite di offerte attive ({{limit}}).",
+        "approveCompanyFirst": "L'azienda non è verificata.",
+        "companySuspendedOrNotVerified": "L'azienda è sospesa o non verificata.",
+        "approvedToast": "Offerta convalidata con successo.",
+        "rejectedToast": "Offerta respinta.",
+        "suspendedToast": "Offerta sospesa.",
+        "deletedToast": "Offerta eliminata.",
+        "reactivatedToast": "Offerta riattivata.",
+        "approveError": "Errore durante la convalida.",
+        "genericError": "Si è verificato un errore.",
+        "rejectConfirm": "Respingere questa offerta?",
+        "suspendModalTitle": "Sospendi offerta",
+        "deleteModalTitle": "Elimina offerta",
+        "reasonLabel": "Motivo (opzionale)",
+        "cancel": "Annulla",
+        "confirm": "Conferma",
         "status": {
-          "pending": "In sospeso",
+          "pending": "In attesa",
           "active": "Attiva",
           "suspended": "Sospesa",
           "rejected": "Respinta"
-        },
-        "companyNotVerified": "Azienda non verificata",
-        "approve": "Approva",
-        "reject": "Rifiuta",
-        "publish": "Pubblica",
-        "suspend": "Sospendi",
-        "reactivate": "Riattiva",
-        "delete": "Elimina",
-        "approveCompanyFirst": "L'azienda deve essere verificata prima",
-        "approveLimitReached": "L'azienda ha raggiunto il limite del suo piano ({{limit}} offerte)",
-        "approvedToast": "Offerta approvata con successo",
-        "rejectedToast": "Offerta respinta",
-        "suspendedToast": "Offerta sospesa",
-        "deletedToast": "Offerta eliminata",
-        "approveError": "Errore di approvazione",
-        "rejectConfirm": "Confermare il rifiuto?",
-        "genericError": "Errore",
-        "suspendModalTitle": "Sospendi offerta",
-        "deleteModalTitle": "Elimina offerta",
-        "reasonLabel": "Motivo",
-        "cancel": "Annulla",
-        "confirm": "Conferma",
-        "viewJob": "Vedi offerta"
+        }
       },
       "companies": {
         "searchPlaceholder": "Cerca un'azienda...",
-        "filterAll": "Tutte",
+        "filterAll": "Tutte le aziende",
         "filterUnverified": "Non verificate",
         "filterVerified": "Verificate",
-        "noCompanies": "Nessuna azienda trovata",
-        "noCompaniesFound": "Nessuna azienda corrisponde alla ricerca",
+        "filterSuspended": "Sospese",
+        "noCompanies": "Nessuna azienda trovata.",
+        "noCompaniesFound": "Nessuna azienda corrisponde alla ricerca.",
         "loadMore": "Carica altro",
-        "employees": "{{size}} dipendenti",
-        "createdAt": "Creata il {{date}}",
-        "offersCount": "{{count}} offerta/e",
-        "validate": "Convalida",
-        "reject": "Rifiuta",
-        "suspend": "Sospendi",
-        "deleteCompany": "Elimina",
         "viewSite": "Vedi sito",
         "viewOffers": "Vedi offerte ({{count}})",
-        "validatedToast": "Azienda convalidata con successo",
-        "rejectedToast": "Azienda respinta",
-        "suspendedToast": "Azienda sospesa",
-        "deletedToast": "Azienda eliminata",
-        "validateError": "Errore di convalida",
-        "genericError": "Errore",
-        "rejectModalTitle": "Rifiuta azienda",
+        "createdAt": "Creata il {{date}}",
+        "offersCount": "{{count}} offerta/e",
+        "employees": "{{size}} dipendenti",
+        "validate": "Convalida",
+        "reject": "Respingi",
+        "suspend": "Sospendi",
+        "reactivate": "Riattiva",
+        "deleteCompany": "Elimina",
+        "deleteConfirm": "Eliminare definitivamente {{name}}?",
+        "deleteWarning": "Tutte le offerte e i dati associati saranno cancellati.",
+        "deletedToast": "Azienda eliminata.",
+        "validatedToast": "Azienda convalidata con successo.",
+        "rejectedToast": "Azienda respinta.",
+        "suspendedToast": "Azienda sospesa.",
+        "reactivatedToast": "Azienda riattivata.",
+        "validateError": "Errore durante la convalida.",
+        "genericError": "Si è verificato un errore.",
+        "rejectModalTitle": "Respingi azienda",
         "deleteModalTitle": "Elimina azienda",
-        "deleteWarning": "Anche le offerte e i membri di questa azienda verranno eliminati.",
-        "deleteConfirm": "Eliminare l'azienda {{name}}?",
         "cancel": "Annulla",
         "confirm": "Conferma",
         "suspendModalTitle": "Sospendi azienda",
-        "suspendWarning": "Tutte le offerte di questa azienda verranno nascoste.",
+        "suspendWarning": "Anche tutte le offerte di questa azienda saranno sospese.",
         "suspendDurationLabel": "Durata della sospensione",
         "durationIndefinite": "Indefinita",
         "duration1day": "1 giorno",
         "duration7days": "7 giorni",
         "duration30days": "30 giorni",
-        "suspendReasonLabel": "Motivo",
+        "suspendReasonLabel": "Motivo (opzionale)",
         "status": {
-          "unverified": "Non verificata",
-          "verified": "Verificata"
+          "unverified": "In attesa",
+          "verified": "Convalidata",
+          "suspended": "Sospesa"
         }
       },
       "users": {
         "title": "Utenti",
-        "description": "Gestisci gli account utente",
-        "noUsers": "Nessun utente",
+        "description": "Gestisci ruoli, sospensioni e ban.",
+        "noUsers": "Nessun utente trovato.",
         "loadMore": "Carica altro",
-        "roleUpdated": "Ruolo aggiornato",
-        "roleUpdateError": "Errore aggiornamento ruolo",
-        "suspendedToast": "Utente sospeso",
-        "reactivatedToast": "Utente riattivato",
-        "bannedToast": "Utente bannato",
-        "deletedToast": "Utente eliminato",
-        "deleteError": "Errore di eliminazione",
-        "banConfirm": "Confermare il ban?",
-        "deleteConfirm": "Eliminare definitivamente?",
+        "roleUpdated": "Ruolo aggiornato.",
+        "roleUpdateError": "Errore durante il cambio di ruolo.",
+        "suspendedToast": "Utente sospeso.",
+        "reactivatedToast": "Utente riattivato.",
+        "bannedToast": "Utente bannato.",
+        "unbannedToast": "Utente sbannato.",
+        "deletedToast": "Utente eliminato.",
+        "deleteError": "Errore durante l'eliminazione.",
+        "banConfirm": "Bannare permanentemente questo utente?",
+        "unbanConfirm": "Sbannare questo utente?",
+        "deleteConfirm": "Eliminare permanentemente questo utente?",
         "suspendModalTitle": "Sospendi utente",
-        "suspendDurationLabel": "Durata",
+        "suspendDurationLabel": "Durata della sospensione",
         "durationIndefinite": "Indefinita",
         "duration1day": "1 giorno",
         "duration7days": "7 giorni",
         "duration30days": "30 giorni",
-        "suspendReasonLabel": "Motivo",
+        "suspendReasonLabel": "Motivo (opzionale)",
         "cancel": "Annulla",
         "confirm": "Conferma",
         "status": {
@@ -2643,83 +1798,84 @@
         },
         "roles": {
           "candidate": "Candidato",
-          "company": "Azienda",
+          "company": "Reclutatore",
           "admin": "Admin"
         },
         "actions": {
           "suspend": "Sospendi",
           "reactivate": "Riattiva",
           "ban": "Banna",
+          "unban": "Sbanna",
           "delete": "Elimina"
         }
       },
       "reports": {
         "title": "Segnalazioni",
-        "description": "Gestisci le segnalazioni degli utenti",
-        "noReports": "Nessuna segnalazione",
-        "reportedBy": "Segnalato da {{email}}",
-        "reason": "Motivo: {{reason}}",
+        "description": "Gestisci i contenuti segnalati dagli utenti.",
+        "noReports": "Nessuna segnalazione.",
         "badges": {
           "job": "Offerta",
           "company": "Azienda",
           "candidate": "Candidato"
         },
+        "reportedBy": "Segnalato da {{email}}",
+        "reason": "Motivo: {{reason}}",
         "status": {
-          "pending": "In sospeso",
-          "reviewed": "Esaminato",
+          "pending": "In attesa",
+          "reviewed": "Revisionato",
           "resolved": "Risolto"
         },
-        "markReviewed": "Segna come esaminato",
+        "markReviewed": "Segna come rivisto",
         "markResolved": "Segna come risolto",
         "suspendJob": "Sospendi offerta",
         "suspendCompany": "Sospendi azienda",
         "deleteJob": "Elimina offerta",
         "deleteCompany": "Elimina azienda",
         "banUser": "Banna utente",
-        "suspendedToast": "Elemento sospeso",
-        "companySuspendedToast": "Azienda sospesa",
-        "deletedToast": "Elemento eliminato",
-        "companyDeletedToast": "Azienda eliminata",
-        "bannedToast": "Utente bannato",
-        "banError": "Impossibile trovare l'utente da bannare",
-        "banConfirm": "Confermare il ban?",
-        "updatedToast": "Stato aggiornato"
+        "suspendedToast": "Offerta sospesa.",
+        "companySuspendedToast": "Azienda sospesa.",
+        "deletedToast": "Offerta eliminata.",
+        "companyDeletedToast": "Azienda eliminata.",
+        "bannedToast": "Utente bannato.",
+        "banError": "Impossibile trovare l'utente da bannare.",
+        "banConfirm": "Bannare l'utente responsabile?",
+        "updatedToast": "Stato aggiornato."
       },
       "subscriptions": {
-        "title": "Abbonamenti",
-        "description": "Gestisci gli abbonamenti delle aziende",
-        "cancellationsTitle": "Disdette",
-        "cancellationsDescription": "Cronologia delle disdette",
-        "noCancellations": "Nessuna disdetta",
-        "cancelledFrom": "Disdetto da",
-        "toFrom": "a",
+        "title": "Abbonamenti attivi",
+        "description": "Elenco degli abbonamenti in corso.",
         "table": {
           "company": "Azienda",
           "plan": "Piano",
           "previousPlan": "Piano precedente",
           "stripeSubId": "ID Stripe",
           "expiration": "Scadenza",
-          "cancellationReason": "Motivo della disdetta"
-        }
+          "cancellationReason": "Motivo annullamento"
+        },
+        "cancellationsTitle": "Disdette recenti",
+        "cancellationsDescription": "Storico delle disdette.",
+        "noCancellations": "Nessuna disdetta recente.",
+        "cancelledFrom": "Disdetto dal",
+        "toFrom": "proveniente da"
       },
       "newsletter": {
-        "sendTitle": "Invia una newsletter",
-        "sendDescription": "Invia un'email a tutti gli iscritti",
+        "sendTitle": "Invia newsletter",
+        "sendDescription": "Scrivi e invia un'email a tutti gli iscritti.",
         "subjectLabel": "Oggetto",
-        "subjectPlaceholder": "Titolo della newsletter",
-        "contentLabel": "Contenuto HTML",
-        "contentPlaceholder": "<p>Il tuo messaggio...</p>",
+        "subjectPlaceholder": "Titolo dell'email",
+        "contentLabel": "Contenuto",
+        "contentPlaceholder": "Scrivi qui il tuo messaggio...",
         "sendButton": "Invia newsletter",
-        "fillRequired": "Si prega di compilare l'oggetto e il contenuto",
-        "networkError": "Errore di rete",
-        "sentSuccess": "Newsletter inviata a {{count}}/{{total}} iscritti.",
+        "fillRequired": "Compila oggetto e contenuto.",
+        "sentSuccess": "Newsletter inviata a {{sent}}/{{total}} iscritti.",
+        "networkError": "Errore di rete durante l'invio.",
         "subscribersTitle": "Iscritti ({{count}})",
-        "subscribersDescription": "Lista degli iscritti alla newsletter",
-        "noSubscribers": "Nessun iscritto",
+        "subscribersDescription": "Gestisci le iscrizioni alla newsletter.",
+        "noSubscribers": "Nessun iscritto.",
         "table": {
           "email": "Email",
           "status": "Stato",
-          "actions": "Azioni",
+          "actions": "Azione",
           "subscribed": "Iscritto il",
           "unsubscribed": "Disiscritto il"
         },
@@ -2727,15 +1883,15 @@
         "statusUnsubscribed": "Disiscritto",
         "deactivate": "Disattiva",
         "reactivate": "Riattiva",
-        "toggledToast": "Iscritto aggiornato"
+        "toggledToast": "Stato dell'iscritto modificato."
       },
       "blog": {
-        "generateTitle": "Genera un articolo",
-        "generateDescription": "L'IA scriverà un articolo del blog",
-        "titleLabel": "Titolo",
-        "titlePlaceholder": "Titolo dell'articolo",
-        "keywordsLabel": "Parole chiave",
-        "keywordsPlaceholder": "Separate da virgole",
+        "generateTitle": "Genera articolo del blog",
+        "generateDescription": "L'IA scriverà un articolo ottimizzato per il tuo pubblico.",
+        "titleLabel": "Titolo dell'articolo",
+        "titlePlaceholder": "es. I migliori lavori del 2026",
+        "keywordsLabel": "Parole chiave (opzionale)",
+        "keywordsPlaceholder": "es. recruiting, IA, carriera",
         "audienceLabel": "Pubblico",
         "audienceAll": "Tutti",
         "audienceCandidates": "Candidati",
@@ -2743,52 +1899,49 @@
         "categoryLabel": "Categoria",
         "categories": {
           "carriere": "Carriera",
-          "recrutement": "Reclutamento",
+          "recrutement": "Recruiting",
           "technologie": "Tecnologia",
           "entrepreneuriat": "Imprenditoria",
           "conseils": "Consigli"
         },
         "authorLabel": "Autore",
-        "authorPlaceholder": "Team Actoos",
+        "authorPlaceholder": "es. Team Actoos",
         "readTimeLabel": "Tempo di lettura",
-        "readTimePlaceholder": "5 min",
-        "generateButton": "Genera",
-        "titleRequired": "Il titolo è obbligatorio",
-        "generatedToast": "Articolo generato con successo",
-        "generateError": "Errore di generazione",
-        "articlesTitle": "Articoli ({{count}})",
-        "articlesDescription": "Gestisci i tuoi articoli del blog",
-        "noArticles": "Nessun articolo",
+        "readTimePlaceholder": "es. 5 min",
+        "generateButton": "Genera con IA",
+        "titleRequired": "Il titolo è obbligatorio.",
+        "generatedToast": "Articolo generato con successo!",
+        "generateError": "Errore durante la generazione.",
+        "articlesTitle": "Articoli pubblicati ({{count}})",
+        "articlesDescription": "Modifica o elimina i tuoi articoli.",
+        "noArticles": "Nessun articolo pubblicato.",
         "save": "Salva",
         "cancel": "Annulla",
-        "updatedToast": "Articolo aggiornato",
-        "updateError": "Errore di aggiornamento",
-        "deleteConfirm": "Eliminare l'articolo?",
-        "deletedToast": "Articolo eliminato",
-        "deleteError": "Errore di eliminazione"
-      },
-      "messages": {
-        "sentSuccess": "Messaggio inviato a {{count}}/{{total}} persone",
-        "sendError": "Errore di invio"
+        "updatedToast": "Articolo aggiornato.",
+        "updateError": "Errore durante l'aggiornamento.",
+        "deleteConfirm": "Eliminare permanentemente questo articolo?",
+        "deletedToast": "Articolo eliminato.",
+        "deleteError": "Errore durante l'eliminazione."
       },
       "roleRequests": {
-        "title": "Richieste di cambio ruolo",
-        "description": "Approva o rifiuta le richieste",
-        "noRequests": "Nessuna richiesta",
-        "from": "da",
+        "title": "Richieste di ruolo",
+        "description": "Approva o respingi le richieste di cambio ruolo.",
+        "noRequests": "Nessuna richiesta in sospeso.",
+        "from": "Da",
         "to": "a",
         "approve": "Approva",
-        "reject": "Rifiuta",
-        "approvedToast": "Richiesta approvata",
-        "rejectedToast": "Richiesta respinta"
+        "reject": "Respingi",
+        "approvedToast": "Richiesta approvata.",
+        "rejectedToast": "Richiesta respinta."
       },
       "roleLabels": {
         "candidate": "Candidato",
-        "company": "Azienda",
-        "admin": "Admin",
+        "company": "Reclutatore",
+        "admin": "Amministratore",
         "unknown": "Sconosciuto"
       }
-    },
+    }
+,
     "unsubscribe": {
       "loading": "Elaborazione in corso...",
       "success": {
@@ -2837,6 +1990,1035 @@
       "toasts": {
         "saved": "Salvato con successo.",
         "noteDeleted": "Nota eliminata."
+      }
+    },
+    "auth": {
+      "login": {
+        "title": "Accedi",
+        "description": "Accedi al tuo account.",
+        "googleButton": "Continua con Google",
+        "orSeparator": "oppure",
+        "emailLabel": "Email",
+        "emailPlaceholder": "email@esempio.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "La tua password",
+        "forgotPassword": "Password dimenticata?",
+        "submitButton": "Accedi",
+        "noAccount": "Non hai un account?",
+        "createAccount": "Crea un account",
+        "legalPrefix": "Accedendo, accetti i nostri",
+        "cgu": "Termini di utilizzo",
+        "legalAnd": "e la nostra",
+        "privacy": "Informativa sulla privacy",
+        "success": "Accesso effettuato con successo!",
+        "errorInvalid": "Email o password errati.",
+        "errorGeneric": "Si è verificato un errore durante l'accesso.",
+        "errorGoogle": "Accesso Google fallito.",
+        "fillAllFields": "Si prega di compilare tutti i campi.",
+        "accountSuspended": "Il tuo account è attualmente sospeso. Contatta l'assistenza.",
+        "accountBanned": "Il tuo account è stato bannato permanentemente.",
+        "accountSuspendedMessage": "Il tuo account è sospeso. Contatta l'assistenza per maggiori informazioni.",
+        "accountBannedMessage": "Il tuo account è bannato. Non puoi più accedere alla piattaforma."
+      },
+      "signup": {
+        "title": "Crea un account",
+        "description": "Unisciti alla community Actoos Jobs.",
+        "googleButton": "Registrati con Google",
+        "orSeparator": "oppure",
+        "firstNameLabel": "Nome",
+        "lastNameLabel": "Cognome",
+        "emailLabel": "Email",
+        "passwordLabel": "Password",
+        "confirmPasswordLabel": "Conferma password",
+        "roleCandidate": "Cerco lavoro",
+        "roleCompany": "Sto assumendo",
+        "submitButton": "Crea il mio account",
+        "alreadyHaveAccount": "Hai già un account?",
+        "loginLink": "Accedi",
+        "legalConsent": "Creando un account, accetti i nostri",
+        "success": "Account creato con successo!",
+        "errorPasswordMismatch": "Le password non corrispondono.",
+        "errorPasswordLength": "La password deve contenere almeno 8 caratteri.",
+        "errorEmailTaken": "Questa email è già in uso.",
+        "errorGeneric": "Si è verificato un errore durante la registrazione.",
+        "fillAllFields": "Si prega di compilare tutti i campi obbligatori."
+      },
+      "forgotPassword": {
+        "title": "Password dimenticata",
+        "description": "Inserisci la tua email per ricevere un link di reimpostazione.",
+        "emailLabel": "Email",
+        "emailPlaceholder": "email@esempio.com",
+        "submitButton": "Invia link",
+        "backToLogin": "Torna all'accesso",
+        "success": "Se esiste un account con questa email, riceverai un link di reimpostazione.",
+        "error": "Si è verificato un errore. Riprova."
+      },
+      "resetPassword": {
+        "title": "Nuova password",
+        "description": "Imposta la tua nuova password.",
+        "passwordLabel": "Nuova password",
+        "confirmPasswordLabel": "Conferma password",
+        "submitButton": "Salva",
+        "success": "Password aggiornata con successo.",
+        "errorPasswordMismatch": "Le password non corrispondono.",
+        "errorPasswordLength": "La password deve contenere almeno 8 caratteri.",
+        "errorGeneric": "Si è verificato un errore."
+      }
+    },
+    "createJob": {
+      "back": "Indietro",
+      "titleNew": "Nuova offerta",
+      "titleEdit": "Modifica offerta",
+      "save": "Bozza",
+      "updateOffer": "Aggiorna",
+      "validationRequired": "Convalida richiesta",
+      "submitForValidation": "Invia per convalida",
+      "saveDraft": "Salva bozza",
+      "companyUnverified": "La tua azienda non è ancora verificata.",
+      "unverifiedBanner": {
+        "title": "Azienda non verificata",
+        "description": "La tua azienda deve essere convalidata prima di poter pubblicare offerte. Puoi preparare le bozze nel frattempo."
+      },
+      "sections": {
+        "basicInfo": "Informazioni di base",
+        "description": "Descrizione",
+        "skills": "Competenze",
+        "location": "Localizzazione",
+        "salary": "Retribuzione",
+        "dates": "Date"
+      },
+      "labels": {
+        "title": "Titolo dell'offerta",
+        "category": "Categoria",
+        "contractType": "Tipo di contratto",
+        "experienceLevel": "Livello di esperienza",
+        "positionsCount": "Numero di posizioni",
+        "urgent": "Offerta urgente",
+        "description": "Descrizione del posto",
+        "missions": "Missioni",
+        "requirements": "Profilo ricercato",
+        "benefits": "Benefici",
+        "city": "Città",
+        "address": "Indirizzo",
+        "remote": "Lavoro da remoto possibile",
+        "remoteType": "Tipo di lavoro da remoto",
+        "salaryMin": "Stipendio minimo",
+        "salaryMax": "Stipendio massimo",
+        "showSalary": "Mostra stipendio",
+        "applicationDeadline": "Scadenza candidatura",
+        "startDate": "Data di inizio"
+      },
+      "options": {
+        "selectCategory": "Seleziona una categoria",
+        "selectContract": "Seleziona un tipo",
+        "unspecified": "Non specificato",
+        "selectCity": "Seleziona una città",
+        "remoteFull": "100% remoto",
+        "remoteHybrid": "Ibrido",
+        "remoteOccasional": "Occasionale"
+      },
+      "placeholders": {
+        "title": "es. Sviluppatore Full Stack",
+        "description": "Descrivi la posizione, le missioni e l'ambiente di lavoro…",
+        "missions": "Descrivi le missioni principali…",
+        "requirements": "Descrivi il profilo ideale, le competenze richieste…",
+        "benefits": "Benefici offerti (assicurazione sanitaria, buoni pasto, lavoro da remoto…)",
+        "skill": "Aggiungi una competenza",
+        "address": "Indirizzo del luogo di lavoro",
+        "salaryMin": "es. 60000",
+        "salaryMax": "es. 120000"
+      },
+      "skills": {
+        "add": "Aggiungi"
+      },
+      "limitModal": {
+        "title": "Limite offerte raggiunto",
+        "message": "Il tuo piano {plan} ti consente di pubblicare fino a {max} offerta/e attiva/e. Al momento ne hai {current}.",
+        "upgradeSuggestion": "Passa a un piano superiore per pubblicare più offerte.",
+        "later": "Più tardi",
+        "seePlans": "Vedi i piani"
+      },
+      "toasts": {
+        "userNotIdentified": "Utente non identificato",
+        "noCompanySelected": "Nessuna azienda selezionata",
+        "companyNotFound": "Azienda non trovata",
+        "companySuspended": "La tua azienda è sospesa, non puoi pubblicare offerte.",
+        "companySuspendedDesc": "Contatta l'assistenza per maggiori informazioni.",
+        "jobNotFound": "Offerta non trovata",
+        "fillRequiredFields": "Si prega di compilare i campi obbligatori.",
+        "companyNotVerified": "La tua azienda non è ancora verificata.",
+        "limitReached": "Hai raggiunto il limite di {limit} offerte per il tuo piano.",
+        "submittedForValidation": "Offerta inviata per la convalida.",
+        "offerUpdated": "Offerta aggiornata con successo.",
+        "draftSaved": "Bozza salvata.",
+        "saveError": "Errore durante il salvataggio."
+      }
+    },
+    "createCompany": {
+      "back": "Indietro",
+      "title": "Crea azienda",
+      "subtitle": "Inserisci le informazioni per aggiungere la tua azienda alla piattaforma.",
+      "logo": "Logo",
+      "uploading": "Caricamento…",
+      "submit": "Crea azienda",
+      "sizes": {
+        "1-10": "1-10 dipendenti",
+        "11-50": "11-50 dipendenti",
+        "51-200": "51-200 dipendenti",
+        "201-500": "201-500 dipendenti",
+        "500+": "Più di 500 dipendenti"
+      },
+      "industries": [
+        "Agricoltura",
+        "Artigianato",
+        "Audiovisivo",
+        "Automobilistico",
+        "Banche / Assicurazioni",
+        "Edilizia",
+        "Commercio",
+        "Comunicazione",
+        "Consulenza",
+        "Distribuzione",
+        "Istruzione",
+        "Energia",
+        "Ambiente",
+        "Finanza",
+        "Ospitalità / Ristorazione",
+        "Immobiliare",
+        "Industria",
+        "Informatica",
+        "Legale",
+        "Logistica / Trasporti",
+        "Lusso",
+        "Media",
+        "Medico / Farmaceutico",
+        "Moda",
+        "Pubblico / Amministrazione",
+        "Risorse umane",
+        "Salute",
+        "Sicurezza",
+        "Servizi",
+        "Telecomunicazioni",
+        "Turismo",
+        "Altro"
+      ],
+      "labels": {
+        "name": "Nome azienda",
+        "description": "Descrizione",
+        "industry": "Settore",
+        "size": "Dimensione azienda",
+        "website": "Sito web",
+        "email": "Email",
+        "phone": "Telefono",
+        "foundedYear": "Anno di fondazione",
+        "country": "Paese",
+        "city": "Città",
+        "address": "Indirizzo"
+      },
+      "options": {
+        "selectIndustry": "Seleziona settore",
+        "selectSize": "Seleziona dimensione",
+        "selectCity": "Seleziona città"
+      },
+      "placeholders": {
+        "description": "Descrivi la tua azienda, la sua missione, i suoi valori…",
+        "address": "Indirizzo della sede"
+      },
+      "toasts": {
+        "imageRequired": "Seleziona un'immagine.",
+        "imageTooBig": "L'immagine non deve superare 2 MB.",
+        "logoUploaded": "Logo caricato con successo.",
+        "uploadError": "Errore durante il caricamento del logo.",
+        "accountSuspended": "Il tuo account è sospeso, non puoi creare un'azienda.",
+        "cannotCreateCompany": "Gli account sospesi o bannati non possono creare un'azienda.",
+        "fillRequired": "Compila i campi obbligatori.",
+        "companyCreated": "Azienda creata con successo!",
+        "notificationError": "L'azienda è stata creata ma la notifica all'amministratore non è riuscita.",
+        "createError": "Errore durante la creazione dell'azienda."
+      }
+    },
+    "companyApplications": {
+      "back": "Indietro",
+      "title": "Candidature",
+      "noApplications": "Nessuna candidatura ricevuta.",
+      "deleteConfirm": "Eliminare definitivamente questa candidatura?",
+      "deleteButton": "Elimina",
+      "accountSuspended": "Il tuo account è sospeso.",
+      "companySuspended": "L'azienda è sospesa.",
+      "suspendedDescription": "Al momento non puoi consultare le candidature.",
+      "backToDashboard": "Torna alla dashboard",
+      "status": {
+        "pending": "In attesa",
+        "viewed": "Visualizzata",
+        "shortlisted": "Preselezionata",
+        "interview": "Colloquio",
+        "accepted": "Accettata",
+        "rejected": "Rifiutata"
+      },
+      "toasts": {
+        "deleted": "Candidatura eliminata.",
+        "deleteError": "Errore durante l'eliminazione."
+      }
+    },
+    "companyJobs": {
+      "back": "Indietro",
+      "title": "Offerte di lavoro",
+      "newOffer": "Nuova offerta",
+      "companySuspended": "L'azienda è sospesa.",
+      "suspendedDescription": "Al momento non puoi gestire le offerte.",
+      "backToDashboard": "Torna alla dashboard",
+      "status": {
+        "draft": "Bozza",
+        "active": "Attiva",
+        "paused": "In pausa",
+        "closed": "Chiusa",
+        "expired": "Scaduta",
+        "pending": "In attesa"
+      },
+      "views": "{{count}} visualizzazione(i)",
+      "applications": "{{count}} candidatura/e",
+      "confirmDelete": "Eliminare l'offerta \"{{title}}\" definitivamente?",
+      "toasts": {
+        "deleted": "Offerta eliminata.",
+        "deleteError": "Errore durante l'eliminazione.",
+        "published": "Offerta pubblicata.",
+        "statusUpdated": "Stato aggiornato.",
+        "updateError": "Errore durante l'aggiornamento.",
+        "companyNotFound": "Azienda non trovata.",
+        "boostBusinessOnly": "Riservato al piano Business.",
+        "boostAlreadyUsed": "Boost già utilizzato. Disponibile tra {{days}} giorno/i.",
+        "jobNotEligible": "Offerta non idonea.",
+        "boostActivated": "Boost attivato per 7 giorni.",
+        "boostError": "Errore durante il boost."
+      },
+      "noJobs": {
+        "title": "Nessuna offerta",
+        "message": "Non hai ancora creato nessuna offerta.",
+        "createButton": "Crea un'offerta"
+      },
+      "menu": {
+        "edit": "Modifica",
+        "pause": "Metti in pausa",
+        "boost": "Potenzia",
+        "reactivate": "Riattiva",
+        "publish": "Pubblica",
+        "delete": "Elimina"
+      }
+    },
+    "companyDetail": {
+      "back": "Torna alle aziende",
+      "notFound": "Azienda non trovata.",
+      "notFoundMessage": "Questa azienda non esiste o è stata eliminata.",
+      "suspendedTitle": "Azienda sospesa",
+      "suspendedDescription": "Questa azienda è attualmente sospesa.",
+      "backToCompanies": "Vedi tutte le aziende",
+      "about": "Informazioni",
+      "jobs": "Offerte di lavoro",
+      "noJobs": "Nessuna offerta al momento.",
+      "employees": "{{size}} dipendenti",
+      "website": "Sito web",
+      "email": "Email",
+      "yourCompany": "La tua azienda"
+    },
+    "candidateProfilePage": {
+      "back": "Indietro",
+      "title": "Il mio profilo candidato",
+      "subtitle": "Completa il tuo profilo per aumentare le tue possibilità.",
+      "save": "Salva",
+      "saveChanges": "Salva modifiche",
+      "toasts": {
+        "accountSuspended": "Il tuo account è sospeso. Non puoi modificare il profilo.",
+        "profileUpdated": "Profilo aggiornato con successo.",
+        "saveError": "Errore durante il salvataggio del profilo.",
+        "fillRequired": "Compila i campi obbligatori (nome, cognome, titolo)."
+      },
+      "photo": {
+        "title": "Foto profilo",
+        "hint": "JPG o PNG, max 2 MB.",
+        "change": "Modifica",
+        "delete": "Elimina",
+        "updated": "Foto aggiornata.",
+        "uploadError": "Errore durante il caricamento della foto.",
+        "deleteConfirm": "Eliminare la foto profilo?",
+        "deleted": "Foto eliminata.",
+        "deleteError": "Errore durante l'eliminazione della foto."
+      },
+      "personalInfo": {
+        "sectionTitle": "Informazioni personali",
+        "sectionDesc": "Queste informazioni appariranno sul tuo profilo pubblico.",
+        "firstName": "Nome",
+        "lastName": "Cognome",
+        "phone": "Telefono",
+        "phonePlaceholder": "+39 123 4567890",
+        "city": "Città",
+        "selectCity": "Seleziona una città"
+      },
+      "professionalProfile": {
+        "sectionTitle": "Profilo professionale",
+        "sectionDesc": "Descrivi il tuo percorso e le tue aspettative.",
+        "title": "Titolo professionale",
+        "bio": "Riepilogo del profilo",
+        "experienceLevel": "Livello di esperienza",
+        "yearsOfExperience": "Anni di esperienza",
+        "available": "Disponibile",
+        "openToRemote": "Aperto al lavoro da remoto",
+        "selectLevel": "Seleziona un livello"
+      },
+      "cv": {
+        "sectionTitle": "CV principale",
+        "sectionDesc": "Carica il tuo CV in formato PDF, DOC o DOCX.",
+        "uploadTitle": "Carica il tuo CV",
+        "uploadHint": "Formati accettati: PDF, DOC, DOCX. Max 5 MB.",
+        "chooseFile": "Scegli file",
+        "uploaded": "CV caricato",
+        "view": "Visualizza",
+        "change": "Modifica",
+        "delete": "Elimina",
+        "uploadedToast": "CV caricato con successo.",
+        "uploadError": "Errore durante il caricamento del CV.",
+        "deleteConfirm": "Eliminare il tuo CV?",
+        "deletedToast": "CV eliminato.",
+        "deleteError": "Errore durante l'eliminazione del CV.",
+        "invalidFormat": "Formato non supportato. Usa PDF, DOC o DOCX.",
+        "fileTooLarge": "Il file non deve superare 5 MB.",
+        "analyzeButton": "Analizza il mio CV con l'IA"
+      },
+      "documents": {
+        "sectionTitle": "Documenti aggiuntivi",
+        "sectionDesc": "Aggiungi diplomi, certificazioni, ecc.",
+        "typeDiploma": "Diploma",
+        "typeCertificate": "Certificazione",
+        "typeOther": "Altro",
+        "addButton": "Aggiungi documento",
+        "empty": "Nessun documento aggiunto.",
+        "addedToast": "Documento aggiunto.",
+        "uploadError": "Errore durante l'aggiunta del documento.",
+        "deleteConfirm": "Eliminare questo documento?",
+        "deletedToast": "Documento eliminato.",
+        "deleteError": "Errore durante l'eliminazione."
+      },
+      "skills": {
+        "sectionTitle": "Competenze",
+        "sectionDesc": "Le competenze aiutano i reclutatori a trovarti.",
+        "placeholder": "Aggiungi una competenza",
+        "add": "Aggiungi",
+        "empty": "Nessuna competenza aggiunta.",
+        "addedToast": "{{count}} competenza/e aggiunta/e.",
+        "noneFound": "Nessuna competenza trovata nel testo."
+      },
+      "experience": {
+        "sectionTitle": "Esperienze professionali",
+        "sectionDesc": "Aggiungi le tue esperienze più rilevanti.",
+        "add": "Aggiungi esperienza",
+        "empty": "Nessuna esperienza aggiunta.",
+        "present": "Attuale",
+        "edit": "Modifica",
+        "jobTitle": "Ruolo",
+        "company": "Azienda",
+        "location": "Luogo",
+        "startDate": "Data di inizio",
+        "endDate": "Data di fine",
+        "currentlyWorking": "Attualmente lavoro qui",
+        "description": "Descrizione",
+        "cancel": "Annulla",
+        "save": "Salva modifiche",
+        "saveNew": "Aggiungi esperienza",
+        "modalEditTitle": "Modifica esperienza",
+        "modalAddTitle": "Aggiungi esperienza",
+        "fillRequired": "Compila il ruolo, l'azienda e la data di inizio."
+      },
+      "education": {
+        "sectionTitle": "Istruzione e formazione",
+        "sectionDesc": "Aggiungi i tuoi titoli di studio e la formazione.",
+        "add": "Aggiungi formazione",
+        "empty": "Nessuna formazione aggiunta.",
+        "edit": "Modifica",
+        "degree": "Titolo di studio",
+        "school": "Istituto",
+        "field": "Ambito di studio",
+        "year": "Anno di conseguimento",
+        "cancel": "Annulla",
+        "save": "Salva modifiche",
+        "saveNew": "Aggiungi formazione",
+        "modalEditTitle": "Modifica formazione",
+        "modalAddTitle": "Aggiungi formazione",
+        "fillRequired": "Compila il titolo, la scuola e l'anno."
+      },
+      "links": {
+        "sectionTitle": "Link",
+        "sectionDesc": "Aggiungi LinkedIn, portfolio o altri link."
+      },
+      "salary": {
+        "sectionTitle": "Stipendio desiderato",
+        "sectionDesc": "Indica una fascia indicativa.",
+        "minSalary": "Stipendio minimo",
+        "maxSalary": "Stipendio massimo"
+      },
+      "cvAnalysis": {
+        "title": "Analisi del CV con IA",
+        "description": "Incolla il contenuto del tuo CV per ottenere suggerimenti di miglioramento.",
+        "placeholder": "Incolla qui il testo del tuo CV...",
+        "suggestions": "Suggerimenti di miglioramento:",
+        "close": "Chiudi",
+        "analyze": "Analizza",
+        "analyzing": "Analisi in corso...",
+        "emptyText": "Per favore incolla il contenuto del tuo CV.",
+        "doneToast": "Analisi completata.",
+        "errorToast": "Errore durante l'analisi."
+      }
+    },
+    "settings": {
+      "back": "Indietro",
+      "myProfile": "Il mio profilo",
+      "title": "Impostazioni",
+      "subtitle": "Gestisci il tuo account e le tue preferenze.",
+      "toasts": {
+        "accountSuspended": "Il tuo account è sospeso. Azione impossibile.",
+        "passwordMismatch": "Le password non corrispondono.",
+        "passwordLength": "La password deve contenere almeno 8 caratteri.",
+        "passwordUpdated": "Password aggiornata.",
+        "passwordError": "Errore durante il cambio password.",
+        "fillAllFields": "Si prega di compilare tutti i campi.",
+        "emailConfirmationSent": "Una mail di conferma è stata inviata al tuo nuovo indirizzo.",
+        "wrongPassword": "Password attuale errata.",
+        "emailError": "Errore durante il cambio email.",
+        "logoutError": "Errore durante la disconnessione.",
+        "accountDeleted": "Account eliminato definitivamente.",
+        "deleteError": "Errore durante l'eliminazione dell'account.",
+        "roleRequestSent": "Richiesta di cambio ruolo inviata.",
+        "roleRequestError": "Errore durante l'invio della richiesta."
+      },
+      "accountInfo": {
+        "title": "Informazioni account",
+        "description": "Connesso come {{email}}"
+      },
+      "changeEmail": {
+        "title": "Cambia email",
+        "description": "Modifica il tuo indirizzo email di accesso.",
+        "newEmailLabel": "Nuova email",
+        "newEmailPlaceholder": "email@esempio.com",
+        "currentPasswordLabel": "Password attuale",
+        "currentPasswordPlaceholder": "La tua password attuale",
+        "submit": "Aggiorna email"
+      },
+      "changePassword": {
+        "title": "Cambia password",
+        "description": "Usa una password complessa di almeno 8 caratteri.",
+        "newPasswordLabel": "Nuova password",
+        "newPasswordPlaceholder": "Nuova password",
+        "confirmPasswordLabel": "Conferma password",
+        "confirmPasswordPlaceholder": "Conferma password",
+        "submit": "Aggiorna password"
+      },
+      "logout": {
+        "title": "Disconnetti",
+        "description": "Esci da questo dispositivo.",
+        "button": "Disconnetti"
+      },
+      "roleChange": {
+        "title": "Cambia ruolo",
+        "descriptionCandidate": "Attualmente sei un <strong>candidato</strong>. Puoi richiedere di diventare un <strong>reclutatore</strong>.",
+        "descriptionCompany": "Attualmente sei un <strong>reclutatore</strong>. Puoi richiedere di tornare <strong>candidato</strong>.",
+        "requestButton": "Richiedi cambio ruolo",
+        "modal": {
+          "title": "Richiesta di cambio ruolo",
+          "roleLabel": "Nuovo ruolo desiderato",
+          "roleCompany": "Reclutatore (azienda)",
+          "roleCandidate": "Candidato",
+          "reasonLabel": "Motivo della richiesta",
+          "reasonPlaceholder": "Spiega perché vuoi cambiare ruolo…",
+          "cancel": "Annulla",
+          "submit": "Invia richiesta"
+        }
+      },
+      "dangerZone": {
+        "title": "Zona pericolo",
+        "description": "Elimina definitivamente il tuo account e tutti i tuoi dati.",
+        "confirm": "Eliminare definitivamente il tuo account? Questa azione è irreversibile.",
+        "button": "Elimina il mio account"
+      }
+    },
+     "jobs": {
+      "searchPlaceholder": "Titolo, competenza o azienda…",
+      "allCities": "Tutte le città",
+      "filters": "Filtri",
+      "resetFilters": "Reimposta",
+      "contractType": "Tipo di contratto",
+      "location": "Località",
+      "remotePossible": "Lavoro da remoto possibile",
+      "salary": "Stipendio",
+      "minSalary": "Stipendio minimo",
+      "maxSalary": "Stipendio massimo",
+      "experience": "Esperienza",
+      "category": "Categoria",
+      "allCategories": "Tutte le categorie",
+      "resultsFor": "Risultati per \"{{query}}\"",
+      "allOffers": "Tutte le offerte",
+      "results": "{{count}} offerta/e trovata/e",
+      "sortRecent": "Più recenti",
+      "sortSalary": "Stipendio più alto",
+      "noResults": "Nessuna offerta trovata",
+      "noResultsHint": "Prova a modificare i criteri di ricerca.",
+      "viewResults": "Vedi risultati ({{count}})",
+      "remote": "Lavoro da remoto",
+      "remoteFull": "100% remoto",
+      "remoteHybrid": "Ibrido",
+      "remoteOccasional": "Occasionale",
+      "boosted": "In evidenza",
+      "featured": "In prima pagina",
+      "urgent": "Urgente",
+      "yourOffer": "La tua offerta",
+      "verified": "Verificato",
+      "viewOffer": "Vedi offerta",
+      "unspecified": "Non specificato",
+      "loginToSave": "Accedi per salvare le offerte.",
+      "companyCannotSave": "I reclutatori non possono salvare le offerte.",
+      "accountSuspended": "Il tuo account è sospeso. Azione non possibile.",
+      "saveSuccess": "Offerta salvata.",
+      "unsaveSuccess": "Offerta rimossa dai preferiti.",
+      "publishedToast": "Offerta pubblicata.",
+      "statusUpdated": "Stato aggiornato.",
+      "updateError": "Errore durante l'aggiornamento.",
+      "deleteConfirm": "Eliminare definitivamente questa offerta?",
+      "deletedToast": "Offerta eliminata.",
+      "deleteError": "Errore durante l'eliminazione.",
+      "edit": "Modifica",
+      "publish": "Pubblica",
+      "pause": "Metti in pausa",
+      "reactivate": "Riattiva",
+      "delete": "Elimina"
+    },
+     "jobDetail": {
+      "notFound": "Offerta non trovata",
+      "notFoundMessage": "Questa offerta non esiste o è stata eliminata.",
+      "backToJobs": "Torna alle offerte",
+      "pleaseLogin": "Accedi per candidarti.",
+      "accountSuspended": "Il tuo account è sospeso.",
+      "accountBanned": "Il tuo account è bannato.",
+      "companyCannotApply": "I reclutatori non possono candidarsi.",
+      "companyCannotSaveFavorites": "I reclutatori non possono salvare preferiti.",
+      "alreadyApplied": "Già candidato",
+      "alreadyAppliedMessage": "Ti sei già candidato a questa offerta.",
+      "apply": "Candidati",
+      "applicationSent": "La tua candidatura è stata inviata.",
+      "applicationError": "Errore durante l'invio della candidatura.",
+      "savedToFavorites": "Offerta aggiunta ai preferiti.",
+      "removedFromFavorites": "Offerta rimossa dai preferiti.",
+      "errorSaving": "Errore durante il salvataggio.",
+      "yourOffer": "La tua offerta",
+      "matchScore": "{{score}}% di corrispondenza",
+      "unspecified": "Non specificato",
+      "boosted": "In evidenza",
+      "descriptionTitle": "Descrizione del lavoro",
+      "missionsTitle": "Missioni",
+      "profileTitle": "Profilo ricercato",
+      "benefitsTitle": "Benefici"
+    },
+    "savedJobs": {
+      "back": "Indietro",
+      "title": "Offerte salvate",
+      "noSaved": "Nessuna offerta salvata per il momento.",
+      "accountSuspended": "Il tuo account è sospeso."
+    },
+    "jobAlerts": {
+      "back": "Indietro",
+      "title": "Avvisi di lavoro",
+      "subtitle": "Ricevi una notifica quando un'offerta corrisponde ai tuoi criteri.",
+      "newAlert": "Nuovo avviso",
+      "frequencies": {
+        "instant": "Immediato",
+        "daily": "Giornaliero",
+        "weekly": "Settimanale"
+      },
+      "editTitle": "Modifica avviso",
+      "createTitle": "Crea avviso",
+      "createDescription": "Definisci i tuoi criteri per ricevere le offerte corrispondenti.",
+      "nameLabel": "Nome (opzionale)",
+      "namePlaceholder": "es: Offerte per sviluppatori",
+      "keywordsLabel": "Parole chiave",
+      "keywordsPlaceholder": "es: sviluppatore, marketing",
+      "keywordsHint": "Separa le parole con virgole.",
+      "categoryLabel": "Categoria",
+      "cityLabel": "Città",
+      "allCategories": "Tutte le categorie",
+      "allCities": "Tutte le città",
+      "contractTypesLabel": "Tipi di contratto",
+      "salaryMinLabel": "Stipendio minimo",
+      "salaryMinPlaceholder": "es: 60000",
+      "frequencyLabel": "Frequenza",
+      "cancel": "Annulla",
+      "editButton": "Salva modifiche",
+      "createButton": "Crea avviso",
+      "myAlerts": "I miei avvisi ({{count}})",
+      "noAlerts": "Nessun avviso configurato.",
+      "createFirstAlert": "Crea il mio primo avviso",
+      "alertActive": "Attivo",
+      "alertInactive": "Inattivo",
+      "lastSent": "Ultimo invio: {{date}}",
+      "deactivate": "Disattiva",
+      "activate": "Attiva",
+      "edit": "Modifica",
+      "delete": "Elimina",
+      "deleteConfirm": "Eliminare definitivamente questo avviso?",
+      "toasts": {
+        "loadError": "Errore durante il caricamento degli avvisi.",
+        "addCriteria": "Aggiungi almeno un criterio.",
+        "editSuccess": "Avviso aggiornato.",
+        "createSuccess": "Avviso creato con successo.",
+        "saveError": "Errore durante il salvataggio.",
+        "activateSuccess": "Avviso attivato.",
+        "deactivateSuccess": "Avviso disattivato.",
+        "toggleError": "Errore durante il cambio stato.",
+        "deleteSuccess": "Avviso eliminato.",
+        "deleteError": "Errore durante l'eliminazione."
+      }
+    },
+    "companyProfile": {
+      "back": "Indietro",
+      "title": "Profilo aziendale",
+      "subtitle": "Gestisci le informazioni pubbliche della tua azienda.",
+      "logo": "Logo",
+      "uploading": "Caricamento…",
+      "submit": "Salva modifiche",
+      "deleteConfirm": "Eliminare definitivamente la tua azienda? Tutte le offerte e i dati associati andranno persi.",
+      "labels": {
+        "name": "Nome azienda",
+        "description": "Descrizione",
+        "industry": "Settore",
+        "size": "Dimensione azienda",
+        "website": "Sito web",
+        "email": "Email",
+        "phone": "Telefono",
+        "foundedYear": "Anno di fondazione",
+        "country": "Paese",
+        "city": "Città",
+        "address": "Indirizzo"
+      },
+      "placeholders": {
+        "name": "Nome della tua azienda",
+        "description": "Descrivi la tua azienda, la sua missione, i suoi valori…",
+        "website": "https://www.miaazienda.it",
+        "email": "info@miaazienda.it",
+        "phone": "+39 123 4567890",
+        "year": "Es: 2020",
+        "address": "Indirizzo della sede"
+      },
+      "options": {
+        "selectIndustry": "Seleziona settore",
+        "selectSize": "Seleziona dimensione",
+        "selectCity": "Seleziona città"
+      },
+      "sizes": {
+        "1-10": "1-10 dipendenti",
+        "11-50": "11-50 dipendenti",
+        "51-200": "51-200 dipendenti",
+        "201-500": "201-500 dipendenti",
+        "500+": "Più di 500 dipendenti"
+      },
+      "toasts": {
+        "imageRequired": "Seleziona un'immagine.",
+        "imageTooBig": "L'immagine non deve superare 2 MB.",
+        "logoUploaded": "Logo aggiornato.",
+        "uploadError": "Errore durante il caricamento del logo.",
+        "nameRequired": "Il nome dell'azienda è obbligatorio.",
+        "updateSuccess": "Profilo aziendale aggiornato.",
+        "updateError": "Errore durante l'aggiornamento del profilo.",
+        "accountSuspended": "Il tuo account è sospeso. Azione impossibile.",
+        "companySuspended": "La tua azienda è sospesa. Modifica non possibile.",
+        "companyDeleted": "Azienda eliminata con successo.",
+        "deleteError": "Errore durante l'eliminazione dell'azienda."
+      },
+      "deleteSection": {
+        "title": "Elimina azienda",
+        "description": "Questa azione è irreversibile. Tutte le offerte e i dati verranno eliminati definitivamente.",
+        "button": "Elimina la mia azienda",
+        "deleting": "Eliminazione…"
+      },
+      "noCompany": {
+        "title": "Nessuna azienda",
+        "message": "Non hai ancora creato un'azienda.",
+        "createButton": "Crea la mia azienda"
+      }
+    },
+    "applicationDetail": {
+      "back": "Indietro",
+      "notFound": "Candidatura non trovata.",
+      "status": {
+        "pending": "In attesa",
+        "viewed": "Visualizzata",
+        "shortlisted": "Preselezionata",
+        "interview": "Colloquio",
+        "accepted": "Accettata",
+        "rejected": "Rifiutata"
+      },
+      "receivedAt": "Ricevuta il {{date}}",
+      "changeStatus": "Cambia stato",
+      "jobTitle": "Offerta correlata",
+      "coverLetter": "Lettera di presentazione",
+      "cv": "CV del candidato",
+      "viewCV": "Visualizza CV",
+      "viewFullProfile": "Visualizza profilo completo",
+      "scheduleInterview": "Pianifica colloquio",
+      "step1ChooseSlot": "Scegli fascia oraria",
+      "step2CreateLink": "Crea link videoconferenza",
+      "openCalendly": "Apri Calendly",
+      "sendEmail": "Invia via email",
+      "joinMeeting": "Partecipa alla riunione",
+      "generateJitsiLink": "Genera link Jitsi",
+      "updateLink": "Aggiorna link",
+      "deleteLink": "Elimina link",
+      "roomPlaceholder": "Nome stanza (opzionale)",
+      "newRoomPlaceholder": "Nuovo nome stanza (opzionale)",
+      "interviewNotes": "Note del colloquio",
+      "generateQuestions": "Genera domande",
+      "generateAnswers": "Genera risposte",
+      "generateTips": "Genera suggerimenti",
+      "toasts": {
+        "noteSaved": "Nota salvata.",
+        "noteDeleted": "Nota eliminata.",
+        "questionsGenerated": "Domande generate con successo.",
+        "rejectionPrompt": "Motivo del rifiuto (opzionale):",
+        "statusUpdated": "Stato della candidatura aggiornato.",
+        "updateError": "Errore durante l'aggiornamento.",
+        "linkUpdated": "Link videoconferenza aggiornato.",
+        "linkDeleted": "Link videoconferenza eliminato.",
+        "emailSent": "Email inviata al candidato."
+      },
+      "accountSuspended": "Il tuo account è sospeso."
+    },
+    "companyDashboard": {
+      "stats": {
+        "trend": "{{trend}} questa settimana",
+        "publishedJobs": "Offerte attive",
+        "totalApplications": "Candidature totali",
+        "newApplications": "Nuove candidature",
+        "totalViews": "Visualizzazioni totali"
+      },
+      "status": {
+        "draft": "Bozza",
+        "pending": "In attesa",
+        "active": "Attiva",
+        "paused": "In pausa",
+        "closed": "Chiusa",
+        "expired": "Scaduta",
+        "rejected": "Rifiutata"
+      },
+      "jobCard": {
+        "unspecifiedLocation": "Non specificato",
+        "views": "{{count}} visualizzazione/i",
+        "applications": "{{count}} candidatura/e",
+        "menu": {
+          "edit": "Modifica",
+          "viewApplications": "Candidature",
+          "submitForValidation": "Invia",
+          "validationRequired": "Validazione richiesta",
+          "cancelSubmission": "Annulla invio",
+          "freeBoost": "Potenzia gratuitamente",
+          "pause": "Metti in pausa",
+          "republish": "Ripubblica",
+          "delete": "Elimina"
+        }
+      },
+      "applicationStatus": {
+        "pending": "In attesa",
+        "viewed": "Visualizzata",
+        "shortlisted": "Preselezionata",
+        "interview": "Colloquio",
+        "accepted": "Accettata",
+        "rejected": "Rifiutata"
+      },
+      "toasts": {
+        "companyNotVerifiedMenu": "La tua azienda non è verificata.",
+        "loadError": "Errore durante il caricamento dei dati.",
+        "deleteConfirm": "Eliminare l'offerta \"{{title}}\"?",
+        "jobDeleted": "Offerta eliminata.",
+        "limitReached": "Hai raggiunto il limite di {{limit}} offerte attive.",
+        "limitReachedDetailed": "Limite di {{limit}} offerte raggiunto (attive + in attesa: {{total}}).",
+        "offerPublished": "Offerta pubblicata.",
+        "statusUpdated": "Stato aggiornato.",
+        "updateError": "Errore durante l'aggiornamento.",
+        "companyNotVerified": "La tua azienda non è verificata.",
+        "submittedForValidation": "Offerta inviata per la validazione.",
+        "submissionError": "Errore durante l'invio.",
+        "submissionCancelled": "Invio annullato.",
+        "subscriptionCancelled": "Abbonamento disdetto.",
+        "cancelError": "Errore durante la disdetta.",
+        "boostActivated": "Boost attivato per 7 giorni.",
+        "boostAlreadyUsed": "Boost già utilizzato questo mese.",
+        "boostError": "Errore durante il boost."
+      },
+      "cancelModal": {
+        "title": "Disdici abbonamento",
+        "description": "La disdetta dell'abbonamento disattiverà le tue offerte attive e perderai le funzionalità avanzate.",
+        "reasonLabel": "Motivo (opzionale)",
+        "reasonPlaceholder": "Perché vuoi disdire?",
+        "consequencesTitle": "Conseguenze",
+        "consequences": [
+          "Le tue offerte attive saranno sospese",
+          "Tornerai al piano Gratuito",
+          "Le funzionalità Pro/Business saranno disattivate"
+        ],
+        "cancelButton": "Annulla",
+        "confirmButton": "Disdici il mio abbonamento"
+      },
+      "noCompany": {
+        "title": "Nessuna azienda",
+        "subtitle": "Crea la tua azienda per iniziare a pubblicare offerte.",
+        "createButton": "Crea la mia azienda"
+      },
+      "companySelector": {
+        "owner": "Proprietario",
+        "member": "Membro",
+        "newCompany": "Nuova azienda"
+      },
+      "header": {
+        "title": "Panoramica"
+      },
+      "profileButton": "Profilo",
+      "newOfferButton": "Nuova offerta",
+      "jobsSection": {
+        "title": "Offerte recenti",
+        "totalOffers": "{{count}} offerta/e in totale",
+        "viewAll": "Vedi tutto",
+        "noOffers": "Nessuna offerta",
+        "publishButton": "Pubblica un'offerta"
+      },
+      "applicationsSection": {
+        "title": "Ultime candidature",
+        "newCount": "{{count}} nuova/e",
+        "viewAll": "Vedi tutto",
+        "noApplications": "Nessuna candidatura"
+      },
+      "companyProfileCard": {
+        "title": "Profilo aziendale",
+        "pendingValidation": "Validazione in sospeso",
+        "employees": "{{size}} dipendenti",
+        "founded": "Fondata nel {{year}}",
+        "editProfile": "Modifica profilo"
+      },
+      "subscriptionCard": {
+        "currentPlan": "Piano {{plan}}",
+        "changePlan": "Cambia",
+        "activeOffers": "Offerte attive",
+        "activePlanMessage": "Il tuo piano {{plan}} è attivo.",
+        "manageSubscription": "Gestisci abbonamento",
+        "cancelSubscription": "Disdici abbonamento",
+        "lastCancelReason": "Ultima disdetta",
+        "cancelReasonQuote": "\"{{reason}}\"",
+        "freePlanMessage": "Passa a un piano superiore per più funzionalità.",
+        "freeBoostMessage": "Boost gratuito disponibile!"
+      },
+      "adminMessages": {
+        "title": "Messaggi amministratore"
+      }
+    },
+    "candidateDashboard": {
+      "greeting": "Ciao {{name}}",
+      "activityPreview": "Ecco un riepilogo della tua attività recente.",
+      "myProfile": "Il mio profilo",
+      "searchJobs": "Cerca offerte",
+      "stats": {
+        "trend": "{{trend}} questa settimana",
+        "applications": "Candidature",
+        "savedJobs": "Offerte salvate",
+        "activeAlerts": "Avvisi attivi",
+        "completionRate": "Completamento profilo"
+      },
+      "applications": {
+        "title": "Candidature recenti",
+        "description": "Tieni traccia delle tue candidature in corso.",
+        "viewAll": "Vedi tutto",
+        "empty": "Nessuna candidatura.",
+        "findJob": "Trova un'offerta",
+        "defaultJobTitle": "Offerta",
+        "defaultCompany": "Azienda"
+      },
+      "savedJobs": {
+        "title": "Offerte salvate",
+        "description": "Le tue offerte preferite.",
+        "viewAll": "Vedi tutto",
+        "empty": "Nessuna offerta salvata.",
+        "browseJobs": "Sfoglia le offerte",
+        "unspecifiedLocation": "Non specificato"
+      },
+      "profileCompletion": {
+        "title": "Completamento del profilo",
+        "completeProfile": "Completa il mio profilo",
+        "messages": {
+          "low": "Il tuo profilo è poco completo. Aggiungi più dettagli per attrarre i reclutatori.",
+          "medium": "Il tuo profilo sta migliorando. Continua a completarlo per ottenere risultati migliori.",
+          "high": "Profilo eccellente! Sei ben preparato."
+        }
+      },
+      "quickActions": {
+        "title": "Azioni rapide",
+        "updateCV": "Aggiorna il mio CV",
+        "updateCVDesc": "Aggiungi un nuovo file.",
+        "createAlert": "Crea un avviso",
+        "createAlertDesc": "Ricevi offerte via email.",
+        "settings": "Impostazioni",
+        "settingsDesc": "Gestisci il tuo account."
+      },
+      "dailyTip": {
+        "title": "Consiglio",
+        "low": [
+          "Aggiungi una foto profilo professionale.",
+          "Descrivi le tue competenze principali.",
+          "Scrivi un riepilogo accattivante."
+        ],
+        "high": [
+          "Personalizza le tue candidature.",
+          "Preparati ai colloqui con l'IA.",
+          "Attiva gli avvisi per non perdere nulla."
+        ]
+      },
+      "adminMessages": {
+        "title": "Messaggi dell'amministratore",
+        "description": "Annunci e informazioni importanti."
+      },
+      "toasts": {
+        "accountSuspended": "Il tuo account è sospeso."
+      }
+    },
+    "report": {
+      "button": "Segnala",
+      "titleDefault": "Segnala questo contenuto",
+      "titleJob": "Segnala questa offerta",
+      "titleCompany": "Segnala questa azienda",
+      "titleUser": "Segnala questo utente",
+      "subtitleJob": "Spiega perché vuoi segnalare questa offerta.",
+      "subtitleCompany": "Spiega perché vuoi segnalare questa azienda.",
+      "subtitleUser": "Spiega perché vuoi segnalare questo utente.",
+      "subtitleDefault": "Spiega brevemente il motivo della segnalazione.",
+      "mustLogin": "Devi aver effettuato l'accesso per segnalare un contenuto.",
+      "reasonRequired": "Seleziona un motivo.",
+      "detailsPlaceholder": "Aggiungi dettagli se necessario...",
+      "cancel": "Annulla",
+      "send": "Invia",
+      "sentSuccess": "Segnalazione inviata con successo.",
+      "sendError": "Si è verificato un errore durante l'invio della segnalazione."
+    },
+    "reportReasons": {
+      "job": {
+        "spam": "Spam o contenuto ingannevole",
+        "fake": "Annuncio fraudolento",
+        "inappropriate": "Contenuto inappropriato",
+        "duplicate": "Annuncio duplicato",
+        "other": "Altro"
+      },
+      "company": {
+        "spam": "Spam o contenuto ingannevole",
+        "fake": "Azienda fraudolenta",
+        "inappropriate": "Contenuto inappropriato",
+        "duplicate": "Scheda duplicata",
+        "other": "Altro"
+      },
+      "user": {
+        "spam": "Spam",
+        "harassment": "Molestie",
+        "fake": "Account sospetto o falso",
+        "inappropriate": "Contenuto inappropriato",
+        "other": "Altro"
       }
     }
 

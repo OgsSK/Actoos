@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,12 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Label } from '../components/ui/label';
 import { Separator } from '../components/ui/separator';
 import {
-  Briefcase, Mail, Lock, Eye, EyeOff, Loader2
+  Briefcase, Mail, Lock, Eye, EyeOff, Loader2, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 
-// Google Icon SVG
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -29,6 +28,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
+  const reason = new URLSearchParams(location.search).get('reason');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,6 +36,14 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    if (reason === 'suspended') {
+      toast.error(t('auth.login.accountSuspended'), { duration: 6000 });
+    } else if (reason === 'banned') {
+      toast.error(t('auth.login.accountBanned'), { duration: 6000 });
+    }
+  }, [reason, t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,6 +68,10 @@ const LoginPage = () => {
       console.error('Login error:', error);
       if (error.message?.includes('Invalid login')) {
         toast.error(t('auth.login.errorInvalid'));
+      } else if (error.message?.includes('suspendu')) {
+        toast.error(t('auth.login.accountSuspended'));
+      } else if (error.message?.includes('banni')) {
+        toast.error(t('auth.login.accountBanned'));
       } else {
         toast.error(error.message || t('auth.login.errorGeneric'));
       }
@@ -90,6 +102,17 @@ const LoginPage = () => {
             <span className="text-2xl font-bold text-slate-900">Actoos Jobs</span>
           </Link>
         </div>
+
+        {reason && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+            <p className="text-sm text-red-800">
+              {reason === 'suspended'
+                ? t('auth.login.accountSuspendedMessage')
+                : t('auth.login.accountBannedMessage')}
+            </p>
+          </div>
+        )}
 
         <Card className="shadow-xl border-0">
           <CardHeader className="text-center pb-2">

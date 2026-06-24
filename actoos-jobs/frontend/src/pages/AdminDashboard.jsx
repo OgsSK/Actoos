@@ -47,7 +47,6 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
 
-// ---------- Stats Card ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) => {
   const { t } = useTranslation();
   return (
@@ -103,7 +102,6 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue', onClick }) 
   );
 };
 
-// ---------- Job Moderation Card (avec onReactivate) ----------
 const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete, onReactivate }) => {
   const { t } = useTranslation();
   const menuButtonRef = useRef(null);
@@ -457,8 +455,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete, onRe
   );
 };
 
-// ---------- Company Validation Card ----------
-const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJobs, onSuspendWithDuration }) => {
+const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJobs, onSuspendWithDuration, onReactivate }) => {
   const { t } = useTranslation();
   const menuButtonRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -466,12 +463,16 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
   const [actionType, setActionType] = useState(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
 
+  const isSuspended = company.is_verified && !company.is_active;
+
   const statusConfig = {
+    suspended: { label: t('adminDashboard.companies.status.suspended', 'Suspendue'), color: 'bg-yellow-100 text-yellow-700', icon: Ban },
     false: { label: t('adminDashboard.companies.status.unverified'), color: 'bg-yellow-100 text-yellow-700', icon: Clock },
     true: { label: t('adminDashboard.companies.status.verified'), color: 'bg-green-100 text-green-700', icon: CheckCircle },
   };
 
-  const status = statusConfig[company.is_verified ? 'true' : 'false'] || statusConfig.false;
+  const statusKey = isSuspended ? 'suspended' : (company.is_verified ? 'true' : 'false');
+  const status = statusConfig[statusKey];
   const StatusIcon = status.icon;
 
   const updateMenuPosition = () => {
@@ -620,16 +621,29 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
             </Button>
           </>
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full sm:w-auto text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 min-h-[44px]"
-            onClick={() => onSuspendWithDuration(company)}
-            disabled={!company.is_active}
-          >
-            <Ban className="w-4 h-4 mr-1" />
-            {t('adminDashboard.companies.suspend')}
-          </Button>
+          <>
+            {company.is_active ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full sm:w-auto text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 min-h-[44px]"
+                onClick={() => onSuspendWithDuration(company)}
+              >
+                <Ban className="w-4 h-4 mr-1" />
+                {t('adminDashboard.companies.suspend')}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full sm:w-auto text-green-600 hover:bg-green-50 hover:text-green-700 min-h-[44px]"
+                onClick={() => onReactivate(company)}
+              >
+                <Check className="w-4 h-4 mr-1" />
+                {t('adminDashboard.companies.reactivate')}
+              </Button>
+            )}
+          </>
         )}
         <Button
           size="sm"
@@ -681,7 +695,6 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
   );
 };
 
-// ---------- Tabs ----------
 const TabButton = ({ active, onClick, children, count }) => (
   <button
     onClick={onClick}
@@ -704,7 +717,6 @@ const TabButton = ({ active, onClick, children, count }) => (
   </button>
 );
 
-// ---------- Main Admin Dashboard ----------
 const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -978,7 +990,6 @@ const AdminDashboard = () => {
     toast.success(t('adminDashboard.dataRefreshed'));
   };
 
-  // ---------- Role requests ----------
   const handleRoleRequest = async (requestId, action) => {
     const message = action === 'reject'
       ? window.prompt(t('adminDashboard.jobs.reasonLabel'))
@@ -1038,10 +1049,9 @@ const AdminDashboard = () => {
     }
   };
 
-  // ---------- Job handlers ----------
   const handleApproveJob = async (job) => {
-    if (!job.company?.is_verified) {
-      toast.error(t('adminDashboard.jobs.approveCompanyFirst'));
+    if (!job.company?.is_verified || !job.company?.is_active) {
+      toast.error(t('adminDashboard.jobs.companySuspendedOrNotVerified', "L'entreprise est suspendue ou non vérifiée."));
       return;
     }
     const plan = job.company?.subscription_plan || 'free';
@@ -1077,7 +1087,6 @@ const AdminDashboard = () => {
       setStats((s) => ({ ...s, pendingJobs: Math.max(0, s.pendingJobs - 1), activeJobs: s.activeJobs + 1 }));
       toast.success(t('adminDashboard.jobs.approvedToast'));
 
-      // Envoyer l'email au recruteur
       if (job.posted_by_user?.email) {
         try {
           await apiFetch('/api/notify-job-approved', {
@@ -1137,10 +1146,9 @@ const AdminDashboard = () => {
     }
   };
 
-  // Réactivation d'offre suspendue (modifié pour utiliser l'API dédiée)
   const handleReactivateJob = async (job) => {
-    if (!job.company?.is_verified) {
-      toast.error(t('adminDashboard.jobs.approveCompanyFirst'));
+    if (!job.company?.is_verified || !job.company?.is_active) {
+      toast.error(t('adminDashboard.jobs.companySuspendedOrNotVerified', "L'entreprise est suspendue ou non vérifiée."));
       return;
     }
     const plan = job.company?.subscription_plan || 'free';
@@ -1157,17 +1165,14 @@ const AdminDashboard = () => {
     }
 
     try {
-      // 1. Mise à jour via le backend (bypass RLS)
       await apiFetch('/api/admin/reactivate-job', {
         method: 'POST',
         body: JSON.stringify({ id: job.id, language: i18n.language }),
       });
 
-      // 2. Mise à jour locale de l'état
       setJobs(prev => prev.map(j => (j.id === job.id ? { ...j, status: 'active', suspended_until: null } : j)));
       setStats(s => ({ ...s, activeJobs: s.activeJobs + 1 }));
 
-      // 3. Envoi de l'email de réactivation
       if (job.posted_by_user?.email) {
         try {
           await apiFetch('/api/notify-job-reactivated', {
@@ -1191,7 +1196,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // ---------- Company handlers ----------
   const handleApproveCompany = async (company) => {
     try {
       await apiFetch('/api/admin/verify-company', {
@@ -1238,13 +1242,25 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleReactivateCompany = async (company) => {
+    try {
+      await apiFetch('/api/admin/reactivate-company', {
+        method: 'POST',
+        body: JSON.stringify({ id: company.id, language: i18n.language }),
+      });
+      setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, is_active: true, is_verified: true } : c));
+      toast.success(t('adminDashboard.companies.reactivatedToast'));
+    } catch (error) {
+      toast.error(t('adminDashboard.jobs.genericError'));
+    }
+  };
+
   const handleViewCompanyJobs = (company) => {
     setActiveTab('jobs');
     setJobFilter('all');
     setSearchQuery(company.name);
   };
 
-  // ---------- User handlers ----------
   const handleToggleUserRole = async (userId, newRole) => {
     try {
       const { error } = await supabase.from('users').update({ role: newRole }).eq('id', userId);
@@ -1279,6 +1295,20 @@ const AdminDashboard = () => {
       });
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_active: false, is_banned: true } : u)));
       toast.success(t('adminDashboard.users.bannedToast'));
+    } catch (error) {
+      toast.error(t('adminDashboard.jobs.genericError'));
+    }
+  };
+
+  const handleUnbanUser = async (userId) => {
+    if (!window.confirm(t('adminDashboard.users.unbanConfirm'))) return;
+    try {
+      await apiFetch('/api/admin/unban-user', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId, language: i18n.language }),
+      });
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_active: true, is_banned: false } : u)));
+      toast.success(t('adminDashboard.users.unbannedToast'));
     } catch (error) {
       toast.error(t('adminDashboard.jobs.genericError'));
     }
@@ -1343,7 +1373,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // ---------- Report handlers ----------
   const handleUpdateReportStatus = async (reportId, newStatus) => {
     const { error } = await supabase.rpc('update_report_status', {
       report_id: reportId,
@@ -1436,7 +1465,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // ---------- Newsletter handlers ----------
   const handleToggleSubscriber = async (sub) => {
     const { error } = await supabase.rpc('toggle_subscriber_active', {
       sub_id: sub.id,
@@ -1479,7 +1507,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // ---------- Blog handlers ----------
   const handleGenerateBlog = async () => {
     if (!blogForm.title.trim()) {
       toast.error(t('adminDashboard.blog.titleRequired'));
@@ -1535,7 +1562,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // ---------- Filtres locaux ----------
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
       searchQuery === '' ||
@@ -1548,8 +1574,9 @@ const AdminDashboard = () => {
   const filteredCompanies = companies.filter((company) => {
     const matchesSearch = searchQuery === '' || company.name.toLowerCase().includes(searchQuery.toLowerCase());
     if (companyFilter === 'all') return matchesSearch;
-    if (companyFilter === 'verified') return matchesSearch && company.is_verified === true;
+    if (companyFilter === 'verified') return matchesSearch && company.is_verified === true && company.is_active === true;
     if (companyFilter === 'unverified') return matchesSearch && company.is_verified !== true;
+    if (companyFilter === 'suspended') return matchesSearch && company.is_verified === true && company.is_active === false;
     return matchesSearch;
   });
 
@@ -1566,7 +1593,6 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20" data-testid="admin-dashboard">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
-        {/* Header + bouton refresh */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
             <div className="w-14 h-14 shrink-0 bg-blue-600 text-white rounded-2xl flex items-center justify-center">
@@ -1583,7 +1609,6 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        {/* Stats cards */}
         <div className="grid grid-cols-2 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <StatCard icon={Clock} label={t('adminDashboard.stats.pendingJobs')} value={stats.pendingJobs} color="yellow" onClick={() => { setActiveTab('jobs'); setJobFilter('pending'); }} />
           <StatCard icon={Briefcase} label={t('adminDashboard.stats.activeJobs')} value={stats.activeJobs} color="green" />
@@ -1593,7 +1618,6 @@ const AdminDashboard = () => {
           <StatCard icon={FileText} label={t('adminDashboard.stats.applications')} value={stats.totalApplications} color="purple" />
         </div>
 
-        {/* Tabs */}
         <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
           <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
             <LayoutDashboard className="w-4 h-4" />
@@ -1641,7 +1665,6 @@ const AdminDashboard = () => {
           </TabButton>
         </div>
 
-        {/* Contenu des onglets */}
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="overflow-hidden">
@@ -1692,7 +1715,7 @@ const AdminDashboard = () => {
                 ) : (
                   <>
                     {companies.filter((c) => c.is_verified !== true).slice(0, 5).map((company) => (
-                      <CompanyValidationCard key={company.id} company={company} onApprove={handleApproveCompany} onReject={handleRejectCompany} onDelete={handleDeleteCompany} onViewJobs={handleViewCompanyJobs} onSuspendWithDuration={(company) => setCompanySuspendModal({ open: true, companyId: company.id })} />
+                      <CompanyValidationCard key={company.id} company={company} onApprove={handleApproveCompany} onReject={handleRejectCompany} onDelete={handleDeleteCompany} onViewJobs={handleViewCompanyJobs} onSuspendWithDuration={(company) => setCompanySuspendModal({ open: true, companyId: company.id })} onReactivate={handleReactivateCompany} />
                     ))}
                     {companies.filter((c) => c.is_verified !== true).length === 0 && (
                       <p className="text-center text-slate-500 py-8">{t('adminDashboard.overview.noPendingCompanies')}</p>
@@ -1784,6 +1807,7 @@ const AdminDashboard = () => {
                     <option value="all">{t('adminDashboard.companies.filterAll')}</option>
                     <option value="unverified">{t('adminDashboard.companies.filterUnverified')}</option>
                     <option value="verified">{t('adminDashboard.companies.filterVerified')}</option>
+                    <option value="suspended">{t('adminDashboard.companies.filterSuspended', 'Suspendues')}</option>
                   </select>
                 </div>
               </div>
@@ -1797,7 +1821,7 @@ const AdminDashboard = () => {
                 <>
                   {filteredCompanies.length > 0 ? (
                     filteredCompanies.map((company) => (
-                      <CompanyValidationCard key={company.id} company={company} onApprove={handleApproveCompany} onReject={handleRejectCompany} onDelete={handleDeleteCompany} onViewJobs={handleViewCompanyJobs} onSuspendWithDuration={(company) => setCompanySuspendModal({ open: true, companyId: company.id })} />
+                      <CompanyValidationCard key={company.id} company={company} onApprove={handleApproveCompany} onReject={handleRejectCompany} onDelete={handleDeleteCompany} onViewJobs={handleViewCompanyJobs} onSuspendWithDuration={(company) => setCompanySuspendModal({ open: true, companyId: company.id })} onReactivate={handleReactivateCompany} />
                     ))
                   ) : (
                     <p className="text-center text-slate-500 py-12">
@@ -1855,11 +1879,13 @@ const AdminDashboard = () => {
                               <option value="company">{t('adminDashboard.users.roles.company')}</option>
                               <option value="admin">{t('adminDashboard.users.roles.admin')}</option>
                             </select>
-                            <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]" onClick={() => setSuspendModal({ open: true, userId: u.id })} disabled={!u.is_active}>
-                              <UserX className="w-4 h-4 mr-1" />
-                              {t('adminDashboard.users.actions.suspend')}
-                            </Button>
-                            {!u.is_active && (
+                            {!u.is_banned && u.is_active && (
+                              <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]" onClick={() => setSuspendModal({ open: true, userId: u.id })}>
+                                <UserX className="w-4 h-4 mr-1" />
+                                {t('adminDashboard.users.actions.suspend')}
+                              </Button>
+                            )}
+                            {!u.is_active && !u.is_banned && (
                               <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]" onClick={() => handleToggleUserActive(u.id, u.is_active)}>
                                 <UserCheck className="w-4 h-4 mr-1" />
                                 {t('adminDashboard.users.actions.reactivate')}
@@ -1869,6 +1895,12 @@ const AdminDashboard = () => {
                               <Button size="sm" variant="outline" className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleBanUser(u.id)}>
                                 <Ban className="w-4 h-4 mr-1" />
                                 {t('adminDashboard.users.actions.ban')}
+                              </Button>
+                            )}
+                            {u.is_banned && (
+                              <Button size="sm" variant="outline" className="w-full sm:w-auto text-green-600 hover:bg-green-50 min-h-[44px]" onClick={() => handleUnbanUser(u.id)}>
+                                <UserCheck className="w-4 h-4 mr-1" />
+                                {t('adminDashboard.users.actions.unban')}
                               </Button>
                             )}
                             <Button size="sm" variant="outline" className="w-full sm:w-auto text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleDeleteUser(u.id)}>
@@ -2357,7 +2389,6 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {/* Modals suspend user/company */}
         {suspendModal.open && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">

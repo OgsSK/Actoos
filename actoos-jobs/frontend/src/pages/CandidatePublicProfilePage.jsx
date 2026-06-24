@@ -6,7 +6,7 @@ import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Loader2, ChevronLeft, User, Mail, Phone, MapPin, Briefcase, GraduationCap, Award, FileText, Flag, Globe, ExternalLink } from 'lucide-react';
+import { Loader2, ChevronLeft, User, Mail, Phone, MapPin, Briefcase, GraduationCap, Award, FileText, Flag, Globe, ExternalLink, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const normalizeUrl = (url) => {
@@ -21,20 +21,26 @@ const normalizeUrl = (url) => {
 const CandidatePublicProfilePage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, profile: currentProfile } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reporting, setReporting] = useState(false);
+  const [suspended, setSuspended] = useState(false);
 
   useEffect(() => {
-    console.log('Candidate ID:', id);
     if (id) fetchProfile();
   }, [id]);
 
   const fetchProfile = async () => {
     try {
       const data = await apiFetch(`/api/candidate/${id}`);
-      setProfile(data);
+      // Vérification : le profil candidat est-il suspendu ou banni ?
+      if (data.is_active === false || data.is_banned === true) {
+        setSuspended(true);
+        setProfile(null);
+      } else {
+        setProfile(data);
+      }
     } catch (err) {
       console.error('Erreur chargement profil candidat:', err);
       toast.error(t('candidateProfile.notFound'));
@@ -43,9 +49,15 @@ const CandidatePublicProfilePage = () => {
     }
   };
 
+  const isCurrentUserRestricted = !currentUser || !currentProfile?.is_active || currentProfile?.is_banned;
+
   const handleReport = async () => {
     if (!currentUser) {
       toast.error(t('candidateProfile.loginToReport'));
+      return;
+    }
+    if (isCurrentUserRestricted) {
+      toast.error(t('candidateProfile.cannotReport'));
       return;
     }
     const reason = window.prompt(t('candidateProfile.reportTitle'));
@@ -70,6 +82,20 @@ const CandidatePublicProfilePage = () => {
   };
 
   if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+  if (suspended) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-20">
+        <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+          <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">{t('candidateProfile.suspendedTitle')}</h1>
+          <p className="text-slate-600">{t('candidateProfile.suspendedDescription')}</p>
+          <Link to="/dashboard/entreprise/candidatures">
+            <Button variant="outline" className="mt-6">{t('candidateProfile.back')}</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
   if (!profile) return <div className="pt-20 text-center">{t('candidateProfile.notFound')}</div>;
 
   return (
@@ -95,7 +121,6 @@ const CandidatePublicProfilePage = () => {
                     {profile.phone && <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {profile.phone}</p>}
                     {profile.city && <p className="text-slate-600 flex items-center gap-2 mt-1"><MapPin className="w-4 h-4" /> {profile.city}</p>}
                     
-                    {/* Section remplacée : affichage des liens dynamiques */}
                     {profile.links?.length > 0 && (
                       <div className="mt-6">
                         <h3 className="text-sm font-semibold text-slate-900 mb-3">{t('profile.links.title')}</h3>
@@ -117,7 +142,12 @@ const CandidatePublicProfilePage = () => {
                     )}
 
                     <div className="mt-4">
-                      <Button variant="outline" size="sm" onClick={handleReport} disabled={reporting}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleReport}
+                        disabled={reporting || isCurrentUserRestricted}
+                      >
                         <Flag className="w-4 h-4 mr-2" /> {t('candidateProfile.reportButton')}
                       </Button>
                     </div>

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter'; // ← ajouté
+import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -22,6 +22,7 @@ import {
   Briefcase,
   Clock,
   Banknote,
+  AlertTriangle,
 } from 'lucide-react';
 
 import { toast } from 'sonner';
@@ -31,12 +32,13 @@ const CompanyDetailPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const { user, isAdmin } = useAuth();
-  const { format } = useCurrencyFormatter(); // ← hook utilisé
+  const { format } = useCurrencyFormatter();
 
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [jobsLoading, setJobsLoading] = useState(true);
+  const [suspended, setSuspended] = useState(false);
 
   useEffect(() => {
     const fetchCompany = async () => {
@@ -45,13 +47,19 @@ const CompanyDetailPage = () => {
           .from('companies')
           .select(`
             *,
-            city:cities(name)
+            city:cities(name),
+            owner:users!owner_id(is_banned)
           `)
           .eq('id', id)
           .single();
 
         if (error) throw error;
         setCompany(data);
+
+        // Vérifier si l'entreprise est inactive ou si le propriétaire est banni
+        if (!data.is_active || (data.owner && data.owner.is_banned)) {
+          setSuspended(true);
+        }
       } catch (err) {
         console.error(err);
         toast.error(t('companyDetail.notFound'));
@@ -104,6 +112,27 @@ const CompanyDetailPage = () => {
     return (
       <div className="pt-20 text-center text-slate-500">
         {t('companyDetail.notFoundMessage')}
+      </div>
+    );
+  }
+
+  if (suspended) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-20">
+        <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+          <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+            {t('companyDetail.suspendedTitle')}
+          </h1>
+          <p className="text-slate-600">
+            {t('companyDetail.suspendedDescription')}
+          </p>
+          <Link to="/entreprises">
+            <Button variant="outline" className="mt-6">
+              {t('companyDetail.backToCompanies')}
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }

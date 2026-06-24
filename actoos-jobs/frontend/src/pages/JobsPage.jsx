@@ -116,7 +116,6 @@ const removeAccents = (str = '') => {
 const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   const [local, setLocal] = useState('');
 
-  // Affiche la valeur actuelle convertie dans la devise de l'utilisateur
   useEffect(() => {
     if (value != null && conversionRate) {
       const displayValue = Math.round(value / conversionRate);
@@ -128,7 +127,6 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
 
   const handleBlur = () => {
     const num = local ? parseInt(local, 10) : null;
-    // Convertit en XOF pour le stockage
     const xofVal = num != null ? Math.round(num * conversionRate) : null;
     onApply(xofVal);
   };
@@ -148,7 +146,7 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
 };
 
 // -------------------- Job Card (avec badge télétravail amélioré) --------------------
-const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
+const JobCard = ({ job, user, isCompany, isAccountRestricted, onSave, isSaved, onEdit }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -280,10 +278,8 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
       )
     : null;
 
-  // Détermine si l'offre est boostée et que le boost n'a pas expiré
   const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
 
-  // Libellé du télétravail selon le type
   const getRemoteLabel = () => {
     if (!job.is_remote) return null;
     switch (job.remote_type) {
@@ -325,7 +321,6 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
                 {getRemoteLabel()}
               </Badge>
             )}
-            {/* Badge Boosté */}
             {isBoosted && (
               <Badge className="bg-purple-100 text-purple-700 border border-purple-200">
                 🚀 {t('jobs.boosted')}
@@ -420,19 +415,27 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
         </CardContent>
       </Link>
 
+      {/* Bouton sauvegarde – désactivé si compte suspendu/banni */}
       {!isOwner && !isCompany && (
         <button
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (isAccountRestricted) {
+              toast.error(t('jobs.accountSuspended'));
+              return;
+            }
             onSave && onSave(job.id);
           }}
+          disabled={isAccountRestricted}
           className={cn(
             'absolute top-3 right-3 p-2 rounded-xl transition-all z-30',
             isSaved
               ? 'bg-red-100 text-red-500'
-              : 'bg-white/90 text-slate-400 hover:bg-red-50 hover:text-red-500'
+              : 'bg-white/90 text-slate-400 hover:bg-red-50 hover:text-red-500',
+            isAccountRestricted && 'opacity-50 cursor-not-allowed'
           )}
+          title={isAccountRestricted ? t('jobs.accountSuspended') : ''}
         >
           <Heart className={cn('w-5 h-5', isSaved && 'fill-current')} />
         </button>
@@ -460,7 +463,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
   );
 };
 
-// -------------------- Filters Sidebar (avec conversion des salaires) --------------------
+// -------------------- Filters Sidebar (identique) --------------------
 const FiltersSidebar = ({
   filters,
   onChange,
@@ -649,7 +652,7 @@ const FiltersSidebar = ({
 const JobsPage = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const { user, isCompany } = useAuth();
+  const { user, profile, isCompany } = useAuth(); // ✅ ajout du profile
   const navigate = useNavigate();
   const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
@@ -671,17 +674,18 @@ const JobsPage = () => {
     contract_types: searchParams.get('contract')?.split(',').filter(Boolean) || [],
     experience_levels: [],
     category: searchParams.get('category') || null,
-    salary_min: null,     // stocké en XOF
-    salary_max: null,     // stocké en XOF
+    salary_min: null,
+    salary_max: null,
     remote: false,
   });
 
   const [sortBy, setSortBy] = useState('recent');
 
-  // Taux de conversion de la devise affichée vers XOF
   const conversionRate = RATES[prefs.currency] || 1;
 
-  // Résolution du countryId
+  // Statut restreint du compte
+  const isAccountRestricted = !profile?.is_active || profile?.is_banned;
+
   useEffect(() => {
     if (prefs.country) {
       supabase
@@ -695,7 +699,6 @@ const JobsPage = () => {
     }
   }, [prefs.country]);
 
-  // Chargement des jobs
   useEffect(() => {
     const fetchJobs = async () => {
       setLoading(true);
@@ -732,7 +735,6 @@ const JobsPage = () => {
     fetchJobs();
   }, [countryId]);
 
-  // Chargement des options de filtres (inchangé)
   useEffect(() => {
     const loadFilterOptions = async () => {
       try {
@@ -769,7 +771,6 @@ const JobsPage = () => {
     loadFilterOptions();
   }, [countryId]);
 
-  // Chargement des favoris
   useEffect(() => {
     if (user) {
       supabase
@@ -782,7 +783,6 @@ const JobsPage = () => {
     }
   }, [user]);
 
-  // Filtrage et tri
   const filteredJobs = useMemo(() => {
     let result = [...jobs];
 
@@ -814,7 +814,6 @@ const JobsPage = () => {
       }
     }
 
-    // Tri
     result.sort((a, b) => {
       const aBoost = a.boosted_until && new Date(a.boosted_until) > new Date() ? 1 : 0;
       const bBoost = b.boosted_until && new Date(b.boosted_until) > new Date() ? 1 : 0;
@@ -835,7 +834,6 @@ const JobsPage = () => {
     return result;
   }, [jobs, filters, sortBy, categories]);
 
-  // Gestion des favoris
   const handleSaveJob = async (jobId) => {
     if (!user) {
       toast.error(t('jobs.loginToSave'));
@@ -843,6 +841,10 @@ const JobsPage = () => {
     }
     if (isCompany) {
       toast.error(t('jobs.companyCannotSave'));
+      return;
+    }
+    if (isAccountRestricted) {
+      toast.error(t('jobs.accountSuspended'));
       return;
     }
     if (savedJobs.includes(jobId)) {
@@ -856,7 +858,6 @@ const JobsPage = () => {
     }
   };
 
-  // Réinitialisation des filtres
   const resetFilters = () =>
     setFilters({
       keyword: '',
@@ -884,7 +885,6 @@ const JobsPage = () => {
     navigate(`/dashboard/entreprise/offres/${job.id}/modifier`);
   };
 
-  // Badge de salaire dynamique (affiche la devise courante)
   const salaryBadge = (filters.salary_min || filters.salary_max) ? (
     <Badge className="gap-1 rounded-full bg-slate-100 text-slate-700">
       {filters.salary_min ? format(filters.salary_min) : '0'} –{' '}
@@ -1046,7 +1046,6 @@ const JobsPage = () => {
                   </Badge>
                 )}
 
-                {/* Badge salaire dynamique */}
                 {salaryBadge}
 
                 {filters.remote && (
@@ -1084,6 +1083,7 @@ const JobsPage = () => {
                     job={job}
                     user={user}
                     isCompany={isCompany}
+                    isAccountRestricted={isAccountRestricted}
                     onSave={handleSaveJob}
                     isSaved={savedJobs.includes(job.id)}
                     onEdit={handleEditJob}

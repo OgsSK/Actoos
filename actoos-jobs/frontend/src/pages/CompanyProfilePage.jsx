@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import { supabase } from '../lib/supabase';
-import { apiFetch } from '../lib/api'; // ← Import pour l'API
+import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -15,7 +15,6 @@ import {
   Loader2, ChevronLeft, Save, Image, Trash2
 } from 'lucide-react';
 
-// ----- Constantes de traduction -----
 const INDUSTRY_KEYS = [
   'tech', 'finance', 'telecom', 'commerce', 'manufacturing',
   'agriculture', 'construction', 'transport', 'health',
@@ -26,7 +25,7 @@ const COMPANY_SIZE_KEYS = ['1-10', '11-50', '51-200', '201-500', '500+'];
 
 const CompanyProfilePage = () => {
   const { t } = useTranslation();
-  const { user, activeCompanyId } = useAuth();
+  const { user, profile, activeCompanyId, signOut } = useAuth();
   const { prefs } = usePreferencesContext();
   const navigate = useNavigate();
   const logoInputRef = React.useRef(null);
@@ -38,7 +37,8 @@ const CompanyProfilePage = () => {
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(prefs.country);
   const { cities: filteredCities } = useCities(selectedCountry);
-  const [deleting, setDeleting] = useState(false); // ← état pour la suppression
+  const [deleting, setDeleting] = useState(false);
+  const [company, setCompany] = useState(null); // <- pour connaître l'état de l'entreprise
 
   const [form, setForm] = useState({
     name: '',
@@ -53,6 +53,15 @@ const CompanyProfilePage = () => {
     founded_year: '',
     logo_url: '',
   });
+
+  // Vérification du compte utilisateur et de l'entreprise
+  useEffect(() => {
+    if (!user) return;
+    if (!profile?.is_active || profile?.is_banned) {
+      signOut();
+      navigate('/connexion?reason=suspended', { replace: true });
+    }
+  }, [user, profile, signOut, navigate]);
 
   useEffect(() => {
     if (!user || !activeCompanyId) {
@@ -87,6 +96,7 @@ const CompanyProfilePage = () => {
     }
 
     setNoCompany(false);
+    setCompany(company);
     setForm({
       name: company.name || '',
       description: company.description || '',
@@ -112,7 +122,12 @@ const CompanyProfilePage = () => {
     setLoading(false);
   };
 
+  const isAccountRestricted = !profile?.is_active || profile?.is_banned;
+  const isCompanyInactive = company && !company.is_active;
+  const isDisabled = isAccountRestricted || isCompanyInactive;
+
   const handleLogoUpload = async (e) => {
+    if (isDisabled) return;
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -147,6 +162,10 @@ const CompanyProfilePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isDisabled) {
+      toast.error(t('companyProfile.toasts.companySuspended'));
+      return;
+    }
     if (!form.name.trim()) {
       toast.error(t('companyProfile.toasts.nameRequired'));
       return;
@@ -190,9 +209,9 @@ const CompanyProfilePage = () => {
     }
   };
 
-  // ✅ Suppression de l'entreprise
   const handleDeleteCompany = async () => {
     if (!window.confirm(t('companyProfile.deleteConfirm'))) return;
+    if (isDisabled) return;
 
     setDeleting(true);
     try {
@@ -204,7 +223,7 @@ const CompanyProfilePage = () => {
         }),
       });
       toast.success(t('companyProfile.toasts.companyDeleted'));
-      navigate('/dashboard/entreprise'); // redirige après suppression
+      navigate('/dashboard/entreprise');
     } catch (err) {
       toast.error(err.message || t('companyProfile.toasts.deleteError'));
     } finally {
@@ -251,14 +270,27 @@ const CompanyProfilePage = () => {
           <p className="text-slate-600 mt-2">{t('companyProfile.subtitle')}</p>
         </div>
 
+        {/* Bannière si compte restreint ou entreprise suspendue */}
+        {isAccountRestricted && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
+            <p className="text-red-800 text-sm">{t('companyProfile.toasts.accountSuspended')}</p>
+          </div>
+        )}
+
+        {isCompanyInactive && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
+            <p className="text-yellow-800 text-sm">{t('companyProfile.toasts.companySuspended')}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <Card>
             <CardContent className="p-6 space-y-6">
               {/* Logo */}
               <div className="text-center">
                 <div
-                  className="w-24 h-24 bg-slate-100 rounded-xl mx-auto mb-3 flex items-center justify-center border-2 border-dashed border-slate-300 cursor-pointer hover:border-blue-400 transition-colors overflow-hidden"
-                  onClick={() => logoInputRef.current?.click()}
+                  className={`w-24 h-24 bg-slate-100 rounded-xl mx-auto mb-3 flex items-center justify-center border-2 border-dashed ${isDisabled ? 'border-slate-200 cursor-not-allowed' : 'border-slate-300 cursor-pointer hover:border-blue-400'} transition-colors overflow-hidden`}
+                  onClick={() => !isDisabled && logoInputRef.current?.click()}
                 >
                   {uploadingLogo ? (
                     <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
@@ -273,11 +305,11 @@ const CompanyProfilePage = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => logoInputRef.current?.click()}
-                  disabled={uploadingLogo}
+                  disabled={uploadingLogo || isDisabled}
                 >
                   {uploadingLogo ? t('companyProfile.uploading') : t('companyProfile.logo')}
                 </Button>
-                <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" disabled={isDisabled} />
               </div>
 
               {/* Nom */}
@@ -290,6 +322,7 @@ const CompanyProfilePage = () => {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder={t('companyProfile.placeholders.name')}
                   required
+                  disabled={isDisabled}
                 />
               </div>
 
@@ -304,6 +337,7 @@ const CompanyProfilePage = () => {
                   rows={4}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder={t('companyProfile.placeholders.description')}
+                  disabled={isDisabled}
                 />
               </div>
 
@@ -317,6 +351,7 @@ const CompanyProfilePage = () => {
                     value={form.industry}
                     onChange={(e) => setForm({ ...form, industry: e.target.value })}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    disabled={isDisabled}
                   >
                     <option value="">{t('companyProfile.options.selectIndustry')}</option>
                     {INDUSTRY_KEYS.map(key => (
@@ -334,6 +369,7 @@ const CompanyProfilePage = () => {
                     value={form.size}
                     onChange={(e) => setForm({ ...form, size: e.target.value })}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    disabled={isDisabled}
                   >
                     <option value="">{t('companyProfile.options.selectSize')}</option>
                     {COMPANY_SIZE_KEYS.map(size => (
@@ -355,6 +391,7 @@ const CompanyProfilePage = () => {
                     value={form.website}
                     onChange={(e) => setForm({ ...form, website: e.target.value })}
                     placeholder={t('companyProfile.placeholders.website')}
+                    disabled={isDisabled}
                   />
                 </div>
                 <div>
@@ -365,6 +402,7 @@ const CompanyProfilePage = () => {
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     placeholder={t('companyProfile.placeholders.email')}
+                    disabled={isDisabled}
                   />
                 </div>
               </div>
@@ -379,6 +417,7 @@ const CompanyProfilePage = () => {
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     placeholder={t('companyProfile.placeholders.phone')}
+                    disabled={isDisabled}
                   />
                 </div>
                 <div>
@@ -392,6 +431,7 @@ const CompanyProfilePage = () => {
                     type="number"
                     min="1900"
                     max={new Date().getFullYear()}
+                    disabled={isDisabled}
                   />
                 </div>
               </div>
@@ -406,6 +446,7 @@ const CompanyProfilePage = () => {
                     value={selectedCountry}
                     onChange={(e) => setSelectedCountry(e.target.value)}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    disabled={isDisabled}
                   >
                     {countries.map(c => (
                       <option key={c.code} value={c.code}>
@@ -422,6 +463,7 @@ const CompanyProfilePage = () => {
                     value={form.city_id}
                     onChange={(e) => setForm({ ...form, city_id: e.target.value })}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    disabled={isDisabled}
                   >
                     <option value="">{t('companyProfile.options.selectCity')}</option>
                     {filteredCities.map(city => (
@@ -438,6 +480,7 @@ const CompanyProfilePage = () => {
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
                   placeholder={t('companyProfile.placeholders.address')}
+                  disabled={isDisabled}
                 />
               </div>
 
@@ -445,7 +488,7 @@ const CompanyProfilePage = () => {
               <Button
                 type="submit"
                 className="w-full bg-blue-600 text-white hover:bg-blue-700"
-                disabled={saving}
+                disabled={saving || isDisabled}
               >
                 {saving ? (
                   <Loader2 className="w-5 h-5 animate-spin mr-2" />
@@ -458,7 +501,7 @@ const CompanyProfilePage = () => {
           </Card>
         </form>
 
-        {/* ✅ Section suppression d'entreprise */}
+        {/* Section suppression d'entreprise */}
         <div className="mt-8 border-t pt-6">
           <h3 className="text-red-600 font-semibold mb-2">{t('companyProfile.deleteSection.title')}</h3>
           <p className="text-sm text-slate-600 mb-4">
@@ -468,7 +511,7 @@ const CompanyProfilePage = () => {
             variant="outline"
             className="border-red-300 text-red-600 hover:bg-red-50"
             onClick={handleDeleteCompany}
-            disabled={deleting}
+            disabled={deleting || isDisabled}
           >
             {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
             {deleting ? t('companyProfile.deleteSection.deleting') : t('companyProfile.deleteSection.button')}

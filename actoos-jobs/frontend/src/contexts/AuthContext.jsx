@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { apiFetch } from '../lib/api';
 
 const AuthContext = createContext({});
 
@@ -17,7 +18,6 @@ export const AuthProvider = ({ children }) => {
     return localStorage.getItem('actoosActiveCompanyId') || null;
   });
 
-  // Persister l'ID actif dans localStorage
   useEffect(() => {
     if (activeCompanyId) {
       localStorage.setItem('actoosActiveCompanyId', activeCompanyId);
@@ -25,6 +25,45 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('actoosActiveCompanyId');
     }
   }, [activeCompanyId]);
+
+  // Vérification de l'état du compte (suspension, bannissement)
+  const checkAccountStatus = useCallback(async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('is_active, is_banned')
+        .eq('id', userId)
+        .single();
+      if (error) return true; // en cas d'erreur, on laisse passer
+      if (!data.is_active) {
+        await supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
+        window.location.href = '/connexion?reason=suspended';
+        return false;
+      }
+      if (data.is_banned) {
+        await supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
+        window.location.href = '/connexion?reason=banned';
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn('Erreur vérification statut utilisateur:', e);
+      return true;
+    }
+  }, []);
+
+  // Vérification périodique du statut
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      checkAccountStatus(user.id);
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user, checkAccountStatus]);
 
   const buildBaseProfile = useCallback((authUser) => {
     if (!authUser) return null;
@@ -69,7 +108,6 @@ export const AuthProvider = ({ children }) => {
         .maybeSingle();
       if (companyData) subscriptionPlan = companyData.subscription_plan || 'free';
 
-      // Vérifier si l'utilisateur possède ou est membre d'au moins une entreprise
       const { count: ownedCount } = await supabase
         .from('companies')
         .select('id', { count: 'exact', head: true })
@@ -104,14 +142,33 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return;
     }
+
     const baseProfile = buildBaseProfile(authUser);
     setUser(authUser);
-    setProfile(baseProfile);   // ← profil de base disponible immédiatement
-    setLoading(false);         // ← on libère l’affichage tout de suite
-    // L’enrichissement se fait en arrière‑plan, sans bloquer la page
+    setProfile(baseProfile);
+    setLoading(false);
+
+    // Vérifier et lever automatiquement une suspension utilisateur expirée
+    try {
+      const suspensionCheck = await apiFetch('/api/auth/check-suspension', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: authUser.id }),
+      });
+      if (suspensionCheck.active && baseProfile.is_active === false) {
+        setProfile(prev => ({ ...prev, is_active: true }));
+      }
+    } catch (e) {
+      console.warn('Vérification suspension échouée:', e);
+    }
+
+    // Vérifier immédiatement le statut du compte
+    const valid = await checkAccountStatus(authUser.id);
+    if (!valid) return;
+
+    // Enrichissement du profil en arrière‑plan
     const enriched = await enrichProfile(authUser, baseProfile);
     setProfile(enriched);
-  }, [buildBaseProfile, enrichProfile]);
+  }, [buildBaseProfile, enrichProfile, checkAccountStatus]);
 
   useEffect(() => {
     let mounted = true;
@@ -132,18 +189,17 @@ export const AuthProvider = ({ children }) => {
   }, [handleSession]);
 
   const signUp = async ({ email, password, role = 'candidate', firstName, lastName, language }) => {
-    // Nettoyer la langue pour ne garder que le code principal (ex: "en-US" -> "en")
     const cleanLanguage = language ? language.split('-')[0] : 'fr';
-    
+
     const { data, error } = await supabase.auth.signUp({
       email, password,
-      options: { 
-        data: { 
-          role, 
-          first_name: firstName, 
+      options: {
+        data: {
+          role,
+          first_name: firstName,
           last_name: lastName,
-          language: cleanLanguage   // ← stockage du code langue propre
-        } 
+          language: cleanLanguage
+        }
       },
     });
     if (error) throw error;
@@ -157,8 +213,28 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signIn = async ({ email, password }) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+
+    // Vérifier le statut du compte avant de finaliser
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('is_active, is_banned')
+      .eq('id', data.user.id)
+      .single();
+
+    if (userError) throw new Error("Impossible de récupérer vos informations.");
+
+    if (!userData.is_active) {
+      await supabase.auth.signOut();
+      throw new Error("Votre compte est actuellement suspendu.");
+    }
+    if (userData.is_banned) {
+      await supabase.auth.signOut();
+      throw new Error("Votre compte a été banni définitivement.");
+    }
+
+    return data;
   };
 
   const signInWithGoogle = async () => {

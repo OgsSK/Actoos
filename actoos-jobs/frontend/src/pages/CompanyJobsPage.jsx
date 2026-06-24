@@ -25,6 +25,7 @@ import {
   Send,
   XCircle,
   Zap,
+  AlertTriangle
 } from 'lucide-react';
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
@@ -260,29 +261,47 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
 
 const CompanyJobsPage = () => {
   const { t } = useTranslation();
-  const { user, activeCompanyId } = useAuth();
+  const { user, profile, activeCompanyId, signOut } = useAuth(); // profile et signOut ajoutés
   const navigate = useNavigate();
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState(null);
+  const [accountRestricted, setAccountRestricted] = useState(false);
 
+  // Vérification du compte utilisateur et de l'entreprise
   useEffect(() => {
-    if (user && activeCompanyId) fetchJobs();
-  }, [user, activeCompanyId]);
-
-  useEffect(() => {
+    if (!user) return;
+    if (!profile?.is_active || profile?.is_banned) {
+      signOut();
+      navigate('/connexion?reason=suspended', { replace: true });
+      return;
+    }
     if (activeCompanyId) {
       supabase
         .from('companies')
-        .select('subscription_plan')
+        .select('subscription_plan, is_active')
         .eq('id', activeCompanyId)
         .single()
         .then(({ data }) => {
           setCompany(data);
+          if (data && !data.is_active) {
+            setAccountRestricted(true);
+            toast.error(t('companyJobs.companySuspended'));
+            navigate('/dashboard/entreprise');
+          }
         });
     }
-  }, [activeCompanyId]);
+  }, [user, profile, activeCompanyId, signOut, navigate, t]);
+
+  useEffect(() => {
+    if (user && activeCompanyId && profile?.is_active && !profile?.is_banned && company?.is_active !== false) {
+      fetchJobs();
+    } else if (!activeCompanyId) {
+      setJobs([]);
+      setLoading(false);
+    }
+  }, [user, activeCompanyId, profile, company]);
 
   const fetchJobs = async () => {
     if (!activeCompanyId) {
@@ -404,6 +423,21 @@ const CompanyJobsPage = () => {
     return (
       <div className="min-h-screen pt-20 flex justify-center items-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (accountRestricted) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-20">
+        <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+          <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">{t('companyJobs.companySuspended')}</h1>
+          <p className="text-slate-600">{t('companyJobs.suspendedDescription')}</p>
+          <Link to="/dashboard/entreprise">
+            <Button variant="outline" className="mt-6">{t('companyJobs.backToDashboard')}</Button>
+          </Link>
+        </div>
       </div>
     );
   }

@@ -39,31 +39,7 @@
       "title": "Explore by category",
       "subtitle": "Find opportunities in your field of expertise"
     },
-    "jobs": {
-       "remote": "Remote",
-      "remoteFull": "100% remote",
-      "remoteHybrid": "Hybrid",
-      "remoteOccasional": "Occasional",
-      "boosted": "Boosted",
-      "title": "Recent jobs",
-      "subtitle": "The latest posted opportunities",
-      "viewAll": "View all jobs",
-      "noJobsTitle": "No jobs available",
-      "noJobsText": "The first jobs will be here soon!",
-      "postFirstJob": "Post the first job",
-      "postJob": "Post a job",
-      "seeJobs": "View jobs",
-      "saveLogin": "Log in to save this job",
-      "companyCannotSave": "Companies cannot save jobs as favorites",
-      "saveSuccess": "Job saved",
-      "unsaveSuccess": "Job removed from favorites",
-      "urgent": "🔥 Urgent - Apply now",
-      "salary": "Salary",
-      "unspecified": "Not specified",
-      "unknownCompany": "Company",
-      "unknownLocation": "Not specified",
-      "yourJob": "Your job"
-    },
+    
     "companies": {
       "title": "Companies hiring",
       "subtitle": "Discover the companies that trust Actoos Jobs"
@@ -331,109 +307,81 @@
       "checkoutError": "Error redirecting to payment"
     }
   },
-  "jobDetail": {
-    "boosted": "Boosted",
-    "notFound": "Job not found",
-    "notFoundMessage": "Job not found.",
-    "backToJobs": "Back to jobs",
-    "apply": "Apply",
-    "alreadyApplied": "Already applied",
-    "removedFromFavorites": "Removed from favorites",
-    "savedToFavorites": "Job saved",
-    "errorSaving": "Error saving",
-    "yourOffer": "Your job",
-    "unspecified": "Not specified",
-    "descriptionTitle": "Job description",
-    "missionsTitle": "Missions",
-    "profileTitle": "Desired profile",
-    "benefitsTitle": "Benefits",
-    "pleaseLogin": "Please log in",
-    "companyCannotApply": "Companies cannot apply",
-    "alreadyAppliedMessage": "You have already applied",
-    "applicationSent": "Application sent",
-    "applicationError": "Error sending application",
-    "matchScore": "{{score}}% match",
-    "currency": "FCFA",
-    "companyCannotSaveFavorites": "Companies cannot save favorites"
-  },
+  
   "auth": {
-    "login": {
-      "title": "Log in",
-      "description": "Access your personal space",
-      "googleButton": "Continue with Google",
-      "orSeparator": "or",
-      "emailLabel": "Email address *",
-      "emailPlaceholder": "your@email.com",
-      "passwordLabel": "Password *",
-      "passwordPlaceholder": "••••••••",
-      "forgotPassword": "Forgot password?",
-      "submitButton": "Log in",
-      "noAccount": "Don't have an account yet?",
-      "createAccount": "Create an account",
-      "legalPrefix": "By logging in, you accept our",
-      "legalAnd": "and our",
-      "cgu": "Terms of Service",
-      "privacy": "Privacy Policy",
-      "success": "Login successful!",
-      "errorInvalid": "Incorrect email or password",
-      "errorGeneric": "Login error",
-      "errorGoogle": "Error logging in with Google",
-      "fillAllFields": "Please fill in all fields"
-    }
-  },
-  "jobAlerts": {
-    "back": "Back",
-    "title": "Job alerts",
-    "subtitle": "Receive jobs matching your criteria",
-    "newAlert": "New alert",
-    "createTitle": "Create alert",
-    "editTitle": "Edit alert",
-    "createDescription": "Define your criteria to receive email notifications.",
-    "nameLabel": "Name (optional)",
-    "namePlaceholder": "E.g.: Tech jobs in Bamako",
-    "keywordsLabel": "Keywords *",
-    "keywordsPlaceholder": "E.g.: developer, accountant, Bamako",
-    "keywordsHint": "Separate words with spaces. E.g.: \"dev Bamako\"",
-    "categoryLabel": "Category",
-    "allCategories": "All categories",
-    "cityLabel": "City",
-    "allCities": "All cities",
-    "contractTypesLabel": "Contract types",
-    "salaryMinLabel": "Minimum salary (FCFA)",
-    "salaryMinPlaceholder": "E.g.: 300000",
-    "frequencyLabel": "Frequency",
-    "frequencies": {
-      "instant": "Instant",
-      "daily": "Daily",
-      "weekly": "Weekly"
+      "login": {
+        "title": "Login",
+        "description": "Log in to access your account.",
+        "googleButton": "Continue with Google",
+        "orSeparator": "or",
+        "emailLabel": "Email",
+        "emailPlaceholder": "email@example.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Your password",
+        "forgotPassword": "Forgot your password?",
+        "submitButton": "Log in",
+        "noAccount": "Don't have an account?",
+        "createAccount": "Create an account",
+        "legalPrefix": "By logging in, you accept our",
+        "cgu": "Terms of Use",
+        "legalAnd": "and our",
+        "privacy": "Privacy Policy",
+        "success": "Login successful!",
+        "errorInvalid": "Incorrect email or password.",
+        "errorGeneric": "An error occurred during login.",
+        "errorGoogle": "Google login failed.",
+        "fillAllFields": "Please fill in all fields.",
+        "accountSuspended": "Your account is currently suspended. Please contact support.",
+        "accountBanned": "Your account has been permanently banned.",
+        "accountSuspendedMessage": "Your account is suspended. Please contact support for more information.",
+        "accountBannedMessage": "Your account is banned. You can no longer access the platform."
+      },
+      "signup": {
+        "title": "Create an account",
+        "description": "Join the Actoos Jobs community.",
+        "googleButton": "Sign up with Google",
+        "orSeparator": "or",
+        "firstNameLabel": "First name",
+        "lastNameLabel": "Last name",
+        "emailLabel": "Email",
+        "passwordLabel": "Password",
+        "confirmPasswordLabel": "Confirm password",
+        "roleCandidate": "I'm looking for a job",
+        "roleCompany": "I'm hiring",
+        "submitButton": "Create my account",
+        "alreadyHaveAccount": "Already have an account?",
+        "loginLink": "Log in",
+        "legalConsent": "By creating an account, you accept our",
+        "success": "Account created successfully!",
+        "errorPasswordMismatch": "Passwords do not match.",
+        "errorPasswordLength": "Password must be at least 8 characters.",
+        "errorEmailTaken": "This email is already in use.",
+        "errorGeneric": "An error occurred during registration.",
+        "fillAllFields": "Please fill in all required fields."
+      },
+      "forgotPassword": {
+        "title": "Forgot password",
+        "description": "Enter your email to receive a reset link.",
+        "emailLabel": "Email",
+        "emailPlaceholder": "email@example.com",
+        "submitButton": "Send link",
+        "backToLogin": "Back to login",
+        "success": "If an account exists with this email, you will receive a reset link.",
+        "error": "An error occurred. Please try again."
+      },
+      "resetPassword": {
+        "title": "New password",
+        "description": "Set your new password.",
+        "passwordLabel": "New password",
+        "confirmPasswordLabel": "Confirm password",
+        "submitButton": "Save",
+        "success": "Password updated successfully.",
+        "errorPasswordMismatch": "Passwords do not match.",
+        "errorPasswordLength": "Password must be at least 8 characters.",
+        "errorGeneric": "An error occurred."
+      }
     },
-    "cancel": "Cancel",
-    "createButton": "Create alert",
-    "editButton": "Edit",
-    "alertActive": "Active",
-    "alertInactive": "Inactive",
-    "noAlerts": "You have no alerts yet.",
-    "createFirstAlert": "Create my first alert",
-    "myAlerts": "My alerts ({{count}})",
-    "lastSent": "Last sent: {{date}}",
-    "activate": "Activate",
-    "deactivate": "Deactivate",
-    "edit": "Edit",
-    "delete": "Delete",
-    "deleteConfirm": "Delete this alert?",
-    "toasts": {
-      "loadError": "Error loading alerts",
-      "addCriteria": "Add at least one criterion (keywords, category, city, salary)",
-      "editSuccess": "Alert edited",
-      "createSuccess": "Alert successfully created",
-      "saveError": "Error",
-      "activateSuccess": "Alert activated",
-      "deactivateSuccess": "Alert deactivated",
-      "toggleError": "Error",
-      "deleteSuccess": "Alert deleted",
-      "deleteError": "Error"
-    }
-  },
+
   "contractTypes": {
     "cdi": "Permanent contract (CDI)",
     "cdd": "Fixed-term contract (CDD)",
@@ -536,23 +484,7 @@
       "googleError": "Error logging in with Google"
     }
   },
-  "report": {
-    "button": "Report",
-    "mustLogin": "Log in to report",
-    "sentSuccess": "Report sent",
-    "sendError": "Error sending report",
-    "title": "Report this {{itemType}}",
-    "itemTypes": {
-      "job": "this job",
-      "company": "this company",
-      "user": "this user",
-      "default": "this item"
-    },
-    "reasonPlaceholder": "Reason for report...",
-    "reasonDefault": "Not specified",
-    "cancel": "Cancel",
-    "send": "Send report"
-  },
+
   "resetPassword": {
     "title": "New password",
     "description": "Choose a new password for your account.",
@@ -570,11 +502,7 @@
       "updateError": "Error updating password"
     }
   },
-  "savedJobs": {
-    "title": "Saved jobs",
-    "back": "Back",
-    "noSaved": "No saved jobs."
-  },
+  
   "scheduleInterview": {
     "title": "Schedule an interview"
   },
@@ -708,94 +636,7 @@
       }
     ]
   },
-  "createJob": {
-    "titleNew": "New job offer",
-    "titleEdit": "Edit job",
-    "back": "Back",
-    "save": "Save",
-    "saveDraft": "Save as draft",
-    "submitForValidation": "Submit for validation",
-    "updateOffer": "Update job",
-    "validationRequired": "Company validation required",
-    "companyUnverified": "Your company must be validated before you can submit a job.",
-    "unverifiedBanner": {
-      "title": "Company pending validation",
-      "description": "Your company is not yet verified. You can save your jobs as drafts, but they will not be published until the administrator validates your account."
-    },
-    "sections": {
-      "basicInfo": "Basic information",
-      "description": "Job description",
-      "skills": "Required skills",
-      "location": "Location",
-      "salary": "Compensation",
-      "dates": "Dates"
-    },
-    "labels": {
-      "title": "Job title *",
-      "category": "Category *",
-      "contractType": "Contract type *",
-      "experienceLevel": "Experience level",
-      "positionsCount": "Number of positions",
-      "urgent": "Urgent job",
-      "description": "Description *",
-      "missions": "Missions / Responsibilities",
-      "requirements": "Desired profile / Requirements",
-      "benefits": "Offered benefits",
-      "skillInput": "Add a skill",
-      "city": "City",
-      "address": "Specific address",
-      "remote": "Remote possible",
-      "remoteType": "Type of remote",
-      "salaryMin": "Minimum salary (FCFA/month)",
-      "salaryMax": "Maximum salary (FCFA/month)",
-      "showSalary": "Show salary to candidates",
-      "applicationDeadline": "Application deadline",
-      "startDate": "Desired start date"
-    },
-    "placeholders": {
-      "title": "E.g.: Full Stack Developer, Senior Accountant...",
-      "description": "Describe the position, context, team...",
-      "missions": "• Mission 1\n• Mission 2\n• Mission 3...",
-      "requirements": "• Required degree\n• Technical skills\n• Personal qualities...",
-      "benefits": "• Health insurance\n• Partial remote\n• Continuing education...",
-      "skill": "E.g.: React, Python, Excel...",
-      "address": "Neighborhood, street...",
-      "salaryMin": "E.g.: 300000",
-      "salaryMax": "E.g.: 500000"
-    },
-    "options": {
-      "selectCategory": "Select",
-      "selectContract": "Select",
-      "selectCity": "Select",
-      "unspecified": "Not specified",
-      "remoteFull": "100% remote",
-      "remoteHybrid": "Hybrid",
-      "remoteOccasional": "Occasional"
-    },
-    "skills": {
-      "add": "Add"
-    },
-    "toasts": {
-      "userNotIdentified": "User not identified",
-      "noCompanySelected": "No company selected",
-      "companyNotFound": "Company not found",
-      "fillRequiredFields": "Please fill in the required fields",
-      "companyNotVerified": "Your company is not yet verified. You cannot submit a job.",
-      "limitReached": "You already have {{total}} active or pending job(s). Your plan limit: {{limit}}.",
-      "submittedForValidation": "Job submitted for validation! It will be visible after approval.",
-      "offerUpdated": "Job updated successfully.",
-      "draftSaved": "Draft saved",
-      "saveError": "Error saving",
-      "jobNotFound": "Job not found"
-    },
-    "limitModal": {
-      "title": "Job limit reached",
-      "message": "Your {{plan}} plan allows you to publish {{max}} active job(s). You currently have {{current}} active job(s).",
-      "upgradeSuggestion": "To post more jobs, upgrade to a higher plan.",
-      "later": "Later",
-      "seePlans": "See plans"
-    }
-  },
+  
   "experienceLevels": {
     "junior": "Junior",
     "intermediate": "Intermediate",
@@ -803,74 +644,7 @@
     "lead": "Lead",
     "manager": "Manager"
   },
-  "createCompany": {
-    "title": "Create your company",
-    "subtitle": "Fill in your company information to start recruiting",
-    "back": "Back",
-    "logo": "Add a logo",
-    "uploading": "Uploading...",
-    "labels": {
-      "name": "Company name *",
-      "description": "Description",
-      "industry": "Industry sector",
-      "size": "Company size",
-      "website": "Website",
-      "email": "Contact email",
-      "phone": "Phone",
-      "foundedYear": "Year founded",
-      "city": "City",
-      "address": "Address"
-    },
-    "placeholders": {
-      "name": "E.g.: Orange",
-      "description": "Present your company, its mission, values...",
-      "website": "example.com",
-      "email": "recruitment@example.com",
-      "phone": "+223 XX XX XX XX",
-      "year": "E.g.: 2010",
-      "address": "Neighborhood, street..."
-    },
-    "options": {
-      "selectIndustry": "Select",
-      "selectSize": "Select",
-      "selectCity": "Select"
-    },
-    "sizes": {
-      "1-10": "1-10 employees",
-      "11-50": "11-50 employees",
-      "51-200": "51-200 employees",
-      "201-500": "201-500 employees",
-      "500+": "500+ employees"
-    },
-    "industries": [
-      "Technology",
-      "Finance & Banking",
-      "Telecommunications",
-      "Commerce & Distribution",
-      "Industry & Manufacturing",
-      "Agriculture",
-      "Construction & Civil Engineering",
-      "Transport & Logistics",
-      "Health & Pharmaceutical",
-      "Education & Training",
-      "Tourism & Hospitality",
-      "Business services",
-      "NGO & Humanitarian",
-      "Public administration",
-      "Other"
-    ],
-    "toasts": {
-      "imageRequired": "Please select an image",
-      "imageTooBig": "Image must not exceed 2MB",
-      "logoUploaded": "Logo uploaded",
-      "uploadError": "Upload error",
-      "fillRequired": "Please fill in the required fields",
-      "companyCreated": "Company created successfully! Redirecting...",
-      "createError": "Error creating company",
-      "notificationError": "Admin notification error"
-    },
-    "submit": "Create my company"
-  },
+  
   "coverLetter": {
     "badge": "AI",
     "title": "Cover letter generator",
@@ -960,258 +734,11 @@
       "removeConfirm": "Remove this member?"
     }
   },
-  "companyProfile": {
-    "back": "Back",
-    "title": "Company profile",
-    "subtitle": "Edit your company information",
-    "uploading": "Uploading...",
-    "logo": "Change logo",
-    "labels": {
-      "name": "Company name",
-      "description": "Description",
-      "industry": "Industry sector",
-      "size": "Company size",
-      "website": "Website",
-      "email": "Contact email",
-      "phone": "Phone",
-      "foundedYear": "Year founded",
-      "country": "Country",
-      "city": "City",
-      "address": "Address"
-    },
-    "placeholders": {
-      "name": "Your company name",
-      "description": "Describe your company in a few sentences",
-      "website": "https://www.mycompany.com",
-      "email": "contact@company.com",
-      "phone": "+223 00 00 00 00",
-      "year": "E.g.: 2020",
-      "address": "Neighborhood, street, building..."
-    },
-    "options": {
-      "selectIndustry": "Select an industry",
-      "selectSize": "Select a size",
-      "selectCity": "Select a city"
-    },
-    "submit": "Save changes",
-    "deleteConfirm": "Are you sure you want to permanently delete your company? This action is irreversible.",
-    "deleteSection": {
-      "title": "Delete my company",
-      "description": "This action will permanently delete your company, all its jobs, and associated data.",
-      "button": "Delete my company",
-      "deleting": "Deleting..."
-    },
-    "toasts": {
-      "imageRequired": "Please select an image",
-      "imageTooBig": "Image must not exceed 2 MB",
-      "logoUploaded": "Logo uploaded successfully",
-      "uploadError": "Error uploading logo",
-      "nameRequired": "Company name is required",
-      "updateSuccess": "Profile updated successfully",
-      "updateError": "Error updating profile",
-      "companyDeleted": "Company successfully deleted",
-      "deleteError": "Error deleting company"
-    },
-    "noCompany": {
-      "title": "No company found",
-      "message": "You must first create a company to access this page.",
-      "createButton": "Create my company"
-    },
-    "sizes": {
-      "1-10": "1-10 employees",
-      "11-50": "11-50 employees",
-      "51-200": "51-200 employees",
-      "201-500": "201-500 employees",
-      "500+": "More than 500 employees"
-    }
-  },
-  "companyJobs": {
-    "title": "All my jobs",
-    "back": "Back",
-    "newOffer": "New job",
-    "noJobs": {
-      "title": "No jobs",
-      "message": "You have not published any jobs yet.",
-      "createButton": "Create a job"
-    },
-    "status": {
-      "draft": "Draft",
-      "active": "Published",
-      "paused": "Paused",
-      "closed": "Closed",
-      "expired": "Expired",
-      "pending": "Under validation"
-    },
-    "menu": {
-      "edit": "Edit",
-      "pause": "Pause",
-      "boost": "Use my monthly boost",
-      "reactivate": "Reactivate",
-      "publish": "Publish",
-      "delete": "Delete"
-    },
-    "views": "{{count}} views",
-    "applications": "{{count}} applications",
-    "confirmDelete": "Are you sure you want to delete \"{{title}}\"?",
-    "toasts": {
-      "deleted": "Job deleted",
-      "deleteError": "Error deleting",
-      "published": "Job published!",
-      "statusUpdated": "Status updated",
-      "updateError": "Error updating",
-      "boostActivated": "Free boost activated for 7 days!",
-      "boostError": "Error activating boost",
-      "boostBusinessOnly": "This feature is reserved for the Business plan",
-      "boostAlreadyUsed": "Boost already used this month. Try again in {{days}} day(s).",
-      "jobNotEligible": "Job not eligible",
-      "companyNotFound": "Company not found"
-    }
-  },
-  "companyDetail": {
-    "notFound": "Company not found",
-    "notFoundMessage": "Company not found.",
-    "back": "Back",
-    "yourCompany": "Your company",
-    "about": "About",
-    "jobs": "Job offers",
-    "noJobs": "No active jobs at the moment.",
-    "employees": "{{size}} employees",
-    "website": "Website",
-    "email": "Email"
-  },
+
   
-  "companyDashboard": {
-    "header": {
-    "title": "Recruiter Space"
-  },
-    "noCompany": {
-      "title": "Create your first company",
-      "subtitle": "To post job offers and receive applications, start by creating your company profile.",
-      "createButton": "Create my company"
-    },
-    "companySelector": {
-      "owner": "(owner)",
-      "member": "(member)",
-      "newCompany": "New company"
-    },
-    
-    "profileButton": "Company profile",
-    "newOfferButton": "New offer",
-    "stats": {
-      "publishedJobs": "Published jobs",
-      "totalApplications": "Total applications",
-      "newApplications": "New applications",
-      "totalViews": "Total views",
-      "trend": "+{{trend}}% this month"
-    },
-    "jobsSection": {
-      "title": "My job offers",
-      "totalOffers": "{{count}} offers in total",
-      "viewAll": "View all",
-      "noOffers": "No published offers",
-      "publishButton": "Publish an offer"
-    },
-    "applicationsSection": {
-      "title": "Recent applications",
-      "newCount": "{{count}} new",
-      "viewAll": "View all",
-      "noApplications": "No applications"
-    },
-    "companyProfileCard": {
-      "title": "Company profile",
-      "pendingValidation": "⏳ Your company is pending validation. You can prepare your offers as drafts. Once validated, you can submit them for publication.",
-      "employees": "{{size}} employees",
-      "founded": "Founded in {{year}}",
-      "editProfile": "Edit profile"
-    },
-    "subscriptionCard": {
-      "currentPlan": "Current plan: {{plan}}",
-      "changePlan": "Change plan",
-      "activeOffers": "Active offers",
-      "teamMembers": "Team members",
-      "unlimited": "Unlimited",
-      "activePlanMessage": "You are currently on the {{plan}} plan. You can manage your subscription or cancel it.",
-      "manageSubscription": "Manage my subscription",
-      "cancelSubscription": "Cancel subscription",
-      "freePlanMessage": "Upgrade to a higher plan to publish more offers and access advanced features.",
-      "lastCancelReason": "Reason for last cancellation:",
-      "cancelReasonQuote": "\"{{reason}}\"",
-      "freeBoostMessage": "🚀 You are entitled to a free 7-day boost per month. Use it from your active offers menu."
-    },
-    "adminMessages": {
-      "title": "Admin messages"
-    },
-    "status": {
-      "draft": "Draft",
-      "pending": "Pending validation",
-      "active": "Published",
-      "paused": "Paused",
-      "closed": "Closed",
-      "expired": "Expired",
-      "rejected": "Rejected"
-    },
-    "applicationStatus": {
-      "pending": "New",
-      "viewed": "Viewed",
-      "shortlisted": "Shortlisted",
-      "interview": "Interview",
-      "accepted": "Accepted",
-      "rejected": "Rejected"
-    },
-    "jobCard": {
-      "unspecifiedLocation": "Unspecified",
-      "views": "{{count}} views",
-      "applications": "{{count}} applications",
-      "menu": {
-        "edit": "Edit",
-        "viewApplications": "View applications",
-        "submitForValidation": "Submit for validation",
-        "validationRequired": "Company validation required",
-        "cancelSubmission": "Cancel submission",
-        "pause": "Pause",
-        "republish": "Republish",
-        "delete": "Delete",
-        "freeBoost": "Free boost (7 days)"
-      }
-    },
-    "cancelModal": {
-      "title": "Cancel subscription",
-      "description": "You are about to cancel your subscription. This action is irreversible.",
-      "reasonLabel": "Reason for cancellation (optional)",
-      "reasonPlaceholder": "Tell us why you're leaving...",
-      "consequencesTitle": "⚠️ Consequences:",
-      "consequences": [
-        "Your plan will be downgraded to Free",
-        "Premium features will be disabled",
-        "This action is immediate"
-      ],
-      "cancelButton": "Cancel",
-      "confirmButton": "Confirm cancellation"
-    },
-    "teamButton": "Manage team",
-    "toasts": {
-      "loadError": "Dashboard loading error",
-      "jobDeleted": "Job offer deleted",
-      "limitReached": "Limit reached ({{limit}} max offer(s)).",
-      "offerPublished": "Offer published",
-      "statusUpdated": "Status updated",
-      "updateError": "Error",
-      "companyNotVerified": "Your company is not yet verified. You cannot submit an offer at the moment.",
-      "limitReachedDetailed": "Limit reached ({{limit}} max offer(s)). You already have {{total}} active or pending offer(s).",
-      "submittedForValidation": "Offer submitted for validation",
-      "submissionCancelled": "Submission cancelled, offer set back to draft",
-      "submissionError": "Error during submission",
-      "subscriptionCancelled": "Subscription successfully cancelled",
-      "cancelError": "Error during cancellation",
-      "deleteConfirm": "Delete \"{{title}}\"?",
-      "adminNotifyError": "Admin job notification error",
-      "companyNotVerifiedMenu": "Your company is not yet verified.",
-      "boostActivated": "Free boost activated for 7 days!",
-      "boostAlreadyUsed": "You have already used your free boost this month.",
-      "boostError": "Error activating the boost."
-    }
   
-},
+  
+  
   "candidateProfile": {
     "notFound": "Candidate not found.",
     "back": "Back",
@@ -1229,163 +756,7 @@
     "linkedin": "LinkedIn",
     "portfolio": "Portfolio"
   },
-  "candidateProfilePage": {
-    "title": "My Profile",
-    "subtitle": "Manage your professional information",
-    "back": "Back",
-    "save": "Save",
-    "saveChanges": "Save changes",
-    "photo": {
-      "title": "Profile picture",
-      "hint": "JPG, PNG (max 2MB)",
-      "change": "Change",
-      "delete": "Delete",
-      "deleteConfirm": "Delete your profile picture?",
-      "uploadError": "Photo upload error",
-      "updated": "Photo updated",
-      "deleted": "Photo deleted",
-      "deleteError": "Error deleting photo"
-    },
-    "personalInfo": {
-      "sectionTitle": "Personal information",
-      "sectionDesc": "Your basic information",
-      "firstName": "First name *",
-      "lastName": "Last name *",
-      "phone": "Phone",
-      "phonePlaceholder": "+223 XX XX XX XX",
-      "city": "City",
-      "selectCity": "Select a city"
-    },
-    "professionalProfile": {
-      "sectionTitle": "Professional profile",
-      "sectionDesc": "Your title and presentation",
-      "title": "Professional title *",
-      "bio": "About me",
-      "experienceLevel": "Experience level",
-      "selectLevel": "Select",
-      "yearsOfExperience": "Years of experience",
-      "available": "I am immediately available",
-      "openToRemote": "Open to remote work"
-    },
-    "cv": {
-      "sectionTitle": "My CV",
-      "sectionDesc": "Upload your main CV (PDF or Word)",
-      "uploaded": "CV uploaded",
-      "view": "View",
-      "change": "Change",
-      "delete": "Delete",
-      "deleteConfirm": "Delete your CV?",
-      "uploadTitle": "Upload your CV",
-      "uploadHint": "PDF or Word, max 5MB",
-      "chooseFile": "Choose a file",
-      "analyzeButton": "Analyze my CV (AI)",
-      "uploadError": "CV upload error",
-      "uploadedToast": "CV uploaded",
-      "deletedToast": "CV deleted",
-      "deleteError": "Error deleting CV",
-      "invalidFormat": "Unsupported format. Use PDF or Word.",
-      "fileTooLarge": "File is too large (max 5MB)"
-    },
-    "documents": {
-      "sectionTitle": "Documents",
-      "sectionDesc": "Diplomas, certificates, certifications...",
-      "typeDiploma": "Diploma",
-      "typeCertificate": "Certificate / Attestation",
-      "typeOther": "Other",
-      "addButton": "Add a document",
-      "addedToast": "Document added",
-      "uploadError": "Document upload error",
-      "deleteConfirm": "Delete this document?",
-      "deletedToast": "Document deleted",
-      "deleteError": "Error deleting document",
-      "empty": "No documents added."
-    },
-    "skills": {
-      "sectionTitle": "Skills",
-      "sectionDesc": "Add your key skills",
-      "placeholder": "E.g.: React, Python...",
-      "add": "Add",
-      "empty": "No skills added.",
-      "addedToast": "{{count}} skill(s) added!",
-      "noneFound": "No new skills found."
-    },
-    "experience": {
-      "sectionTitle": "Work experience",
-      "sectionDesc": "Your professional background",
-      "add": "Add",
-      "edit": "Edit",
-      "delete": "Delete",
-      "empty": "No experience added",
-      "present": "Present",
-      "modalAddTitle": "Add experience",
-      "modalEditTitle": "Edit experience",
-      "jobTitle": "Position *",
-      "company": "Company *",
-      "location": "Location",
-      "startDate": "Start date *",
-      "endDate": "End date",
-      "currentlyWorking": "I currently hold this position",
-      "description": "Description",
-      "cancel": "Cancel",
-      "save": "Save",
-      "saveNew": "Add",
-      "fillRequired": "Please fill in all required fields"
-    },
-    "education": {
-      "sectionTitle": "Education",
-      "sectionDesc": "Your degrees and certifications",
-      "add": "Add",
-      "edit": "Edit",
-      "delete": "Delete",
-      "empty": "No education added",
-      "modalAddTitle": "Add education",
-      "modalEditTitle": "Edit education",
-      "degree": "Degree *",
-      "school": "Institution *",
-      "field": "Field of study",
-      "year": "Year of graduation *",
-      "cancel": "Cancel",
-      "save": "Save",
-      "saveNew": "Add",
-      "fillRequired": "Please fill in all required fields"
-    },
-    "links": {
-      "sectionTitle": "Links",
-      "sectionDesc": "Portfolio and social networks",
-      "linkedin": "LinkedIn",
-      "portfolio": "Portfolio / Website"
-    },
-    "salary": {
-      "sectionTitle": "Salary expectations",
-      "sectionDesc": "Desired salary range (FCFA/month)",
-      "minSalary": "Minimum salary",
-      "maxSalary": "Maximum salary"
-    },
-    "cvAnalysis": {
-      "title": "CV analysis",
-      "description": "Paste the text of your CV below to get improvement suggestions.",
-      "placeholder": "Paste your CV content here...",
-      "suggestions": "Suggestions:",
-      "close": "Close",
-      "analyze": "Analyze",
-      "analyzing": "Analyzing...",
-      "doneToast": "Analysis complete",
-      "errorToast": "AI analysis error",
-      "emptyText": "Please paste your CV text"
-    },
-    "report": {
-      "button": "Report",
-      "title": "Why are you reporting this candidate?",
-      "loginRequired": "Please log in to report",
-      "sent": "Report sent. Thank you!",
-      "error": "Error sending report"
-    },
-    "toasts": {
-      "profileUpdated": "Profile updated successfully!",
-      "saveError": "Error saving profile",
-      "fillRequired": "Please fill in all required fields"
-    }
-  },
+
   "blog": {
     "badge": "Blog",
     "title": "Career tips and resources",
@@ -1419,51 +790,7 @@
     "title": "Logging in...",
     "message": "Please wait while we finalize your authentication."
   },
- "applicationDetail": {
-    "back": "Back to applications",
-    "notFound": "Application not found",
-    "viewFullProfile": "View full profile",
-    "jobTitle": "Linked job",
-    "coverLetter": "Cover letter",
-    "cv": "CV",
-    "viewCV": "View CV",
-    "interviewNotes": "Interview notes",
-    "generateQuestions": "Generate questions",
-    "generateAnswers": "Generate answers",
-    "generateTips": "Generate tips",
-    "receivedAt": "Received on {{date}}",
-    "status": {
-      "pending": "Pending",
-      "viewed": "Viewed",
-      "shortlisted": "Shortlisted",
-      "interview": "Interview",
-      "accepted": "Accepted",
-      "rejected": "Rejected"
-    },
-    "changeStatus": "Change status",
-    "scheduleInterview": "Schedule interview",
-    "step1ChooseSlot": "Choose a slot (Calendly)",
-    "openCalendly": "Open Calendly",
-    "sendEmail": "Send email",
-    "step2CreateLink": "Create Jitsi link",
-    "joinMeeting": "Join meeting",
-    "updateLink": "Update",
-    "deleteLink": "Delete",
-    "generateJitsiLink": "Generate Jitsi link",
-    "newRoomPlaceholder": "New room name (optional)",
-    "roomPlaceholder": "Room name (optional)",
-    "toasts": {
-      "questionsGenerated": "Content generated",
-      "noteSaved": "Note saved",
-      "noteDeleted": "Note deleted",
-      "emailSent": "Email sent",
-      "statusUpdated": "Status updated",
-      "updateError": "Update error",
-      "rejectionPrompt": "Rejection reason (optional)",
-      "linkUpdated": "Link updated",
-      "linkDeleted": "Link deleted"
-    }
-  },
+
   "notes": {
     "personal": "Personal notes",
     "questions": "Interview questions",
@@ -1508,102 +835,9 @@
       "content": "Founded by a team of passionate engineers, Actoos Jobs is carefully developed to meet the real needs of the job market. We combine technical expertise and field knowledge to offer a reliable and innovative service."
     }
   },
-  "candidateDashboard": {
-    "greeting": "Hello, {{name}} 👋",
-    "activityPreview": "Here is an overview of your activity",
-    "myProfile": "My profile",
-    "searchJobs": "Search",
-    "stats": {
-      "applications": "Applications",
-      "savedJobs": "Saved jobs",
-      "activeAlerts": "Active alerts",
-      "completionRate": "Completion rate",
-      "trend": "+{{trend}}% this month"
-    },
-    "applications": {
-      "title": "My applications",
-      "description": "Track the status of your applications",
-      "viewAll": "View all",
-      "empty": "No applications yet",
-      "findJob": "Find a job",
-      "defaultJobTitle": "Job offer",
-      "defaultCompany": "Company"
-    },
-    "savedJobs": {
-      "title": "Saved jobs",
-      "description": "The jobs that interest you",
-      "viewAll": "View all",
-      "empty": "No saved jobs",
-      "browseJobs": "Browse jobs",
-      "unspecifiedLocation": "Not specified"
-    },
-    "adminMessages": {
-      "title": "Messages from administration",
-      "description": "Important communications from the Actoos team"
-    },
-    "profileCompletion": {
-      "title": "Profile completion",
-      "completeProfile": "Complete my profile",
-      "messages": {
-        "low": "Complete your profile to attract more recruiters",
-        "medium": "Good start! Add more details",
-        "high": "Excellent! Your profile is almost complete"
-      }
-    },
-    "quickActions": {
-      "title": "Quick actions",
-      "updateCV": "Update my CV",
-      "updateCVDesc": "Upload your latest CV",
-      "createAlert": "Create an alert",
-      "createAlertDesc": "Receive jobs by email",
-      "settings": "Settings",
-      "settingsDesc": "Manage your account"
-    },
-    "dailyTip": {
-      "title": "Tip of the day",
-      "low": [
-        "Add a profile picture: profiles with a photo receive more contacts.",
-        "Fill in your professional title to appear in searches.",
-        "Complete your CV to apply in one click.",
-        "Indicate your key skills to be found more easily."
-      ],
-      "high": [
-        "Update your CV regularly to reflect your latest experiences.",
-        "Activate job alerts to miss nothing.",
-        "Add examples of achievements in your experiences.",
-        "Share your profile on LinkedIn to increase your visibility."
-      ]
-    }
-  },
   
-  "header": {
-    "brand": "Actoos Jobs",
-    "nav": {
-      "jobs": "Jobs",
-      "companies": "Companies",
-      "pricing": "Pricing",
-      "blog": "Blog"
-    },
-    "user": {
-      "dashboard": "Dashboard",
-      "profile": "My profile",
-      "createAlert": "Create alert",
-      "settings": "Settings",
-      "admin": "Administration",
-      "plan": "Plan: {{plan}}",
-      "logout": "Logout",
-      "defaultName": "Account",
-      "defaultUser": "User"
-    },
-    "auth": {
-      "login": "Login",
-      "register": "Register",
-      "companySpace": "Company Space"
-    },
-    "mobile": {
-      "alerts": "Job alerts"
-    }
-  },
+  
+ 
   "cookieBanner": {
     "title": "We use cookies",
     "description": "To improve your experience, analyze traffic, and personalize content. You can accept all cookies or customize your preferences.",
@@ -1990,17 +1224,7 @@
     "portfolio": "Portfolio / Website"
   }
 },
-"companyApplications": {
-    "back": "Back",
-    "title": "Applications",
-    "deleteButton": "Delete",
-    "noApplications": "No applications at the moment.",
-    "deleteConfirm": "Confirm deletion?",
-    "toasts": {
-      "deleted": "Application deleted.",
-      "deleteError": "Error during deletion."
-    }
-  },
+
   "countries": {
   "ZA": "South Africa",
   "DZ": "Algeria",
@@ -2383,82 +1607,7 @@
     "logout": "Log out"
   }
 },
-"settings": {
-  "back": "Back",
-  "myProfile": "My Profile",
-  "title": "Settings",
-  "subtitle": "Manage your account information",
-  "accountInfo": {
-    "title": "Account information",
-    "description": "Logged in as {{email}}"
-  },
-  "countryAndCurrency": "🌍 Country & currency",
-  "country": "Country",
-  "selectCountry": "Select a country",
-  "currency": "Currency",
-  "selectCurrency": "Select a currency",
-  "allCountries": "All countries",
-  "changeEmail": {
-    "title": "Change email",
-    "description": "Update your login email address",
-    "newEmailLabel": "New email",
-    "newEmailPlaceholder": "new@email.com",
-    "currentPasswordLabel": "Current password",
-    "currentPasswordPlaceholder": "Your current password",
-    "submit": "Update email"
-  },
-  "changePassword": {
-    "title": "Change password",
-    "description": "Use a strong and unique password",
-    "newPasswordLabel": "New password",
-    "newPasswordPlaceholder": "At least 8 characters",
-    "confirmPasswordLabel": "Confirm password",
-    "confirmPasswordPlaceholder": "Repeat the password",
-    "submit": "Update password"
-  },
-  "logout": {
-    "title": "Logout",
-    "description": "You can log out of your account at any time.",
-    "button": "Log out"
-  },
-  "roleChange": {
-    "title": "Change role",
-    "descriptionCandidate": "You are currently a <strong>candidate</strong>. You can request to become a <strong>recruiter</strong>.",
-    "descriptionCompany": "You are currently a <strong>recruiter</strong>. You can request to become a <strong>candidate</strong>.",
-    "requestButton": "Request a role change",
-    "modal": {
-      "title": "Role change request",
-      "roleLabel": "Desired new role",
-      "roleCandidate": "Candidate",
-      "roleCompany": "Recruiter (Company)",
-      "reasonLabel": "Reason for request (optional)",
-      "reasonPlaceholder": "Explain why you want to change role...",
-      "cancel": "Cancel",
-      "submit": "Send request"
-    }
-  },
-  "dangerZone": {
-    "title": "Danger zone",
-    "description": "Deleting your account is permanent and irreversible. All your data will be erased.",
-    "button": "Delete my account",
-    "confirm": "Are you sure you want to permanently delete your account? This action cannot be undone."
-  },
-  "toasts": {
-    "passwordMismatch": "Passwords do not match.",
-    "passwordLength": "Password must be at least 8 characters.",
-    "passwordUpdated": "Password updated successfully.",
-    "passwordError": "Error updating password.",
-    "fillAllFields": "Please fill in all fields.",
-    "wrongPassword": "Incorrect password.",
-    "emailConfirmationSent": "A confirmation email has been sent to your new address.",
-    "emailError": "Error updating email.",
-    "logoutError": "Error logging out.",
-    "accountDeleted": "Your account has been permanently deleted.",
-    "deleteError": "Error deleting account.",
-    "roleRequestSent": "Role change request sent successfully.",
-    "roleRequestError": "Error sending request."
-  }
-},
+
 "aiAssistant": {
   "improve": "Improve with AI",
   "improvedVersion": "Improved version",
@@ -2477,19 +1626,19 @@
   
   "adminDashboard": {
       "title": "Administration",
-      "subtitle": "Manage your platform",
+      "subtitle": "Manage jobs, companies and users of the platform.",
       "refresh": "Refresh",
-      "loadingError": "Loading error",
-      "dataRefreshed": "Data refreshed",
-      "unauthorized": "Unauthorized access",
+      "dataRefreshed": "Data refreshed successfully.",
+      "unauthorized": "Access denied. You do not have admin rights.",
+      "loadingError": "Error while loading data.",
       "stats": {
-        "pendingJobs": "Pending jobs",
+        "trend": "{{trend}} this week",
+        "pendingJobs": "Jobs to validate",
         "activeJobs": "Active jobs",
         "pendingCompanies": "Companies to validate",
-        "verifiedCompanies": "Verified companies",
+        "verifiedCompanies": "Validated companies",
         "candidates": "Candidates",
-        "applications": "Applications",
-        "trend": "{{trend}}%"
+        "applications": "Applications"
       },
       "tabs": {
         "overview": "Overview",
@@ -2500,141 +1649,148 @@
         "subscriptions": "Subscriptions",
         "newsletter": "Newsletter",
         "blog": "Blog",
-        "messageCompanies": "Message companies",
-        "messageCandidates": "Message candidates",
+        "messageCompanies": "Recruiter messages",
+        "messageCandidates": "Candidate messages",
         "roleRequests": "Role requests"
       },
       "overview": {
-        "pendingJobsTitle": "Pending job offers",
-        "pendingJobsDesc": "Approve offers so they can be published",
-        "pendingCompaniesTitle": "Companies to validate",
-        "pendingCompaniesDesc": "Verify companies before activating them",
+        "pendingJobsTitle": "Jobs awaiting validation",
+        "pendingJobsDesc": "Validate or reject new job offers.",
         "viewAll": "View all",
-        "noPendingJobs": "No pending offers",
-        "noPendingCompanies": "No companies to validate"
+        "noPendingJobs": "No pending job offers.",
+        "pendingCompaniesTitle": "Companies awaiting validation",
+        "pendingCompaniesDesc": "Validate new companies.",
+        "noPendingCompanies": "No pending companies."
       },
       "jobs": {
-        "reactivatedToast": "Offer reactivated successfully",
-        "searchPlaceholder": "Search a job offer...",
-        "filterAll": "All",
+        "searchPlaceholder": "Search for a job or company...",
+        "filterAll": "All jobs",
         "filterPending": "Pending",
-        "filterDraft": "Draft",
+        "filterDraft": "Drafts",
         "filterActive": "Active",
         "filterSuspended": "Suspended",
         "filterRejected": "Rejected",
-        "noJobs": "No job offers found",
-        "noJobsFound": "No job offer matches the search",
+        "noJobs": "No jobs found.",
+        "noJobsFound": "No jobs match your search.",
         "loadMore": "Load more",
-        "detailsError": "Error loading details",
+        "viewJob": "View job",
         "showDetails": "Show details",
         "hideDetails": "Hide details",
-        "detailsDescription": "Description:",
-        "detailsRequirements": "Profile sought:",
-        "detailsMissions": "Missions:",
-        "detailsBenefits": "Benefits:",
-        "detailsSkills": "Skills:",
-        "detailsExperience": "Experience:",
-        "detailsSalary": "Salary:",
-        "detailsPositions": "Positions:",
-        "detailsDeadline": "Deadline:",
-        "detailsRemote": "Remote:",
-        "detailsUrgent": "Urgent:",
+        "detailsError": "Error loading details.",
+        "detailsDescription": "Description",
+        "detailsRequirements": "Desired profile",
+        "detailsMissions": "Missions",
+        "detailsBenefits": "Benefits",
+        "detailsSkills": "Skills",
+        "detailsExperience": "Experience",
+        "detailsSalary": "Salary",
+        "detailsPositions": "Positions",
+        "detailsDeadline": "Deadline",
+        "detailsRemote": "Remote",
+        "detailsUrgent": "Urgent",
+        "detailsUnspecified": "Not specified",
         "detailsYes": "Yes",
         "detailsNo": "No",
-        "detailsUnspecified": "Unspecified",
-        "publishedBy": "Published {{date}} by {{email}}",
+        "publishedBy": "Published on {{date}} by {{email}}",
+        "companyNotVerified": "Company not validated",
+        "approve": "Validate",
+        "reject": "Reject",
+        "publish": "Publish",
+        "suspend": "Suspend",
+        "delete": "Delete",
+        "reactivate": "Reactivate",
+        "approveLimitReached": "The company has reached its active jobs limit ({{limit}}).",
+        "approveCompanyFirst": "The company is not verified.",
+        "companySuspendedOrNotVerified": "The company is suspended or not verified.",
+        "approvedToast": "Job validated successfully.",
+        "rejectedToast": "Job rejected.",
+        "suspendedToast": "Job suspended.",
+        "deletedToast": "Job deleted.",
+        "reactivatedToast": "Job reactivated.",
+        "approveError": "Error during validation.",
+        "genericError": "An error occurred.",
+        "rejectConfirm": "Reject this job?",
+        "suspendModalTitle": "Suspend job",
+        "deleteModalTitle": "Delete job",
+        "reasonLabel": "Reason (optional)",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
         "status": {
           "pending": "Pending",
           "active": "Active",
           "suspended": "Suspended",
           "rejected": "Rejected"
-        },
-        "companyNotVerified": "Company not verified",
-        "approve": "Approve",
-        "reject": "Reject",
-        "publish": "Publish",
-        "suspend": "Suspend",
-        "reactivate": "Reactivate",
-        "delete": "Delete",
-        "approveCompanyFirst": "The company must be verified first",
-        "approveLimitReached": "The company has reached its plan limit ({{limit}} offers)",
-        "approvedToast": "Offer approved successfully",
-        "rejectedToast": "Offer rejected",
-        "suspendedToast": "Offer suspended",
-        "deletedToast": "Offer deleted",
-        "approveError": "Approval error",
-        "rejectConfirm": "Confirm rejection?",
-        "genericError": "Error",
-        "suspendModalTitle": "Suspend offer",
-        "deleteModalTitle": "Delete offer",
-        "reasonLabel": "Reason",
-        "cancel": "Cancel",
-        "confirm": "Confirm",
-        "viewJob": "View offer"
+        }
       },
       "companies": {
-        "searchPlaceholder": "Search a company...",
-        "filterAll": "All",
+        "searchPlaceholder": "Search for a company...",
+        "filterAll": "All companies",
         "filterUnverified": "Unverified",
         "filterVerified": "Verified",
-        "noCompanies": "No companies found",
-        "noCompaniesFound": "No company matches the search",
+        "filterSuspended": "Suspended",
+        "noCompanies": "No companies found.",
+        "noCompaniesFound": "No companies match your search.",
         "loadMore": "Load more",
-        "employees": "{{size}} employees",
+        "viewSite": "View site",
+        "viewOffers": "View offers ({{count}})",
         "createdAt": "Created on {{date}}",
         "offersCount": "{{count}} offer(s)",
+        "employees": "{{size}} employees",
         "validate": "Validate",
         "reject": "Reject",
         "suspend": "Suspend",
+        "reactivate": "Reactivate",
         "deleteCompany": "Delete",
-        "viewSite": "View site",
-        "viewOffers": "View offers ({{count}})",
-        "validatedToast": "Company validated successfully",
-        "rejectedToast": "Company rejected",
-        "suspendedToast": "Company suspended",
-        "deletedToast": "Company deleted",
-        "validateError": "Validation error",
-        "genericError": "Error",
+        "deleteConfirm": "Permanently delete {{name}}?",
+        "deleteWarning": "All related offers and data will be deleted.",
+        "deletedToast": "Company deleted.",
+        "validatedToast": "Company validated successfully.",
+        "rejectedToast": "Company rejected.",
+        "suspendedToast": "Company suspended.",
+        "reactivatedToast": "Company reactivated.",
+        "validateError": "Error during validation.",
+        "genericError": "An error occurred.",
         "rejectModalTitle": "Reject company",
         "deleteModalTitle": "Delete company",
-        "deleteWarning": "The offers and members of this company will also be deleted.",
-        "deleteConfirm": "Delete company {{name}}?",
         "cancel": "Cancel",
         "confirm": "Confirm",
         "suspendModalTitle": "Suspend company",
-        "suspendWarning": "All offers from this company will be hidden.",
+        "suspendWarning": "All offers from this company will also be suspended.",
         "suspendDurationLabel": "Suspension duration",
         "durationIndefinite": "Indefinite",
         "duration1day": "1 day",
         "duration7days": "7 days",
         "duration30days": "30 days",
-        "suspendReasonLabel": "Reason",
+        "suspendReasonLabel": "Reason (optional)",
         "status": {
-          "unverified": "Unverified",
-          "verified": "Verified"
+          "unverified": "Pending",
+          "verified": "Validated",
+          "suspended": "Suspended"
         }
       },
       "users": {
         "title": "Users",
-        "description": "Manage user accounts",
-        "noUsers": "No users",
+        "description": "Manage roles, suspensions and bans.",
+        "noUsers": "No users found.",
         "loadMore": "Load more",
-        "roleUpdated": "Role updated",
-        "roleUpdateError": "Role update error",
-        "suspendedToast": "User suspended",
-        "reactivatedToast": "User reactivated",
-        "bannedToast": "User banned",
-        "deletedToast": "User deleted",
-        "deleteError": "Deletion error",
-        "banConfirm": "Confirm ban?",
-        "deleteConfirm": "Delete permanently?",
+        "roleUpdated": "Role updated.",
+        "roleUpdateError": "Error changing role.",
+        "suspendedToast": "User suspended.",
+        "reactivatedToast": "User reactivated.",
+        "bannedToast": "User banned.",
+        "unbannedToast": "User unbanned.",
+        "deletedToast": "User deleted.",
+        "deleteError": "Error during deletion.",
+        "banConfirm": "Permanently ban this user?",
+        "unbanConfirm": "Unban this user?",
+        "deleteConfirm": "Permanently delete this user?",
         "suspendModalTitle": "Suspend user",
-        "suspendDurationLabel": "Duration",
+        "suspendDurationLabel": "Suspension duration",
         "durationIndefinite": "Indefinite",
         "duration1day": "1 day",
         "duration7days": "7 days",
         "duration30days": "30 days",
-        "suspendReasonLabel": "Reason",
+        "suspendReasonLabel": "Reason (optional)",
         "cancel": "Cancel",
         "confirm": "Confirm",
         "status": {
@@ -2644,27 +1800,28 @@
         },
         "roles": {
           "candidate": "Candidate",
-          "company": "Company",
+          "company": "Recruiter",
           "admin": "Admin"
         },
         "actions": {
           "suspend": "Suspend",
           "reactivate": "Reactivate",
           "ban": "Ban",
+          "unban": "Unban",
           "delete": "Delete"
         }
       },
       "reports": {
         "title": "Reports",
-        "description": "Handle user reports",
-        "noReports": "No reports",
-        "reportedBy": "Reported by {{email}}",
-        "reason": "Reason: {{reason}}",
+        "description": "Handle content flagged by users.",
+        "noReports": "No reports.",
         "badges": {
           "job": "Job",
           "company": "Company",
           "candidate": "Candidate"
         },
+        "reportedBy": "Reported by {{email}}",
+        "reason": "Reason: {{reason}}",
         "status": {
           "pending": "Pending",
           "reviewed": "Reviewed",
@@ -2672,28 +1829,23 @@
         },
         "markReviewed": "Mark as reviewed",
         "markResolved": "Mark as resolved",
-        "suspendJob": "Suspend offer",
+        "suspendJob": "Suspend job",
         "suspendCompany": "Suspend company",
-        "deleteJob": "Delete offer",
+        "deleteJob": "Delete job",
         "deleteCompany": "Delete company",
         "banUser": "Ban user",
-        "suspendedToast": "Element suspended",
-        "companySuspendedToast": "Company suspended",
-        "deletedToast": "Element deleted",
-        "companyDeletedToast": "Company deleted",
-        "bannedToast": "User banned",
-        "banError": "Could not find the user to ban",
-        "banConfirm": "Confirm ban?",
-        "updatedToast": "Status updated"
+        "suspendedToast": "Job suspended.",
+        "companySuspendedToast": "Company suspended.",
+        "deletedToast": "Job deleted.",
+        "companyDeletedToast": "Company deleted.",
+        "bannedToast": "User banned.",
+        "banError": "Could not find the user to ban.",
+        "banConfirm": "Ban the responsible user?",
+        "updatedToast": "Status updated."
       },
       "subscriptions": {
-        "title": "Subscriptions",
-        "description": "Manage company subscriptions",
-        "cancellationsTitle": "Cancellations",
-        "cancellationsDescription": "Cancellation history",
-        "noCancellations": "No cancellations",
-        "cancelledFrom": "Cancelled from",
-        "toFrom": "to",
+        "title": "Active subscriptions",
+        "description": "List of current subscriptions.",
         "table": {
           "company": "Company",
           "plan": "Plan",
@@ -2701,26 +1853,31 @@
           "stripeSubId": "Stripe ID",
           "expiration": "Expiration",
           "cancellationReason": "Cancellation reason"
-        }
+        },
+        "cancellationsTitle": "Recent cancellations",
+        "cancellationsDescription": "Cancellation history.",
+        "noCancellations": "No recent cancellations.",
+        "cancelledFrom": "Cancelled since",
+        "toFrom": "from"
       },
       "newsletter": {
         "sendTitle": "Send a newsletter",
-        "sendDescription": "Send an email to all subscribers",
+        "sendDescription": "Write and send an email to all subscribers.",
         "subjectLabel": "Subject",
-        "subjectPlaceholder": "Newsletter title",
-        "contentLabel": "HTML content",
-        "contentPlaceholder": "<p>Your message...</p>",
+        "subjectPlaceholder": "Email title",
+        "contentLabel": "Content",
+        "contentPlaceholder": "Write your message here...",
         "sendButton": "Send newsletter",
-        "fillRequired": "Please fill in subject and content",
-        "networkError": "Network error",
-        "sentSuccess": "Newsletter sent to {{count}}/{{total}} subscribers.",
+        "fillRequired": "Please fill in the subject and content.",
+        "sentSuccess": "Newsletter sent to {{sent}}/{{total}} subscribers.",
+        "networkError": "Network error while sending.",
         "subscribersTitle": "Subscribers ({{count}})",
-        "subscribersDescription": "List of newsletter subscribers",
-        "noSubscribers": "No subscribers",
+        "subscribersDescription": "Manage newsletter subscriptions.",
+        "noSubscribers": "No subscribers.",
         "table": {
           "email": "Email",
           "status": "Status",
-          "actions": "Actions",
+          "actions": "Action",
           "subscribed": "Subscribed on",
           "unsubscribed": "Unsubscribed on"
         },
@@ -2728,15 +1885,15 @@
         "statusUnsubscribed": "Unsubscribed",
         "deactivate": "Deactivate",
         "reactivate": "Reactivate",
-        "toggledToast": "Subscriber updated"
+        "toggledToast": "Subscriber status changed."
       },
       "blog": {
-        "generateTitle": "Generate an article",
-        "generateDescription": "AI will write a blog article",
-        "titleLabel": "Title",
-        "titlePlaceholder": "Article title",
-        "keywordsLabel": "Keywords",
-        "keywordsPlaceholder": "Separated by commas",
+        "generateTitle": "Generate a blog article",
+        "generateDescription": "AI will write an article optimized for your audience.",
+        "titleLabel": "Article title",
+        "titlePlaceholder": "e.g. Top jobs in 2026",
+        "keywordsLabel": "Keywords (optional)",
+        "keywordsPlaceholder": "e.g. recruitment, AI, career",
         "audienceLabel": "Audience",
         "audienceAll": "All",
         "audienceCandidates": "Candidates",
@@ -2750,43 +1907,39 @@
           "conseils": "Advice"
         },
         "authorLabel": "Author",
-        "authorPlaceholder": "Actoos Team",
+        "authorPlaceholder": "e.g. Actoos Team",
         "readTimeLabel": "Reading time",
-        "readTimePlaceholder": "5 min",
-        "generateButton": "Generate",
-        "titleRequired": "Title is required",
-        "generatedToast": "Article generated successfully",
-        "generateError": "Generation error",
-        "articlesTitle": "Articles ({{count}})",
-        "articlesDescription": "Manage your blog articles",
-        "noArticles": "No articles",
+        "readTimePlaceholder": "e.g. 5 min",
+        "generateButton": "Generate with AI",
+        "titleRequired": "Title is required.",
+        "generatedToast": "Article generated successfully!",
+        "generateError": "Error during generation.",
+        "articlesTitle": "Published articles ({{count}})",
+        "articlesDescription": "Edit or delete your articles.",
+        "noArticles": "No published articles.",
         "save": "Save",
         "cancel": "Cancel",
-        "updatedToast": "Article updated",
-        "updateError": "Update error",
-        "deleteConfirm": "Delete article?",
-        "deletedToast": "Article deleted",
-        "deleteError": "Deletion error"
-      },
-      "messages": {
-        "sentSuccess": "Message sent to {{count}}/{{total}} people",
-        "sendError": "Error sending"
+        "updatedToast": "Article updated.",
+        "updateError": "Error during update.",
+        "deleteConfirm": "Permanently delete this article?",
+        "deletedToast": "Article deleted.",
+        "deleteError": "Error during deletion."
       },
       "roleRequests": {
-        "title": "Role change requests",
-        "description": "Approve or deny requests",
-        "noRequests": "No requests",
-        "from": "from",
+        "title": "Role requests",
+        "description": "Approve or reject role change requests.",
+        "noRequests": "No pending requests.",
+        "from": "From",
         "to": "to",
         "approve": "Approve",
         "reject": "Reject",
-        "approvedToast": "Request approved",
-        "rejectedToast": "Request rejected"
+        "approvedToast": "Request approved.",
+        "rejectedToast": "Request rejected."
       },
       "roleLabels": {
         "candidate": "Candidate",
-        "company": "Company",
-        "admin": "Admin",
+        "company": "Recruiter",
+        "admin": "Administrator",
         "unknown": "Unknown"
       }
     },
@@ -2839,7 +1992,962 @@
     "saved": "Save successful.",
     "noteDeleted": "Note deleted."
   }
-}
+},
+"createJob": {
+      "back": "Back",
+      "titleNew": "New job offer",
+      "titleEdit": "Edit job offer",
+      "save": "Draft",
+      "updateOffer": "Update",
+      "validationRequired": "Validation required",
+      "submitForValidation": "Submit for validation",
+      "saveDraft": "Save draft",
+      "companyUnverified": "Your company is not yet verified.",
+      "unverifiedBanner": {
+        "title": "Unverified company",
+        "description": "Your company must be validated before you can publish job offers. You can prepare drafts in the meantime."
+      },
+      "sections": {
+        "basicInfo": "Basic information",
+        "description": "Description",
+        "skills": "Skills",
+        "location": "Location",
+        "salary": "Compensation",
+        "dates": "Dates"
+      },
+      "labels": {
+        "title": "Job title",
+        "category": "Category",
+        "contractType": "Contract type",
+        "experienceLevel": "Experience level",
+        "positionsCount": "Number of positions",
+        "urgent": "Urgent offer",
+        "description": "Job description",
+        "missions": "Missions",
+        "requirements": "Desired profile",
+        "benefits": "Benefits",
+        "city": "City",
+        "address": "Address",
+        "remote": "Remote work possible",
+        "remoteType": "Remote work type",
+        "salaryMin": "Minimum salary",
+        "salaryMax": "Maximum salary",
+        "showSalary": "Show salary",
+        "applicationDeadline": "Application deadline",
+        "startDate": "Start date"
+      },
+      "options": {
+        "selectCategory": "Select a category",
+        "selectContract": "Select a type",
+        "unspecified": "Unspecified",
+        "selectCity": "Select a city",
+        "remoteFull": "Fully remote",
+        "remoteHybrid": "Hybrid",
+        "remoteOccasional": "Occasional"
+      },
+      "placeholders": {
+        "title": "e.g. Full Stack Developer",
+        "description": "Describe the position, missions and work environment…",
+        "missions": "Describe the main missions…",
+        "requirements": "Describe the ideal profile, required skills…",
+        "benefits": "Benefits offered (health insurance, meal vouchers, remote work…)",
+        "skill": "Add a skill",
+        "address": "Workplace address",
+        "salaryMin": "e.g. 60000",
+        "salaryMax": "e.g. 120000"
+      },
+      "skills": {
+        "add": "Add"
+      },
+      "limitModal": {
+        "title": "Job offer limit reached",
+        "message": "Your {plan} plan allows you to publish up to {max} active offer(s). You currently have {current}.",
+        "upgradeSuggestion": "Upgrade to a higher plan to publish more offers.",
+        "later": "Later",
+        "seePlans": "See plans"
+      },
+      "toasts": {
+        "userNotIdentified": "User not identified",
+        "noCompanySelected": "No company selected",
+        "companyNotFound": "Company not found",
+        "companySuspended": "Your company is suspended, you cannot publish offers.",
+        "companySuspendedDesc": "Contact support for more information.",
+        "jobNotFound": "Job offer not found",
+        "fillRequiredFields": "Please fill in the required fields.",
+        "companyNotVerified": "Your company is not yet verified.",
+        "limitReached": "You have reached the {limit} offer limit for your plan.",
+        "submittedForValidation": "Job offer submitted for validation.",
+        "offerUpdated": "Job offer updated successfully.",
+        "draftSaved": "Draft saved.",
+        "saveError": "Error while saving."
+      }
+    },
+    "createCompany": {
+      "back": "Back",
+      "title": "Create a company",
+      "subtitle": "Fill in the information to add your company to the platform.",
+      "logo": "Logo",
+      "uploading": "Uploading…",
+      "submit": "Create company",
+      "sizes": {
+        "1-10": "1-10 employees",
+        "11-50": "11-50 employees",
+        "51-200": "51-200 employees",
+        "201-500": "201-500 employees",
+        "500+": "More than 500 employees"
+      },
+      "industries": [
+        "Agriculture",
+        "Crafts",
+        "Audiovisual",
+        "Automotive",
+        "Banking / Insurance",
+        "Construction",
+        "Retail",
+        "Communication",
+        "Consulting",
+        "Distribution",
+        "Education",
+        "Energy",
+        "Environment",
+        "Finance",
+        "Hospitality / Catering",
+        "Real estate",
+        "Industry",
+        "IT",
+        "Legal",
+        "Logistics / Transport",
+        "Luxury",
+        "Media",
+        "Medical / Pharmaceutical",
+        "Fashion",
+        "Public / Administration",
+        "Human resources",
+        "Health",
+        "Security",
+        "Services",
+        "Telecommunications",
+        "Tourism",
+        "Other"
+      ],
+      "labels": {
+        "name": "Company name",
+        "description": "Description",
+        "industry": "Industry",
+        "size": "Company size",
+        "website": "Website",
+        "email": "Email",
+        "phone": "Phone",
+        "foundedYear": "Year founded",
+        "country": "Country",
+        "city": "City",
+        "address": "Address"
+      },
+      "options": {
+        "selectIndustry": "Select an industry",
+        "selectSize": "Select a size",
+        "selectCity": "Select a city"
+      },
+      "placeholders": {
+        "description": "Describe your company, its mission, values…",
+        "address": "Headquarters address"
+      },
+      "toasts": {
+        "imageRequired": "Please select an image.",
+        "imageTooBig": "Image must not exceed 2 MB.",
+        "logoUploaded": "Logo uploaded successfully.",
+        "uploadError": "Error uploading logo.",
+        "accountSuspended": "Your account is suspended, you cannot create a company.",
+        "cannotCreateCompany": "Suspended or banned accounts cannot create a company.",
+        "fillRequired": "Please fill in the required fields.",
+        "companyCreated": "Company created successfully!",
+        "notificationError": "Company was created but the admin notification failed.",
+        "createError": "Error creating company."
+      }
+    },
+    "companyApplications": {
+      "back": "Back",
+      "title": "Applications",
+      "noApplications": "No applications received.",
+      "deleteConfirm": "Delete this application permanently?",
+      "deleteButton": "Delete",
+      "accountSuspended": "Your account is suspended.",
+      "companySuspended": "The company is suspended.",
+      "suspendedDescription": "You cannot view applications at the moment.",
+      "backToDashboard": "Back to dashboard",
+      "status": {
+        "pending": "Pending",
+        "viewed": "Viewed",
+        "shortlisted": "Shortlisted",
+        "interview": "Interview",
+        "accepted": "Accepted",
+        "rejected": "Rejected"
+      },
+      "toasts": {
+        "deleted": "Application deleted.",
+        "deleteError": "Error during deletion."
+      }
+    },
+    "companyJobs": {
+      "back": "Back",
+      "title": "Job offers",
+      "newOffer": "New offer",
+      "companySuspended": "The company is suspended.",
+      "suspendedDescription": "You cannot manage offers at the moment.",
+      "backToDashboard": "Back to dashboard",
+      "status": {
+        "draft": "Draft",
+        "active": "Active",
+        "paused": "Paused",
+        "closed": "Closed",
+        "expired": "Expired",
+        "pending": "Pending"
+      },
+      "views": "{{count}} view(s)",
+      "applications": "{{count}} application(s)",
+      "confirmDelete": "Permanently delete the offer \"{{title}}\"?",
+      "toasts": {
+        "deleted": "Offer deleted.",
+        "deleteError": "Error during deletion.",
+        "published": "Offer published.",
+        "statusUpdated": "Status updated.",
+        "updateError": "Error during update.",
+        "companyNotFound": "Company not found.",
+        "boostBusinessOnly": "Reserved for Business plan.",
+        "boostAlreadyUsed": "Boost already used. Available in {{days}} day(s).",
+        "jobNotEligible": "Offer not eligible.",
+        "boostActivated": "Boost activated for 7 days.",
+        "boostError": "Error during boost."
+      },
+      "noJobs": {
+        "title": "No offers",
+        "message": "You haven't created any offer yet.",
+        "createButton": "Create an offer"
+      },
+      "menu": {
+        "edit": "Edit",
+        "pause": "Pause",
+        "boost": "Boost",
+        "reactivate": "Reactivate",
+        "publish": "Publish",
+        "delete": "Delete"
+      }
+    },
+    "companyDetail": {
+      "back": "Back to companies",
+      "notFound": "Company not found.",
+      "notFoundMessage": "This company does not exist or has been deleted.",
+      "suspendedTitle": "Company suspended",
+      "suspendedDescription": "This company is currently suspended.",
+      "backToCompanies": "See all companies",
+      "about": "About",
+      "jobs": "Job offers",
+      "noJobs": "No offers at the moment.",
+      "employees": "{{size}} employees",
+      "website": "Website",
+      "email": "Email",
+      "yourCompany": "Your company"
+    },
+     "candidateProfilePage": {
+      "back": "Back",
+      "title": "My candidate profile",
+      "subtitle": "Complete your profile to increase your chances.",
+      "save": "Save",
+      "saveChanges": "Save changes",
+      "toasts": {
+        "accountSuspended": "Your account is suspended. You cannot edit your profile.",
+        "profileUpdated": "Profile updated successfully.",
+        "saveError": "Error saving profile.",
+        "fillRequired": "Please fill in the required fields (first name, last name, title)."
+      },
+      "photo": {
+        "title": "Profile photo",
+        "hint": "JPG or PNG, max 2 MB.",
+        "change": "Edit",
+        "delete": "Delete",
+        "updated": "Photo updated.",
+        "uploadError": "Error uploading photo.",
+        "deleteConfirm": "Delete profile photo?",
+        "deleted": "Photo deleted.",
+        "deleteError": "Error deleting photo."
+      },
+      "personalInfo": {
+        "sectionTitle": "Personal information",
+        "sectionDesc": "This information will appear on your public profile.",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "phone": "Phone",
+        "phonePlaceholder": "+1 123 456 7890",
+        "city": "City",
+        "selectCity": "Select a city"
+      },
+      "professionalProfile": {
+        "sectionTitle": "Professional profile",
+        "sectionDesc": "Describe your background and expectations.",
+        "title": "Professional title",
+        "bio": "Profile summary",
+        "experienceLevel": "Experience level",
+        "yearsOfExperience": "Years of experience",
+        "available": "Available",
+        "openToRemote": "Open to remote work",
+        "selectLevel": "Select a level"
+      },
+      "cv": {
+        "sectionTitle": "Main CV",
+        "sectionDesc": "Upload your CV in PDF, DOC or DOCX format.",
+        "uploadTitle": "Upload your CV",
+        "uploadHint": "Accepted formats: PDF, DOC, DOCX. Max 5 MB.",
+        "chooseFile": "Choose a file",
+        "uploaded": "CV uploaded",
+        "view": "View",
+        "change": "Edit",
+        "delete": "Delete",
+        "uploadedToast": "CV uploaded successfully.",
+        "uploadError": "Error uploading CV.",
+        "deleteConfirm": "Delete your CV?",
+        "deletedToast": "CV deleted.",
+        "deleteError": "Error deleting CV.",
+        "invalidFormat": "Unsupported format. Use PDF, DOC or DOCX.",
+        "fileTooLarge": "File must not exceed 5 MB.",
+        "analyzeButton": "Analyze my CV with AI"
+      },
+      "documents": {
+        "sectionTitle": "Additional documents",
+        "sectionDesc": "Add diplomas, certifications, etc.",
+        "typeDiploma": "Diploma",
+        "typeCertificate": "Certification",
+        "typeOther": "Other",
+        "addButton": "Add a document",
+        "empty": "No document added.",
+        "addedToast": "Document added.",
+        "uploadError": "Error adding document.",
+        "deleteConfirm": "Delete this document?",
+        "deletedToast": "Document deleted.",
+        "deleteError": "Error deleting."
+      },
+      "skills": {
+        "sectionTitle": "Skills",
+        "sectionDesc": "Skills help recruiters find you.",
+        "placeholder": "Add a skill",
+        "add": "Add",
+        "empty": "No skills added.",
+        "addedToast": "{{count}} skill(s) added.",
+        "noneFound": "No skills found in the text."
+      },
+      "experience": {
+        "sectionTitle": "Professional experience",
+        "sectionDesc": "Add your most relevant experiences.",
+        "add": "Add experience",
+        "empty": "No experience added.",
+        "present": "Present",
+        "edit": "Edit",
+        "jobTitle": "Job title",
+        "company": "Company",
+        "location": "Location",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "currentlyWorking": "I currently work here",
+        "description": "Description",
+        "cancel": "Cancel",
+        "save": "Save changes",
+        "saveNew": "Add experience",
+        "modalEditTitle": "Edit experience",
+        "modalAddTitle": "Add experience",
+        "fillRequired": "Please fill in the job title, company and start date."
+      },
+      "education": {
+        "sectionTitle": "Education",
+        "sectionDesc": "Add your degrees and training.",
+        "add": "Add education",
+        "empty": "No education added.",
+        "edit": "Edit",
+        "degree": "Degree",
+        "school": "School",
+        "field": "Field of study",
+        "year": "Year obtained",
+        "cancel": "Cancel",
+        "save": "Save changes",
+        "saveNew": "Add education",
+        "modalEditTitle": "Edit education",
+        "modalAddTitle": "Add education",
+        "fillRequired": "Please fill in the degree, school and year."
+      },
+      "links": {
+        "sectionTitle": "Links",
+        "sectionDesc": "Add your LinkedIn, portfolio or other links."
+      },
+      "salary": {
+        "sectionTitle": "Desired salary",
+        "sectionDesc": "Indicate an indicative range.",
+        "minSalary": "Minimum salary",
+        "maxSalary": "Maximum salary"
+      },
+      "cvAnalysis": {
+        "title": "AI CV analysis",
+        "description": "Paste your CV content to get improvement suggestions.",
+        "placeholder": "Paste your CV text here...",
+        "suggestions": "Improvement suggestions:",
+        "close": "Close",
+        "analyze": "Analyze",
+        "analyzing": "Analyzing...",
+        "emptyText": "Please paste your CV content.",
+        "doneToast": "Analysis completed.",
+        "errorToast": "Analysis error."
+      }
+    },
+    "settings": {
+      "back": "Back",
+      "myProfile": "My profile",
+      "title": "Settings",
+      "subtitle": "Manage your account and preferences.",
+      "toasts": {
+        "accountSuspended": "Your account is suspended. Action impossible.",
+        "passwordMismatch": "Passwords do not match.",
+        "passwordLength": "Password must be at least 8 characters.",
+        "passwordUpdated": "Password updated.",
+        "passwordError": "Error changing password.",
+        "fillAllFields": "Please fill in all fields.",
+        "emailConfirmationSent": "A confirmation email has been sent to your new address.",
+        "wrongPassword": "Current password is incorrect.",
+        "emailError": "Error changing email.",
+        "logoutError": "Error during logout.",
+        "accountDeleted": "Account permanently deleted.",
+        "deleteError": "Error deleting account.",
+        "roleRequestSent": "Role change request sent.",
+        "roleRequestError": "Error sending request."
+      },
+      "accountInfo": {
+        "title": "Account information",
+        "description": "Logged in as {{email}}"
+      },
+      "changeEmail": {
+        "title": "Change email",
+        "description": "Change your login email address.",
+        "newEmailLabel": "New email",
+        "newEmailPlaceholder": "email@example.com",
+        "currentPasswordLabel": "Current password",
+        "currentPasswordPlaceholder": "Your current password",
+        "submit": "Update email"
+      },
+      "changePassword": {
+        "title": "Change password",
+        "description": "Use a strong password of at least 8 characters.",
+        "newPasswordLabel": "New password",
+        "newPasswordPlaceholder": "New password",
+        "confirmPasswordLabel": "Confirm password",
+        "confirmPasswordPlaceholder": "Confirm password",
+        "submit": "Update password"
+      },
+      "logout": {
+        "title": "Log out",
+        "description": "Log out from this device.",
+        "button": "Log out"
+      },
+      "roleChange": {
+        "title": "Change role",
+        "descriptionCandidate": "You are currently a <strong>candidate</strong>. You can request to become a <strong>recruiter</strong>.",
+        "descriptionCompany": "You are currently a <strong>recruiter</strong>. You can request to switch back to <strong>candidate</strong>.",
+        "requestButton": "Request role change",
+        "modal": {
+          "title": "Role change request",
+          "roleLabel": "Desired new role",
+          "roleCompany": "Recruiter (company)",
+          "roleCandidate": "Candidate",
+          "reasonLabel": "Reason for request",
+          "reasonPlaceholder": "Explain why you want to change role…",
+          "cancel": "Cancel",
+          "submit": "Send request"
+        }
+      },
+      "dangerZone": {
+        "title": "Danger zone",
+        "description": "Permanently delete your account and all your data.",
+        "confirm": "Permanently delete your account? This action is irreversible.",
+        "button": "Delete my account"
+      }
+    },
+    "jobs": {
+      "searchPlaceholder": "Title, skill or company…",
+      "allCities": "All cities",
+      "filters": "Filters",
+      "resetFilters": "Reset",
+      "contractType": "Contract type",
+      "location": "Location",
+      "remotePossible": "Remote work possible",
+      "salary": "Salary",
+      "minSalary": "Minimum salary",
+      "maxSalary": "Maximum salary",
+      "experience": "Experience",
+      "category": "Category",
+      "allCategories": "All categories",
+      "resultsFor": "Results for \"{{query}}\"",
+      "allOffers": "All offers",
+      "results": "{{count}} offer(s) found",
+      "sortRecent": "Most recent",
+      "sortSalary": "Highest salary",
+      "noResults": "No offers found",
+      "noResultsHint": "Try modifying your search criteria.",
+      "viewResults": "View results ({{count}})",
+      "remote": "Remote",
+      "remoteFull": "100% remote",
+      "remoteHybrid": "Hybrid",
+      "remoteOccasional": "Occasional",
+      "boosted": "Boosted",
+      "featured": "Featured",
+      "urgent": "Urgent",
+      "yourOffer": "Your offer",
+      "verified": "Verified",
+      "viewOffer": "View offer",
+      "unspecified": "Unspecified",
+      "loginToSave": "Log in to save offers.",
+      "companyCannotSave": "Recruiters cannot save offers.",
+      "accountSuspended": "Your account is suspended. Action not possible.",
+      "saveSuccess": "Offer saved.",
+      "unsaveSuccess": "Offer removed from favorites.",
+      "publishedToast": "Offer published.",
+      "statusUpdated": "Status updated.",
+      "updateError": "Error while updating.",
+      "deleteConfirm": "Permanently delete this offer?",
+      "deletedToast": "Offer deleted.",
+      "deleteError": "Error while deleting.",
+      "edit": "Edit",
+      "publish": "Publish",
+      "pause": "Pause",
+      "reactivate": "Reactivate",
+      "delete": "Delete"
+    },
+    "jobDetail": {
+      "notFound": "Offer not found",
+      "notFoundMessage": "This offer does not exist or has been deleted.",
+      "backToJobs": "Back to offers",
+      "pleaseLogin": "Log in to apply.",
+      "accountSuspended": "Your account is suspended.",
+      "accountBanned": "Your account is banned.",
+      "companyCannotApply": "Recruiters cannot apply.",
+      "companyCannotSaveFavorites": "Recruiters cannot save favorites.",
+      "alreadyApplied": "Already applied",
+      "alreadyAppliedMessage": "You have already applied to this offer.",
+      "apply": "Apply",
+      "applicationSent": "Your application has been sent.",
+      "applicationError": "Error sending application.",
+      "savedToFavorites": "Offer added to favorites.",
+      "removedFromFavorites": "Offer removed from favorites.",
+      "errorSaving": "Error while saving.",
+      "yourOffer": "Your offer",
+      "matchScore": "{{score}}% match",
+      "unspecified": "Not specified",
+      "boosted": "Boosted",
+      "descriptionTitle": "Job description",
+      "missionsTitle": "Missions",
+      "profileTitle": "Desired profile",
+      "benefitsTitle": "Benefits"
+    },
+    "savedJobs": {
+      "back": "Back",
+      "title": "Saved jobs",
+      "noSaved": "No saved jobs yet.",
+      "accountSuspended": "Your account is suspended."
+    },
+    "jobAlerts": {
+      "back": "Back",
+      "title": "Job Alerts",
+      "subtitle": "Be notified when an offer matches your criteria.",
+      "newAlert": "New alert",
+      "frequencies": {
+        "instant": "Instant",
+        "daily": "Daily",
+        "weekly": "Weekly"
+      },
+      "editTitle": "Edit alert",
+      "createTitle": "Create alert",
+      "createDescription": "Define your criteria to receive matching offers.",
+      "nameLabel": "Name (optional)",
+      "namePlaceholder": "e.g. Developer offers",
+      "keywordsLabel": "Keywords",
+      "keywordsPlaceholder": "e.g. developer, marketing",
+      "keywordsHint": "Separate words with commas.",
+      "categoryLabel": "Category",
+      "cityLabel": "City",
+      "allCategories": "All categories",
+      "allCities": "All cities",
+      "contractTypesLabel": "Contract types",
+      "salaryMinLabel": "Minimum salary",
+      "salaryMinPlaceholder": "e.g. 60000",
+      "frequencyLabel": "Frequency",
+      "cancel": "Cancel",
+      "editButton": "Save changes",
+      "createButton": "Create alert",
+      "myAlerts": "My alerts ({{count}})",
+      "noAlerts": "No alerts configured.",
+      "createFirstAlert": "Create my first alert",
+      "alertActive": "Active",
+      "alertInactive": "Inactive",
+      "lastSent": "Last sent: {{date}}",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Permanently delete this alert?",
+      "toasts": {
+        "loadError": "Error loading alerts.",
+        "addCriteria": "Please add at least one criterion.",
+        "editSuccess": "Alert updated.",
+        "createSuccess": "Alert created successfully.",
+        "saveError": "Error while saving.",
+        "activateSuccess": "Alert activated.",
+        "deactivateSuccess": "Alert deactivated.",
+        "toggleError": "Error changing state.",
+        "deleteSuccess": "Alert deleted.",
+        "deleteError": "Error while deleting."
+      }
+    },
+    "companyProfile": {
+      "back": "Back",
+      "title": "Company profile",
+      "subtitle": "Manage your company's public information.",
+      "logo": "Logo",
+      "uploading": "Uploading…",
+      "submit": "Save changes",
+      "deleteConfirm": "Permanently delete your company? All offers and associated data will be lost.",
+      "labels": {
+        "name": "Company name",
+        "description": "Description",
+        "industry": "Industry",
+        "size": "Company size",
+        "website": "Website",
+        "email": "Email",
+        "phone": "Phone",
+        "foundedYear": "Year founded",
+        "country": "Country",
+        "city": "City",
+        "address": "Address"
+      },
+      "placeholders": {
+        "name": "Your company name",
+        "description": "Describe your company, its mission, values…",
+        "website": "https://www.mycompany.com",
+        "email": "contact@mycompany.com",
+        "phone": "+1 123 456 7890",
+        "year": "e.g. 2020",
+        "address": "Headquarters address"
+      },
+      "options": {
+        "selectIndustry": "Select an industry",
+        "selectSize": "Select a size",
+        "selectCity": "Select a city"
+      },
+      "sizes": {
+        "1-10": "1-10 employees",
+        "11-50": "11-50 employees",
+        "51-200": "51-200 employees",
+        "201-500": "201-500 employees",
+        "500+": "More than 500 employees"
+      },
+      "toasts": {
+        "imageRequired": "Please select an image.",
+        "imageTooBig": "Image must not exceed 2 MB.",
+        "logoUploaded": "Logo updated.",
+        "uploadError": "Error uploading logo.",
+        "nameRequired": "Company name is required.",
+        "updateSuccess": "Company profile updated.",
+        "updateError": "Error updating profile.",
+        "accountSuspended": "Your account is suspended. Action impossible.",
+        "companySuspended": "Your company is suspended. Modification not possible.",
+        "companyDeleted": "Company successfully deleted.",
+        "deleteError": "Error deleting company."
+      },
+      "deleteSection": {
+        "title": "Delete company",
+        "description": "This action is irreversible. All offers and data will be permanently deleted.",
+        "button": "Delete my company",
+        "deleting": "Deleting…"
+      },
+      "noCompany": {
+        "title": "No company",
+        "message": "You haven't created a company yet.",
+        "createButton": "Create my company"
+      }
+    },
+    "applicationDetail": {
+      "back": "Back",
+      "notFound": "Application not found.",
+      "status": {
+        "pending": "Pending",
+        "viewed": "Viewed",
+        "shortlisted": "Shortlisted",
+        "interview": "Interview",
+        "accepted": "Accepted",
+        "rejected": "Rejected"
+      },
+      "receivedAt": "Received on {{date}}",
+      "changeStatus": "Change status",
+      "jobTitle": "Related offer",
+      "coverLetter": "Cover letter",
+      "cv": "Candidate's CV",
+      "viewCV": "View CV",
+      "viewFullProfile": "View full profile",
+      "scheduleInterview": "Schedule an interview",
+      "step1ChooseSlot": "Choose a time slot",
+      "step2CreateLink": "Create a video conference link",
+      "openCalendly": "Open Calendly",
+      "sendEmail": "Send by email",
+      "joinMeeting": "Join meeting",
+      "generateJitsiLink": "Generate Jitsi link",
+      "updateLink": "Update link",
+      "deleteLink": "Delete link",
+      "roomPlaceholder": "Room name (optional)",
+      "newRoomPlaceholder": "New room name (optional)",
+      "interviewNotes": "Interview notes",
+      "generateQuestions": "Generate questions",
+      "generateAnswers": "Generate answers",
+      "generateTips": "Generate tips",
+      "toasts": {
+        "noteSaved": "Note saved.",
+        "noteDeleted": "Note deleted.",
+        "questionsGenerated": "Questions generated successfully.",
+        "rejectionPrompt": "Rejection reason (optional):",
+        "statusUpdated": "Application status updated.",
+        "updateError": "Update error.",
+        "linkUpdated": "Video conference link updated.",
+        "linkDeleted": "Video conference link deleted.",
+        "emailSent": "Email sent to candidate."
+      },
+      "accountSuspended": "Your account is suspended."
+    },
+     "companyDashboard": {
+      "stats": {
+        "trend": "{{trend}} this week",
+        "publishedJobs": "Active offers",
+        "totalApplications": "Total applications",
+        "newApplications": "New applications",
+        "totalViews": "Total views"
+      },
+      "status": {
+        "draft": "Draft",
+        "pending": "Pending",
+        "active": "Active",
+        "paused": "Paused",
+        "closed": "Closed",
+        "expired": "Expired",
+        "rejected": "Rejected"
+      },
+      "jobCard": {
+        "unspecifiedLocation": "Unspecified",
+        "views": "{{count}} view(s)",
+        "applications": "{{count}} application(s)",
+        "menu": {
+          "edit": "Edit",
+          "viewApplications": "Applications",
+          "submitForValidation": "Submit",
+          "validationRequired": "Validation required",
+          "cancelSubmission": "Cancel submission",
+          "freeBoost": "Boost for free",
+          "pause": "Pause",
+          "republish": "Republish",
+          "delete": "Delete"
+        }
+      },
+      "applicationStatus": {
+        "pending": "Pending",
+        "viewed": "Viewed",
+        "shortlisted": "Shortlisted",
+        "interview": "Interview",
+        "accepted": "Accepted",
+        "rejected": "Rejected"
+      },
+      "toasts": {
+        "companyNotVerifiedMenu": "Your company is not verified.",
+        "loadError": "Error loading data.",
+        "deleteConfirm": "Delete offer \"{{title}}\"?",
+        "jobDeleted": "Offer deleted.",
+        "limitReached": "You have reached the limit of {{limit}} active offers.",
+        "limitReachedDetailed": "Limit of {{limit}} offers reached (active + pending: {{total}}).",
+        "offerPublished": "Offer published.",
+        "statusUpdated": "Status updated.",
+        "updateError": "Error while updating.",
+        "companyNotVerified": "Your company is not verified.",
+        "submittedForValidation": "Offer submitted for validation.",
+        "submissionError": "Error during submission.",
+        "submissionCancelled": "Submission cancelled.",
+        "subscriptionCancelled": "Subscription cancelled.",
+        "cancelError": "Error during cancellation.",
+        "boostActivated": "Boost activated for 7 days.",
+        "boostAlreadyUsed": "Boost already used this month.",
+        "boostError": "Error during boost."
+      },
+      "cancelModal": {
+        "title": "Cancel subscription",
+        "description": "Cancelling your subscription will deactivate your active offers and you will lose advanced features.",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "Why do you want to cancel?",
+        "consequencesTitle": "Consequences",
+        "consequences": [
+          "Your active offers will be suspended",
+          "You will be downgraded to the Free plan",
+          "Pro/Business features will be disabled"
+        ],
+        "cancelButton": "Cancel",
+        "confirmButton": "Cancel my subscription"
+      },
+      "noCompany": {
+        "title": "No company",
+        "subtitle": "Create your company to start posting offers.",
+        "createButton": "Create my company"
+      },
+      "companySelector": {
+        "owner": "Owner",
+        "member": "Member",
+        "newCompany": "New company"
+      },
+      "header": {
+        "title": "Overview"
+      },
+      "profileButton": "Profile",
+      "newOfferButton": "New offer",
+      "jobsSection": {
+        "title": "Recent offers",
+        "totalOffers": "{{count}} offer(s) in total",
+        "viewAll": "View all",
+        "noOffers": "No offers",
+        "publishButton": "Publish an offer"
+      },
+      "applicationsSection": {
+        "title": "Latest applications",
+        "newCount": "{{count}} new",
+        "viewAll": "View all",
+        "noApplications": "No applications"
+      },
+      "companyProfileCard": {
+        "title": "Company profile",
+        "pendingValidation": "Pending validation",
+        "employees": "{{size}} employees",
+        "founded": "Founded in {{year}}",
+        "editProfile": "Edit profile"
+      },
+      "subscriptionCard": {
+        "currentPlan": "{{plan}} plan",
+        "changePlan": "Change",
+        "activeOffers": "Active offers",
+        "activePlanMessage": "Your {{plan}} plan is active.",
+        "manageSubscription": "Manage subscription",
+        "cancelSubscription": "Cancel subscription",
+        "lastCancelReason": "Last cancellation",
+        "cancelReasonQuote": "\"{{reason}}\"",
+        "freePlanMessage": "Upgrade to a higher plan for more features.",
+        "freeBoostMessage": "Free boost available!"
+      },
+      "adminMessages": {
+        "title": "Admin messages"
+      }
+    },
+    "candidateDashboard": {
+      "greeting": "Hello {{name}}",
+      "activityPreview": "Here's an overview of your recent activity.",
+      "myProfile": "My profile",
+      "searchJobs": "Search jobs",
+      "stats": {
+        "trend": "{{trend}} this week",
+        "applications": "Applications",
+        "savedJobs": "Saved jobs",
+        "activeAlerts": "Active alerts",
+        "completionRate": "Profile completion"
+      },
+      "applications": {
+        "title": "Recent applications",
+        "description": "Track your ongoing applications.",        "viewAll": "View all",
+        "empty": "No applications.",
+        "findJob": "Find a job",
+        "defaultJobTitle": "Job",
+        "defaultCompany": "Company"
+      },
+      "savedJobs": {
+        "title": "Saved jobs",
+        "description": "Your favorite jobs.",
+        "viewAll": "View all",
+        "empty": "No saved jobs.",
+        "browseJobs": "Browse jobs",
+        "unspecifiedLocation": "Unspecified"
+      },
+      "profileCompletion": {
+        "title": "Profile completion",
+        "completeProfile": "Complete my profile",
+        "messages": {
+          "low": "Your profile is quite bare. Add more details to attract recruiters.",
+          "medium": "Your profile is improving. Keep filling it out for better results.",
+          "high": "Excellent profile! You're well prepared."
+        }
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "updateCV": "Update my CV",
+        "updateCVDesc": "Add a new file.",
+        "createAlert": "Create an alert",
+        "createAlertDesc": "Receive jobs by email.",
+        "settings": "Settings",
+        "settingsDesc": "Manage your account."
+      },
+      "dailyTip": {
+        "title": "Tip",
+        "low": [
+          "Add a professional profile photo.",
+          "Describe your key skills.",
+          "Write a compelling summary."
+        ],
+        "high": [
+          "Personalize your applications.",
+          "Prepare for interviews with AI.",
+          "Activate alerts to never miss an opportunity."
+        ]
+      },
+      "adminMessages": {
+        "title": "Admin messages",
+        "description": "Announcements and important information."
+      },
+      "toasts": {
+        "accountSuspended": "Your account is suspended."
+      }
+    },
+    "report": {
+    "button": "Signaler",
+    "titleDefault": "Signaler ce contenu",
+    "titleJob": "Signaler cette offre",
+    "titleCompany": "Signaler cette entreprise",
+    "titleUser": "Signaler cet utilisateur",
+    "subtitleJob": "Expliquez pourquoi vous souhaitez signaler cette offre.",
+    "subtitleCompany": "Expliquez pourquoi vous souhaitez signaler cette entreprise.",
+    "subtitleUser": "Expliquez pourquoi vous souhaitez signaler cet utilisateur.",
+    "subtitleDefault": "Expliquez brièvement la raison de votre signalement.",
+    "mustLogin": "Vous devez être connecté pour signaler un contenu.",
+    "reasonRequired": "Veuillez sélectionner une raison.",
+    "detailsPlaceholder": "Ajoutez des détails si nécessaire...",
+    "cancel": "Annuler",
+    "send": "Envoyer",
+    "sentSuccess": "Signalement envoyé avec succès.",
+    "sendError": "Une erreur est survenue lors de l'envoi du signalement."
+  },
+  "reportReasons": {
+    "job": {
+      "spam": "Spam ou contenu trompeur",
+      "fake": "Annonce frauduleuse",
+      "inappropriate": "Contenu inapproprié",
+      "duplicate": "Annonce en double",
+      "other": "Autre"
+    },
+    "company": {
+      "spam": "Spam ou contenu trompeur",
+      "fake": "Entreprise frauduleuse",
+      "inappropriate": "Contenu inapproprié",
+      "duplicate": "Fiche en double",
+      "other": "Autre"
+    },
+    "user": {
+      "spam": "Spam",
+      "harassment": "Harcèlement",
+      "fake": "Compte suspect ou faux",
+      "inappropriate": "Contenu inapproprié",
+      "other": "Autre"
+    }
+  }
 
   
 

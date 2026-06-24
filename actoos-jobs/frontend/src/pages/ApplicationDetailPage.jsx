@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext'; // ← ajouté
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -125,6 +126,8 @@ const TABS = [
 const ApplicationDetailPage = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
+  const { user, profile, signOut } = useAuth(); // ← extraction de profile et signOut
+  const navigate = useNavigate();                 // ← ajouté pour la redirection
   const [application, setApplication] = useState(null);
   const [candidateProfile, setCandidateProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -141,6 +144,15 @@ const ApplicationDetailPage = () => {
   const [generatingAnswers, setGeneratingAnswers] = useState(false);
   const [generatingTips, setGeneratingTips] = useState(false);
 
+  // Vérification du compte utilisateur (suspension / bannissement)
+  useEffect(() => {
+    if (!user) return;
+    if (!profile?.is_active || profile?.is_banned) {
+      signOut();
+      navigate('/connexion?reason=suspended', { replace: true });
+    }
+  }, [user, profile, signOut, navigate]);
+
   const getLocalNotes = () => {
     try { return JSON.parse(localStorage.getItem(`app_notes_${id}`) || '{}'); }
     catch { return {}; }
@@ -152,6 +164,8 @@ const ApplicationDetailPage = () => {
   };
 
   useEffect(() => {
+    if (!user || !profile?.is_active || profile?.is_banned) return; // ne charge pas si restreint
+
     const fetchData = async () => {
       const { data, error } = await supabase
         .from('applications')
@@ -192,7 +206,7 @@ const ApplicationDetailPage = () => {
       setLoading(false);
     };
     fetchData();
-  }, [id]);
+  }, [id, user, profile]);
 
   const saveNote = useCallback(async (type, content) => {
     if (!id) return false;
@@ -396,7 +410,6 @@ Profil candidat :
                     <p className="text-slate-600 flex items-center gap-2 mt-1"><Mail className="w-4 h-4" /> {candidate?.email}</p>
                     {candidate?.phone && <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {candidate.phone}</p>}
                     {candidate?.city?.name && <p className="text-slate-600 flex items-center gap-2 mt-1"><MapPin className="w-4 h-4" /> {candidate.city.name}</p>}
-                    {/* Lien protégé : n'apparaît que si candidate.id existe */}
                     {candidate?.id && (
                       <Link to={`/candidat/${candidate.id}`} className="inline-flex items-center gap-1 mt-3 text-blue-600 hover:underline text-sm">
                         <ExternalLink className="w-4 h-4" /> {t('applicationDetail.viewFullProfile')}
@@ -576,7 +589,6 @@ Profil candidat :
                                  onChange={(e) => setCustomRoomName(e.target.value)}
                                  className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
                           <div className="flex flex-wrap gap-2">
-                            {/* Bouton "Mettre à jour" avec texte défilant si trop long */}
                             <button
                               type="button"
                               disabled={updating}

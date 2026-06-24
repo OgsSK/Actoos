@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
@@ -21,13 +21,14 @@ import {
   MapPin,
   Briefcase,
   Clock,
-  ChevronLeft,   // ← bien présent
+  ChevronLeft,
 } from 'lucide-react';
 import { cn, CONTRACT_TYPES } from '../lib/utils';
 
 const JobAlertsPage = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
@@ -55,10 +56,20 @@ const JobAlertsPage = () => {
     frequency: 'daily',
   });
 
+  // Vérification du compte utilisateur (suspension / bannissement)
   useEffect(() => {
+    if (!user) return;
+    if (!profile?.is_active || profile?.is_banned) {
+      signOut();
+      navigate('/connexion?reason=suspended', { replace: true });
+    }
+  }, [user, profile, signOut, navigate]);
+
+  useEffect(() => {
+    if (!user || !profile?.is_active || profile?.is_banned) return;
     fetchAlerts();
     fetchReferenceData();
-  }, [user]);
+  }, [user, profile]);
 
   const fetchAlerts = async () => {
     if (!user) return;
@@ -186,6 +197,15 @@ const JobAlertsPage = () => {
       }
     });
   };
+
+  // Si le compte est restreint, on ne rend rien (la redirection est en cours)
+  if (profile && (!profile.is_active || profile.is_banned)) {
+    return (
+      <div className="min-h-screen pt-20 flex justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flag, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
@@ -12,16 +12,38 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
   const [details, setDetails] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Récupération dynamique des motifs depuis les traductions
-  const reasonObj = t(`reportReasons.${itemType}`, { returnObjects: true }) || t('reportReasons.job', { returnObjects: true });
-  const reasons = reasonObj ? Object.entries(reasonObj).map(([value, label]) => ({ value, label })) : [];
+  const titleKey =
+    itemType === 'job'
+      ? 'report.titleJob'
+      : itemType === 'company'
+      ? 'report.titleCompany'
+      : itemType === 'user'
+      ? 'report.titleUser'
+      : 'report.titleDefault';
 
   const subtitleKey =
     itemType === 'job'
       ? 'report.subtitleJob'
       : itemType === 'company'
       ? 'report.subtitleCompany'
+      : itemType === 'user'
+      ? 'report.subtitleUser'
       : 'report.subtitleDefault';
+
+  const reasons = useMemo(() => {
+    const raw =
+      t(`reportReasons.${itemType}`, { returnObjects: true }) ||
+      t('reportReasons.job', { returnObjects: true });
+
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      return Object.entries(raw).map(([value, label]) => ({
+        value,
+        label: String(label),
+      }));
+    }
+
+    return [];
+  }, [t, itemType]);
 
   const handleSubmit = async () => {
     if (!reason) {
@@ -29,9 +51,17 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
       return;
     }
 
+    if (!reporterId) {
+      toast.error(t('report.mustLogin'));
+      return;
+    }
+
     setLoading(true);
     try {
-      const fullReason = `${reason}${details ? ' - ' + details : ''}`;
+      const fullReason = details.trim()
+        ? `${reason} - ${details.trim()}`
+        : reason;
+
       const { error } = await supabase.from('reports').insert({
         reporter_id: reporterId,
         reported_item_type: itemType,
@@ -62,6 +92,7 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
         onClick={() => setShowModal(true)}
         className="text-slate-400 hover:text-red-500 flex items-center gap-1 text-sm transition-colors"
         title={t('report.button')}
+        type="button"
       >
         <Flag className="w-4 h-4" />
         {t('report.button')}
@@ -72,7 +103,9 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <Flag className="w-5 h-5 text-red-500" />
-              <h3 className="text-lg font-semibold text-slate-900">{t('report.title')}</h3>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {t(titleKey)}
+              </h3>
             </div>
 
             <p className="text-sm text-slate-600 mb-4">
@@ -83,7 +116,7 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
               {reasons.map((r) => (
                 <label
                   key={r.value}
-                  className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-sm ${
+                  className={`flex items-start gap-2 p-3 rounded-lg border cursor-pointer text-sm ${
                     reason === r.value
                       ? 'border-red-300 bg-red-50 text-red-800'
                       : 'border-slate-200 hover:bg-slate-50'
@@ -95,9 +128,11 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
                     value={r.value}
                     checked={reason === r.value}
                     onChange={(e) => setReason(e.target.value)}
-                    className="text-red-600 focus:ring-red-500"
+                    className="mt-0.5 text-red-600 focus:ring-red-500"
                   />
-                  {r.label}
+                  <span className="whitespace-normal break-words leading-5">
+                    {r.label}
+                  </span>
                 </label>
               ))}
             </div>
@@ -119,7 +154,9 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
                 disabled={loading || !reason}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
                 {t('report.send')}
               </Button>
             </div>

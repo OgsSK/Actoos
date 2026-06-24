@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
-import { usePreferencesContext } from '../contexts/PreferencesContext'; // ← ajouté pour le log
+import { usePreferencesContext } from '../contexts/PreferencesContext';
 import DashboardSkeleton from '../components/DashboardSkeleton';
 import {
   Building2, Briefcase, Users, Eye, FileText, Plus, Settings,
@@ -47,7 +47,7 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
   );
 };
 
-// ---------- CompanyJobCard (avec logs de débogage) ----------
+// ---------- CompanyJobCard ----------
 const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForReview, onCancelSubmission, isCompanyVerified, isBusinessPlan, onFreeBoost }) => {
   const { t } = useTranslation();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -55,11 +55,9 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const { format } = useCurrencyFormatter();
-  const { prefs } = usePreferencesContext(); // ← pour le log
+  const { prefs } = usePreferencesContext();
 
-  // ----- LOG DE DÉBOGAGE -----
   console.log('Devise active :', prefs?.currency, '– Salaire brut :', job.salary_min, '– Formaté :', format(job.salary_min));
-  // ----- FIN LOG -----
 
   const statusLabel = t(`companyDashboard.status.${job.status}`, { defaultValue: job.status });
   const statusColors = { draft: 'bg-slate-100 text-slate-700', pending: 'bg-yellow-100 text-yellow-700', active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', closed: 'bg-red-100 text-red-700', expired: 'bg-slate-100 text-slate-700', rejected: 'bg-red-100 text-red-700' };
@@ -194,7 +192,7 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
 // ---------- Dashboard principal ----------
 const CompanyDashboard = () => {
   const { t } = useTranslation();
-  const { user, activeCompanyId, setActiveCompanyId } = useAuth();
+  const { user, activeCompanyId, setActiveCompanyId, signOut } = useAuth(); // signOut ajouté
   const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [company, setCompany] = useState(null);
@@ -206,6 +204,29 @@ const CompanyDashboard = () => {
   const [membersCount] = useState(0);
   const [stats, setStats] = useState({ totalJobs: 0, activeJobs: 0, totalApplications: 0, newApplications: 0 });
   const hasLoaded = useRef(false);
+
+  // Vérification du statut du compte (suspension / bannissement)
+  useEffect(() => {
+    if (!user) return;
+    const checkStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('is_active, is_banned')
+          .eq('id', user.id)
+          .single();
+
+        if (error) return;
+        if (!data.is_active || data.is_banned) {
+          await signOut();
+          navigate('/connexion?reason=suspended', { replace: true });
+        }
+      } catch (err) {
+        console.error('Erreur vérification statut recruteur:', err);
+      }
+    };
+    checkStatus();
+  }, [user, signOut, navigate]);
 
   const fetchUserCompanies = async () => {
     if (!user) return [];
@@ -228,6 +249,19 @@ const CompanyDashboard = () => {
       const { data: comp } = await supabase.from('companies').select('*').eq('id', companyId).single();
       if (!comp) return;
       setCompany(comp);
+      
+      // ✅ Levée automatique de suspension pour l'entreprise
+      try {
+        const check = await apiFetch(`/api/company/check-suspension/${comp.id}`, {
+          method: 'POST',
+        });
+        if (check.active && comp.is_active === false) {
+          setCompany(prev => ({ ...prev, is_active: true, is_verified: true }));
+        }
+      } catch (e) {
+        console.warn('Vérification suspension entreprise échouée:', e);
+      }
+      
       const { data: jobsData } = await supabase.from('jobs').select('*, city:cities(name)').eq('company_id', comp.id).order('created_at', { ascending: false }).limit(10);
       setJobs(jobsData || []);
       let appsData = [];

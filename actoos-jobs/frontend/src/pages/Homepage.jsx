@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
-import { usePreferencesContext } from '../contexts/PreferencesContext'; // ← Rétabli
+import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import { fetchCategories } from '../lib/data';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,7 +19,6 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import { toast } from 'sonner';
 
-// ---------- Animated Counter ----------
 const AnimatedCounter = ({ value, duration = 1000 }) => {
   const [display, setDisplay] = useState(0);
   useEffect(() => {
@@ -40,7 +39,6 @@ const AnimatedCounter = ({ value, duration = 1000 }) => {
   return <>{display}+</>;
 };
 
-// ---------- HeroSection ----------
 const HeroSection = ({ stats, popularSearches = [], cities = [] }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -201,7 +199,6 @@ const HeroSection = ({ stats, popularSearches = [], cities = [] }) => {
   );
 };
 
-// ---------- Categories Section ----------
 const CategoriesSection = () => {
   const { t } = useTranslation();
   const [categories, setCategories] = useState([]);
@@ -218,8 +215,7 @@ const CategoriesSection = () => {
   );
 };
 
-// ---------- Recent Jobs Section ----------
-const RecentJobsSection = ({ countryId }) => {
+const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
   const { t } = useTranslation();
   const { user, isCompany, isCandidate } = useAuth();
   const [jobs, setJobs] = useState([]);
@@ -246,12 +242,19 @@ const RecentJobsSection = ({ countryId }) => {
   };
 
   useEffect(() => {
+    if (!activeCompanyIds || activeCompanyIds.length === 0) {
+      setJobs([]);
+      setLoading(false);
+      return;
+    }
+
     const fetchJobs = async () => {
       try {
         let query = supabase
           .from('jobs')
           .select(`id, title, contract_type, salary_min, salary_max, created_at, is_urgent, is_remote, remote_type, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
           .eq('status', 'active')
+          .in('company_id', activeCompanyIds)
           .order('boosted_until', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
           .limit(6);
@@ -262,6 +265,7 @@ const RecentJobsSection = ({ countryId }) => {
 
         const { data, error } = await query;
         if (error) throw error;
+
         const formattedJobs = (data || []).map((job) => ({
           id: job.id,
           title: job.title,
@@ -287,7 +291,7 @@ const RecentJobsSection = ({ countryId }) => {
     };
 
     fetchJobs();
-  }, [countryId, t]);
+  }, [countryId, activeCompanyIds, t]);
 
   return (
     <section className="py-20 bg-slate-50">
@@ -324,7 +328,6 @@ const RecentJobsSection = ({ countryId }) => {
   );
 };
 
-// ---------- Job Card (avec badge télétravail amélioré) ----------
 const JobCard = ({ job, user, onSave, isSaved }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
@@ -401,7 +404,6 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
   );
 };
 
-// ---------- Companies Section (avec filtrage par pays) ----------
 const CompaniesSection = ({ countryId }) => {
   const { t } = useTranslation();
   const [companies, setCompanies] = useState([]);
@@ -414,6 +416,7 @@ const CompaniesSection = ({ countryId }) => {
         .from('companies')
         .select('id, name, logo_url, industry, subscription_plan')
         .eq('is_verified', true)
+        .eq('is_active', true)
         .limit(8);
 
       if (countryId) {
@@ -464,7 +467,6 @@ const CompaniesSection = ({ countryId }) => {
   );
 };
 
-// ---------- How It Works Section ----------
 const HowItWorksSection = () => {
   const { t } = useTranslation();
   const steps = [
@@ -504,7 +506,6 @@ const HowItWorksSection = () => {
   );
 };
 
-// ---------- CTA Section ----------
 const CompanyCTASection = ({ stats }) => {
   const { t } = useTranslation();
   const { isCompany } = useAuth();
@@ -589,7 +590,6 @@ const CompanyCTASection = ({ stats }) => {
   );
 };
 
-// ---------- Why Choose Section ----------
 const WhyChooseSection = () => {
   const { t } = useTranslation();
   const reasons = [
@@ -605,15 +605,15 @@ const WhyChooseSection = () => {
   );
 };
 
-// ---------- Main Homepage ----------
 const Homepage = () => {
   const [activeJobs, setActiveJobs] = useState(null);
   const [companies, setCompanies] = useState(null);
   const [candidates, setCandidates] = useState(null);
   const [countryId, setCountryId] = useState(null);
   const [countryLoading, setCountryLoading] = useState(true);
+  const [activeCompanyIds, setActiveCompanyIds] = useState([]);
 
-  const { prefs } = usePreferencesContext(); // ← Contexte rétabli
+  const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
 
   useEffect(() => {
@@ -638,39 +638,83 @@ const Homepage = () => {
     }
   }, [prefs.country]);
 
+  // Charger les IDs des entreprises vérifiées et actives (utilisé partout)
   useEffect(() => {
     if (countryLoading) return;
+
+    const loadActiveCompanyIds = async () => {
+      let query = supabase
+        .from('companies')
+        .select('id')
+        .eq('is_verified', true)
+        .eq('is_active', true);
+
+      if (countryId) {
+        query = query.eq('country_id', countryId);
+      }
+
+      const { data } = await query;
+      setActiveCompanyIds(data ? data.map(c => c.id) : []);
+    };
+
+    loadActiveCompanyIds();
+  }, [countryId, countryLoading]);
+
+  useEffect(() => {
+    if (countryLoading || activeCompanyIds.length === 0) {
+      // Si aucun ID d'entreprise valide, les compteurs restent à 0
+      if (!countryLoading && activeCompanyIds.length === 0) {
+        setActiveJobs(0);
+        setCompanies(0);
+        setCandidates(0);
+      }
+      return;
+    }
 
     const loadStats = async () => {
       setActiveJobs(null);
       setCompanies(null);
       setCandidates(null);
 
-      let queryJobs = supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('status', 'active');
-      let queryCompanies = supabase.from('companies').select('id', { count: 'exact', head: true }).eq('is_verified', true);
-      let queryCandidates = supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'candidate');
+      // Compter les offres actives appartenant aux entreprises vérifiées et actives
+      const { count: jobsCount } = await supabase
+        .from('jobs')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active')
+        .in('company_id', activeCompanyIds);
+
+      // Compter les entreprises vérifiées et actives
+      let queryCompanies = supabase
+        .from('companies')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_verified', true)
+        .eq('is_active', true);
 
       if (countryId) {
-        queryJobs = queryJobs.eq('country_id', countryId);
         queryCompanies = queryCompanies.eq('country_id', countryId);
-        if (prefs.country) {
-          queryCandidates = queryCandidates.eq('preferences->>country', prefs.country);
-        }
       }
+      const { count: compsCount } = await queryCompanies;
 
-      const [jobsRes, compsRes, candsRes] = await Promise.all([
-        queryJobs,
-        queryCompanies,
-        queryCandidates,
-      ]);
+      // Candidats actifs et non bannis
+      let queryCandidates = supabase
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .eq('role', 'candidate')
+        .eq('is_active', true)
+        .eq('is_banned', false);
 
-      setActiveJobs(jobsRes.count || 0);
-      setCompanies(compsRes.count || 0);
-      setCandidates(candsRes.count || 0);
+      if (countryId && prefs.country) {
+        queryCandidates = queryCandidates.eq('preferences->>country', prefs.country);
+      }
+      const { count: candsCount } = await queryCandidates;
+
+      setActiveJobs(jobsCount || 0);
+      setCompanies(compsCount || 0);
+      setCandidates(candsCount || 0);
     };
 
     loadStats();
-  }, [countryId, countryLoading, prefs.country]);
+  }, [countryId, countryLoading, prefs.country, activeCompanyIds]);
 
   const stats = { activeJobs, companies, candidates };
 
@@ -678,7 +722,7 @@ const Homepage = () => {
     <div className="min-h-screen">
       <HeroSection stats={stats} popularSearches={[]} cities={filteredCities} />
       <CategoriesSection />
-      <RecentJobsSection countryId={countryId} />
+      <RecentJobsSection countryId={countryId} activeCompanyIds={activeCompanyIds} />
       <CompaniesSection countryId={countryId} />
       <HowItWorksSection />
       <CompanyCTASection stats={stats} />

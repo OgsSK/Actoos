@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -235,7 +235,8 @@ const ProfileCompletionWidget = ({ completion }) => {
 // ---------- Main Dashboard ----------
 const CandidateDashboard = () => {
   const { t } = useTranslation();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [savedJobs, setSavedJobs] = useState([]);
   const [alertsCount, setAlertsCount] = useState(0);
@@ -263,6 +264,31 @@ const CandidateDashboard = () => {
 
     return Math.round((score / checks.length) * 100);
   }, [profile]);
+
+  // Vérification du statut du compte (suspension/bannissement)
+  useEffect(() => {
+    if (!user) return;
+
+    const checkStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('is_active, is_banned')
+          .eq('id', user.id)
+          .single();
+
+        if (error) return;
+        if (!data.is_active || data.is_banned) {
+          await signOut();
+          navigate('/connexion?reason=suspended', { replace: true });
+        }
+      } catch (err) {
+        console.error('Erreur vérification statut candidat:', err);
+      }
+    };
+
+    checkStatus();
+  }, [user, signOut, navigate]);
 
   useEffect(() => {
     if (user) fetchData();

@@ -69,9 +69,24 @@ const SettingsPage = () => {
   const [requestReason, setRequestReason] = useState('');
   const [requestLoading, setRequestLoading] = useState(false);
 
+  // Vérification du statut du compte (suspension / bannissement)
+  useEffect(() => {
+    if (!user) return;
+    if (!profile?.is_active || profile?.is_banned) {
+      signOut();
+      navigate('/connexion?reason=suspended', { replace: true });
+    }
+  }, [user, profile, signOut, navigate]);
+
+  const isAccountRestricted = !profile?.is_active || profile?.is_banned;
+
   // Changement de mot de passe
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    if (isAccountRestricted) {
+      toast.error(t('settings.toasts.accountSuspended'));
+      return;
+    }
     if (passwords.newPassword !== passwords.confirmPassword) {
       toast.error(t('settings.toasts.passwordMismatch'));
       return;
@@ -95,6 +110,10 @@ const SettingsPage = () => {
   // Changement d'email
   const handleChangeEmail = async (e) => {
     e.preventDefault();
+    if (isAccountRestricted) {
+      toast.error(t('settings.toasts.accountSuspended'));
+      return;
+    }
     if (!newEmail || !currentPassword) {
       toast.error(t('settings.toasts.fillAllFields'));
       return;
@@ -137,6 +156,10 @@ const SettingsPage = () => {
 
   // Suppression du compte (RGPD)
   const handleDeleteAccount = async () => {
+    if (isAccountRestricted) {
+      toast.error(t('settings.toasts.accountSuspended'));
+      return;
+    }
     if (!window.confirm(t('settings.dangerZone.confirm'))) return;
 
     setDeleting(true);
@@ -165,6 +188,10 @@ const SettingsPage = () => {
 
   // Demande de changement de rôle
   const handleRequestRoleChange = async () => {
+    if (isAccountRestricted) {
+      toast.error(t('settings.toasts.accountSuspended'));
+      return;
+    }
     setRequestLoading(true);
     try {
       const { error } = await supabase.rpc('submit_role_change_request', {
@@ -225,6 +252,14 @@ const SettingsPage = () => {
           </div>
         </div>
 
+        {/* Bannière si compte suspendu/banni */}
+        {isAccountRestricted && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+            <p className="text-sm text-red-800">{t('settings.toasts.accountSuspended')}</p>
+          </div>
+        )}
+
         <div className="space-y-6">
           {/* Informations du compte */}
           <Card>
@@ -273,6 +308,7 @@ const SettingsPage = () => {
                     onChange={(e) => setNewEmail(e.target.value)}
                     placeholder={t('settings.changeEmail.newEmailPlaceholder')}
                     required
+                    disabled={isAccountRestricted}
                   />
                 </div>
                 <div>
@@ -285,9 +321,10 @@ const SettingsPage = () => {
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder={t('settings.changeEmail.currentPasswordPlaceholder')}
                     required
+                    disabled={isAccountRestricted}
                   />
                 </div>
-                <Button type="submit" disabled={emailLoading} className="bg-green-600 hover:bg-green-700 text-white">
+                <Button type="submit" disabled={emailLoading || isAccountRestricted} className="bg-green-600 hover:bg-green-700 text-white">
                   {emailLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
                   {t('settings.changeEmail.submit')}
                 </Button>
@@ -318,6 +355,7 @@ const SettingsPage = () => {
                     onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
                     placeholder={t('settings.changePassword.newPasswordPlaceholder')}
                     required
+                    disabled={isAccountRestricted}
                   />
                 </div>
                 <div>
@@ -330,9 +368,10 @@ const SettingsPage = () => {
                     onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
                     placeholder={t('settings.changePassword.confirmPasswordPlaceholder')}
                     required
+                    disabled={isAccountRestricted}
                   />
                 </div>
-                <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button type="submit" disabled={loading || isAccountRestricted} className="bg-blue-600 hover:bg-blue-700 text-white">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                   {t('settings.changePassword.submit')}
                 </Button>
@@ -382,6 +421,7 @@ const SettingsPage = () => {
                   <Button
                     variant="outline"
                     onClick={() => setShowRoleModal(true)}
+                    disabled={isAccountRestricted}
                     className="w-full sm:w-auto text-blue-600 border-blue-200 hover:bg-blue-50 min-h-[44px] shrink-0 overflow-hidden"
                   >
                     <UserCog className="w-4 h-4 mr-2 shrink-0" />
@@ -457,7 +497,7 @@ const SettingsPage = () => {
                 <Button
                   variant="outline"
                   onClick={handleDeleteAccount}
-                  disabled={deleting}
+                  disabled={deleting || isAccountRestricted}
                   className="w-full sm:w-auto border-red-300 text-red-700 hover:bg-red-100 hover:border-red-400 shrink-0 min-h-[44px]"
                 >
                   {deleting ? (

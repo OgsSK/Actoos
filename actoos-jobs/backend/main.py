@@ -595,6 +595,7 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
             "subject": subject_fr,
             "html": html_fr
         })
+
 # ----- Nouveaux endpoints de notification (validation et réactivation) -----
 @app.post("/api/notify-job-approved")
 async def notify_job_approved(req: NotifyJobApprovedRequest):
@@ -1047,7 +1048,7 @@ async def notify_new_application(req: NotifyNewApplicationRequest):
 
 @app.post("/api/notify-status-change")
 async def notify_status_change(req: NotifyStatusChangeRequest):
-    print("[DEBUG] /api/notify-status-change appelé")  # ← Log pour vérifier l'appel
+    print("[DEBUG] /api/notify-status-change appelé")
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
     try:
@@ -1057,7 +1058,7 @@ async def notify_status_change(req: NotifyStatusChangeRequest):
         await send_translated_email(req.candidate_email, subject, html, lang)
         return {"success": True, "message": "Email envoyé au candidat."}
     except Exception as e:
-        print(f"[ERREUR] notify_status_change: {e}")  # ← Log d'erreur
+        print(f"[ERREUR] notify_status_change: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/send-job-alerts")
@@ -1159,7 +1160,7 @@ async def get_candidate_public_profile(candidate_id: str):
         raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
         user_resp = httpx.get(
-            f"{supabase_url}/rest/v1/users?id=eq.{candidate_id}&select=id,email,first_name,last_name,avatar_url",
+            f"{supabase_url}/rest/v1/users?id=eq.{candidate_id}&select=id,email,first_name,last_name,avatar_url,is_active,is_banned",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         users = user_resp.json()
@@ -1187,6 +1188,8 @@ async def get_candidate_public_profile(candidate_id: str):
             "first_name": user.get("first_name") or "",
             "last_name": user.get("last_name") or "",
             "avatar_url": user.get("avatar_url"),
+            "is_active": user.get("is_active"),
+            "is_banned": user.get("is_banned"),
             "title": profile.get("title"),
             "bio": profile.get("bio"),
             "skills": profile.get("skills") or [],
@@ -1564,9 +1567,6 @@ async def notify_admin_new_company(req: NewCompanyNotificationRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-
-
 @app.post("/api/notify-admin-new-job")
 async def notify_admin_new_job(req: NotifyAdminNewJobRequest):
     if not resend.api_key:
@@ -1608,6 +1608,7 @@ async def admin_delete_company(company_id: str, request: Request, language: str 
         return {"success": True, "message": "Entreprise supprimée et notification envoyée"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 @app.delete("/api/company/delete")
 async def delete_own_company(request: Request):
     data = await request.json()
@@ -1711,6 +1712,59 @@ async def admin_reject_company(req: AdminActionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ---------- NOUVELLE FONCTION UTILITAIRE ----------
+def set_user_entities_status(user_id: str, active: bool):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    # Récupérer les entreprises de l'utilisateur
+    companies_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
+        headers=headers
+    )
+    companies = companies_resp.json()
+    for company in companies:
+        company_id = company["id"]
+        # Mettre à jour l'entreprise
+        httpx.patch(
+            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
+            json={"is_active": active, "suspended_until": None},
+            headers=headers
+        )
+        if not active:
+            # Suspendre toutes les offres actives de cette entreprise
+            jobs_resp = httpx.get(
+                f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}&status=eq.active&select=id",
+                headers=headers
+            )
+            for job in jobs_resp.json():
+                httpx.patch(
+                    f"{supabase_url}/rest/v1/jobs?id=eq.{job['id']}",
+                    json={"status": "suspended"},
+                    headers=headers
+                )
+        else:
+            # Réactiver les offres suspendues de cette entreprise
+            jobs_resp = httpx.get(
+                f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}&status=eq.suspended&select=id",
+                headers=headers
+            )
+            for job in jobs_resp.json():
+                httpx.patch(
+                    f"{supabase_url}/rest/v1/jobs?id=eq.{job['id']}",
+                    json={"status": "active"},
+                    headers=headers
+                )
+    # Invalider les sessions pour forcer la déconnexion
+    try:
+        httpx.post(
+            f"{supabase_url}/auth/v1/admin/users/{user_id}/sessions/logout",
+            headers=headers
+        )
+    except Exception as e:
+        print(f"Erreur déconnexion sessions: {e}")
+
+# ---------- ENDPOINTS ADMIN MODIFIÉS ----------
 @app.post("/api/admin/suspend-company")
 async def admin_suspend_company(req: AdminSuspendCompanyRequest):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -1726,7 +1780,7 @@ async def admin_suspend_company(req: AdminSuspendCompanyRequest):
         if not companies:
             raise HTTPException(status_code=404, detail="Entreprise non trouvée")
         company = companies[0]
-        update_data = {"is_active": False, "is_verified": False}
+        update_data = {"is_active": False}
         if req.duration_days:
             suspended_until = datetime.utcnow() + timedelta(days=req.duration_days)
             update_data["suspended_until"] = suspended_until.isoformat()
@@ -1737,6 +1791,18 @@ async def admin_suspend_company(req: AdminSuspendCompanyRequest):
             json=update_data,
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
+        # Suspension des offres actives de l'entreprise
+        active_jobs_resp = httpx.get(
+            f"{supabase_url}/rest/v1/jobs?company_id=eq.{req.id}&status=eq.active&select=id",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        active_jobs = active_jobs_resp.json()
+        for job in active_jobs:
+            httpx.patch(
+                f"{supabase_url}/rest/v1/jobs?id=eq.{job['id']}",
+                json={"status": "suspended"},
+                headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+            )
         owner_email = company.get("owner", {}).get("email")
         if owner_email and resend.api_key:
             lang = req.language or "fr"
@@ -1746,6 +1812,56 @@ async def admin_suspend_company(req: AdminSuspendCompanyRequest):
         return {"success": True, "message": "Entreprise suspendue"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/reactivate-company")
+async def reactivate_company(request: Request):
+    data = await request.json()
+    company_id = data.get("id")
+    language = data.get("language", "fr")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="id requis")
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    company_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=*,owner:users(email,first_name)",
+        headers=headers
+    )
+    companies = company_resp.json()
+    if not companies:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    company = companies[0]
+    httpx.patch(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
+        json={"is_active": True, "suspended_until": None},
+        headers=headers
+    )
+    # Réactiver les offres suspendues de cette entreprise
+    suspended_jobs_resp = httpx.get(
+        f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}&status=eq.suspended&select=id",
+        headers=headers
+    )
+    suspended_jobs = suspended_jobs_resp.json()
+    for job in suspended_jobs:
+        httpx.patch(
+            f"{supabase_url}/rest/v1/jobs?id=eq.{job['id']}",
+            json={"status": "active"},
+            headers=headers
+        )
+    owner = company.get("owner", {})
+    if isinstance(owner, list) and len(owner) > 0:
+        owner = owner[0]
+    owner_email = owner.get("email") if owner else None
+    if owner_email and resend.api_key:
+        first_name = owner.get("first_name") or "Recruteur"
+        subject = f"Votre entreprise \"{company['name']}\" a été réactivée"
+        html = f"""
+        <h2>Bonjour {first_name},</h2>
+        <p>Votre entreprise <strong>{company['name']}</strong> a été réactivée et est à nouveau active.</p>
+        <p><a href="https://jobs.actoos.com/dashboard/entreprise">Accéder à votre espace recruteur</a></p>
+        """
+        await send_translated_email(owner_email, subject, html, language)
+    return {"success": True, "message": "Entreprise réactivée et offres réactivées"}
 
 @app.post("/api/admin/suspend-job")
 async def admin_suspend_job(req: AdminActionRequest):
@@ -1806,29 +1922,24 @@ async def admin_delete_job(req: AdminActionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ----- Nouvel endpoint de réactivation (bypass RLS) -----
 @app.post("/api/admin/reactivate-job")
 async def reactivate_job(req: AdminActionRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
-    
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    
     try:
         resp = httpx.patch(
             f"{supabase_url}/rest/v1/jobs?id=eq.{req.id}",
             json={"status": "active"},
             headers=headers
         )
-        # Accepter 200 (OK) ou 204 (No Content) comme succès
         if resp.status_code not in (200, 204):
             raise Exception(f"Supabase error {resp.status_code}: {resp.text}")
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/api/admin/send-messages")
 async def admin_send_messages(req: AdminSendMessagesRequest):
@@ -2146,6 +2257,8 @@ async def admin_suspend_user(req: AdminSuspendUserRequest):
             json=update_data,
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
+        # Propagation de la suspension aux entités de l'utilisateur
+        set_user_entities_status(req.user_id, False)
         if resend.api_key:
             lang = req.language or "fr"
             html = email_account_suspended(user['first_name'], req.duration_days, req.reason)
@@ -2175,13 +2288,19 @@ async def toggle_user_status(req: AdminToggleUserStatusRequest):
             json={"is_active": req.is_active, "suspended_until": None},
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
+        # Propagation (réactivation)
+        if req.is_active:
+            set_user_entities_status(req.user_id, True)
+        else:
+            set_user_entities_status(req.user_id, False)
         if resend.api_key:
             lang = req.language or "fr"
+            first_name = user.get('first_name') or 'Utilisateur'
             if req.is_active:
-                html = email_account_reactivated(user['first_name'])
+                html = email_account_reactivated(first_name)
                 subject = "Votre compte a été réactivé"
             else:
-                html = email_account_suspended(user['first_name'])
+                html = email_account_suspended(first_name)
                 subject = "Votre compte a été suspendu"
             await send_translated_email(user["email"], subject, html, lang)
         return {"success": True, "message": f"Compte {'réactivé' if req.is_active else 'suspendu'}"}
@@ -2208,6 +2327,8 @@ async def ban_user(req: AdminBanUserRequest):
             json={"is_active": False, "is_banned": True},
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
+        # Propagation du bannissement (identique à la suspension)
+        set_user_entities_status(req.user_id, False)
         if resend.api_key:
             lang = req.language or "fr"
             html = email_account_banned(user['first_name'], req.reason)
@@ -2216,6 +2337,119 @@ async def ban_user(req: AdminBanUserRequest):
         return {"success": True, "message": "Utilisateur banni"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/unban-user")
+async def unban_user(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    language = data.get("language", "fr")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id requis")
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    user_resp = httpx.get(
+        f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=email,first_name,is_banned",
+        headers=headers
+    )
+    users = user_resp.json()
+    if not users:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    user = users[0]
+    httpx.patch(
+        f"{supabase_url}/rest/v1/users?id=eq.{user_id}",
+        json={"is_active": True, "is_banned": False, "suspended_until": None},
+        headers=headers
+    )
+    # Réactivation des entités
+    set_user_entities_status(user_id, True)
+    if user.get("email") and resend.api_key:
+        lang = language
+        subject = "Votre compte a été réactivé"
+        first_name = user.get("first_name") or "Utilisateur"
+        html = email_account_reactivated(first_name)
+        await send_translated_email(user["email"], subject, html, lang)
+    return {"success": True, "message": "Utilisateur débanni et réactivé"}
+
+@app.post("/api/auth/check-suspension")
+async def check_suspension(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id requis")
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    user_resp = httpx.get(
+        f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=is_active,suspended_until,email,first_name",
+        headers=headers
+    )
+    users = user_resp.json()
+    if not users:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    user = users[0]
+    is_active = user.get("is_active", True)
+    suspended_until = user.get("suspended_until")
+    if not is_active and suspended_until:
+        try:
+            suspended_until_dt = datetime.fromisoformat(suspended_until.replace("Z", "+00:00"))
+            now = datetime.now(timezone.utc)
+            if now >= suspended_until_dt:
+                httpx.patch(
+                    f"{supabase_url}/rest/v1/users?id=eq.{user_id}",
+                    json={"is_active": True, "suspended_until": None},
+                    headers=headers
+                )
+                if user.get("email"):
+                    lang = get_user_language(email=user["email"], request=request)
+                    subject = "Votre compte a été réactivé"
+                    first_name = user.get("first_name") or "Utilisateur"
+                    html = email_account_reactivated(first_name)
+                    await send_translated_email(user["email"], subject, html, lang)
+                return {"active": True, "message": "Suspension levée automatiquement"}
+        except Exception as e:
+            print(f"Erreur vérification suspension: {e}")
+    return {"active": is_active}
+
+@app.post("/api/company/check-suspension/{company_id}")
+async def check_company_suspension(company_id: str, request: Request):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    company_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=is_active,suspended_until,name,owner:users(email,first_name)",
+        headers=headers
+    )
+    companies = company_resp.json()
+    if not companies:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    company = companies[0]
+    is_active = company.get("is_active", True)
+    suspended_until = company.get("suspended_until")
+    if not is_active and suspended_until:
+        try:
+            suspended_until_dt = datetime.fromisoformat(suspended_until.replace("Z", "+00:00"))
+            now = datetime.now(timezone.utc)
+            if now >= suspended_until_dt:
+                httpx.patch(
+                    f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
+                    json={"is_active": True, "suspended_until": None},
+                    headers=headers
+                )
+                owner = company.get("owner", {})
+                if isinstance(owner, list) and len(owner) > 0:
+                    owner = owner[0]
+                owner_email = owner.get("email") if owner else None
+                if owner_email:
+                    lang = get_user_language(email=owner_email, request=request)
+                    subject = "Votre entreprise a été réactivée"
+                    first_name = owner.get('first_name') or 'Recruteur'
+                    html = f"<h2>Bonjour {first_name},</h2><p>Votre entreprise <strong>{company['name']}</strong> a été réactivée.</p>"
+                    await send_translated_email(owner_email, subject, html, lang)
+                return {"active": True, "message": "Suspension levée automatiquement"}
+        except Exception as e:
+            print(f"Erreur vérification suspension entreprise: {e}")
+    return {"active": is_active}
 
 @app.get("/api/admin/cancellations")
 async def get_cancellations():

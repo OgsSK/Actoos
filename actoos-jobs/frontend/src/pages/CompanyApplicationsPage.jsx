@@ -1,24 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Loader2, ChevronLeft, Users, Trash2 } from 'lucide-react';
+import { Loader2, ChevronLeft, Users, Trash2, AlertTriangle } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 import { toast } from 'sonner';
 
 const CompanyApplicationsPage = () => {
   const { t } = useTranslation();
-  const { user, activeCompanyId } = useAuth();
+  const { user, profile, activeCompanyId, signOut } = useAuth();
+  const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [company, setCompany] = useState(null);
+
+  // Vérification du compte utilisateur et de l'entreprise
+  useEffect(() => {
+    if (!user) return;
+    if (!profile?.is_active || profile?.is_banned) {
+      signOut();
+      navigate('/connexion?reason=suspended', { replace: true });
+      return;
+    }
+    if (activeCompanyId) {
+      supabase
+        .from('companies')
+        .select('is_active')
+        .eq('id', activeCompanyId)
+        .single()
+        .then(({ data }) => {
+          setCompany(data);
+          if (data && !data.is_active) {
+            toast.error(t('companyApplications.companySuspended'));
+            navigate('/dashboard/entreprise');
+          }
+        });
+    }
+  }, [user, profile, activeCompanyId, signOut, navigate, t]);
 
   useEffect(() => {
-    if (user && activeCompanyId) fetchApplications();
-  }, [user, activeCompanyId]);
+    if (user && activeCompanyId && profile?.is_active && !profile?.is_banned && company?.is_active !== false) {
+      fetchApplications();
+    } else if (!activeCompanyId) {
+      setApplications([]);
+      setLoading(false);
+    }
+  }, [user, activeCompanyId, profile, company]);
 
   const fetchApplications = async () => {
     if (!activeCompanyId) {
@@ -75,6 +106,30 @@ const CompanyApplicationsPage = () => {
     return (
       <div className="pt-20 flex justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  const isAccountRestricted = !profile?.is_active || profile?.is_banned;
+  const isCompanyInactive = company && !company.is_active;
+
+  if (isAccountRestricted || isCompanyInactive) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-20">
+        <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+          <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+            {isAccountRestricted ? t('companyApplications.accountSuspended') : t('companyApplications.companySuspended')}
+          </h1>
+          <p className="text-slate-600">
+            {t('companyApplications.suspendedDescription')}
+          </p>
+          <Link to="/dashboard/entreprise">
+            <Button variant="outline" className="mt-6">
+              {t('companyApplications.backToDashboard')}
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }

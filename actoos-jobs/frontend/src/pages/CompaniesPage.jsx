@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
@@ -13,12 +13,21 @@ import { useAuth } from '../contexts/AuthContext';
 
 const CompaniesPage = () => {
   const { t } = useTranslation();
-  const { isCompany } = useAuth();
+  const { isCompany, profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [industries, setIndustries] = useState([]);
+
+  // Vérification du statut du compte (suspension / bannissement)
+  useEffect(() => {
+    if (profile && (!profile.is_active || profile.is_banned)) {
+      signOut();
+      navigate('/connexion?reason=suspended', { replace: true });
+    }
+  }, [profile, signOut, navigate]);
 
   useEffect(() => {
     const fetchIndustries = async () => {
@@ -48,7 +57,6 @@ const CompaniesPage = () => {
         .select(`*, city:cities(name)`)
         .eq('is_active', true)
         .eq('is_verified', true)
-        // Tri : Business en premier, puis Pro, puis Free, puis ordre alphabétique
         .order('subscription_plan', { ascending: false })
         .order('name');
 
@@ -89,6 +97,15 @@ const CompaniesPage = () => {
       setLoading(false);
     }
   };
+
+  // Si l'utilisateur est restreint, on ne rend rien (la redirection est en cours)
+  if (profile && (!profile.is_active || profile.is_banned)) {
+    return (
+      <div className="min-h-screen pt-20 flex justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -161,7 +178,6 @@ const CompaniesPage = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      {/* Section modifiée : badges Pro et Premium */}
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-slate-900 truncate">
                           {company.name}
