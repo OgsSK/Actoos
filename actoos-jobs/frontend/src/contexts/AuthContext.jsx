@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { apiFetch } from '../lib/api';
 
 const AuthContext = createContext({});
 
@@ -25,48 +24,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('actoosActiveCompanyId');
     }
   }, [activeCompanyId]);
-
-  // Vérification de l'état du compte (suspension, bannissement)
-  const checkAccountStatus = useCallback(async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('is_active, is_banned')
-        .eq('id', userId)
-        .single();
-      console.log('🔍 checkAccountStatus - data:', data, 'error:', error);
-      if (error) return true; // en cas d'erreur, on laisse passer
-      if (!data.is_active) {
-        console.warn('⚠️ Compte suspendu détecté, redirection');
-        await supabase.auth.signOut();
-        setUser(null);
-        setProfile(null);
-        window.location.href = '/connexion?reason=suspended';
-        return false;
-      }
-      if (data.is_banned) {
-        console.warn('⚠️ Compte banni détecté, redirection');
-        await supabase.auth.signOut();
-        setUser(null);
-        setProfile(null);
-        window.location.href = '/connexion?reason=banned';
-        return false;
-      }
-      return true;
-    } catch (e) {
-      console.warn('Erreur vérification statut utilisateur:', e);
-      return true;
-    }
-  }, []);
-
-  // Vérification périodique du statut
-  useEffect(() => {
-    if (!user) return;
-    const interval = setInterval(() => {
-      checkAccountStatus(user.id);
-    }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [user, checkAccountStatus]);
 
   const buildBaseProfile = useCallback((authUser) => {
     if (!authUser) return null;
@@ -151,17 +108,10 @@ export const AuthProvider = ({ children }) => {
     setProfile(baseProfile);
     setLoading(false);
 
-    // Suppression de l'appel à /api/auth/check-suspension qui n'existe pas en production
-    // Cette vérification n'était pas indispensable et provoquait des erreurs 404.
-
-    // Vérifier immédiatement le statut du compte
-    const valid = await checkAccountStatus(authUser.id);
-    if (!valid) return;
-
     // Enrichissement du profil en arrière‑plan
     const enriched = await enrichProfile(authUser, baseProfile);
     setProfile(enriched);
-  }, [buildBaseProfile, enrichProfile, checkAccountStatus]);
+  }, [buildBaseProfile, enrichProfile]);
 
   useEffect(() => {
     let mounted = true;
@@ -208,25 +158,6 @@ export const AuthProvider = ({ children }) => {
   const signIn = async ({ email, password }) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-
-    // Vérifier le statut du compte avant de finaliser
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('is_active, is_banned')
-      .eq('id', data.user.id)
-      .single();
-
-    if (userError) throw new Error("Impossible de récupérer vos informations.");
-
-    if (!userData.is_active) {
-      await supabase.auth.signOut();
-      throw new Error("Votre compte est actuellement suspendu.");
-    }
-    if (userData.is_banned) {
-      await supabase.auth.signOut();
-      throw new Error("Votre compte a été banni définitivement.");
-    }
-
     return data;
   };
 

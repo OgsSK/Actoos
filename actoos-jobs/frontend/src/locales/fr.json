@@ -1,88 +1,168 @@
 {
-  "common": {
-    "allCountries": "Tous les pays",
-  "allCountriesShort": "Tous",
-    "premium": "Premium",
-    "search": "Rechercher",
-    "login": "Se connecter",
-    "register": "S'inscrire",
-    "logout": "Déconnexion",
-    "dashboard": "Tableau de bord",
-    "profile": "Profil",
-    "settings": "Paramètres",
-    "save": "Enregistrer",
-    "cancel": "Annuler",
-    "confirm": "Confirmer",
-    "delete": "Supprimer",
-    "edit": "Modifier",
-    "loading": "Chargement...",
-    "error": "Erreur",
-    "success": "Succès"
-  },
+  
   "home": {
     "hero": {
-      "badge": "Là où les talents rencontrent leur futur",
-      "titleLine1": "Trouvez l'emploi qui",
-      "titleLine2": "change votre vie",
-      "subtitle": "Des milliers d'opportunités vous attendent. Postulez en un clic et construisez votre carrière avec les meilleures entreprises.",
-      "searchPlaceholder": "Poste, compétences ou entreprise...",
+      "badge": "La plateforme emploi N°1",
+      "titleLine1": "Trouvez le job de vos rêves",
+      "titleLine2": "ou le talent qu'il vous faut",
+      "subtitle": "Des milliers d'offres et de candidats vous attendent.",
+      "searchPlaceholder": "Métier, mot-clé, compétence...",
       "allCities": "Toutes les villes",
       "searchButton": "Rechercher",
+      "searching": "Recherche en cours...",
       "activeJobs": "Offres actives",
       "companies": "Entreprises",
-      "candidates": "Candidats",
-      "popularSearches": "Recherches populaires :",
-      "searching": "Recherche en cours..."
+      "candidates": "Candidats"
     },
     "categories": {
-      "title": "Explorez par catégorie",
-      "subtitle": "Trouvez des opportunités dans votre domaine d'expertise"
+      "title": "Explorer les catégories",
+      "subtitle": "Trouvez des offres par secteur d'activité"
     },
-   
+    "jobs": {
+      "title": "Offres récentes",
+      "subtitle": "Les dernières opportunités postées",
+      "viewAll": "Voir toutes les offres",
+      "noJobsTitle": "Aucune offre pour le moment",
+      "noJobsText": "Revenez bientôt pour découvrir de nouvelles opportunités.",
+      "seeJobs": "Voir les offres",
+      "postJob": "Publier une offre",
+      "postFirstJob": "Publier ma première offre",
+      "urgent": "Urgent",
+      "boosted": "Boosté",
+      "yourJob": "Votre offre",
+      "unknownCompany": "Entreprise inconnue",
+      "unknownLocation": "Lieu non spécifié",
+      "salary": "Salaire",
+      "unspecified": "Non spécifié",
+      "saveLogin": "Connectez-vous pour sauvegarder cette offre",
+      "companyCannotSave": "Les recruteurs ne peuvent pas sauvegarder d'offres.",
+      "unsaveSuccess": "Offre retirée des favoris",
+      "saveSuccess": "Offre sauvegardée",
+      "remoteFull": "100% télétravail",
+      "remoteHybrid": "Hybride",
+      "remoteOccasional": "Occasionnel",
+      "remote": "Télétravail"
+    },
     "companies": {
       "title": "Entreprises qui recrutent",
-      "subtitle": "Découvrez les entreprises qui font confiance à Actoos Jobs"
+      "subtitle": "Découvrez les entreprises et leurs offres"
     },
     "how": {
       "title": "Comment ça marche ?",
-      "subtitle": "Trouvez votre emploi idéal en 4 étapes simples",
-      "step1Title": "Créez votre profil",
-      "step1Desc": "Inscrivez-vous gratuitement et complétez votre profil en quelques minutes.",
-      "step2Title": "Recherchez des offres",
-      "step2Desc": "Parcourez des centaines d'offres et utilisez nos filtres avancés.",
-      "step3Title": "Postulez en un clic",
-      "step3Desc": "Envoyez votre candidature directement aux recruteurs.",
+      "subtitle": "Quatre étapes simples pour trouver un emploi ou recruter.",
+      "step1Title": "Créez votre compte",
+      "step1Desc": "Inscrivez-vous en quelques secondes, en tant que candidat ou recruteur.",
+      "step2Title": "Recherchez ou publiez",
+      "step2Desc": "Parcourez les offres ou déposez la vôtre en quelques clics.",
+      "step3Title": "Postulez / Sélectionnez",
+      "step3Desc": "Postulez aux offres qui vous correspondent, ou recevez des candidatures.",
       "step4Title": "Décrochez le job",
-      "step4Desc": "Suivez vos candidatures et préparez vos entretiens."
+      "step4Desc": "Passez l'entretien et commencez votre nouvelle aventure."
     },
     "cta": {
-      "badge": "Pour les entreprises",
+      "badge": "Pour les recruteurs",
       "title": "Recrutez les meilleurs talents",
-      "subtitle": "Publiez vos offres, recevez des candidatures qualifiées et trouvez votre prochain collaborateur en quelques jours.",
-      "feature1": "Publication d'offres illimitées",
-      "feature2": "Accès à une base de candidats qualifiés",
-      "feature3": "Outils de gestion des candidatures",
-      "feature4": "Visibilité premium sur la plateforme",
-      "createAccount": "Créer un compte entreprise",
+      "subtitle": "Publiez vos offres, recevez des candidatures qualifiées et trouvez la perle rare.",
+      "feature1": "Publiez des offres gratuitement",
+      "feature2": "Recevez des candidatures ciblées",
+      "feature3": "Gérez vos recrutements en toute simplicité",
+      "feature4": "Bénéficiez d'outils de matching intelligents",
       "publishJob": "Publier une offre",
-      "pricing": "Voir nos tarifs"
+      "createAccount": "Créer un compte recruteur",
+      "pricing": "Voir les tarifs"
     },
     "why": {
       "mainTitle": "Pourquoi choisir Actoos Jobs ?",
-      "mainSubtitle": "La plateforme de recrutement nouvelle génération, créée par des ingénieurs passionnés.",
-      "title1": "100 % gratuit pour les candidats",
-      "desc1": "Créez votre profil, postulez et soyez recruté sans rien payer.",
-      "title2": "Visibilité immédiate pour les entreprises",
-      "desc2": "Publiez vos offres et touchez des milliers de candidats qualifiés.",
-      "title3": "Données sécurisées et locales",
-      "desc3": "Vos informations sont hébergées de manière sécurisée et restent confidentielles.",
-      "title4": "Moteur de recherche intelligent",
-      "desc4": "Trouvez l'offre idéale grâce à une recherche rapide et des filtres précis.",
-      "title5": "Support local réactif",
-      "desc5": "Une équipe réactive, à votre écoute pour vous accompagner.",
+      "mainSubtitle": "La plateforme pensée pour l'emploi de demain.",
+      "title1": "Ouverture internationale",
+      "desc1": "Des offres et des candidats du monde entier, avec une présence locale.",
+      "title2": "Entreprises vérifiées",
+      "desc2": "Toutes nos entreprises sont vérifiées pour plus de confiance.",
+      "title3": "Sécurité et confidentialité",
+      "desc3": "Vos données sont protégées avec les meilleurs standards.",
+      "title4": "Rapidité et simplicité",
+      "desc4": "Une interface fluide pour postuler ou recruter en un clin d'œil.",
+      "title5": "Expérience personnalisée",
+      "desc5": "Des recommandations sur mesure grâce à notre intelligence artificielle.",
       "title6": "Statistiques en temps réel",
-      "desc6": "Suivez vos candidatures et la performance de vos offres en direct.",
+      "desc6": "Suivez vos candidatures et vos performances facilement.",
       "createAccount": "Créer un compte gratuit"
+    }
+  },
+ "settings": {
+    "title": "Paramètres",
+    "subtitle": "Gérez votre compte et vos préférences.",
+    "back": "Retour",
+    "myProfile": "Mon profil",
+    "countryAndCurrency": "Pays et devise",
+    "country": "Pays",
+    "selectCountry": "Tous les pays",
+    "currency": "Devise",
+    "selectCurrency": "Toutes les devises",
+    "accountInfo": {
+      "title": "Informations du compte",
+      "description": "Connecté en tant que {{email}}"
+    },
+    "changeEmail": {
+      "title": "Changer l'email",
+      "description": "Mettez à jour votre adresse email.",
+      "newEmailLabel": "Nouvel email",
+      "newEmailPlaceholder": "nouveau@email.com",
+      "currentPasswordLabel": "Mot de passe actuel",
+      "currentPasswordPlaceholder": "Votre mot de passe",
+      "submit": "Mettre à jour l'email"
+    },
+    "changePassword": {
+      "title": "Changer le mot de passe",
+      "description": "Utilisez au moins 8 caractères.",
+      "newPasswordLabel": "Nouveau mot de passe",
+      "newPasswordPlaceholder": "Nouveau mot de passe",
+      "confirmPasswordLabel": "Confirmer le mot de passe",
+      "confirmPasswordPlaceholder": "Confirmer le mot de passe",
+      "submit": "Enregistrer le mot de passe"
+    },
+    "logout": {
+      "title": "Se déconnecter",
+      "description": "Vous pourrez vous reconnecter à tout moment.",
+      "button": "Se déconnecter"
+    },
+    "dangerZone": {
+      "title": "Zone dangereuse",
+      "description": "Supprimez définitivement votre compte. Cette action est irréversible.",
+      "confirm": "Confirmez-vous la suppression de votre compte ?",
+      "button": "Supprimer mon compte"
+    },
+    "roleChange": {
+      "title": "Changer de rôle",
+      "descriptionCandidate": "Vous êtes <strong>candidat</strong>. Demandez à devenir recruteur.",
+      "descriptionCompany": "Vous êtes <strong>recruteur</strong>. Demandez à devenir candidat.",
+      "requestButton": "Demander un changement de rôle",
+      "modal": {
+        "title": "Demande de changement de rôle",
+        "roleLabel": "Nouveau rôle souhaité",
+        "roleCompany": "Recruteur",
+        "roleCandidate": "Candidat",
+        "reasonLabel": "Raison (optionnelle)",
+        "reasonPlaceholder": "Expliquez pourquoi vous souhaitez changer de rôle...",
+        "cancel": "Annuler",
+        "submit": "Envoyer la demande"
+      }
+    },
+    "toasts": {
+      "passwordMismatch": "Les mots de passe ne correspondent pas.",
+      "passwordLength": "Le mot de passe doit contenir au moins 8 caractères.",
+      "passwordUpdated": "Mot de passe mis à jour avec succès.",
+      "passwordError": "Erreur lors de la mise à jour du mot de passe.",
+      "fillAllFields": "Veuillez remplir tous les champs.",
+      "wrongPassword": "Mot de passe incorrect.",
+      "emailConfirmationSent": "Un email de confirmation a été envoyé. Vérifiez votre boîte.",
+      "emailError": "Erreur lors du changement d'email.",
+      "logoutError": "Erreur lors de la déconnexion.",
+      "accountDeleted": "Votre compte a été supprimé définitivement.",
+      "deleteError": "Erreur lors de la suppression du compte.",
+      "accountSuspended": "Votre compte est suspendu. Action impossible.",
+      "roleRequestSent": "Votre demande a été envoyée.",
+      "roleRequestError": "Erreur lors de l'envoi de la demande."
     }
   },
   "jobs": {
@@ -132,7 +212,13 @@
     "unsaveSuccess": "Offre retirée des favoris",
     "searchPlaceholder": "Poste, compétences ou entreprise...",
     "resultsFor": "Résultats pour \"{{query}}\"",
-    "viewResults": "Voir les {{count}} résultats"
+    "viewResults": "Voir les {{count}} résultats",
+  "title": "Offres récentes",
+  "subtitle": "Les dernières opportunités postées",
+  "viewAll": "Voir toutes les offres",
+  "noJobsTitle": "Aucune offre pour le moment",
+  "noJobsText": "Revenez bientôt pour découvrir de nouvelles opportunités.",
+  "seeJobs": "Voir les offres"
   },
   "pricing": {
     "downgradeBlocked": "Vous avez {{active}} offre(s) active(s). Le plan cible n'autorise que {{limit}} offre(s). Désactivez ou supprimez celles en trop avant de changer de plan.",
@@ -380,15 +466,7 @@
     }
   },
 
-  "contractTypes": {
-    "cdi": "CDI",
-    "cdd": "CDD",
-    "stage": "Stage",
-    "freelance": "Freelance",
-    "interim": "Intérim",
-    "alternance": "Alternance",
-    "temps_partiel": "Temps partiel"
-  },
+  
   "myApplications": {
     "title": "Mes candidatures",
     "back": "Retour",
@@ -521,13 +599,7 @@
   
   },
   
-  "experienceLevels": {
-    "junior": "Junior",
-    "intermediate": "Intermédiaire",
-    "senior": "Senior",
-    "lead": "Lead",
-    "manager": "Manager"
-  },
+  
  
   "coverLetter": {
     "badge": "IA",
@@ -2281,75 +2353,79 @@
     }
   },
   
-  "settings": {
-    "back": "Retour",
-    "myProfile": "Mon profil",
+   "settings": {
     "title": "Paramètres",
     "subtitle": "Gérez votre compte et vos préférences.",
-    "toasts": {
-      "accountSuspended": "Votre compte est suspendu. Action impossible.",
-      "passwordMismatch": "Les mots de passe ne correspondent pas.",
-      "passwordLength": "Le mot de passe doit contenir au moins 8 caractères.",
-      "passwordUpdated": "Mot de passe mis à jour.",
-      "passwordError": "Erreur lors du changement de mot de passe.",
-      "fillAllFields": "Veuillez remplir tous les champs.",
-      "emailConfirmationSent": "Un email de confirmation a été envoyé à votre nouvelle adresse.",
-      "wrongPassword": "Mot de passe actuel incorrect.",
-      "emailError": "Erreur lors du changement d'email.",
-      "logoutError": "Erreur lors de la déconnexion.",
-      "accountDeleted": "Compte supprimé définitivement.",
-      "deleteError": "Erreur lors de la suppression du compte.",
-      "roleRequestSent": "Demande de changement de rôle envoyée.",
-      "roleRequestError": "Erreur lors de l'envoi de la demande."
-    },
+    "back": "Retour",
+    "myProfile": "Mon profil",
+    "countryAndCurrency": "Pays et devise",
+    "country": "Pays",
+    "selectCountry": "Sélectionnez un pays",
+    "currency": "Devise",
     "accountInfo": {
       "title": "Informations du compte",
       "description": "Connecté en tant que {{email}}"
     },
     "changeEmail": {
       "title": "Changer l'email",
-      "description": "Modifiez votre adresse email de connexion.",
+      "description": "Mettez à jour votre adresse email.",
       "newEmailLabel": "Nouvel email",
-      "newEmailPlaceholder": "vous@exemple.com",
+      "newEmailPlaceholder": "nouveau@email.com",
       "currentPasswordLabel": "Mot de passe actuel",
-      "currentPasswordPlaceholder": "Votre mot de passe actuel",
+      "currentPasswordPlaceholder": "Votre mot de passe",
       "submit": "Mettre à jour l'email"
     },
     "changePassword": {
       "title": "Changer le mot de passe",
-      "description": "Utilisez un mot de passe fort d'au moins 8 caractères.",
+      "description": "Utilisez au moins 8 caractères.",
       "newPasswordLabel": "Nouveau mot de passe",
       "newPasswordPlaceholder": "Nouveau mot de passe",
       "confirmPasswordLabel": "Confirmer le mot de passe",
       "confirmPasswordPlaceholder": "Confirmer le mot de passe",
-      "submit": "Mettre à jour le mot de passe"
+      "submit": "Enregistrer le mot de passe"
     },
     "logout": {
-      "title": "Déconnexion",
-      "description": "Se déconnecter de cet appareil.",
+      "title": "Se déconnecter",
+      "description": "Vous pourrez vous reconnecter à tout moment.",
       "button": "Se déconnecter"
+    },
+    "dangerZone": {
+      "title": "Zone dangereuse",
+      "description": "Supprimez définitivement votre compte. Cette action est irréversible.",
+      "confirm": "Confirmez-vous la suppression de votre compte ?",
+      "button": "Supprimer mon compte"
     },
     "roleChange": {
       "title": "Changer de rôle",
-      "descriptionCandidate": "Vous êtes actuellement <strong>candidat</strong>. Vous pouvez demander à devenir <strong>recruteur</strong>.",
-      "descriptionCompany": "Vous êtes actuellement <strong>recruteur</strong>. Vous pouvez demander à redevenir <strong>candidat</strong>.",
+      "descriptionCandidate": "Vous êtes <strong>candidat</strong>. Demandez à devenir recruteur.",
+      "descriptionCompany": "Vous êtes <strong>recruteur</strong>. Demandez à devenir candidat.",
       "requestButton": "Demander un changement de rôle",
       "modal": {
         "title": "Demande de changement de rôle",
         "roleLabel": "Nouveau rôle souhaité",
-        "roleCompany": "Recruteur (entreprise)",
+        "roleCompany": "Recruteur",
         "roleCandidate": "Candidat",
-        "reasonLabel": "Raison de la demande",
-        "reasonPlaceholder": "Expliquez pourquoi vous souhaitez changer de rôle…",
+        "reasonLabel": "Raison (optionnelle)",
+        "reasonPlaceholder": "Expliquez pourquoi vous souhaitez changer de rôle...",
         "cancel": "Annuler",
         "submit": "Envoyer la demande"
       }
     },
-    "dangerZone": {
-      "title": "Zone de danger",
-      "description": "Supprimez définitivement votre compte et toutes vos données.",
-      "confirm": "Supprimer définitivement votre compte ? Cette action est irréversible.",
-      "button": "Supprimer mon compte"
+    "toasts": {
+      "passwordMismatch": "Les mots de passe ne correspondent pas.",
+      "passwordLength": "Le mot de passe doit contenir au moins 8 caractères.",
+      "passwordUpdated": "Mot de passe mis à jour avec succès.",
+      "passwordError": "Erreur lors de la mise à jour du mot de passe.",
+      "fillAllFields": "Veuillez remplir tous les champs.",
+      "wrongPassword": "Mot de passe incorrect.",
+      "emailConfirmationSent": "Un email de confirmation a été envoyé. Vérifiez votre boîte.",
+      "emailError": "Erreur lors du changement d'email.",
+      "logoutError": "Erreur lors de la déconnexion.",
+      "accountDeleted": "Votre compte a été supprimé définitivement.",
+      "deleteError": "Erreur lors de la suppression du compte.",
+      "accountSuspended": "Votre compte est suspendu. Action impossible.",
+      "roleRequestSent": "Votre demande a été envoyée.",
+      "roleRequestError": "Erreur lors de l'envoi de la demande."
     }
   },
   "jobs": {
@@ -2834,7 +2910,47 @@
       "inappropriate": "Contenu inapproprié",
       "other": "Autre"
     }
-  }
+  },
+  "common": {
+  "pro": "Pro",
+  "premium": "Premium",
+  "allCountries": "Tous les pays",
+  "allCountriesShort": "Tous",
+  "search": "Rechercher",
+  "login": "Se connecter",
+  "register": "S'inscrire",
+  "logout": "Déconnexion",
+  "dashboard": "Tableau de bord",
+  "profile": "Profil",
+  "settings": "Paramètres",
+  "save": "Enregistrer",
+  "cancel": "Annuler",
+  "confirm": "Confirmer",
+  "delete": "Supprimer",
+  "edit": "Modifier",
+  "loading": "Chargement...",
+  "error": "Erreur",
+  "success": "Succès",
+  "savedAt": "Enregistré à {{time}}"
+},
+"contractTypes": {
+  "cdi": "CDI",
+  "cdd": "CDD",
+  "stage": "Stage",
+  "alternance": "Alternance",
+  "freelance": "Freelance",
+  "interim": "Intérim",
+  "jobEtudiant": "Job étudiant",
+  "extra": "Extra",
+  "saisonnier": "Saisonnier",
+  "benevolat": "Bénévolat"
+},
+"experienceLevels": {
+  "junior": "Junior (0-2 ans)",
+  "intermediaire": "Intermédiaire (2-5 ans)",
+  "senior": "Senior (5-10 ans)",
+  "expert": "Expert (10+ ans)"
+}
 
 
 

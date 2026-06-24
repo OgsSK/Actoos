@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
@@ -27,8 +27,7 @@ import { cn, CONTRACT_TYPES } from '../lib/utils';
 
 const JobAlertsPage = () => {
   const { t } = useTranslation();
-  const { user, profile, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
@@ -56,20 +55,11 @@ const JobAlertsPage = () => {
     frequency: 'daily',
   });
 
-  // Vérification du compte utilisateur (suspension / bannissement)
   useEffect(() => {
     if (!user) return;
-    if (!profile?.is_active || profile?.is_banned) {
-      signOut();
-      navigate('/connexion?reason=suspended', { replace: true });
-    }
-  }, [user, profile, signOut, navigate]);
-
-  useEffect(() => {
-    if (!user || !profile?.is_active || profile?.is_banned) return;
     fetchAlerts();
     fetchReferenceData();
-  }, [user, profile]);
+  }, [user]);
 
   const fetchAlerts = async () => {
     if (!user) return;
@@ -198,15 +188,6 @@ const JobAlertsPage = () => {
     });
   };
 
-  // Si le compte est restreint, on ne rend rien (la redirection est en cours)
-  if (profile && (!profile.is_active || profile.is_banned)) {
-    return (
-      <div className="min-h-screen pt-20 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
   if (loading) {
     return (
       <div className="pt-20 flex justify-center">
@@ -319,7 +300,7 @@ const JobAlertsPage = () => {
                             : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                         )}
                       >
-                        {t(`contractTypes.${key}`, { defaultValue: val.label })}
+                        {t(val.key)}
                       </Badge>
                     ))}
                   </div>
@@ -421,7 +402,7 @@ const JobAlertsPage = () => {
                             <div className="flex flex-wrap gap-1">
                               {alert.contract_types.map((ct) => (
                                 <Badge key={ct} className="bg-blue-50 text-blue-700 text-xs">
-                                  {t(`contractTypes.${ct}`, { defaultValue: CONTRACT_TYPES[ct]?.label || ct })}
+                                  {t(CONTRACT_TYPES[ct]?.key || ct)}
                                 </Badge>
                               ))}
                             </div>

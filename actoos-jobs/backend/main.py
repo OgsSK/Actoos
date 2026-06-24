@@ -2825,11 +2825,6 @@ if os.path.isdir(BUILD_DIR):
     app.mount("/static", StaticFiles(directory=os.path.join(BUILD_DIR, "static")), name="static")
     app.mount("/", StaticFiles(directory=BUILD_DIR, html=True), name="root")
 
-# --- DIAGNOSTIC TEMPORAIRE ---
-print("Routes disponibles :")
-for route in app.routes:
-    print(f"  {route.path} {route.methods}")
-# --- FIN DIAGNOSTIC ---
 
 
 

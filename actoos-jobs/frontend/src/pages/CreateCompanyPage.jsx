@@ -18,7 +18,7 @@ import { apiFetch } from '../lib/api';
 
 const CreateCompanyPage = () => {
   const { t, i18n } = useTranslation();
-  const { user, profile, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const logoInputRef = useRef(null);
 
@@ -49,22 +49,11 @@ const CreateCompanyPage = () => {
   const COMPANY_SIZES = Object.keys(t('createCompany.sizes', { returnObjects: true }));
   const INDUSTRIES = t('createCompany.industries', { returnObjects: true }) || [];
 
-  // Vérification du statut du compte utilisateur (suspension / bannissement)
-  useEffect(() => {
-    if (!user) return;
-    if (!profile?.is_active || profile?.is_banned) {
-      signOut();
-      navigate('/connexion?reason=suspended', { replace: true });
-    }
-  }, [user, profile, signOut, navigate]);
-
   useEffect(() => {
     supabase.from('countries').select('code, name').order('name').then(({ data }) => {
       setCountries(data || []);
     });
   }, []);
-
-  const isAccountRestricted = !profile?.is_active || profile?.is_banned;
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -106,11 +95,6 @@ const CreateCompanyPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (isAccountRestricted) {
-      toast.error(t('createCompany.toasts.accountSuspended'));
-      return;
-    }
 
     const newErrors = {};
     if (!form.name) newErrors.name = true;
@@ -216,21 +200,6 @@ const CreateCompanyPage = () => {
           <p className="text-slate-600 mt-2">{t('createCompany.subtitle')}</p>
         </div>
 
-        {/* Bannière si compte suspendu */}
-        {isAccountRestricted && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-3 sm:p-4 mb-6 flex items-center gap-3">
-            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center shrink-0">
-              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="text-sm">
-              <p className="text-red-800 font-medium">{t('createCompany.toasts.accountSuspended')}</p>
-              <p className="text-red-600">{t('createCompany.toasts.cannotCreateCompany')}</p>
-            </div>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit}>
           <Card>
             <CardContent className="p-6 space-y-6">
@@ -238,7 +207,7 @@ const CreateCompanyPage = () => {
               <div className="text-center">
                 <div
                   className="w-24 h-24 bg-slate-100 rounded-xl mx-auto mb-3 flex items-center justify-center border-2 border-dashed border-slate-300 cursor-pointer hover:border-blue-400 transition-colors overflow-hidden"
-                  onClick={() => !isAccountRestricted && logoInputRef.current?.click()}
+                  onClick={() => logoInputRef.current?.click()}
                 >
                   {uploadingLogo ? (
                     <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
@@ -253,7 +222,7 @@ const CreateCompanyPage = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => logoInputRef.current?.click()}
-                  disabled={uploadingLogo || isAccountRestricted}
+                  disabled={uploadingLogo}
                 >
                   {uploadingLogo ? t('createCompany.uploading') : t('createCompany.logo')}
                 </Button>
@@ -263,7 +232,6 @@ const CreateCompanyPage = () => {
                   accept="image/*"
                   onChange={handleLogoUpload}
                   className="hidden"
-                  disabled={isAccountRestricted}
                 />
               </div>
 
@@ -282,7 +250,6 @@ const CreateCompanyPage = () => {
                   required
                   className={errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}
                   data-testid="company-name-input"
-                  disabled={isAccountRestricted}
                 />
               </div>
 
@@ -296,7 +263,6 @@ const CreateCompanyPage = () => {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder={t('createCompany.placeholders.description')}
                   data-testid="company-description-textarea"
-                  disabled={isAccountRestricted}
                 />
               </div>
 
@@ -309,7 +275,6 @@ const CreateCompanyPage = () => {
                     onChange={(e) => setForm({ ...form, industry: e.target.value })}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     data-testid="company-industry-select"
-                    disabled={isAccountRestricted}
                   >
                     <option value="">{t('createCompany.options.selectIndustry')}</option>
                     {INDUSTRIES.map((ind, i) => (
@@ -324,7 +289,6 @@ const CreateCompanyPage = () => {
                     onChange={(e) => setForm({ ...form, size: e.target.value })}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     data-testid="company-size-select"
-                    disabled={isAccountRestricted}
                   >
                     <option value="">{t('createCompany.options.selectSize')}</option>
                     {COMPANY_SIZES.map((size) => (
@@ -345,7 +309,6 @@ const CreateCompanyPage = () => {
                     onChange={(e) => setForm({ ...form, website: e.target.value })}
                     placeholder="https://www.monentreprise.com"
                     data-testid="company-website-input"
-                    disabled={isAccountRestricted}
                   />
                 </div>
                 <div>
@@ -358,7 +321,6 @@ const CreateCompanyPage = () => {
                     placeholder="contact@monentreprise.com"
                     type="email"
                     data-testid="company-email-input"
-                    disabled={isAccountRestricted}
                   />
                 </div>
               </div>
@@ -373,7 +335,6 @@ const CreateCompanyPage = () => {
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     placeholder="+1 (555) 000-0000"
                     data-testid="company-phone-input"
-                    disabled={isAccountRestricted}
                   />
                 </div>
                 <div>
@@ -388,7 +349,6 @@ const CreateCompanyPage = () => {
                     min="1900"
                     max={new Date().getFullYear()}
                     data-testid="company-year-input"
-                    disabled={isAccountRestricted}
                   />
                 </div>
               </div>
@@ -403,7 +363,6 @@ const CreateCompanyPage = () => {
                     value={selectedCountry}
                     onChange={(e) => setSelectedCountry(e.target.value)}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    disabled={isAccountRestricted}
                   >
                     {countries.map((c) => (
                       <option key={c.code} value={c.code}>
@@ -421,7 +380,6 @@ const CreateCompanyPage = () => {
                     onChange={(e) => setForm({ ...form, city_id: e.target.value })}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     data-testid="company-city-select"
-                    disabled={isAccountRestricted}
                   >
                     <option value="">{t('createCompany.options.selectCity')}</option>
                     {filteredCities.map(city => (
@@ -438,7 +396,6 @@ const CreateCompanyPage = () => {
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
                   placeholder={t('createCompany.placeholders.address')}
                   data-testid="company-address-input"
-                  disabled={isAccountRestricted}
                 />
               </div>
 
@@ -446,7 +403,7 @@ const CreateCompanyPage = () => {
               <Button
                 type="submit"
                 className="w-full bg-blue-600 text-white hover:bg-blue-700"
-                disabled={loading || isAccountRestricted}
+                disabled={loading}
                 data-testid="create-company-btn"
               >
                 {loading ? (

@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -24,12 +23,10 @@ import {
   CheckCircle,
   Send,
   XCircle,
-  Zap,
-  AlertTriangle
+  Zap
 } from 'lucide-react';
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
-// Mapping icônes conservé, labels traduits dans le composant
 const statusIcons = {
   draft: FileText,
   active: CheckCircle,
@@ -261,47 +258,28 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
 
 const CompanyJobsPage = () => {
   const { t } = useTranslation();
-  const { user, profile, activeCompanyId, signOut } = useAuth(); // profile et signOut ajoutés
+  const { user, activeCompanyId } = useAuth();
   const navigate = useNavigate();
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState(null);
-  const [accountRestricted, setAccountRestricted] = useState(false);
 
-  // Vérification du compte utilisateur et de l'entreprise
   useEffect(() => {
-    if (!user) return;
-    if (!profile?.is_active || profile?.is_banned) {
-      signOut();
-      navigate('/connexion?reason=suspended', { replace: true });
-      return;
-    }
-    if (activeCompanyId) {
+    if (user && activeCompanyId) {
+      fetchJobs();
+      // Récupérer l'entreprise juste pour le plan (boost gratuit)
       supabase
         .from('companies')
-        .select('subscription_plan, is_active')
+        .select('subscription_plan')
         .eq('id', activeCompanyId)
         .single()
-        .then(({ data }) => {
-          setCompany(data);
-          if (data && !data.is_active) {
-            setAccountRestricted(true);
-            toast.error(t('companyJobs.companySuspended'));
-            navigate('/dashboard/entreprise');
-          }
-        });
-    }
-  }, [user, profile, activeCompanyId, signOut, navigate, t]);
-
-  useEffect(() => {
-    if (user && activeCompanyId && profile?.is_active && !profile?.is_banned && company?.is_active !== false) {
-      fetchJobs();
+        .then(({ data }) => setCompany(data));
     } else if (!activeCompanyId) {
       setJobs([]);
       setLoading(false);
     }
-  }, [user, activeCompanyId, profile, company]);
+  }, [user, activeCompanyId]);
 
   const fetchJobs = async () => {
     if (!activeCompanyId) {
@@ -423,21 +401,6 @@ const CompanyJobsPage = () => {
     return (
       <div className="min-h-screen pt-20 flex justify-center items-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  if (accountRestricted) {
-    return (
-      <div className="min-h-screen bg-slate-50 pt-20">
-        <div className="max-w-4xl mx-auto px-4 py-8 text-center">
-          <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">{t('companyJobs.companySuspended')}</h1>
-          <p className="text-slate-600">{t('companyJobs.suspendedDescription')}</p>
-          <Link to="/dashboard/entreprise">
-            <Button variant="outline" className="mt-6">{t('companyJobs.backToDashboard')}</Button>
-          </Link>
-        </div>
       </div>
     );
   }

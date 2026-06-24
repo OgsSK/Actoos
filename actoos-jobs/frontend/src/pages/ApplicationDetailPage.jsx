@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
-import { useAuth } from '../contexts/AuthContext'; // ← ajouté
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -126,8 +126,7 @@ const TABS = [
 const ApplicationDetailPage = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
-  const { user, profile, signOut } = useAuth(); // ← extraction de profile et signOut
-  const navigate = useNavigate();                 // ← ajouté pour la redirection
+  const { user } = useAuth();
   const [application, setApplication] = useState(null);
   const [candidateProfile, setCandidateProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -144,15 +143,6 @@ const ApplicationDetailPage = () => {
   const [generatingAnswers, setGeneratingAnswers] = useState(false);
   const [generatingTips, setGeneratingTips] = useState(false);
 
-  // Vérification du compte utilisateur (suspension / bannissement)
-  useEffect(() => {
-    if (!user) return;
-    if (!profile?.is_active || profile?.is_banned) {
-      signOut();
-      navigate('/connexion?reason=suspended', { replace: true });
-    }
-  }, [user, profile, signOut, navigate]);
-
   const getLocalNotes = () => {
     try { return JSON.parse(localStorage.getItem(`app_notes_${id}`) || '{}'); }
     catch { return {}; }
@@ -164,7 +154,7 @@ const ApplicationDetailPage = () => {
   };
 
   useEffect(() => {
-    if (!user || !profile?.is_active || profile?.is_banned) return; // ne charge pas si restreint
+    if (!user) return;
 
     const fetchData = async () => {
       const { data, error } = await supabase
@@ -206,7 +196,7 @@ const ApplicationDetailPage = () => {
       setLoading(false);
     };
     fetchData();
-  }, [id, user, profile]);
+  }, [id, user]);
 
   const saveNote = useCallback(async (type, content) => {
     if (!id) return false;

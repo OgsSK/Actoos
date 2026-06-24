@@ -192,7 +192,7 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
 // ---------- Dashboard principal ----------
 const CompanyDashboard = () => {
   const { t } = useTranslation();
-  const { user, activeCompanyId, setActiveCompanyId, signOut } = useAuth(); // signOut ajouté
+  const { user, activeCompanyId, setActiveCompanyId } = useAuth();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [company, setCompany] = useState(null);
@@ -201,32 +201,8 @@ const CompanyDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [membersCount] = useState(0);
   const [stats, setStats] = useState({ totalJobs: 0, activeJobs: 0, totalApplications: 0, newApplications: 0 });
   const hasLoaded = useRef(false);
-
-  // Vérification du statut du compte (suspension / bannissement)
-  useEffect(() => {
-    if (!user) return;
-    const checkStatus = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('is_active, is_banned')
-          .eq('id', user.id)
-          .single();
-
-        if (error) return;
-        if (!data.is_active || data.is_banned) {
-          await signOut();
-          navigate('/connexion?reason=suspended', { replace: true });
-        }
-      } catch (err) {
-        console.error('Erreur vérification statut recruteur:', err);
-      }
-    };
-    checkStatus();
-  }, [user, signOut, navigate]);
 
   const fetchUserCompanies = async () => {
     if (!user) return [];
@@ -250,7 +226,6 @@ const CompanyDashboard = () => {
       if (!comp) return;
       setCompany(comp);
       
-      // ✅ Levée automatique de suspension pour l'entreprise
       try {
         const check = await apiFetch(`/api/company/check-suspension/${comp.id}`, {
           method: 'POST',

@@ -1,91 +1,100 @@
 {
-  "common": {
-    "allCountries": "Todos los países",
-    "allCountriesShort": "Todos",
-    "premium": "Premium",
-    "pro": "Pro",
-    "search": "Buscar",
-    "login": "Iniciar sesión",
-    "register": "Registrarse",
-    "logout": "Cerrar sesión",
-    "dashboard": "Panel",
-    "profile": "Perfil",
-    "settings": "Configuración",
-    "save": "Guardar",
-    "cancel": "Cancelar",
-    "confirm": "Confirmar",
-    "delete": "Eliminar",
-    "edit": "Editar",
-    "loading": "Cargando...",
-    "error": "Error",
-    "success": "Éxito"
-  },
-  "home": {
-    "hero": {
-      "badge": "Donde el talento encuentra su futuro",
-      "titleLine1": "Encuentra el empleo que",
-      "titleLine2": "cambia tu vida",
-      "subtitle": "Miles de oportunidades te esperan. Postula en un clic y construye tu carrera con las mejores empresas.",
-      "searchPlaceholder": "Puesto, habilidades o empresa...",
-      "allCities": "Todas las ciudades",
-      "searchButton": "Buscar",
-      "activeJobs": "Ofertas activas",
-      "companies": "Empresas",
-      "candidates": "Candidatos",
-      "popularSearches": "Búsquedas populares:",
-      "searching": "Buscando..."
+  
+   "home": {
+      "hero": {
+        "badge": "La plataforma de empleo Nº1",
+        "titleLine1": "Encuentra el trabajo de tus sueños",
+        "titleLine2": "o el talento que necesitas",
+        "subtitle": "Miles de ofertas y candidatos te esperan.",
+        "searchPlaceholder": "Puesto, palabra clave, habilidad...",
+        "allCities": "Todas las ciudades",
+        "searchButton": "Buscar",
+        "searching": "Buscando...",
+        "activeJobs": "Ofertas activas",
+        "companies": "Empresas",
+        "candidates": "Candidatos"
+      },
+      "categories": {
+        "title": "Explorar categorías",
+        "subtitle": "Encuentra ofertas por sector"
+      },
+      "jobs": {
+        "title": "Ofertas recientes",
+        "subtitle": "Las últimas oportunidades publicadas",
+        "viewAll": "Ver todas las ofertas",
+        "noJobsTitle": "No hay ofertas por el momento",
+        "noJobsText": "Vuelve pronto para descubrir nuevas oportunidades.",
+        "seeJobs": "Ver ofertas",
+        "postJob": "Publicar una oferta",
+        "postFirstJob": "Publicar mi primera oferta",
+        "urgent": "Urgente",
+        "boosted": "Destacada",
+        "yourJob": "Tu oferta",
+        "unknownCompany": "Empresa desconocida",
+        "unknownLocation": "Ubicación no especificada",
+        "salary": "Salario",
+        "unspecified": "No especificado",
+        "saveLogin": "Inicia sesión para guardar esta oferta",
+        "companyCannotSave": "Los reclutadores no pueden guardar ofertas.",
+        "unsaveSuccess": "Oferta eliminada de favoritos",
+        "saveSuccess": "Oferta guardada",
+        "remoteFull": "100% teletrabajo",
+        "remoteHybrid": "Híbrido",
+        "remoteOccasional": "Ocasional",
+        "remote": "Teletrabajo"
+      },
+      "companies": {
+        "title": "Empresas que contratan",
+        "subtitle": "Descubre las empresas y sus ofertas"
+      },
+      "how": {
+        "title": "¿Cómo funciona?",
+        "subtitle": "Cuatro pasos sencillos para encontrar empleo o contratar.",
+        "step1Title": "Crea tu cuenta",
+        "step1Desc": "Regístrate en segundos, como candidato o reclutador.",
+        "step2Title": "Busca o publica",
+        "step2Desc": "Explora las ofertas o publica la tuya en pocos clics.",
+        "step3Title": "Postula / Selecciona",
+        "step3Desc": "Postula a las ofertas que te correspondan o recibe candidaturas.",
+        "step4Title": "Consigue el empleo",
+        "step4Desc": "Supera la entrevista y comienza tu nueva aventura."
+      },
+      "cta": {
+        "badge": "Para reclutadores",
+        "title": "Recluta a los mejores talentos",
+        "subtitle": "Publica tus ofertas, recibe candidaturas cualificadas y encuentra la perla rara.",
+        "feature1": "Publica ofertas gratis",
+        "feature2": "Recibe candidaturas específicas",
+        "feature3": "Gestiona tus contrataciones fácilmente",
+        "feature4": "Benefíciate de herramientas de matching inteligentes",
+        "publishJob": "Publicar oferta",
+        "createAccount": "Crear cuenta de reclutador",
+        "pricing": "Ver precios"
+      },
+      "why": {
+        "mainTitle": "¿Por qué elegir Actoos Jobs?",
+        "mainSubtitle": "La plataforma pensada para el empleo del mañana.",
+        "title1": "Apertura internacional",
+        "desc1": "Ofertas y candidatos de todo el mundo, con presencia local.",
+        "title2": "Empresas verificadas",
+        "desc2": "Todas nuestras empresas están verificadas para mayor confianza.",
+        "title3": "Seguridad y confidencialidad",
+        "desc3": "Tus datos están protegidos con los mejores estándares.",
+        "title4": "Rapidez y simplicidad",
+        "desc4": "Una interfaz fluida para postular o reclutar en un abrir y cerrar de ojos.",
+        "title5": "Experiencia personalizada",
+        "desc5": "Recomendaciones a medida gracias a nuestra inteligencia artificial.",
+        "title6": "Estadísticas en tiempo real",
+        "desc6": "Sigue tus candidaturas y tu rendimiento fácilmente.",
+        "createAccount": "Crear cuenta gratuita"
+      }
     },
-    "categories": {
-      "title": "Explora por categoría",
-      "subtitle": "Encuentra oportunidades en tu área de especialización"
+    "settings": {
+      "countryAndCurrency": "País y moneda",
+      "country": "País",
+      "selectCountry": "Selecciona un país",
+      "currency": "Moneda"
     },
-    
-    "companies": {
-      "title": "Empresas que contratan",
-      "subtitle": "Descubre las empresas que confían en Actoos Jobs"
-    },
-    "how": {
-      "title": "¿Cómo funciona?",
-      "subtitle": "Encuentra tu empleo ideal en 4 simples pasos",
-      "step1Title": "Crea tu perfil",
-      "step1Desc": "Regístrate gratis y completa tu perfil en minutos.",
-      "step2Title": "Busca ofertas",
-      "step2Desc": "Explora cientos de ofertas y utiliza nuestros filtros avanzados.",
-      "step3Title": "Postula en un clic",
-      "step3Desc": "Envía tu candidatura directamente a los reclutadores.",
-      "step4Title": "Consigue el empleo",
-      "step4Desc": "Haz seguimiento de tus postulaciones y prepárate para las entrevistas."
-    },
-    "cta": {
-      "badge": "Para empresas",
-      "title": "Recluta a los mejores talentos",
-      "subtitle": "Publica tus ofertas, recibe candidaturas cualificadas y encuentra a tu próximo colaborador en pocos días.",
-      "feature1": "Publicación ilimitada de ofertas",
-      "feature2": "Acceso a una base de candidatos cualificados",
-      "feature3": "Herramientas de gestión de candidaturas",
-      "feature4": "Visibilidad premium en la plataforma",
-      "createAccount": "Crear cuenta de empresa",
-      "publishJob": "Publicar una oferta",
-      "pricing": "Ver tarifas"
-    },
-    "why": {
-      "mainTitle": "¿Por qué elegir Actoos Jobs?",
-      "mainSubtitle": "La plataforma de reclutamiento de nueva generación, creada por ingenieros apasionados.",
-      "title1": "100 % gratis para candidatos",
-      "desc1": "Crea tu perfil, postula y sé contratado sin pagar nada.",
-      "title2": "Visibilidad inmediata para empresas",
-      "desc2": "Publica tus ofertas y llega a miles de candidatos cualificados.",
-      "title3": "Datos seguros y locales",
-      "desc3": "Tu información está alojada de forma segura y permanece confidencial.",
-      "title4": "Motor de búsqueda inteligente",
-      "desc4": "Encuentra la oferta ideal gracias a una búsqueda rápida y filtros precisos.",
-      "title5": "Soporte local reactivo",
-      "desc5": "Un equipo reactivo, a tu escucha para acompañarte.",
-      "title6": "Estadísticas en tiempo real",
-      "desc6": "Haz seguimiento de tus postulaciones y del rendimiento de tus ofertas en directo.",
-      "createAccount": "Crear una cuenta gratuita"
-    }
-  },
   "jobs": {
     "remote": "Teletrabajo",
       "remoteFull": "100% teletrabajo",
@@ -380,15 +389,7 @@
         "errorGeneric": "Ocurrió un error."
       },
   
-  "contractTypes": {
-    "cdi": "Contrato indefinido (CDI)",
-    "cdd": "Contrato temporal (CDD)",
-    "stage": "Prácticas",
-    "freelance": "Freelance",
-    "interim": "Interino",
-    "alternance": "Formación dual",
-    "temps_partiel": "Tiempo parcial"
-  },
+  
   "myApplications": {
     "title": "Mis candidaturas",
     "back": "Volver",
@@ -634,14 +635,7 @@
       }
     ]
   },
-  
-  "experienceLevels": {
-    "junior": "Junior",
-    "intermediate": "Intermedio",
-    "senior": "Senior",
-    "lead": "Lead",
-    "manager": "Manager"
-  },
+ 
 
   "coverLetter": {
     "badge": "IA",
@@ -2465,75 +2459,80 @@
         "errorToast": "Error en el análisis."
       }
     },
-    "settings": {
-      "back": "Volver",
-      "myProfile": "Mi perfil",
+   "settings": {
       "title": "Configuración",
       "subtitle": "Gestiona tu cuenta y preferencias.",
-      "toasts": {
-        "accountSuspended": "Tu cuenta está suspendida. Acción imposible.",
-        "passwordMismatch": "Las contraseñas no coinciden.",
-        "passwordLength": "La contraseña debe tener al menos 8 caracteres.",
-        "passwordUpdated": "Contraseña actualizada.",
-        "passwordError": "Error al cambiar la contraseña.",
-        "fillAllFields": "Por favor, completa todos los campos.",
-        "emailConfirmationSent": "Se ha enviado un correo de confirmación a tu nueva dirección.",
-        "wrongPassword": "Contraseña actual incorrecta.",
-        "emailError": "Error al cambiar el correo electrónico.",
-        "logoutError": "Error al cerrar sesión.",
-        "accountDeleted": "Cuenta eliminada permanentemente.",
-        "deleteError": "Error al eliminar la cuenta.",
-        "roleRequestSent": "Solicitud de cambio de rol enviada.",
-        "roleRequestError": "Error al enviar la solicitud."
-      },
+      "back": "Volver",
+      "myProfile": "Mi perfil",
+      "countryAndCurrency": "País y moneda",
+      "country": "País",
+      "selectCountry": "Todos los países",
+      "currency": "Moneda",
+      "selectCurrency": "Todas las monedas",
       "accountInfo": {
         "title": "Información de la cuenta",
         "description": "Conectado como {{email}}"
       },
       "changeEmail": {
-        "title": "Cambiar correo electrónico",
-        "description": "Cambia tu dirección de correo electrónico de inicio de sesión.",
-        "newEmailLabel": "Nuevo correo electrónico",
-        "newEmailPlaceholder": "email@ejemplo.com",
+        "title": "Cambiar email",
+        "description": "Actualiza tu dirección de email.",
+        "newEmailLabel": "Nuevo email",
+        "newEmailPlaceholder": "nuevo@email.com",
         "currentPasswordLabel": "Contraseña actual",
-        "currentPasswordPlaceholder": "Tu contraseña actual",
-        "submit": "Actualizar correo electrónico"
+        "currentPasswordPlaceholder": "Tu contraseña",
+        "submit": "Actualizar email"
       },
       "changePassword": {
         "title": "Cambiar contraseña",
-        "description": "Utiliza una contraseña segura de al menos 8 caracteres.",
+        "description": "Usa al menos 8 caracteres.",
         "newPasswordLabel": "Nueva contraseña",
         "newPasswordPlaceholder": "Nueva contraseña",
         "confirmPasswordLabel": "Confirmar contraseña",
         "confirmPasswordPlaceholder": "Confirmar contraseña",
-        "submit": "Actualizar contraseña"
+        "submit": "Guardar contraseña"
       },
       "logout": {
         "title": "Cerrar sesión",
-        "description": "Cerrar sesión en este dispositivo.",
+        "description": "Podrás volver a iniciar sesión en cualquier momento.",
         "button": "Cerrar sesión"
+      },
+      "dangerZone": {
+        "title": "Zona peligrosa",
+        "description": "Elimina definitivamente tu cuenta. Esta acción es irreversible.",
+        "confirm": "¿Confirmas la eliminación de tu cuenta?",
+        "button": "Eliminar mi cuenta"
       },
       "roleChange": {
         "title": "Cambiar rol",
-        "descriptionCandidate": "Actualmente eres <strong>candidato</strong>. Puedes solicitar convertirte en <strong>reclutador</strong>.",
-        "descriptionCompany": "Actualmente eres <strong>reclutador</strong>. Puedes solicitar volver a ser <strong>candidato</strong>.",
+        "descriptionCandidate": "Eres <strong>candidato</strong>. Solicita convertirte en reclutador.",
+        "descriptionCompany": "Eres <strong>reclutador</strong>. Solicita convertirte en candidato.",
         "requestButton": "Solicitar cambio de rol",
         "modal": {
           "title": "Solicitud de cambio de rol",
           "roleLabel": "Nuevo rol deseado",
-          "roleCompany": "Reclutador (empresa)",
+          "roleCompany": "Reclutador",
           "roleCandidate": "Candidato",
-          "reasonLabel": "Motivo de la solicitud",
-          "reasonPlaceholder": "Explica por qué deseas cambiar de rol…",
+          "reasonLabel": "Motivo (opcional)",
+          "reasonPlaceholder": "Explica por qué quieres cambiar de rol…",
           "cancel": "Cancelar",
           "submit": "Enviar solicitud"
         }
       },
-      "dangerZone": {
-        "title": "Zona de peligro",
-        "description": "Elimina permanentemente tu cuenta y todos tus datos.",
-        "confirm": "¿Eliminar permanentemente tu cuenta? Esta acción es irreversible.",
-        "button": "Eliminar mi cuenta"
+      "toasts": {
+        "passwordMismatch": "Las contraseñas no coinciden.",
+        "passwordLength": "La contraseña debe tener al menos 8 caracteres.",
+        "passwordUpdated": "Contraseña actualizada correctamente.",
+        "passwordError": "Error al actualizar la contraseña.",
+        "fillAllFields": "Completa todos los campos.",
+        "wrongPassword": "Contraseña incorrecta.",
+        "emailConfirmationSent": "Se ha enviado un correo de confirmación. Revisa tu bandeja.",
+        "emailError": "Error al cambiar el email.",
+        "logoutError": "Error al cerrar sesión.",
+        "accountDeleted": "Tu cuenta ha sido eliminada definitivamente.",
+        "deleteError": "Error al eliminar la cuenta.",
+        "accountSuspended": "Tu cuenta está suspendida. Acción imposible.",
+        "roleRequestSent": "Tu solicitud ha sido enviada.",
+        "roleRequestError": "Error al enviar la solicitud."
       }
     },
     "jobs": {
@@ -3018,6 +3017,46 @@
         "inappropriate": "Contenido inapropiado",
         "other": "Otro"
       }
+    },
+     "common": {
+      "pro": "Pro",
+      "premium": "Premium",
+      "allCountries": "Todos los países",
+      "allCountriesShort": "Todos",
+      "search": "Buscar",
+      "login": "Iniciar sesión",
+      "register": "Registrarse",
+      "logout": "Cerrar sesión",
+      "dashboard": "Panel",
+      "profile": "Perfil",
+      "settings": "Configuración",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar",
+      "delete": "Eliminar",
+      "edit": "Editar",
+      "loading": "Cargando...",
+      "error": "Error",
+      "success": "Éxito",
+      "savedAt": "Guardado a las {{time}}"
+    },
+    "contractTypes": {
+      "cdi": "Indefinido",
+      "cdd": "Temporal",
+      "stage": "Prácticas",
+      "alternance": "Formación dual",
+      "freelance": "Freelance",
+      "interim": "Temporal",
+      "jobEtudiant": "Trabajo de estudiante",
+      "extra": "Extra",
+      "saisonnier": "De temporada",
+      "benevolat": "Voluntariado"
+    },
+    "experienceLevels": {
+      "junior": "Junior (0-2 años)",
+      "intermediaire": "Intermedio (2-5 años)",
+      "senior": "Senior (5-10 años)",
+      "expert": "Experto (10+ años)"
     }
 
 

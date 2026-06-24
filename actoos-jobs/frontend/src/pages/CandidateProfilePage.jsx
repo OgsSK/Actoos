@@ -15,7 +15,7 @@ import {
   User, Briefcase, FileText, GraduationCap, Award,
   MapPin, Globe, Plus, X, Save, Loader2,
   Upload, Trash2, ChevronLeft, Check, Calendar, Building2, Link,
-  Camera, File, ExternalLink, Sparkles, Eye, Flag,AlertTriangle
+  Camera, File, ExternalLink, Sparkles, Eye, Flag
 } from 'lucide-react';
 import { cn, EXPERIENCE_LEVELS } from '../lib/utils';
 
@@ -412,7 +412,7 @@ const CvAnalysisModal = ({ isOpen, onClose, cvText, onTextChange, onAnalyze, ana
 // ---------- Main Component ----------
 const CandidateProfilePage = () => {
   const { t, i18n } = useTranslation();
-  const { user, profile, updateProfile, refreshProfile, signOut } = useAuth(); // signOut ajouté
+  const { user, profile, updateProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const photoInputRef = useRef(null);
@@ -461,15 +461,6 @@ const CandidateProfilePage = () => {
   const [editingExp, setEditingExp] = useState(null);
   const [showEduModal, setShowEduModal] = useState(false);
   const [editingEdu, setEditingEdu] = useState(null);
-
-  // Vérification du compte utilisateur
-  useEffect(() => {
-    if (!user) return;
-    if (!profile?.is_active || profile?.is_banned) {
-      signOut();
-      navigate('/connexion?reason=suspended', { replace: true });
-    }
-  }, [user, profile, signOut, navigate]);
 
   useEffect(() => {
     const fetchCities = async () => {
@@ -544,14 +535,8 @@ const CandidateProfilePage = () => {
     setDocuments(data || []);
   };
 
-  const isAccountRestricted = !profile?.is_active || profile?.is_banned;
-
   // ---- Photo de profil ----
   const handlePhotoUpload = async (e) => {
-    if (isAccountRestricted) {
-      toast.error(t('candidateProfilePage.toasts.accountSuspended'));
-      return;
-    }
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingPhoto(true);
@@ -597,10 +582,6 @@ const CandidateProfilePage = () => {
 
   // ---- CV principal ----
   const handleCVUpload = async (e) => {
-    if (isAccountRestricted) {
-      toast.error(t('candidateProfilePage.toasts.accountSuspended'));
-      return;
-    }
     const file = e.target.files?.[0];
     if (!file) return;
     const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -649,10 +630,6 @@ const CandidateProfilePage = () => {
 
   // ---- Documents supplémentaires ----
   const handleDocumentUpload = async (file, fileType = 'other') => {
-    if (isAccountRestricted) {
-      toast.error(t('candidateProfilePage.toasts.accountSuspended'));
-      return;
-    }
     if (!file) return;
     setUploadingDoc(true);
     try {
@@ -763,10 +740,6 @@ const CandidateProfilePage = () => {
 
   // ---- Sauvegarde ----
   const handleSave = async () => {
-    if (isAccountRestricted) {
-      toast.error(t('candidateProfilePage.toasts.accountSuspended'));
-      return;
-    }
     const newErrors = {};
     if (!personalInfo.first_name?.trim()) newErrors.first_name = true;
     if (!personalInfo.last_name?.trim()) newErrors.last_name = true;
@@ -829,7 +802,7 @@ const CandidateProfilePage = () => {
           </div>
           <Button
             onClick={handleSave}
-            disabled={saving || isAccountRestricted}
+            disabled={saving}
             className="gap-2 bg-blue-600 text-white hover:bg-blue-700"
             type="button"
           >
@@ -837,13 +810,6 @@ const CandidateProfilePage = () => {
             {t('candidateProfilePage.save')}
           </Button>
         </div>
-
-        {isAccountRestricted && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-            <p className="text-sm text-red-800">{t('candidateProfilePage.toasts.accountSuspended')}</p>
-          </div>
-        )}
 
         <div className="space-y-6">
           {/* Photo */}
@@ -859,9 +825,8 @@ const CandidateProfilePage = () => {
                 )}
                 <button
                   type="button"
-                  onClick={() => !isAccountRestricted && photoInputRef.current?.click()}
-                  disabled={isAccountRestricted}
-                  className={`absolute bottom-0 right-0 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
+                  onClick={() => photoInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow hover:bg-blue-700"
                 >
                   <Camera className="w-4 h-4" />
                 </button>
@@ -870,17 +835,17 @@ const CandidateProfilePage = () => {
                 <h3 className="font-semibold text-slate-900">{t('candidateProfilePage.photo.title')}</h3>
                 <p className="text-sm text-slate-500">{t('candidateProfilePage.photo.hint')}</p>
                 <div className="flex gap-2 mt-2">
-                  <Button variant="outline" size="sm" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto || isAccountRestricted} type="button">
+                  <Button variant="outline" size="sm" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto} type="button">
                     <Upload className="w-4 h-4 mr-2" /> {t('candidateProfilePage.photo.change')}
                   </Button>
                   {personalInfo.avatar_url && (
-                    <Button variant="outline" size="sm" onClick={handleDeletePhoto} disabled={isAccountRestricted} className="text-red-600 hover:bg-red-50" type="button">
+                    <Button variant="outline" size="sm" onClick={handleDeletePhoto} className="text-red-600 hover:bg-red-50" type="button">
                       <Trash2 className="w-4 h-4 mr-2" /> {t('candidateProfilePage.photo.delete')}
                     </Button>
                   )}
                 </div>
               </div>
-              <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={isAccountRestricted} />
+              <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
             </CardContent>
           </Card>
 
@@ -898,7 +863,6 @@ const CandidateProfilePage = () => {
                       if (errors.first_name) setErrors(prev => ({ ...prev, first_name: false }));
                     }}
                     className={errors.first_name ? 'border-red-500 focus-visible:ring-red-500' : ''}
-                    disabled={isAccountRestricted}
                   />
                 </div>
                 <div>
@@ -910,7 +874,6 @@ const CandidateProfilePage = () => {
                       if (errors.last_name) setErrors(prev => ({ ...prev, last_name: false }));
                     }}
                     className={errors.last_name ? 'border-red-500 focus-visible:ring-red-500' : ''}
-                    disabled={isAccountRestricted}
                   />
                 </div>
                 <div>
@@ -919,7 +882,6 @@ const CandidateProfilePage = () => {
                     value={personalInfo.phone}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
                     placeholder={t('candidateProfilePage.personalInfo.phonePlaceholder')}
-                    disabled={isAccountRestricted}
                   />
                 </div>
                 <div>
@@ -928,7 +890,6 @@ const CandidateProfilePage = () => {
                     value={personalInfo.city_id}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, city_id: e.target.value })}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    disabled={isAccountRestricted}
                   >
                     <option value="">{t('candidateProfilePage.personalInfo.selectCity')}</option>
                     {cities.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}
@@ -952,7 +913,6 @@ const CandidateProfilePage = () => {
                       if (errors.title) setErrors(prev => ({ ...prev, title: false }));
                     }}
                     className={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
-                    disabled={isAccountRestricted}
                   />
                   <div className="mt-2">
                     <AIAssistant
@@ -970,7 +930,6 @@ const CandidateProfilePage = () => {
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     value={candidateInfo.bio}
                     onChange={(e) => setCandidateInfo({ ...candidateInfo, bio: e.target.value })}
-                    disabled={isAccountRestricted}
                   />
                   <div className="mt-2">
                     <AIAssistant
@@ -989,7 +948,6 @@ const CandidateProfilePage = () => {
                       value={candidateInfo.experience_level}
                       onChange={(e) => setCandidateInfo({ ...candidateInfo, experience_level: e.target.value })}
                       className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                      disabled={isAccountRestricted}
                     >
                       <option value="">{t('candidateProfilePage.professionalProfile.selectLevel')}</option>
                       {Object.entries(EXPERIENCE_LEVELS).map(([key, val]) => (
@@ -1005,7 +963,6 @@ const CandidateProfilePage = () => {
                       max="50"
                       value={candidateInfo.years_of_experience}
                       onChange={(e) => setCandidateInfo({ ...candidateInfo, years_of_experience: parseInt(e.target.value) || 0 })}
-                      disabled={isAccountRestricted}
                     />
                   </div>
                 </div>
@@ -1017,7 +974,6 @@ const CandidateProfilePage = () => {
                       checked={candidateInfo.is_available}
                       onChange={(e) => setCandidateInfo({ ...candidateInfo, is_available: e.target.checked })}
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      disabled={isAccountRestricted}
                     />
                     <span className="text-sm text-slate-600">{t('candidateProfilePage.professionalProfile.available')}</span>
                   </label>
@@ -1027,7 +983,6 @@ const CandidateProfilePage = () => {
                       checked={candidateInfo.is_open_to_remote}
                       onChange={(e) => setCandidateInfo({ ...candidateInfo, is_open_to_remote: e.target.checked })}
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      disabled={isAccountRestricted}
                     />
                     <span className="text-sm text-slate-600">{t('candidateProfilePage.professionalProfile.openToRemote')}</span>
                   </label>
@@ -1053,10 +1008,10 @@ const CandidateProfilePage = () => {
                           <Eye className="w-4 h-4 mr-2" /> {t('candidateProfilePage.cv.view')}
                         </Button>
                       </a>
-                      <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadingCV || isAccountRestricted} type="button">
+                      <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadingCV} type="button">
                         <Upload className="w-4 h-4 mr-2" />{t('candidateProfilePage.cv.change')}
                       </Button>
-                      <Button variant="outline" onClick={handleDeleteCV} disabled={uploadingCV || isAccountRestricted} className="text-red-600 hover:bg-red-50" type="button">
+                      <Button variant="outline" onClick={handleDeleteCV} disabled={uploadingCV} className="text-red-600 hover:bg-red-50" type="button">
                         <Trash2 className="w-4 h-4 mr-2" />{t('candidateProfilePage.cv.delete')}
                       </Button>
                     </div>
@@ -1068,15 +1023,15 @@ const CandidateProfilePage = () => {
                     </div>
                     <p className="font-medium text-slate-900">{t('candidateProfilePage.cv.uploadTitle')}</p>
                     <p className="text-sm text-slate-500">{t('candidateProfilePage.cv.uploadHint')}</p>
-                    <Button onClick={() => fileInputRef.current?.click()} disabled={uploadingCV || isAccountRestricted} type="button">
+                    <Button onClick={() => fileInputRef.current?.click()} disabled={uploadingCV} type="button">
                       <Upload className="w-4 h-4 mr-2" />{t('candidateProfilePage.cv.chooseFile')}
                     </Button>
                   </div>
                 )}
-                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleCVUpload} className="hidden" disabled={isAccountRestricted} />
+                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleCVUpload} className="hidden" />
               </div>
               <div className="mt-4 text-center">
-                <Button variant="outline" onClick={() => setShowAnalysis(true)} disabled={isAccountRestricted} type="button">
+                <Button variant="outline" onClick={() => setShowAnalysis(true)} type="button">
                   <Sparkles className="w-4 h-4 mr-2" /> {t('candidateProfilePage.cv.analyzeButton')}
                 </Button>
               </div>
@@ -1093,7 +1048,6 @@ const CandidateProfilePage = () => {
                     id="doc-type"
                     className="h-10 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white"
                     defaultValue="other"
-                    disabled={isAccountRestricted}
                   >
                     <option value="diploma">{t('candidateProfilePage.documents.typeDiploma')}</option>
                     <option value="certificate">{t('candidateProfilePage.documents.typeCertificate')}</option>
@@ -1103,7 +1057,6 @@ const CandidateProfilePage = () => {
                     <input
                       type="file"
                       className="hidden"
-                      disabled={isAccountRestricted}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
@@ -1117,11 +1070,9 @@ const CandidateProfilePage = () => {
                       className="w-full"
                       onClick={(e) => {
                         e.preventDefault();
-                        if (!isAccountRestricted) {
-                          e.currentTarget.parentElement.querySelector('input[type="file"]').click();
-                        }
+                        e.currentTarget.parentElement.querySelector('input[type="file"]').click();
                       }}
-                      disabled={uploadingDoc || isAccountRestricted}
+                      disabled={uploadingDoc}
                       type="button"
                     >
                       <Upload className="w-4 h-4 mr-2" /> {t('candidateProfilePage.documents.addButton')}
@@ -1146,7 +1097,7 @@ const CandidateProfilePage = () => {
                               <Eye className="w-4 h-4" />
                             </Button>
                           </a>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteDocument(doc)} disabled={isAccountRestricted} type="button">
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteDocument(doc)} type="button">
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </div>
@@ -1170,9 +1121,8 @@ const CandidateProfilePage = () => {
                   onChange={(e) => setNewSkill(e.target.value)}
                   placeholder={t('candidateProfilePage.skills.placeholder')}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
-                  disabled={isAccountRestricted}
                 />
-                <Button onClick={handleAddSkill} disabled={!newSkill.trim() || isAccountRestricted} type="button">
+                <Button onClick={handleAddSkill} disabled={!newSkill.trim()} type="button">
                   <Plus className="w-4 h-4 mr-1" />{t('candidateProfilePage.skills.add')}
                 </Button>
               </div>
@@ -1221,7 +1171,6 @@ const CandidateProfilePage = () => {
                       setEditingExp(null);
                       setShowExpModal(true);
                     }}
-                    disabled={isAccountRestricted}
                     type="button"
                   >
                     <Plus className="w-4 h-4 mr-1" />{t('candidateProfilePage.experience.add')}
@@ -1267,7 +1216,6 @@ const CandidateProfilePage = () => {
                       setEditingEdu(null);
                       setShowEduModal(true);
                     }}
-                    disabled={isAccountRestricted}
                     type="button"
                   >
                     <Plus className="w-4 h-4 mr-1" />{t('candidateProfilePage.education.add')}
@@ -1306,7 +1254,7 @@ const CandidateProfilePage = () => {
                 title={t('candidateProfilePage.links.sectionTitle')}
                 description={t('candidateProfilePage.links.sectionDesc')}
               />
-              <EditableLinks links={links} onChange={setLinks} disabled={isAccountRestricted} />
+              <EditableLinks links={links} onChange={setLinks} />
             </CardContent>
           </Card>
 
@@ -1321,7 +1269,6 @@ const CandidateProfilePage = () => {
                     type="number"
                     value={candidateInfo.desired_salary_min}
                     onChange={(e) => setCandidateInfo({ ...candidateInfo, desired_salary_min: e.target.value })}
-                    disabled={isAccountRestricted}
                   />
                 </div>
                 <div>
@@ -1330,7 +1277,6 @@ const CandidateProfilePage = () => {
                     type="number"
                     value={candidateInfo.desired_salary_max}
                     onChange={(e) => setCandidateInfo({ ...candidateInfo, desired_salary_max: e.target.value })}
-                    disabled={isAccountRestricted}
                   />
                 </div>
               </div>
@@ -1338,7 +1284,7 @@ const CandidateProfilePage = () => {
           </Card>
 
           <div className="flex justify-end pt-4">
-            <Button onClick={handleSave} disabled={saving || isAccountRestricted} size="lg" className="gap-2 bg-blue-600 text-white hover:bg-blue-700" type="button">
+            <Button onClick={handleSave} disabled={saving} size="lg" className="gap-2 bg-blue-600 text-white hover:bg-blue-700" type="button">
               {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
               {t('candidateProfilePage.saveChanges')}
             </Button>

@@ -1,91 +1,100 @@
 {
-  "common": {
-     "allCountries": "Alle Länder",
-    "allCountriesShort": "Alle",
-    "premium": "Premium",
-    "pro": "Pro",
-    "search": "Suche",
-    "login": "Anmelden",
-    "register": "Registrieren",
-    "logout": "Abmelden",
-    "dashboard": "Dashboard",
-    "profile": "Profil",
-    "settings": "Einstellungen",
-    "save": "Speichern",
-    "cancel": "Abbrechen",
-    "confirm": "Bestätigen",
-    "delete": "Löschen",
-    "edit": "Bearbeiten",
-    "loading": "Laden...",
-    "error": "Fehler",
-    "success": "Erfolg"
-  },
-  "home": {
-    "hero": {
-      "badge": "Wo Talente ihre Zukunft finden",
-      "titleLine1": "Finde den Job, der",
-      "titleLine2": "dein Leben verändert",
-      "subtitle": "Tausende von Möglichkeiten warten auf dich. Bewirb dich mit einem Klick und baue deine Karriere bei den besten Unternehmen auf.",
-      "searchPlaceholder": "Position, Fähigkeiten oder Unternehmen...",
-      "allCities": "Alle Städte",
-      "searchButton": "Suchen",
-      "activeJobs": "Aktive Stellen",
-      "companies": "Unternehmen",
-      "candidates": "Kandidaten",
-      "popularSearches": "Beliebte Suchen:",
-      "searching": "Suche läuft..."
-    },
-    "categories": {
-      "title": "Nach Kategorie entdecken",
-      "subtitle": "Finde Möglichkeiten in deinem Fachgebiet"
-    },
 
-    "companies": {
-      "title": "Unternehmen, die einstellen",
-      "subtitle": "Entdecke die Unternehmen, die Actoos Jobs vertrauen"
+   "home": {
+      "hero": {
+        "badge": "Die Nr. 1 Job-Plattform",
+        "titleLine1": "Finden Sie Ihren Traumjob",
+        "titleLine2": "oder das Talent, das Sie brauchen",
+        "subtitle": "Tausende von Angeboten und Kandidaten warten auf Sie.",
+        "searchPlaceholder": "Job, Stichwort, Kompetenz...",
+        "allCities": "Alle Städte",
+        "searchButton": "Suchen",
+        "searching": "Suche läuft...",
+        "activeJobs": "Aktive Angebote",
+        "companies": "Unternehmen",
+        "candidates": "Kandidaten"
+      },
+      "categories": {
+        "title": "Kategorien entdecken",
+        "subtitle": "Finden Sie Angebote nach Branche"
+      },
+      "jobs": {
+        "title": "Aktuelle Angebote",
+        "subtitle": "Die neuesten veröffentlichten Chancen",
+        "viewAll": "Alle Angebote anzeigen",
+        "noJobsTitle": "Momentan keine Angebote",
+        "noJobsText": "Schauen Sie bald wieder vorbei, um neue Möglichkeiten zu entdecken.",
+        "seeJobs": "Angebote ansehen",
+        "postJob": "Angebot veröffentlichen",
+        "postFirstJob": "Mein erstes Angebot veröffentlichen",
+        "urgent": "Dringend",
+        "boosted": "Geboostet",
+        "yourJob": "Ihr Angebot",
+        "unknownCompany": "Unbekanntes Unternehmen",
+        "unknownLocation": "Kein Ort angegeben",
+        "salary": "Gehalt",
+        "unspecified": "Nicht angegeben",
+        "saveLogin": "Melden Sie sich an, um dieses Angebot zu speichern",
+        "companyCannotSave": "Personalvermittler können keine Angebote speichern.",
+        "unsaveSuccess": "Angebot aus Favoriten entfernt",
+        "saveSuccess": "Angebot gespeichert",
+        "remoteFull": "100% Homeoffice",
+        "remoteHybrid": "Hybrid",
+        "remoteOccasional": "Gelegentlich",
+        "remote": "Homeoffice"
+      },
+      "companies": {
+        "title": "Unternehmen, die einstellen",
+        "subtitle": "Entdecken Sie Unternehmen und ihre Angebote"
+      },
+      "how": {
+        "title": "Wie funktioniert es?",
+        "subtitle": "Vier einfache Schritte, um einen Job zu finden oder zu rekrutieren.",
+        "step1Title": "Erstellen Sie Ihr Konto",
+        "step1Desc": "Melden Sie sich in Sekunden an, als Kandidat oder Personalvermittler.",
+        "step2Title": "Suchen oder veröffentlichen",
+        "step2Desc": "Durchsuchen Sie Angebote oder geben Sie Ihr eigenes mit wenigen Klicks auf.",
+        "step3Title": "Bewerben / Auswählen",
+        "step3Desc": "Bewerben Sie sich auf passende Angebote oder erhalten Sie Bewerbungen.",
+        "step4Title": "Den Job bekommen",
+        "step4Desc": "Bestehen Sie das Vorstellungsgespräch und starten Sie Ihr neues Abenteuer."
+      },
+      "cta": {
+        "badge": "Für Personalvermittler",
+        "title": "Rekrutieren Sie die besten Talente",
+        "subtitle": "Veröffentlichen Sie Ihre Angebote, erhalten Sie qualifizierte Bewerbungen und finden Sie die seltene Perle.",
+        "feature1": "Angebote kostenlos veröffentlichen",
+        "feature2": "Gezielte Bewerbungen erhalten",
+        "feature3": "Ihre Rekrutierungen einfach verwalten",
+        "feature4": "Nutzen Sie intelligente Matching-Tools",
+        "publishJob": "Angebot veröffentlichen",
+        "createAccount": "Kostenloses Personalvermittlerkonto erstellen",
+        "pricing": "Preise ansehen"
+      },
+      "why": {
+        "mainTitle": "Warum Actoos Jobs wählen?",
+        "mainSubtitle": "Die Plattform, die für die Arbeitswelt von morgen konzipiert ist.",
+        "title1": "Internationale Ausrichtung",
+        "desc1": "Angebote und Kandidaten weltweit, mit lokaler Präsenz.",
+        "title2": "Verifizierte Unternehmen",
+        "desc2": "Alle unsere Unternehmen sind für mehr Vertrauen verifiziert.",
+        "title3": "Sicherheit und Datenschutz",
+        "desc3": "Ihre Daten werden mit den besten Standards geschützt.",
+        "title4": "Schnelligkeit und Einfachheit",
+        "desc4": "Eine flüssige Oberfläche, um sich im Handumdrehen zu bewerben oder zu rekrutieren.",
+        "title5": "Personalisierte Erfahrung",
+        "desc5": "Maßgeschneiderte Empfehlungen dank unserer künstlichen Intelligenz.",
+        "title6": "Echtzeit-Statistiken",
+        "desc6": "Verfolgen Sie Ihre Bewerbungen und Leistungen ganz einfach.",
+        "createAccount": "Kostenloses Konto erstellen"
+      }
     },
-    "how": {
-      "title": "Wie funktioniert es?",
-      "subtitle": "Finde deinen idealen Job in 4 einfachen Schritten",
-      "step1Title": "Erstelle dein Profil",
-      "step1Desc": "Registriere dich kostenlos und vervollständige dein Profil in wenigen Minuten.",
-      "step2Title": "Suche nach Stellen",
-      "step2Desc": "Durchstöbere Hunderte von Stellen und nutze unsere erweiterten Filter.",
-      "step3Title": "Bewirb dich mit einem Klick",
-      "step3Desc": "Sende deine Bewerbung direkt an die Personalverantwortlichen.",
-      "step4Title": "Bekomme den Job",
-      "step4Desc": "Verfolge deine Bewerbungen und bereite dich auf Vorstellungsgespräche vor."
+    "settings": {
+      "countryAndCurrency": "Land und Währung",
+      "country": "Land",
+      "selectCountry": "Land auswählen",
+      "currency": "Währung"
     },
-    "cta": {
-      "badge": "Für Unternehmen",
-      "title": "Die besten Talente rekrutieren",
-      "subtitle": "Veröffentliche deine Stellen, erhalte qualifizierte Bewerbungen und finde deinen nächsten Mitarbeiter in wenigen Tagen.",
-      "feature1": "Unbegrenzte Stellenanzeigen",
-      "feature2": "Zugang zu einem Pool qualifizierter Kandidaten",
-      "feature3": "Tools zur Bewerbungsverwaltung",
-      "feature4": "Premium-Sichtbarkeit auf der Plattform",
-      "createAccount": "Unternehmenskonto erstellen",
-      "publishJob": "Stelle veröffentlichen",
-      "pricing": "Unsere Preise ansehen"
-    },
-    "why": {
-      "mainTitle": "Warum Actoos Jobs wählen?",
-      "mainSubtitle": "Die Recruiting-Plattform der nächsten Generation, entwickelt von leidenschaftlichen Ingenieuren.",
-      "title1": "100 % kostenlos für Kandidaten",
-      "desc1": "Erstelle dein Profil, bewirb dich und werde eingestellt, ohne etwas zu bezahlen.",
-      "title2": "Sofortige Sichtbarkeit für Unternehmen",
-      "desc2": "Veröffentliche deine Stellen und erreiche Tausende qualifizierter Kandidaten.",
-      "title3": "Sichere und lokale Daten",
-      "desc3": "Deine Daten werden sicher gehostet und bleiben vertraulich.",
-      "title4": "Intelligente Suchmaschine",
-      "desc4": "Finde die ideale Stelle dank schneller Suche und präziser Filter.",
-      "title5": "Reaktiver lokaler Support",
-      "desc5": "Ein reaktives Team, das für dich da ist.",
-      "title6": "Echtzeit-Statistiken",
-      "desc6": "Verfolge deine Bewerbungen und die Leistung deiner Stellen live.",
-      "createAccount": "Kostenloses Konto erstellen"
-    }
-  },
   "jobs": {
     "remote": "Homeoffice",
       "remoteFull": "100% Homeoffice",
@@ -380,15 +389,7 @@
         "errorGeneric": "Ein Fehler ist aufgetreten."
       },
 
-  "contractTypes": {
-    "cdi": "Unbefristet (CDI)",
-    "cdd": "Befristet (CDD)",
-    "stage": "Praktikum",
-    "freelance": "Freiberuflich",
-    "interim": "Zeitarbeit",
-    "alternance": "Duale Ausbildung",
-    "temps_partiel": "Teilzeit"
-  },
+
   "myApplications": {
     "title": "Meine Bewerbungen",
     "back": "Zurück",
@@ -670,13 +671,7 @@
     ]
   },
   
-  "experienceLevels": {
-    "junior": "Junior",
-    "intermediate": "Fortgeschritten",
-    "senior": "Senior",
-    "lead": "Lead",
-    "manager": "Manager"
-  },
+ 
   
   "coverLetter": {
     "badge": "KI",
@@ -2573,74 +2568,79 @@
       }
     },
     "settings": {
-      "back": "Zurück",
-      "myProfile": "Mein Profil",
       "title": "Einstellungen",
       "subtitle": "Verwalten Sie Ihr Konto und Ihre Präferenzen.",
-      "toasts": {
-        "accountSuspended": "Ihr Konto ist gesperrt. Aktion unmöglich.",
-        "passwordMismatch": "Die Passwörter stimmen nicht überein.",
-        "passwordLength": "Das Passwort muss mindestens 8 Zeichen lang sein.",
-        "passwordUpdated": "Passwort aktualisiert.",
-        "passwordError": "Fehler beim Ändern des Passworts.",
-        "fillAllFields": "Bitte füllen Sie alle Felder aus.",
-        "emailConfirmationSent": "Eine Bestätigungs-E-Mail wurde an Ihre neue Adresse gesendet.",
-        "wrongPassword": "Aktuelles Passwort ist falsch.",
-        "emailError": "Fehler beim Ändern der E-Mail.",
-        "logoutError": "Fehler beim Abmelden.",
-        "accountDeleted": "Konto endgültig gelöscht.",
-        "deleteError": "Fehler beim Löschen des Kontos.",
-        "roleRequestSent": "Anfrage zur Rollenänderung gesendet.",
-        "roleRequestError": "Fehler beim Senden der Anfrage."
-      },
+      "back": "Zurück",
+      "myProfile": "Mein Profil",
+      "countryAndCurrency": "Land und Währung",
+      "country": "Land",
+      "selectCountry": "Alle Länder",
+      "currency": "Währung",
+      "selectCurrency": "Alle Währungen",
       "accountInfo": {
         "title": "Kontoinformationen",
         "description": "Angemeldet als {{email}}"
       },
       "changeEmail": {
         "title": "E-Mail ändern",
-        "description": "Ändern Sie Ihre Login-E-Mail-Adresse.",
+        "description": "Aktualisieren Sie Ihre E-Mail-Adresse.",
         "newEmailLabel": "Neue E-Mail",
-        "newEmailPlaceholder": "ihr@beispiel.com",
+        "newEmailPlaceholder": "neu@email.de",
         "currentPasswordLabel": "Aktuelles Passwort",
-        "currentPasswordPlaceholder": "Ihr aktuelles Passwort",
+        "currentPasswordPlaceholder": "Ihr Passwort",
         "submit": "E-Mail aktualisieren"
       },
       "changePassword": {
         "title": "Passwort ändern",
-        "description": "Verwenden Sie ein starkes Passwort mit mindestens 8 Zeichen.",
+        "description": "Mindestens 8 Zeichen verwenden.",
         "newPasswordLabel": "Neues Passwort",
         "newPasswordPlaceholder": "Neues Passwort",
         "confirmPasswordLabel": "Passwort bestätigen",
         "confirmPasswordPlaceholder": "Passwort bestätigen",
-        "submit": "Passwort aktualisieren"
+        "submit": "Passwort speichern"
       },
       "logout": {
         "title": "Abmelden",
-        "description": "Von diesem Gerät abmelden.",
+        "description": "Sie können sich jederzeit wieder anmelden.",
         "button": "Abmelden"
+      },
+      "dangerZone": {
+        "title": "Gefahrenbereich",
+        "description": "Ihr Konto endgültig löschen. Diese Aktion kann nicht rückgängig gemacht werden.",
+        "confirm": "Sind Sie sicher, dass Sie Ihr Konto löschen möchten?",
+        "button": "Mein Konto löschen"
       },
       "roleChange": {
         "title": "Rolle wechseln",
-        "descriptionCandidate": "Sie sind derzeit <strong>Kandidat</strong>. Sie können beantragen, <strong>Personalvermittler</strong> zu werden.",
-        "descriptionCompany": "Sie sind derzeit <strong>Personalvermittler</strong>. Sie können beantragen, wieder <strong>Kandidat</strong> zu werden.",
+        "descriptionCandidate": "Sie sind <strong>Kandidat</strong>. Beantragen Sie, Personalvermittler zu werden.",
+        "descriptionCompany": "Sie sind <strong>Personalvermittler</strong>. Beantragen Sie, Kandidat zu werden.",
         "requestButton": "Rollenänderung beantragen",
         "modal": {
-          "title": "Anfrage zur Rollenänderung",
+          "title": "Rollenänderungsanfrage",
           "roleLabel": "Gewünschte neue Rolle",
-          "roleCompany": "Personalvermittler (Unternehmen)",
+          "roleCompany": "Personalvermittler",
           "roleCandidate": "Kandidat",
-          "reasonLabel": "Grund der Anfrage",
+          "reasonLabel": "Grund (optional)",
           "reasonPlaceholder": "Erklären Sie, warum Sie die Rolle wechseln möchten…",
           "cancel": "Abbrechen",
           "submit": "Anfrage senden"
         }
       },
-      "dangerZone": {
-        "title": "Gefahrenbereich",
-        "description": "Löschen Sie Ihr Konto und alle Ihre Daten endgültig.",
-        "confirm": "Ihr Konto endgültig löschen? Diese Aktion ist unumkehrbar.",
-        "button": "Mein Konto löschen"
+      "toasts": {
+        "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+        "passwordLength": "Das Passwort muss mindestens 8 Zeichen lang sein.",
+        "passwordUpdated": "Passwort erfolgreich aktualisiert.",
+        "passwordError": "Fehler beim Aktualisieren des Passworts.",
+        "fillAllFields": "Bitte füllen Sie alle Felder aus.",
+        "wrongPassword": "Falsches Passwort.",
+        "emailConfirmationSent": "Eine Bestätigungsmail wurde gesendet. Prüfen Sie Ihren Posteingang.",
+        "emailError": "Fehler beim Ändern der E-Mail.",
+        "logoutError": "Fehler beim Abmelden.",
+        "accountDeleted": "Ihr Konto wurde endgültig gelöscht.",
+        "deleteError": "Fehler beim Löschen des Kontos.",
+        "accountSuspended": "Ihr Konto ist gesperrt. Aktion nicht möglich.",
+        "roleRequestSent": "Ihre Anfrage wurde gesendet.",
+        "roleRequestError": "Fehler beim Senden der Anfrage."
       }
     },
     "jobs": {
@@ -3125,6 +3125,46 @@
         "inappropriate": "Unangemessener Inhalt",
         "other": "Sonstiges"
       }
+    },
+    "common": {
+      "pro": "Pro",
+      "premium": "Premium",
+      "allCountries": "Alle Länder",
+      "allCountriesShort": "Alle",
+      "search": "Suchen",
+      "login": "Anmelden",
+      "register": "Registrieren",
+      "logout": "Abmelden",
+      "dashboard": "Dashboard",
+      "profile": "Profil",
+      "settings": "Einstellungen",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "confirm": "Bestätigen",
+      "delete": "Löschen",
+      "edit": "Bearbeiten",
+      "loading": "Lädt...",
+      "error": "Fehler",
+      "success": "Erfolg",
+      "savedAt": "Gespeichert um {{time}}"
+    },
+    "contractTypes": {
+      "cdi": "Unbefristet",
+      "cdd": "Befristet",
+      "stage": "Praktikum",
+      "alternance": "Ausbildung",
+      "freelance": "Freiberuflich",
+      "interim": "Zeitarbeit",
+      "jobEtudiant": "Studentenjob",
+      "extra": "Aushilfe",
+      "saisonnier": "Saisonal",
+      "benevolat": "Ehrenamt"
+    },
+    "experienceLevels": {
+      "junior": "Junior (0-2 Jahre)",
+      "intermediaire": "Mittelstufe (2-5 Jahre)",
+      "senior": "Senior (5-10 Jahre)",
+      "expert": "Experte (10+ Jahre)"
     }
 
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,22 +12,12 @@ import { formatRelative } from '../lib/utils';
 const ApplicationDetailCandidatePage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
-  const { user, profile, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Vérification du compte (suspension / bannissement)
   useEffect(() => {
     if (!user) return;
-    if (!profile?.is_active || profile?.is_banned) {
-      signOut();
-      navigate('/connexion?reason=suspended', { replace: true });
-    }
-  }, [user, profile, signOut, navigate]);
-
-  useEffect(() => {
-    if (!user || !profile?.is_active || profile?.is_banned) return;
     supabase
       .from('applications')
       .select('*, job:jobs(title, company:companies(name, logo_url))')
@@ -38,7 +28,7 @@ const ApplicationDetailCandidatePage = () => {
         setApplication(data);
         setLoading(false);
       });
-  }, [id, user, profile]);
+  }, [id, user]);
 
   if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
   if (!application) return <div className="pt-20 text-center">{t('applicationDetailCandidate.notFound')}</div>;

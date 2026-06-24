@@ -369,7 +369,7 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
               <p className="text-slate-600 text-sm mt-1">{job.company}</p>
               <div className="flex items-center gap-3 mt-3 text-sm text-slate-500">
                 <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{job.location}</span>
-                <Badge className={`${contractInfo.color} border-0 rounded-full`}>{contractInfo.label}</Badge>
+                <Badge className={`${contractInfo.color} border-0 rounded-full`}>{t(contractInfo.key)}</Badge>
                 {isBoosted && (
                   <Badge className="bg-purple-100 text-purple-700 border border-purple-200">
                     🚀 {t('home.jobs.boosted')}

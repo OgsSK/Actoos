@@ -1,92 +1,100 @@
 {
-  "common": {
-    
-    "allCountries": "Alle landen",
-    "allCountriesShort": "Alle",
-    "premium": "Premium",
-    "pro": "Pro",
-    "search": "Zoeken",
-    "login": "Inloggen",
-    "register": "Registreren",
-    "logout": "Uitloggen",
-    "dashboard": "Dashboard",
-    "profile": "Profiel",
-    "settings": "Instellingen",
-    "save": "Opslaan",
-    "cancel": "Annuleren",
-    "confirm": "Bevestigen",
-    "delete": "Verwijderen",
-    "edit": "Bewerken",
-    "loading": "Laden...",
-    "error": "Fout",
-    "success": "Succes"
-  },
+  
   "home": {
-    "hero": {
-      "badge": "Waar talent zijn toekomst vindt",
-      "titleLine1": "Vind de baan die",
-      "titleLine2": "uw leven verandert",
-      "subtitle": "Duizenden kansen wachten op u. Solliciteer met één klik en bouw uw carrière bij de beste bedrijven.",
-      "searchPlaceholder": "Functie, vaardigheden of bedrijf...",
-      "allCities": "Alle steden",
-      "searchButton": "Zoeken",
-      "activeJobs": "Actieve vacatures",
-      "companies": "Bedrijven",
-      "candidates": "Kandidaten",
-      "popularSearches": "Populaire zoekopdrachten:",
-      "searching": "Bezig met zoeken..."
+      "hero": {
+        "badge": "Het nr. 1 vacatureplatform",
+        "titleLine1": "Vind de baan van je dromen",
+        "titleLine2": "of het talent dat je nodig hebt",
+        "subtitle": "Duizenden vacatures en kandidaten wachten op je.",
+        "searchPlaceholder": "Beroep, trefwoord, vaardigheid...",
+        "allCities": "Alle steden",
+        "searchButton": "Zoeken",
+        "searching": "Zoeken...",
+        "activeJobs": "Actieve vacatures",
+        "companies": "Bedrijven",
+        "candidates": "Kandidaten"
+      },
+      "categories": {
+        "title": "Ontdek de categorieën",
+        "subtitle": "Vind vacatures per branche"
+      },
+      "jobs": {
+        "title": "Recente vacatures",
+        "subtitle": "De nieuwste gepubliceerde kansen",
+        "viewAll": "Bekijk alle vacatures",
+        "noJobsTitle": "Op dit moment geen vacatures",
+        "noJobsText": "Kom snel terug voor nieuwe kansen.",
+        "seeJobs": "Bekijk vacatures",
+        "postJob": "Plaats een vacature",
+        "postFirstJob": "Mijn eerste vacature plaatsen",
+        "urgent": "Dringend",
+        "boosted": "Uitgelicht",
+        "yourJob": "Jouw vacature",
+        "unknownCompany": "Onbekend bedrijf",
+        "unknownLocation": "Locatie niet gespecificeerd",
+        "salary": "Salaris",
+        "unspecified": "Niet gespecificeerd",
+        "saveLogin": "Log in om deze vacature op te slaan",
+        "companyCannotSave": "Recruiters kunnen geen vacatures opslaan.",
+        "unsaveSuccess": "Vacature verwijderd uit favorieten",
+        "saveSuccess": "Vacature opgeslagen",
+        "remoteFull": "100% thuiswerk",
+        "remoteHybrid": "Hybride",
+        "remoteOccasional": "Incidenteel",
+        "remote": "Thuiswerk"
+      },
+      "companies": {
+        "title": "Bedrijven die aanwerven",
+        "subtitle": "Ontdek bedrijven en hun vacatures"
+      },
+      "how": {
+        "title": "Hoe werkt het?",
+        "subtitle": "Vier eenvoudige stappen om een baan te vinden of te werven.",
+        "step1Title": "Maak je account aan",
+        "step1Desc": "Registreer in enkele seconden, als kandidaat of recruiter.",
+        "step2Title": "Zoek of publiceer",
+        "step2Desc": "Blader door vacatures of plaats die van jou in een paar klikken.",
+        "step3Title": "Solliciteer / Selecteer",
+        "step3Desc": "Solliciteer op vacatures die bij je passen, of ontvang sollicitaties.",
+        "step4Title": "Bemachtig de baan",
+        "step4Desc": "Voer het gesprek en begin aan je nieuwe avontuur."
+      },
+      "cta": {
+        "badge": "Voor recruiters",
+        "title": "Werf het beste talent",
+        "subtitle": "Plaats je vacatures, ontvang gekwalificeerde sollicitaties en vind de zeldzame parel.",
+        "feature1": "Plaats gratis vacatures",
+        "feature2": "Ontvang gerichte sollicitaties",
+        "feature3": "Beheer je aanwervingen eenvoudig",
+        "feature4": "Profiteer van slimme matchingtools",
+        "publishJob": "Plaats een vacature",
+        "createAccount": "Maak een recruiteraccount aan",
+        "pricing": "Bekijk de tarieven"
+      },
+      "why": {
+        "mainTitle": "Waarom kiezen voor Actoos Jobs?",
+        "mainSubtitle": "Het platform ontworpen voor de arbeidsmarkt van morgen.",
+        "title1": "Internationale openheid",
+        "desc1": "Vacatures en kandidaten van over de hele wereld, met lokale aanwezigheid.",
+        "title2": "Geverifieerde bedrijven",
+        "desc2": "Al onze bedrijven zijn geverifieerd voor meer vertrouwen.",
+        "title3": "Veiligheid en vertrouwelijkheid",
+        "desc3": "Jouw gegevens worden beschermd met de beste standaarden.",
+        "title4": "Snelheid en eenvoud",
+        "desc4": "Een vlotte interface om in een oogwenk te solliciteren of te werven.",
+        "title5": "Gepersonaliseerde ervaring",
+        "desc5": "Advies op maat dankzij onze kunstmatige intelligentie.",
+        "title6": "Realtime statistieken",
+        "desc6": "Volg je sollicitaties en prestaties eenvoudig.",
+        "createAccount": "Maak een gratis account aan"
+      }
     },
-    "categories": {
-      "title": "Ontdek per categorie",
-      "subtitle": "Vind kansen in uw vakgebied"
+    "settings": {
+      "countryAndCurrency": "Land en munteenheid",
+      "country": "Land",
+      "selectCountry": "Selecteer een land",
+      "currency": "Munteenheid"
     },
-    
-    "companies": {
-      "title": "Bedrijven die werven",
-      "subtitle": "Ontdek de bedrijven die vertrouwen op Actoos Jobs"
-    },
-    "how": {
-      "title": "Hoe werkt het?",
-      "subtitle": "Vind uw ideale baan in 4 eenvoudige stappen",
-      "step1Title": "Maak uw profiel aan",
-      "step1Desc": "Registreer gratis en vul uw profiel in enkele minuten in.",
-      "step2Title": "Zoek vacatures",
-      "step2Desc": "Blader door honderden vacatures en gebruik onze geavanceerde filters.",
-      "step3Title": "Solliciteer met één klik",
-      "step3Desc": "Stuur uw sollicitatie rechtstreeks naar recruiters.",
-      "step4Title": "Bemachtig de baan",
-      "step4Desc": "Volg uw sollicitaties en bereid u voor op uw gesprekken."
-    },
-    "cta": {
-      "badge": "Voor bedrijven",
-      "title": "Werf het beste talent",
-      "subtitle": "Plaats uw vacatures, ontvang gekwalificeerde sollicitaties en vind uw volgende medewerker binnen enkele dagen.",
-      "feature1": "Onbeperkt vacatures plaatsen",
-      "feature2": "Toegang tot een pool van gekwalificeerde kandidaten",
-      "feature3": "Beheertools voor sollicitaties",
-      "feature4": "Premium zichtbaarheid op het platform",
-      "createAccount": "Bedrijfsaccount aanmaken",
-      "publishJob": "Vacature plaatsen",
-      "pricing": "Onze tarieven bekijken"
-    },
-    "why": {
-      "mainTitle": "Waarom Actoos Jobs kiezen?",
-      "mainSubtitle": "Het next-generation recruitmentplatform, gemaakt door gepassioneerde ingenieurs.",
-      "title1": "100% gratis voor kandidaten",
-      "desc1": "Maak uw profiel aan, solliciteer en word aangenomen zonder iets te betalen.",
-      "title2": "Directe zichtbaarheid voor bedrijven",
-      "desc2": "Plaats uw vacatures en bereik duizenden gekwalificeerde kandidaten.",
-      "title3": "Veilige en lokale gegevens",
-      "desc3": "Uw informatie wordt veilig gehost en blijft vertrouwelijk.",
-      "title4": "Slimme zoekmachine",
-      "desc4": "Vind de ideale vacature dankzij snel zoeken en nauwkeurige filters.",
-      "title5": "Lokale responsieve ondersteuning",
-      "desc5": "Een reactief team, klaar om u te begeleiden.",
-      "title6": "Realtime statistieken",
-      "desc6": "Volg uw sollicitaties en de prestaties van uw vacatures live.",
-      "createAccount": "Maak een gratis account aan"
-    }
-  },
   "jobs": {
     "remote": "Thuiswerk",
       "remoteFull": "100% thuiswerk",
@@ -381,15 +389,7 @@
         "errorGeneric": "Er is een fout opgetreden."
       },
   
-  "contractTypes": {
-    "cdi": "Onbepaalde duur (CDI)",
-    "cdd": "Bepaalde duur (CDD)",
-    "stage": "Stage",
-    "freelance": "Freelance",
-    "interim": "Uitzendwerk",
-    "alternance": "Alternerend leren",
-    "temps_partiel": "Deeltijds"
-  },
+
   "myApplications": {
     "title": "Mijn sollicitaties",
     "back": "Terug",
@@ -636,13 +636,7 @@
     ]
   },
   
-  "experienceLevels": {
-    "junior": "Junior",
-    "intermediate": "Medior",
-    "senior": "Senior",
-    "lead": "Lead",
-    "manager": "Manager"
-  },
+  
   "createCompany": {
     "title": "Uw bedrijf aanmaken",
     "subtitle": "Vul de informatie van uw bedrijf in om te beginnen met werven",
@@ -2535,74 +2529,79 @@
       }
     },
     "settings": {
-      "back": "Terug",
-      "myProfile": "Mijn profiel",
       "title": "Instellingen",
       "subtitle": "Beheer je account en voorkeuren.",
-      "toasts": {
-        "accountSuspended": "Je account is geschorst. Actie niet mogelijk.",
-        "passwordMismatch": "Wachtwoorden komen niet overeen.",
-        "passwordLength": "Het wachtwoord moet minimaal 8 tekens bevatten.",
-        "passwordUpdated": "Wachtwoord bijgewerkt.",
-        "passwordError": "Fout bij wijzigen wachtwoord.",
-        "fillAllFields": "Vul alle velden in.",
-        "emailConfirmationSent": "Er is een bevestigingsmail naar je nieuwe adres gestuurd.",
-        "wrongPassword": "Huidig wachtwoord is onjuist.",
-        "emailError": "Fout bij wijzigen e-mail.",
-        "logoutError": "Fout bij uitloggen.",
-        "accountDeleted": "Account permanent verwijderd.",
-        "deleteError": "Fout bij verwijderen account.",
-        "roleRequestSent": "Verzoek tot rolwijziging verzonden.",
-        "roleRequestError": "Fout bij verzenden verzoek."
-      },
+      "back": "Terug",
+      "myProfile": "Mijn profiel",
+      "countryAndCurrency": "Land en munteenheid",
+      "country": "Land",
+      "selectCountry": "Alle landen",
+      "currency": "Munteenheid",
+      "selectCurrency": "Alle valuta",
       "accountInfo": {
-        "title": "Accountgegevens",
+        "title": "Accountinformatie",
         "description": "Ingelogd als {{email}}"
       },
       "changeEmail": {
         "title": "E-mail wijzigen",
-        "description": "Wijzig het e-mailadres waarmee je inlogt.",
+        "description": "Werk je e-mailadres bij.",
         "newEmailLabel": "Nieuwe e-mail",
-        "newEmailPlaceholder": "email@voorbeeld.com",
+        "newEmailPlaceholder": "nieuw@email.com",
         "currentPasswordLabel": "Huidig wachtwoord",
-        "currentPasswordPlaceholder": "Jouw huidige wachtwoord",
+        "currentPasswordPlaceholder": "Je wachtwoord",
         "submit": "E-mail bijwerken"
       },
       "changePassword": {
         "title": "Wachtwoord wijzigen",
-        "description": "Gebruik een sterk wachtwoord van minimaal 8 tekens.",
+        "description": "Gebruik minstens 8 tekens.",
         "newPasswordLabel": "Nieuw wachtwoord",
         "newPasswordPlaceholder": "Nieuw wachtwoord",
         "confirmPasswordLabel": "Bevestig wachtwoord",
         "confirmPasswordPlaceholder": "Bevestig wachtwoord",
-        "submit": "Wachtwoord bijwerken"
+        "submit": "Wachtwoord opslaan"
       },
       "logout": {
         "title": "Uitloggen",
-        "description": "Uitloggen van dit apparaat.",
+        "description": "Je kunt op elk moment opnieuw inloggen.",
         "button": "Uitloggen"
+      },
+      "dangerZone": {
+        "title": "Gevarenzone",
+        "description": "Verwijder je account definitief. Deze actie is onomkeerbaar.",
+        "confirm": "Weet je zeker dat je je account wilt verwijderen?",
+        "button": "Mijn account verwijderen"
       },
       "roleChange": {
         "title": "Rol wijzigen",
-        "descriptionCandidate": "Je bent nu <strong>kandidaat</strong>. Je kunt verzoeken om <strong>recruiter</strong> te worden.",
-        "descriptionCompany": "Je bent nu <strong>recruiter</strong>. Je kunt verzoeken om weer <strong>kandidaat</strong> te worden.",
+        "descriptionCandidate": "Je bent <strong>kandidaat</strong>. Vraag aan om recruiter te worden.",
+        "descriptionCompany": "Je bent <strong>recruiter</strong>. Vraag aan om kandidaat te worden.",
         "requestButton": "Rolwijziging aanvragen",
         "modal": {
           "title": "Verzoek tot rolwijziging",
           "roleLabel": "Gewenste nieuwe rol",
-          "roleCompany": "Recruiter (bedrijf)",
+          "roleCompany": "Recruiter",
           "roleCandidate": "Kandidaat",
-          "reasonLabel": "Reden van verzoek",
+          "reasonLabel": "Reden (optioneel)",
           "reasonPlaceholder": "Leg uit waarom je van rol wilt wisselen…",
           "cancel": "Annuleren",
           "submit": "Verzoek indienen"
         }
       },
-      "dangerZone": {
-        "title": "Gevarenzone",
-        "description": "Verwijder je account en al je gegevens permanent.",
-        "confirm": "Je account permanent verwijderen? Deze actie is onomkeerbaar.",
-        "button": "Mijn account verwijderen"
+      "toasts": {
+        "passwordMismatch": "Wachtwoorden komen niet overeen.",
+        "passwordLength": "Het wachtwoord moet minstens 8 tekens bevatten.",
+        "passwordUpdated": "Wachtwoord succesvol bijgewerkt.",
+        "passwordError": "Fout bij het bijwerken van het wachtwoord.",
+        "fillAllFields": "Vul alle velden in.",
+        "wrongPassword": "Onjuist wachtwoord.",
+        "emailConfirmationSent": "Er is een bevestigingsmail gestuurd. Controleer je inbox.",
+        "emailError": "Fout bij het wijzigen van de e-mail.",
+        "logoutError": "Fout bij het uitloggen.",
+        "accountDeleted": "Je account is definitief verwijderd.",
+        "deleteError": "Fout bij het verwijderen van het account.",
+        "accountSuspended": "Je account is geschorst. Actie niet mogelijk.",
+        "roleRequestSent": "Je verzoek is verzonden.",
+        "roleRequestError": "Fout bij het verzenden van het verzoek."
       }
     },
      "jobs": {
@@ -3087,6 +3086,46 @@
         "inappropriate": "Ongepaste inhoud",
         "other": "Anders"
       }
+    },
+    "common": {
+      "pro": "Pro",
+      "premium": "Premium",
+      "allCountries": "Alle landen",
+      "allCountriesShort": "Alle",
+      "search": "Zoeken",
+      "login": "Inloggen",
+      "register": "Registreren",
+      "logout": "Uitloggen",
+      "dashboard": "Dashboard",
+      "profile": "Profiel",
+      "settings": "Instellingen",
+      "save": "Opslaan",
+      "cancel": "Annuleren",
+      "confirm": "Bevestigen",
+      "delete": "Verwijderen",
+      "edit": "Bewerken",
+      "loading": "Laden...",
+      "error": "Fout",
+      "success": "Succes",
+      "savedAt": "Opgeslagen om {{time}}"
+    },
+    "contractTypes": {
+      "cdi": "Vast",
+      "cdd": "Tijdelijk",
+      "stage": "Stage",
+      "alternance": "Werkend leren",
+      "freelance": "Freelance",
+      "interim": "Uitzendwerk",
+      "jobEtudiant": "Studentenjob",
+      "extra": "Extra",
+      "saisonnier": "Seizoenswerk",
+      "benevolat": "Vrijwilligerswerk"
+    },
+    "experienceLevels": {
+      "junior": "Junior (0-2 jaar)",
+      "intermediaire": "Middelbaar (2-5 jaar)",
+      "senior": "Senior (5-10 jaar)",
+      "expert": "Expert (10+ jaar)"
     }
 
 

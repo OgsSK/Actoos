@@ -1,91 +1,100 @@
 {
-  "common": {
-    "allCountries": "جميع الدول",
-    "allCountriesShort": "الكل",
-    "premium": "بريميوم",
-    "pro": "برو",
-    "search": "بحث",
-    "login": "تسجيل الدخول",
-    "register": "إنشاء حساب",
-    "logout": "تسجيل الخروج",
-    "dashboard": "لوحة التحكم",
-    "profile": "الملف الشخصي",
-    "settings": "الإعدادات",
-    "save": "حفظ",
-    "cancel": "إلغاء",
-    "confirm": "تأكيد",
-    "delete": "حذف",
-    "edit": "تعديل",
-    "loading": "جارٍ التحميل...",
-    "error": "خطأ",
-    "success": "تم بنجاح"
-  },
-  "home": {
-    "hero": {
-      "badge": "حيث يلتقي المواهب بمستقبلها",
-      "titleLine1": "اعثر على الوظيفة التي",
-      "titleLine2": "تغير حياتك",
-      "subtitle": "آلاف الفرص في انتظارك. قدّم بنقرة واحدة وابنِ مسيرتك المهنية مع أفضل الشركات.",
-      "searchPlaceholder": "المسمى الوظيفي، المهارات أو الشركة...",
-      "allCities": "جميع المدن",
-      "searchButton": "بحث",
-      "activeJobs": "وظائف نشطة",
-      "companies": "شركات",
-      "candidates": "مرشحون",
-      "popularSearches": "عمليات البحث الشائعة:",
-      "searching": "جارٍ البحث..."
+  
+"home": {
+      "hero": {
+        "badge": "منصة التوظيف رقم 1",
+        "titleLine1": "اعثر على وظيفة أحلامك",
+        "titleLine2": "أو الموهبة التي تحتاجها",
+        "subtitle": "الآلاف من العروض والمرشحين في انتظارك.",
+        "searchPlaceholder": "وظيفة، كلمة مفتاحية، مهارة...",
+        "allCities": "جميع المدن",
+        "searchButton": "بحث",
+        "searching": "جارٍ البحث...",
+        "activeJobs": "عروض نشطة",
+        "companies": "شركات",
+        "candidates": "مرشحون"
+      },
+      "categories": {
+        "title": "استكشاف الفئات",
+        "subtitle": "ابحث عن عروض حسب القطاع"
+      },
+      "jobs": {
+        "title": "عروض حديثة",
+        "subtitle": "أحدث الفرص المنشورة",
+        "viewAll": "عرض جميع العروض",
+        "noJobsTitle": "لا توجد عروض حالياً",
+        "noJobsText": "عد قريباً لاكتشاف فرص جديدة.",
+        "seeJobs": "مشاهدة العروض",
+        "postJob": "نشر عرض",
+        "postFirstJob": "نشر عرضي الأول",
+        "urgent": "عاجل",
+        "boosted": "معزز",
+        "yourJob": "عرضك",
+        "unknownCompany": "شركة غير معروفة",
+        "unknownLocation": "موقع غير محدد",
+        "salary": "الراتب",
+        "unspecified": "غير محدد",
+        "saveLogin": "سجّل الدخول لحفظ هذا العرض",
+        "companyCannotSave": "لا يمكن لمسؤولي التوظيف حفظ العروض.",
+        "unsaveSuccess": "تمت إزالة العرض من المفضلة",
+        "saveSuccess": "تم حفظ العرض",
+        "remoteFull": "عن بعد بالكامل",
+        "remoteHybrid": "هجين",
+        "remoteOccasional": "عرضي",
+        "remote": "عن بعد"
+      },
+      "companies": {
+        "title": "شركات توظف",
+        "subtitle": "اكتشف الشركات وعروضها"
+      },
+      "how": {
+        "title": "كيف يعمل؟",
+        "subtitle": "أربع خطوات بسيطة للعثور على وظيفة أو التوظيف.",
+        "step1Title": "أنشئ حسابك",
+        "step1Desc": "سجّل في ثوانٍ، كمرشح أو مسؤول توظيف.",
+        "step2Title": "ابحث أو انشر",
+        "step2Desc": "تصفح العروض أو أضف عرضك ببضع نقرات.",
+        "step3Title": "تقدّم / اختر",
+        "step3Desc": "تقدّم للعروض التي تناسبك، أو استقبل الطلبات.",
+        "step4Title": "احصل على الوظيفة",
+        "step4Desc": "اجتز المقابلة وابدأ مغامرتك الجديدة."
+      },
+      "cta": {
+        "badge": "للموظفين",
+        "title": "وظّف أفضل المواهب",
+        "subtitle": "انشر عروضك، واستقبل طلبات مؤهلة، واعثر على الجوهرة النادرة.",
+        "feature1": "انشر عروضاً مجاناً",
+        "feature2": "استقبل طلبات مستهدفة",
+        "feature3": "أدر عمليات التوظيف بكل سهولة",
+        "feature4": "استفد من أدوات المطابقة الذكية",
+        "publishJob": "نشر عرض",
+        "createAccount": "إنشاء حساب موظف",
+        "pricing": "عرض الأسعار"
+      },
+      "why": {
+        "mainTitle": "لماذا تختار أكتوس جوبز؟",
+        "mainSubtitle": "المنصة المصممة لوظائف الغد.",
+        "title1": "انفتاح دولي",
+        "desc1": "عروض ومرشحون من جميع أنحاء العالم، مع حضور محلي.",
+        "title2": "شركات موثقة",
+        "desc2": "جميع شركاتنا موثقة لمزيد من الثقة.",
+        "title3": "الأمان والخصوصية",
+        "desc3": "بياناتك محمية بأفضل المعايير.",
+        "title4": "السرعة والبساطة",
+        "desc4": "واجهة سلسة للتقديم أو التوظيف في لمح البصر.",
+        "title5": "تجربة مخصصة",
+        "desc5": "توصيات مصممة خصيصاً بفضل ذكائنا الاصطناعي.",
+        "title6": "إحصائيات في الوقت الفعلي",
+        "desc6": "تتبع طلباتك وأداءك بسهولة.",
+        "createAccount": "إنشاء حساب مجاني"
+      }
     },
-    "categories": {
-      "title": "استكشف حسب الفئة",
-      "subtitle": "اعثر على فرص في مجال خبرتك"
+    "settings": {
+      "countryAndCurrency": "البلد والعملة",
+      "country": "البلد",
+      "selectCountry": "اختر بلداً",
+      "currency": "العملة"
     },
-
-    "companies": {
-      "title": "شركات توظف",
-      "subtitle": "اكتشف الشركات التي تثق بـ Actoos Jobs"
-    },
-    "how": {
-      "title": "كيف يعمل؟",
-      "subtitle": "اعثر على وظيفتك المثالية في 4 خطوات بسيطة",
-      "step1Title": "أنشئ ملفك الشخصي",
-      "step1Desc": "سجّل مجاناً وأكمل ملفك الشخصي في دقائق.",
-      "step2Title": "ابحث عن وظائف",
-      "step2Desc": "تصفح مئات الوظائف واستخدم فلاترنا المتقدمة.",
-      "step3Title": "قدّم بنقرة واحدة",
-      "step3Desc": "أرسل طلبك مباشرة إلى مسؤولي التوظيف.",
-      "step4Title": "احصل على الوظيفة",
-      "step4Desc": "تابع طلباتك واستعد للمقابلات."
-    },
-    "cta": {
-      "badge": "للشركات",
-      "title": "وظّف أفضل المواهب",
-      "subtitle": "انشر وظائفك، استقبل طلبات مؤهلة واعثر على زميلك القادم في أيام.",
-      "feature1": "نشر غير محدود للوظائف",
-      "feature2": "الوصول إلى قاعدة مرشحين مؤهلين",
-      "feature3": "أدوات إدارة الطلبات",
-      "feature4": "رؤية متميزة على المنصة",
-      "createAccount": "إنشاء حساب شركة",
-      "publishJob": "نشر وظيفة",
-      "pricing": "اطلع على أسعارنا"
-    },
-    "why": {
-      "mainTitle": "لماذا تختار Actoos Jobs؟",
-      "mainSubtitle": "منصة التوظيف من الجيل الجديد، صممها مهندسون شغوفون.",
-      "title1": "مجانية 100% للمرشحين",
-      "desc1": "أنشئ ملفك الشخصي، قدّم وتوظف دون أن تدفع شيئاً.",
-      "title2": "رؤية فورية للشركات",
-      "desc2": "انشر وظائفك واصِل إلى آلاف المرشحين المؤهلين.",
-      "title3": "بيانات آمنة ومحلية",
-      "desc3": "معلوماتك مستضافة بشكل آمن وتظل سرية.",
-      "title4": "محرك بحث ذكي",
-      "desc4": "اعثر على الوظيفة المثالية بفضل بحث سريع وفلاتر دقيقة.",
-      "title5": "دعم محلي سريع الاستجابة",
-      "desc5": "فريق سريع الاستجابة، في خدمتك لمرافقتك.",
-      "title6": "إحصائيات في الوقت الفعلي",
-      "desc6": "تابع طلباتك وأداء وظائفك مباشرة.",
-      "createAccount": "إنشاء حساب مجاني"
-    }
-  },
   "jobs": {
     "remote": "العمل عن بعد",
       "remoteFull": "عن بعد بالكامل",
@@ -380,15 +389,7 @@
         "errorGeneric": "حدث خطأ."
       },
 
-  "contractTypes": {
-    "cdi": "عقد غير محدد المدة (CDI)",
-    "cdd": "عقد محدد المدة (CDD)",
-    "stage": "تدريب",
-    "freelance": "عمل حر",
-    "interim": "مؤقت",
-    "alternance": "تكوين بالتناوب",
-    "temps_partiel": "دوام جزئي"
-  },
+  
   "myApplications": {
     "title": "طلباتي",
     "back": "رجوع",
@@ -636,13 +637,7 @@
     ]
   },
   
-  "experienceLevels": {
-    "junior": "مبتدئ",
-    "intermediate": "متوسط",
-    "senior": "أول",
-    "lead": "قائد",
-    "manager": "مدير"
-  },
+ 
   
   "coverLetter": {
     "badge": "ذكاء اصطناعي",
@@ -2466,75 +2461,80 @@
         "errorToast": "خطأ في التحليل."
       }
     },
-    "settings": {
-      "back": "رجوع",
-      "myProfile": "ملفي الشخصي",
+"settings": {
       "title": "الإعدادات",
       "subtitle": "إدارة حسابك وتفضيلاتك.",
-      "toasts": {
-        "accountSuspended": "حسابك معلق. الإجراء غير ممكن.",
-        "passwordMismatch": "كلمات المرور غير متطابقة.",
-        "passwordLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل.",
-        "passwordUpdated": "تم تحديث كلمة المرور.",
-        "passwordError": "خطأ في تغيير كلمة المرور.",
-        "fillAllFields": "يرجى ملء جميع الحقول.",
-        "emailConfirmationSent": "تم إرسال بريد تأكيد إلى عنوانك الجديد.",
-        "wrongPassword": "كلمة المرور الحالية غير صحيحة.",
-        "emailError": "خطأ في تغيير البريد الإلكتروني.",
-        "logoutError": "خطأ أثناء تسجيل الخروج.",
-        "accountDeleted": "تم حذف الحساب بشكل دائم.",
-        "deleteError": "خطأ في حذف الحساب.",
-        "roleRequestSent": "تم إرسال طلب تغيير الدور.",
-        "roleRequestError": "خطأ في إرسال الطلب."
-      },
+      "back": "رجوع",
+      "myProfile": "ملفي الشخصي",
+      "countryAndCurrency": "البلد والعملة",
+      "country": "البلد",
+      "selectCountry": "جميع البلدان",
+      "currency": "العملة",
+      "selectCurrency": "جميع العملات",
       "accountInfo": {
         "title": "معلومات الحساب",
         "description": "تم تسجيل الدخول باسم {{email}}"
       },
       "changeEmail": {
         "title": "تغيير البريد الإلكتروني",
-        "description": "تغيير عنوان بريدك الإلكتروني لتسجيل الدخول.",
+        "description": "تحديث عنوان بريدك الإلكتروني.",
         "newEmailLabel": "البريد الإلكتروني الجديد",
-        "newEmailPlaceholder": "email@example.com",
+        "newEmailPlaceholder": "new@email.com",
         "currentPasswordLabel": "كلمة المرور الحالية",
-        "currentPasswordPlaceholder": "كلمة مرورك الحالية",
+        "currentPasswordPlaceholder": "كلمة مرورك",
         "submit": "تحديث البريد الإلكتروني"
       },
       "changePassword": {
         "title": "تغيير كلمة المرور",
-        "description": "استخدم كلمة مرور قوية لا تقل عن 8 أحرف.",
+        "description": "استخدم 8 أحرف على الأقل.",
         "newPasswordLabel": "كلمة المرور الجديدة",
         "newPasswordPlaceholder": "كلمة المرور الجديدة",
         "confirmPasswordLabel": "تأكيد كلمة المرور",
         "confirmPasswordPlaceholder": "تأكيد كلمة المرور",
-        "submit": "تحديث كلمة المرور"
+        "submit": "حفظ كلمة المرور"
       },
       "logout": {
         "title": "تسجيل الخروج",
-        "description": "تسجيل الخروج من هذا الجهاز.",
+        "description": "يمكنك إعادة تسجيل الدخول في أي وقت.",
         "button": "تسجيل الخروج"
+      },
+      "dangerZone": {
+        "title": "منطقة الخطر",
+        "description": "حذف حسابك بشكل دائم. هذا الإجراء غير قابل للرجوع.",
+        "confirm": "هل أنت متأكد من حذف حسابك؟",
+        "button": "حذف حسابي"
       },
       "roleChange": {
         "title": "تغيير الدور",
-        "descriptionCandidate": "أنت حالياً <strong>مرشح</strong>. يمكنك طلب أن تصبح <strong>مسؤول توظيف</strong>.",
-        "descriptionCompany": "أنت حالياً <strong>مسؤول توظيف</strong>. يمكنك طلب العودة إلى <strong>مرشح</strong>.",
+        "descriptionCandidate": "أنت <strong>مرشح</strong>. اطلب لتصبح مسؤول توظيف.",
+        "descriptionCompany": "أنت <strong>مسؤول توظيف</strong>. اطلب لتصبح مرشحاً.",
         "requestButton": "طلب تغيير الدور",
         "modal": {
           "title": "طلب تغيير الدور",
           "roleLabel": "الدور الجديد المطلوب",
-          "roleCompany": "مسؤول توظيف (شركة)",
+          "roleCompany": "مسؤول توظيف",
           "roleCandidate": "مرشح",
-          "reasonLabel": "سبب الطلب",
+          "reasonLabel": "السبب (اختياري)",
           "reasonPlaceholder": "اشرح سبب رغبتك في تغيير الدور…",
           "cancel": "إلغاء",
           "submit": "إرسال الطلب"
         }
       },
-      "dangerZone": {
-        "title": "منطقة الخطر",
-        "description": "حذف حسابك نهائياً وجميع بياناتك.",
-        "confirm": "حذف حسابك بشكل دائم؟ هذا الإجراء لا رجعة فيه.",
-        "button": "حذف حسابي"
+      "toasts": {
+        "passwordMismatch": "كلمتا المرور غير متطابقتين.",
+        "passwordLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل.",
+        "passwordUpdated": "تم تحديث كلمة المرور بنجاح.",
+        "passwordError": "خطأ في تحديث كلمة المرور.",
+        "fillAllFields": "يرجى ملء جميع الحقول.",
+        "wrongPassword": "كلمة مرور غير صحيحة.",
+        "emailConfirmationSent": "تم إرسال بريد تأكيد. تفقد صندوق الوارد.",
+        "emailError": "خطأ في تغيير البريد الإلكتروني.",
+        "logoutError": "خطأ أثناء تسجيل الخروج.",
+        "accountDeleted": "تم حذف حسابك بشكل دائم.",
+        "deleteError": "خطأ في حذف الحساب.",
+        "accountSuspended": "حسابك معلق. الإجراء غير ممكن.",
+        "roleRequestSent": "تم إرسال طلبك.",
+        "roleRequestError": "خطأ في إرسال الطلب."
       }
     },
      "jobs": {
@@ -3019,6 +3019,46 @@
         "inappropriate": "محتوى غير لائق",
         "other": "أخرى"
       }
+    },
+    "common": {
+      "pro": "برو",
+      "premium": "بريميوم",
+      "allCountries": "جميع الدول",
+      "allCountriesShort": "الكل",
+      "search": "بحث",
+      "login": "تسجيل الدخول",
+      "register": "التسجيل",
+      "logout": "تسجيل الخروج",
+      "dashboard": "لوحة التحكم",
+      "profile": "الملف الشخصي",
+      "settings": "الإعدادات",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد",
+      "delete": "حذف",
+      "edit": "تعديل",
+      "loading": "جارٍ التحميل...",
+      "error": "خطأ",
+      "success": "نجاح",
+      "savedAt": "تم الحفظ في {{time}}"
+    },
+     "contractTypes": {
+      "cdi": "دائم",
+      "cdd": "مؤقت",
+      "stage": "تدريب",
+      "alternance": "تلمذة مهنية",
+      "freelance": "عمل حر",
+      "interim": "مؤقت (وكالة)",
+      "jobEtudiant": "وظيفة طالب",
+      "extra": "إضافي",
+      "saisonnier": "موسمي",
+      "benevolat": "تطوع"
+    },
+    "experienceLevels": {
+      "junior": "مبتدئ (0-2 سنة)",
+      "intermediaire": "متوسط (2-5 سنوات)",
+      "senior": "أول (5-10 سنوات)",
+      "expert": "خبير (10+ سنوات)"
     }
 
 

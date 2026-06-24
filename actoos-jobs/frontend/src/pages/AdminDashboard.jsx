@@ -253,7 +253,7 @@ const JobModerationCard = ({ job, onApprove, onReject, onSuspend, onDelete, onRe
               {job.city?.name || t('adminDashboard.jobs.detailsUnspecified')}
             </span>
             <Badge className={cn(contractInfo.color, 'border-0 text-xs')}>
-              {contractInfo.label}
+              {t(contractInfo.key)}
             </Badge>
           </div>
           <p className="text-xs text-slate-400 mt-1">

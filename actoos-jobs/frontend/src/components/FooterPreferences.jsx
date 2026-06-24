@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
-import { useCountries } from '../contexts/CountriesContext'; // ← Nouveau
+import { useCountries } from '../contexts/CountriesContext';
 import { Globe, ChevronDown } from 'lucide-react';
 
 const selectClass =
@@ -10,7 +10,7 @@ const selectClass =
 const FooterPreferences = () => {
   const { t } = useTranslation();
   const { prefs, updatePrefs } = usePreferencesContext();
-  const { countries, availableCurrencies } = useCountries(); // ← Données centralisées
+  const { countries, availableCurrencies } = useCountries();
 
   const handleCountryChange = (e) => {
     const newValue = e.target.value === '' ? null : e.target.value;
@@ -34,7 +34,7 @@ const FooterPreferences = () => {
           onChange={handleCountryChange}
           className={`${selectClass} pl-10`}
         >
-          <option value="">{t('common.allCountries', 'Tous les pays')}</option>
+          <option value="">{t('common.allCountries')}</option>
           {countries.map((c) => (
             <option key={c.code} value={c.code}>
               {t(`countries.${c.code}`, c.name)}

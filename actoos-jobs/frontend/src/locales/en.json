@@ -1,91 +1,170 @@
 {
-  "common": {
-    "allCountries": "All countries",
-    "allCountriesShort": "All",
-    "premium": "Premium",
-    "pro": "Pro",
-    "search": "Search",
-    "login": "Log in",
-    "register": "Register",
-    "logout": "Logout",
-    "dashboard": "Dashboard",
-    "profile": "Profile",
-    "settings": "Settings",
-    "save": "Save",
-    "cancel": "Cancel",
-    "confirm": "Confirm",
-    "delete": "Delete",
-    "edit": "Edit",
-    "loading": "Loading...",
-    "error": "Error",
-    "success": "Success"
-  },
-  "home": {
-    "hero": {
-      "badge": "Where talent meets its future",
-      "titleLine1": "Find the job that",
-      "titleLine2": "changes your life",
-      "subtitle": "Thousands of opportunities await you. Apply in one click and build your career with the best companies.",
-      "searchPlaceholder": "Job, skills or company...",
-      "allCities": "All cities",
-      "searchButton": "Search",
-      "activeJobs": "Active jobs",
-      "companies": "Companies",
-      "candidates": "Candidates",
-      "popularSearches": "Popular searches:",
-      "searching": "Searching..."
+
+   "home": {
+      "hero": {
+        "badge": "The #1 Job Platform",
+        "titleLine1": "Find the job of your dreams",
+        "titleLine2": "or the talent you need",
+        "subtitle": "Thousands of offers and candidates are waiting for you.",
+        "searchPlaceholder": "Job, keyword, skill...",
+        "allCities": "All cities",
+        "searchButton": "Search",
+        "searching": "Searching...",
+        "activeJobs": "Active offers",
+        "companies": "Companies",
+        "candidates": "Candidates"
+      },
+      "categories": {
+        "title": "Explore categories",
+        "subtitle": "Find offers by industry"
+      },
+      "jobs": {
+        "title": "Recent offers",
+        "subtitle": "The latest posted opportunities",
+        "viewAll": "View all offers",
+        "noJobsTitle": "No offers at the moment",
+        "noJobsText": "Check back soon for new opportunities.",
+        "seeJobs": "See offers",
+        "postJob": "Post an offer",
+        "postFirstJob": "Post my first offer",
+        "urgent": "Urgent",
+        "boosted": "Boosted",
+        "yourJob": "Your offer",
+        "unknownCompany": "Unknown company",
+        "unknownLocation": "Unspecified location",
+        "salary": "Salary",
+        "unspecified": "Not specified",
+        "saveLogin": "Log in to save this offer",
+        "companyCannotSave": "Recruiters cannot save offers.",
+        "unsaveSuccess": "Offer removed from favorites",
+        "saveSuccess": "Offer saved",
+        "remoteFull": "100% remote",
+        "remoteHybrid": "Hybrid",
+        "remoteOccasional": "Occasional",
+        "remote": "Remote"
+      },
+      "companies": {
+        "title": "Companies hiring",
+        "subtitle": "Discover companies and their offers"
+      },
+      "how": {
+        "title": "How does it work?",
+        "subtitle": "Four simple steps to find a job or recruit.",
+        "step1Title": "Create your account",
+        "step1Desc": "Sign up in seconds, as a candidate or recruiter.",
+        "step2Title": "Search or publish",
+        "step2Desc": "Browse offers or post yours in a few clicks.",
+        "step3Title": "Apply / Select",
+        "step3Desc": "Apply to offers that match you, or receive applications.",
+        "step4Title": "Land the job",
+        "step4Desc": "Get the interview and start your new adventure."
+      },
+      "cta": {
+        "badge": "For recruiters",
+        "title": "Recruit the best talent",
+        "subtitle": "Post your offers, receive qualified applications and find the rare gem.",
+        "feature1": "Post offers for free",
+        "feature2": "Receive targeted applications",
+        "feature3": "Manage your recruitments easily",
+        "feature4": "Benefit from smart matching tools",
+        "publishJob": "Post an offer",
+        "createAccount": "Create a recruiter account",
+        "pricing": "See pricing"
+      },
+      "why": {
+        "mainTitle": "Why choose Actoos Jobs?",
+        "mainSubtitle": "The platform designed for the employment of tomorrow.",
+        "title1": "International reach",
+        "desc1": "Offers and candidates worldwide, with a local presence.",
+        "title2": "Verified companies",
+        "desc2": "All our companies are verified for greater trust.",
+        "title3": "Security and privacy",
+        "desc3": "Your data is protected with the best standards.",
+        "title4": "Speed and simplicity",
+        "desc4": "A smooth interface to apply or recruit in the blink of an eye.",
+        "title5": "Personalized experience",
+        "desc5": "Tailored recommendations thanks to our artificial intelligence.",
+        "title6": "Real-time statistics",
+        "desc6": "Track your applications and performance easily.",
+        "createAccount": "Create a free account"
+      }
     },
-    "categories": {
-      "title": "Explore by category",
-      "subtitle": "Find opportunities in your field of expertise"
+"settings": {
+      "title": "Settings",
+      "subtitle": "Manage your account and preferences.",
+      "back": "Back",
+      "myProfile": "My profile",
+      "countryAndCurrency": "Country and currency",
+      "country": "Country",
+      "selectCountry": "All countries",
+      "currency": "Currency",
+      "selectCurrency": "All currencies",
+      "accountInfo": {
+        "title": "Account information",
+        "description": "Logged in as {{email}}"
+      },
+      "changeEmail": {
+        "title": "Change email",
+        "description": "Update your email address.",
+        "newEmailLabel": "New email",
+        "newEmailPlaceholder": "new@email.com",
+        "currentPasswordLabel": "Current password",
+        "currentPasswordPlaceholder": "Your password",
+        "submit": "Update email"
+      },
+      "changePassword": {
+        "title": "Change password",
+        "description": "Use at least 8 characters.",
+        "newPasswordLabel": "New password",
+        "newPasswordPlaceholder": "New password",
+        "confirmPasswordLabel": "Confirm password",
+        "confirmPasswordPlaceholder": "Confirm password",
+        "submit": "Save password"
+      },
+      "logout": {
+        "title": "Log out",
+        "description": "You can log back in at any time.",
+        "button": "Log out"
+      },
+      "dangerZone": {
+        "title": "Danger zone",
+        "description": "Permanently delete your account. This action is irreversible.",
+        "confirm": "Are you sure you want to delete your account?",
+        "button": "Delete my account"
+      },
+      "roleChange": {
+        "title": "Change role",
+        "descriptionCandidate": "You are a <strong>candidate</strong>. Request to become a recruiter.",
+        "descriptionCompany": "You are a <strong>recruiter</strong>. Request to become a candidate.",
+        "requestButton": "Request role change",
+        "modal": {
+          "title": "Role change request",
+          "roleLabel": "Desired new role",
+          "roleCompany": "Recruiter",
+          "roleCandidate": "Candidate",
+          "reasonLabel": "Reason (optional)",
+          "reasonPlaceholder": "Explain why you want to change role…",
+          "cancel": "Cancel",
+          "submit": "Send request"
+        }
+      },
+      "toasts": {
+        "passwordMismatch": "Passwords do not match.",
+        "passwordLength": "Password must contain at least 8 characters.",
+        "passwordUpdated": "Password updated successfully.",
+        "passwordError": "Error updating password.",
+        "fillAllFields": "Please fill in all fields.",
+        "wrongPassword": "Incorrect password.",
+        "emailConfirmationSent": "A confirmation email has been sent. Check your inbox.",
+        "emailError": "Error changing email.",
+        "logoutError": "Error logging out.",
+        "accountDeleted": "Your account has been permanently deleted.",
+        "deleteError": "Error deleting account.",
+        "accountSuspended": "Your account is suspended. Action impossible.",
+        "roleRequestSent": "Your request has been sent.",
+        "roleRequestError": "Error sending request."
+      }
     },
-    
-    "companies": {
-      "title": "Companies hiring",
-      "subtitle": "Discover the companies that trust Actoos Jobs"
-    },
-    "how": {
-      "title": "How it works?",
-      "subtitle": "Find your ideal job in 4 simple steps",
-      "step1Title": "Create your profile",
-      "step1Desc": "Sign up for free and complete your profile in minutes.",
-      "step2Title": "Search for jobs",
-      "step2Desc": "Browse hundreds of jobs and use our advanced filters.",
-      "step3Title": "Apply in one click",
-      "step3Desc": "Send your application directly to recruiters.",
-      "step4Title": "Land the job",
-      "step4Desc": "Track your applications and prepare for your interviews."
-    },
-    "cta": {
-      "badge": "For companies",
-      "title": "Recruit the best talents",
-      "subtitle": "Post your jobs, receive qualified applications and find your next team member in days.",
-      "feature1": "Unlimited job postings",
-      "feature2": "Access to a pool of qualified candidates",
-      "feature3": "Application management tools",
-      "feature4": "Premium visibility on the platform",
-      "createAccount": "Create a company account",
-      "publishJob": "Post a job",
-      "pricing": "See our pricing"
-    },
-    "why": {
-      "mainTitle": "Why choose Actoos Jobs?",
-      "mainSubtitle": "The next-generation recruitment platform, created by passionate engineers.",
-      "title1": "100% free for candidates",
-      "desc1": "Create your profile, apply and get hired without paying anything.",
-      "title2": "Immediate visibility for companies",
-      "desc2": "Post your jobs and reach thousands of qualified candidates.",
-      "title3": "Secure and local data",
-      "desc3": "Your information is hosted securely and remains confidential.",
-      "title4": "Smart search engine",
-      "desc4": "Find the ideal job with fast search and precise filters.",
-      "title5": "Responsive local support",
-      "desc5": "A responsive team, listening to help you.",
-      "title6": "Real-time statistics",
-      "desc6": "Track your applications and the performance of your jobs live.",
-      "createAccount": "Create a free account"
-    }
-  },
   "jobs": {
     "remote": "Remote",
       "remoteFull": "100% remote",
@@ -382,15 +461,7 @@
       }
     },
 
-  "contractTypes": {
-    "cdi": "Permanent contract (CDI)",
-    "cdd": "Fixed-term contract (CDD)",
-    "stage": "Internship",
-    "freelance": "Freelance",
-    "interim": "Temporary",
-    "alternance": "Apprenticeship",
-    "temps_partiel": "Part-time"
-  },
+  
   "myApplications": {
     "title": "My applications",
     "back": "Back",
@@ -637,13 +708,7 @@
     ]
   },
   
-  "experienceLevels": {
-    "junior": "Junior",
-    "intermediate": "Intermediate",
-    "senior": "Senior",
-    "lead": "Lead",
-    "manager": "Manager"
-  },
+ 
   
   "coverLetter": {
     "badge": "AI",
@@ -2395,75 +2460,79 @@
         "errorToast": "Analysis error."
       }
     },
-    "settings": {
-      "back": "Back",
-      "myProfile": "My profile",
+"settings": {
       "title": "Settings",
       "subtitle": "Manage your account and preferences.",
-      "toasts": {
-        "accountSuspended": "Your account is suspended. Action impossible.",
-        "passwordMismatch": "Passwords do not match.",
-        "passwordLength": "Password must be at least 8 characters.",
-        "passwordUpdated": "Password updated.",
-        "passwordError": "Error changing password.",
-        "fillAllFields": "Please fill in all fields.",
-        "emailConfirmationSent": "A confirmation email has been sent to your new address.",
-        "wrongPassword": "Current password is incorrect.",
-        "emailError": "Error changing email.",
-        "logoutError": "Error during logout.",
-        "accountDeleted": "Account permanently deleted.",
-        "deleteError": "Error deleting account.",
-        "roleRequestSent": "Role change request sent.",
-        "roleRequestError": "Error sending request."
-      },
+      "back": "Back",
+      "myProfile": "My profile",
+      "countryAndCurrency": "Country and currency",
+      "country": "Country",
+      "selectCountry": "Select a country",
+      "currency": "Currency",
       "accountInfo": {
         "title": "Account information",
         "description": "Logged in as {{email}}"
       },
       "changeEmail": {
         "title": "Change email",
-        "description": "Change your login email address.",
+        "description": "Update your email address.",
         "newEmailLabel": "New email",
-        "newEmailPlaceholder": "email@example.com",
+        "newEmailPlaceholder": "new@email.com",
         "currentPasswordLabel": "Current password",
-        "currentPasswordPlaceholder": "Your current password",
+        "currentPasswordPlaceholder": "Your password",
         "submit": "Update email"
       },
       "changePassword": {
         "title": "Change password",
-        "description": "Use a strong password of at least 8 characters.",
+        "description": "Use at least 8 characters.",
         "newPasswordLabel": "New password",
         "newPasswordPlaceholder": "New password",
         "confirmPasswordLabel": "Confirm password",
         "confirmPasswordPlaceholder": "Confirm password",
-        "submit": "Update password"
+        "submit": "Save password"
       },
       "logout": {
         "title": "Log out",
-        "description": "Log out from this device.",
+        "description": "You can log back in at any time.",
         "button": "Log out"
+      },
+      "dangerZone": {
+        "title": "Danger zone",
+        "description": "Permanently delete your account. This action is irreversible.",
+        "confirm": "Are you sure you want to delete your account?",
+        "button": "Delete my account"
       },
       "roleChange": {
         "title": "Change role",
-        "descriptionCandidate": "You are currently a <strong>candidate</strong>. You can request to become a <strong>recruiter</strong>.",
-        "descriptionCompany": "You are currently a <strong>recruiter</strong>. You can request to switch back to <strong>candidate</strong>.",
+        "descriptionCandidate": "You are a <strong>candidate</strong>. Request to become a recruiter.",
+        "descriptionCompany": "You are a <strong>recruiter</strong>. Request to become a candidate.",
         "requestButton": "Request role change",
         "modal": {
           "title": "Role change request",
           "roleLabel": "Desired new role",
-          "roleCompany": "Recruiter (company)",
+          "roleCompany": "Recruiter",
           "roleCandidate": "Candidate",
-          "reasonLabel": "Reason for request",
+          "reasonLabel": "Reason (optional)",
           "reasonPlaceholder": "Explain why you want to change role…",
           "cancel": "Cancel",
           "submit": "Send request"
         }
       },
-      "dangerZone": {
-        "title": "Danger zone",
-        "description": "Permanently delete your account and all your data.",
-        "confirm": "Permanently delete your account? This action is irreversible.",
-        "button": "Delete my account"
+      "toasts": {
+        "passwordMismatch": "Passwords do not match.",
+        "passwordLength": "Password must contain at least 8 characters.",
+        "passwordUpdated": "Password updated successfully.",
+        "passwordError": "Error updating password.",
+        "fillAllFields": "Please fill in all fields.",
+        "wrongPassword": "Incorrect password.",
+        "emailConfirmationSent": "A confirmation email has been sent. Check your inbox.",
+        "emailError": "Error changing email.",
+        "logoutError": "Error logging out.",
+        "accountDeleted": "Your account has been permanently deleted.",
+        "deleteError": "Error deleting account.",
+        "accountSuspended": "Your account is suspended. Action impossible.",
+        "roleRequestSent": "Your request has been sent.",
+        "roleRequestError": "Error sending request."
       }
     },
     "jobs": {
@@ -2947,7 +3016,47 @@
       "inappropriate": "Contenu inapproprié",
       "other": "Autre"
     }
-  }
+  },
+  "common": {
+      "pro": "Pro",
+      "premium": "Premium",
+      "allCountries": "All countries",
+      "allCountriesShort": "All",
+      "search": "Search",
+      "login": "Log in",
+      "register": "Register",
+      "logout": "Logout",
+      "dashboard": "Dashboard",
+      "profile": "Profile",
+      "settings": "Settings",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "delete": "Delete",
+      "edit": "Edit",
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "savedAt": "Saved at {{time}}"
+    },
+    "contractTypes": {
+      "cdi": "Permanent",
+      "cdd": "Fixed-term",
+      "stage": "Internship",
+      "alternance": "Apprenticeship",
+      "freelance": "Freelance",
+      "interim": "Temporary",
+      "jobEtudiant": "Student job",
+      "extra": "Casual",
+      "saisonnier": "Seasonal",
+      "benevolat": "Volunteer"
+    },
+    "experienceLevels": {
+      "junior": "Junior (0-2 years)",
+      "intermediaire": "Intermediate (2-5 years)",
+      "senior": "Senior (5-10 years)",
+      "expert": "Expert (10+ years)"
+    }
 
   
 

@@ -1,14 +1,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
-import { useCountries } from '../contexts/CountriesContext'; // ← Nouveau
+import { useCountries } from '../contexts/CountriesContext';
 import { Globe } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const HeaderPreferences = ({ isMobile = false, isTransparent = false }) => {
   const { t } = useTranslation();
   const { prefs, updatePrefs } = usePreferencesContext();
-  const { countries, availableCurrencies } = useCountries(); // ← Récupère les données centralisées
+  const { countries, availableCurrencies } = useCountries();
 
   const handleCountryChange = (e) => {
     const newValue = e.target.value === '' ? null : e.target.value;
@@ -49,7 +49,7 @@ const HeaderPreferences = ({ isMobile = false, isTransparent = false }) => {
         aria-label={t('select_country')}
       >
         <option value="">
-          {isMobile ? t('common.allCountriesShort', 'Tous') : t('common.allCountries', 'Tous les pays')}
+          {isMobile ? t('common.allCountriesShort') : t('common.allCountries')}
         </option>
         {countries.map(c => (
           <option key={c.code} value={c.code}>

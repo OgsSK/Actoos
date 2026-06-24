@@ -145,8 +145,8 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   );
 };
 
-// -------------------- Job Card (avec badge télétravail amélioré) --------------------
-const JobCard = ({ job, user, isCompany, isAccountRestricted, onSave, isSaved, onEdit }) => {
+// -------------------- Job Card (sans vérification de suspension) --------------------
+const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -371,7 +371,7 @@ const JobCard = ({ job, user, isCompany, isAccountRestricted, onSave, isSaved, o
                   </span>
 
                   <Badge className={cn(contractInfo.color, 'border-0 rounded-full')}>
-                    {contractInfo.label}
+                    {t(contractInfo.key)}
                   </Badge>
 
                   {job.salary_min && job.salary_max && (
@@ -415,27 +415,20 @@ const JobCard = ({ job, user, isCompany, isAccountRestricted, onSave, isSaved, o
         </CardContent>
       </Link>
 
-      {/* Bouton sauvegarde – désactivé si compte suspendu/banni */}
+      {/* Bouton sauvegarde normal, sans restriction */}
       {!isOwner && !isCompany && (
         <button
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (isAccountRestricted) {
-              toast.error(t('jobs.accountSuspended'));
-              return;
-            }
             onSave && onSave(job.id);
           }}
-          disabled={isAccountRestricted}
           className={cn(
             'absolute top-3 right-3 p-2 rounded-xl transition-all z-30',
             isSaved
               ? 'bg-red-100 text-red-500'
-              : 'bg-white/90 text-slate-400 hover:bg-red-50 hover:text-red-500',
-            isAccountRestricted && 'opacity-50 cursor-not-allowed'
+              : 'bg-white/90 text-slate-400 hover:bg-red-50 hover:text-red-500'
           )}
-          title={isAccountRestricted ? t('jobs.accountSuspended') : ''}
         >
           <Heart className={cn('w-5 h-5', isSaved && 'fill-current')} />
         </button>
@@ -463,7 +456,7 @@ const JobCard = ({ job, user, isCompany, isAccountRestricted, onSave, isSaved, o
   );
 };
 
-// -------------------- Filters Sidebar (identique) --------------------
+// -------------------- Filters Sidebar (identiques) --------------------
 const FiltersSidebar = ({
   filters,
   onChange,
@@ -506,18 +499,24 @@ const FiltersSidebar = ({
 
   const contractOptions =
     contractTypes?.length > 0
-      ? contractTypes
+      ? contractTypes.map(({ value }) => ({
+          value,
+          label: t(CONTRACT_TYPES[value]?.key || value),
+        }))
       : Object.entries(CONTRACT_TYPES).map(([value, meta]) => ({
           value,
-          label: meta.label,
+          label: t(meta.key),
         }));
 
   const experienceOptions =
     experienceLevels?.length > 0
-      ? experienceLevels
+      ? experienceLevels.map(({ value }) => ({
+          value,
+          label: t(EXPERIENCE_LEVELS[value]?.key || value),
+        }))
       : Object.entries(EXPERIENCE_LEVELS).map(([value, meta]) => ({
           value,
-          label: meta.label,
+          label: t(meta.key),
         }));
 
   return (
@@ -547,9 +546,7 @@ const FiltersSidebar = ({
                 }}
                 className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
               />
-              <span className="text-sm text-slate-700">
-                {t(`contracts.${value}`, label)}
-              </span>
+              <span className="text-sm text-slate-700">{label}</span>
             </label>
           ))}
         </div>
@@ -620,9 +617,7 @@ const FiltersSidebar = ({
                 }}
                 className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
               />
-              <span className="text-sm text-slate-700">
-                {t(`experienceLevels.${value}`, label)}
-              </span>
+              <span className="text-sm text-slate-700">{label}</span>
             </label>
           ))}
         </div>
@@ -652,7 +647,7 @@ const FiltersSidebar = ({
 const JobsPage = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const { user, profile, isCompany } = useAuth(); // ✅ ajout du profile
+  const { user, isCompany } = useAuth();
   const navigate = useNavigate();
   const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
@@ -682,9 +677,6 @@ const JobsPage = () => {
   const [sortBy, setSortBy] = useState('recent');
 
   const conversionRate = RATES[prefs.currency] || 1;
-
-  // Statut restreint du compte
-  const isAccountRestricted = !profile?.is_active || profile?.is_banned;
 
   useEffect(() => {
     if (prefs.country) {
@@ -751,19 +743,19 @@ const JobsPage = () => {
         if (data) {
           const uniqueTypes = [...new Set(data.map((j) => j.contract_type).filter(Boolean))];
           setAvailableContractTypes(
-            uniqueTypes.map((type) => ({ value: type, label: CONTRACT_TYPES[type]?.label || type }))
+            uniqueTypes.map((type) => ({ value: type }))
           );
           const uniqueExp = [...new Set(data.map((j) => j.experience_level).filter(Boolean))];
           setAvailableExperienceLevels(
-            uniqueExp.map((exp) => ({ value: exp, label: EXPERIENCE_LEVELS[exp]?.label || exp }))
+            uniqueExp.map((exp) => ({ value: exp }))
           );
         }
       } catch {
         setAvailableContractTypes(
-          Object.entries(CONTRACT_TYPES).map(([k, v]) => ({ value: k, label: v.label }))
+          Object.entries(CONTRACT_TYPES).map(([k]) => ({ value: k }))
         );
         setAvailableExperienceLevels(
-          Object.entries(EXPERIENCE_LEVELS).map(([k, v]) => ({ value: k, label: v.label }))
+          Object.entries(EXPERIENCE_LEVELS).map(([k]) => ({ value: k }))
         );
       }
     };
@@ -841,10 +833,6 @@ const JobsPage = () => {
     }
     if (isCompany) {
       toast.error(t('jobs.companyCannotSave'));
-      return;
-    }
-    if (isAccountRestricted) {
-      toast.error(t('jobs.accountSuspended'));
       return;
     }
     if (savedJobs.includes(jobId)) {
@@ -1007,7 +995,7 @@ const JobsPage = () => {
 
                 {filters.contract_types?.map((type) => (
                   <Badge key={type} className="gap-1 rounded-full bg-slate-100 text-slate-700">
-                    {CONTRACT_TYPES[type]?.label}
+                    {t(CONTRACT_TYPES[type]?.key || type)}
                     <button
                       onClick={() =>
                         setFilters((prev) => ({
@@ -1023,7 +1011,7 @@ const JobsPage = () => {
 
                 {filters.experience_levels?.map((exp) => (
                   <Badge key={exp} className="gap-1 rounded-full bg-slate-100 text-slate-700">
-                    {EXPERIENCE_LEVELS[exp]?.label}
+                    {t(EXPERIENCE_LEVELS[exp]?.key || exp)}
                     <button
                       onClick={() =>
                         setFilters((prev) => ({
@@ -1083,7 +1071,6 @@ const JobsPage = () => {
                     job={job}
                     user={user}
                     isCompany={isCompany}
-                    isAccountRestricted={isAccountRestricted}
                     onSave={handleSaveJob}
                     isSaved={savedJobs.includes(job.id)}
                     onEdit={handleEditJob}

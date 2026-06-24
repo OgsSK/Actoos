@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -12,23 +12,13 @@ import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 
 const SavedJobsPage = () => {
   const { t } = useTranslation();
-  const { user, profile, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const { format } = useCurrencyFormatter();
 
-  // Vérification du compte (suspension / bannissement)
-  useEffect(() => {
-    if (!user) return;
-    if (!profile?.is_active || profile?.is_banned) {
-      signOut();
-      navigate('/connexion?reason=suspended', { replace: true });
-    }
-  }, [user, profile, signOut, navigate]);
-
   const fetchSaved = async () => {
-    if (!user || !profile?.is_active || profile?.is_banned) return;
+    if (!user) return;
     const { data } = await supabase
       .from('saved_jobs')
       .select('job:jobs(id, title, contract_type, salary_min, salary_max, company:companies(name), city:cities(name))')
@@ -38,27 +28,14 @@ const SavedJobsPage = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    if (user && profile?.is_active && !profile?.is_banned) fetchSaved();
-    else if (user && (!profile?.is_active || profile?.is_banned)) setLoading(false);
-  }, [user, profile]);
+  useEffect(() => { fetchSaved(); }, [user]);
 
   const handleRemove = async (jobId) => {
-    if (!profile?.is_active || profile?.is_banned) return; // sécurité supplémentaire
     await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', jobId);
     fetchSaved();
   };
 
   if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
-
-  // Si le compte est restreint, on ne rend rien (redirection en cours)
-  if (profile && (!profile.is_active || profile.is_banned)) {
-    return (
-      <div className="min-h-screen pt-20 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -96,7 +73,6 @@ const SavedJobsPage = () => {
                     size="sm"
                     onClick={() => handleRemove(job.id)}
                     className="text-red-500"
-                    disabled={!profile?.is_active || profile?.is_banned}
                   >
                     <Heart className="w-4 h-4 fill-current" />
                   </Button>

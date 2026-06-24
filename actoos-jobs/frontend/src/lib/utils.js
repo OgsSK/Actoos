@@ -6,7 +6,7 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-// Format date in French (inchangé – pour l'instant, tu peux le garder tel quel)
+// Format date in French (inchangé)
 export function formatDate(date) {
   if (!date) return '';
   const d = new Date(date);
@@ -17,7 +17,7 @@ export function formatDate(date) {
   });
 }
 
-// Format relative date (maintenant multilingue)
+// Format relative date (multilingue)
 export function formatRelative(date) {
   if (!date) return '';
   const d = new Date(date);
@@ -42,7 +42,7 @@ export function formatRelative(date) {
   return t('time.yearsAgo', { count: Math.floor(diffDays / 365) });
 }
 
-// Format salary in FCFA (default)
+// Format salary (à remplacer à terme par useCurrencyFormatter dans les composants)
 export function formatSalary(min, max, currency = 'XOF') {
   const formatter = new Intl.NumberFormat('fr-FR', {
     style: 'currency',
@@ -76,24 +76,24 @@ export function slugify(text) {
     .replace(/(^-|-$)+/g, '');
 }
 
-// Contract types (fixed enum)
+// ----- Types de contrat (clés de traduction) -----
 export const CONTRACT_TYPES = {
-  cdi:             { label: 'CDI',              color: 'bg-green-100 text-green-700' },
-  cdd:             { label: 'CDD',              color: 'bg-blue-100 text-blue-700' },
-  stage:           { label: 'Stage',            color: 'bg-purple-100 text-purple-700' },
-  alternance:      { label: 'Alternance',       color: 'bg-orange-100 text-orange-700' },
-  freelance:       { label: 'Freelance',        color: 'bg-cyan-100 text-cyan-700' },
-  interim:         { label: 'Intérim',          color: 'bg-yellow-100 text-yellow-700' },
-  'job-etudiant':  { label: 'Job étudiant',     color: 'bg-teal-100 text-teal-700' },
-  extra:           { label: 'Extra',            color: 'bg-pink-100 text-pink-700' },
-  saisonnier:      { label: 'Saisonnier',       color: 'bg-lime-100 text-lime-700' },
-  benevolat:       { label: 'Bénévolat',        color: 'bg-indigo-100 text-indigo-700' },
+  cdi:             { key: 'contractTypes.cdi',              color: 'bg-blue-100 text-blue-700' },
+  cdd:             { key: 'contractTypes.cdd',              color: 'bg-green-100 text-green-700' },
+  stage:           { key: 'contractTypes.stage',            color: 'bg-purple-100 text-purple-700' },
+  alternance:      { key: 'contractTypes.alternance',       color: 'bg-orange-100 text-orange-700' },
+  freelance:       { key: 'contractTypes.freelance',        color: 'bg-teal-100 text-teal-700' },
+  interim:         { key: 'contractTypes.interim',          color: 'bg-amber-100 text-amber-700' },
+  'job-etudiant':  { key: 'contractTypes.jobEtudiant',      color: 'bg-pink-100 text-pink-700' },
+  extra:           { key: 'contractTypes.extra',            color: 'bg-indigo-100 text-indigo-700' },
+  saisonnier:      { key: 'contractTypes.saisonnier',       color: 'bg-rose-100 text-rose-700' },
+  benevolat:       { key: 'contractTypes.benevolat',        color: 'bg-emerald-100 text-emerald-700' },
 };
 
-// Experience levels (fixed enum)
+// ----- Niveaux d'expérience (clés de traduction) -----
 export const EXPERIENCE_LEVELS = {
-  junior: { label: 'Junior (0-2 ans)', value: 'junior' },
-  intermediaire: { label: 'Intermédiaire (2-5 ans)', value: 'intermediaire' },
-  senior: { label: 'Senior (5-10 ans)', value: 'senior' },
-  expert: { label: 'Expert (10+ ans)', value: 'expert' },
+  junior:           { key: 'experienceLevels.junior',           color: 'bg-green-100 text-green-700' },
+  intermediaire:    { key: 'experienceLevels.intermediaire',    color: 'bg-blue-100 text-blue-700' },
+  senior:           { key: 'experienceLevels.senior',           color: 'bg-purple-100 text-purple-700' },
+  expert:           { key: 'experienceLevels.expert',           color: 'bg-red-100 text-red-700' },
 };

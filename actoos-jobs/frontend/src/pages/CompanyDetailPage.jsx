@@ -284,7 +284,7 @@ const CompanyDetailPage = () => {
                               </span>
                             )}
                             <Badge className={`${contractInfo.color} border-0`}>
-                              {contractInfo.label}
+                              {t(contractInfo.key)}
                             </Badge>
                             {job.salary_min && job.salary_max && (
                               <span className="flex items-center gap-1">
