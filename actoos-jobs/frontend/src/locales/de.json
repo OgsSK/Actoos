@@ -2,14 +2,13 @@
 
    "home": {
       "hero": {
-        "badge": "Die Nr. 1 Job-Plattform",
-        "titleLine1": "Finden Sie Ihren Traumjob",
-        "titleLine2": "oder das Talent, das Sie brauchen",
-        "subtitle": "Tausende von Angeboten und Kandidaten warten auf Sie.",
-        "searchPlaceholder": "Job, Stichwort, Kompetenz...",
+        "badge": "Die neue Art der Personalgewinnung",
+        "titleLine1": "Finden Sie die Stelle, die Ihren Fähigkeiten entspricht.",
+        "titleLine2": "Identifizieren Sie den Kandidaten, der den Unterschied macht.",
+        "subtitle": "Die Referenzplattform für Ihre Personalprojekte.",
+        "searchPlaceholder": "Stellenbezeichnung, Stichwort...",
         "allCities": "Alle Städte",
         "searchButton": "Suchen",
-        "searching": "Suche läuft...",
         "activeJobs": "Aktive Angebote",
         "companies": "Unternehmen",
         "candidates": "Kandidaten"

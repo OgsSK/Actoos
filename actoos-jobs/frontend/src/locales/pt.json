@@ -2,14 +2,13 @@
   
  "home": {
       "hero": {
-        "badge": "A plataforma de emprego Nº1",
-        "titleLine1": "Encontre o emprego dos seus sonhos",
-        "titleLine2": "ou o talento que precisa",
-        "subtitle": "Milhares de ofertas e candidatos esperam por si.",
-        "searchPlaceholder": "Profissão, palavra-chave, competência...",
+        "badge": "A nova forma de recrutar",
+        "titleLine1": "Encontre o emprego à altura das suas competências.",
+        "titleLine2": "Identifique o candidato que fará a diferença.",
+        "subtitle": "A plataforma de recrutamento de referência para os seus projetos profissionais.",
+        "searchPlaceholder": "Título do cargo, palavra-chave...",
         "allCities": "Todas as cidades",
         "searchButton": "Pesquisar",
-        "searching": "A pesquisar...",
         "activeJobs": "Ofertas ativas",
         "companies": "Empresas",
         "candidates": "Candidatos"

@@ -2,18 +2,17 @@
   
   "home": {
     "hero": {
-      "badge": "La plateforme emploi N°1",
-      "titleLine1": "Trouvez le job de vos rêves",
-      "titleLine2": "ou le talent qu'il vous faut",
-      "subtitle": "Des milliers d'offres et de candidats vous attendent.",
-      "searchPlaceholder": "Métier, mot-clé, compétence...",
-      "allCities": "Toutes les villes",
-      "searchButton": "Rechercher",
-      "searching": "Recherche en cours...",
-      "activeJobs": "Offres actives",
-      "companies": "Entreprises",
-      "candidates": "Candidats"
-    },
+    "badge": "La nouvelle façon de recruter",
+    "titleLine1": "Trouvez le poste à la hauteur de vos compétences.",
+    "titleLine2": "Identifiez le candidat qui fera la différence.",
+    "subtitle": "La plateforme de recrutement de référence pour vos projets professionnels.",
+    "searchPlaceholder": "Titre du poste, mot-clé...",
+    "allCities": "Toutes les villes",
+    "searchButton": "Rechercher",
+    "activeJobs": "Offres actives",
+    "companies": "Entreprises",
+    "candidates": "Candidats"
+  },
     "categories": {
       "title": "Explorer les catégories",
       "subtitle": "Trouvez des offres par secteur d'activité"

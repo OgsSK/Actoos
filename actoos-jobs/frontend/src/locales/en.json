@@ -2,14 +2,13 @@
 
    "home": {
       "hero": {
-        "badge": "The #1 Job Platform",
-        "titleLine1": "Find the job of your dreams",
-        "titleLine2": "or the talent you need",
-        "subtitle": "Thousands of offers and candidates are waiting for you.",
-        "searchPlaceholder": "Job, keyword, skill...",
+        "badge": "The new way to recruit",
+        "titleLine1": "Find the job that matches your skills.",
+        "titleLine2": "Identify the candidate who will make the difference.",
+        "subtitle": "The reference recruitment platform for your professional projects.",
+        "searchPlaceholder": "Job title, keyword...",
         "allCities": "All cities",
         "searchButton": "Search",
-        "searching": "Searching...",
         "activeJobs": "Active offers",
         "companies": "Companies",
         "candidates": "Candidates"

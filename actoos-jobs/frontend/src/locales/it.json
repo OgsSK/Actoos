@@ -2,14 +2,13 @@
 
   "home": {
       "hero": {
-        "badge": "La piattaforma di lavoro N.1",
-        "titleLine1": "Trova il lavoro dei tuoi sogni",
-        "titleLine2": "o il talento che ti serve",
-        "subtitle": "Migliaia di offerte e candidati ti aspettano.",
-        "searchPlaceholder": "Professione, parola chiave, competenza...",
+        "badge": "Il nuovo modo di reclutare",
+        "titleLine1": "Trova il lavoro all'altezza delle tue competenze.",
+        "titleLine2": "Identifica il candidato che farà la differenza.",
+        "subtitle": "La piattaforma di reclutamento di riferimento per i tuoi progetti professionali.",
+        "searchPlaceholder": "Titolo di lavoro, parola chiave...",
         "allCities": "Tutte le città",
         "searchButton": "Cerca",
-        "searching": "Ricerca in corso...",
         "activeJobs": "Offerte attive",
         "companies": "Aziende",
         "candidates": "Candidati"

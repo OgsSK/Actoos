@@ -2,14 +2,13 @@
   
   "home": {
       "hero": {
-        "badge": "Het nr. 1 vacatureplatform",
-        "titleLine1": "Vind de baan van je dromen",
-        "titleLine2": "of het talent dat je nodig hebt",
-        "subtitle": "Duizenden vacatures en kandidaten wachten op je.",
-        "searchPlaceholder": "Beroep, trefwoord, vaardigheid...",
+        "badge": "De nieuwe manier van werven",
+        "titleLine1": "Vind de functie die past bij uw vaardigheden.",
+        "titleLine2": "Identificeer de kandidaat die het verschil zal maken.",
+        "subtitle": "Het referentie-wervingsplatform voor uw professionele projecten.",
+        "searchPlaceholder": "Functietitel, trefwoord...",
         "allCities": "Alle steden",
         "searchButton": "Zoeken",
-        "searching": "Zoeken...",
         "activeJobs": "Actieve vacatures",
         "companies": "Bedrijven",
         "candidates": "Kandidaten"
