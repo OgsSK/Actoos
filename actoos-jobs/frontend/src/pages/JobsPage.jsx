@@ -145,7 +145,7 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   );
 };
 
-// -------------------- Job Card (sans vérification de suspension) --------------------
+// -------------------- Job Card (modifié pour object-cover) --------------------
 const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
@@ -330,15 +330,16 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
 
           <div className="p-4 sm:p-5 pt-3">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
+              {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0">
                 {job.company?.logo_url ? (
                   <img
                     src={job.company.logo_url}
                     alt={job.company.name}
-                    className="w-11 h-11 sm:w-12 sm:h-12 object-contain"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
-                  <Building2 className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400 group-hover:text-blue-500" />
+                  <Building2 className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400" />
                 )}
               </div>
 

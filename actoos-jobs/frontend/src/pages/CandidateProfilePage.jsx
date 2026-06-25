@@ -21,17 +21,17 @@ import { cn, EXPERIENCE_LEVELS } from '../lib/utils';
 
 // ---------- Section Header ----------
 const SectionHeader = ({ icon: Icon, title, description, action }) => (
-  <div className="flex items-center justify-between mb-6">
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
     <div className="flex items-center gap-3">
-      <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+      <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
         <Icon className="w-5 h-5 text-blue-600" />
       </div>
-      <div>
+      <div className="min-w-0">
         <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
         {description && <p className="text-sm text-slate-500">{description}</p>}
       </div>
     </div>
-    {action}
+    {action && <div className="shrink-0">{action}</div>}
   </div>
 );
 
@@ -52,36 +52,34 @@ const SkillBadge = ({ skill, onRemove }) => (
 // ---------- Experience Item ----------
 const ExperienceItem = ({ experience, onEdit, onRemove, t }) => (
   <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
-    <div className="flex items-start justify-between">
+    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-slate-200">
+        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-slate-200 shrink-0">
           <Building2 className="w-6 h-6 text-slate-400" />
         </div>
-        <div>
+        <div className="min-w-0">
           <h3 className="font-medium text-slate-900">{experience.title}</h3>
           <p className="text-sm text-slate-600">{experience.company}</p>
-          <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
-            <Calendar className="w-3.5 h-3.5" />
-            <span>{experience.start_date} - {experience.end_date || t('candidateProfilePage.experience.present')}</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-sm text-slate-500">
+            <span className="inline-flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{experience.start_date} - {experience.end_date || t('candidateProfilePage.experience.present')}</span>
             {experience.location && (
               <>
-                <span>•</span>
-                <MapPin className="w-3.5 h-3.5" />
-                <span>{experience.location}</span>
+                <span className="hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{experience.location}</span>
               </>
             )}
           </div>
         </div>
       </div>
-      <div className="flex gap-1">
-        <Button variant="ghost" size="sm" type="button" onClick={() => onEdit(experience)}>
+      <div className="flex gap-2 sm:self-start ml-15 sm:ml-0">
+        <Button variant="ghost" size="sm" type="button" onClick={() => onEdit(experience)} className="h-9 px-3">
           {t('candidateProfilePage.experience.edit')}
         </Button>
         <Button
           variant="ghost"
           size="sm"
           type="button"
-          className="text-red-500 hover:text-red-700"
+          className="text-red-500 hover:text-red-700 h-9 px-2"
           onClick={() => onRemove(experience.id)}
         >
           <Trash2 className="w-4 h-4" />
@@ -97,12 +95,12 @@ const ExperienceItem = ({ experience, onEdit, onRemove, t }) => (
 // ---------- Education Item ----------
 const EducationItem = ({ education, onEdit, onRemove, t }) => (
   <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
-    <div className="flex items-start justify-between">
+    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-slate-200">
+        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-slate-200 shrink-0">
           <GraduationCap className="w-6 h-6 text-slate-400" />
         </div>
-        <div>
+        <div className="min-w-0">
           <h3 className="font-medium text-slate-900">{education.degree}</h3>
           <p className="text-sm text-slate-600">{education.school}</p>
           <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
@@ -111,15 +109,15 @@ const EducationItem = ({ education, onEdit, onRemove, t }) => (
           </div>
         </div>
       </div>
-      <div className="flex gap-1">
-        <Button variant="ghost" size="sm" type="button" onClick={() => onEdit(education)}>
+      <div className="flex gap-2 sm:self-start ml-15 sm:ml-0">
+        <Button variant="ghost" size="sm" type="button" onClick={() => onEdit(education)} className="h-9 px-3">
           {t('candidateProfilePage.education.edit')}
         </Button>
         <Button
           variant="ghost"
           size="sm"
           type="button"
-          className="text-red-500 hover:text-red-700"
+          className="text-red-500 hover:text-red-700 h-9 px-2"
           onClick={() => onRemove(education.id)}
         >
           <Trash2 className="w-4 h-4" />
@@ -178,8 +176,8 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-100">
           <h3 className="text-lg font-semibold text-slate-900">
             {experience ? t('candidateProfilePage.experience.modalEditTitle') : t('candidateProfilePage.experience.modalAddTitle')}
@@ -194,7 +192,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
                 setForm({ ...form, title: e.target.value });
                 if (errors.title) setErrors(prev => ({ ...prev, title: false }));
               }}
-              className={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
+              className={cn('min-h-[44px]', errors.title ? 'border-red-500 focus-visible:ring-red-500' : '')}
             />
           </div>
           <div>
@@ -205,7 +203,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
                 setForm({ ...form, company: e.target.value });
                 if (errors.company) setErrors(prev => ({ ...prev, company: false }));
               }}
-              className={errors.company ? 'border-red-500 focus-visible:ring-red-500' : ''}
+              className={cn('min-h-[44px]', errors.company ? 'border-red-500 focus-visible:ring-red-500' : '')}
             />
           </div>
           <div>
@@ -213,9 +211,10 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
             <Input
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
+              className="min-h-[44px]"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.experience.startDate')}</label>
               <Input
@@ -225,7 +224,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
                   setForm({ ...form, start_date: e.target.value });
                   if (errors.start_date) setErrors(prev => ({ ...prev, start_date: false }));
                 }}
-                className={errors.start_date ? 'border-red-500 focus-visible:ring-red-500' : ''}
+                className={cn('min-h-[44px]', errors.start_date ? 'border-red-500 focus-visible:ring-red-500' : '')}
               />
             </div>
             <div>
@@ -235,6 +234,7 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
                 value={form.end_date}
                 onChange={(e) => setForm({ ...form, end_date: e.target.value })}
                 disabled={form.current}
+                className="min-h-[44px]"
               />
             </div>
           </div>
@@ -267,9 +267,9 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
             </div>
           </div>
         </div>
-        <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
-          <Button variant="outline" type="button" onClick={onClose}>{t('candidateProfilePage.experience.cancel')}</Button>
-          <Button type="button" onClick={handleSave}>
+        <div className="p-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
+          <Button variant="outline" type="button" onClick={onClose} className="min-h-[44px] w-full sm:w-auto">{t('candidateProfilePage.experience.cancel')}</Button>
+          <Button type="button" onClick={handleSave} className="min-h-[44px] w-full sm:w-auto">
             {experience ? t('candidateProfilePage.experience.save') : t('candidateProfilePage.experience.saveNew')}
           </Button>
         </div>
@@ -308,8 +308,8 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null, t }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-w-lg w-full">
         <div className="p-6 border-b border-slate-100">
           <h3 className="text-lg font-semibold text-slate-900">
             {education ? t('candidateProfilePage.education.modalEditTitle') : t('candidateProfilePage.education.modalAddTitle')}
@@ -324,7 +324,7 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null, t }) => {
                 setForm({ ...form, degree: e.target.value });
                 if (errors.degree) setErrors(prev => ({ ...prev, degree: false }));
               }}
-              className={errors.degree ? 'border-red-500 focus-visible:ring-red-500' : ''}
+              className={cn('min-h-[44px]', errors.degree ? 'border-red-500 focus-visible:ring-red-500' : '')}
             />
           </div>
           <div>
@@ -335,7 +335,7 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null, t }) => {
                 setForm({ ...form, school: e.target.value });
                 if (errors.school) setErrors(prev => ({ ...prev, school: false }));
               }}
-              className={errors.school ? 'border-red-500 focus-visible:ring-red-500' : ''}
+              className={cn('min-h-[44px]', errors.school ? 'border-red-500 focus-visible:ring-red-500' : '')}
             />
           </div>
           <div>
@@ -343,6 +343,7 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null, t }) => {
             <Input
               value={form.field}
               onChange={(e) => setForm({ ...form, field: e.target.value })}
+              className="min-h-[44px]"
             />
           </div>
           <div>
@@ -356,13 +357,13 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null, t }) => {
                 setForm({ ...form, year: e.target.value });
                 if (errors.year) setErrors(prev => ({ ...prev, year: false }));
               }}
-              className={errors.year ? 'border-red-500 focus-visible:ring-red-500' : ''}
+              className={cn('min-h-[44px]', errors.year ? 'border-red-500 focus-visible:ring-red-500' : '')}
             />
           </div>
         </div>
-        <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
-          <Button variant="outline" type="button" onClick={onClose}>{t('candidateProfilePage.education.cancel')}</Button>
-          <Button type="button" onClick={handleSave}>
+        <div className="p-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
+          <Button variant="outline" type="button" onClick={onClose} className="min-h-[44px] w-full sm:w-auto">{t('candidateProfilePage.education.cancel')}</Button>
+          <Button type="button" onClick={handleSave} className="min-h-[44px] w-full sm:w-auto">
             {education ? t('candidateProfilePage.education.save') : t('candidateProfilePage.education.saveNew')}
           </Button>
         </div>
@@ -371,12 +372,12 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null, t }) => {
   );
 };
 
-// ---------- Analyse CV Modale ----------
+// ---------- CV Analysis Modal ----------
 const CvAnalysisModal = ({ isOpen, onClose, cvText, onTextChange, onAnalyze, analyzing, result, t }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-slate-900">{t('candidateProfilePage.cvAnalysis.title')}</h3>
           <button type="button" onClick={onClose}><X className="w-5 h-5" /></button>
@@ -397,9 +398,9 @@ const CvAnalysisModal = ({ isOpen, onClose, cvText, onTextChange, onAnalyze, ana
             </div>
           )}
         </div>
-        <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
-          <Button variant="outline" type="button" onClick={onClose}>{t('candidateProfilePage.cvAnalysis.close')}</Button>
-          <Button type="button" onClick={onAnalyze} disabled={analyzing || !cvText.trim()}>
+        <div className="p-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
+          <Button variant="outline" type="button" onClick={onClose} className="min-h-[44px] w-full sm:w-auto">{t('candidateProfilePage.cvAnalysis.close')}</Button>
+          <Button type="button" onClick={onAnalyze} disabled={analyzing || !cvText.trim()} className="min-h-[44px] w-full sm:w-auto">
             {analyzing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
             {analyzing ? t('candidateProfilePage.cvAnalysis.analyzing') : t('candidateProfilePage.cvAnalysis.analyze')}
           </Button>
@@ -535,29 +536,28 @@ const CandidateProfilePage = () => {
     setDocuments(data || []);
   };
 
-  // ---- Photo de profil ----
+  // ✅ UPLOAD DIRECT VERS SUPABASE STORAGE (corrigé)
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingPhoto(true);
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64Data = reader.result;
-        const res = await apiFetch('/api/upload', {
-          method: 'POST',
-          body: JSON.stringify({
-            bucket: 'avatars',
-            folder: user.id,
-            filename: `avatar-${Date.now()}.${file.name.split('.').pop()}`,
-            file_data: base64Data
-          })
-        });
-        await updateProfile({ avatar_url: res.url });
-        toast.success(t('candidateProfilePage.photo.updated'));
-        await refreshProfile();
-      };
-      reader.readAsDataURL(file);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      await updateProfile({ avatar_url: urlData.publicUrl });
+      toast.success(t('candidateProfilePage.photo.updated'));
+      await refreshProfile();
     } catch (err) {
       toast.error(t('candidateProfilePage.photo.uploadError'));
     } finally {
@@ -580,7 +580,6 @@ const CandidateProfilePage = () => {
     }
   };
 
-  // ---- CV principal ----
   const handleCVUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -628,7 +627,6 @@ const CandidateProfilePage = () => {
     }
   };
 
-  // ---- Documents supplémentaires ----
   const handleDocumentUpload = async (file, fileType = 'other') => {
     if (!file) return;
     setUploadingDoc(true);
@@ -676,7 +674,6 @@ const CandidateProfilePage = () => {
     }
   };
 
-  // ---- Analyse IA du CV ----
   const handleAnalyzeCV = async () => {
     if (!cvText.trim()) {
       toast.error(t('candidateProfilePage.cvAnalysis.emptyText'));
@@ -702,7 +699,6 @@ const CandidateProfilePage = () => {
     }
   };
 
-  // ---- Compétences ----
   const handleAddSkill = () => {
     if (newSkill.trim() && !skills.includes(newSkill.trim())) {
       setSkills([...skills, newSkill.trim()]);
@@ -712,7 +708,6 @@ const CandidateProfilePage = () => {
 
   const handleRemoveSkill = (skillToRemove) => setSkills(skills.filter(s => s !== skillToRemove));
 
-  // ---- Expériences ----
   const handleSaveExperience = (exp) => {
     if (editingExp) {
       setExperiences(experiences.map(e => e.id === editingExp.id ? { ...exp, id: editingExp.id } : e));
@@ -725,7 +720,6 @@ const CandidateProfilePage = () => {
 
   const handleRemoveExperience = (id) => setExperiences(experiences.filter(e => e.id !== id));
 
-  // ---- Éducation ----
   const handleSaveEducation = (edu) => {
     if (editingEdu) {
       setEducation(education.map(e => e.id === editingEdu.id ? { ...edu, id: editingEdu.id } : e));
@@ -738,7 +732,6 @@ const CandidateProfilePage = () => {
 
   const handleRemoveEducation = (id) => setEducation(education.filter(e => e.id !== id));
 
-  // ---- Sauvegarde ----
   const handleSave = async () => {
     const newErrors = {};
     if (!personalInfo.first_name?.trim()) newErrors.first_name = true;
@@ -787,23 +780,24 @@ const CandidateProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20 pb-24 sm:pb-10">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* En-tête responsive */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/dashboard')} className="gap-2" type="button">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="shrink-0" type="button">
               <ChevronLeft className="w-4 h-4" />
-              {t('candidateProfilePage.back')}
             </Button>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold text-slate-900">{t('candidateProfilePage.title')}</h1>
-              <p className="text-slate-600">{t('candidateProfilePage.subtitle')}</p>
+              <p className="text-sm text-slate-600">{t('candidateProfilePage.subtitle')}</p>
             </div>
           </div>
+          {/* Bouton sauvegarde desktop uniquement (mobile via barre sticky) */}
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="gap-2 bg-blue-600 text-white hover:bg-blue-700"
+            className="hidden sm:inline-flex gap-2 bg-blue-600 text-white hover:bg-blue-700 min-h-[44px]"
             type="button"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -814,35 +808,37 @@ const CandidateProfilePage = () => {
         <div className="space-y-6">
           {/* Photo */}
           <Card>
-            <CardContent className="p-6 flex items-center gap-6">
-              <div className="relative w-24 h-24">
-                {personalInfo.avatar_url ? (
-                  <img src={personalInfo.avatar_url} alt="Avatar" className="w-24 h-24 rounded-full object-cover border-4 border-white shadow" />
-                ) : (
-                  <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center">
-                    <User className="w-12 h-12 text-blue-600" />
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => photoInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow hover:bg-blue-700"
-                >
-                  <Camera className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-slate-900">{t('candidateProfilePage.photo.title')}</h3>
-                <p className="text-sm text-slate-500">{t('candidateProfilePage.photo.hint')}</p>
-                <div className="flex gap-2 mt-2">
-                  <Button variant="outline" size="sm" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto} type="button">
-                    <Upload className="w-4 h-4 mr-2" /> {t('candidateProfilePage.photo.change')}
-                  </Button>
-                  {personalInfo.avatar_url && (
-                    <Button variant="outline" size="sm" onClick={handleDeletePhoto} className="text-red-600 hover:bg-red-50" type="button">
-                      <Trash2 className="w-4 h-4 mr-2" /> {t('candidateProfilePage.photo.delete')}
-                    </Button>
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <div className="relative w-24 h-24 shrink-0">
+                  {personalInfo.avatar_url ? (
+                    <img src={personalInfo.avatar_url} alt="Avatar" className="w-24 h-24 rounded-full object-cover border-4 border-white shadow" />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center">
+                      <User className="w-12 h-12 text-blue-600" />
+                    </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow hover:bg-blue-700"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <h3 className="font-semibold text-slate-900">{t('candidateProfilePage.photo.title')}</h3>
+                  <p className="text-sm text-slate-500">{t('candidateProfilePage.photo.hint')}</p>
+                  <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
+                    <Button variant="outline" size="sm" onClick={() => photoInputRef.current?.click()} disabled={uploadingPhoto} type="button" className="min-h-[44px]">
+                      <Upload className="w-4 h-4 mr-2" /> {t('candidateProfilePage.photo.change')}
+                    </Button>
+                    {personalInfo.avatar_url && (
+                      <Button variant="outline" size="sm" onClick={handleDeletePhoto} className="text-red-600 hover:bg-red-50 min-h-[44px]" type="button">
+                        <Trash2 className="w-4 h-4 mr-2" /> {t('candidateProfilePage.photo.delete')}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
               <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
@@ -853,7 +849,7 @@ const CandidateProfilePage = () => {
           <Card>
             <CardContent className="p-6">
               <SectionHeader icon={User} title={t('candidateProfilePage.personalInfo.sectionTitle')} description={t('candidateProfilePage.personalInfo.sectionDesc')} />
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.personalInfo.firstName')}</label>
                   <Input
@@ -862,7 +858,7 @@ const CandidateProfilePage = () => {
                       setPersonalInfo({ ...personalInfo, first_name: e.target.value });
                       if (errors.first_name) setErrors(prev => ({ ...prev, first_name: false }));
                     }}
-                    className={errors.first_name ? 'border-red-500 focus-visible:ring-red-500' : ''}
+                    className={cn('min-h-[44px]', errors.first_name ? 'border-red-500 focus-visible:ring-red-500' : '')}
                   />
                 </div>
                 <div>
@@ -873,7 +869,7 @@ const CandidateProfilePage = () => {
                       setPersonalInfo({ ...personalInfo, last_name: e.target.value });
                       if (errors.last_name) setErrors(prev => ({ ...prev, last_name: false }));
                     }}
-                    className={errors.last_name ? 'border-red-500 focus-visible:ring-red-500' : ''}
+                    className={cn('min-h-[44px]', errors.last_name ? 'border-red-500 focus-visible:ring-red-500' : '')}
                   />
                 </div>
                 <div>
@@ -882,6 +878,7 @@ const CandidateProfilePage = () => {
                     value={personalInfo.phone}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
                     placeholder={t('candidateProfilePage.personalInfo.phonePlaceholder')}
+                    className="min-h-[44px]"
                   />
                 </div>
                 <div>
@@ -889,7 +886,7 @@ const CandidateProfilePage = () => {
                   <select
                     value={personalInfo.city_id}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, city_id: e.target.value })}
-                    className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">{t('candidateProfilePage.personalInfo.selectCity')}</option>
                     {cities.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}
@@ -912,7 +909,7 @@ const CandidateProfilePage = () => {
                       setCandidateInfo({ ...candidateInfo, title: e.target.value });
                       if (errors.title) setErrors(prev => ({ ...prev, title: false }));
                     }}
-                    className={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
+                    className={cn('min-h-[44px]', errors.title ? 'border-red-500 focus-visible:ring-red-500' : '')}
                   />
                   <div className="mt-2">
                     <AIAssistant
@@ -941,13 +938,13 @@ const CandidateProfilePage = () => {
                   </div>
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.professionalProfile.experienceLevel')}</label>
                     <select
                       value={candidateInfo.experience_level}
                       onChange={(e) => setCandidateInfo({ ...candidateInfo, experience_level: e.target.value })}
-                      className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                       <option value="">{t('candidateProfilePage.professionalProfile.selectLevel')}</option>
                       {Object.entries(EXPERIENCE_LEVELS).map(([key, val]) => (
@@ -963,11 +960,12 @@ const CandidateProfilePage = () => {
                       max="50"
                       value={candidateInfo.years_of_experience}
                       onChange={(e) => setCandidateInfo({ ...candidateInfo, years_of_experience: parseInt(e.target.value) || 0 })}
+                      className="min-h-[44px]"
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -995,23 +993,23 @@ const CandidateProfilePage = () => {
           <Card>
             <CardContent className="p-6">
               <SectionHeader icon={FileText} title={t('candidateProfilePage.cv.sectionTitle')} description={t('candidateProfilePage.cv.sectionDesc')} />
-              <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
+              <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 sm:p-8 text-center hover:border-blue-400 transition-colors">
                 {cvUrl ? (
                   <div className="space-y-4">
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                       <Check className="w-8 h-8 text-green-600" />
                     </div>
                     <p className="font-medium text-slate-900">{t('candidateProfilePage.cv.uploaded')}</p>
-                    <div className="flex justify-center gap-2 flex-wrap">
+                    <div className="flex flex-col sm:flex-row justify-center gap-3">
                       <a href={cvUrl} target="_blank" rel="noopener noreferrer">
-                        <Button variant="outline" type="button">
+                        <Button variant="outline" type="button" className="min-h-[44px] w-full sm:w-auto">
                           <Eye className="w-4 h-4 mr-2" /> {t('candidateProfilePage.cv.view')}
                         </Button>
                       </a>
-                      <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadingCV} type="button">
+                      <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadingCV} type="button" className="min-h-[44px] w-full sm:w-auto">
                         <Upload className="w-4 h-4 mr-2" />{t('candidateProfilePage.cv.change')}
                       </Button>
-                      <Button variant="outline" onClick={handleDeleteCV} disabled={uploadingCV} className="text-red-600 hover:bg-red-50" type="button">
+                      <Button variant="outline" onClick={handleDeleteCV} disabled={uploadingCV} className="text-red-600 hover:bg-red-50 min-h-[44px] w-full sm:w-auto" type="button">
                         <Trash2 className="w-4 h-4 mr-2" />{t('candidateProfilePage.cv.delete')}
                       </Button>
                     </div>
@@ -1023,7 +1021,7 @@ const CandidateProfilePage = () => {
                     </div>
                     <p className="font-medium text-slate-900">{t('candidateProfilePage.cv.uploadTitle')}</p>
                     <p className="text-sm text-slate-500">{t('candidateProfilePage.cv.uploadHint')}</p>
-                    <Button onClick={() => fileInputRef.current?.click()} disabled={uploadingCV} type="button">
+                    <Button onClick={() => fileInputRef.current?.click()} disabled={uploadingCV} type="button" className="min-h-[44px]">
                       <Upload className="w-4 h-4 mr-2" />{t('candidateProfilePage.cv.chooseFile')}
                     </Button>
                   </div>
@@ -1031,7 +1029,7 @@ const CandidateProfilePage = () => {
                 <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleCVUpload} className="hidden" />
               </div>
               <div className="mt-4 text-center">
-                <Button variant="outline" onClick={() => setShowAnalysis(true)} type="button">
+                <Button variant="outline" onClick={() => setShowAnalysis(true)} type="button" className="min-h-[44px]">
                   <Sparkles className="w-4 h-4 mr-2" /> {t('candidateProfilePage.cv.analyzeButton')}
                 </Button>
               </div>
@@ -1046,7 +1044,7 @@ const CandidateProfilePage = () => {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <select
                     id="doc-type"
-                    className="h-10 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white"
+                    className="h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white"
                     defaultValue="other"
                   >
                     <option value="diploma">{t('candidateProfilePage.documents.typeDiploma')}</option>
@@ -1067,7 +1065,7 @@ const CandidateProfilePage = () => {
                     />
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className="w-full min-h-[44px]"
                       onClick={(e) => {
                         e.preventDefault();
                         e.currentTarget.parentElement.querySelector('input[type="file"]').click();
@@ -1084,20 +1082,20 @@ const CandidateProfilePage = () => {
                   <div className="space-y-2 mt-4">
                     {documents.map(doc => (
                       <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <File className="w-5 h-5 text-slate-400" />
-                          <div>
-                            <p className="text-sm font-medium">{doc.name}</p>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <File className="w-5 h-5 text-slate-400 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{doc.name}</p>
                             <p className="text-xs text-slate-500 capitalize">{doc.file_type}</p>
                           </div>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 shrink-0">
                           <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon" type="button">
+                            <Button variant="ghost" size="icon" type="button" className="h-9 w-9">
                               <Eye className="w-4 h-4" />
                             </Button>
                           </a>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteDocument(doc)} type="button">
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteDocument(doc)} type="button" className="h-9 w-9">
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </div>
@@ -1115,14 +1113,15 @@ const CandidateProfilePage = () => {
           <Card>
             <CardContent className="p-6">
               <SectionHeader icon={Award} title={t('candidateProfilePage.skills.sectionTitle')} description={t('candidateProfilePage.skills.sectionDesc')} />
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Input
                   value={newSkill}
                   onChange={(e) => setNewSkill(e.target.value)}
                   placeholder={t('candidateProfilePage.skills.placeholder')}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
+                  className="min-h-[44px] flex-1"
                 />
-                <Button onClick={handleAddSkill} disabled={!newSkill.trim()} type="button">
+                <Button onClick={handleAddSkill} disabled={!newSkill.trim()} type="button" className="min-h-[44px] w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-1" />{t('candidateProfilePage.skills.add')}
                 </Button>
               </div>
@@ -1172,6 +1171,7 @@ const CandidateProfilePage = () => {
                       setShowExpModal(true);
                     }}
                     type="button"
+                    className="min-h-[44px] w-full sm:w-auto"
                   >
                     <Plus className="w-4 h-4 mr-1" />{t('candidateProfilePage.experience.add')}
                   </Button>
@@ -1217,6 +1217,7 @@ const CandidateProfilePage = () => {
                       setShowEduModal(true);
                     }}
                     type="button"
+                    className="min-h-[44px] w-full sm:w-auto"
                   >
                     <Plus className="w-4 h-4 mr-1" />{t('candidateProfilePage.education.add')}
                   </Button>
@@ -1262,13 +1263,14 @@ const CandidateProfilePage = () => {
           <Card>
             <CardContent className="p-6">
               <SectionHeader icon={Briefcase} title={t('candidateProfilePage.salary.sectionTitle')} description={t('candidateProfilePage.salary.sectionDesc')} />
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.salary.minSalary')}</label>
                   <Input
                     type="number"
                     value={candidateInfo.desired_salary_min}
                     onChange={(e) => setCandidateInfo({ ...candidateInfo, desired_salary_min: e.target.value })}
+                    className="min-h-[44px]"
                   />
                 </div>
                 <div>
@@ -1277,19 +1279,26 @@ const CandidateProfilePage = () => {
                     type="number"
                     value={candidateInfo.desired_salary_max}
                     onChange={(e) => setCandidateInfo({ ...candidateInfo, desired_salary_max: e.target.value })}
+                    className="min-h-[44px]"
                   />
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          <div className="flex justify-end pt-4">
-            <Button onClick={handleSave} disabled={saving} size="lg" className="gap-2 bg-blue-600 text-white hover:bg-blue-700" type="button">
-              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-              {t('candidateProfilePage.saveChanges')}
-            </Button>
-          </div>
         </div>
+      </div>
+
+      {/* Barre de sauvegarde sticky en bas (mobile) */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 sm:hidden z-40">
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full min-h-[48px] bg-blue-600 text-white hover:bg-blue-700 gap-2"
+          type="button"
+        >
+          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+          {t('candidateProfilePage.saveChanges')}
+        </Button>
       </div>
 
       <ExperienceModal

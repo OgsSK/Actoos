@@ -2670,6 +2670,8 @@
       }
     },
     "companyProfile": {
+      "deleteLogo": "Delete logo",
+"deleteLogoConfirm": "Are you sure you want to delete the current logo?",
       "back": "Back",
       "title": "Company profile",
       "subtitle": "Manage your company's public information.",

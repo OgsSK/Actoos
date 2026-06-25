@@ -2739,6 +2739,8 @@
       }
     },
     "companyProfile": {
+      "deleteLogo": "Logo verwijderen",
+    "deleteLogoConfirm": "Weet u zeker dat u het huidige logo wilt verwijderen?",
       "back": "Terug",
       "title": "Bedrijfsprofiel",
       "subtitle": "Beheer de openbare informatie van uw bedrijf.",

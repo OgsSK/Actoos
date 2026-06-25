@@ -2778,6 +2778,8 @@
       }
     },
     "companyProfile": {
+       "deleteLogo": "Logo löschen",
+    "deleteLogoConfirm": "Möchten Sie das aktuelle Logo wirklich löschen?",
       "back": "Zurück",
       "title": "Unternehmensprofil",
       "subtitle": "Verwalten Sie die öffentlichen Informationen Ihres Unternehmens.",

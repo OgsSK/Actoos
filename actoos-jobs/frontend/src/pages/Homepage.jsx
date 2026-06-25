@@ -363,7 +363,14 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
         {job.urgent && <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium px-3 py-1 text-center">{t('home.jobs.urgent')}</div>}
         <CardContent className="p-5 pt-3">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">{job.company_logo ? <img src={job.company_logo} alt={job.company} className="w-10 h-10 object-contain" /> : <Building2 className="w-7 h-7 text-slate-400 group-hover:text-blue-500" />}</div>
+            {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0">
+              {job.company_logo ? (
+                <img src={job.company_logo} alt={job.company} className="w-full h-full object-cover" />
+              ) : (
+                <Building2 className="w-7 h-7 text-slate-400" />
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 line-clamp-1">{job.title}</h3>
               <p className="text-slate-600 text-sm mt-1">{job.company}</p>
@@ -444,8 +451,13 @@ const CompaniesSection = ({ countryId }) => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           {companies.map((c) => (
             <Link key={c.id} to={`/entreprises/${c.id}`} className="flex flex-col items-center p-6 bg-slate-50 rounded-2xl hover:bg-blue-50 transition-colors">
-              <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-3">
-                {c.logo_url ? <img src={c.logo_url} alt={c.name} className="w-10 h-10 object-contain" /> : <Building2 className="w-8 h-8 text-slate-400" />}
+              {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
+              <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center overflow-hidden mb-3">
+                {c.logo_url ? (
+                  <img src={c.logo_url} alt={c.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Building2 className="w-8 h-8 text-slate-400" />
+                )}
               </div>
               <h3 className="font-medium text-slate-900 text-center">
                 {c.name}
@@ -638,7 +650,6 @@ const Homepage = () => {
     }
   }, [prefs.country]);
 
-  // Charger les IDs des entreprises vérifiées et actives (utilisé partout)
   useEffect(() => {
     if (countryLoading) return;
 
@@ -660,7 +671,6 @@ const Homepage = () => {
     loadActiveCompanyIds();
   }, [countryId, countryLoading]);
 
-  // ---------- COMPTEURS CORRIGÉS ----------
   useEffect(() => {
     if (countryLoading) return;
 
@@ -673,7 +683,6 @@ const Homepage = () => {
       let compsCount = 0;
       let candsCount = 0;
 
-      // 1. Offres actives (seulement si des entreprises valides existent)
       if (activeCompanyIds.length > 0) {
         const { count } = await supabase
           .from('jobs')
@@ -683,7 +692,6 @@ const Homepage = () => {
         jobsCount = count || 0;
       }
 
-      // 2. Entreprises vérifiées et actives
       let queryCompanies = supabase
         .from('companies')
         .select('id', { count: 'exact', head: true })
@@ -693,7 +701,6 @@ const Homepage = () => {
       const { count: cCount } = await queryCompanies;
       compsCount = cCount || 0;
 
-      // 3. Candidats actifs et non bannis
       let queryCandidates = supabase
         .from('users')
         .select('id', { count: 'exact', head: true })

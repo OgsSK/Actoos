@@ -2670,6 +2670,8 @@
       }
     },
     "companyProfile": {
+      "deleteLogo": "Eliminar el logo",
+    "deleteLogoConfirm": "¿Está seguro de que desea eliminar el logo actual?",
       "back": "Volver",
       "title": "Perfil de empresa",
       "subtitle": "Gestiona la información pública de tu empresa.",

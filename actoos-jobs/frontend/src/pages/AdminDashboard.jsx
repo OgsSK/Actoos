@@ -562,11 +562,12 @@ const CompanyValidationCard = ({ company, onApprove, onReject, onDelete, onViewJ
       data-testid={`company-card-${company.id}`}
     >
       <div className="flex items-start gap-3">
-        <div className="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
+        {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
+        <div className="w-14 h-14 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center shrink-0">
           {company.logo_url ? (
-            <img src={company.logo_url} alt={company.name} className="w-10 h-10 object-contain rounded" />
+            <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
           ) : (
-            <Building2 className="w-7 h-7 text-slate-400" />
+            <Building2 className="w-7 h-7 text-slate-400 m-auto" />
           )}
         </div>
         <div className="flex-1 min-w-0">

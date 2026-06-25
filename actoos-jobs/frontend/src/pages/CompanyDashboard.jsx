@@ -370,7 +370,14 @@ const CompanyDashboard = () => {
 
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
-            <div className="w-16 h-16 shrink-0 bg-white rounded-xl flex items-center justify-center border border-slate-200">{company?.logo_url ? <img src={company.logo_url} alt={company.name} className="w-12 h-12 object-contain" /> : <Building2 className="w-8 h-8 text-slate-400" />}</div>
+            {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
+            <div className="w-16 h-16 shrink-0 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-slate-200">
+              {company?.logo_url ? (
+                <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
+              ) : (
+                <Building2 className="w-8 h-8 text-slate-400" />
+              )}
+            </div>
             <div className="min-w-0"><h1 className="text-2xl font-bold text-slate-900 truncate">{company?.name}</h1><p className="text-slate-600">{t('companyDashboard.header.title')}</p></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">

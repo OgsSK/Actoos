@@ -70,12 +70,8 @@ def get_plan_limit_static(plan, attribute):
     plan_data = PLAN_LIMITS_CONFIG.get(plan, PLAN_LIMITS_CONFIG["free"])
     return plan_data.get(attribute, PLAN_LIMITS_CONFIG["free"][attribute])
 
-# ----- NOUVELLE DÉPENDANCE : Vérification du compte actif/non banni -----
+# ----- Dépendance : Vérification du compte actif/non banni -----
 async def get_current_active_user(request: Request) -> str:
-    """
-    Récupère l'utilisateur authentifié et vérifie qu'il est actif et non banni.
-    Retourne l'user_id.
-    """
     auth_header = request.headers.get("authorization")
     if not auth_header:
         raise HTTPException(status_code=401, detail="Non authentifié")
@@ -111,7 +107,7 @@ class CheckoutRequest(BaseModel):
     origin_url: str
     job_id: Optional[str] = None
     user_email: Optional[str] = None
-    metadata: Optional[Dict[str, str]] = None  # user_id retiré
+    metadata: Optional[Dict[str, str]] = None
 
 class ContactRequest(BaseModel):
     name: str
@@ -131,7 +127,7 @@ class AIAgentRequest(BaseModel):
     language: Optional[str] = "fr"
 
 class CancelSubscriptionRequest(BaseModel):
-    reason: Optional[str] = None  # user_id retiré
+    reason: Optional[str] = None
 
 class SendInterviewLinkRequest(BaseModel):
     email: str
@@ -150,7 +146,7 @@ class UploadRequest(BaseModel):
 class UploadDocumentRequest(BaseModel):
     file_data: str
     filename: str
-    file_type: str = 'other'  # user_id retiré
+    file_type: str = 'other'
 
 class NotifyNewApplicationRequest(BaseModel):
     recruiter_email: str
@@ -186,7 +182,7 @@ class AdminVerifyCompanyRequest(BaseModel):
 class ReportRequest(BaseModel):
     reported_item_type: str
     reported_item_id: str
-    reason: str  # reporter_id retiré
+    reason: str
 
 class AdminToggleUserStatusRequest(BaseModel):
     user_id: str
@@ -287,20 +283,20 @@ class TeamInviteRequest(BaseModel):
     company_id: str
     email: str
     role: str = "recruiter"
-    language: Optional[str] = "fr"  # inviter_id retiré
+    language: Optional[str] = "fr"
 
 class TeamUpdateRoleRequest(BaseModel):
     company_id: Optional[str] = None
-    role: str  # user_id retiré
+    role: str
 
 class TeamRemoveRequest(BaseModel):
-    company_id: str  # user_id retiré
+    company_id: str
 
 class TeamLeaveRequest(BaseModel):
-    company_id: str  # user_id retiré
+    company_id: str
 
 class AcceptInvitationRequest(BaseModel):
-    token: str  # user_id retiré (vient de l'auth)
+    token: str
 
 class AdminDeleteUserRequest(BaseModel):
     language: Optional[str] = "fr"
@@ -313,7 +309,7 @@ class AdminDeleteCompanyRequest(BaseModel):
 
 class CompanyDeleteRequest(BaseModel):
     company_id: str
-    language: Optional[str] = "fr"  # user_id retiré
+    language: Optional[str] = "fr"
 
 class NotifyJobApprovedRequest(BaseModel):
     email: str
@@ -362,7 +358,7 @@ def get_user_language(email=None, request: Request = None):
             return browser_lang
     return 'fr'
 
-# ----- Fonctions d'email (templates en français uniquement) -----
+# ----- Fonctions d'email (templates en français) -----
 def email_new_application(recruiter_name, candidate_name, job_title):
     return f"""
     <h2>Bonjour {recruiter_name},</h2>
@@ -620,7 +616,7 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
             "html": html_fr
         })
 
-# ----- Nouveaux endpoints de notification (validation et réactivation) -----
+# ----- Nouveaux endpoints de notification -----
 @app.post("/api/notify-job-approved")
 async def notify_job_approved(req: NotifyJobApprovedRequest):
     if not resend.api_key:
@@ -704,7 +700,7 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
         metadata["job_id"] = checkout_request.job_id
     if checkout_request.user_email:
         metadata["user_email"] = checkout_request.user_email
-    metadata["user_id"] = user_id  # Ajouté automatiquement depuis l'authentification
+    metadata["user_id"] = user_id
     if checkout_request.metadata:
         metadata.update(checkout_request.metadata)
     if package_id in SUBSCRIPTION_PLANS:
@@ -936,7 +932,6 @@ async def contact_form(contact: ContactRequest):
         raise HTTPException(status_code=500, detail="Email service not configured")
     try:
         lang = contact.language or "fr"
-        # Notification admin (toujours en français)
         resend.Emails.send({
             "from": "Actoos Jobs <noreply@actoos.com>",
             "to": ["contact@actoos.com"],
@@ -944,7 +939,6 @@ async def contact_form(contact: ContactRequest):
             "subject": f"[Contact] {contact.subject}",
             "html": f"<h2>Nouveau message de {contact.name}</h2><p><strong>Email :</strong> {contact.email}</p><p><strong>Sujet :</strong> {contact.subject}</p><p><strong>Message :</strong></p><p>{contact.message}</p>"
         })
-        # Accusé de réception
         subject = f"Merci de nous avoir contacté - {clean_subject(contact.subject)}"
         html = f"<h2>Merci {contact.name} !</h2><p>Nous avons bien reçu votre message concernant \"<strong>{contact.subject}</strong>\".</p><p>Notre équipe vous répondra dans les plus brefs délais.</p><p>Cordialement,<br/>L'équipe Actoos Jobs</p>"
         await send_translated_email(contact.email, subject, html, lang)
@@ -1174,44 +1168,31 @@ async def send_job_alerts():
 async def get_candidate_public_profile(candidate_id: str):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    print(f"👉 GET /api/candidate/{candidate_id} – SUPABASE_URL={supabase_url} – KEY_SET={'oui' if supabase_key else 'non'}")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
-        # Requête pour l'utilisateur
-        user_query = f"{supabase_url}/rest/v1/users?id=eq.{candidate_id}&select=id,email,first_name,last_name,avatar_url,is_active,is_banned"
-        print(f"🔍 Requête users : {user_query}")
         user_resp = httpx.get(
-            user_query,
+            f"{supabase_url}/rest/v1/users?id=eq.{candidate_id}&select=id,email,first_name,last_name,avatar_url,is_active,is_banned",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
-        print(f"📬 Réponse users – status={user_resp.status_code}, body={user_resp.text[:200]}")
         users = user_resp.json()
         if not users:
-            print("❌ Aucun utilisateur trouvé pour cet ID")
             raise HTTPException(status_code=404, detail="Candidat introuvable")
         user = users[0]
 
-        # Profil candidat
-        profile_query = f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{candidate_id}&select=*"
-        print(f"🔍 Requête candidate_profiles : {profile_query}")
         profile_resp = httpx.get(
-            profile_query,
+            f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{candidate_id}&select=*",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
-        print(f"📬 Réponse candidate_profiles – status={profile_resp.status_code}, body={profile_resp.text[:200]}")
         profiles = profile_resp.json()
         profile = profiles[0] if profiles else {}
 
         city = None
         if profile.get("city_id"):
-            city_query = f"{supabase_url}/rest/v1/cities?id=eq.{profile['city_id']}&select=name"
-            print(f"🔍 Requête cities : {city_query}")
             city_resp = httpx.get(
-                city_query,
+                f"{supabase_url}/rest/v1/cities?id=eq.{profile['city_id']}&select=name",
                 headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
             )
-            print(f"📬 Réponse cities – status={city_resp.status_code}, body={city_resp.text[:200]}")
             cities_list = city_resp.json()
             if cities_list:
                 city = cities_list[0]["name"]
@@ -1243,12 +1224,10 @@ async def get_candidate_public_profile(candidate_id: str):
             "is_open_to_remote": profile.get("is_open_to_remote", False),
             "links": profile.get("links") or [],
         }
-        print("✅ Candidat renvoyé avec succès")
         return result
     except HTTPException:
         raise
     except Exception as e:
-        print(f"💥 Exception non gérée : {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/team/members")
@@ -1362,7 +1341,6 @@ async def invite_team_member_v2(req: TeamInviteRequest, inviter_id: str = Depend
             raise HTTPException(status_code=500, detail=f"Erreur ajout membre : {insert_resp.text}")
         return {"success": True, "member": insert_resp.json()}
     else:
-        import uuid
         token_str = str(uuid.uuid4())
         valid_roles = ["admin", "recruiter", "viewer"]
         if req.role not in valid_roles:
@@ -1637,7 +1615,53 @@ async def admin_delete_company(company_id: str, request: Request, language: str 
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/company/delete")
-async def delete_own_company(request: Request, user_id: str = Depends(get_current_active_user)):
+async def delete_own_company(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    company_id = data.get("company_id")
+    language = data.get("language", "fr")
+
+    if not user_id or not company_id:
+        raise HTTPException(status_code=400, detail="user_id et company_id sont requis")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Vérifier la propriété de l’entreprise (avec la clé de service)
+    company_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=id,name,owner_id,owner:users(email,first_name,last_name)",
+        headers=headers
+    )
+    companies = company_resp.json()
+    if not companies:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    company = companies[0]
+    if company["owner_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Vous n'êtes pas le propriétaire de cette entreprise")
+
+    # Supprimer les offres, les membres, puis l’entreprise
+    httpx.delete(f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}", headers=headers)
+    httpx.delete(f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}", headers=headers)
+    httpx.delete(f"{supabase_url}/rest/v1/companies?id=eq.{company_id}", headers=headers)
+
+    # Envoyer un email de confirmation (si possible)
+    owner = company.get("owner")
+    if isinstance(owner, list) and len(owner) > 0:
+        owner = owner[0]
+    owner_email = owner.get("email") if owner else None
+    if owner_email and resend.api_key:
+        first_name = owner.get("first_name") or "Utilisateur"
+        if not first_name or first_name.strip() == "":
+            first_name = "Utilisateur"
+        subject = "Votre entreprise a été supprimée"
+        html = f"<h2>Bonjour {first_name},</h2><p>Votre entreprise <strong>{company['name']}</strong> a bien été supprimée.</p>"
+        try:
+            await send_translated_email(owner_email, subject, html, language)
+        except Exception as e:
+            print(f"Email error: {e}")
+
+    return {"success": True, "message": "Entreprise supprimée"}
     data = await request.json()
     company_id = data.get("company_id")
     language = data.get("language", "fr")
@@ -1743,7 +1767,6 @@ def set_user_entities_status(user_id: str, active: bool):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    # Récupérer les entreprises de l'utilisateur
     companies_resp = httpx.get(
         f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
         headers=headers
@@ -1751,14 +1774,12 @@ def set_user_entities_status(user_id: str, active: bool):
     companies = companies_resp.json()
     for company in companies:
         company_id = company["id"]
-        # Mettre à jour l'entreprise
         httpx.patch(
             f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
             json={"is_active": active, "suspended_until": None},
             headers=headers
         )
         if not active:
-            # Suspendre toutes les offres actives de cette entreprise
             jobs_resp = httpx.get(
                 f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}&status=eq.active&select=id",
                 headers=headers
@@ -1770,7 +1791,6 @@ def set_user_entities_status(user_id: str, active: bool):
                     headers=headers
                 )
         else:
-            # Réactiver les offres suspendues de cette entreprise
             jobs_resp = httpx.get(
                 f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}&status=eq.suspended&select=id",
                 headers=headers
@@ -1781,7 +1801,6 @@ def set_user_entities_status(user_id: str, active: bool):
                     json={"status": "active"},
                     headers=headers
                 )
-    # Invalider les sessions pour forcer la déconnexion
     try:
         httpx.post(
             f"{supabase_url}/auth/v1/admin/users/{user_id}/sessions/logout",
@@ -1817,7 +1836,6 @@ async def admin_suspend_company(req: AdminSuspendCompanyRequest):
             json=update_data,
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
-        # Suspension des offres actives de l'entreprise
         active_jobs_resp = httpx.get(
             f"{supabase_url}/rest/v1/jobs?company_id=eq.{req.id}&status=eq.active&select=id",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -1862,7 +1880,6 @@ async def reactivate_company(request: Request):
         json={"is_active": True, "suspended_until": None},
         headers=headers
     )
-    # Réactiver les offres suspendues de cette entreprise
     suspended_jobs_resp = httpx.get(
         f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}&status=eq.suspended&select=id",
         headers=headers
@@ -2274,7 +2291,6 @@ async def admin_suspend_user(req: AdminSuspendUserRequest):
             json=update_data,
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
-        # Propagation de la suspension aux entités de l'utilisateur
         set_user_entities_status(req.user_id, False)
         if resend.api_key:
             lang = req.language or "fr"
@@ -2343,7 +2359,6 @@ async def ban_user(req: AdminBanUserRequest):
             json={"is_active": False, "is_banned": True},
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
-        # Propagation du bannissement (identique à la suspension)
         set_user_entities_status(req.user_id, False)
         if resend.api_key:
             lang = req.language or "fr"
@@ -2377,7 +2392,6 @@ async def unban_user(request: Request):
         json={"is_active": True, "is_banned": False, "suspended_until": None},
         headers=headers
     )
-    # Réactivation des entités
     set_user_entities_status(user_id, True)
     if user.get("email") and resend.api_key:
         lang = language
@@ -2721,7 +2735,47 @@ async def get_match_score(job_id: str, user_id: str = Depends(get_current_active
     return {"score": score}
 
 @app.delete("/api/user/delete-account")
-async def delete_own_account(request: Request, user_id: str = Depends(get_current_active_user)):
+async def delete_own_account(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id requis")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    try:
+        # Vérifier que l'utilisateur existe
+        user_resp = httpx.get(
+            f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=id",
+            headers=headers
+        )
+        if not user_resp.json():
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+
+        # Supprimer toutes les données liées
+        httpx.delete(f"{supabase_url}/rest/v1/applications?candidate_id=eq.{user_id}", headers=headers)
+        httpx.delete(f"{supabase_url}/rest/v1/saved_jobs?user_id=eq.{user_id}", headers=headers)
+        httpx.delete(f"{supabase_url}/rest/v1/job_alerts?user_id=eq.{user_id}", headers=headers)
+        httpx.delete(f"{supabase_url}/rest/v1/notifications?user_id=eq.{user_id}", headers=headers)
+        httpx.delete(f"{supabase_url}/rest/v1/candidate_documents?user_id=eq.{user_id}", headers=headers)
+        httpx.delete(f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{user_id}", headers=headers)
+
+        # Supprimer les entreprises dont l'utilisateur est propriétaire
+        companies_resp = httpx.get(f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id", headers=headers)
+        companies = companies_resp.json()
+        for company in companies:
+            httpx.delete(f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}", headers=headers)
+
+        # Supprimer l'utilisateur
+        httpx.delete(f"{supabase_url}/rest/v1/users?id=eq.{user_id}", headers=headers)
+        # Supprimer le compte Auth
+        httpx.delete(f"{supabase_url}/auth/v1/admin/users/{user_id}", headers=headers)
+
+        return {"success": True, "message": "Compte supprimé définitivement"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:

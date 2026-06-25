@@ -2563,6 +2563,8 @@
     }
   },
   "companyProfile": {
+    "deleteLogo": "Supprimer le logo",
+"deleteLogoConfirm": "Voulez-vous vraiment supprimer le logo actuel ?",
     "back": "Retour",
     "title": "Profil de l'entreprise",
     "subtitle": "Gérez les informations publiques de votre entreprise.",

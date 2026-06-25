@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -28,7 +28,7 @@ const CompanyProfilePage = () => {
   const { user, activeCompanyId } = useAuth();
   const { prefs } = usePreferencesContext();
   const navigate = useNavigate();
-  const logoInputRef = React.useRef(null);
+  const logoInputRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -146,6 +146,12 @@ const CompanyProfilePage = () => {
     }
   };
 
+  const handleDeleteLogo = () => {
+    if (!window.confirm(t('companyProfile.deleteLogoConfirm'))) return;
+    setForm(prev => ({ ...prev, logo_url: '' }));
+    toast.success(t('companyProfile.toasts.logoDeleted'));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
@@ -191,26 +197,27 @@ const CompanyProfilePage = () => {
     }
   };
 
-  const handleDeleteCompany = async () => {
-    if (!window.confirm(t('companyProfile.deleteConfirm'))) return;
+const handleDeleteCompany = async () => {
+  if (!window.confirm(t('companyProfile.deleteConfirm'))) return;
 
-    setDeleting(true);
-    try {
-      await apiFetch('/api/company/delete', {
-        method: 'DELETE',
-        body: JSON.stringify({
-          user_id: user.id,
-          company_id: activeCompanyId,
-        }),
-      });
-      toast.success(t('companyProfile.toasts.companyDeleted'));
-      navigate('/dashboard/entreprise');
-    } catch (err) {
-      toast.error(err.message || t('companyProfile.toasts.deleteError'));
-    } finally {
-      setDeleting(false);
-    }
-  };
+  setDeleting(true);
+  try {
+    await apiFetch('/api/company/delete', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: user.id,
+        company_id: activeCompanyId,
+      }),
+    });
+    toast.success(t('companyProfile.toasts.companyDeleted'));
+    navigate('/dashboard/entreprise');
+  } catch (err) {
+    toast.error(err.message || t('companyProfile.toasts.deleteError'));
+  } finally {
+    setDeleting(false);
+  }
+};
 
   if (loading) {
     return (
@@ -236,47 +243,73 @@ const CompanyProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20" data-testid="company-profile-page">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 -ml-2">
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          {t('companyProfile.back')}
-        </Button>
-
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-8 h-8 text-blue-600" />
+    <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20 pb-24 sm:pb-10" data-testid="company-profile-page">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        {/* En-tête avec bouton retour et bouton Enregistrer (desktop) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">{t('companyProfile.title')}</h1>
+              <p className="text-sm text-slate-600">{t('companyProfile.subtitle')}</p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">{t('companyProfile.title')}</h1>
-          <p className="text-slate-600 mt-2">{t('companyProfile.subtitle')}</p>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={saving}
+            className="hidden sm:inline-flex gap-2 bg-blue-600 text-white hover:bg-blue-700 min-h-[44px]"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {t('companyProfile.submit')}
+          </Button>
         </div>
 
         <form onSubmit={handleSubmit}>
           <Card>
             <CardContent className="p-6 space-y-6">
-              {/* Logo */}
+              {/* Logo avec suppression possible */}
               <div className="text-center">
-                <div
-                  className="w-24 h-24 bg-slate-100 rounded-xl mx-auto mb-3 flex items-center justify-center border-2 border-dashed border-slate-300 cursor-pointer hover:border-blue-400 transition-colors overflow-hidden"
-                  onClick={() => logoInputRef.current?.click()}
-                >
-                  {uploadingLogo ? (
-                    <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-                  ) : form.logo_url ? (
-                    <img src={form.logo_url} alt="Logo" className="w-full h-full object-cover" />
-                  ) : (
-                    <Image className="w-8 h-8 text-slate-400" />
-                  )}
+                <div className="flex flex-col items-center gap-3">
+                  <div
+                    className="w-24 h-24 bg-slate-100 rounded-xl overflow-hidden border-2 border-dashed border-slate-300 cursor-pointer hover:border-blue-400 transition-colors flex items-center justify-center"
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    {uploadingLogo ? (
+                      <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                    ) : form.logo_url ? (
+                      <img src={form.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <Image className="w-8 h-8 text-slate-400" />
+                    )}
+                  </div>
+                  <div className="flex gap-2 flex-wrap justify-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={uploadingLogo}
+                      className="min-h-[44px]"
+                    >
+                      {uploadingLogo ? t('companyProfile.uploading') : t('companyProfile.logo')}
+                    </Button>
+                    {form.logo_url && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDeleteLogo}
+                        className="min-h-[44px] text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {t('companyProfile.deleteLogo')}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => logoInputRef.current?.click()}
-                  disabled={uploadingLogo}
-                >
-                  {uploadingLogo ? t('companyProfile.uploading') : t('companyProfile.logo')}
-                </Button>
                 <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
               </div>
 
@@ -290,6 +323,7 @@ const CompanyProfilePage = () => {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder={t('companyProfile.placeholders.name')}
                   required
+                  className="min-h-[44px]"
                 />
               </div>
 
@@ -308,7 +342,7 @@ const CompanyProfilePage = () => {
               </div>
 
               {/* Secteur et Taille */}
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     {t('companyProfile.labels.industry')}
@@ -316,7 +350,7 @@ const CompanyProfilePage = () => {
                   <select
                     value={form.industry}
                     onChange={(e) => setForm({ ...form, industry: e.target.value })}
-                    className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">{t('companyProfile.options.selectIndustry')}</option>
                     {INDUSTRY_KEYS.map(key => (
@@ -333,7 +367,7 @@ const CompanyProfilePage = () => {
                   <select
                     value={form.size}
                     onChange={(e) => setForm({ ...form, size: e.target.value })}
-                    className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">{t('companyProfile.options.selectSize')}</option>
                     {COMPANY_SIZE_KEYS.map(size => (
@@ -346,7 +380,7 @@ const CompanyProfilePage = () => {
               </div>
 
               {/* Site web / Email */}
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     <Globe className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.website')}
@@ -355,6 +389,7 @@ const CompanyProfilePage = () => {
                     value={form.website}
                     onChange={(e) => setForm({ ...form, website: e.target.value })}
                     placeholder={t('companyProfile.placeholders.website')}
+                    className="min-h-[44px]"
                   />
                 </div>
                 <div>
@@ -365,12 +400,13 @@ const CompanyProfilePage = () => {
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     placeholder={t('companyProfile.placeholders.email')}
+                    className="min-h-[44px]"
                   />
                 </div>
               </div>
 
               {/* Téléphone / Année de création */}
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     <Phone className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.phone')}
@@ -379,6 +415,7 @@ const CompanyProfilePage = () => {
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     placeholder={t('companyProfile.placeholders.phone')}
+                    className="min-h-[44px]"
                   />
                 </div>
                 <div>
@@ -392,12 +429,13 @@ const CompanyProfilePage = () => {
                     type="number"
                     min="1900"
                     max={new Date().getFullYear()}
+                    className="min-h-[44px]"
                   />
                 </div>
               </div>
 
               {/* Pays / Ville */}
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     <MapPin className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.country')}
@@ -405,7 +443,7 @@ const CompanyProfilePage = () => {
                   <select
                     value={selectedCountry}
                     onChange={(e) => setSelectedCountry(e.target.value)}
-                    className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     {countries.map(c => (
                       <option key={c.code} value={c.code}>
@@ -421,7 +459,7 @@ const CompanyProfilePage = () => {
                   <select
                     value={form.city_id}
                     onChange={(e) => setForm({ ...form, city_id: e.target.value })}
-                    className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">{t('companyProfile.options.selectCity')}</option>
                     {filteredCities.map(city => (
@@ -438,13 +476,14 @@ const CompanyProfilePage = () => {
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
                   placeholder={t('companyProfile.placeholders.address')}
+                  className="min-h-[44px]"
                 />
               </div>
 
-              {/* Bouton enregistrer */}
+              {/* Bouton enregistrer dans le formulaire (visible sur mobile si l'utilisateur scroll) */}
               <Button
                 type="submit"
-                className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                className="w-full bg-blue-600 text-white hover:bg-blue-700 min-h-[44px]"
                 disabled={saving}
               >
                 {saving ? (
@@ -466,7 +505,7 @@ const CompanyProfilePage = () => {
           </p>
           <Button
             variant="outline"
-            className="border-red-300 text-red-600 hover:bg-red-50"
+            className="border-red-300 text-red-600 hover:bg-red-50 min-h-[44px]"
             onClick={handleDeleteCompany}
             disabled={deleting}
           >
@@ -474,6 +513,19 @@ const CompanyProfilePage = () => {
             {deleting ? t('companyProfile.deleteSection.deleting') : t('companyProfile.deleteSection.button')}
           </Button>
         </div>
+      </div>
+
+      {/* Barre sticky en bas pour mobile (comme dans profil candidat) */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 sm:hidden z-40">
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          disabled={saving}
+          className="w-full min-h-[48px] bg-blue-600 text-white hover:bg-blue-700 gap-2"
+        >
+          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+          {t('companyProfile.submit')}
+        </Button>
       </div>
     </div>
   );

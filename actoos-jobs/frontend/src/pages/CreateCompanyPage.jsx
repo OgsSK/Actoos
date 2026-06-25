@@ -18,7 +18,7 @@ import { apiFetch } from '../lib/api';
 
 const CreateCompanyPage = () => {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth(); // ← ajout de refreshProfile
   const navigate = useNavigate();
   const logoInputRef = useRef(null);
 
@@ -55,6 +55,7 @@ const CreateCompanyPage = () => {
     });
   }, []);
 
+  // Upload de logo directement vers Supabase Storage
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -158,8 +159,14 @@ const CreateCompanyPage = () => {
         data: { role: 'company' }
       });
 
+      // ✅ Attendre que le profil soit rafraîchi avant de rediriger
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+
       toast.success(t('createCompany.toasts.companyCreated'));
-      console.log("Langue envoyée pour notif admin :", i18n.language);
+
+      // Notification admin (facultative)
       try {
         await apiFetch('/api/notify-admin-new-company', {
           method: 'POST',
@@ -172,10 +179,10 @@ const CreateCompanyPage = () => {
         });
       } catch (e) {
         console.error('Erreur notification admin:', e);
-        toast.error(t('createCompany.toasts.notificationError'));
       }
 
-      window.location.href = '/dashboard/entreprise';
+      // Navigation programmatique (évite le problème de redirection)
+      navigate('/dashboard/entreprise', { replace: true });
     } catch (error) {
       console.error('Error creating company:', error);
       toast.error(error.message || t('createCompany.toasts.createError'));

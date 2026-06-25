@@ -131,32 +131,34 @@ const SettingsPage = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (!window.confirm(t('settings.dangerZone.confirm'))) return;
+const handleDeleteAccount = async () => {
+  if (!window.confirm(t('settings.dangerZone.confirm'))) return;
 
-    setDeleting(true);
-    try {
-      const res = await apiFetch('/api/user/delete-account', {
-        method: 'DELETE',
-        body: JSON.stringify({ user_id: user.id }),
-      });
+  setDeleting(true);
+  try {
+    const response = await fetch('/api/user/delete-account', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id }),
+    });
 
-      if (res.success) {
-        toast.success(t('settings.toasts.accountDeleted'));
-        await supabase.auth.signOut();
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 2000);
-      } else {
-        toast.error(res.message || t('settings.toasts.deleteError'));
-      }
-    } catch (err) {
-      console.error('Delete account error:', err);
-      toast.error(err.message || t('settings.toasts.deleteError'));
-    } finally {
-      setDeleting(false);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.detail || 'Erreur lors de la suppression');
     }
-  };
+
+    toast.success(t('settings.toasts.accountDeleted'));
+    await supabase.auth.signOut();
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 2000);
+  } catch (err) {
+    console.error('Delete account error:', err);
+    toast.error(err.message || t('settings.toasts.deleteError'));
+  } finally {
+    setDeleting(false);
+  }
+};
 
   const handleRequestRoleChange = async () => {
     setRequestLoading(true);

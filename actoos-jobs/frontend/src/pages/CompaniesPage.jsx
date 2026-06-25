@@ -166,12 +166,13 @@ const CompaniesPage = () => {
               <Card key={company.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
+                    {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
+                    <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center overflow-hidden shrink-0">
                       {company.logo_url ? (
                         <img 
                           src={company.logo_url} 
                           alt={company.name}
-                          className="w-12 h-12 object-contain"
+                          className="w-full h-full object-cover"
                         />
                       ) : (
                         <Building2 className="w-8 h-8 text-slate-400" />
