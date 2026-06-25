@@ -552,8 +552,32 @@ export const t: Record<string, Record<string, string>> = {
     paymentAmount: "Montant payé",
     redirectingToClientSpace: "Redirection vers votre espace projet",
     accessNow: "Accéder maintenant",
+    paymentRetry: "Réessayer le paiement",
   },
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
   en: {
     navProducts: "Products",
     navExpertise: "Expertise",
@@ -1103,5 +1127,6 @@ export const t: Record<string, Record<string, string>> = {
     paymentAmount: "Amount paid",
     redirectingToClientSpace: "Redirecting to your project space",
     accessNow: "Access now",
+    paymentRetry: "Retry payment",
   },
 };

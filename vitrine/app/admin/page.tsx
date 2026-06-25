@@ -201,15 +201,41 @@ export default function AdminPage() {
   };
 
   const updatePaymentStatus = async (id: string, paymentStatus: string) => {
-    setActionLoading(id);
-    try {
-      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id, payment_status: normalizeStatus(paymentStatus) }),
-      });
-      setProjets(prev => prev.map(p => p.id === id ? { ...p, payment_status: normalizeStatus(paymentStatus) } : p));
-    } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
-  };
+  setActionLoading(id);
+  try {
+    const updates: any = { payment_status: normalizeStatus(paymentStatus) };
+    const projet = projets.find(p => p.id === id);
+    if (!projet) return;
+
+    if (normalizeStatus(paymentStatus) === 'complet') {
+      // Paiement complet : on met paid_amount = payment_amount
+      if (projet.payment_amount) {
+        updates.paid_amount = projet.payment_amount;
+      }
+    } else if (normalizeStatus(paymentStatus) === 'acompte_payé') {
+      // Acompte payé : demander le montant
+      const amountStr = prompt('Montant payé (€) ?', (projet.payment_amount - (projet.paid_amount || 0)).toString());
+      if (amountStr) {
+        const amount = parseFloat(amountStr);
+        if (!isNaN(amount) && amount > 0) {
+          updates.paid_amount = (projet.paid_amount || 0) + amount;
+        }
+      }
+    }
+
+    await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id, ...updates }),
+    });
+
+    setProjets(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+  } catch (err) {
+    alert(t[language].adminError);
+  } finally {
+    setActionLoading(null);
+  }
+};
 
   const updateMaturity = async (id: string, value: number) => {
     try {
