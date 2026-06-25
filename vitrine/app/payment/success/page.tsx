@@ -9,6 +9,7 @@ import { t } from '../../../lib/translations';
 function PaymentContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
+  const projetId = searchParams.get('projet_id');   // 👈 lu depuis l'URL
   const router = useRouter();
   const { language } = useLanguage();
 
@@ -16,15 +17,21 @@ function PaymentContent() {
   const [clientToken, setClientToken] = useState<string | null>(null);
 
   useEffect(() => {
-    if (sessionId) {
-      fetch(`/api/confirm-payment?session_id=${sessionId}`)
+    if (projetId) {
+      // Appelle directement Supabase pour récupérer le client_token
+      fetch(`https://mgsantsreaybhsxyxzve.supabase.co/rest/v1/projets?id=eq.${projetId}&select=client_token`, {
+        headers: {
+          apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1nc2FudHNyZWF5YmhzeHl4enZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzMjQ3MjksImV4cCI6MjA1OTkwMDcyOX0.pgHu5y9wQPQxvK1L4JGXJKxBm0pYTqYVAiN2KzLbMEI', // clé anon publique
+          'Content-Type': 'application/json',
+        },
+      })
         .then(res => res.json())
         .then(data => {
-          if (data.client_token) {
-            setClientToken(data.client_token);
+          if (data?.[0]?.client_token) {
+            setClientToken(data[0].client_token);
             setStatus('success');
             setTimeout(() => {
-              router.push(`/client/${data.client_token}`);
+              router.push(`/client/${data[0].client_token}`);
             }, 3000);
           } else {
             setStatus('error');
@@ -34,7 +41,7 @@ function PaymentContent() {
     } else {
       setStatus('error');
     }
-  }, [sessionId, router]);
+  }, [projetId, router]);
 
   return (
     <main className="min-h-screen bg-white flex items-center justify-center px-6">
