@@ -3044,6 +3044,7 @@
       "savedAt": "تم الحفظ في {{time}}"
     },
      "contractTypes": {
+      "job-etudiant": "وظيفة طالب",
       "cdi": "دائم",
       "cdd": "مؤقت",
       "stage": "تدريب",

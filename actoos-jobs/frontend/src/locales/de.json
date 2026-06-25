@@ -3150,6 +3150,7 @@
       "savedAt": "Gespeichert um {{time}}"
     },
     "contractTypes": {
+      "job-etudiant": "Studentenjob",
       "cdi": "Unbefristet",
       "cdd": "Befristet",
       "stage": "Praktikum",

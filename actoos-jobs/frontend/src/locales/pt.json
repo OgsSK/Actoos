@@ -3043,6 +3043,7 @@
       "savedAt": "Guardado às {{time}}"
     },
     "contractTypes": {
+      "job-etudiant": "Trabalho estudante",
       "cdi": "Efetivo",
       "cdd": "A termo",
       "stage": "Estágio",

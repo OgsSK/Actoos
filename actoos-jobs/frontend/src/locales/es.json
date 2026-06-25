@@ -3042,6 +3042,7 @@
       "savedAt": "Guardado a las {{time}}"
     },
     "contractTypes": {
+      "job-etudiant": "Trabajo estudiante",
       "cdi": "Indefinido",
       "cdd": "Temporal",
       "stage": "Prácticas",

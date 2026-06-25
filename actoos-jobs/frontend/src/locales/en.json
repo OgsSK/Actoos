@@ -3041,6 +3041,7 @@
       "savedAt": "Saved at {{time}}"
     },
     "contractTypes": {
+      "job-etudiant": "Student job",
       "cdi": "Permanent",
       "cdd": "Fixed-term",
       "stage": "Internship",

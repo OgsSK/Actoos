@@ -3044,7 +3044,9 @@
       "success": "Successo",
       "savedAt": "Salvato alle {{time}}"
     },
+
      "contractTypes": {
+      "job-etudiant": "Lavoro studentesco",
       "cdi": "Indeterminato",
       "cdd": "Determinato",
       "stage": "Stage",

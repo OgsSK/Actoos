@@ -2935,6 +2935,7 @@
   "savedAt": "Enregistré à {{time}}"
 },
 "contractTypes": {
+  "job-etudiant": "Job étudiant",
   "cdi": "CDI",
   "cdd": "CDD",
   "stage": "Stage",

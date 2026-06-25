@@ -66,7 +66,7 @@ const JobAlertsPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('job_alerts')
-      .select('*')
+      .select('*, category:job_categories(id, slug, name), city:cities(id, name)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     if (!error) setAlerts(data || []);
@@ -77,7 +77,7 @@ const JobAlertsPage = () => {
   const fetchReferenceData = async () => {
     const { data: cats } = await supabase
       .from('job_categories')
-      .select('id, name')
+      .select('id, slug, name')
       .eq('is_active', true)
       .order('name');
     setCategories(cats || []);
@@ -267,7 +267,9 @@ const JobAlertsPage = () => {
                     >
                       <option value="">{t('jobAlerts.allCategories')}</option>
                       {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        <option key={cat.id} value={cat.id}>
+                          {t(`categories.${cat.slug}`, cat.name)}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -280,7 +282,9 @@ const JobAlertsPage = () => {
                     >
                       <option value="">{t('jobAlerts.allCities')}</option>
                       {filteredCities.map((city) => (
-                        <option key={city.id} value={city.id}>{city.name}</option>
+                        <option key={city.id} value={city.id}>
+                          {t(`cities.${city.id}`, city.name)}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -300,7 +304,7 @@ const JobAlertsPage = () => {
                             : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                         )}
                       >
-                        {t(val.key)}
+                        {t(`contractTypes.${key}`, { defaultValue: val.label })}
                       </Badge>
                     ))}
                   </div>
@@ -386,14 +390,14 @@ const JobAlertsPage = () => {
                               {alert.keywords}
                             </span>
                           )}
-                          {alert.city?.name && (
+                          {alert.city && (
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3 h-3" />
-                              {alert.city.name}
+                              {t(`cities.${alert.city.id}`, alert.city.name)}
                             </span>
                           )}
-                          {alert.category?.name && (
-                            <span>{alert.category.name}</span>
+                          {alert.category && (
+                            <span>{t(`categories.${alert.category.slug}`, alert.category.name)}</span>
                           )}
                           {alert.salary_min && (
                             <span>≥ {alert.salary_min.toLocaleString('fr-FR')} FCFA</span>
@@ -402,7 +406,7 @@ const JobAlertsPage = () => {
                             <div className="flex flex-wrap gap-1">
                               {alert.contract_types.map((ct) => (
                                 <Badge key={ct} className="bg-blue-50 text-blue-700 text-xs">
-                                  {t(CONTRACT_TYPES[ct]?.key || ct)}
+                                  {t(`contractTypes.${ct}`, { defaultValue: CONTRACT_TYPES[ct]?.label || ct })}
                                 </Badge>
                               ))}
                             </div>

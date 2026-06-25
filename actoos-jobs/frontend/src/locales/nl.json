@@ -3111,6 +3111,7 @@
       "savedAt": "Opgeslagen om {{time}}"
     },
     "contractTypes": {
+      "job-etudiant": "Studentenjob",
       "cdi": "Vast",
       "cdd": "Tijdelijk",
       "stage": "Stage",
