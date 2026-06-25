@@ -387,27 +387,27 @@ export default function AdminPage() {
   };
 
   // Nouvelle fonction : supprimer définitivement un projet via l'Edge Function delete-project
-  const handleDeletePermanently = async (projet: any) => {
-    if (!confirm(t[language].adminDeletePermanentlyConfirm)) return;
-    setActionLoading(projet.id);
-    try {
-      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-project', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id: projet.id }),
-      });
-      if (res.ok) {
-        setProjets(prev => prev.filter(p => p.id !== projet.id));
-      } else {
-        const data = await res.json();
-        alert(data.error || t[language].adminError);
-      }
-    } catch (err) {
+const handleDeletePermanently = async (projet: any) => {
+  if (!confirm(t[language].adminDeletePermanentlyConfirm)) return;
+  setActionLoading(projet.id);
+  try {
+    const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-project', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: projet.id }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setProjets(prev => prev.filter(p => p.id !== projet.id));
+    } else {
       alert(t[language].adminError);
-    } finally {
-      setActionLoading(null);
     }
-  };
+  } catch (err) {
+    alert(t[language].adminError);
+  } finally {
+    setActionLoading(null);
+  }
+};
 
   const handleAddAdminComment = async () => {
     if (!adminComment.trim() || !selectedProject) return;

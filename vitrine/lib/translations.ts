@@ -522,7 +522,6 @@ export const t: Record<string, Record<string, string>> = {
     chatPlaceholderInput: "Décrivez votre projet...",
     maturity: "Maturité",
     urgency: "Urgence",
-    // Client rendez-vous
     clientUpcomingAppointment: "Rendez-vous à venir",
     clientDate: "Date",
     clientTime: "Heure",
@@ -530,22 +529,29 @@ export const t: Record<string, Record<string, string>> = {
     clientCancelAppointment: "Annuler le rendez-vous",
     clientCancelAppointmentConfirm: "Annuler ce rendez-vous ?",
     clientErrorCancelAppointment: "Erreur lors de l'annulation",
-    // Admin rendez-vous
     adminAppointmentTitle: "Rendez-vous",
     adminDate: "Date",
     adminTime: "Heure",
     adminMeetingLink: "Lien visioconférence",
     adminCancelAppointment: "Annuler ce rendez-vous",
     adminCancelAppointmentConfirm: "Annuler ce rendez-vous ?",
-      // Admin actions supplémentaires
     adminResetDecision: "Remettre en décision",
     adminResetDecisionConfirm: "Remettre ce projet en attente de décision ?",
     adminDeletePermanently: "Supprimer définitivement",
     adminDeletePermanentlyConfirm: "Supprimer ce projet définitivement ? Cette action est irréversible.",
-  
-  
-  
-  
+
+    // ===== PAIEMENT =====
+    paymentSuccessTitle: "Paiement confirmé",
+    paymentSuccessMessage: "Votre paiement a été traité avec succès.",
+    paymentSessionId: "ID de transaction",
+    paymentCancelTitle: "Paiement annulé",
+    paymentCancelMessage: "Votre paiement n'a pas été finalisé. Aucun montant n'a été prélevé.",
+    paymentCancelNote: "Vous pouvez réessayer à tout moment.",
+    backToHome: "Retour à l'accueil",
+    paymentProject: "Projet",
+    paymentAmount: "Montant payé",
+    redirectingToClientSpace: "Redirection vers votre espace projet",
+    accessNow: "Accéder maintenant",
   },
 
   en: {
@@ -1067,7 +1073,6 @@ export const t: Record<string, Record<string, string>> = {
     chatPlaceholderInput: "Describe your project...",
     maturity: "Maturity",
     urgency: "Urgency",
-    // Client appointment
     clientUpcomingAppointment: "Upcoming appointment",
     clientDate: "Date",
     clientTime: "Time",
@@ -1075,24 +1080,28 @@ export const t: Record<string, Record<string, string>> = {
     clientCancelAppointment: "Cancel appointment",
     clientCancelAppointmentConfirm: "Cancel this appointment?",
     clientErrorCancelAppointment: "Error cancelling appointment",
-    // Admin appointment
     adminAppointmentTitle: "Appointment",
     adminDate: "Date",
     adminTime: "Time",
     adminMeetingLink: "Meeting link",
     adminCancelAppointment: "Cancel this appointment",
     adminCancelAppointmentConfirm: "Cancel this appointment?",
-      // Admin additional actions
     adminResetDecision: "Reset to decision",
     adminResetDecisionConfirm: "Put this project back into decision queue?",
     adminDeletePermanently: "Delete permanently",
     adminDeletePermanentlyConfirm: "Delete this project permanently? This action is irreversible.",
+
+    // ===== PAYMENT =====
+    paymentSuccessTitle: "Payment confirmed",
+    paymentSuccessMessage: "Your payment has been processed successfully.",
+    paymentSessionId: "Transaction ID",
+    paymentCancelTitle: "Payment cancelled",
+    paymentCancelMessage: "Your payment was not completed. No amount was charged.",
+    paymentCancelNote: "You can try again at any time.",
+    backToHome: "Back to home",
+    paymentProject: "Project",
+    paymentAmount: "Amount paid",
+    redirectingToClientSpace: "Redirecting to your project space",
+    accessNow: "Access now",
   },
-  // Section paiement
-paymentSuccessTitle: { fr: "Paiement réussi !", en: "Payment successful!" },
-paymentSuccessMessage: { fr: "Votre paiement a bien été enregistré. L'équipe Actoos vous contactera pour la suite.", en: "Your payment has been recorded. The Actoos team will contact you shortly." },
-paymentSessionId: { fr: "ID de session", en: "Session ID" },
-paymentCancelTitle: { fr: "Paiement annulé", en: "Payment cancelled" },
-paymentCancelMessage: { fr: "Le paiement n'a pas été finalisé. Vous pouvez réessayer plus tard.", en: "Payment was not completed. You can try again later." },
-backToHome: { fr: "Retour à l'accueil", en: "Back to home" },
 };
