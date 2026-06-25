@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  ArrowLeft, Calendar, DollarSign, MessageSquare, RefreshCw,
+  ArrowLeft, Calendar, MessageSquare, RefreshCw,
   Upload, FileText, Send, Download, Activity, Eye, Trash2, Edit3, X, Check
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
@@ -310,7 +310,7 @@ export default function ClientSpacePage() {
           </button>
         </div>
 
-        {/* Actions : rendez-vous, paiement */}
+        {/* Actions : rendez-vous uniquement */}
         <div className="flex flex-col sm:flex-row flex-wrap gap-3">
           {projet.booking_id ? (
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D4AF37]/30 w-full">
@@ -360,16 +360,7 @@ export default function ClientSpacePage() {
             </button>
           )}
 
-          {projet.payment_link && (
-            <a
-              href={projet.payment_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-white rounded-2xl px-5 py-3 text-sm font-bold shadow-sm border hover:bg-slate-50 transition-colors w-full sm:w-auto"
-            >
-              <DollarSign size={16} className="text-green-500" /> {t[language].clientPayment}
-            </a>
-          )}
+          {/* Bouton de paiement supprimé */}
         </div>
 
         {/* Timeline des étapes */}
@@ -443,36 +434,7 @@ export default function ClientSpacePage() {
           </div>
         </div>
 
-        {/* Barre de progression du paiement */}
-        {projet.payment_amount > 0 && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm border">
-            <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-              <DollarSign size={16} className="text-[#D4AF37]" /> {t[language].clientPaymentProgress}
-            </h3>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex-1 w-full">
-                <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${(projet.paid_amount || 0) >= projet.payment_amount ? 'bg-green-500' : 'bg-[#D4AF37]'}`}
-                    style={{ width: `${Math.min(((projet.paid_amount || 0) / projet.payment_amount) * 100, 100)}%` }}
-                  />
-                </div>
-                <div className="flex justify-between mt-1 text-xs text-slate-500">
-                  <span>{projet.paid_amount || 0}€ {t[language].clientPaid}</span>
-                  <span>{projet.payment_amount}€ {t[language].clientExpected}</span>
-                </div>
-              </div>
-              <span className={`text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap ${(projet.paid_amount || 0) >= projet.payment_amount ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                {(projet.paid_amount || 0) >= projet.payment_amount ? `✅ ${t[language].clientPaidFull}` : `⚠️ ${t[language].clientDeposit}`}
-              </span>
-            </div>
-            {(projet.paid_amount || 0) < projet.payment_amount && (
-              <p className="text-xs text-slate-400 mt-3 pt-3 border-t border-slate-100">
-                {t[language].clientRemaining}: <strong className="text-amber-600">{(projet.payment_amount - (projet.paid_amount || 0)).toFixed(2)}€</strong>
-              </p>
-            )}
-          </div>
-        )}
+        {/* Barre de progression du paiement supprimée */}
 
         {/* Onglets – défilement horizontal sur mobile */}
         <div className="overflow-x-auto -mx-4 sm:mx-0 pb-1">
