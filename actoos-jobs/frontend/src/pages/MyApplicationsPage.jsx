@@ -6,16 +6,16 @@ import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Loader2, ChevronLeft, FileText, RefreshCw, Banknote } from 'lucide-react'; // Import Banknote
+import { Loader2, ChevronLeft, FileText, RefreshCw, Banknote } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
-import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter'; // 👈 Hook de formatage
+import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 
 const MyApplicationsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { format } = useCurrencyFormatter(); // 👈 Initialisation
+  const { format } = useCurrencyFormatter();
 
   const statusConfig = {
     pending: { label: t('myApplications.status.pending'), color: 'bg-yellow-100 text-yellow-700' },
@@ -30,7 +30,6 @@ const MyApplicationsPage = () => {
     setLoading(true);
     supabase
       .from('applications')
-      // Ajout de salary_min et salary_max dans la jointure job
       .select('*, job:jobs(title, salary_min, salary_max, company:companies(name))')
       .eq('candidate_id', user.id)
       .order('created_at', { ascending: false })
@@ -53,22 +52,28 @@ const MyApplicationsPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+        {/* En-tête mobile-first : empilé sur mobile, en ligne sur desktop */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard"><Button variant="ghost"><ChevronLeft className="w-4 h-4 mr-2" />{t('myApplications.back')}</Button></Link>
-            <h1 className="text-2xl font-bold text-slate-900">{t('myApplications.title')}</h1>
+            <Link to="/dashboard">
+              <Button variant="ghost" size="sm" className="gap-1">
+                <ChevronLeft className="w-4 h-4" />
+                {t('myApplications.back')}
+              </Button>
+            </Link>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{t('myApplications.title')}</h1>
           </div>
-          <Button variant="outline" onClick={handleRefresh} className="gap-2">
+          <Button variant="outline" onClick={handleRefresh} className="gap-2 w-full sm:w-auto">
             <RefreshCw className="w-4 h-4" /> {t('myApplications.refresh')}
           </Button>
         </div>
+
         {applications.length === 0 ? (
           <Card><CardContent className="p-8 text-center text-slate-500"><FileText className="w-12 h-12 mx-auto mb-4" />{t('myApplications.noApplications')}</CardContent></Card>
         ) : (
           <div className="space-y-3">
             {applications.map((app) => {
               const status = statusConfig[app.status] || statusConfig.pending;
-              // Récupération des infos salaire
               const salaryMin = app.job?.salary_min;
               const salaryMax = app.job?.salary_max;
               const hasSalary = salaryMin != null && salaryMax != null;
