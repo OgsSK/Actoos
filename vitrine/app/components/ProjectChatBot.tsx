@@ -189,9 +189,20 @@ export default function ProjectChatBot() {
   }, [loading]);
 
   // Chargement initial avec message traduit
+  // Chargement initial avec message traduit
   useEffect(() => {
     const saved = loadMessages();
     if (saved.length > 0) {
+      // Vérifier si le premier message est le message d’accueil
+      const firstMsg = saved[0];
+      const welcomeFr = t.fr?.chatWelcome;
+      const welcomeEn = t.en?.chatWelcome;
+      const isWelcome = (welcomeFr && firstMsg.content === welcomeFr) || (welcomeEn && firstMsg.content === welcomeEn);
+      // Si c’est le message d’accueil et que la langue a changé, on le met à jour
+      if (isWelcome && firstMsg.content !== t[language]?.chatWelcome) {
+        saved[0] = { ...firstMsg, content: t[language]?.chatWelcome || welcomeFr || '' };
+        saveMessages(saved);
+      }
       setMessages(saved);
       const lastBriefMsg = [...saved].reverse().find((m) => m.type === 'briefing' && m.briefing);
       if (lastBriefMsg?.briefing) {
@@ -199,11 +210,10 @@ export default function ProjectChatBot() {
         setStep(saved.some((m) => m.content.includes('transmis')) ? 'soumettre' : 'ajuster');
       }
     } else {
-      const welcomeText = t[language]?.chatWelcome || "Bonjour ! Je suis l'Agent Actoos. Décrivez votre projet...";
+      const welcomeText = t[language]?.chatWelcome || "Bonjour ! Je suis l'Agent Actoos…";
       setMessages([{ id: generateId(), role: 'assistant', content: welcomeText }]);
     }
   }, [language]);
-
   // Sauvegarde automatique
   useEffect(() => {
     if (messages.length > 0) saveMessages(messages);
