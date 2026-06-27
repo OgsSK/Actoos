@@ -18,13 +18,14 @@ import { apiFetch } from '../lib/api';
 
 const CreateCompanyPage = () => {
   const { t, i18n } = useTranslation();
-  const { user, refreshProfile } = useAuth(); // ← ajout de refreshProfile
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const logoInputRef = useRef(null);
 
   const { prefs } = usePreferencesContext();
 
-  const [selectedCountry, setSelectedCountry] = useState(prefs.country || 'ML');
+  // Par défaut : le pays préféré de l'utilisateur, sinon Belgique
+  const [selectedCountry, setSelectedCountry] = useState(prefs.country || 'BE');
   const [countries, setCountries] = useState([]);
 
   const { cities: filteredCities } = useCities(selectedCountry);
@@ -54,6 +55,13 @@ const CreateCompanyPage = () => {
       setCountries(data || []);
     });
   }, []);
+
+  // Synchronise le pays sélectionné avec les préférences de l'utilisateur
+  useEffect(() => {
+    if (prefs.country && prefs.country !== selectedCountry) {
+      setSelectedCountry(prefs.country);
+    }
+  }, [prefs.country]);
 
   // Upload de logo directement vers Supabase Storage
   const handleLogoUpload = async (e) => {
@@ -159,14 +167,12 @@ const CreateCompanyPage = () => {
         data: { role: 'company' }
       });
 
-      // ✅ Attendre que le profil soit rafraîchi avant de rediriger
       if (refreshProfile) {
         await refreshProfile();
       }
 
       toast.success(t('createCompany.toasts.companyCreated'));
 
-      // Notification admin (facultative)
       try {
         await apiFetch('/api/notify-admin-new-company', {
           method: 'POST',
@@ -181,7 +187,6 @@ const CreateCompanyPage = () => {
         console.error('Erreur notification admin:', e);
       }
 
-      // Navigation programmatique (évite le problème de redirection)
       navigate('/dashboard/entreprise', { replace: true });
     } catch (error) {
       console.error('Error creating company:', error);

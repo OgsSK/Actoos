@@ -206,7 +206,7 @@ const CreateJobPage = () => {
       const { data: country } = await supabase
         .from('countries')
         .select('id')
-        .eq('code', prefs.country || 'ML')
+        .eq('code', prefs.country || 'BE')
         .single();
       const countryId = country?.id;
 
