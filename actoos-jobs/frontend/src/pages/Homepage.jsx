@@ -410,7 +410,7 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
   );
 };
 
-// ✅ CompaniesSection avec tri par plan (Business en premier, puis Pro, puis Free)
+// ✅ CompaniesSection avec tri par plan (Business en premier, puis Pro, puis Free) ET bouton "Voir tout" bien positionné
 const CompaniesSection = ({ countryId }) => {
   const { t } = useTranslation();
   const [companies, setCompanies] = useState([]);
@@ -481,6 +481,15 @@ const CompaniesSection = ({ countryId }) => {
               {c.industry && <p className="text-xs text-slate-500 mt-1">{c.industry}</p>}
             </Link>
           ))}
+        </div>
+
+        {/* ✅ Bouton "Voir tout" centré, pleine largeur sur mobile, avec une clé existante */}
+        <div className="mt-10 flex justify-center">
+          <Link to="/entreprises" className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto border-blue-600 text-blue-600 hover:bg-blue-50">
+              {t('adminDashboard.overview.viewAll')} <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
