@@ -1504,19 +1504,19 @@ const AdminDashboard = () => {
   };
 
   // ✅ Supprimer un signalement (le rapport)
-  const handleDeleteReport = async (reportId) => {
-    if (!window.confirm(t('adminDashboard.users.deleteConfirm'))) return;
-    const { error } = await supabase
-      .from('reports')
-      .delete()
-      .eq('id', reportId);
-    if (!error) {
-      setReports(prev => prev.filter(r => r.id !== reportId));
-      toast.success('Signalement supprimé');
-    } else {
-      toast.error('Erreur lors de la suppression');
-    }
-  };
+// NOUVELLE VERSION (appel backend)
+const handleDeleteReport = async (reportId) => {
+  if (!window.confirm(t('adminDashboard.users.deleteConfirm'))) return;
+
+  try {
+    await apiFetch(`/api/admin/reports/${reportId}`, { method: 'DELETE' });
+    setReports(prev => prev.filter(r => r.id !== reportId));
+    toast.success('Signalement supprimé');
+  } catch (error) {
+    console.error('Erreur suppression signalement:', error);
+    toast.error(t('adminDashboard.jobs.genericError'));
+  }
+};
 
   const handleToggleSubscriber = async (sub) => {
     const { error } = await supabase.rpc('toggle_subscriber_active', {

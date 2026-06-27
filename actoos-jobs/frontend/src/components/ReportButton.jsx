@@ -46,43 +46,51 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
   }, [t, itemType]);
 
   const handleSubmit = async () => {
-    if (!reason) {
-      toast.error(t('report.reasonRequired'));
-      return;
-    }
+  if (!reason) {
+    toast.error(t('report.reasonRequired'));
+    return;
+  }
 
-    if (!reporterId) {
-      toast.error(t('report.mustLogin'));
-      return;
-    }
+  if (!reporterId) {
+    toast.error(t('report.mustLogin'));
+    return;
+  }
 
-    setLoading(true);
-    try {
-      const fullReason = details.trim()
-        ? `${reason} - ${details.trim()}`
-        : reason;
+  setLoading(true);
+  try {
+    const fullReason = details.trim()
+      ? `${reason} - ${details.trim()}`
+      : reason;
 
-      const { error } = await supabase.from('reports').insert({
-        reporter_id: reporterId,
+    // ✅ Appel à l'API backend (plus de dépendance JWT)
+    const response = await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: reporterId,          // ← envoyé dans le corps
         reported_item_type: itemType,
         reported_item_id: itemId,
         reason: fullReason,
-        status: 'pending',
-      });
+      }),
+    });
 
-      if (error) throw error;
+    const result = await response.json();
 
-      toast.success(t('report.sentSuccess'));
-      setShowModal(false);
-      setReason('');
-      setDetails('');
-    } catch (err) {
-      console.error('Erreur signalement:', err);
-      toast.error(t('report.sendError'));
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      throw new Error(result.detail || t('report.sendError'));
     }
-  };
+
+    toast.success(t('report.sentSuccess'));
+    setShowModal(false);
+    setReason('');
+    setDetails('');
+  } catch (err) {
+    console.error('Erreur signalement:', err);
+    toast.error(err.message || t('report.sendError'));
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (!reporterId) return null;
 

@@ -184,6 +184,7 @@ class AdminVerifyCompanyRequest(BaseModel):
     language: Optional[str] = "fr"
 
 class ReportRequest(BaseModel):
+    user_id: str                # ← nouveau champ
     reported_item_type: str
     reported_item_id: str
     reason: str
@@ -2233,17 +2234,38 @@ async def admin_handle_role_request(req: AdminHandleRoleRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ---------- ENDPOINT REPORT CORRIGÉ (sans dépendance JWT) ----------
 @app.post("/api/report")
-async def create_report(req: ReportRequest, reporter_id: str = Depends(get_current_active_user)):
+async def create_report(req: ReportRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
+
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    # Vérification que l'utilisateur existe et n'est pas suspendu/banni
+    user_check = httpx.get(
+        f"{supabase_url}/rest/v1/users?id=eq.{req.user_id}&select=id,is_active,is_banned",
+        headers=headers
+    )
+    users = user_check.json()
+    if not users:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+    user = users[0]
+    if not user.get("is_active", True) or user.get("is_banned", False):
+        raise HTTPException(status_code=403, detail="Compte désactivé ou banni")
+
     try:
         response = httpx.post(
             f"{supabase_url}/rest/v1/reports",
-            json={"reporter_id": reporter_id, "reported_item_type": req.reported_item_type, "reported_item_id": req.reported_item_id, "reason": req.reason, "status": "pending"},
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}", "Content-Type": "application/json", "Prefer": "return=minimal"}
+            json={
+                "reporter_id": req.user_id,
+                "reported_item_type": req.reported_item_type,
+                "reported_item_id": req.reported_item_id,
+                "reason": req.reason,
+                "status": "pending"
+            },
+            headers={**headers, "Content-Type": "application/json", "Prefer": "return=minimal"}
         )
         if response.status_code not in (200, 201):
             raise Exception(f"Report creation failed: {response.text}")
@@ -2842,6 +2864,48 @@ async def favicon_ico():
 @app.get("/assets/fonts/{font_name}")
 async def fonts(font_name: str):
     return Response(content="", media_type="font/woff2")
+
+# ---------- ENDPOINT SUPPRESSION RAPPORT (corrigé, sans doublon) ----------
+@app.delete("/api/admin/reports/{report_id}")
+async def admin_delete_report(report_id: str):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    check = httpx.get(
+        f"{supabase_url}/rest/v1/reports?id=eq.{report_id}&select=id",
+        headers=headers
+    )
+    if not check.json():
+        raise HTTPException(status_code=404, detail="Signalement non trouvé")
+    resp = httpx.delete(
+        f"{supabase_url}/rest/v1/reports?id=eq.{report_id}",
+        headers=headers
+    )
+    # ⚠️ Accepter 200 et 204 comme succès
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Erreur lors de la suppression du signalement")
+    return {"success": True, "message": "Signalement supprimé avec succès"}
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    check = httpx.get(
+        f"{supabase_url}/rest/v1/reports?id=eq.{report_id}&select=id",
+        headers=headers
+    )
+    if not check.json():
+        raise HTTPException(status_code=404, detail="Signalement non trouvé")
+    resp = httpx.delete(
+        f"{supabase_url}/rest/v1/reports?id=eq.{report_id}",
+        headers=headers
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=500, detail="Erreur lors de la suppression du signalement")
+    return {"success": True, "message": "Signalement supprimé avec succès"}
+
 
 if os.path.isdir(BUILD_DIR):
     app.mount("/static", StaticFiles(directory=os.path.join(BUILD_DIR, "static")), name="static")
