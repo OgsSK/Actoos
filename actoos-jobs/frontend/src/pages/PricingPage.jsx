@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { apiFetch } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
@@ -31,7 +30,8 @@ const CACHE_DURATION = 30 * 60 * 1000;
 
 const PricingPage = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  // ✅ Correction : récupère activeCompanyId depuis le contexte
+  const { user, activeCompanyId } = useAuth();
   const { format } = useCurrencyFormatter();
   const [pricing, setPricing] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,7 +58,7 @@ const PricingPage = () => {
       let fallbackTimer;
       try {
         const data = await Promise.race([
-          apiFetch('/api/pricing'),
+          fetch('/api/pricing').then(res => res.json()),
           new Promise((_, reject) => fallbackTimer = setTimeout(() => reject(new Error('timeout')), 3000))
         ]);
         clearTimeout(fallbackTimer);
@@ -75,6 +75,7 @@ const PricingPage = () => {
     loadPricing();
   }, []);
 
+  // ✅ Correction : charge l'entreprise correspondant à activeCompanyId, ou la première si non défini
   useEffect(() => {
     if (!user) {
       setCompany(null);
@@ -82,47 +83,91 @@ const PricingPage = () => {
       return;
     }
     setCompanyLoading(true);
-    supabase
-      .from('companies')
-      .select('*')
-      .eq('owner_id', user.id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (!error && data) setCompany(data);
-        else setCompany(null);
-        setCompanyLoading(false);
-      });
-  }, [user]);
 
+    const fetchCompany = async () => {
+      // Si une entreprise active est sélectionnée, on la charge
+      if (activeCompanyId) {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('id', activeCompanyId)
+          .maybeSingle();
+        if (!error && data) {
+          setCompany(data);
+          setCompanyLoading(false);
+          return;
+        }
+        // Si l'entreprise active n'existe plus, on continue pour prendre la première
+      }
+
+      // Fallback : première entreprise possédée par l'utilisateur
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (!error && data) setCompany(data);
+      else setCompany(null);
+      setCompanyLoading(false);
+    };
+
+    fetchCompany();
+  }, [user, activeCompanyId]);
+
+  // ✅ Correction : envoi de company_id (entreprise active ou celle chargée) dans le checkout
   const handleCheckout = async (packageId) => {
     if (!user) {
       toast.error(t('pricing.toast.mustLogin'));
       return;
     }
+
+    // Détermine le company_id à envoyer
+    const companyId = activeCompanyId || company?.id;
+    if (!companyId) {
+      toast.error(t('pricing.toast.noCompany'));
+      return;
+    }
+
     setCheckoutLoading(packageId);
     try {
-      const result = await apiFetch('/api/checkout/session', {
+      const response = await fetch('/api/checkout/session', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           package_id: packageId,
           origin_url: window.location.origin,
           user_email: user.email,
           user_id: user.id,
+          company_id: companyId,        // ← ajout du company_id
         }),
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        const msg = result.detail || result.message || '';
+        if (msg.includes('DOWNGRADE_BLOCKED:')) {
+          const numbers = msg.match(/\d+/g);
+          if (numbers && numbers.length >= 3) {
+            throw new Error(`DOWNGRADE_BLOCKED:${numbers[numbers.length - 2]}:${numbers[numbers.length - 1]}`);
+          } else {
+            throw new Error('DOWNGRADE_BLOCKED');
+          }
+        }
+        throw new Error(msg || t('pricing.toast.checkoutError'));
+      }
+
       window.location.href = result.url;
     } catch (err) {
       const msg = err.message || '';
-      if (msg.includes('DOWNGRADE_BLOCKED:')) {
-        const numbers = msg.match(/\d+/g);
-        if (numbers && numbers.length >= 3) {
-          toast.error(t('pricing.downgradeBlocked', {
-            active: numbers[numbers.length - 2],
-            limit: numbers[numbers.length - 1]
-          }));
-        } else {
-          toast.error(t('pricing.downgradeBlocked', { active: '?', limit: '?' }));
-        }
+      if (msg.startsWith('DOWNGRADE_BLOCKED:')) {
+        const parts = msg.split(':');
+        toast.error(t('pricing.downgradeBlocked', {
+          active: parts[1] || '?',
+          limit: parts[2] || '?'
+        }));
       } else {
         toast.error(err.message || t('pricing.toast.checkoutError'));
       }
@@ -400,14 +445,13 @@ const PricingPage = () => {
         </div>
       </div>
 
-      {/* Tableau comparatif – version mobile améliorée */}
+      {/* Tableau comparatif */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-slate-900 font-display">{t('pricing.comparison.title')}</h2>
           <p className="text-slate-600 mt-2">{t('pricing.comparison.subtitle')}</p>
         </div>
 
-        {/* Conteneur scrollable pour mobile */}
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm min-w-[600px] sm:min-w-0">
             <table className="w-full text-sm">

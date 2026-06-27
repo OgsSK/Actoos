@@ -70,7 +70,7 @@ def get_plan_limit_static(plan, attribute):
     plan_data = PLAN_LIMITS_CONFIG.get(plan, PLAN_LIMITS_CONFIG["free"])
     return plan_data.get(attribute, PLAN_LIMITS_CONFIG["free"][attribute])
 
-# ----- Dépendance : Vérification du compte actif/non banni -----
+# ----- Dépendance : Vérification du compte actif/non banni (utilisée uniquement pour les endpoints protégés) -----
 async def get_current_active_user(request: Request) -> str:
     auth_header = request.headers.get("authorization")
     if not auth_header:
@@ -103,6 +103,8 @@ async def get_current_active_user(request: Request) -> str:
 
 # ----- Modèles -----
 class CheckoutRequest(BaseModel):
+    user_id: str
+    company_id: str          # nouveau champ obligatoire
     package_id: str
     origin_url: str
     job_id: Optional[str] = None
@@ -127,6 +129,8 @@ class AIAgentRequest(BaseModel):
     language: Optional[str] = "fr"
 
 class CancelSubscriptionRequest(BaseModel):
+    user_id: str
+    company_id: str          # ajout
     reason: Optional[str] = None
 
 class SendInterviewLinkRequest(BaseModel):
@@ -664,10 +668,18 @@ async def get_pricing():
 async def get_currencies():
     return {"currencies": SUPPORTED_CURRENCIES, "default": "XOF"}
 
+# ✅ Correction : utilisation de company_id pour cibler l'entreprise exacte
 @app.post("/api/checkout/session")
-async def create_checkout_session(request: Request, checkout_request: CheckoutRequest, user_id: str = Depends(get_current_active_user)):
+async def create_checkout_session(checkout_request: CheckoutRequest, request: Request):
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
+    user_id = checkout_request.user_id
+    company_id = checkout_request.company_id
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id requis")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="company_id requis")
+
     package_id = checkout_request.package_id
     if package_id in SUBSCRIPTION_PLANS:
         package = SUBSCRIPTION_PLANS[package_id]
@@ -695,44 +707,48 @@ async def create_checkout_session(request: Request, checkout_request: CheckoutRe
         "package_id": package_id,
         "package_name": package["name"],
         "source": "actoos_jobs",
+        "user_id": user_id,
+        "company_id": company_id,   # ajouté pour le webhook
     }
     if checkout_request.job_id:
         metadata["job_id"] = checkout_request.job_id
     if checkout_request.user_email:
         metadata["user_email"] = checkout_request.user_email
-    metadata["user_id"] = user_id
     if checkout_request.metadata:
         metadata.update(checkout_request.metadata)
-    if package_id in SUBSCRIPTION_PLANS:
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        if supabase_url and supabase_key:
-            headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-            company_resp = httpx.get(
-                f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id,subscription_plan",
-                headers=headers
+
+    # Vérification downgrade pour l'entreprise spécifique
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if supabase_url and supabase_key:
+        headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        company_resp = httpx.get(
+            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id,subscription_plan",
+            headers=headers
+        )
+        companies = company_resp.json()
+        if not companies:
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée ou non autorisée")
+        company = companies[0]
+        current_plan = company.get("subscription_plan", "free")
+        target_plan = "free"
+        if "pro" in package_id:
+            target_plan = "pro"
+        elif "business" in package_id:
+            target_plan = "business"
+        plan_rank = {"free": 0, "pro": 1, "business": 2, "enterprise": 3}
+        if plan_rank.get(target_plan, 0) < plan_rank.get(current_plan, 0):
+            jobs_resp = httpx.get(
+                f"{supabase_url}/rest/v1/jobs?company_id=eq.{company['id']}&status=eq.active&select=id",
+                headers={**headers, "Prefer": "count=exact"}
             )
-            companies = company_resp.json()
-            if companies:
-                company = companies[0]
-                current_plan = company.get("subscription_plan", "free")
-                target_plan = "free"
-                if "pro" in package_id:
-                    target_plan = "pro"
-                elif "business" in package_id:
-                    target_plan = "business"
-                plan_rank = {"free": 0, "pro": 1, "business": 2, "enterprise": 3}
-                if plan_rank.get(target_plan, 0) < plan_rank.get(current_plan, 0):
-                    jobs_resp = httpx.get(
-                        f"{supabase_url}/rest/v1/jobs?company_id=eq.{company['id']}&status=eq.active&select=id",
-                        headers={**headers, "Prefer": "count=exact"}
-                    )
-                    active_jobs = 0
-                    if "content-range" in jobs_resp.headers:
-                        active_jobs = int(jobs_resp.headers["content-range"].split("/")[1])
-                    target_limit = get_plan_limit_static(target_plan, "jobs")
-                    if active_jobs > target_limit:
-                        raise HTTPException(status_code=400, detail=f"DOWNGRADE_BLOCKED:{active_jobs}:{target_limit}")
+            active_jobs = 0
+            if "content-range" in jobs_resp.headers:
+                active_jobs = int(jobs_resp.headers["content-range"].split("/")[1])
+            target_limit = get_plan_limit_static(target_plan, "jobs")
+            if active_jobs > target_limit:
+                raise HTTPException(status_code=400, detail=f"DOWNGRADE_BLOCKED:{active_jobs}:{target_limit}")
+
     STRIPE_LOCALES = {
         'ar', 'bg', 'cs', 'da', 'de', 'el', 'en', 'es', 'et', 'fi', 'fil',
         'fr', 'he', 'hr', 'hu', 'id', 'it', 'ja', 'ko', 'lt', 'lv', 'ms',
@@ -785,6 +801,7 @@ async def get_checkout_status(session_id: str):
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# Webhook Stripe – correction pour utiliser company_id des métadonnées
 @app.post("/api/webhook/stripe")
 async def stripe_webhook(request: Request):
     if not stripe.api_key:
@@ -808,13 +825,20 @@ async def stripe_webhook(request: Request):
                 package_id = session.metadata.get("package_id")
                 job_id = session.metadata.get("job_id")
                 if user_id and package_id and package_id in SUBSCRIPTION_PLANS:
-                    company_resp = httpx.get(
-                        f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
-                        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-                    )
-                    companies = company_resp.json()
-                    if companies and len(companies) > 0:
-                        company = companies[0]
+                    company_id = session.metadata.get("company_id")
+                    if not company_id:
+                        # fallback pour les anciennes sessions sans company_id
+                        company_resp = httpx.get(
+                            f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
+                            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+                        )
+                        companies = company_resp.json()
+                        if companies:
+                            company_id = companies[0]["id"]
+                        else:
+                            company_id = None
+
+                    if company_id:
                         plan_name = "free"
                         if "pro" in package_id:
                             plan_name = "pro"
@@ -827,7 +851,7 @@ async def stripe_webhook(request: Request):
                             "subscription_expires_at": None
                         }
                         httpx.patch(
-                            f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
+                            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
                             json=update_data,
                             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
                         )
@@ -850,22 +874,28 @@ async def stripe_webhook(request: Request):
         print(f"Webhook error: {e}")
         return {"received": True, "error": str(e)}
 
+# Annulation – utilisation de company_id
 @app.post("/api/subscription/cancel")
-async def cancel_subscription(req: CancelSubscriptionRequest, user_id: str = Depends(get_current_active_user)):
+async def cancel_subscription(req: CancelSubscriptionRequest):
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
+    user_id = req.user_id
+    company_id = req.company_id
+    if not company_id:
+        raise HTTPException(status_code=400, detail="company_id requis")
+    reason = req.reason
     try:
         company_resp = httpx.get(
-            f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id,stripe_subscription_id,subscription_plan",
+            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id,stripe_subscription_id,subscription_plan",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         companies = company_resp.json()
-        if not companies or len(companies) == 0:
-            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+        if not companies:
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée ou non autorisée")
         company = companies[0]
         previous_plan = company.get("subscription_plan", "free")
         if previous_plan != "free":
@@ -891,7 +921,7 @@ async def cancel_subscription(req: CancelSubscriptionRequest, user_id: str = Dep
                 "stripe_subscription_id": None,
                 "subscription_plan": "free",
                 "subscription_expires_at": None,
-                "cancellation_reason": req.reason or None,
+                "cancellation_reason": reason or None,
                 "previous_subscription_plan": previous_plan
             },
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -900,19 +930,26 @@ async def cancel_subscription(req: CancelSubscriptionRequest, user_id: str = Dep
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# Portail client Stripe – utilisation de company_id
 @app.post("/api/stripe/portal")
-async def stripe_portal(request: Request, user_id: str = Depends(get_current_active_user)):
+async def stripe_portal(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    company_id = data.get("company_id")
+    if not user_id or not company_id:
+        raise HTTPException(status_code=400, detail="user_id et company_id requis")
+
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     company_resp = httpx.get(
-        f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=stripe_customer_id",
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=stripe_customer_id",
         headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     )
     companies = company_resp.json()
-    if not companies or len(companies) == 0:
-        raise HTTPException(status_code=404, detail="Aucune entreprise trouvée")
+    if not companies:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée ou non autorisée")
     customer_id = companies[0].get("stripe_customer_id")
     if not customer_id or customer_id.startswith("cus_test"):
         return {"url": "https://jobs.actoos.com/tarifs"}
@@ -922,7 +959,7 @@ async def stripe_portal(request: Request, user_id: str = Depends(get_current_act
             return_url="https://jobs.actoos.com/dashboard/entreprise",
         )
         return {"url": session.url}
-    except stripe.error.InvalidRequestError as e:
+    except stripe.error.InvalidRequestError:
         return {"url": "https://jobs.actoos.com/tarifs"}
 
 # ----- Contact & Newsletter -----
@@ -1661,42 +1698,6 @@ async def delete_own_company(request: Request):
         except Exception as e:
             print(f"Email error: {e}")
 
-    return {"success": True, "message": "Entreprise supprimée"}
-    data = await request.json()
-    company_id = data.get("company_id")
-    language = data.get("language", "fr")
-    if not company_id:
-        raise HTTPException(status_code=400, detail="company_id requis")
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    company_resp = httpx.get(
-        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=id,name,owner_id,owner:users(email,first_name,last_name)",
-        headers=headers
-    )
-    companies = company_resp.json()
-    if not companies:
-        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-    company = companies[0]
-    if company["owner_id"] != user_id:
-        raise HTTPException(status_code=403, detail="Vous n'êtes pas le propriétaire de cette entreprise")
-    httpx.delete(f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}", headers=headers)
-    httpx.delete(f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}", headers=headers)
-    httpx.delete(f"{supabase_url}/rest/v1/companies?id=eq.{company_id}", headers=headers)
-    owner = company.get("owner")
-    if isinstance(owner, list) and len(owner) > 0:
-        owner = owner[0]
-    owner_email = owner.get("email") if owner else None
-    if owner_email and resend.api_key:
-        first_name = owner.get("first_name") or "Utilisateur"
-        if not first_name or first_name.strip() == "":
-            first_name = "Utilisateur"
-        subject = "Votre entreprise a été supprimée"
-        html = f"<h2>Bonjour {first_name},</h2><p>Votre entreprise <strong>{company['name']}</strong> a bien été supprimée.</p>"
-        try:
-            await send_translated_email(owner_email, subject, html, language)
-        except Exception as e:
-            print(f"Email error: {e}")
     return {"success": True, "message": "Entreprise supprimée"}
 
 @app.delete("/api/admin/delete-user/{user_id}")
@@ -2746,7 +2747,6 @@ async def delete_own_account(request: Request):
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
 
     try:
-        # Vérifier que l'utilisateur existe
         user_resp = httpx.get(
             f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=id",
             headers=headers
@@ -2754,7 +2754,6 @@ async def delete_own_account(request: Request):
         if not user_resp.json():
             raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
 
-        # Supprimer toutes les données liées
         httpx.delete(f"{supabase_url}/rest/v1/applications?candidate_id=eq.{user_id}", headers=headers)
         httpx.delete(f"{supabase_url}/rest/v1/saved_jobs?user_id=eq.{user_id}", headers=headers)
         httpx.delete(f"{supabase_url}/rest/v1/job_alerts?user_id=eq.{user_id}", headers=headers)
@@ -2762,38 +2761,14 @@ async def delete_own_account(request: Request):
         httpx.delete(f"{supabase_url}/rest/v1/candidate_documents?user_id=eq.{user_id}", headers=headers)
         httpx.delete(f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{user_id}", headers=headers)
 
-        # Supprimer les entreprises dont l'utilisateur est propriétaire
         companies_resp = httpx.get(f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id", headers=headers)
         companies = companies_resp.json()
         for company in companies:
             httpx.delete(f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}", headers=headers)
 
-        # Supprimer l'utilisateur
         httpx.delete(f"{supabase_url}/rest/v1/users?id=eq.{user_id}", headers=headers)
-        # Supprimer le compte Auth
         httpx.delete(f"{supabase_url}/auth/v1/admin/users/{user_id}", headers=headers)
 
-        return {"success": True, "message": "Compte supprimé définitivement"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    try:
-        httpx.delete(f"{supabase_url}/rest/v1/applications?candidate_id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/rest/v1/saved_jobs?user_id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/rest/v1/job_alerts?user_id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/rest/v1/notifications?user_id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/rest/v1/candidate_documents?user_id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{user_id}", headers=headers)
-        companies_resp = httpx.get(f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id", headers=headers)
-        companies = companies_resp.json()
-        for company in companies:
-            httpx.delete(f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}", headers=headers)
-        httpx.delete(f"{supabase_url}/rest/v1/users?id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/auth/v1/admin/users/{user_id}", headers=headers)
         return {"success": True, "message": "Compte supprimé définitivement"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -2814,17 +2789,18 @@ async def checkout_complete(request: Request):
     plan_name = None
     if package_id in SUBSCRIPTION_PLANS:
         user_id = metadata.get("user_id")
-        if not user_id:
+        company_id = metadata.get("company_id")
+        if not user_id or not company_id:
             raise HTTPException(status_code=400, detail="Métadonnées manquantes")
         supabase_url = os.getenv("SUPABASE_URL")
         supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         company_resp = httpx.get(
-            f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
+            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         companies = company_resp.json()
         if not companies:
-            raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée ou non autorisée")
         plan_name = "free"
         if "pro" in package_id:
             plan_name = "pro"
@@ -2837,7 +2813,7 @@ async def checkout_complete(request: Request):
             "subscription_expires_at": None
         }
         httpx.patch(
-            f"{supabase_url}/rest/v1/companies?id=eq.{companies[0]['id']}",
+            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
             json=update_data,
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )

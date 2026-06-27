@@ -363,7 +363,6 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
         {job.urgent && <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium px-3 py-1 text-center">{t('home.jobs.urgent')}</div>}
         <CardContent className="p-5 pt-3">
           <div className="flex items-start gap-4">
-            {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
             <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0">
               {job.company_logo ? (
                 <img src={job.company_logo} alt={job.company} className="w-full h-full object-cover" />
@@ -411,6 +410,7 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
   );
 };
 
+// ✅ CompaniesSection avec tri par plan (Business en premier, puis Pro, puis Free)
 const CompaniesSection = ({ countryId }) => {
   const { t } = useTranslation();
   const [companies, setCompanies] = useState([]);
@@ -423,15 +423,24 @@ const CompaniesSection = ({ countryId }) => {
         .from('companies')
         .select('id, name, logo_url, industry, subscription_plan')
         .eq('is_verified', true)
-        .eq('is_active', true)
-        .limit(8);
+        .eq('is_active', true);
 
       if (countryId) {
         query = query.eq('country_id', countryId);
       }
 
       const { data } = await query;
-      setCompanies(data || []);
+      if (data) {
+        // Tri par priorité de plan : business > pro > free
+        const planPriority = { business: 3, pro: 2, free: 1 };
+        const sorted = data.sort((a, b) => {
+          return (planPriority[b.subscription_plan] || 0) - (planPriority[a.subscription_plan] || 0);
+        });
+        // Garder seulement les 8 premiers
+        setCompanies(sorted.slice(0, 8));
+      } else {
+        setCompanies([]);
+      }
       setLoading(false);
     };
     fetchCompanies();
@@ -451,7 +460,6 @@ const CompaniesSection = ({ countryId }) => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           {companies.map((c) => (
             <Link key={c.id} to={`/entreprises/${c.id}`} className="flex flex-col items-center p-6 bg-slate-50 rounded-2xl hover:bg-blue-50 transition-colors">
-              {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
               <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center overflow-hidden mb-3">
                 {c.logo_url ? (
                   <img src={c.logo_url} alt={c.name} className="w-full h-full object-cover" />

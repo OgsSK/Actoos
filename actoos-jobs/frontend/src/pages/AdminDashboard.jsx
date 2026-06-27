@@ -855,7 +855,7 @@ const AdminDashboard = () => {
     try {
       const { data: jobsData } = await supabase
         .from('jobs')
-        .select(`*, company:companies(id, name, logo_url, is_verified, subscription_plan), city:cities(name), posted_by_user:users!jobs_posted_by_fkey(email)`)
+        .select(`*, company:companies(id, name, logo_url, is_verified, is_active, subscription_plan), city:cities(name), posted_by_user:users!jobs_posted_by_fkey(email)`)
         .order('created_at', { ascending: false })
         .limit(ITEMS_PER_PAGE);
       setJobs(jobsData || []);
@@ -932,7 +932,7 @@ const AdminDashboard = () => {
     const to = from + ITEMS_PER_PAGE - 1;
     const { data } = await supabase
       .from('jobs')
-      .select(`..., company:companies(id, name, logo_url, is_verified, subscription_plan), city:cities(name), posted_by_user:users!jobs_posted_by_fkey(email)`)
+      .select(`..., company:companies(id, name, logo_url, is_verified, is_active, subscription_plan), city:cities(name), posted_by_user:users!jobs_posted_by_fkey(email)`)
       .order('created_at', { ascending: false })
       .range(from, to);
     if (data) {
@@ -1430,6 +1430,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleReactivateReportedItem = async (report) => {
+    try {
+      if (report.reported_item_type === 'job') {
+        await apiFetch('/api/admin/reactivate-job', {
+          method: 'POST',
+          body: JSON.stringify({ id: report.reported_item_id, language: i18n.language }),
+        });
+        toast.success(t('adminDashboard.reports.jobReactivatedToast', 'Offre réactivée'));
+      } else if (report.reported_item_type === 'company') {
+        await apiFetch('/api/admin/reactivate-company', {
+          method: 'POST',
+          body: JSON.stringify({ id: report.reported_item_id, language: i18n.language }),
+        });
+        toast.success(t('adminDashboard.reports.companyReactivatedToast', 'Entreprise réactivée'));
+      }
+      fetchInitialData();
+    } catch (error) {
+      toast.error(error.message || t('adminDashboard.jobs.genericError'));
+    }
+  };
+
   const handleBanReportedUser = async (report) => {
     let userIdToBan = null;
     if (report.reported_item_type === 'job') {
@@ -1463,6 +1484,37 @@ const AdminDashboard = () => {
       fetchInitialData();
     } catch (error) {
       toast.error(error.message || t('adminDashboard.jobs.genericError'));
+    }
+  };
+
+  // ✅ Statut d'un élément signalé (actif ou suspendu)
+  const getItemStatus = (report) => {
+    if (!report) return null;
+    if (report.reported_item_type === 'job') {
+      const job = jobs.find(j => j.id === report.reported_item_id);
+      return job?.status; // 'active', 'suspended', etc.
+    } else if (report.reported_item_type === 'company') {
+      const comp = companies.find(c => c.id === report.reported_item_id);
+      if (!comp) return null;
+      if (comp.is_verified && !comp.is_active) return 'suspended';
+      if (comp.is_verified && comp.is_active) return 'active';
+      return 'pending'; // non vérifiée
+    }
+    return null;
+  };
+
+  // ✅ Supprimer un signalement (le rapport)
+  const handleDeleteReport = async (reportId) => {
+    if (!window.confirm(t('adminDashboard.users.deleteConfirm'))) return;
+    const { error } = await supabase
+      .from('reports')
+      .delete()
+      .eq('id', reportId);
+    if (!error) {
+      setReports(prev => prev.filter(r => r.id !== reportId));
+      toast.success('Signalement supprimé');
+    } else {
+      toast.error('Erreur lors de la suppression');
     }
   };
 
@@ -1949,6 +2001,8 @@ const AdminDashboard = () => {
                       const isJobReport = report.reported_item_type === 'job';
                       const isCompanyReport = report.reported_item_type === 'company';
                       const isCandidateReport = report.reported_item_type === 'candidate';
+                      const itemStatus = getItemStatus(report);
+                      const isSuspended = itemStatus === 'suspended';
 
                       return (
                         <div key={report.id} className="flex flex-col gap-4 p-4 bg-white border border-slate-200 rounded-2xl">
@@ -1975,6 +2029,7 @@ const AdminDashboard = () => {
                               {report.status === 'pending' ? t('adminDashboard.reports.status.pending') : report.status === 'reviewed' ? t('adminDashboard.reports.status.reviewed') : t('adminDashboard.reports.status.resolved')}
                             </Badge>
                           </div>
+
                           <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:justify-end">
                             <Button size="sm" variant="outline" className="min-h-[44px]" onClick={() => handleUpdateReportStatus(report.id, 'reviewed')} disabled={report.status !== 'pending'}>
                               {t('adminDashboard.reports.markReviewed')}
@@ -1982,21 +2037,53 @@ const AdminDashboard = () => {
                             <Button size="sm" variant="outline" className="min-h-[44px]" onClick={() => handleUpdateReportStatus(report.id, 'resolved')} disabled={report.status === 'resolved'}>
                               {t('adminDashboard.reports.markResolved')}
                             </Button>
-                            {!isCandidateReport && (
-                              <>
-                                <Button size="sm" variant="outline" className="text-yellow-600 hover:bg-yellow-50 min-h-[44px]" onClick={() => handleSuspendReportedItem(report)}>
+
+                            {/* Bouton Suspendre / Réactiver (affichage conditionnel) */}
+                            {!isCandidateReport && itemStatus && (
+                              isSuspended ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-green-600 hover:bg-green-50 min-h-[44px]"
+                                  onClick={() => handleReactivateReportedItem(report)}
+                                >
+                                  <Check className="w-4 h-4 mr-1" />
+                                  {isJobReport ? t('adminDashboard.jobs.reactivate') : t('adminDashboard.companies.reactivate')}
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-yellow-600 hover:bg-yellow-50 min-h-[44px]"
+                                  onClick={() => handleSuspendReportedItem(report)}
+                                >
                                   <Ban className="w-4 h-4 mr-1" />
                                   {isJobReport ? t('adminDashboard.reports.suspendJob') : t('adminDashboard.reports.suspendCompany')}
                                 </Button>
-                                <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleDeleteReportedItem(report)}>
-                                  <Trash2 className="w-4 h-4 mr-1" />
-                                  {isJobReport ? t('adminDashboard.reports.deleteJob') : t('adminDashboard.reports.deleteCompany')}
-                                </Button>
-                              </>
+                              )
                             )}
+
+                            {!isCandidateReport && (
+                              <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleDeleteReportedItem(report)}>
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                {isJobReport ? t('adminDashboard.reports.deleteJob') : t('adminDashboard.reports.deleteCompany')}
+                              </Button>
+                            )}
+
                             <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => handleBanReportedUser(report)}>
                               <UserX className="w-4 h-4 mr-1" />
                               {t('adminDashboard.reports.banUser')}
+                            </Button>
+
+                            {/* ✅ Supprimer le signalement (le rapport) – utilise la clé existante "Supprimer" */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-slate-600 hover:bg-slate-50 min-h-[44px]"
+                              onClick={() => handleDeleteReport(report.id)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              {t('adminDashboard.jobs.delete')}
                             </Button>
                           </div>
                         </div>

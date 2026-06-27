@@ -22,6 +22,7 @@ import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import UserMessages from '../components/UserMessages';
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
 
+// ---------- StatCard ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
   const { t } = useTranslation();
   return (
@@ -300,10 +301,18 @@ const CompanyDashboard = () => {
   };
   const handleCancelSubmission = async (job) => { try { await supabase.from('jobs').update({ status: 'draft' }).eq('id', job.id); setJobs(prev => prev.map(j => (j.id === job.id ? { ...j, status: 'draft' } : j))); toast.success(t('companyDashboard.toasts.submissionCancelled')); } catch (err) { toast.error(t('companyDashboard.toasts.updateError')); } };
 
+  // ✅ CORRECTION : Ajout de company_id pour cibler l'entreprise active lors de l'annulation
   const handleCancelSubscription = async (reason) => {
     setCancelling(true);
     try {
-      await apiFetch('/api/subscription/cancel', { method: 'POST', body: JSON.stringify({ user_id: user.id, reason }) });
+      await apiFetch('/api/subscription/cancel', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: user.id,
+          company_id: company?.id,   // ← identifie l'entreprise à annuler
+          reason
+        })
+      });
       toast.success(t('companyDashboard.toasts.subscriptionCancelled'));
       setShowCancelModal(false);
       fetchCompanyData(company.id);
@@ -335,7 +344,26 @@ const CompanyDashboard = () => {
     }
   };
 
-  const handleOpenPortal = () => { window.location.href = '/tarifs'; };
+  // ✅ CORRECTION : Utilisation de l'API pour récupérer l'URL du portail client Stripe
+  const handleOpenPortal = async () => {
+    try {
+      const res = await apiFetch('/api/stripe/portal', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: user.id,
+          company_id: company?.id   // ← entreprise active
+        })
+      });
+      if (res.url) {
+        window.location.href = res.url;
+      } else {
+        window.location.href = '/tarifs';
+      }
+    } catch (err) {
+      console.error('Erreur portail Stripe:', err);
+      window.location.href = '/tarifs';
+    }
+  };
 
   const activeJobsCount = jobs.filter(j => j.status === 'active').length;
   const plan = company?.subscription_plan || 'free';
@@ -370,7 +398,6 @@ const CompanyDashboard = () => {
 
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
-            {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
             <div className="w-16 h-16 shrink-0 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-slate-200">
               {company?.logo_url ? (
                 <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
