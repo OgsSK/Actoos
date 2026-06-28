@@ -10,12 +10,14 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import GeoBanner from './components/GeoBanner';
 import CookieBanner from './components/CookieBanner';
+import CountryGate from './components/CountryGate'; // ← Ajout du gate pays
 import { Card, CardContent } from './components/ui/card';
 import { Target, Eye, Shield, Zap, Heart, TrendingUp, Loader2 } from 'lucide-react';
 import AcceptInvitationPage from './pages/AcceptInvitationPage';
 import './index.css';
 
 // ---------- Lazy-loaded pages ----------
+// (inchangé)
 const Homepage = lazy(() => import('./pages/Homepage'));
 const JobsPage = lazy(() => import('./pages/JobsPage'));
 const JobDetailPage = lazy(() => import('./pages/JobDetailPage'));
@@ -131,75 +133,78 @@ const AppContent = () => {
             </div>
           }
         >
-          <Routes>
-            {/* ---------- Public routes ---------- */}
-            <Route path="/" element={<Homepage />} />
-            <Route path="/emplois" element={<JobsPage />} />
-            <Route path="/emplois/:id" element={<JobDetailPage />} />
-            <Route path="/entreprises" element={<CompaniesPage />} />
-            <Route path="/entreprises/inscription" element={<RegisterPage />} />
-            <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
-            <Route path="/tarifs" element={<PricingPage />} />
-            <Route path="/paiement/succes" element={<PaymentSuccess />} />
-            <Route path="/paiement/annule" element={<PaymentCancel />} />
-            <Route path="/blog" element={<BlogPage />} />
-            <Route path="/blog/:id" element={<BlogArticlePage />} />
-            <Route path="/preparation-entretien" element={<InterviewPrep />} />
-            <Route path="/lettre-motivation" element={<CoverLetter />} />
-            <Route path="/planifier-entretien" element={<ScheduleInterview />} />
-            <Route path="/entreprises/:id" element={<CompanyDetailPage />} />
-            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-            <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/a-propos" element={<AboutPage />} />
-            <Route path="/faq" element={<FAQPage />} />
+          {/* ✅ CountryGate englobe toutes les routes */}
+          <CountryGate>
+            <Routes>
+              {/* ---------- Public routes ---------- */}
+              <Route path="/" element={<Homepage />} />
+              <Route path="/emplois" element={<JobsPage />} />
+              <Route path="/emplois/:id" element={<JobDetailPage />} />
+              <Route path="/entreprises" element={<CompaniesPage />} />
+              <Route path="/entreprises/inscription" element={<RegisterPage />} />
+              <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+              <Route path="/tarifs" element={<PricingPage />} />
+              <Route path="/paiement/succes" element={<PaymentSuccess />} />
+              <Route path="/paiement/annule" element={<PaymentCancel />} />
+              <Route path="/blog" element={<BlogPage />} />
+              <Route path="/blog/:id" element={<BlogArticlePage />} />
+              <Route path="/preparation-entretien" element={<InterviewPrep />} />
+              <Route path="/lettre-motivation" element={<CoverLetter />} />
+              <Route path="/planifier-entretien" element={<ScheduleInterview />} />
+              <Route path="/entreprises/:id" element={<CompanyDetailPage />} />
+              <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+              <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/a-propos" element={<AboutPage />} />
+              <Route path="/faq" element={<FAQPage />} />
 
-            {/* ---------- Legal pages ---------- */}
-            <Route path="/cgu" element={<CGUPage />} />
-            <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
-            <Route path="/cookies" element={<CookiesPage />} />
-            <Route path="/contact" element={<ContactPage />} />
+              {/* ---------- Legal pages ---------- */}
+              <Route path="/cgu" element={<CGUPage />} />
+              <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
+              <Route path="/cookies" element={<CookiesPage />} />
+              <Route path="/contact" element={<ContactPage />} />
 
-            {/* ---------- Auth routes ---------- */}
-            <Route path="/connexion" element={<LoginPage />} />
-            <Route path="/inscription" element={<RegisterPage />} />
+              {/* ---------- Auth routes ---------- */}
+              <Route path="/connexion" element={<LoginPage />} />
+              <Route path="/inscription" element={<RegisterPage />} />
 
-            {/* ---------- Unsubscribe page (newsletter) ---------- */}
-            <Route path="/desabonnement" element={<UnsubscribePage />} />
+              {/* ---------- Unsubscribe page (newsletter) ---------- */}
+              <Route path="/desabonnement" element={<UnsubscribePage />} />
 
-            {/* ---------- Protected routes - Candidat ---------- */}
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
-            <Route path="/dashboard/candidat" element={<ProtectedRoute><CandidateDashboard /></ProtectedRoute>} />
-            <Route path="/profil" element={<ProtectedRoute><CandidateProfilePage /></ProtectedRoute>} />
-            <Route path="/parametres" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-            <Route path="/mes-candidatures" element={<ProtectedRoute><MyApplicationsPage /></ProtectedRoute>} />
-            <Route path="/mes-candidatures/:id" element={<ProtectedRoute><ApplicationDetailCandidatePage /></ProtectedRoute>} />
-            <Route path="/offres-sauvegardees" element={<ProtectedRoute><SavedJobsPage /></ProtectedRoute>} />
-            <Route path="/alertes" element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
+              {/* ---------- Protected routes - Candidat ---------- */}
+              <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
+              <Route path="/dashboard/candidat" element={<ProtectedRoute><CandidateDashboard /></ProtectedRoute>} />
+              <Route path="/profil" element={<ProtectedRoute><CandidateProfilePage /></ProtectedRoute>} />
+              <Route path="/parametres" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/mes-candidatures" element={<ProtectedRoute><MyApplicationsPage /></ProtectedRoute>} />
+              <Route path="/mes-candidatures/:id" element={<ProtectedRoute><ApplicationDetailCandidatePage /></ProtectedRoute>} />
+              <Route path="/offres-sauvegardees" element={<ProtectedRoute><SavedJobsPage /></ProtectedRoute>} />
+              <Route path="/alertes" element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
 
-            {/* ---------- Protected routes - Entreprise ---------- */}
-            <Route path="/dashboard/entreprise" element={<ProtectedRoute><CompanyDashboard /></ProtectedRoute>} />
-            <Route path="/dashboard/entreprise/creer" element={<ProtectedRoute><CreateCompanyPage /></ProtectedRoute>} />
-            <Route path="/dashboard/entreprise/offres/nouvelle" element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>} />
-            <Route path="/dashboard/entreprise/offres/:id/modifier" element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>} />
-            <Route path="/dashboard/entreprise/profil" element={<ProtectedRoute><CompanyProfilePage /></ProtectedRoute>} />
-            <Route path="/dashboard/entreprise/offres" element={<ProtectedRoute><CompanyJobsPage /></ProtectedRoute>} />
-            <Route path="/dashboard/entreprise/candidatures" element={<ProtectedRoute><CompanyApplicationsPage /></ProtectedRoute>} />
-            <Route path="/dashboard/entreprise/candidatures/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
+              {/* ---------- Protected routes - Entreprise ---------- */}
+              <Route path="/dashboard/entreprise" element={<ProtectedRoute><CompanyDashboard /></ProtectedRoute>} />
+              <Route path="/dashboard/entreprise/creer" element={<ProtectedRoute><CreateCompanyPage /></ProtectedRoute>} />
+              <Route path="/dashboard/entreprise/offres/nouvelle" element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>} />
+              <Route path="/dashboard/entreprise/offres/:id/modifier" element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>} />
+              <Route path="/dashboard/entreprise/profil" element={<ProtectedRoute><CompanyProfilePage /></ProtectedRoute>} />
+              <Route path="/dashboard/entreprise/offres" element={<ProtectedRoute><CompanyJobsPage /></ProtectedRoute>} />
+              <Route path="/dashboard/entreprise/candidatures" element={<ProtectedRoute><CompanyApplicationsPage /></ProtectedRoute>} />
+              <Route path="/dashboard/entreprise/candidatures/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
 
-            {/* ---------- Voir profil candidat (public) ---------- */}
-            <Route path="/candidat/:id" element={<CandidatePublicProfilePage />} />
+              {/* ---------- Voir profil candidat (public) ---------- */}
+              <Route path="/candidat/:id" element={<CandidatePublicProfilePage />} />
 
-            {/* ---------- Admin routes ---------- */}
-            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              {/* ---------- Admin routes ---------- */}
+              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
 
-            {/* ---------- Auth callback ---------- */}
-            <Route path="/auth/callback" element={<AuthCallback />} />
+              {/* ---------- Auth callback ---------- */}
+              <Route path="/auth/callback" element={<AuthCallback />} />
 
-            {/* ---------- 404 ---------- */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+              {/* ---------- 404 ---------- */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </CountryGate>
         </Suspense>
       </main>
       <GeoBanner />

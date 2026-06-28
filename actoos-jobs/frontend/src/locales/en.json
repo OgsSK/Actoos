@@ -3019,6 +3019,7 @@
     }
   },
   "common": {
+     "comingSoon": "coming soon",
       "pro": "Pro",
       "premium": "Premium",
       "allCountries": "All countries",
@@ -3058,6 +3059,10 @@
       "intermediaire": "Intermediate (2-5 years)",
       "senior": "Senior (5-10 years)",
       "expert": "Expert (10+ years)"
+    },
+    "countryGate": {
+      "title": "Coming Soon",
+      "message": "Our service is not yet available in your country. Check back soon!"
     }
 
   

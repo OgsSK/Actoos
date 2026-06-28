@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCountries } from '../contexts/CountriesContext';
+import useAllowedCountries from '../hooks/useAllowedCountries';
 import { Globe } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -9,6 +10,7 @@ const HeaderPreferences = ({ isMobile = false, isTransparent = false }) => {
   const { t } = useTranslation();
   const { prefs, updatePrefs } = usePreferencesContext();
   const { countries, availableCurrencies } = useCountries();
+  const { allowed, isRestricted } = useAllowedCountries();
 
   const handleCountryChange = (e) => {
     const newValue = e.target.value === '' ? null : e.target.value;
@@ -51,11 +53,23 @@ const HeaderPreferences = ({ isMobile = false, isTransparent = false }) => {
         <option value="">
           {isMobile ? t('common.allCountriesShort') : t('common.allCountries')}
         </option>
-        {countries.map(c => (
-          <option key={c.code} value={c.code}>
-            {isMobile ? c.code : t(`countries.${c.code}`, c.name)}
-          </option>
-        ))}
+        {countries.map(c => {
+          const disabled = isRestricted && !allowed.includes(c.code);
+          const label = isMobile
+            ? c.code
+            : t(`countries.${c.code}`, c.name);
+          return (
+            <option
+              key={c.code}
+              value={c.code}
+              disabled={disabled}
+              style={disabled ? { color: '#6b7280', opacity: 0.6 } : {}}
+            >
+              {label}
+              {disabled && !isMobile ? ` (${t('common.comingSoon', 'bientôt')})` : ''}
+            </option>
+          );
+        })}
       </select>
       <select
         value={prefs.currency || 'XOF'}

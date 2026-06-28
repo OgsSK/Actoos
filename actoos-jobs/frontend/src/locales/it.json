@@ -3023,6 +3023,7 @@
       }
     },
     "common": {
+      "comingSoon": "presto disponibile",
       "pro": "Pro",
       "premium": "Premium",
       "allCountries": "Tutti i paesi",
@@ -3063,6 +3064,10 @@
       "intermediaire": "Intermedio (2-5 anni)",
       "senior": "Senior (5-10 anni)",
       "expert": "Esperto (10+ anni)"
+    },
+    "countryGate": {
+      "title": "Presto disponibile",
+      "message": "Il nostro servizio non è ancora disponibile nel tuo paese. Torna presto!"
     }
 
 }

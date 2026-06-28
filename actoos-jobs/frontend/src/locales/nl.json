@@ -3089,6 +3089,7 @@
       }
     },
     "common": {
+      "comingSoon": "binnenkort beschikbaar",
       "pro": "Pro",
       "premium": "Premium",
       "allCountries": "Alle landen",
@@ -3128,6 +3129,10 @@
       "intermediaire": "Middelbaar (2-5 jaar)",
       "senior": "Senior (5-10 jaar)",
       "expert": "Expert (10+ jaar)"
+    },
+     "countryGate": {
+      "title": "Binnenkort beschikbaar",
+      "message": "Onze service is nog niet beschikbaar in uw land. Kom snel terug!"
     }
 
 

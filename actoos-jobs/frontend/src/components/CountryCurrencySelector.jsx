@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { usePreferences } from '../hooks/usePreferences'; // Correction de l'import
+import { usePreferences } from '../hooks/usePreferences';
+import useAllowedCountries from '../hooks/useAllowedCountries';
 import { supabase } from '../lib/supabase';
 import { Loader2 } from 'lucide-react';
 
 const CountryCurrencySelector = () => {
   const { t } = useTranslation();
-  const { prefs, updatePrefs } = usePreferences(); // Correction du hook
+  const { prefs, updatePrefs } = usePreferences();
   const [countries, setCountries] = useState([]);
   const [availableCurrencies, setAvailableCurrencies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { allowed, isRestricted } = useAllowedCountries();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,11 +63,20 @@ const CountryCurrencySelector = () => {
           className="w-full h-10 border border-slate-200 rounded-xl px-3 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">{t('settings.selectCountry')}</option>
-          {countries.map(c => (
-            <option key={c.code} value={c.code}>
-              {t(`countries.${c.code}`, c.name)}
-            </option>
-          ))}
+          {countries.map(c => {
+            const disabled = isRestricted && !allowed.includes(c.code);
+            return (
+              <option
+                key={c.code}
+                value={c.code}
+                disabled={disabled}
+                style={disabled ? { color: '#6b7280', opacity: 0.6 } : {}}
+              >
+                {t(`countries.${c.code}`, c.name)}
+                {disabled ? ` (${t('common.comingSoon', 'bientôt')})` : ''}
+              </option>
+            );
+          })}
         </select>
       </div>
       <div>

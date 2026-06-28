@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCountries } from '../contexts/CountriesContext';
+import useAllowedCountries from '../hooks/useAllowedCountries';
 import { Globe, ChevronDown } from 'lucide-react';
 
 const selectClass =
@@ -11,6 +12,7 @@ const FooterPreferences = () => {
   const { t } = useTranslation();
   const { prefs, updatePrefs } = usePreferencesContext();
   const { countries, availableCurrencies } = useCountries();
+  const { allowed, isRestricted } = useAllowedCountries();
 
   const handleCountryChange = (e) => {
     const newValue = e.target.value === '' ? null : e.target.value;
@@ -35,11 +37,20 @@ const FooterPreferences = () => {
           className={`${selectClass} pl-10`}
         >
           <option value="">{t('common.allCountries')}</option>
-          {countries.map((c) => (
-            <option key={c.code} value={c.code}>
-              {t(`countries.${c.code}`, c.name)}
-            </option>
-          ))}
+          {countries.map((c) => {
+            const disabled = isRestricted && !allowed.includes(c.code);
+            return (
+              <option
+                key={c.code}
+                value={c.code}
+                disabled={disabled}
+                style={disabled ? { color: '#6b7280', opacity: 0.6 } : {}}
+              >
+                {t(`countries.${c.code}`, c.name)}
+                {disabled ? ` (${t('common.comingSoon', 'bientôt')})` : ''}
+              </option>
+            );
+          })}
         </select>
         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
       </div>

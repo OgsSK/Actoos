@@ -3128,6 +3128,7 @@
       }
     },
     "common": {
+       "comingSoon": "demnächst verfügbar",
       "pro": "Pro",
       "premium": "Premium",
       "allCountries": "Alle Länder",
@@ -3167,6 +3168,10 @@
       "intermediaire": "Mittelstufe (2-5 Jahre)",
       "senior": "Senior (5-10 Jahre)",
       "expert": "Experte (10+ Jahre)"
+    },
+    "countryGate": {
+      "title": "Demnächst verfügbar",
+      "message": "Unser Service ist in Ihrem Land noch nicht verfügbar. Kommen Sie bald wieder!"
     }
 
 
