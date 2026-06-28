@@ -11,12 +11,14 @@ const useAllowedCountries = () => {
         return res.json();
       })
       .then(data => {
-        // data est un tableau de codes ISO, ex: ["ML"]
-        setAllowed(data.map(code => code.toUpperCase()));
+        // On ne garde que les codes qui ne commencent pas par "//"
+        const active = data
+          .filter(code => typeof code === 'string' && !code.startsWith('//'))
+          .map(code => code.toUpperCase());
+        setAllowed(active);
         setLoading(false);
       })
       .catch(() => {
-        // Si le fichier est absent ou illisible, on laisse la liste vide -> restriction désactivée
         setAllowed([]);
         setLoading(false);
       });
