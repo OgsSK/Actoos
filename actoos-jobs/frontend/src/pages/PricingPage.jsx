@@ -10,7 +10,8 @@ import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 import { PLAN_LIMITS } from '../lib/planLimits';
 import {
   Loader2, Check, Zap, Crown, Building2, ArrowRight, AlertCircle,
-  ChevronDown, ChevronUp, X, Shield, Briefcase, Clock, Sparkles
+  ChevronDown, ChevronUp, X, Shield, Briefcase, Clock, Sparkles,
+  FileText, Calendar, Search, Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,7 +31,6 @@ const CACHE_DURATION = 30 * 60 * 1000;
 
 const PricingPage = () => {
   const { t } = useTranslation();
-  // ✅ Correction : récupère activeCompanyId depuis le contexte
   const { user, activeCompanyId } = useAuth();
   const { format } = useCurrencyFormatter();
   const [pricing, setPricing] = useState(null);
@@ -54,7 +54,6 @@ const PricingPage = () => {
           }
         } catch (e) {}
       }
-
       let fallbackTimer;
       try {
         const data = await Promise.race([
@@ -75,7 +74,6 @@ const PricingPage = () => {
     loadPricing();
   }, []);
 
-  // ✅ Correction : charge l'entreprise correspondant à activeCompanyId, ou la première si non défini
   useEffect(() => {
     if (!user) {
       setCompany(null);
@@ -83,9 +81,7 @@ const PricingPage = () => {
       return;
     }
     setCompanyLoading(true);
-
     const fetchCompany = async () => {
-      // Si une entreprise active est sélectionnée, on la charge
       if (activeCompanyId) {
         const { data, error } = await supabase
           .from('companies')
@@ -97,10 +93,7 @@ const PricingPage = () => {
           setCompanyLoading(false);
           return;
         }
-        // Si l'entreprise active n'existe plus, on continue pour prendre la première
       }
-
-      // Fallback : première entreprise possédée par l'utilisateur
       const { data, error } = await supabase
         .from('companies')
         .select('*')
@@ -112,24 +105,19 @@ const PricingPage = () => {
       else setCompany(null);
       setCompanyLoading(false);
     };
-
     fetchCompany();
   }, [user, activeCompanyId]);
 
-  // ✅ Correction : envoi de company_id (entreprise active ou celle chargée) dans le checkout
   const handleCheckout = async (packageId) => {
     if (!user) {
       toast.error(t('pricing.toast.mustLogin'));
       return;
     }
-
-    // Détermine le company_id à envoyer
     const companyId = activeCompanyId || company?.id;
     if (!companyId) {
       toast.error(t('pricing.toast.noCompany'));
       return;
     }
-
     setCheckoutLoading(packageId);
     try {
       const response = await fetch('/api/checkout/session', {
@@ -140,12 +128,10 @@ const PricingPage = () => {
           origin_url: window.location.origin,
           user_email: user.email,
           user_id: user.id,
-          company_id: companyId,        // ← ajout du company_id
+          company_id: companyId,
         }),
       });
-
       const result = await response.json();
-
       if (!response.ok) {
         const msg = result.detail || result.message || '';
         if (msg.includes('DOWNGRADE_BLOCKED:')) {
@@ -158,7 +144,6 @@ const PricingPage = () => {
         }
         throw new Error(msg || t('pricing.toast.checkoutError'));
       }
-
       window.location.href = result.url;
     } catch (err) {
       const msg = err.message || '';
@@ -201,8 +186,10 @@ const PricingPage = () => {
         { icon: Shield, text: t('pricing.plans.free.features.2') },
       ],
       limitations: [
-        t('pricing.plans.free.limitations.0'),
-        t('pricing.plans.free.limitations.1'),
+        t('pricing.plans.free.limitations.noInterviewTools'),
+        t('pricing.plans.free.limitations.noAiNotes'),
+        t('pricing.plans.free.limitations.noCvBank'),
+        t('pricing.plans.free.limitations.noMultiCompany'),
       ],
       icon: Building2,
       borderColor: 'border-slate-200',
@@ -216,10 +203,13 @@ const PricingPage = () => {
       features: [
         { icon: Briefcase, text: t('pricing.plans.pro.features.0', { count: PLAN_LIMITS.pro.jobs }) },
         { icon: Clock, text: t('pricing.plans.pro.features.expiration', { days: PLAN_LIMITS.pro.expirationDays }) },
-        { icon: Shield, text: t('pricing.plans.pro.features.4') },
+        { icon: FileText, text: t('pricing.plans.pro.features.interviewTools') },
+        { icon: Sparkles, text: t('pricing.plans.pro.features.aiNotes') },
+        { icon: Shield, text: t('pricing.plans.pro.features.verifiedProfile') },
       ],
       limitations: [
-        t('pricing.plans.pro.limitations.0'),
+        t('pricing.plans.pro.limitations.noCvBank'),
+        t('pricing.plans.pro.limitations.noMultiCompany'),
       ],
       icon: Zap,
       borderColor: 'border-blue-200',
@@ -233,8 +223,12 @@ const PricingPage = () => {
       features: [
         { icon: Briefcase, text: t('pricing.plans.business.features.0') },
         { icon: Clock, text: t('pricing.plans.business.features.expiration', { days: PLAN_LIMITS.business.expirationDays }) },
-        { icon: Sparkles, text: t('pricing.plans.business.features.4') },
-        { icon: Shield, text: t('pricing.plans.business.features.5') },
+        { icon: FileText, text: t('pricing.plans.business.features.interviewTools') },
+        { icon: Sparkles, text: t('pricing.plans.business.features.aiNotes') },
+        { icon: Sparkles, text: t('pricing.plans.business.features.freeBoost') },
+        { icon: Search, text: t('pricing.plans.business.features.cvBank') },
+        { icon: Users, text: t('pricing.plans.business.features.multiCompany') },
+        { icon: Shield, text: t('pricing.plans.business.features.premiumBadge') },
       ],
       limitations: [],
       icon: Crown,
@@ -267,10 +261,18 @@ const PricingPage = () => {
 
   const comparisonRows = [
     { key: 'activeOffers', free: PLAN_LIMITS.free.jobs, pro: PLAN_LIMITS.pro.jobs, business: '∞' },
-    { key: 'expiration', free: `${PLAN_LIMITS.free.expirationDays} jours`, pro: `${PLAN_LIMITS.pro.expirationDays} jours`, business: `${PLAN_LIMITS.business.expirationDays} jours` },
-    { key: 'candidates', free: '✓', pro: '✓', business: '✓' },
-    { key: 'verifiedProfile', free: '-', pro: '✓', business: '✓' },
-    { key: 'freeBoost', free: '-', pro: '-', business: '1 / mois' },
+    {
+      key: 'expiration',
+      free: t('pricing.comparison.values.days', { count: PLAN_LIMITS.free.expirationDays }),
+      pro: t('pricing.comparison.values.days', { count: PLAN_LIMITS.pro.expirationDays }),
+      business: t('pricing.comparison.values.days', { count: PLAN_LIMITS.business.expirationDays }),
+    },
+    { key: 'interviewTools', free: '-', pro: '✓', business: '✓' },
+    { key: 'aiNotes', free: '-', pro: '✓', business: '✓' },
+    { key: 'cvBank', free: '-', pro: '-', business: '✓' },
+    { key: 'multiCompany', free: '-', pro: '-', business: '✓' },
+    { key: 'freeBoost', free: '-', pro: '-', business: t('pricing.comparison.values.perMonth') },
+    { key: 'verifiedProfile', free: '-', pro: '✓', business: t('pricing.comparison.values.premium') },
   ];
 
   return (
@@ -334,7 +336,7 @@ const PricingPage = () => {
                 {companyLoading ? (
                   <div className="absolute top-4 left-4 bg-slate-100 text-slate-500 text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    Chargement...
+                    {t('pricing.loading')}
                   </div>
                 ) : isCurrentPlan ? (
                   <div className="absolute top-4 left-4 bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
@@ -361,7 +363,7 @@ const PricingPage = () => {
                       <>
                         <div className="text-3xl font-extrabold text-slate-900">
                           {format(annualMonthlyEquivalent)}
-                          <span className="text-lg font-normal text-slate-500 ml-1">/mois</span>
+                          <span className="text-lg font-normal text-slate-500 ml-1">{t('pricing.perMonthShort')}</span>
                         </div>
                         <div className="text-sm text-slate-500 mt-1">
                           {t('pricing.billedAnnually')} ({format(annualPrice)})
@@ -376,7 +378,7 @@ const PricingPage = () => {
                       <>
                         <div className="text-3xl font-extrabold text-slate-900">
                           {format(monthlyPrice)}
-                          <span className="text-lg font-normal text-slate-500 ml-1">/mois</span>
+                          <span className="text-lg font-normal text-slate-500 ml-1">{t('pricing.perMonthShort')}</span>
                         </div>
                         <div className="text-sm text-slate-500 mt-1">
                           {t('pricing.billedMonthly')}

@@ -31,7 +31,7 @@ const PaymentSuccess = () => {
         if (res.success) {
           setDetails(res);
           setStatus('success');
-          await refreshProfile();
+          await refreshProfile(); // ✅ met à jour le profil avec les nouvelles permissions
         } else {
           setStatus('error');
         }
@@ -81,7 +81,6 @@ const PaymentSuccess = () => {
             <>
               <Zap className="w-8 h-8 text-blue-500 mx-auto mb-2" />
               <h2 className="text-xl font-bold text-slate-900 mb-2">{t('paymentSuccess.boost.title')}</h2>
-              {/* Correction : <p> remplacé par <div> car il contient un <Badge> (élément bloc) */}
               <div className="text-slate-600 mb-4">
                 <Trans
                   i18nKey="paymentSuccess.boost.message"
@@ -113,7 +112,6 @@ const PaymentSuccess = () => {
           ) : (
             <>
               <h2 className="text-xl font-bold text-slate-900 mb-2">{t('paymentSuccess.subscription.title')}</h2>
-              {/* Correction : <p> remplacé par <div> car il contient un <Badge> */}
               <div className="text-slate-600 mb-4">
                 <Trans
                   i18nKey="paymentSuccess.subscription.message"

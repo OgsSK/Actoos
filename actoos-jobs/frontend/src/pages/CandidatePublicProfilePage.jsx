@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { apiFetch } from '../lib/api';
@@ -21,11 +21,16 @@ const normalizeUrl = (url) => {
 const CandidatePublicProfilePage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const from = searchParams.get('from'); // 'cv-bank' ou autre
   const { user: currentUser, profile: currentProfile } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reporting, setReporting] = useState(false);
   const [suspended, setSuspended] = useState(false);
+
+  // Détermine l'URL de retour selon l'origine
+  const backUrl = from === 'cv-bank' ? '/dashboard/entreprise/cv-bank' : '/dashboard/entreprise/candidatures';
 
   console.log("CandidatePublicProfilePage - ID du candidat :", id);
 
@@ -95,7 +100,7 @@ const CandidatePublicProfilePage = () => {
           <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-slate-900 mb-2">{t('candidateProfile.suspendedTitle')}</h1>
           <p className="text-slate-600">{t('candidateProfile.suspendedDescription')}</p>
-          <Link to="/dashboard/entreprise/candidatures">
+          <Link to={backUrl}>
             <Button variant="outline" className="mt-6">{t('candidateProfile.back')}</Button>
           </Link>
         </div>
@@ -107,7 +112,13 @@ const CandidatePublicProfilePage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <Link to="/dashboard/entreprise/candidatures"><Button variant="ghost" className="mb-6"><ChevronLeft className="w-4 h-4 mr-2" />{t('candidateProfile.back')}</Button></Link>
+        {/* ✅ Bouton retour intelligent */}
+        <Link to={backUrl}>
+          <Button variant="ghost" className="mb-6">
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            {t('candidateProfile.back')}
+          </Button>
+        </Link>
 
         <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">

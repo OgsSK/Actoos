@@ -23,10 +23,51 @@ import {
   Clock,
   Banknote,
   AlertTriangle,
+  Star,
 } from 'lucide-react';
 
 import { toast } from 'sonner';
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
+
+// ---------- SimpleCompanyCard (pour les suggestions) ----------
+const SimpleCompanyCard = ({ company, t }) => (
+  <Link to={`/entreprises/${company.id}`} className="block group">
+    <Card className="hover:shadow-md transition-shadow h-full">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 overflow-hidden">
+            {company.logo_url ? (
+              <img src={company.logo_url} alt={company.name} className="w-6 h-6 object-contain" />
+            ) : (
+              <Building2 className="w-5 h-5 text-blue-600" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h4 className="font-medium text-slate-900 truncate group-hover:text-blue-600">
+              {company.name}
+              {company.subscription_plan === 'pro' && (
+                <Badge className="ml-2 bg-blue-100 text-blue-700 border-blue-200 text-xs">
+                  {t('common.pro', 'Pro')}
+                </Badge>
+              )}
+              {company.subscription_plan === 'business' && (
+                <Badge className="ml-2 bg-purple-100 text-purple-700 border-purple-200 text-xs">
+                  ⭐ {t('common.premium')}
+                </Badge>
+              )}
+            </h4>
+            {company.industry && (
+              <p className="text-xs text-slate-500 mt-1">{company.industry}</p>
+            )}
+            <p className="text-xs text-slate-400 mt-1">
+              {t('companyDetail.jobsCount', { count: company.jobs_count || 0 })}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  </Link>
+);
 
 const CompanyDetailPage = () => {
   const { t } = useTranslation();
@@ -39,64 +80,121 @@ const CompanyDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [suspended, setSuspended] = useState(false);
+  const [similarCompanies, setSimilarCompanies] = useState([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
 
   useEffect(() => {
-    const fetchCompany = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('companies')
-          .select(`
-            *,
-            city:cities(name),
-            owner:users!owner_id(is_banned)
-          `)
-          .eq('id', id)
-          .single();
-
-        if (error) throw error;
-        setCompany(data);
-
-        // Vérifier si l'entreprise est inactive ou si le propriétaire est banni
-        if (!data.is_active || (data.owner && data.owner.is_banned)) {
-          setSuspended(true);
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error(t('companyDetail.notFound'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchJobs = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('jobs')
-          .select(`
-            id,
-            title,
-            contract_type,
-            salary_min,
-            salary_max,
-            created_at,
-            city:cities(name)
-          `)
-          .eq('company_id', id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setJobs(data || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setJobsLoading(false);
-      }
-    };
-
+    window.scrollTo(0, 0);
+    setCompany(null);
+    setLoading(true);
+    setJobs([]);
+    setJobsLoading(true);
+    setSimilarCompanies([]);
     fetchCompany();
     fetchJobs();
-  }, [id, t]);
+  }, [id]);
+
+  const fetchCompany = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select(`
+          *,
+          city:cities(name),
+          owner:users!owner_id(is_banned)
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      setCompany(data);
+
+      if (!data.is_active || (data.owner && data.owner.is_banned)) {
+        setSuspended(true);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(t('companyDetail.notFound'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchJobs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select(`
+          id,
+          title,
+          contract_type,
+          salary_min,
+          salary_max,
+          created_at,
+          city:cities(name)
+        `)
+        .eq('company_id', id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setJobs(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setJobsLoading(false);
+    }
+  };
+
+  // ✅ Charger les entreprises similaires après le chargement de l'entreprise
+  useEffect(() => {
+    if (!company) return;
+    setSimilarLoading(true);
+
+    const fetchSimilar = async () => {
+      try {
+        let query = supabase
+          .from('companies')
+          .select('id, name, logo_url, industry, subscription_plan')
+          .eq('is_verified', true)
+          .eq('is_active', true)
+          .neq('id', company.id)
+          .order('subscription_plan', { ascending: false }) // business > pro > free
+          .order('name')
+          .limit(6);
+
+        // Similarité : même industrie OU même ville
+        if (company.industry) {
+          query = query.or(`industry.eq.${company.industry},city_id.eq.${company.city_id || ''}`);
+        } else if (company.city_id) {
+          query = query.eq('city_id', company.city_id);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        // Récupérer le nombre d'offres actives pour chaque entreprise
+        const enriched = await Promise.all(
+          (data || []).map(async (comp) => {
+            const { count } = await supabase
+              .from('jobs')
+              .select('id', { count: 'exact', head: true })
+              .eq('company_id', comp.id)
+              .eq('status', 'active');
+            return { ...comp, jobs_count: count || 0 };
+          })
+        );
+
+        setSimilarCompanies(enriched);
+      } catch (err) {
+        console.error('Erreur chargement entreprises similaires:', err);
+      } finally {
+        setSimilarLoading(false);
+      }
+    };
+
+    fetchSimilar();
+  }, [company]);
 
   const isOwner = user?.id && company?.owner_id === user.id;
 
@@ -118,7 +216,7 @@ const CompanyDetailPage = () => {
 
   if (suspended) {
     return (
-      <div className="min-h-screen bg-slate-50 pt-20">
+      <div key={id} className="min-h-screen bg-slate-50 pt-20">
         <div className="max-w-4xl mx-auto px-4 py-8 text-center">
           <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-slate-900 mb-2">
@@ -138,7 +236,7 @@ const CompanyDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20">
+    <div key={id} className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <Link to="/entreprises">
           <Button variant="ghost" className="mb-6">
@@ -167,7 +265,7 @@ const CompanyDetailPage = () => {
                   {company.name}
                   {company.subscription_plan === 'pro' && (
                     <Badge className="ml-3 bg-blue-100 text-blue-700 border-blue-200">
-                      Pro
+                      {t('common.pro', 'Pro')}
                     </Badge>
                   )}
                   {company.subscription_plan === 'business' && (
@@ -306,6 +404,24 @@ const CompanyDetailPage = () => {
             </div>
           )}
         </div>
+
+        {/* ENTREPRISES SIMILAIRES */}
+        {similarLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
+        ) : similarCompanies.length > 0 ? (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">
+              {t('companyDetail.similarCompanies', 'Entreprises similaires')}
+            </h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {similarCompanies.map(comp => (
+                <SimpleCompanyCard key={comp.id} company={comp} t={t} />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

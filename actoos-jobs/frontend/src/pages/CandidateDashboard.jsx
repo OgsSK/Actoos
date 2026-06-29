@@ -26,7 +26,7 @@ import {
   Target,
   BookOpen,
   Upload,
-  Mail
+  Mail,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 

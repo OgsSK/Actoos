@@ -11,9 +11,10 @@ import { toast } from 'sonner';
 import {
   Loader2, ChevronLeft, Mail, Phone, MapPin, Calendar, Briefcase, User, FileText,
   ExternalLink, Video, Sparkles, RefreshCw, Trash2, Save, MessageSquare, Lightbulb,
-  CheckCircle
+  CheckCircle, Crown
 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
+import { planHasFeature } from '../lib/planLimits';
 
 /* ---------- Bloc éditable avec gestion du curseur ---------- */
 const EditableBlock = ({ title, icon: Icon, content, onChange, onSave, saving, onDelete, lastSaved, t }) => {
@@ -126,7 +127,7 @@ const TABS = [
 const ApplicationDetailPage = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, activeCompanyId } = useAuth();
   const [application, setApplication] = useState(null);
   const [candidateProfile, setCandidateProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -142,6 +143,35 @@ const ApplicationDetailPage = () => {
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
   const [generatingAnswers, setGeneratingAnswers] = useState(false);
   const [generatingTips, setGeneratingTips] = useState(false);
+
+  // Plan de l'entreprise active
+  const [companyPlan, setCompanyPlan] = useState('free');
+  const [planLoading, setPlanLoading] = useState(true);
+
+  // Récupération du plan de l'entreprise active
+  useEffect(() => {
+    if (!activeCompanyId) {
+      setCompanyPlan('free');
+      setPlanLoading(false);
+      return;
+    }
+    setPlanLoading(true);
+    supabase
+      .from('companies')
+      .select('subscription_plan')
+      .eq('id', activeCompanyId)
+      .single()
+      .then(({ data }) => {
+        setCompanyPlan(data?.subscription_plan || 'free');
+        setPlanLoading(false);
+      })
+      .catch(() => {
+        setCompanyPlan('free');
+        setPlanLoading(false);
+      });
+  }, [activeCompanyId]);
+
+  const isProOrBusiness = planHasFeature(companyPlan, 'canUseInterviewTools');
 
   const getLocalNotes = () => {
     try { return JSON.parse(localStorage.getItem(`app_notes_${id}`) || '{}'); }
@@ -369,7 +399,7 @@ Profil candidat :
     finally { setSendingEmail(false); }
   };
 
-  if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+  if (loading || planLoading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
   if (!application) return <div className="pt-20 text-center">{t('applicationDetail.notFound')}</div>;
 
   const candidate = application.candidate;
@@ -421,82 +451,101 @@ Profil candidat :
             {application.cover_letter && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.coverLetter')}</h2><p className="text-slate-600 whitespace-pre-wrap">{application.cover_letter}</p></CardContent></Card>}
             {candidateProfile?.cv_url && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.cv')}</h2><a href={candidateProfile.cv_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl hover:bg-blue-100"><FileText className="w-4 h-4" /> {t('applicationDetail.viewCV')}</a></CardContent></Card>}
 
-            {/* Bloc Notes avec onglets */}
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-blue-600" /> {t('applicationDetail.interviewNotes')}
-                </h3>
+            {/* Bloc Notes avec onglets (réservé Pro/Business) */}
+            {isProOrBusiness ? (
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-600" /> {t('applicationDetail.interviewNotes')}
+                  </h3>
 
-                <div className="flex flex-wrap gap-2 mb-4 border-b border-slate-200 pb-px">
-                  {TABS.map(tab => (
-                    <button
-                      key={tab.key}
-                      onClick={() => handleTabChange(tab.key)}
-                      className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
-                        activeNoteTab === tab.key
-                          ? 'bg-white text-blue-600 border-b-2 border-blue-600'
-                          : 'text-slate-500 hover:text-slate-700'
-                      }`}
-                    >
-                      <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1" />
-                      {t(`notes.${tab.key}`)}
-                    </button>
-                  ))}
-                </div>
+                  <div className="flex flex-wrap gap-2 mb-4 border-b border-slate-200 pb-px">
+                    {TABS.map(tab => (
+                      <button
+                        key={tab.key}
+                        onClick={() => handleTabChange(tab.key)}
+                        className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
+                          activeNoteTab === tab.key
+                            ? 'bg-white text-blue-600 border-b-2 border-blue-600'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1" />
+                        {t(`notes.${tab.key}`)}
+                      </button>
+                    ))}
+                  </div>
 
-                <div className="max-h-[60vh] overflow-y-auto">
-                  {activeNoteTab === 'personal' && (
-                    <EditableBlock title={t('notes.personal')} icon={FileText} content={notes.personal}
-                      onChange={(val) => setNotes(prev => ({ ...prev, personal: val }))}
-                      onSave={() => handleSaveNote('personal')} saving={savingNotes}
-                      onDelete={() => handleDeleteNote('personal')} lastSaved={lastSavedMap['personal']} t={t} />
-                  )}
-                  {activeNoteTab === 'questions' && (
-                    <div className="space-y-3">
-                      <div className="flex justify-end">
-                        <Button variant="outline" size="sm" onClick={() => handleGenerate('questions')} disabled={generatingQuestions}>
-                          {generatingQuestions ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
-                          {t('applicationDetail.generateQuestions')}
-                        </Button>
+                  <div className="max-h-[60vh] overflow-y-auto">
+                    {activeNoteTab === 'personal' && (
+                      <EditableBlock title={t('notes.personal')} icon={FileText} content={notes.personal}
+                        onChange={(val) => setNotes(prev => ({ ...prev, personal: val }))}
+                        onSave={() => handleSaveNote('personal')} saving={savingNotes}
+                        onDelete={() => handleDeleteNote('personal')} lastSaved={lastSavedMap['personal']} t={t} />
+                    )}
+                    {activeNoteTab === 'questions' && (
+                      <div className="space-y-3">
+                        <div className="flex justify-end">
+                          <Button variant="outline" size="sm" onClick={() => handleGenerate('questions')} disabled={generatingQuestions}>
+                            {generatingQuestions ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                            {t('applicationDetail.generateQuestions')}
+                          </Button>
+                        </div>
+                        <EditableBlock title={t('notes.questions')} icon={MessageSquare} content={notes.questions}
+                          onChange={(val) => setNotes(prev => ({ ...prev, questions: val }))}
+                          onSave={() => handleSaveNote('questions')} saving={savingNotes}
+                          onDelete={() => handleDeleteNote('questions')} lastSaved={lastSavedMap['questions']} t={t} />
                       </div>
-                      <EditableBlock title={t('notes.questions')} icon={MessageSquare} content={notes.questions}
-                        onChange={(val) => setNotes(prev => ({ ...prev, questions: val }))}
-                        onSave={() => handleSaveNote('questions')} saving={savingNotes}
-                        onDelete={() => handleDeleteNote('questions')} lastSaved={lastSavedMap['questions']} t={t} />
-                    </div>
-                  )}
-                  {activeNoteTab === 'answers' && (
-                    <div className="space-y-3">
-                      <div className="flex justify-end">
-                        <Button variant="outline" size="sm" onClick={() => handleGenerate('answers')} disabled={generatingAnswers || !notes.questions}>
-                          {generatingAnswers ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
-                          {t('applicationDetail.generateAnswers')}
-                        </Button>
+                    )}
+                    {activeNoteTab === 'answers' && (
+                      <div className="space-y-3">
+                        <div className="flex justify-end">
+                          <Button variant="outline" size="sm" onClick={() => handleGenerate('answers')} disabled={generatingAnswers || !notes.questions}>
+                            {generatingAnswers ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                            {t('applicationDetail.generateAnswers')}
+                          </Button>
+                        </div>
+                        <EditableBlock title={t('notes.answers')} icon={Sparkles} content={notes.answers}
+                          onChange={(val) => setNotes(prev => ({ ...prev, answers: val }))}
+                          onSave={() => handleSaveNote('answers')} saving={savingNotes}
+                          onDelete={() => handleDeleteNote('answers')} lastSaved={lastSavedMap['answers']} t={t} />
                       </div>
-                      <EditableBlock title={t('notes.answers')} icon={Sparkles} content={notes.answers}
-                        onChange={(val) => setNotes(prev => ({ ...prev, answers: val }))}
-                        onSave={() => handleSaveNote('answers')} saving={savingNotes}
-                        onDelete={() => handleDeleteNote('answers')} lastSaved={lastSavedMap['answers']} t={t} />
-                    </div>
-                  )}
-                  {activeNoteTab === 'tips' && (
-                    <div className="space-y-3">
-                      <div className="flex justify-end">
-                        <Button variant="outline" size="sm" onClick={() => handleGenerate('tips')} disabled={generatingTips}>
-                          {generatingTips ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
-                          {t('applicationDetail.generateTips')}
-                        </Button>
+                    )}
+                    {activeNoteTab === 'tips' && (
+                      <div className="space-y-3">
+                        <div className="flex justify-end">
+                          <Button variant="outline" size="sm" onClick={() => handleGenerate('tips')} disabled={generatingTips}>
+                            {generatingTips ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                            {t('applicationDetail.generateTips')}
+                          </Button>
+                        </div>
+                        <EditableBlock title={t('notes.tips')} icon={Lightbulb} content={notes.tips}
+                          onChange={(val) => setNotes(prev => ({ ...prev, tips: val }))}
+                          onSave={() => handleSaveNote('tips')} saving={savingNotes}
+                          onDelete={() => handleDeleteNote('tips')} lastSaved={lastSavedMap['tips']} t={t} />
                       </div>
-                      <EditableBlock title={t('notes.tips')} icon={Lightbulb} content={notes.tips}
-                        onChange={(val) => setNotes(prev => ({ ...prev, tips: val }))}
-                        onSave={() => handleSaveNote('tips')} saving={savingNotes}
-                        onDelete={() => handleDeleteNote('tips')} lastSaved={lastSavedMap['tips']} t={t} />
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-amber-200 bg-amber-50">
+                <CardContent className="p-6 text-center">
+                  <Crown className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+                  <p className="text-amber-800 font-medium">
+                    {t('applicationDetail.upgradeForNotes', 'Notes d’entretien et outils IA')}
+                  </p>
+                  <p className="text-sm text-amber-700 mt-2">
+                    {t('applicationDetail.upgradeForNotesDesc', 'Passez au plan Pro ou Business pour générer des questions, réponses et conseils, et prendre des notes.')}
+                  </p>
+                  <Link to="/tarifs">
+                    <Button className="mt-4 bg-amber-600 hover:bg-amber-700 text-white">
+                      {t('applicationDetail.viewPlans')}
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Colonne de droite : statut et entretien */}
@@ -528,89 +577,108 @@ Profil candidat :
               </CardContent>
             </Card>
 
-            {/* Section Entretien avec boutons améliorés */}
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-600" /> {t('applicationDetail.scheduleInterview')}
-                </h3>
-                <div className="space-y-6">
-                  {/* Étape 1 */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span>
-                      <h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step1ChooseSlot')}</h4>
+            {/* Section Entretien (réservée Pro/Business) */}
+            {isProOrBusiness ? (
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-blue-600" /> {t('applicationDetail.scheduleInterview')}
+                  </h3>
+                  <div className="space-y-6">
+                    {/* Étape 1 */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span>
+                        <h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step1ChooseSlot')}</h4>
+                      </div>
+                      <div className="flex flex-wrap gap-2 ml-8">
+                        <a href="https://calendly.com/actoos/entretien" target="_blank" rel="noopener noreferrer"
+                           className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700">
+                          <Calendar className="w-4 h-4" /> {t('applicationDetail.openCalendly')}
+                        </a>
+                        <Button variant="outline" size="sm" onClick={() => handleSendEmail('calendly')} disabled={sendingEmail}>
+                          <Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 ml-8">
-                      <a href="https://calendly.com/actoos/entretien" target="_blank" rel="noopener noreferrer"
-                         className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700">
-                        <Calendar className="w-4 h-4" /> {t('applicationDetail.openCalendly')}
-                      </a>
-                      <Button variant="outline" size="sm" onClick={() => handleSendEmail('calendly')} disabled={sendingEmail}>
-                        <Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}
-                      </Button>
-                    </div>
-                  </div>
 
-                  {/* Étape 2 */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span>
-                      <h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step2CreateLink')}</h4>
-                    </div>
-                    <div className="ml-8 space-y-3">
-                      {application.meeting_link ? (
-                        <>
-                          <div className="bg-blue-50 rounded-xl p-3 text-sm break-all">
-                            <a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
-                              {application.meeting_link}
-                            </a>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <a href={application.meeting_link} target="_blank" rel="noopener noreferrer"
-                               className="inline-flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-green-700">
-                              <Video className="w-4 h-4" /> {t('applicationDetail.joinMeeting')}
-                            </a>
-                            <Button variant="outline" size="sm" onClick={() => handleSendEmail('jitsi')} disabled={sendingEmail}>
-                              <Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}
+                    {/* Étape 2 */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span>
+                        <h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step2CreateLink')}</h4>
+                      </div>
+                      <div className="ml-8 space-y-3">
+                        {application.meeting_link ? (
+                          <>
+                            <div className="bg-blue-50 rounded-xl p-3 text-sm break-all">
+                              <a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
+                                {application.meeting_link}
+                              </a>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <a href={application.meeting_link} target="_blank" rel="noopener noreferrer"
+                                 className="inline-flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-green-700">
+                                <Video className="w-4 h-4" /> {t('applicationDetail.joinMeeting')}
+                              </a>
+                              <Button variant="outline" size="sm" onClick={() => handleSendEmail('jitsi')} disabled={sendingEmail}>
+                                <Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}
+                              </Button>
+                            </div>
+                            <input type="text" placeholder={t('applicationDetail.newRoomPlaceholder')} value={customRoomName}
+                                   onChange={(e) => setCustomRoomName(e.target.value)}
+                                   className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                disabled={updating}
+                                onClick={handleCreateMeeting}
+                                className="flex-1 min-w-0 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 overflow-hidden"
+                              >
+                                <RefreshCw className="w-4 h-4 shrink-0" />
+                                <span className="btn-marquee flex-1 min-w-0">
+                                  <span>{t('applicationDetail.updateLink')}</span>
+                                </span>
+                              </button>
+                              <Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteMeeting} disabled={updating}>
+                                <Trash2 className="w-4 h-4" /> {t('applicationDetail.deleteLink')}
+                              </Button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <input type="text" placeholder={t('applicationDetail.roomPlaceholder')} value={customRoomName}
+                                   onChange={(e) => setCustomRoomName(e.target.value)}
+                                   className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
+                            <Button variant="outline" className="w-full" onClick={handleCreateMeeting} disabled={updating}>
+                              {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Video className="w-4 h-4 mr-2" />}
+                              {t('applicationDetail.generateJitsiLink')}
                             </Button>
-                          </div>
-                          <input type="text" placeholder={t('applicationDetail.newRoomPlaceholder')} value={customRoomName}
-                                 onChange={(e) => setCustomRoomName(e.target.value)}
-                                 className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              disabled={updating}
-                              onClick={handleCreateMeeting}
-                              className="flex-1 min-w-0 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 overflow-hidden"
-                            >
-                              <RefreshCw className="w-4 h-4 shrink-0" />
-                              <span className="btn-marquee flex-1 min-w-0">
-                                <span>{t('applicationDetail.updateLink')}</span>
-                              </span>
-                            </button>
-                            <Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteMeeting} disabled={updating}>
-                              <Trash2 className="w-4 h-4" /> {t('applicationDetail.deleteLink')}
-                            </Button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <input type="text" placeholder={t('applicationDetail.roomPlaceholder')} value={customRoomName}
-                                 onChange={(e) => setCustomRoomName(e.target.value)}
-                                 className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
-                          <Button variant="outline" className="w-full" onClick={handleCreateMeeting} disabled={updating}>
-                            {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Video className="w-4 h-4 mr-2" />}
-                            {t('applicationDetail.generateJitsiLink')}
-                          </Button>
-                        </>
-                      )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-amber-200 bg-amber-50">
+                <CardContent className="p-6 text-center">
+                  <Calendar className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+                  <p className="text-amber-800 font-medium">
+                    {t('applicationDetail.upgradeForSchedule', 'Planification d’entretien')}
+                  </p>
+                  <p className="text-sm text-amber-700 mt-2">
+                    {t('applicationDetail.upgradeForScheduleDesc', 'Passez au plan Pro ou Business pour planifier des entretiens avec Calendly et Jitsi.')}
+                  </p>
+                  <Link to="/tarifs">
+                    <Button className="mt-4 bg-amber-600 hover:bg-amber-700 text-white">
+                      {t('applicationDetail.viewPlans')}
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

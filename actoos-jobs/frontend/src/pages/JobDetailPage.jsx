@@ -21,9 +21,51 @@ import {
   Heart,
   Loader2,
   ChevronLeft,
+  Briefcase,
 } from 'lucide-react';
 
 import { CONTRACT_TYPES } from '../lib/utils';
+
+// ---------- SimpleJobCard (pour les suggestions) ----------
+const SimpleJobCard = ({ job, t, format }) => {
+  const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
+  return (
+    <Link to={`/emplois/${job.id}`} className="block group h-full">
+      <Card className="hover:shadow-md transition-shadow h-full">
+        <CardContent className="p-4 flex flex-col h-full">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+              {job.company?.logo_url ? (
+                <img src={job.company.logo_url} alt="" className="w-6 h-6 object-contain" />
+              ) : (
+                <Briefcase className="w-5 h-5 text-blue-600" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-medium text-slate-900 truncate group-hover:text-blue-600">
+                {job.title}
+              </h4>
+              <p className="text-sm text-slate-500 truncate">{job.company?.name}</p>
+              <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-slate-500">
+                {job.city?.name && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3 shrink-0" />{job.city.name}
+                  </span>
+                )}
+                <Badge className={`${contractInfo.color} text-xs shrink-0`}>{t(contractInfo.key)}</Badge>
+                {job.salary_min && job.salary_max && (
+                  <span className="font-medium text-slate-700 whitespace-nowrap">
+                    {format(job.salary_min)} – {format(job.salary_max)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+};
 
 const JobDetailPage = () => {
   const { t } = useTranslation();
@@ -36,6 +78,8 @@ const JobDetailPage = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [matchScore, setMatchScore] = useState(null);
+  const [similarJobs, setSimilarJobs] = useState([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
 
   const isCompany =
     user?.user_metadata?.role === 'company' ||
@@ -44,7 +88,12 @@ const JobDetailPage = () => {
 
   const isOwner = user?.id && job?.company?.owner_id === user.id;
 
+  // Réinitialisation à chaque changement d'id
   useEffect(() => {
+    window.scrollTo(0, 0);
+    setJob(null);
+    setLoading(true);
+    setSimilarJobs([]);
     fetchJob();
   }, [id]);
 
@@ -67,7 +116,6 @@ const JobDetailPage = () => {
   }, [user, job, isOwner, isCompany]);
 
   const fetchJob = async () => {
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('jobs')
@@ -120,6 +168,53 @@ const JobDetailPage = () => {
       console.error(err);
     }
   };
+
+  // ✅ Charger les offres similaires après le chargement de l'offre
+  useEffect(() => {
+    if (!job) return;
+    setSimilarLoading(true);
+
+    const fetchSimilar = async () => {
+      try {
+        const skills = job.skills_required || [];
+        const categoryId = job.category_id;
+        const contractType = job.contract_type;
+
+        let query = supabase
+          .from('jobs')
+          .select('id, title, contract_type, salary_min, salary_max, company:companies(name, logo_url), city:cities(name)')
+          .eq('status', 'active')
+          .neq('id', job.id)
+          .order('boosted_until', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
+          .limit(6);
+
+        const conditions = [];
+        if (categoryId) {
+          conditions.push(`category_id.eq.${categoryId}`);
+        }
+        if (skills.length > 0) {
+          conditions.push(`skills_required.ov.{${skills.join(',')}}`);
+        }
+        if (contractType) {
+          conditions.push(`contract_type.eq.${contractType}`);
+        }
+        if (conditions.length > 0) {
+          query = query.or(conditions.join(','));
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        setSimilarJobs(data || []);
+      } catch (err) {
+        console.error('Erreur chargement offres similaires:', err);
+      } finally {
+        setSimilarLoading(false);
+      }
+    };
+
+    fetchSimilar();
+  }, [job]);
 
   const requireAuth = () => {
     if (!user) {
@@ -232,8 +327,8 @@ const JobDetailPage = () => {
   const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div key={id} className="min-h-screen bg-slate-50 pt-20">
+      <div className="max-w-4xl mx-auto px-4 py-8 overflow-x-hidden">
         <Link to="/emplois">
           <Button variant="ghost" className="mb-6">
             <ChevronLeft className="w-4 h-4 mr-2" /> {t('jobDetail.backToJobs')}
@@ -252,11 +347,11 @@ const JobDetailPage = () => {
                 )}
               </div>
 
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 w-full sm:w-auto">
                 <div className="flex items-center flex-wrap gap-2 mb-2">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{job.title}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 break-words">{job.title}</h1>
                   {user?.role === 'candidate' && !isOwner && matchScore !== null && (
-                    <Badge className="bg-blue-100 text-blue-700 text-sm px-3 py-1">
+                    <Badge className="bg-blue-100 text-blue-700 text-sm px-3 py-1 shrink-0">
                       🎯 {t('jobDetail.matchScore', { score: matchScore })}
                     </Badge>
                   )}
@@ -268,13 +363,13 @@ const JobDetailPage = () => {
                   </Badge>
                   <Badge className={contractInfo.color}>{t(contractInfo.key)}</Badge>
                   {job.salary_min && job.salary_max && (
-                    <Badge variant="outline" className="flex items-center gap-1">
+                    <Badge variant="outline" className="flex items-center gap-1 whitespace-nowrap">
                       <Banknote className="w-3 h-3" />
                       {format(job.salary_min)} – {format(job.salary_max)}
                     </Badge>
                   )}
                   {isBoosted && (
-                    <Badge className="bg-purple-100 text-purple-700 border border-purple-200">
+                    <Badge className="bg-purple-100 text-purple-700 border border-purple-200 shrink-0">
                       🚀 {t('jobDetail.boosted')}
                     </Badge>
                   )}
@@ -286,7 +381,7 @@ const JobDetailPage = () => {
                 {!isOwner && !isCompany && !isAdmin && (
                   <>
                     {hasApplied ? (
-                      <Badge className="bg-green-100 text-green-700 text-sm px-4 py-2 w-full sm:w-auto text-center">
+                      <Badge className="bg-green-100 text-green-700 text-sm px-4 py-2 w-full sm:w-auto text-center shrink-0">
                         ✅ {t('jobDetail.alreadyApplied')}
                       </Badge>
                     ) : (
@@ -322,31 +417,49 @@ const JobDetailPage = () => {
               )}
             </div>
 
-            {/* DESCRIPTION */}
-            <div className="prose max-w-none">
+            {/* DESCRIPTION – avec gestion du responsive */}
+            <div className="prose max-w-none break-words">
               <h2>{t('jobDetail.descriptionTitle')}</h2>
-              <p>{job.description}</p>
+              <div className="whitespace-pre-line break-words">{job.description}</div>
               {job.responsibilities && (
                 <>
                   <h3>{t('jobDetail.missionsTitle')}</h3>
-                  <p>{job.responsibilities}</p>
+                  <div className="whitespace-pre-line break-words">{job.responsibilities}</div>
                 </>
               )}
               {job.requirements && (
                 <>
                   <h3>{t('jobDetail.profileTitle')}</h3>
-                  <p>{job.requirements}</p>
+                  <div className="whitespace-pre-line break-words">{job.requirements}</div>
                 </>
               )}
               {job.benefits && (
                 <>
                   <h3>{t('jobDetail.benefitsTitle')}</h3>
-                  <p>{job.benefits}</p>
+                  <div className="whitespace-pre-line break-words">{job.benefits}</div>
                 </>
               )}
             </div>
           </CardContent>
         </Card>
+
+        {/* OFFRES SIMILAIRES */}
+        {similarLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
+        ) : similarJobs.length > 0 ? (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">
+              {t('jobDetail.similarJobs', 'Offres similaires')}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {similarJobs.map(simJob => (
+                <SimpleJobCard key={simJob.id} job={simJob} t={t} format={format} />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

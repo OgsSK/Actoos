@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -17,10 +17,11 @@ import {
   ChevronRight, TrendingUp, Clock, CheckCircle, XCircle, Loader2,
   Edit, Trash2, MoreVertical, Globe, Mail, Phone, MapPin, Calendar,
   AlertTriangle, X, Send, Undo2, CreditCard, Layers, Banknote, Sparkles,
+  Crown, Search,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import UserMessages from '../components/UserMessages';
-import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
+import { getPlanLimit, getExpirationDays, planHasFeature } from '../lib/planLimits';
 
 // ---------- StatCard ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
@@ -57,8 +58,6 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const { format } = useCurrencyFormatter();
   const { prefs } = usePreferencesContext();
-
-  console.log('Devise active :', prefs?.currency, '– Salaire brut :', job.salary_min, '– Formaté :', format(job.salary_min));
 
   const statusLabel = t(`companyDashboard.status.${job.status}`, { defaultValue: job.status });
   const statusColors = { draft: 'bg-slate-100 text-slate-700', pending: 'bg-yellow-100 text-yellow-700', active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', closed: 'bg-red-100 text-red-700', expired: 'bg-slate-100 text-slate-700', rejected: 'bg-red-100 text-red-700' };
@@ -193,7 +192,7 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
 // ---------- Dashboard principal ----------
 const CompanyDashboard = () => {
   const { t } = useTranslation();
-  const { user, activeCompanyId, setActiveCompanyId } = useAuth();
+  const { user, activeCompanyId, setActiveCompanyId, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [company, setCompany] = useState(null);
@@ -205,14 +204,14 @@ const CompanyDashboard = () => {
   const [stats, setStats] = useState({ totalJobs: 0, activeJobs: 0, totalApplications: 0, newApplications: 0 });
   const hasLoaded = useRef(false);
 
-  const fetchUserCompanies = async () => {
+  const fetchUserCompanies = useCallback(async () => {
     if (!user) return [];
     const { data: owned } = await supabase.from('companies').select('*').eq('owner_id', user.id);
     const { data: memberships } = await supabase.from('company_members').select('company:companies(*)').eq('user_id', user.id).eq('status', 'active');
     const memberCompanies = (memberships || []).map(m => m.company).filter(Boolean);
     const all = [...(owned || []), ...memberCompanies];
     return all.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-  };
+  }, [user]);
 
   const handleSwitchCompany = (companyId) => {
     setActiveCompanyId(companyId);
@@ -226,28 +225,41 @@ const CompanyDashboard = () => {
       const { data: comp } = await supabase.from('companies').select('*').eq('id', companyId).single();
       if (!comp) return;
       setCompany(comp);
-      
-      try {
-        const check = await apiFetch(`/api/company/check-suspension/${comp.id}`, {
-          method: 'POST',
-        });
-        if (check.active && comp.is_active === false) {
-          setCompany(prev => ({ ...prev, is_active: true, is_verified: true }));
-        }
-      } catch (e) {
-        console.warn('Vérification suspension entreprise échouée:', e);
-      }
-      
-      const { data: jobsData } = await supabase.from('jobs').select('*, city:cities(name)').eq('company_id', comp.id).order('created_at', { ascending: false }).limit(10);
+
+      // ✅ Compter les offres actives (toutes, sans limite)
+      const { count: activeJobsCount } = await supabase
+        .from('jobs')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', comp.id)
+        .eq('status', 'active');
+
+      // Récupérer les 10 dernières offres pour l'affichage
+      const { data: jobsData } = await supabase
+        .from('jobs')
+        .select('*, city:cities(name)')
+        .eq('company_id', comp.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
       setJobs(jobsData || []);
+
       let appsData = [];
       if (jobsData?.length) {
-        const { data } = await supabase.from('applications').select(`*, candidate:users(first_name, last_name, email), job:jobs(title)`).in('job_id', jobsData.map(j => j.id)).order('created_at', { ascending: false }).limit(10);
+        const { data } = await supabase
+          .from('applications')
+          .select(`*, candidate:users(first_name, last_name, email), job:jobs(title)`)
+          .in('job_id', jobsData.map(j => j.id))
+          .order('created_at', { ascending: false })
+          .limit(10);
         appsData = data || [];
       }
       setApplications(appsData);
-      const activeJobs = (jobsData || []).filter(j => j.status === 'active').length;
-      setStats({ totalJobs: (jobsData || []).length, activeJobs, totalApplications: appsData.length, newApplications: appsData.filter(app => app.status === 'pending').length });
+
+      setStats({
+        totalJobs: jobsData?.length || 0,
+        activeJobs: activeJobsCount || 0,
+        totalApplications: appsData.length,
+        newApplications: appsData.filter(app => app.status === 'pending').length,
+      });
     } catch (err) {
       console.error(err);
       toast.error(t('companyDashboard.toasts.loadError'));
@@ -268,19 +280,31 @@ const CompanyDashboard = () => {
       await fetchCompanyData(targetId);
     };
     load();
-  }, [user]);
+  }, [user, fetchUserCompanies]);
+
+  // ✅ Recharger la liste des entreprises à chaque changement (entreprise active ou plan)
+  useEffect(() => {
+    if (user) {
+      fetchUserCompanies().then(updated => setCompanies(updated));
+    }
+  }, [activeCompanyId, company?.subscription_plan, fetchUserCompanies]);
 
   const handleEditJob = (job) => navigate(`/dashboard/entreprise/offres/${job.id}/modifier`);
   const handleDeleteJob = async (job) => { if (!window.confirm(t('companyDashboard.toasts.deleteConfirm', { title: job.title }))) return; await supabase.from('jobs').delete().eq('id', job.id); setJobs(prev => prev.filter(j => j.id !== job.id)); toast.success(t('companyDashboard.toasts.jobDeleted')); };
   const handleToggleJobStatus = async (job, newStatus) => {
     if (newStatus === 'active') {
       const { count: activeCount } = await supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'active');
+      const plan = company?.subscription_plan || 'free';
       const limit = getPlanLimit(plan, 'jobs');
       if (activeCount >= limit) { toast.error(t('companyDashboard.toasts.limitReached', { limit })); return; }
     }
     try {
+      const plan = company?.subscription_plan || 'free';
       const updates = { status: newStatus };
-      if (newStatus === 'active' && !job.published_at) { updates.published_at = new Date().toISOString(); updates.expires_at = new Date(Date.now() + getExpirationDays(company) * 24 * 60 * 60 * 1000).toISOString(); }
+      if (newStatus === 'active' && !job.published_at) {
+        updates.published_at = new Date().toISOString();
+        updates.expires_at = new Date(Date.now() + getExpirationDays(plan) * 24 * 60 * 60 * 1000).toISOString();
+      }
       await supabase.from('jobs').update(updates).eq('id', job.id);
       setJobs(prev => prev.map(j => (j.id === job.id ? { ...j, ...updates } : j)));
       toast.success(newStatus === 'active' ? t('companyDashboard.toasts.offerPublished') : t('companyDashboard.toasts.statusUpdated'));
@@ -288,6 +312,7 @@ const CompanyDashboard = () => {
   };
   const handleSubmitForReview = async (job) => {
     if (!company?.is_verified) { toast.error(t('companyDashboard.toasts.companyNotVerified')); return; }
+    const plan = company?.subscription_plan || 'free';
     const { count: activeCount } = await supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'active');
     const { count: pendingCount } = await supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'pending');
     const limit = getPlanLimit(plan, 'jobs');
@@ -301,7 +326,6 @@ const CompanyDashboard = () => {
   };
   const handleCancelSubmission = async (job) => { try { await supabase.from('jobs').update({ status: 'draft' }).eq('id', job.id); setJobs(prev => prev.map(j => (j.id === job.id ? { ...j, status: 'draft' } : j))); toast.success(t('companyDashboard.toasts.submissionCancelled')); } catch (err) { toast.error(t('companyDashboard.toasts.updateError')); } };
 
-  // ✅ CORRECTION : Ajout de company_id pour cibler l'entreprise active lors de l'annulation
   const handleCancelSubscription = async (reason) => {
     setCancelling(true);
     try {
@@ -309,25 +333,24 @@ const CompanyDashboard = () => {
         method: 'POST',
         body: JSON.stringify({
           user_id: user.id,
-          company_id: company?.id,   // ← identifie l'entreprise à annuler
+          company_id: company?.id,
           reason
         })
       });
       toast.success(t('companyDashboard.toasts.subscriptionCancelled'));
       setShowCancelModal(false);
-      fetchCompanyData(company.id);
+      await fetchCompanyData(company.id);
+      await refreshProfile();
+      // ✅ Recharger la liste complète des entreprises
+      const updatedCompanies = await fetchUserCompanies();
+      setCompanies(updatedCompanies);
     } catch (err) {
       const msg = err.message || '';
       if (msg.includes('DOWNGRADE_BLOCKED:')) {
         const numbers = msg.match(/\d+/g);
-        if (numbers && numbers.length >= 3) {
-          toast.error(t('pricing.downgradeBlocked', { active: numbers[numbers.length - 2], limit: numbers[numbers.length - 1] }));
-        } else {
-          toast.error(t('pricing.downgradeBlocked', { active: '?', limit: '?' }));
-        }
-      } else {
-        toast.error(err.message || t('companyDashboard.toasts.cancelError'));
-      }
+        if (numbers && numbers.length >= 3) toast.error(t('pricing.downgradeBlocked', { active: numbers[numbers.length - 2], limit: numbers[numbers.length - 1] }));
+        else toast.error(t('pricing.downgradeBlocked', { active: '?', limit: '?' }));
+      } else toast.error(err.message || t('companyDashboard.toasts.cancelError'));
     } finally {
       setCancelling(false);
     }
@@ -344,31 +367,26 @@ const CompanyDashboard = () => {
     }
   };
 
-  // ✅ CORRECTION : Utilisation de l'API pour récupérer l'URL du portail client Stripe
-  const handleOpenPortal = async () => {
-    try {
-      const res = await apiFetch('/api/stripe/portal', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_id: user.id,
-          company_id: company?.id   // ← entreprise active
-        })
-      });
-      if (res.url) {
-        window.location.href = res.url;
-      } else {
-        window.location.href = '/tarifs';
-      }
-    } catch (err) {
-      console.error('Erreur portail Stripe:', err);
-      window.location.href = '/tarifs';
-    }
+  const handleOpenPortal = () => {
+    window.location.href = '/tarifs';
   };
 
-  const activeJobsCount = jobs.filter(j => j.status === 'active').length;
   const plan = company?.subscription_plan || 'free';
   const jobsLimit = getPlanLimit(plan, 'jobs');
-  const planLabel = company?.subscription_plan === 'free' ? t('pricing.free') : company?.subscription_plan?.charAt(0).toUpperCase() + company?.subscription_plan?.slice(1);
+  const planLabel = plan === 'free' ? t('pricing.free') : plan.charAt(0).toUpperCase() + plan.slice(1);
+
+  // ✅ Droits de création d'entreprise : basé sur la présence d'au moins une entreprise Business/Enterprise
+  const ownedCompaniesCount = companies.filter(c => c.owner_id === user?.id).length;
+  const hasBusinessCompany = companies.some(
+    c => c.owner_id === user?.id && (c.subscription_plan === 'business' || c.subscription_plan === 'enterprise')
+  );
+  const canCreateCompany = hasBusinessCompany || ownedCompaniesCount === 0;
+
+  const hasCVBank = planHasFeature(plan, 'canAccessCvBank');
+  const isBusinessPlan = plan === 'business' || plan === 'enterprise';
+
+  // ✅ Utiliser le vrai total actif
+  const activeJobsCount = stats.activeJobs;
 
   if (loading) return <DashboardSkeleton />;
 
@@ -393,17 +411,19 @@ const CompanyDashboard = () => {
           <select value={activeCompanyId || ''} onChange={(e) => handleSwitchCompany(e.target.value)} className="border border-slate-200 bg-white rounded-xl px-4 py-2 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
             {companies.map(c => (<option key={c.id} value={c.id}>{c.name} {c.owner_id === user.id ? t('companyDashboard.companySelector.owner') : t('companyDashboard.companySelector.member')}</option>))}
           </select>
-          <Link to="/dashboard/entreprise/creer" className="ml-auto"><Button variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" /> {t('companyDashboard.companySelector.newCompany')}</Button></Link>
+          {canCreateCompany ? (
+            <Link to="/dashboard/entreprise/creer" className="ml-auto"><Button variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" /> {t('companyDashboard.companySelector.newCompany')}</Button></Link>
+          ) : (
+            <div className="ml-auto text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-full whitespace-nowrap">
+              🔒 {t('companyDashboard.multiCompanyLocked', 'Multi-entreprise réservé au plan Business')}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
             <div className="w-16 h-16 shrink-0 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-slate-200">
-              {company?.logo_url ? (
-                <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
-              ) : (
-                <Building2 className="w-8 h-8 text-slate-400" />
-              )}
+              {company?.logo_url ? (<img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />) : (<Building2 className="w-8 h-8 text-slate-400" />)}
             </div>
             <div className="min-w-0"><h1 className="text-2xl font-bold text-slate-900 truncate">{company?.name}</h1><p className="text-slate-600">{t('companyDashboard.header.title')}</p></div>
           </div>
@@ -431,7 +451,7 @@ const CompanyDashboard = () => {
                 {jobs.length === 0 ? (
                   <div className="text-center py-8"><Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" /><p className="text-slate-600 mb-4">{t('companyDashboard.jobsSection.noOffers')}</p><Link to="/dashboard/entreprise/offres/nouvelle"><Button className="min-h-[44px]">{t('companyDashboard.jobsSection.publishButton')}</Button></Link></div>
                 ) : (
-                  <div className="space-y-3">{jobs.map(job => (<CompanyJobCard key={job.id} job={job} onEdit={handleEditJob} onDelete={handleDeleteJob} onToggleStatus={handleToggleJobStatus} onSubmitForReview={handleSubmitForReview} onCancelSubmission={handleCancelSubmission} isCompanyVerified={company?.is_verified ?? false} isBusinessPlan={company?.subscription_plan === 'business'} onFreeBoost={handleFreeBoost} />))}</div>
+                  <div className="space-y-3">{jobs.map(job => (<CompanyJobCard key={job.id} job={job} onEdit={handleEditJob} onDelete={handleDeleteJob} onToggleStatus={handleToggleJobStatus} onSubmitForReview={handleSubmitForReview} onCancelSubmission={handleCancelSubmission} isCompanyVerified={company?.is_verified ?? false} isBusinessPlan={isBusinessPlan} onFreeBoost={handleFreeBoost} />))}</div>
                 )}
               </CardContent>
             </Card>
@@ -443,9 +463,7 @@ const CompanyDashboard = () => {
                 <div><h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.applicationsSection.title')}</h2><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.newCount', { count: stats.newApplications })}</p></div>
                 <Link to="/dashboard/entreprise/candidatures" className="w-full sm:w-auto"><Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">{t('companyDashboard.applicationsSection.viewAll')}<ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
               </div>
-              <CardContent className="p-4">
-                {applications.length === 0 ? (<div className="text-center py-6"><Users className="w-10 h-10 text-slate-300 mx-auto mb-2" /><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.noApplications')}</p></div>) : (<div className="space-y-2">{applications.slice(0, 5).map(app => (<ApplicationCard key={app.id} application={app} />))}</div>)}
-              </CardContent>
+              <CardContent className="p-4">{applications.length === 0 ? (<div className="text-center py-6"><Users className="w-10 h-10 text-slate-300 mx-auto mb-2" /><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.noApplications')}</p></div>) : (<div className="space-y-2">{applications.slice(0, 5).map(app => (<ApplicationCard key={app.id} application={app} />))}</div>)}</CardContent>
             </Card>
 
             <Card className="border-slate-200 overflow-hidden">
@@ -475,7 +493,7 @@ const CompanyDashboard = () => {
                   <div className="flex justify-between text-sm text-slate-600 mb-1"><span>{t('companyDashboard.subscriptionCard.activeOffers')}</span><span>{activeJobsCount} / {jobsLimit === Infinity ? '∞' : jobsLimit}</span></div>
                   <div className="w-full bg-blue-100 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${jobsLimit === Infinity ? 100 : Math.min(100, (activeJobsCount / jobsLimit) * 100)}%` }} /></div>
                 </div>
-                {company?.subscription_plan !== 'free' && company?.stripe_subscription_id ? (
+                {plan !== 'free' && company?.stripe_subscription_id ? (
                   <>
                     <p className="text-sm text-blue-800 mb-4">{t('companyDashboard.subscriptionCard.activePlanMessage', { plan: planLabel })}</p>
                     <div className="space-y-2">
@@ -483,14 +501,29 @@ const CompanyDashboard = () => {
                       <Button variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => setShowCancelModal(true)}><AlertTriangle className="w-4 h-4 mr-2" />{t('companyDashboard.subscriptionCard.cancelSubscription')}</Button>
                     </div>
                   </>
-                ) : company?.subscription_plan === 'free' && company?.cancellation_reason ? (
+                ) : plan === 'free' && company?.cancellation_reason ? (
                   <div className="text-sm text-slate-700 mt-2"><p className="font-medium">{t('companyDashboard.subscriptionCard.lastCancelReason')}</p><p className="italic mt-1">{t('companyDashboard.subscriptionCard.cancelReasonQuote', { reason: company.cancellation_reason })}</p></div>
                 ) : (
                   <p className="text-sm text-blue-800">{t('companyDashboard.subscriptionCard.freePlanMessage')}</p>
                 )}
-                {company?.subscription_plan === 'business' && <p className="text-sm text-purple-700 mt-2">{t('companyDashboard.subscriptionCard.freeBoostMessage')}</p>}
+                {isBusinessPlan && <p className="text-sm text-purple-700 mt-2">{t('companyDashboard.subscriptionCard.freeBoostMessage')}</p>}
               </CardContent>
             </Card>
+
+            {hasCVBank && (
+              <Card className="border-purple-200 bg-purple-50 overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Crown className="w-5 h-5 text-purple-600" />
+                    <h3 className="font-semibold text-purple-900">{t('companyDashboard.cvBank.title', 'Banque de CV')}</h3>
+                  </div>
+                  <p className="text-sm text-purple-700 mb-4">{t('companyDashboard.cvBank.desc', 'Accédez à notre vivier de talents disponibles.')}</p>
+                  <Link to="/dashboard/entreprise/cv-bank">
+                    <Button variant="outline" className="w-full border-purple-300 text-purple-700 hover:bg-purple-100"><Search className="w-4 h-4 mr-2" />{t('companyDashboard.cvBank.browse', 'Parcourir les CV')}</Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader><CardTitle>{t('companyDashboard.adminMessages.title')}</CardTitle></CardHeader>

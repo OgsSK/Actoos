@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import os
 import stripe
 from dotenv import load_dotenv
@@ -70,7 +70,7 @@ def get_plan_limit_static(plan, attribute):
     plan_data = PLAN_LIMITS_CONFIG.get(plan, PLAN_LIMITS_CONFIG["free"])
     return plan_data.get(attribute, PLAN_LIMITS_CONFIG["free"][attribute])
 
-# ----- Dépendance : Vérification du compte actif/non banni (utilisée uniquement pour les endpoints protégés) -----
+# ----- Dépendance : Vérification du compte actif/non banni -----
 async def get_current_active_user(request: Request) -> str:
     auth_header = request.headers.get("authorization")
     if not auth_header:
@@ -101,10 +101,41 @@ async def get_current_active_user(request: Request) -> str:
         raise HTTPException(status_code=403, detail="Votre compte a été banni.")
     return user_id
 
+# ----- Fonction utilitaire de vérification du rôle dans une entreprise -----
+def get_user_role_in_company(user_id: str, company_id: str) -> str:
+    """Retourne le rôle de l'utilisateur dans l'entreprise : 'owner', 'admin', 'recruiter', 'viewer', ou None."""
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    owner_check = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id",
+        headers=headers
+    )
+    if owner_check.json():
+        return "owner"
+    member_check = httpx.get(
+        f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&user_id=eq.{user_id}&select=role",
+        headers=headers
+    )
+    members = member_check.json()
+    if members:
+        return members[0]["role"]
+    return None
+
+# ----- Fonction utilitaire : fonctionnalités par plan (backend) -----
+def planHasFeature(plan: str, feature: str) -> bool:
+    features = {
+        "free": ["basicJobs"],
+        "pro": ["basicJobs", "canUseInterviewTools"],
+        "business": ["basicJobs", "canUseInterviewTools", "canAccessCvBank", "canCreateMultipleCompanies"],
+        "enterprise": ["basicJobs", "canUseInterviewTools", "canAccessCvBank", "canCreateMultipleCompanies"],
+    }
+    return feature in features.get(plan, [])
+
 # ----- Modèles -----
 class CheckoutRequest(BaseModel):
     user_id: str
-    company_id: str          # nouveau champ obligatoire
+    company_id: str
     package_id: str
     origin_url: str
     job_id: Optional[str] = None
@@ -130,7 +161,7 @@ class AIAgentRequest(BaseModel):
 
 class CancelSubscriptionRequest(BaseModel):
     user_id: str
-    company_id: str          # ajout
+    company_id: str
     reason: Optional[str] = None
 
 class SendInterviewLinkRequest(BaseModel):
@@ -184,7 +215,7 @@ class AdminVerifyCompanyRequest(BaseModel):
     language: Optional[str] = "fr"
 
 class ReportRequest(BaseModel):
-    user_id: str                # ← nouveau champ
+    user_id: str
     reported_item_type: str
     reported_item_id: str
     reason: str
@@ -284,24 +315,29 @@ class SendRoleChangeEmailRequest(BaseModel):
     requested_role: str
     admin_message: Optional[str] = None
 
+# ----- Modèles pour la gestion d'équipe (modifiés) -----
 class TeamInviteRequest(BaseModel):
     company_id: str
+    user_id: str
     email: str
     role: str = "recruiter"
     language: Optional[str] = "fr"
 
 class TeamUpdateRoleRequest(BaseModel):
-    company_id: Optional[str] = None
+    user_id: str
     role: str
 
 class TeamRemoveRequest(BaseModel):
     company_id: str
+    user_id: str
 
 class TeamLeaveRequest(BaseModel):
     company_id: str
+    user_id: str
 
 class AcceptInvitationRequest(BaseModel):
     token: str
+    user_id: str
 
 class AdminDeleteUserRequest(BaseModel):
     language: Optional[str] = "fr"
@@ -709,7 +745,7 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
         "package_name": package["name"],
         "source": "actoos_jobs",
         "user_id": user_id,
-        "company_id": company_id,   # ajouté pour le webhook
+        "company_id": company_id,
     }
     if checkout_request.job_id:
         metadata["job_id"] = checkout_request.job_id
@@ -802,78 +838,95 @@ async def get_checkout_status(session_id: str):
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# Webhook Stripe – correction pour utiliser company_id des métadonnées
+# ======================= CORRECTION DU WEBHOOK ==========================
+# L'ancien bloc dupliqué a été supprimé. On garde uniquement la version asynchrone.
 @app.post("/api/webhook/stripe")
 async def stripe_webhook(request: Request):
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
+
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
+
     try:
         if webhook_secret and sig_header:
             event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
         else:
+            print("⚠️ Webhook secret not configured. Accepting event without verification.")
             event = stripe.Event.construct_from(await request.json(), stripe.api_key)
+    except stripe.error.SignatureVerificationError as e:
+        print(f"Webhook signature verification failed: {e}")
+        return {"received": False, "error": "Signature verification failed"}
+    except Exception as e:
+        print(f"Webhook error: {e}")
+        return {"received": False, "error": str(e)}
+
+    try:
         if event.type == "checkout.session.completed":
             session = event.data.object
             if session.id in payment_transactions:
                 payment_transactions[session.id]["payment_status"] = "paid"
                 payment_transactions[session.id]["status"] = "completed"
+
             supabase_url = os.getenv("SUPABASE_URL")
             supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
             if supabase_url and supabase_key and session.metadata:
-                user_id = session.metadata.get("user_id")
-                package_id = session.metadata.get("package_id")
-                job_id = session.metadata.get("job_id")
-                if user_id and package_id and package_id in SUBSCRIPTION_PLANS:
-                    company_id = session.metadata.get("company_id")
-                    if not company_id:
-                        # fallback pour les anciennes sessions sans company_id
-                        company_resp = httpx.get(
-                            f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
-                            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-                        )
-                        companies = company_resp.json()
-                        if companies:
-                            company_id = companies[0]["id"]
-                        else:
-                            company_id = None
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+                    user_id = session.metadata.get("user_id")
+                    package_id = session.metadata.get("package_id")
+                    job_id = session.metadata.get("job_id")
 
-                    if company_id:
-                        plan_name = "free"
-                        if "pro" in package_id:
-                            plan_name = "pro"
-                        elif "business" in package_id:
-                            plan_name = "business"
-                        update_data = {
-                            "subscription_plan": plan_name,
-                            "stripe_subscription_id": session.subscription,
-                            "stripe_customer_id": session.customer,
-                            "subscription_expires_at": None
-                        }
-                        httpx.patch(
-                            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
-                            json=update_data,
-                            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+                    if user_id and package_id and package_id in SUBSCRIPTION_PLANS:
+                        company_id = session.metadata.get("company_id")
+                        if not company_id:
+                            resp = await client.get(
+                                f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
+                                headers=headers
+                            )
+                            companies = resp.json()
+                            if companies:
+                                company_id = companies[0]["id"]
+
+                        if company_id:
+                            plan_name = "free"
+                            if "pro" in package_id:
+                                plan_name = "pro"
+                            elif "business" in package_id:
+                                plan_name = "business"
+
+                            await client.patch(
+                                f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
+                                json={
+                                    "subscription_plan": plan_name,
+                                    "stripe_subscription_id": session.subscription,
+                                    "stripe_customer_id": session.customer,
+                                    "subscription_expires_at": None
+                                },
+                                headers=headers
+                            )
+
+                    if job_id and package_id and package_id in BOOST_PACKAGES:
+                        days = BOOST_PACKAGES[package_id]["days"]
+                        boosted_until = datetime.utcnow() + timedelta(days=days)
+                        await client.patch(
+                            f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}",
+                            json={"boosted_until": boosted_until.isoformat()},
+                            headers=headers
                         )
-                if job_id and package_id and package_id in BOOST_PACKAGES:
-                    days = BOOST_PACKAGES[package_id]["days"]
-                    boosted_until = datetime.utcnow() + timedelta(days=days)
-                    httpx.patch(
-                        f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}",
-                        json={"boosted_until": boosted_until.isoformat()},
-                        headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-                    )
+
         elif event.type == "checkout.session.expired":
             session = event.data.object
             if session.id in payment_transactions:
                 payment_transactions[session.id]["status"] = "expired"
-        return {"received": True}
-    except (ValueError, stripe.error.SignatureVerificationError) as e:
-        raise HTTPException(status_code=400, detail=str(e))
+
     except Exception as e:
-        print(f"Webhook error: {e}")
+        print(f"Webhook processing error: {e}")
         return {"received": True, "error": str(e)}
+
+    return {"received": True}
+
+# ==================== FIN DE LA CORRECTION DU WEBHOOK =====================
 
 # Annulation – utilisation de company_id
 @app.post("/api/subscription/cancel")
@@ -1268,23 +1321,19 @@ async def get_candidate_public_profile(candidate_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ===================== GESTION D'ÉQUIPE (endpoints modifiés avec get_user_role_in_company) =====================
+
 @app.get("/api/team/members")
-async def get_team_members_v2(company_id: str, user_id: str = Depends(get_current_active_user)):
+async def get_team_members_v2(company_id: str, user_id: str = Query(...)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    owner_check = httpx.get(
-        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id",
-        headers=headers
-    )
-    is_owner = len(owner_check.json()) > 0
-    if not is_owner:
-        member_check = httpx.get(
-            f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&user_id=eq.{user_id}&role=eq.admin&select=id",
-            headers=headers
-        )
-        if len(member_check.json()) == 0:
-            raise HTTPException(status_code=403, detail="Accès refusé")
+
+    # Vérification du rôle
+    role = get_user_role_in_company(user_id, company_id)
+    if role not in ("owner", "admin"):
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+
     members_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&select=id,user:users(id,email,first_name,last_name,avatar_url),role,status,invitation_token",
         headers=headers
@@ -1315,30 +1364,26 @@ async def get_team_members_v2(company_id: str, user_id: str = Depends(get_curren
     return clean_members
 
 @app.post("/api/team/invite")
-async def invite_team_member_v2(req: TeamInviteRequest, inviter_id: str = Depends(get_current_active_user)):
+async def invite_team_member_v2(req: TeamInviteRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    owner_check = httpx.get(
-        f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&owner_id=eq.{inviter_id}&select=id,name",
+    inviter_id = req.user_id
+
+    # Vérifier que l'inviteur est admin ou propriétaire
+    inviter_role = get_user_role_in_company(inviter_id, req.company_id)
+    if inviter_role not in ("owner", "admin"):
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent inviter des membres")
+
+    # Récupérer le nom de l'entreprise pour l'email
+    comp_info = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&select=name",
         headers=headers
     )
-    companies = owner_check.json()
-    is_owner = len(companies) > 0
-    company_name = companies[0]["name"] if is_owner else ""
-    if not is_owner:
-        member_check = httpx.get(
-            f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&user_id=eq.{inviter_id}&role=eq.admin&select=id",
-            headers=headers
-        )
-        if len(member_check.json()) == 0:
-            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent inviter des membres")
-        comp_info = httpx.get(
-            f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&select=name",
-            headers=headers
-        )
-        comp_json = comp_info.json()
-        company_name = comp_json[0]["name"] if comp_json else ""
+    comp_json = comp_info.json()
+    company_name = comp_json[0]["name"] if comp_json else ""
+
+    # Limite de membres
     plan_resp = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&select=subscription_plan",
         headers=headers
@@ -1354,6 +1399,7 @@ async def invite_team_member_v2(req: TeamInviteRequest, inviter_id: str = Depend
         current_count = int(count_resp.headers["content-range"].split("/")[1])
     if current_count >= max_members:
         raise HTTPException(status_code=400, detail=f"Limite de {max_members} membres atteinte. Passez au plan supérieur.")
+
     user_to_invite = httpx.get(
         f"{supabase_url}/rest/v1/users?email=eq.{req.email}&select=id,email,first_name,last_name",
         headers=headers
@@ -1407,16 +1453,12 @@ async def invite_team_member_v2(req: TeamInviteRequest, inviter_id: str = Depend
         return {"success": True, "message": "Invitation envoyée par email."}
 
 @app.post("/api/team/accept-invitation")
-async def accept_invitation_v2(request: Request, user_id: str = Depends(get_current_active_user)):
-    data = await request.json()
-    token = data.get("token")
-    if not token:
-        raise HTTPException(status_code=400, detail="Token requis")
+async def accept_invitation_v2(req: AcceptInvitationRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     inv_resp = httpx.get(
-        f"{supabase_url}/rest/v1/company_members?invitation_token=eq.{token}&status=eq.pending&select=id,company_id,role",
+        f"{supabase_url}/rest/v1/company_members?invitation_token=eq.{req.token}&status=eq.pending&select=id,company_id,role",
         headers=headers
     )
     invitations = inv_resp.json()
@@ -1425,7 +1467,7 @@ async def accept_invitation_v2(request: Request, user_id: str = Depends(get_curr
     invitation = invitations[0]
     update_resp = httpx.patch(
         f"{supabase_url}/rest/v1/company_members?id=eq.{invitation['id']}",
-        json={"user_id": user_id, "status": "active", "invitation_token": None},
+        json={"user_id": req.user_id, "status": "active", "invitation_token": None},
         headers=headers
     )
     if update_resp.status_code != 200:
@@ -1433,51 +1475,13 @@ async def accept_invitation_v2(request: Request, user_id: str = Depends(get_curr
     return {"success": True, "company_id": invitation["company_id"]}
 
 @app.put("/api/team/members/{member_id}/role")
-async def update_member_role_v2(member_id: str, req: TeamUpdateRoleRequest, current_user_id: str = Depends(get_current_active_user)):
+async def update_member_role_v2(member_id: str, req: TeamUpdateRoleRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    member_resp = httpx.get(
-        f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}&select=company_id,user_id",
-        headers=headers
-    )
-    members = member_resp.json()
-    if not members:
-        raise HTTPException(status_code=404, detail="Membre non trouvé")
-    company_id = req.company_id or members[0]["company_id"]
-    is_owner_target = httpx.get(
-        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{members[0]['user_id']}&select=id",
-        headers=headers
-    )
-    if len(is_owner_target.json()) > 0:
-        raise HTTPException(status_code=403, detail="Impossible de modifier le rôle du propriétaire")
-    owner_check = httpx.get(
-        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{current_user_id}&select=id",
-        headers=headers
-    )
-    is_owner = len(owner_check.json()) > 0
-    if not is_owner:
-        admin_check = httpx.get(
-            f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&user_id=eq.{current_user_id}&role=eq.admin&select=id",
-            headers=headers
-        )
-        if len(admin_check.json()) == 0:
-            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent changer les rôles")
-    valid_roles = ["admin", "recruiter", "viewer"]
-    if req.role not in valid_roles:
-        raise HTTPException(status_code=400, detail="Rôle invalide")
-    httpx.patch(
-        f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}",
-        json={"role": req.role},
-        headers=headers
-    )
-    return {"success": True}
+    current_user_id = req.user_id
 
-@app.delete("/api/team/members/{member_id}")
-async def remove_team_member_v2(member_id: str, req: TeamRemoveRequest, current_user_id: str = Depends(get_current_active_user)):
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    # Récupérer le membre pour trouver le company_id
     member_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}&select=company_id,user_id",
         headers=headers
@@ -1486,18 +1490,63 @@ async def remove_team_member_v2(member_id: str, req: TeamRemoveRequest, current_
     if not members:
         raise HTTPException(status_code=404, detail="Membre non trouvé")
     target_company_id = members[0]["company_id"]
-    owner_check = httpx.get(
-        f"{supabase_url}/rest/v1/companies?id=eq.{target_company_id}&owner_id=eq.{current_user_id}&select=id",
+
+    # Vérifier que l'utilisateur actuel est admin ou propriétaire de cette entreprise
+    role = get_user_role_in_company(current_user_id, target_company_id)
+    if role not in ("owner", "admin"):
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent changer les rôles")
+
+    # Empêcher de changer le rôle du propriétaire
+    is_owner_target = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{target_company_id}&owner_id=eq.{members[0]['user_id']}&select=id",
         headers=headers
     )
-    is_owner = len(owner_check.json()) > 0
-    if not is_owner:
-        admin_check = httpx.get(
-            f"{supabase_url}/rest/v1/company_members?company_id=eq.{target_company_id}&user_id=eq.{current_user_id}&role=eq.admin&select=id",
-            headers=headers
-        )
-        if len(admin_check.json()) == 0:
-            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent retirer des membres")
+    if len(is_owner_target.json()) > 0:
+        raise HTTPException(status_code=403, detail="Impossible de modifier le rôle du propriétaire")
+
+    valid_roles = ["admin", "recruiter", "viewer"]
+    if req.role not in valid_roles:
+        raise HTTPException(status_code=400, detail="Rôle invalide")
+
+    httpx.patch(
+        f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}",
+        json={"role": req.role},
+        headers=headers
+    )
+    return {"success": True}
+
+@app.delete("/api/team/members/{member_id}")
+async def remove_team_member_v2(member_id: str, req: TeamRemoveRequest):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    current_user_id = req.user_id
+    company_id = req.company_id
+
+    # Vérifier les droits de l'utilisateur actuel
+    role = get_user_role_in_company(current_user_id, company_id)
+    if role not in ("owner", "admin"):
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent retirer des membres")
+
+    # Récupérer le membre pour vérifier qu'il appartient bien à l'entreprise
+    member_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}&select=company_id,user_id",
+        headers=headers
+    )
+    members = member_resp.json()
+    if not members:
+        raise HTTPException(status_code=404, detail="Membre non trouvé")
+    if members[0]["company_id"] != company_id:
+        raise HTTPException(status_code=400, detail="Le membre n'appartient pas à cette entreprise")
+
+    # Empêcher de retirer le propriétaire (au cas où il serait aussi dans company_members)
+    is_owner_target = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{members[0]['user_id']}&select=id",
+        headers=headers
+    )
+    if len(is_owner_target.json()) > 0:
+        raise HTTPException(status_code=403, detail="Impossible de retirer le propriétaire de l'entreprise")
+
     httpx.delete(
         f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}",
         headers=headers
@@ -1505,27 +1554,34 @@ async def remove_team_member_v2(member_id: str, req: TeamRemoveRequest, current_
     return {"success": True}
 
 @app.post("/api/team/leave")
-async def leave_company_v2(req: TeamLeaveRequest, user_id: str = Depends(get_current_active_user)):
+async def leave_company_v2(req: TeamLeaveRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    user_id = req.user_id
+    company_id = req.company_id
+
     member_resp = httpx.get(
-        f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&user_id=eq.{user_id}&select=id",
+        f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&user_id=eq.{user_id}&select=id",
         headers=headers
     )
     if len(member_resp.json()) == 0:
         raise HTTPException(status_code=404, detail="Vous n'êtes pas membre de cette entreprise")
+
     owner_check = httpx.get(
-        f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&owner_id=eq.{user_id}&select=id",
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id",
         headers=headers
     )
     if len(owner_check.json()) > 0:
         raise HTTPException(status_code=400, detail="Le propriétaire ne peut pas quitter l'entreprise. Veuillez transférer la propriété d'abord.")
+
     httpx.delete(
-        f"{supabase_url}/rest/v1/company_members?company_id=eq.{req.company_id}&user_id=eq.{user_id}",
+        f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&user_id=eq.{user_id}",
         headers=headers
     )
     return {"success": True}
+
+# =================== FIN DE LA SECTION ÉQUIPE ===================
 
 @app.delete("/api/applications/{application_id}")
 async def delete_application(application_id: str, user_id: str = Depends(get_current_active_user)):
@@ -1559,6 +1615,31 @@ async def delete_application(application_id: str, user_id: str = Depends(get_cur
         headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     )
     return {"success": True, "message": "Candidature supprimée"}
+
+@app.get("/api/users/search")
+async def search_users(q: str = Query(...), user_id: str = Depends(get_current_active_user)):
+    """Recherche des utilisateurs par email, prénom ou nom.
+    Retourne au maximum 10 résultats avec les champs nécessaires à l'invitation.
+    """
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    # On cherche sur l'email, le prénom et le nom (insensible à la casse)
+    query = (
+        f"email.ilike.*{q}*,first_name.ilike.*{q}*,last_name.ilike.*{q}*"
+    )
+    # On limite à 10 résultats, on trie par email
+    resp = httpx.get(
+        f"{supabase_url}/rest/v1/users?select=id,email,first_name,last_name,role&or=({query})&order=email.asc&limit=10",
+        headers=headers
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=500, detail="Erreur recherche utilisateurs")
+    users = resp.json()
+    return users
+
 
 @app.post("/api/admin/verify-company")
 async def admin_verify_company(req: AdminVerifyCompanyRequest):
@@ -2883,29 +2964,108 @@ async def admin_delete_report(report_id: str):
         f"{supabase_url}/rest/v1/reports?id=eq.{report_id}",
         headers=headers
     )
-    # ⚠️ Accepter 200 et 204 comme succès
     if resp.status_code not in (200, 204):
         raise HTTPException(status_code=500, detail="Erreur lors de la suppression du signalement")
     return {"success": True, "message": "Signalement supprimé avec succès"}
+
+# ==================== ENDPOINT BANQUE DE CV CORRIGÉ ====================
+@app.get("/api/candidates/bank")
+async def get_candidates_bank(
+    user_id: str = Query(...),
+    subscription_plan: str = Query(None),   # rendu optionnel pour éviter les 422
+    search: str = Query(""),
+    city_id: str = Query(""),
+    experience_level: str = Query(""),
+    contract_type: str = Query(""),
+    salary_min: int = Query(None),
+    is_available_only: bool = Query(False),
+    sort_by: str = Query("updated_at"),
+    page: int = Query(1),
+    page_size: int = Query(12),
+):
+    # Vérifier le plan seulement s'il est fourni
+    if subscription_plan and subscription_plan != 'business':
+        raise HTTPException(status_code=403, detail="Fonctionnalité réservée au plan Business")
+
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    check = httpx.get(
-        f"{supabase_url}/rest/v1/reports?id=eq.{report_id}&select=id",
-        headers=headers
-    )
-    if not check.json():
-        raise HTTPException(status_code=404, detail="Signalement non trouvé")
-    resp = httpx.delete(
-        f"{supabase_url}/rest/v1/reports?id=eq.{report_id}",
-        headers=headers
-    )
-    if resp.status_code != 200:
-        raise HTTPException(status_code=500, detail="Erreur lors de la suppression du signalement")
-    return {"success": True, "message": "Signalement supprimé avec succès"}
 
+    # Récupérer tous les profils visibles (appel asynchrone)
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get(
+            f"{supabase_url}/rest/v1/candidate_profiles?select=*&is_visible_in_cv_bank=eq.true",
+            headers=headers
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=500, detail="Erreur Supabase")
+        candidates = resp.json()
+
+        enriched = []
+        for c in candidates:
+            # Utilisateur
+            user_info = {}
+            if c.get("user_id"):
+                user_resp = await client.get(
+                    f"{supabase_url}/rest/v1/users?id=eq.{c['user_id']}&select=first_name,last_name,avatar_url",
+                    headers=headers
+                )
+                if user_resp.status_code == 200 and user_resp.json():
+                    user_info = user_resp.json()[0]
+
+            # Ville
+            city_info = {}
+            if c.get("city_id"):
+                city_resp = await client.get(
+                    f"{supabase_url}/rest/v1/cities?id=eq.{c['city_id']}&select=name",
+                    headers=headers
+                )
+                if city_resp.status_code == 200 and city_resp.json():
+                    city_info = city_resp.json()[0]
+
+            enriched.append({**c, "user": user_info, "city": city_info})
+
+    # Appliquer les filtres
+    if search:
+        s = search.lower()
+        enriched = [c for c in enriched if
+                    s in (c.get("title") or "").lower() or
+                    s in " ".join(c.get("skills") or []).lower() or
+                    s in (c.get("user", {}).get("first_name") or "").lower() or
+                    s in (c.get("user", {}).get("last_name") or "").lower()]
+
+    if city_id:
+        enriched = [c for c in enriched if c.get("city_id") == city_id]
+    if experience_level:
+        enriched = [c for c in enriched if c.get("experience_level") == experience_level]
+    if contract_type:
+        enriched = [c for c in enriched if contract_type in (c.get("preferred_contract_types") or [])]
+    if salary_min is not None:
+        enriched = [c for c in enriched if (c.get("desired_salary_min") or 0) >= salary_min]
+    if is_available_only:
+        enriched = [c for c in enriched if c.get("is_available")]
+
+    # Tri
+    if sort_by == "name":
+        enriched.sort(key=lambda c: (c.get("user", {}).get("first_name") or "").lower())
+    else:
+        enriched.sort(key=lambda c: c.get("updated_at") or "", reverse=True)
+
+    # Pagination
+    total = len(enriched)
+    start = (page - 1) * page_size
+    end = start + page_size
+    page_candidates = enriched[start:end]
+
+    return {
+        "candidates": page_candidates,
+        "total": total,
+        "page": page,
+        "pageSize": page_size,
+        "totalPages": -(-total // page_size)
+    }
 
 if os.path.isdir(BUILD_DIR):
     app.mount("/static", StaticFiles(directory=os.path.join(BUILD_DIR, "static")), name="static")

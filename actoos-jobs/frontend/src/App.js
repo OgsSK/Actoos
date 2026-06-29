@@ -10,14 +10,12 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import GeoBanner from './components/GeoBanner';
 import CookieBanner from './components/CookieBanner';
-import CountryGate from './components/CountryGate'; // ← Ajout du gate pays
-import { Card, CardContent } from './components/ui/card';
-import { Target, Eye, Shield, Zap, Heart, TrendingUp, Loader2 } from 'lucide-react';
+import CountryGate from './components/CountryGate';
+import { Loader2 } from 'lucide-react';
 import AcceptInvitationPage from './pages/AcceptInvitationPage';
 import './index.css';
 
 // ---------- Lazy-loaded pages ----------
-// (inchangé)
 const Homepage = lazy(() => import('./pages/Homepage'));
 const JobsPage = lazy(() => import('./pages/JobsPage'));
 const JobDetailPage = lazy(() => import('./pages/JobDetailPage'));
@@ -60,13 +58,12 @@ const CookiesPage = lazy(() => import('./pages/CookiesPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const CandidateBankPage = lazy(() => import('./pages/CandidateBankPage'));
 
 // ---------- Scroll to top on route change ----------
 const ScrollToTop = () => {
   const { pathname } = useLocation();
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return null;
 };
 
@@ -97,9 +94,9 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// ---------- Dashboard router based on role ----------
+// ---------- Dashboard router based on roles ----------
 const DashboardRouter = () => {
-  const { isCompany, isCandidate, isAdmin } = useAuth();
+  const { isAdmin, isCompany, isCandidate } = useAuth();
 
   if (isAdmin) return <Navigate to="/admin" replace />;
   if (isCompany) return <Navigate to="/dashboard/entreprise" replace />;
@@ -133,7 +130,6 @@ const AppContent = () => {
             </div>
           }
         >
-          {/* ✅ CountryGate englobe toutes les routes */}
           <CountryGate>
             <Routes>
               {/* ---------- Public routes ---------- */}
@@ -171,8 +167,10 @@ const AppContent = () => {
               {/* ---------- Unsubscribe page (newsletter) ---------- */}
               <Route path="/desabonnement" element={<UnsubscribePage />} />
 
-              {/* ---------- Protected routes - Candidat ---------- */}
+              {/* ---------- Dashboard principal ---------- */}
               <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
+
+              {/* ---------- Protected routes - Candidat ---------- */}
               <Route path="/dashboard/candidat" element={<ProtectedRoute><CandidateDashboard /></ProtectedRoute>} />
               <Route path="/profil" element={<ProtectedRoute><CandidateProfilePage /></ProtectedRoute>} />
               <Route path="/parametres" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
@@ -190,6 +188,7 @@ const AppContent = () => {
               <Route path="/dashboard/entreprise/offres" element={<ProtectedRoute><CompanyJobsPage /></ProtectedRoute>} />
               <Route path="/dashboard/entreprise/candidatures" element={<ProtectedRoute><CompanyApplicationsPage /></ProtectedRoute>} />
               <Route path="/dashboard/entreprise/candidatures/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
+              <Route path="/dashboard/entreprise/cv-bank" element={<ProtectedRoute><CandidateBankPage /></ProtectedRoute>} />
 
               {/* ---------- Voir profil candidat (public) ---------- */}
               <Route path="/candidat/:id" element={<CandidatePublicProfilePage />} />

@@ -7,6 +7,7 @@ import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import { fetchCategories } from '../lib/data';
 import { useAuth } from '../contexts/AuthContext';
+import useAppliedJobs from '../hooks/useAppliedJobs'; // ✅ nouveau hook
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -70,7 +71,7 @@ const HeroSection = ({ stats, popularSearches = [], cities = [] }) => {
       }
       setLoadingSuggestions(false);
     }, 300);
-    return () => clearTimeout(timer);
+    return () => clearInterval(timer);
   }, [keyword]);
 
   const handleSearch = (e) => {
@@ -215,7 +216,7 @@ const CategoriesSection = () => {
   );
 };
 
-const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
+const RecentJobsSection = ({ countryId, activeCompanyIds, appliedJobIds }) => { // ✅ reçoit appliedJobIds
   const { t } = useTranslation();
   const { user, isCompany, isCandidate } = useAuth();
   const [jobs, setJobs] = useState([]);
@@ -252,7 +253,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
       try {
         let query = supabase
           .from('jobs')
-          .select(`id, title, contract_type, salary_min, salary_max, created_at, is_urgent, is_remote, remote_type, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
+          .select(`id, title, contract_type, salary_min, salary_max, created_at, is_urgent, is_remote, remote_type, boosted_until, company:companies(name, logo_url, owner_id, subscription_plan), city:cities(name)`)
           .eq('status', 'active')
           .in('company_id', activeCompanyIds)
           .order('boosted_until', { ascending: false, nullsFirst: false })
@@ -266,7 +267,10 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
         const { data, error } = await query;
         if (error) throw error;
 
-        const formattedJobs = (data || []).map((job) => ({
+        const now = new Date();
+        const planPriority = { business: 3, pro: 2, free: 1 };
+
+        let formattedJobs = (data || []).map((job) => ({
           id: job.id,
           title: job.title,
           company: job.company?.name || t('home.jobs.unknownCompany'),
@@ -281,8 +285,20 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
           is_remote: job.is_remote,
           remote_type: job.remote_type,
           boosted_until: job.boosted_until,
+          company_plan: job.company?.subscription_plan || 'free',
         }));
-        setJobs(formattedJobs);
+
+        const boosted = formattedJobs.filter(j => j.boosted_until && new Date(j.boosted_until) > now)
+          .sort((a, b) => new Date(b.boosted_until) - new Date(a.boosted_until) || new Date(b.created_at) - new Date(a.created_at));
+        const nonBoosted = formattedJobs.filter(j => !j.boosted_until || new Date(j.boosted_until) <= now)
+          .sort((a, b) => {
+            const pa = planPriority[a.company_plan] || 0;
+            const pb = planPriority[b.company_plan] || 0;
+            if (pa !== pb) return pb - pa;
+            return new Date(b.created_at) - new Date(a.created_at);
+          });
+
+        setJobs([...boosted, ...nonBoosted].slice(0, 6));
       } catch (error) {
         console.error('Error fetching jobs:', error);
       } finally {
@@ -319,7 +335,16 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {jobs.map((job) => (<JobCard key={job.id} job={job} user={user} onSave={handleSaveJob} isSaved={savedJobs.includes(job.id)} />))}
+            {jobs.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                user={user}
+                onSave={handleSaveJob}
+                isSaved={savedJobs.includes(job.id)}
+                hasApplied={appliedJobIds.includes(job.id)} // ✅ transmis
+              />
+            ))}
           </div>
         )}
         <div className="text-center mt-10 sm:hidden"><Link to="/emplois"><Button className="bg-blue-600 text-white hover:bg-blue-700">{t('home.jobs.viewAll')} <ChevronRight className="w-4 h-4 ml-1" /></Button></Link></div>
@@ -328,7 +353,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
   );
 };
 
-const JobCard = ({ job, user, onSave, isSaved }) => {
+const JobCard = ({ job, user, onSave, isSaved, hasApplied }) => { // ✅ nouvelle prop
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -362,6 +387,12 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
       <Card className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-slate-200 rounded-3xl overflow-hidden bg-white relative">
         {job.urgent && <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium px-3 py-1 text-center">{t('home.jobs.urgent')}</div>}
         <CardContent className="p-5 pt-3">
+          {/* ✅ Badge "Postulé" */}
+          {hasApplied && (
+            <Badge className="absolute top-2 left-2 bg-green-100 text-green-700 text-xs">
+              ✅ {t('home.jobs.alreadyAppliedBadge', 'Postulé')}
+            </Badge>
+          )}
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0">
               {job.company_logo ? (
@@ -410,7 +441,6 @@ const JobCard = ({ job, user, onSave, isSaved }) => {
   );
 };
 
-// ✅ CompaniesSection avec tri par plan (Business en premier, puis Pro, puis Free) ET bouton "Voir tout" bien positionné
 const CompaniesSection = ({ countryId }) => {
   const { t } = useTranslation();
   const [companies, setCompanies] = useState([]);
@@ -431,12 +461,10 @@ const CompaniesSection = ({ countryId }) => {
 
       const { data } = await query;
       if (data) {
-        // Tri par priorité de plan : business > pro > free
         const planPriority = { business: 3, pro: 2, free: 1 };
         const sorted = data.sort((a, b) => {
           return (planPriority[b.subscription_plan] || 0) - (planPriority[a.subscription_plan] || 0);
         });
-        // Garder seulement les 8 premiers
         setCompanies(sorted.slice(0, 8));
       } else {
         setCompanies([]);
@@ -470,7 +498,9 @@ const CompaniesSection = ({ countryId }) => {
               <h3 className="font-medium text-slate-900 text-center">
                 {c.name}
                 {c.subscription_plan === 'pro' && (
-                  <Badge className="ml-2 bg-blue-100 text-blue-700 border-blue-200">Pro</Badge>
+                  <Badge className="ml-2 bg-blue-100 text-blue-700 border-blue-200">
+                    {t('common.pro', 'Pro')}
+                  </Badge>
                 )}
                 {c.subscription_plan === 'business' && (
                   <Badge className="ml-2 bg-purple-100 text-purple-700 border-purple-200">
@@ -483,7 +513,6 @@ const CompaniesSection = ({ countryId }) => {
           ))}
         </div>
 
-        {/* ✅ Bouton "Voir tout" centré, pleine largeur sur mobile, avec une clé existante */}
         <div className="mt-10 flex justify-center">
           <Link to="/entreprises" className="w-full sm:w-auto">
             <Button variant="outline" className="w-full sm:w-auto border-blue-600 text-blue-600 hover:bg-blue-50">
@@ -642,6 +671,9 @@ const Homepage = () => {
   const [countryLoading, setCountryLoading] = useState(true);
   const [activeCompanyIds, setActiveCompanyIds] = useState([]);
 
+  const { user } = useAuth(); // ✅ récupération de l'utilisateur pour le hook
+  const appliedJobIds = useAppliedJobs(user?.id); // ✅ hook pour les candidatures
+
   const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
 
@@ -724,9 +756,6 @@ const Homepage = () => {
         .eq('role', 'candidate')
         .eq('is_active', true)
         .eq('is_banned', false);
-      if (countryId && prefs.country) {
-        queryCandidates = queryCandidates.eq('preferences->>country', prefs.country);
-      }
       const { count: candCount } = await queryCandidates;
       candsCount = candCount || 0;
 
@@ -746,7 +775,11 @@ const Homepage = () => {
     <div className="min-h-screen">
       <HeroSection stats={stats} popularSearches={[]} cities={filteredCities} />
       <CategoriesSection />
-      <RecentJobsSection countryId={countryId} activeCompanyIds={activeCompanyIds} />
+      <RecentJobsSection
+        countryId={countryId}
+        activeCompanyIds={activeCompanyIds}
+        appliedJobIds={appliedJobIds} // ✅ transmission
+      />
       <CompaniesSection countryId={countryId} />
       <HowItWorksSection />
       <CompanyCTASection stats={stats} />

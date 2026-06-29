@@ -18,6 +18,7 @@
         "subtitle": "ابحث عن عروض حسب القطاع"
       },
       "jobs": {
+        "alreadyAppliedBadge": "تم التقديم",
         "title": "عروض حديثة",
         "subtitle": "أحدث الفرص المنشورة",
         "viewAll": "عرض جميع العروض",
@@ -95,6 +96,7 @@
       "currency": "العملة"
     },
   "jobs": {
+    
     "remote": "العمل عن بعد",
       "remoteFull": "عن بعد بالكامل",
       "remoteHybrid": "هجين",
@@ -145,176 +147,137 @@
     "viewResults": "عرض النتائج {{count}}"
   },
   "pricing": {
-    "downgradeBlocked": "لديك {{active}} عرض نشط. الخطة المستهدفة تسمح فقط بـ {{limit}} عرض. يرجى تعطيل أو حذف العروض الزائدة قبل تغيير الخطة.",
-     "free": "مجاني",
-    "pro": "برو",
-    "business": "بيزنس",
-    "enterprise": "إنتربرايز",
-    "badge": "الأسعار",
-    "title": "خطط مصممة لنموّك",
-    "subtitle": "اختر الصيغة التي تناسب احتياجاتك ونمُو بكل بساطة.",
-    "perMonth": "/شهر",
-    "perYear": "/سنة",
-    "billedMonthly": "تُدفع شهرياً",
-    "billedAnnually": "تُدفع سنوياً",
-    "mostPopular": "الأكثر شيوعاً",
-    "currentPlan": "الخطة الحالية",
-    "toggle": {
-      "monthly": "شهري",
-      "annual": "سنوي",
-      "savePercent": "-20%"
-    },
-    "plans": {
-      "free": {
-        "name": "مجاني",
-        "description": "للبدء واكتشاف المنصة.",
-        "features": {
-          "0": "{{count}} وظائف نشطة",
-          "1": "{{count}} مستخدم",
-          "expiration": "انتهاء الصلاحية: {{days}} أيام",
-          "2": "ملف شركة عام",
-          "3": "دعم عبر البريد الإلكتروني"
+    "free": "مجاني",
+      "badge": "الأسعار",
+      "title": "خطط مصممة لطموحاتك",
+      "subtitle": "اختر الخطة التي تناسب أهدافك.",
+      "mostPopular": "الأكثر شيوعاً",
+      "currentPlan": "الخطة الحالية",
+      "perMonth": "/شهر",
+      "perMonthShort": "/شهر",
+      "billedAnnually": "الفوترة سنوية",
+      "billedMonthly": "الفوترة شهرية",
+      "loading": "جارٍ التحميل...",
+      "toggle": {
+        "monthly": "شهري",
+        "annual": "سنوي",
+        "savePercent": "وفر 20%"
+      },
+      "plans": {
+        "free": {
+          "name": "مجاني",
+          "description": "للبدء",
+          "features": {
+            "0": "{{count}} عرض (عروض) نشط(ة)",
+            "expiration": "{{days}} يومًا قبل انتهاء الصلاحية",
+            "2": "ملف موثق"
+          },
+          "limitations": {
+            "noInterviewTools": "لا توجد أدوات جدولة للمقابلات",
+            "noAiNotes": "لا توجد ملاحظات مقابلة أو ذكاء اصطناعي",
+            "noCvBank": "لا بنك للسير الذاتية",
+            "noMultiCompany": "شركة واحدة فقط"
+          }
         },
-        "limitations": {
-          "0": "بدون إحصائيات",
-          "1": "بدون تمييز",
-          "2": "بدون API"
+        "pro": {
+          "name": "برو",
+          "description": "لمسؤولي التوظيف النشطين",
+          "features": {
+            "0": "{{count}} عرض (عروض) نشط(ة)",
+            "expiration": "{{days}} يومًا قبل انتهاء الصلاحية",
+            "interviewTools": "أدوات جدولة المقابلات",
+            "aiNotes": "ملاحظات المقابلة والذكاء الاصطناعي",
+            "verifiedProfile": "شارة برو على ملفك الشخصي"
+          },
+          "limitations": {
+            "noCvBank": "لا بنك للسير الذاتية",
+            "noMultiCompany": "شركة واحدة فقط"
+          }
+        },
+        "business": {
+          "name": "الأعمال",
+          "description": "للشركات النامية",
+          "features": {
+            "0": "عروض غير محدودة",
+            "expiration": "{{days}} يومًا قبل انتهاء الصلاحية",
+            "interviewTools": "أدوات جدولة المقابلات",
+            "aiNotes": "ملاحظات مقابلة وذكاء اصطناعي متقدم",
+            "freeBoost": "تعزيز مجاني واحد شهرياً",
+            "cvBank": "بنك سير ذاتية غير محدود",
+            "multiCompany": "شركات متعددة غير محدودة",
+            "premiumBadge": "شارة بريميوم ذات أولوية"
+          },
+          "limitations": {}
         }
       },
-      "pro": {
-        "name": "برو",
-        "description": "للشركات الصغيرة والمتوسطة ومسؤولي التوظيف الدائمين.",
-        "features": {
-          "0": "{{count}} وظائف نشطة",
-          "1": "حتى {{count}} مستخدم",
-          "expiration": "انتهاء الصلاحية: {{days}} أيام",
-          "2": "إحصائيات أساسية",
-          "search": "البحث في ملفات المرشحين",
-          "3": "دعم ذو أولوية",
-          "4": "ملف شركة موثّق"
+      "actions": {
+        "backToFree": "العودة إلى المجاني",
+        "manageSubscription": "إدارة الاشتراك",
+        "upgradeTo": "الترقية إلى {{plan}}",
+        "downgradeTo": "الرجوع إلى {{plan}}",
+        "subscribeMonthly": "اشتراك شهري",
+        "subscribeAnnual": "اشتراك سنوي"
+      },
+      "comparison": {
+        "title": "مقارنة الخطط",
+        "subtitle": "الميزات حسب الخطة",
+        "featureColumn": "الميزة",
+        "freeColumn": "مجاني",
+        "proColumn": "برو",
+        "businessColumn": "الأعمال",
+        "values": {
+          "days": "{{count}} يومًا",
+          "perMonth": "1 / شهر",
+          "premium": "✓ (بريميوم)"
         },
-        "limitations": {
-          "0": "بدون تصدير بيانات",
-          "1": "بدون API"
+        "rows": {
+          "activeOffers": "العروض النشطة",
+          "expiration": "انتهاء الصلاحية",
+          "interviewTools": "أدوات المقابلة",
+          "aiNotes": "ملاحظات الذكاء الاصطناعي والمقابلة",
+          "cvBank": "بنك السير الذاتية",
+          "multiCompany": "شركات متعددة",
+          "freeBoost": "تعزيز مجاني",
+          "verifiedProfile": "ملف موثق"
         }
       },
-      "business": {
-        "name": "بزنس",
-        "description": "للموظفين الكبار والوكالات.",
-        "features": {
-          "0": "وظائف غير محدودة",
-          "1": "مستخدمون غير محدودين",
-          "expiration": "انتهاء الصلاحية: {{days}} أيام",
-          "2": "إحصائيات متقدمة",
-          "export": "تصدير الطلبات (CSV)",
-          "api": "API توظيف",
-          "3": "دعم مخصص",
-          "4": "وظيفة مميزة مجانية واحدة / شهرياً",
-          "5": "ملف شركة متميز"
-        }
-      }
+      "faq": {
+        "title": "الأسئلة الشائعة",
+        "subtitle": "كل ما يتعلق بخططنا",
+        "items": [
+          {
+            "question": "هل يمكنني تغيير خطتي في أي وقت؟",
+            "answer": "نعم، يمكنك الترقية أو التخفيض في أي وقت. تدخل التغييرات حيز التنفيذ فورًا."
+          },
+          {
+            "question": "هل هناك رسوم مخفية؟",
+            "answer": "لا توجد رسوم مخفية. أنت تدفع فقط السعر المعروض، بدون مفاجآت."
+          },
+          {
+            "question": "كيف يمكنني إلغاء اشتراكي؟",
+            "answer": "يمكنك الإلغاء من لوحة تحكم شركتك. سيظل اشتراكك نشطًا حتى نهاية الفترة المدفوعة."
+          }
+        ]
+      },
+      "cta": {
+        "title": "هل لديك سؤال؟",
+        "subtitle": "فريقنا هنا للمساعدة.",
+        "button": "اتصل بنا"
+      },
+      "loginBanner": {
+        "message": "سجّل الدخول للاستفادة من جميع المزايا.",
+        "button": "تسجيل الدخول"
+      },
+      "toast": {
+        "mustLogin": "يجب تسجيل الدخول للاشتراك.",
+        "noCompany": "يجب أن يكون لديك شركة للاشتراك.",
+        "checkoutError": "حدث خطأ أثناء الدفع.",
+        "mustLoginFree": "سجّل الدخول لاستخدام الخطة المجانية.",
+        "alreadyFree": "أنت بالفعل على الخطة المجانية.",
+        "cancelToFree": "ألغ اشتراكك للعودة إلى الخطة المجانية."
+      },
+      "downgradeBlocked": "لديك {{active}} عرض (عروض) نشط(ة). الخطة المستهدفة تسمح فقط بـ {{limit}} عرض (عروض). يرجى تعطيل أو حذف العروض الزائدة قبل تغيير الخطة."
     },
-    "actions": {
-      "backToFree": "العودة إلى المجاني",
-      "upgradeTo": "الترقية إلى {{plan}}",
-      "downgradeTo": "العودة إلى {{plan}}",
-      "subscribeMonthly": "اشتراك (شهري)",
-      "subscribeAnnual": "اشتراك (سنوي -20%)",
-      "manageSubscription": "إدارة اشتراكي"
-    },
-    "comparison": {
-      "values": {
-    "expiration": "{{count}} أيام",
-    "boostPerMonth": "1 / شهر"
-  },
-      "title": "مقارنة مفصلة",
-      "subtitle": "جميع الميزات في لمحة",
-      "featureColumn": "الميزة",
-      "freeColumn": "مجاني",
-      "proColumn": "برو",
-      "businessColumn": "بزنس",
-      "rows": {
-        "activeOffers": "الوظائف النشطة",
-        "teamMembers": "أعضاء الفريق",
-        "expiration": "مدة النشر",
-        "candidates": "الطلبات",
-        "verifiedProfile": "ملف موثّق",
-        "analytics": "الإحصائيات",
-        "searchProfiles": "البحث في الملفات",
-        "export": "تصدير CSV",
-        "api": "API",
-        "prioritySupport": "الدعم ذو الأولوية",
-        "freeBoost": "تمييز مجاني",
-        "customBranding": "تخصيص (العلامة التجارية)"
-      }
-    },
-    "faq": {
-      "title": "الأسئلة الشائعة",
-      "subtitle": "كل ما يتعلق باشتراكاتنا",
-      "items": [
-        {
-          "question": "كيف يعمل الاشتراك؟",
-          "answer": "تختار خطة (برو أو بزنس) مع فوترة شهرية أو سنوية. يتم تجديد الاشتراك تلقائياً في كل فترة. يمكنك الإلغاء في أي وقت من مساحة الشركة الخاصة بك، بدون رسوم."
-        },
-        {
-          "question": "هل يمكنني تغيير الخطة في أي وقت؟",
-          "answer": "نعم، يمكنك الانتقال من خطة إلى أخرى في أي وقت. إذا انتقلت إلى خطة أعلى، تدفع فقط الفرق بالتناسب مع الأيام المتبقية. إذا انتقلت إلى خطة أقل، سيصبح التغيير ساريًا في تاريخ الفوترة التالي."
-        },
-        {
-          "question": "هل هناك رسوم مخفية أو التزامات؟",
-          "answer": "لا توجد رسوم مخفية. الأسعار المعروضة هي الأسعار النهائية شاملة جميع الضرائب. لا يوجد التزام بالمدة: يمكنك الإلغاء في أي وقت."
-        },
-        {
-          "question": "هل يمكنني إلغاء اشتراكي؟",
-          "answer": "بالتأكيد. يتم الإلغاء بنقرة واحدة من مساحة شركتك، في قسم 'الاشتراك'. سيبقى اشتراكك نشطاً حتى نهاية الفترة المدفوعة."
-        },
-        {
-          "question": "هل تبقى وظائفي منشورة بعد انتهاء الاشتراك؟",
-          "answer": "نعم، تبقى وظائفك النشطة منشورة حتى تاريخ انتهاء صلاحيتها الطبيعي. ببساطة لن تتمكن من نشر وظائف جديدة إذا وصلت إلى حد خطتك الجديدة."
-        },
-        {
-          "question": "ما هي وسائل الدفع المقبولة؟",
-          "answer": "نقبل البطاقات المصرفية الدولية (Visa, Mastercard, American Express) عبر Stripe، وهو معالج دفع معتمد PCI-DSS من المستوى 1."
-        },
-        {
-          "question": "كيف تتم إدارة بيانات الفوترة؟",
-          "answer": "بيانات الفوترة الخاصة بك تُخزّن بشكل آمن ولا تتم مشاركتها مع أطراف ثالثة أبداً."
-        },
-        {
-          "question": "هل تقدمون حلولاً للمجموعات الكبيرة؟",
-          "answer": "نعم، نقدم خطط Enterprise مخصصة. اتصل بفريقنا التجاري عبر صفحة الاتصال لمناقشة احتياجاتك."
-        },
-        {
-          "question": "هل يمكنني استخدام الخطة المجانية إلى أجل غير مسمى؟",
-          "answer": "الخطة المجانية تسمح لك باختبار المنصة مع 3 وظائف نشطة. ليس لها حد زمني."
-        },
-        {
-          "question": "ماذا يحدث إذا تجاوزت حد الوظائف المسموح به؟",
-          "answer": "إذا وصلت إلى حد خطتك، لن تتمكن من نشر وظائف جديدة. يمكنك إما أرشفة الوظائف القديمة أو الترقية إلى الخطة الأعلى."
-        },
-        {
-          "question": "هل يمكنني الحصول على استرداد؟",
-          "answer": "نقدم ضماناً لمدة 14 يوماً للمشتركين الجدد. إذا لم تكن راضياً، اتصل بنا لاسترداد كامل."
-        }
-      ]
-    },
-    "cta": {
-      "title": "حل مصمم خصيصاً؟",
-      "subtitle": "للمجموعات الكبيرة، ننشئ عروضاً مخصصة.",
-      "button": "اتصل بفريقنا"
-    },
-    "loginBanner": {
-      "message": "سجّل الدخول للاشتراك في خطة",
-      "button": "تسجيل الدخول"
-    },
-    "toast": {
-      "mustLogin": "يجب أن تكون مسجلاً الدخول للاشتراك",
-      "mustLoginFree": "سجل الدخول لاستخدام الخطة المجانية",
-      "alreadyFree": "أنت بالفعل على الخطة المجانية",
-      "cancelToFree": "ألغ اشتراكك المدفوع للعودة إلى المجاني",
-      "checkoutError": "خطأ أثناء التحويل إلى الدفع"
-    }
-  },
   
   "login": {
         "title": "تسجيل الدخول",
@@ -1140,42 +1103,7 @@
     "accountCreated": "تم إنشاء حسابك وانضممت إلى الشركة!",
     "error": "حدث خطأ."
   },
-  "team": {
-     "removeTitle": "إزالة عضو",
-    "removeMessageGeneric": "هل تريد بالتأكيد إزالة هذا العضو؟ هذا الإجراء لا يمكن التراجع عنه.",
-    "leaveTitle": "مغادرة الشركة",
-    "leaveMessage": "هل أنت متأكد أنك تريد مغادرة هذه الشركة؟",
-    "title": "إدارة الفريق",
-    "subtitle": "الشركة: {{company}}",
-    "inviteButton": "دعوة عضو",
-    "membersList": "أعضاء الفريق",
-    "noMembers": "لا يوجد أعضاء بعد.",
-    "memberLimitReached": "تم الوصول إلى الحد الأقصى لعدد {{limit}} أعضاء. قم بالترقية إلى خطة أعلى.",
-    "owner": "المالك",
-    "leave": "مغادرة الشركة",
-    "leaveConfirm": "هل أنت متأكد من رغبتك في مغادرة هذه الشركة؟",
-    "removeConfirm": "إزالة {{name}} من الفريق؟",
-    "status": { "pending": "قيد الانتظار" },
-    "invite": {
-      "title": "دعوة عضو",
-      "email": "البريد الإلكتروني",
-      "emailRequired": "البريد الإلكتروني مطلوب.",
-      "role": "الدور",
-      "send": "إرسال الدعوة",
-      "cancel": "إلغاء"
-    },
-    "toasts": {
-      "loadError": "خطأ في تحميل الفريق.",
-      "inviteSuccess": "تم إرسال الدعوة.",
-      "inviteError": "خطأ في إرسال الدعوة.",
-      "roleUpdated": "تم تحديث الدور.",
-      "roleError": "خطأ في تحديث الدور.",
-      "memberRemoved": "تمت إزالة العضو.",
-      "removeError": "خطأ في إزالة العضو.",
-      "leaveSuccess": "لقد غادرت الشركة.",
-      "leaveError": "خطأ في مغادرة الشركة."
-    }
-},
+  
 
   "companiesPage": {
     "title": "الشركات",
@@ -1655,6 +1583,7 @@
         "noPendingCompanies": "لا توجد شركات معلقة."
       },
       "jobs": {
+        "alreadyAppliedBadge": "تم التقديم",
         "searchPlaceholder": "البحث عن وظيفة أو شركة...",
         "filterAll": "جميع الوظائف",
         "filterPending": "قيد الانتظار",
@@ -2299,6 +2228,8 @@
       }
     },
     "companyDetail": {
+      "similarCompanies": "شركات مماثلة",
+    "jobsCount": "{{count}} عرض",
       "back": "العودة إلى الشركات",
       "notFound": "الشركة غير موجودة.",
       "notFoundMessage": "هذه الشركة غير موجودة أو تم حذفها.",
@@ -2313,153 +2244,14 @@
       "email": "البريد الإلكتروني",
       "yourCompany": "شركتك"
     },
-    "candidateProfilePage": {
-      "back": "رجوع",
-      "title": "ملفي الشخصي كمرشح",
-      "subtitle": "أكمل ملفك الشخصي لزيادة فرصك.",
-      "save": "حفظ",
-      "saveChanges": "حفظ التغييرات",
-      "toasts": {
-        "accountSuspended": "حسابك معلق. لا يمكنك تعديل ملفك الشخصي.",
-        "profileUpdated": "تم تحديث الملف الشخصي بنجاح.",
-        "saveError": "خطأ في حفظ الملف الشخصي.",
-        "fillRequired": "يرجى ملء الحقول المطلوبة (الاسم الأول، اسم العائلة، المسمى الوظيفي)."
-      },
-      "photo": {
-        "title": "الصورة الشخصية",
-        "hint": "JPG أو PNG، الحد الأقصى 2 ميغابايت.",
-        "change": "تعديل",
-        "delete": "حذف",
-        "updated": "تم تحديث الصورة.",
-        "uploadError": "خطأ في تحميل الصورة.",
-        "deleteConfirm": "حذف الصورة الشخصية؟",
-        "deleted": "تم حذف الصورة.",
-        "deleteError": "خطأ في حذف الصورة."
-      },
-      "personalInfo": {
-        "sectionTitle": "المعلومات الشخصية",
-        "sectionDesc": "ستظهر هذه المعلومات في ملفك الشخصي العام.",
-        "firstName": "الاسم الأول",
-        "lastName": "اسم العائلة",
-        "phone": "الهاتف",
-        "phonePlaceholder": "+966 5xxxxxxxx",
-        "city": "المدينة",
-        "selectCity": "اختر مدينة"
-      },
-      "professionalProfile": {
-        "sectionTitle": "الملف المهني",
-        "sectionDesc": "صف مسيرتك وتطلعاتك.",
-        "title": "المسمى الوظيفي",
-        "bio": "نبذة عن الملف الشخصي",
-        "experienceLevel": "مستوى الخبرة",
-        "yearsOfExperience": "سنوات الخبرة",
-        "available": "متاح",
-        "openToRemote": "منفتح على العمل عن بعد",
-        "selectLevel": "اختر مستوى"
-      },
-      "cv": {
-        "sectionTitle": "السيرة الذاتية الرئيسية",
-        "sectionDesc": "قم بتحميل سيرتك الذاتية بصيغة PDF أو DOC أو DOCX.",
-        "uploadTitle": "تحميل السيرة الذاتية",
-        "uploadHint": "الصيغ المقبولة: PDF، DOC، DOCX. الحد الأقصى 5 ميغابايت.",
-        "chooseFile": "اختيار ملف",
-        "uploaded": "تم تحميل السيرة الذاتية",
-        "view": "معاينة",
-        "change": "تعديل",
-        "delete": "حذف",
-        "uploadedToast": "تم تحميل السيرة الذاتية بنجاح.",
-        "uploadError": "خطأ في تحميل السيرة الذاتية.",
-        "deleteConfirm": "حذف سيرتك الذاتية؟",
-        "deletedToast": "تم حذف السيرة الذاتية.",
-        "deleteError": "خطأ في حذف السيرة الذاتية.",
-        "invalidFormat": "صيغة غير مدعومة. استخدم PDF أو DOC أو DOCX.",
-        "fileTooLarge": "يجب ألا يتجاوز حجم الملف 5 ميغابايت.",
-        "analyzeButton": "تحليل سيرتي الذاتية بالذكاء الاصطناعي"
-      },
-      "documents": {
-        "sectionTitle": "مستندات إضافية",
-        "sectionDesc": "أضف شهادات أو مؤهلات إضافية.",
-        "typeDiploma": "شهادة علمية",
-        "typeCertificate": "شهادة",
-        "typeOther": "أخرى",
-        "addButton": "إضافة مستند",
-        "empty": "لم تتم إضافة أي مستند.",
-        "addedToast": "تمت إضافة المستند.",
-        "uploadError": "خطأ في إضافة المستند.",
-        "deleteConfirm": "حذف هذا المستند؟",
-        "deletedToast": "تم حذف المستند.",
-        "deleteError": "خطأ في الحذف."
-      },
-      "skills": {
-        "sectionTitle": "المهارات",
-        "sectionDesc": "المهارات تساعد مسؤولي التوظيف في العثور عليك.",
-        "placeholder": "أضف مهارة",
-        "add": "إضافة",
-        "empty": "لم تتم إضافة أي مهارات.",
-        "addedToast": "تمت إضافة {{count}} مهارة/مهارات.",
-        "noneFound": "لم يتم العثور على أي مهارات في النص."
-      },
-      "experience": {
-        "sectionTitle": "الخبرات المهنية",
-        "sectionDesc": "أضف أهم خبراتك.",
-        "add": "إضافة خبرة",
-        "empty": "لم تتم إضافة أي خبرة.",
-        "present": "حالياً",
-        "edit": "تعديل",
-        "jobTitle": "المسمى الوظيفي",
-        "company": "الشركة",
-        "location": "المكان",
-        "startDate": "تاريخ البداية",
-        "endDate": "تاريخ النهاية",
-        "currentlyWorking": "أعمل هنا حالياً",
-        "description": "الوصف",
-        "cancel": "إلغاء",
-        "save": "حفظ التغييرات",
-        "saveNew": "إضافة الخبرة",
-        "modalEditTitle": "تعديل الخبرة",
-        "modalAddTitle": "إضافة خبرة",
-        "fillRequired": "يرجى ملء المسمى الوظيفي والشركة وتاريخ البداية."
-      },
-      "education": {
-        "sectionTitle": "المؤهلات العلمية",
-        "sectionDesc": "أضف شهاداتك وتدريباتك.",
-        "add": "إضافة مؤهل علمي",
-        "empty": "لم تتم إضافة أي مؤهل علمي.",
-        "edit": "تعديل",
-        "degree": "الشهادة",
-        "school": "المؤسسة التعليمية",
-        "field": "مجال الدراسة",
-        "year": "سنة التخرج",
-        "cancel": "إلغاء",
-        "save": "حفظ التغييرات",
-        "saveNew": "إضافة المؤهل العلمي",
-        "modalEditTitle": "تعديل المؤهل العلمي",
-        "modalAddTitle": "إضافة مؤهل علمي",
-        "fillRequired": "يرجى ملء الشهادة والمدرسة والسنة."
-      },
-      "links": {
-        "sectionTitle": "روابط",
-        "sectionDesc": "أضف LinkedIn أو معرض أعمالك أو روابط أخرى."
-      },
-      "salary": {
-        "sectionTitle": "الراتب المطلوب",
-        "sectionDesc": "حدد نطاقاً تقديرياً.",
-        "minSalary": "الحد الأدنى للراتب",
-        "maxSalary": "الحد الأعلى للراتب"
-      },
-      "cvAnalysis": {
-        "title": "تحليل السيرة الذاتية بالذكاء الاصطناعي",
-        "description": "الصق محتوى سيرتك الذاتية للحصول على اقتراحات تحسين.",
-        "placeholder": "الصق نص سيرتك الذاتية هنا...",
-        "suggestions": "اقتراحات التحسين:",
-        "close": "إغلاق",
-        "analyze": "تحليل",
-        "analyzing": "جارٍ التحليل...",
-        "emptyText": "يرجى لصق محتوى سيرتك الذاتية.",
-        "doneToast": "اكتمل التحليل.",
-        "errorToast": "خطأ في التحليل."
-      }
-    },
+
+  "experienceLevels": {
+    "junior": "مبتدئ (0-2 سنة)",
+    "intermediaire": "متوسط (2-5 سنوات)",
+    "senior": "أول (5-10 سنوات)",
+    "expert": "خبير (10+ سنوات)"
+  },
+
 "settings": {
       "title": "الإعدادات",
       "subtitle": "إدارة حسابك وتفضيلاتك.",
@@ -2537,6 +2329,7 @@
       }
     },
      "jobs": {
+      "alreadyAppliedBadge": "تم التقديم",
       "searchPlaceholder": "عنوان، مهارة أو شركة…",
       "allCities": "جميع المدن",
       "filters": "عوامل التصفية",
@@ -2587,6 +2380,7 @@
       "delete": "حذف"
     },
     "jobDetail": {
+       "similarJobs": "وظائف مماثلة",
       "notFound": "العرض غير موجود",
       "notFoundMessage": "هذا العرض غير موجود أو تم حذفه.",
       "backToJobs": "العودة إلى العروض",
@@ -2741,6 +2535,11 @@
       }
     },
     "applicationDetail": {
+      "upgradeForNotes": "ملاحظات المقابلة وأدوات الذكاء الاصطناعي",
+    "upgradeForNotesDesc": "قم بالترقية إلى خطة Pro أو Business لإنشاء الأسئلة والأجوبة والنصائح وتدوين الملاحظات.",
+    "upgradeForSchedule": "جدولة المقابلة",
+    "upgradeForScheduleDesc": "قم بالترقية إلى خطة Pro أو Business لجدولة المقابلات باستخدام Calendly وJitsi.",
+    "viewPlans": "عرض الخطط",
       "back": "رجوع",
       "notFound": "الطلب غير موجود.",
       "status": {
@@ -2786,133 +2585,73 @@
       },
       "accountSuspended": "حسابك معلق."
     },
-     "companyDashboard": {
-      "stats": {
-        "trend": "{{trend}} هذا الأسبوع",
-        "publishedJobs": "عروض نشطة",
-        "totalApplications": "إجمالي الطلبات",
-        "newApplications": "طلبات جديدة",
-        "totalViews": "إجمالي المشاهدات"
-      },
-      "status": {
-        "draft": "مسودة",
-        "pending": "قيد الانتظار",
-        "active": "نشطة",
-        "paused": "قيد الإيقاف المؤقت",
-        "closed": "مغلقة",
-        "expired": "منتهية الصلاحية",
-        "rejected": "مرفوضة"
-      },
-      "jobCard": {
-        "unspecifiedLocation": "غير محدد",
-        "views": "{{count}} مشاهدة/مشاهدات",
-        "applications": "{{count}} طلب/طلبات",
-        "menu": {
-          "edit": "تعديل",
-          "viewApplications": "الطلبات",
-          "submitForValidation": "تقديم",
-          "validationRequired": "التحقق مطلوب",
-          "cancelSubmission": "إلغاء التقديم",
-          "freeBoost": "تعزيز مجاني",
-          "pause": "إيقاف مؤقت",
-          "republish": "إعادة نشر",
-          "delete": "حذف"
-        }
-      },
-      "applicationStatus": {
-        "pending": "قيد الانتظار",
-        "viewed": "تمت المشاهدة",
-        "shortlisted": "قائمة مختصرة",
-        "interview": "مقابلة",
-        "accepted": "مقبولة",
-        "rejected": "مرفوضة"
-      },
-      "toasts": {
-        "companyNotVerifiedMenu": "شركتك غير موثقة.",
-        "loadError": "خطأ في تحميل البيانات.",
-        "deleteConfirm": "حذف العرض \"{{title}}\"؟",
-        "jobDeleted": "تم حذف العرض.",
-        "limitReached": "لقد وصلت إلى الحد الأقصى البالغ {{limit}} عروض نشطة.",
-        "limitReachedDetailed": "تم بلوغ حد {{limit}} عروض (نشطة + قيد الانتظار: {{total}}).",
-        "offerPublished": "تم نشر العرض.",
-        "statusUpdated": "تم تحديث الحالة.",
-        "updateError": "خطأ أثناء التحديث.",
-        "companyNotVerified": "شركتك غير موثقة.",
-        "submittedForValidation": "تم تقديم العرض للتحقق.",
-        "submissionError": "خطأ أثناء التقديم.",
-        "submissionCancelled": "تم إلغاء التقديم.",
-        "subscriptionCancelled": "تم إلغاء الاشتراك.",
-        "cancelError": "خطأ أثناء الإلغاء.",
-        "boostActivated": "تم تفعيل التعزيز لمدة 7 أيام.",
-        "boostAlreadyUsed": "تم استخدام التعزيز بالفعل هذا الشهر.",
-        "boostError": "خطأ أثناء التعزيز."
-      },
-      "cancelModal": {
-        "title": "إلغاء الاشتراك",
-        "description": "سيؤدي إلغاء اشتراكك إلى إلغاء تنشيط عروضك النشطة وفقدان الميزات المتقدمة.",
-        "reasonLabel": "السبب (اختياري)",
-        "reasonPlaceholder": "لماذا تريد الإلغاء؟",
-        "consequencesTitle": "العواقب",
-        "consequences": [
-          "سيتم تعليق عروضك النشطة",
-          "ستعود إلى الخطة المجانية",
-          "سيتم تعطيل ميزات Pro/Business"
-        ],
-        "cancelButton": "إلغاء",
-        "confirmButton": "إلغاء اشتراكي"
-      },
-      "noCompany": {
-        "title": "لا توجد شركة",
-        "subtitle": "أنشئ شركتك لبدء نشر العروض.",
-        "createButton": "إنشاء شركتي"
-      },
-      "companySelector": {
-        "owner": "مالك",
-        "member": "عضو",
-        "newCompany": "شركة جديدة"
-      },
-      "header": {
-        "title": "نظرة عامة"
-      },
-      "profileButton": "الملف الشخصي",
-      "newOfferButton": "عرض جديد",
-      "jobsSection": {
-        "title": "العروض الأخيرة",
-        "totalOffers": "{{count}} عرض/عروض إجمالاً",
-        "viewAll": "عرض الكل",
-        "noOffers": "لا توجد عروض",
-        "publishButton": "نشر عرض"
-      },
-      "applicationsSection": {
-        "title": "أحدث الطلبات",
-        "newCount": "{{count}} جديد/جديدة",
-        "viewAll": "عرض الكل",
-        "noApplications": "لا توجد طلبات"
-      },
-      "companyProfileCard": {
-        "title": "ملف الشركة",
-        "pendingValidation": "في انتظار التحقق",
-        "employees": "{{size}} موظف/موظفون",
-        "founded": "تأسست عام {{year}}",
-        "editProfile": "تعديل الملف الشخصي"
-      },
-      "subscriptionCard": {
-        "currentPlan": "خطة {{plan}}",
-        "changePlan": "تغيير",
-        "activeOffers": "العروض النشطة",
-        "activePlanMessage": "خطتك {{plan}} نشطة.",
-        "manageSubscription": "إدارة الاشتراك",
-        "cancelSubscription": "إلغاء الاشتراك",
-        "lastCancelReason": "آخر إلغاء",
-        "cancelReasonQuote": "\"{{reason}}\"",
-        "freePlanMessage": "قم بالترقية إلى خطة أعلى للحصول على ميزات أكثر.",
-        "freeBoostMessage": "تعزيز مجاني متاح!"
-      },
-      "adminMessages": {
-        "title": "رسائل الإدارة"
-      }
+"companyDashboard": {
+    "stats": { "trend": "{{trend}} هذا الأسبوع", "publishedJobs": "العروض النشطة", "totalApplications": "إجمالي الطلبات", "newApplications": "الطلبات الجديدة", "totalViews": "إجمالي المشاهدات" },
+    "status": { "draft": "مسودة", "pending": "قيد الانتظار", "active": "نشطة", "paused": "قيد الإيقاف المؤقت", "closed": "مغلقة", "expired": "منتهية الصلاحية", "rejected": "مرفوضة" },
+    "jobCard": {
+      "unspecifiedLocation": "غير محدد",
+      "views": "{{count}} مشاهدة/مشاهدات",
+      "applications": "{{count}} طلب/طلبات",
+      "menu": { "edit": "تعديل", "viewApplications": "الطلبات", "submitForValidation": "تقديم", "validationRequired": "التحقق مطلوب", "cancelSubmission": "إلغاء التقديم", "freeBoost": "تعزيز مجاني", "pause": "إيقاف مؤقت", "republish": "إعادة نشر", "delete": "حذف" }
     },
+    "applicationStatus": { "pending": "قيد الانتظار", "viewed": "تمت المشاهدة", "shortlisted": "قائمة مختصرة", "interview": "مقابلة", "accepted": "مقبولة", "rejected": "مرفوضة" },
+    "toasts": {
+      "companyNotVerifiedMenu": "شركتك غير موثقة.",
+      "loadError": "خطأ في تحميل البيانات.",
+      "deleteConfirm": "حذف العرض \"{{title}}\"؟",
+      "jobDeleted": "تم حذف العرض.",
+      "limitReached": "لقد وصلت إلى الحد الأقصى البالغ {{limit}} عروض نشطة.",
+      "limitReachedDetailed": "تم بلوغ حد {{limit}} عروض (نشطة + قيد الانتظار: {{total}}).",
+      "offerPublished": "تم نشر العرض.",
+      "statusUpdated": "تم تحديث الحالة.",
+      "updateError": "خطأ أثناء التحديث.",
+      "companyNotVerified": "شركتك غير موثقة.",
+      "submittedForValidation": "تم تقديم العرض للتحقق.",
+      "submissionError": "خطأ أثناء التقديم.",
+      "submissionCancelled": "تم إلغاء التقديم.",
+      "subscriptionCancelled": "تم إلغاء الاشتراك.",
+      "cancelError": "خطأ أثناء الإلغاء.",
+      "boostActivated": "تم تفعيل التعزيز لمدة 7 أيام.",
+      "boostAlreadyUsed": "تم استخدام التعزيز بالفعل هذا الشهر.",
+      "boostError": "خطأ أثناء التعزيز."
+    },
+    "cancelModal": {
+      "title": "إلغاء الاشتراك",
+      "description": "سيؤدي إلغاء اشتراكك إلى إلغاء تنشيط عروضك النشطة وفقدان الميزات المتقدمة.",
+      "reasonLabel": "السبب (اختياري)",
+      "reasonPlaceholder": "لماذا تريد الإلغاء؟",
+      "consequencesTitle": "العواقب",
+      "consequences": ["سيتم تعليق عروضك النشطة", "ستعود إلى الخطة المجانية", "سيتم تعطيل ميزات Pro/Business"],
+      "cancelButton": "إلغاء",
+      "confirmButton": "إلغاء اشتراكي"
+    },
+    "noCompany": { "title": "لا توجد شركة", "subtitle": "أنشئ شركتك لبدء نشر العروض.", "createButton": "إنشاء شركتي" },
+    "companySelector": { "owner": "مالك", "member": "عضو", "newCompany": "شركة جديدة" },
+    "header": { "title": "نظرة عامة" },
+    "profileButton": "الملف الشخصي",
+    "newOfferButton": "عرض جديد",
+    "jobsSection": { "title": "العروض الأخيرة", "totalOffers": "{{count}} عرض/عروض إجمالاً", "viewAll": "عرض الكل", "noOffers": "لا توجد عروض", "publishButton": "نشر عرض" },
+    "applicationsSection": { "title": "أحدث الطلبات", "newCount": "{{count}} جديد/جديدة", "viewAll": "عرض الكل", "noApplications": "لا توجد طلبات" },
+    "companyProfileCard": { "title": "ملف الشركة", "pendingValidation": "في انتظار التحقق", "employees": "{{size}} موظف/موظفون", "founded": "تأسست عام {{year}}", "editProfile": "تعديل الملف الشخصي" },
+    "subscriptionCard": {
+      "currentPlan": "خطة {{plan}}",
+      "changePlan": "تغيير",
+      "activeOffers": "العروض النشطة",
+      "activePlanMessage": "خطتك {{plan}} نشطة.",
+      "manageSubscription": "إدارة الاشتراك",
+      "cancelSubscription": "إلغاء الاشتراك",
+      "lastCancelReason": "آخر إلغاء",
+      "cancelReasonQuote": "\"{{reason}}\"",
+      "freePlanMessage": "قم بالترقية إلى خطة أعلى للحصول على ميزات أكثر.",
+      "freeBoostMessage": "تعزيز مجاني متاح!"
+    },
+    "adminMessages": { "title": "رسائل الإدارة" },
+    "multiCompanyLocked": "الشركات المتعددة مخصصة لخطة الأعمال",
+    "cvBank": { "title": "بنك السير الذاتية", "desc": "الوصول إلى مجموعة المواهب المتاحة لدينا.", "browse": "تصفح السير الذاتية" }
+  },
     "candidateDashboard": {
+      "myCompanies": "شركاتي",
+    "accessCompany": "الوصول إلى لوحة التحكم",
       "greeting": "مرحباً {{name}}",
       "activityPreview": "فيما يلي نظرة عامة على نشاطك الأخير.",
       "myProfile": "ملفي الشخصي",
@@ -3022,6 +2761,24 @@
       }
     },
     "common": {
+      "previous": "السابق",
+    "next": "التالي",
+      "city": "المدينة",
+    "all": "الكل",
+    "experienceLevel": "مستوى الخبرة",
+    "contractType": "نوع العقد",
+    "minSalary": "الحد الأدنى للراتب",
+    "availableOnly": "المتاحون فقط",
+    "clearFilters": "مسح عوامل التصفية",
+    "sortByRecent": "الأحدث",
+    "sortByName": "الاسم",
+    "showFilters": "إظهار عوامل التصفية",
+    "hideFilters": "إخفاء عوامل التصفية",
+    "available": "متاح",
+    "unavailable": "غير متاح",
+      "searching": "جارٍ البحث...",
+    "companyRole": "شركة",
+    "candidateRole": "مرشح",
       "comingSoon": "قريباً",
       "pro": "برو",
       "premium": "بريميوم",
@@ -3066,7 +2823,203 @@
     "countryGate": {
       "title": "متاح قريباً",
       "message": "خدمتنا ليست متاحة بعد في بلدك. عُد قريباً!"
-    }
+    },
+    "team": {
+      "searchPlaceholder": "البحث بالبريد الإلكتروني أو الاسم...",
+      "title": "الفريق",
+      "inviteTitle": "دعوة عضو",
+      "emailPlaceholder": "بريد العضو الإلكتروني",
+      "inviteButton": "دعوة",
+      "members": "الأعضاء",
+      "noMembers": "لا يوجد أعضاء",
+      "pending": "قيد الانتظار",
+      "roles": {
+        "recruiter": "مسؤول توظيف",
+        "viewer": "مشاهد"
+      },
+      "roleUpdated": "تم تحديث الدور",
+      "confirmRemove": "إزالة هذا العضو؟",
+      "memberRemoved": "تمت إزالة العضو",
+      "inviteSuccess": "تم إرسال الدعوة"
+    },
+    
+ "candidateBank": {
+      "title": "بنك السير الذاتية",
+      "subtitle": "تصفح ملفات المرشحين المتاحين",
+      "searchPlaceholder": "البحث بالاسم، المهارة، المسمى الوظيفي…",
+      "candidatesFound": "تم العثور على مرشح (مرشحين)",
+      "upgradeTitle": "بنك السير الذاتية",
+      "upgradeDesc": "بنك السير الذاتية مخصص لخطة الأعمال.",
+      "viewPlans": "عرض الخطط",
+      "noCandidates": "لم يتم العثور على مرشحين"
+    },
+    "companyDashboard.cvBank": {
+      "title": "بنك السير الذاتية",
+      "desc": "الوصول إلى مجموعة المواهب المتاحة لدينا.",
+      "browse": "تصفح السير الذاتية"
+    },
+ "candidateProfilePage": {
+      "title": "الملف الشخصي للمرشح",
+      "subtitle": "إدارة ملفك المهني",
+      "save": "حفظ",
+      "saveChanges": "حفظ التغييرات",
+      "photo": {
+        "title": "الصورة الشخصية",
+        "hint": "JPG أو PNG، الحد الأقصى 2 ميغابايت",
+        "change": "تغيير",
+        "delete": "حذف",
+        "updated": "تم تحديث الصورة",
+        "uploadError": "خطأ في التحميل",
+        "deleteConfirm": "حذف الصورة؟",
+        "deleted": "تم حذف الصورة",
+        "deleteError": "خطأ في حذف الصورة"
+      },
+      "personalInfo": {
+        "sectionTitle": "المعلومات الشخصية",
+        "sectionDesc": "بيانات الاتصال بك",
+        "firstName": "الاسم الأول",
+        "lastName": "اسم العائلة",
+        "phone": "الهاتف",
+        "phonePlaceholder": "+223 xx xx xx xx",
+        "city": "المدينة",
+        "selectCity": "اختيار مدينة"
+      },
+      "professionalProfile": {
+        "sectionTitle": "الملف المهني",
+        "sectionDesc": "صف وظيفتك الحالية أو المطلوبة",
+        "title": "المسمى الوظيفي",
+        "bio": "نبذة / ملخص",
+        "experienceLevel": "مستوى الخبرة",
+        "selectLevel": "اختيار مستوى",
+        "yearsOfExperience": "سنوات الخبرة",
+        "available": "متاح فوراً",
+        "openToRemote": "مفتوح للعمل عن بعد"
+      },
+      "cv": {
+        "sectionTitle": "السيرة الذاتية",
+        "sectionDesc": "تحميل السيرة الذاتية (PDF، DOC، DOCX، 5 ميغابايت كحد أقصى)",
+        "uploaded": "تم تحميل السيرة الذاتية بنجاح",
+        "view": "عرض",
+        "change": "تغيير",
+        "delete": "حذف",
+        "uploadTitle": "تحميل سيرتك الذاتية",
+        "uploadHint": "صيغة PDF أو DOC أو DOCX (5 ميغابايت كحد أقصى)",
+        "chooseFile": "اختيار ملف",
+        "analyzeButton": "تحليل سيرتك الذاتية بالذكاء الاصطناعي",
+        "invalidFormat": "صيغة ملف غير مدعومة",
+        "fileTooLarge": "حجم الملف يتجاوز 5 ميغابايت",
+        "uploadedToast": "تم تحميل السيرة الذاتية بنجاح",
+        "uploadError": "خطأ أثناء تحميل السيرة الذاتية",
+        "deleteConfirm": "حذف السيرة الذاتية؟",
+        "deletedToast": "تم حذف السيرة الذاتية",
+        "deleteError": "خطأ أثناء حذف السيرة الذاتية"
+      },
+      "documents": {
+        "sectionTitle": "المستندات الإضافية",
+        "sectionDesc": "الشهادات، المؤهلات، إلخ.",
+        "typeDiploma": "شهادة",
+        "typeCertificate": "شهادة",
+        "typeOther": "أخرى",
+        "addButton": "إضافة مستند",
+        "empty": "لا توجد مستندات مضافة",
+        "addedToast": "تمت إضافة المستند",
+        "uploadError": "خطأ في التحميل",
+        "deleteConfirm": "حذف هذا المستند؟",
+        "deletedToast": "تم حذف المستند",
+        "deleteError": "خطأ أثناء حذف المستند"
+      },
+      "skills": {
+        "sectionTitle": "المهارات",
+        "sectionDesc": "قائمة بمهاراتك الرئيسية",
+        "placeholder": "أضف مهارة...",
+        "add": "إضافة",
+        "empty": "لا توجد مهارات مضافة",
+        "addedToast": "تمت إضافة {{count}} مهارات",
+        "noneFound": "لم يتم العثور على مهارات جديدة"
+      },
+      "experience": {
+        "sectionTitle": "الخبرة المهنية",
+        "sectionDesc": "مسيرتك المهنية",
+        "add": "إضافة خبرة",
+        "empty": "لا توجد خبرة مضافة",
+        "edit": "تعديل",
+        "present": "حالياً",
+        "jobTitle": "المسمى الوظيفي",
+        "company": "الشركة",
+        "location": "المكان",
+        "startDate": "تاريخ البداية",
+        "endDate": "تاريخ النهاية",
+        "currentlyWorking": "ما زلت أعمل هنا",
+        "description": "الوصف",
+        "modalEditTitle": "تعديل الخبرة",
+        "modalAddTitle": "إضافة خبرة",
+        "fillRequired": "يرجى ملء الحقول المطلوبة",
+        "save": "حفظ",
+        "saveNew": "إضافة",
+        "cancel": "إلغاء"
+      },
+      "education": {
+        "sectionTitle": "المؤهلات العلمية",
+        "sectionDesc": "خلفيتك الأكاديمية",
+        "add": "إضافة مؤهل علمي",
+        "empty": "لا توجد مؤهلات مضافة",
+        "edit": "تعديل",
+        "modalEditTitle": "تعديل المؤهل العلمي",
+        "modalAddTitle": "إضافة مؤهل علمي",
+        "degree": "الشهادة / المؤهل",
+        "school": "المؤسسة التعليمية",
+        "field": "مجال الدراسة",
+        "year": "سنة التخرج",
+        "fillRequired": "يرجى ملء الحقول المطلوبة",
+        "save": "حفظ",
+        "saveNew": "إضافة",
+        "cancel": "إلغاء"
+      },
+      "links": {
+        "sectionTitle": "الروابط",
+        "sectionDesc": "الموقع الشخصي، LinkedIn، إلخ."
+      },
+      "salary": {
+        "sectionTitle": "متطلبات الراتب",
+        "sectionDesc": "الحد الأدنى والأقصى للراتب المطلوب",
+        "minSalary": "الحد الأدنى للراتب",
+        "maxSalary": "الحد الأقصى للراتب"
+      },
+      "toasts": {
+        "fillRequired": "يرجى ملء الحقول المطلوبة",
+        "profileUpdated": "تم تحديث الملف الشخصي",
+        "saveError": "خطأ أثناء الحفظ"
+      },
+      "cvAnalysis": {
+        "title": "تحليل السيرة الذاتية بالذكاء الاصطناعي",
+        "description": "الصق محتوى سيرتك الذاتية النصي للحصول على اقتراحات.",
+        "placeholder": "الصق سيرتك الذاتية هنا...",
+        "suggestions": "اقتراحات التحسين:",
+        "close": "إغلاق",
+        "analyze": "تحليل",
+        "analyzing": "جاري التحليل...",
+        "emptyText": "يرجى إدخال نص لتحليله",
+        "doneToast": "اكتمل التحليل",
+        "errorToast": "خطأ في التحليل"
+      }
+    },
+    "profile": {
+      "visibility": {
+        "sectionTitle": "الظهور",
+        "sectionDesc": "إدارة وجودك في بنك السير الذاتية",
+        "cvBankTitle": "الظهور في بنك السير الذاتية",
+        "cvBankDesc": "يمكن للموظفين العثور عليك والاطلاع على ملفك حتى لو لم تتقدم.",
+        "enabled": "ملفك الشخصي الآن مرئي في بنك السير الذاتية",
+        "disabled": "لم يعد ملفك الشخصي يظهر في بنك السير الذاتية",
+        "error": "خطأ أثناء التحديث"
+      }
+    },
+  "experienceLevels": {
+    "junior": "مبتدئ (0-2 سنة)",
+    "intermediaire": "متوسط (2-5 سنوات)",
+    "senior": "أول (5-10 سنوات)",
+    "expert": "خبير (10+ سنوات)"
+  }
 
 
 

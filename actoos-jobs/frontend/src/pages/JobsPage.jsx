@@ -8,6 +8,7 @@ import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 import useCachedData from '../hooks/useCachedData';
+import useAppliedJobs from '../hooks/useAppliedJobs'; // ✅ hook pour les candidatures
 import { JobCardSkeleton } from '../components/ui/Skeleton';
 import {
   Search,
@@ -28,12 +29,14 @@ import {
   Trash2,
   CheckCircle,
   Send,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 
 // ----------------------------------------------------------------------
-// Taux de conversion vers XOF (identiques à ceux de useCurrencyFormatter)
+// Taux de conversion vers XOF
 // ----------------------------------------------------------------------
 const RATES = {
   XOF: 1, EUR: 655.957, USD: 603.5, MAD: 60.5,
@@ -42,7 +45,7 @@ const RATES = {
   CHF: 722.3, XAF: 1, GNF: 0.07, CDF: 0.22, MGA: 0.15
 };
 
-// -------------------- Local UI components (identiques à l'original) --------------------
+// -------------------- Local UI components --------------------
 const Button = React.forwardRef(
   ({ children, className = '', variant = 'default', size = 'default', type = 'button', ...props }, ref) => {
     const base =
@@ -112,7 +115,7 @@ const removeAccents = (str = '') => {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 };
 
-// -------------------- Salary Input (conversion en XOF au blur) --------------------
+// -------------------- Salary Input --------------------
 const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   const [local, setLocal] = useState('');
 
@@ -145,8 +148,8 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   );
 };
 
-// -------------------- Job Card (modifié pour object-cover) --------------------
-const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
+// -------------------- Job Card --------------------
+const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, hasApplied }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -326,11 +329,16 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
                 🚀 {t('jobs.boosted')}
               </Badge>
             )}
+            {/* ✅ Badge "Postulé" avec la bonne clé */}
+            {hasApplied && (
+              <Badge className="bg-green-100 text-green-700 rounded-full">
+                ✅ {t('jobs.alreadyAppliedBadge', 'Postulé')}
+              </Badge>
+            )}
           </div>
 
           <div className="p-4 sm:p-5 pt-3">
             <div className="flex items-start gap-4">
-              {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0">
                 {job.company?.logo_url ? (
                   <img
@@ -416,7 +424,6 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
         </CardContent>
       </Link>
 
-      {/* Bouton sauvegarde normal, sans restriction */}
       {!isOwner && !isCompany && (
         <button
           onClick={(e) => {
@@ -457,7 +464,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit }) => {
   );
 };
 
-// -------------------- Filters Sidebar (identiques) --------------------
+// -------------------- Filters Sidebar --------------------
 const FiltersSidebar = ({
   filters,
   onChange,
@@ -645,6 +652,8 @@ const FiltersSidebar = ({
 };
 
 // -------------------- Main Jobs Page --------------------
+const ITEMS_PER_PAGE = 10;
+
 const JobsPage = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
@@ -654,11 +663,15 @@ const JobsPage = () => {
   const { cities: filteredCities } = useCities(prefs.country);
   const { format } = useCurrencyFormatter();
 
+  // ✅ Récupération des IDs des offres où le candidat a postulé
+  const appliedJobIds = useAppliedJobs(user?.id);
+
   const [countryId, setCountryId] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: categories } = useCachedData('job_categories', 'id, slug, name, icon', 'name');
   const [availableContractTypes, setAvailableContractTypes] = useState([]);
@@ -675,10 +688,9 @@ const JobsPage = () => {
     remote: false,
   });
 
-  const [sortBy, setSortBy] = useState('recent');
-
   const conversionRate = RATES[prefs.currency] || 1;
 
+  // Récupération du countryId
   useEffect(() => {
     if (prefs.country) {
       supabase
@@ -692,6 +704,7 @@ const JobsPage = () => {
     }
   }, [prefs.country]);
 
+  // Chargement initial des jobs (tous, sans limite)
   useEffect(() => {
     const fetchJobs = async () => {
       setLoading(true);
@@ -702,7 +715,7 @@ const JobsPage = () => {
             id, title, description, contract_type, experience_level, salary_min, salary_max,
             is_remote, remote_type, is_urgent, is_featured, skills_required, created_at, status, category_id,
             boosted_until,
-            company:companies(name, logo_url, is_verified, owner_id),
+            company:companies(name, logo_url, is_verified, owner_id, subscription_plan),
             city:cities(name)
           `)
           .eq('status', 'active');
@@ -713,8 +726,7 @@ const JobsPage = () => {
 
         const { data, error } = await query
           .order('boosted_until', { ascending: false, nullsFirst: false })
-          .order('created_at', { ascending: false })
-          .limit(50);
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
         setJobs(data || []);
@@ -725,9 +737,14 @@ const JobsPage = () => {
       }
     };
 
-    fetchJobs();
+    if (countryId !== null) {
+      fetchJobs();
+    } else {
+      setLoading(false);
+    }
   }, [countryId]);
 
+  // Chargement des filtres disponibles
   useEffect(() => {
     const loadFilterOptions = async () => {
       try {
@@ -743,27 +760,20 @@ const JobsPage = () => {
         const { data } = await query;
         if (data) {
           const uniqueTypes = [...new Set(data.map((j) => j.contract_type).filter(Boolean))];
-          setAvailableContractTypes(
-            uniqueTypes.map((type) => ({ value: type }))
-          );
+          setAvailableContractTypes(uniqueTypes.map((type) => ({ value: type })));
           const uniqueExp = [...new Set(data.map((j) => j.experience_level).filter(Boolean))];
-          setAvailableExperienceLevels(
-            uniqueExp.map((exp) => ({ value: exp }))
-          );
+          setAvailableExperienceLevels(uniqueExp.map((exp) => ({ value: exp })));
         }
       } catch {
-        setAvailableContractTypes(
-          Object.entries(CONTRACT_TYPES).map(([k]) => ({ value: k }))
-        );
-        setAvailableExperienceLevels(
-          Object.entries(EXPERIENCE_LEVELS).map(([k]) => ({ value: k }))
-        );
+        setAvailableContractTypes(Object.entries(CONTRACT_TYPES).map(([k]) => ({ value: k })));
+        setAvailableExperienceLevels(Object.entries(EXPERIENCE_LEVELS).map(([k]) => ({ value: k })));
       }
     };
 
     loadFilterOptions();
   }, [countryId]);
 
+  // Récupération des jobs sauvegardés
   useEffect(() => {
     if (user) {
       supabase
@@ -776,6 +786,12 @@ const JobsPage = () => {
     }
   }, [user]);
 
+  // Reset de la page à 1 quand les filtres changent
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  // Filtrage et tri côté client avec plan d'abonnement
   const filteredJobs = useMemo(() => {
     let result = [...jobs];
 
@@ -807,25 +823,37 @@ const JobsPage = () => {
       }
     }
 
+    const now = new Date();
+    const planPriority = { business: 3, pro: 2, free: 1 };
+
     result.sort((a, b) => {
-      const aBoost = a.boosted_until && new Date(a.boosted_until) > new Date() ? 1 : 0;
-      const bBoost = b.boosted_until && new Date(b.boosted_until) > new Date() ? 1 : 0;
-      if (bBoost !== aBoost) return bBoost - aBoost;
+      const aBoosted = a.boosted_until && new Date(a.boosted_until) > now;
+      const bBoosted = b.boosted_until && new Date(b.boosted_until) > now;
 
-      if ((b.is_featured ? 1 : 0) !== (a.is_featured ? 1 : 0)) {
-        return (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0);
-      }
+      if (aBoosted && !bBoosted) return -1;
+      if (!aBoosted && bBoosted) return 1;
 
-      if (sortBy === 'recent') {
+      if (aBoosted && bBoosted) {
+        const boostedDiff = new Date(b.boosted_until) - new Date(a.boosted_until);
+        if (boostedDiff !== 0) return boostedDiff;
         return new Date(b.created_at) - new Date(a.created_at);
-      } else if (sortBy === 'salary') {
-        return (b.salary_max || 0) - (a.salary_max || 0);
       }
-      return 0;
+
+      const aPlan = planPriority[a.company?.subscription_plan] || 0;
+      const bPlan = planPriority[b.company?.subscription_plan] || 0;
+      if (bPlan !== aPlan) return bPlan - aPlan;
+      return new Date(b.created_at) - new Date(a.created_at);
     });
 
     return result;
-  }, [jobs, filters, sortBy, categories]);
+  }, [jobs, filters, categories]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
+  const paginatedJobs = filteredJobs.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleSaveJob = async (jobId) => {
     if (!user) {
@@ -887,6 +915,11 @@ const JobsPage = () => {
       </button>
     </Badge>
   ) : null;
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -971,15 +1004,6 @@ const JobsPage = () => {
                   {t('jobs.results', { count: filteredJobs.length })}
                 </p>
               </div>
-
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full sm:w-44 h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="recent">{t('jobs.sortRecent')}</option>
-                <option value="salary">{t('jobs.sortSalary')}</option>
-              </select>
             </div>
 
             {/* Badges de filtres actifs */}
@@ -1065,19 +1089,57 @@ const JobsPage = () => {
                 </Button>
               </div>
             ) : (
-              <div className="space-y-4">
-                {filteredJobs.map((job) => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    user={user}
-                    isCompany={isCompany}
-                    onSave={handleSaveJob}
-                    isSaved={savedJobs.includes(job.id)}
-                    onEdit={handleEditJob}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="space-y-4">
+                  {paginatedJobs.map((job) => (
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      user={user}
+                      isCompany={isCompany}
+                      onSave={handleSaveJob}
+                      isSaved={savedJobs.includes(job.id)}
+                      onEdit={handleEditJob}
+                      hasApplied={appliedJobIds.includes(job.id)}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-8">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      {t('common.previous')}
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={page === currentPage ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="min-w-[40px]"
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      {t('common.next')}
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

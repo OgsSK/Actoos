@@ -18,6 +18,7 @@
         "subtitle": "Encontre ofertas por setor de atividade"
       },
       "jobs": {
+         "alreadyAppliedBadge": "Candidatado",
         "title": "Ofertas recentes",
         "subtitle": "As últimas oportunidades publicadas",
         "viewAll": "Ver todas as ofertas",
@@ -95,6 +96,7 @@
       "currency": "Moeda"
     },
   "jobs": {
+    
     "remote": "Teletrabalho",
       "remoteFull": "100% teletrabalho",
       "remoteHybrid": "Híbrido",
@@ -144,177 +146,138 @@
     "resultsFor": "Resultados para \"{{query}}\"",
     "viewResults": "Ver os {{count}} resultados"
   },
-  "pricing": {
-    "downgradeBlocked": "Tem {{active}} oferta(s) ativa(s). O plano de destino permite apenas {{limit}} oferta(s). Desative ou elimine as que estão a mais antes de mudar de plano.",
-    "free": "Gratuito",
-    "pro": "Pro",
-    "business": "Business",
-    "enterprise": "Enterprise",
-    "badge": "Preços",
-    "title": "Planos pensados para o seu crescimento",
-    "subtitle": "Escolha a fórmula que corresponde às suas necessidades e evolua com simplicidade.",
-    "perMonth": "/mês",
-    "perYear": "/ano",
-    "billedMonthly": "faturado mensalmente",
-    "billedAnnually": "faturado anualmente",
-    "mostPopular": "O mais popular",
-    "currentPlan": "Plano atual",
-    "toggle": {
-      "monthly": "Mensal",
-      "annual": "Anual",
-      "savePercent": "-20%"
-    },
-    "plans": {
-      "free": {
-        "name": "Gratuito",
-        "description": "Para começar e descobrir a plataforma.",
-        "features": {
-          "0": "{{count}} ofertas ativas",
-          "1": "{{count}} utilizador",
-          "expiration": "Expiração: {{days}} dias",
-          "2": "Perfil de empresa público",
-          "3": "Suporte por email"
+"pricing": {
+  "free": "Gratuito",
+      "badge": "Preços",
+      "title": "Planos à medida das suas ambições",
+      "subtitle": "Escolha o plano que corresponde aos seus objetivos.",
+      "mostPopular": "Mais popular",
+      "currentPlan": "Plano atual",
+      "perMonth": "/mês",
+      "perMonthShort": "/mês",
+      "billedAnnually": "Faturado anualmente",
+      "billedMonthly": "Faturado mensalmente",
+      "loading": "A carregar...",
+      "toggle": {
+        "monthly": "Mensal",
+        "annual": "Anual",
+        "savePercent": "Poupe 20%"
+      },
+      "plans": {
+        "free": {
+          "name": "Gratuito",
+          "description": "Para começar",
+          "features": {
+            "0": "{{count}} oferta(s) ativa(s)",
+            "expiration": "{{days}} dias antes da expiração",
+            "2": "Perfil verificado"
+          },
+          "limitations": {
+            "noInterviewTools": "Sem ferramentas de agendamento de entrevista",
+            "noAiNotes": "Sem notas de entrevista nem IA",
+            "noCvBank": "Sem banco de CV",
+            "noMultiCompany": "Apenas uma empresa"
+          }
         },
-        "limitations": {
-          "0": "Sem estatísticas",
-          "1": "Sem destaque",
-          "2": "Sem API"
+        "pro": {
+          "name": "Pro",
+          "description": "Para recrutadores ativos",
+          "features": {
+            "0": "{{count}} oferta(s) ativa(s)",
+            "expiration": "{{days}} dias antes da expiração",
+            "interviewTools": "Ferramentas de agendamento de entrevista",
+            "aiNotes": "Notas de entrevista e IA",
+            "verifiedProfile": "Distintivo Pro no seu perfil"
+          },
+          "limitations": {
+            "noCvBank": "Sem banco de CV",
+            "noMultiCompany": "Apenas uma empresa"
+          }
+        },
+        "business": {
+          "name": "Business",
+          "description": "Para empresas em crescimento",
+          "features": {
+            "0": "Ofertas ilimitadas",
+            "expiration": "{{days}} dias antes da expiração",
+            "interviewTools": "Ferramentas de agendamento de entrevista",
+            "aiNotes": "Notas de entrevista e IA avançadas",
+            "freeBoost": "1 impulso gratuito / mês",
+            "cvBank": "Banco de CV ilimitado",
+            "multiCompany": "Multiempresa ilimitada",
+            "premiumBadge": "Distintivo Premium prioritário"
+          },
+          "limitations": {}
         }
       },
-      "pro": {
-        "name": "Pro",
-        "description": "Para PME e recrutadores regulares.",
-        "features": {
-          "0": "{{count}} ofertas ativas",
-          "1": "Até {{count}} utilizadores",
-          "expiration": "Expiração: {{days}} dias",
-          "2": "Estatísticas básicas",
-          "search": "Pesquisa de perfis de candidatos",
-          "3": "Suporte prioritário",
-          "4": "Perfil de empresa verificado"
+      "actions": {
+        "backToFree": "Voltar ao Gratuito",
+        "manageSubscription": "Gerir assinatura",
+        "upgradeTo": "Atualizar para {{plan}}",
+        "downgradeTo": "Rebaixar para {{plan}}",
+        "subscribeMonthly": "Subscrever mensalmente",
+        "subscribeAnnual": "Subscrever anualmente"
+      },
+      "comparison": {
+        "title": "Comparar planos",
+        "subtitle": "Funcionalidades por plano",
+        "featureColumn": "Funcionalidade",
+        "freeColumn": "Gratuito",
+        "proColumn": "Pro",
+        "businessColumn": "Business",
+        "values": {
+          "days": "{{count}} dias",
+          "perMonth": "1 / mês",
+          "premium": "✓ (Premium)"
         },
-        "limitations": {
-          "0": "Sem exportação de dados",
-          "1": "Sem API"
+        "rows": {
+          "activeOffers": "Ofertas ativas",
+          "expiration": "Expiração",
+          "interviewTools": "Ferramentas de entrevista",
+          "aiNotes": "Notas de IA e entrevista",
+          "cvBank": "Banco de CV",
+          "multiCompany": "Multiempresa",
+          "freeBoost": "Impulso gratuito",
+          "verifiedProfile": "Perfil verificado"
         }
       },
-      "business": {
-        "name": "Business",
-        "description": "Para grandes recrutadores e agências.",
-        "features": {
-          "0": "Ofertas ilimitadas",
-          "1": "Utilizadores ilimitados",
-          "expiration": "Expiração: {{days}} dias",
-          "2": "Estatísticas avançadas",
-          "export": "Exportação de candidaturas (CSV)",
-          "api": "API de recrutamento",
-          "3": "Suporte dedicado",
-          "4": "1 destaque oferecido / mês",
-          "5": "Perfil de empresa premium"
-        }
-      }
+      "faq": {
+        "title": "Perguntas frequentes",
+        "subtitle": "Tudo sobre os nossos planos",
+        "items": [
+          {
+            "question": "Posso alterar o meu plano a qualquer momento?",
+            "answer": "Sim, pode fazer upgrade ou downgrade a qualquer momento. As alterações têm efeito imediato."
+          },
+          {
+            "question": "Existem taxas ocultas?",
+            "answer": "Sem taxas ocultas. Paga apenas o preço apresentado, sem surpresas."
+          },
+          {
+            "question": "Como cancelo a minha subscrição?",
+            "answer": "Pode cancelar a partir do painel da sua empresa. A sua subscrição permanecerá ativa até ao final do período pago."
+          }
+        ]
+      },
+      "cta": {
+        "title": "Tem alguma dúvida?",
+        "subtitle": "A nossa equipa está aqui para ajudar.",
+        "button": "Contacte-nos"
+      },
+      "loginBanner": {
+        "message": "Inicie sessão para usufruir de todos os benefícios.",
+        "button": "Iniciar sessão"
+      },
+      "toast": {
+        "mustLogin": "Tem de iniciar sessão para subscrever.",
+        "noCompany": "Tem de ter uma empresa para subscrever.",
+        "checkoutError": "Erro no pagamento.",
+        "mustLoginFree": "Inicie sessão para usar o plano Gratuito.",
+        "alreadyFree": "Já está no plano Gratuito.",
+        "cancelToFree": "Cancele a sua subscrição para voltar ao plano Gratuito."
+      },
+      "downgradeBlocked": "Tem {{active}} oferta(s) ativa(s). O plano de destino só permite {{limit}} oferta(s). Desative ou elimine as que estão a mais antes de mudar de plano."
     },
-    "actions": {
-      "backToFree": "Voltar ao gratuito",
-      "upgradeTo": "Passar para {{plan}}",
-      "downgradeTo": "Voltar para {{plan}}",
-      "subscribeMonthly": "Subscrever (mensal)",
-      "subscribeAnnual": "Subscrever (anual -20%)",
-      "manageSubscription": "Gerir a minha subscrição"
-    },
-    "comparison": {
-      "values": {
-    "expiration": "{{count}} dias",
-    "boostPerMonth": "1 / mês"
-  },
-      "title": "Comparação detalhada",
-      "subtitle": "Todas as funcionalidades num relance",
-      "featureColumn": "Funcionalidade",
-      "freeColumn": "Gratuito",
-      "proColumn": "Pro",
-      "businessColumn": "Business",
-      "rows": {
-        "activeOffers": "Ofertas ativas",
-        "teamMembers": "Membros da equipa",
-        "expiration": "Duração da publicação",
-        "candidates": "Candidaturas",
-        "verifiedProfile": "Perfil verificado",
-        "analytics": "Estatísticas",
-        "searchProfiles": "Pesquisa de perfis",
-        "export": "Exportação CSV",
-        "api": "API",
-        "prioritySupport": "Suporte prioritário",
-        "freeBoost": "Destaque oferecido",
-        "customBranding": "Personalização (branding)"
-      }
-    },
-    "faq": {
-      "title": "Perguntas frequentes",
-      "subtitle": "Tudo sobre as nossas subscrições",
-      "items": [
-        {
-          "question": "Como funciona a subscrição?",
-          "answer": "Escolhe um plano (Pro ou Business) com faturação mensal ou anual. A subscrição é renovada automaticamente a cada período. Pode cancelar a qualquer momento a partir do seu espaço de empresa, sem custos."
-        },
-        {
-          "question": "Posso mudar de plano a qualquer momento?",
-          "answer": "Sim, pode passar de um plano para outro a qualquer momento. Se mudar para um plano superior, paga apenas a diferença proporcional aos dias restantes. Se mudar para um plano inferior, a alteração terá efeito na próxima data de faturação."
-        },
-        {
-          "question": "Há custos ocultos ou compromissos?",
-          "answer": "Nenhum custo oculto. Os preços apresentados são os preços finais, com impostos incluídos. Não há compromisso de permanência: pode cancelar a qualquer momento."
-        },
-        {
-          "question": "Posso cancelar a minha subscrição?",
-          "answer": "Claro. O cancelamento faz-se com um clique a partir do seu espaço de empresa, na secção 'Subscrição'. A sua subscrição permanecerá ativa até ao final do período pago."
-        },
-        {
-          "question": "As minhas ofertas de emprego permanecem online após o fim da subscrição?",
-          "answer": "Sim, as suas ofertas ativas permanecem publicadas até à sua data de expiração normal. Simplesmente não poderá publicar novas se tiver atingido o limite do seu novo plano."
-        },
-        {
-          "question": "Quais os meios de pagamento aceites?",
-          "answer": "Aceitamos cartões bancários internacionais (Visa, Mastercard, American Express) via Stripe, um processador de pagamento certificado PCI-DSS nível 1."
-        },
-        {
-          "question": "Como são geridos os dados de faturação?",
-          "answer": "Os seus dados de faturação são armazenados de forma segura e nunca são partilhados com terceiros."
-        },
-        {
-          "question": "Oferecem soluções para grandes grupos?",
-          "answer": "Sim, oferecemos planos Enterprise à medida. Contacte a nossa equipa comercial através da página de Contacto para discutir as suas necessidades."
-        },
-        {
-          "question": "Posso usar o plano gratuito indefinidamente?",
-          "answer": "O plano gratuito permite-lhe testar a plataforma com 3 ofertas ativas. Não tem limite de tempo."
-        },
-        {
-          "question": "O que acontece se eu exceder o meu limite de ofertas?",
-          "answer": "Se atingir o limite do seu plano, não poderá publicar novas ofertas. Pode arquivar ofertas antigas ou passar para o plano superior."
-        },
-        {
-          "question": "Posso obter um reembolso?",
-          "answer": "Oferecemos uma garantia de 14 dias para novos subscritores. Se não estiver satisfeito, contacte-nos para um reembolso total."
-        }
-      ]
-    },
-    "cta": {
-      "title": "Uma solução à medida?",
-      "subtitle": "Para grandes grupos, criamos ofertas personalizadas.",
-      "button": "Contactar a nossa equipa"
-    },
-    "loginBanner": {
-      "message": "Inicie sessão para subscrever um plano",
-      "button": "Iniciar sessão"
-    },
-    "toast": {
-      "mustLogin": "Deve iniciar sessão para subscrever",
-      "mustLoginFree": "Inicie sessão para usar o plano gratuito",
-      "alreadyFree": "Já está no plano gratuito",
-      "cancelToFree": "Cancele a sua subscrição paga para voltar ao gratuito",
-      "checkoutError": "Erro ao redirecionar para o pagamento"
-    }
-  },
   
   "login": {
         "title": "Entrar",
@@ -1139,42 +1102,7 @@
     "accountCreated": "A sua conta foi criada e juntou-se à empresa!",
     "error": "Ocorreu um erro."
   },
-  "team": {
-     "removeTitle": "Remover membro",
-    "removeMessageGeneric": "Tem certeza de que deseja remover este membro? Esta ação é irreversível.",
-    "leaveTitle": "Sair da empresa",
-    "leaveMessage": "Tem certeza de que deseja sair desta empresa?",
-    "title": "Gestão da equipa",
-    "subtitle": "Empresa: {{company}}",
-    "inviteButton": "Convidar membro",
-    "membersList": "Membros da equipa",
-    "noMembers": "Ainda sem membros.",
-    "memberLimitReached": "Limite de {{limit}} membros atingido. Atualize para um plano superior.",
-    "owner": "Proprietário",
-    "leave": "Sair da empresa",
-    "leaveConfirm": "Tem a certeza de que deseja sair desta empresa?",
-    "removeConfirm": "Remover {{name}} da equipa?",
-    "status": { "pending": "Pendente" },
-    "invite": {
-      "title": "Convidar membro",
-      "email": "Endereço de email",
-      "emailRequired": "O email é obrigatório.",
-      "role": "Função",
-      "send": "Enviar convite",
-      "cancel": "Cancelar"
-    },
-    "toasts": {
-      "loadError": "Erro ao carregar a equipa.",
-      "inviteSuccess": "Convite enviado.",
-      "inviteError": "Erro ao enviar o convite.",
-      "roleUpdated": "Função atualizada.",
-      "roleError": "Erro ao atualizar a função.",
-      "memberRemoved": "Membro removido.",
-      "removeError": "Erro ao remover o membro.",
-      "leaveSuccess": "Saiu da empresa.",
-      "leaveError": "Erro ao sair da empresa."
-    }
-},
+
 
   "companiesPage": {
     "title": "Empresas",
@@ -1654,6 +1582,7 @@
         "noPendingCompanies": "Nenhuma empresa pendente."
       },
       "jobs": {
+        "alreadyAppliedBadge": "Candidatado",
         "searchPlaceholder": "Buscar vaga ou empresa...",
         "filterAll": "Todas as vagas",
         "filterPending": "Pendentes",
@@ -2298,6 +2227,8 @@
       }
     },
     "companyDetail": {
+      "similarCompanies": "Empresas similares",
+    "jobsCount": "{{count}} oferta(s)",
       "back": "Voltar para empresas",
       "notFound": "Empresa não encontrada.",
       "notFoundMessage": "Esta empresa não existe ou foi eliminada.",
@@ -2312,153 +2243,14 @@
       "email": "E-mail",
       "yourCompany": "A sua empresa"
     },
-    "candidateProfilePage": {
-      "back": "Voltar",
-      "title": "Meu perfil de candidato",
-      "subtitle": "Complete seu perfil para aumentar suas chances.",
-      "save": "Guardar",
-      "saveChanges": "Guardar alterações",
-      "toasts": {
-        "accountSuspended": "Sua conta está suspensa. Você não pode editar seu perfil.",
-        "profileUpdated": "Perfil atualizado com sucesso.",
-        "saveError": "Erro ao guardar o perfil.",
-        "fillRequired": "Preencha os campos obrigatórios (nome, sobrenome, título)."
-      },
-      "photo": {
-        "title": "Foto de perfil",
-        "hint": "JPG ou PNG, máx. 2 MB.",
-        "change": "Editar",
-        "delete": "Excluir",
-        "updated": "Foto atualizada.",
-        "uploadError": "Erro ao enviar foto.",
-        "deleteConfirm": "Excluir foto de perfil?",
-        "deleted": "Foto excluída.",
-        "deleteError": "Erro ao excluir a foto."
-      },
-      "personalInfo": {
-        "sectionTitle": "Informações pessoais",
-        "sectionDesc": "Essas informações aparecerão no seu perfil público.",
-        "firstName": "Nome",
-        "lastName": "Sobrenome",
-        "phone": "Telefone",
-        "phonePlaceholder": "+351 912 345 678",
-        "city": "Cidade",
-        "selectCity": "Selecione uma cidade"
-      },
-      "professionalProfile": {
-        "sectionTitle": "Perfil profissional",
-        "sectionDesc": "Descreva sua trajetória e expectativas.",
-        "title": "Título profissional",
-        "bio": "Resumo do perfil",
-        "experienceLevel": "Nível de experiência",
-        "yearsOfExperience": "Anos de experiência",
-        "available": "Disponível",
-        "openToRemote": "Aceita teletrabalho",
-        "selectLevel": "Selecione um nível"
-      },
-      "cv": {
-        "sectionTitle": "Currículo principal",
-        "sectionDesc": "Envie seu CV em PDF, DOC ou DOCX.",
-        "uploadTitle": "Enviar seu CV",
-        "uploadHint": "Formatos aceitos: PDF, DOC, DOCX. Máx. 5 MB.",
-        "chooseFile": "Escolher arquivo",
-        "uploaded": "CV enviado",
-        "view": "Visualizar",
-        "change": "Editar",
-        "delete": "Excluir",
-        "uploadedToast": "CV enviado com sucesso.",
-        "uploadError": "Erro ao enviar o CV.",
-        "deleteConfirm": "Excluir seu CV?",
-        "deletedToast": "CV excluído.",
-        "deleteError": "Erro ao excluir o CV.",
-        "invalidFormat": "Formato não suportado. Use PDF, DOC ou DOCX.",
-        "fileTooLarge": "O arquivo não deve exceder 5 MB.",
-        "analyzeButton": "Analisar meu CV com IA"
-      },
-      "documents": {
-        "sectionTitle": "Documentos complementares",
-        "sectionDesc": "Adicione diplomas, certificações, etc.",
-        "typeDiploma": "Diploma",
-        "typeCertificate": "Certificação",
-        "typeOther": "Outro",
-        "addButton": "Adicionar documento",
-        "empty": "Nenhum documento adicionado.",
-        "addedToast": "Documento adicionado.",
-        "uploadError": "Erro ao adicionar documento.",
-        "deleteConfirm": "Excluir este documento?",
-        "deletedToast": "Documento excluído.",
-        "deleteError": "Erro ao excluir."
-      },
-      "skills": {
-        "sectionTitle": "Competências",
-        "sectionDesc": "As competências ajudam os recrutadores a encontrá-lo.",
-        "placeholder": "Adicionar competência",
-        "add": "Adicionar",
-        "empty": "Nenhuma competência adicionada.",
-        "addedToast": "{{count}} competência(s) adicionada(s).",
-        "noneFound": "Nenhuma competência encontrada no texto."
-      },
-      "experience": {
-        "sectionTitle": "Experiência profissional",
-        "sectionDesc": "Adicione suas experiências mais relevantes.",
-        "add": "Adicionar experiência",
-        "empty": "Nenhuma experiência adicionada.",
-        "present": "Atual",
-        "edit": "Editar",
-        "jobTitle": "Cargo",
-        "company": "Empresa",
-        "location": "Local",
-        "startDate": "Data de início",
-        "endDate": "Data de término",
-        "currentlyWorking": "Trabalho aqui atualmente",
-        "description": "Descrição",
-        "cancel": "Cancelar",
-        "save": "Guardar alterações",
-        "saveNew": "Adicionar experiência",
-        "modalEditTitle": "Editar experiência",
-        "modalAddTitle": "Adicionar experiência",
-        "fillRequired": "Preencha o cargo, a empresa e a data de início."
-      },
-      "education": {
-        "sectionTitle": "Formação acadêmica",
-        "sectionDesc": "Adicione seus diplomas e formações.",
-        "add": "Adicionar formação",
-        "empty": "Nenhuma formação adicionada.",
-        "edit": "Editar",
-        "degree": "Diploma",
-        "school": "Instituição",
-        "field": "Área de estudo",
-        "year": "Ano de conclusão",
-        "cancel": "Cancelar",
-        "save": "Guardar alterações",
-        "saveNew": "Adicionar formação",
-        "modalEditTitle": "Editar formação",
-        "modalAddTitle": "Adicionar formação",
-        "fillRequired": "Preencha o diploma, a escola e o ano."
-      },
-      "links": {
-        "sectionTitle": "Links",
-        "sectionDesc": "Adicione seu LinkedIn, portfólio ou outros links."
-      },
-      "salary": {
-        "sectionTitle": "Salário pretendido",
-        "sectionDesc": "Indique uma faixa indicativa.",
-        "minSalary": "Salário mínimo",
-        "maxSalary": "Salário máximo"
-      },
-      "cvAnalysis": {
-        "title": "Análise de CV por IA",
-        "description": "Cole o conteúdo do seu currículo para receber sugestões de melhoria.",
-        "placeholder": "Cole o texto do seu CV aqui...",
-        "suggestions": "Sugestões de melhoria:",
-        "close": "Fechar",
-        "analyze": "Analisar",
-        "analyzing": "Analisando...",
-        "emptyText": "Por favor, cole o conteúdo do seu CV.",
-        "doneToast": "Análise concluída.",
-        "errorToast": "Erro na análise."
-      }
-    },
+
+  "experienceLevels": {
+    "junior": "Júnior (0-2 anos)",
+    "intermediaire": "Intermediário (2-5 anos)",
+    "senior": "Sénior (5-10 anos)",
+    "expert": "Especialista (10+ anos)"
+  },
+
     "settings": {
       "title": "Configurações",
       "subtitle": "Gerencie sua conta e preferências.",
@@ -2536,6 +2328,7 @@
       }
     },
     "jobs": {
+      "alreadyAppliedBadge": "Candidatado",
       "searchPlaceholder": "Título, competência ou empresa…",
       "allCities": "Todas as cidades",
       "filters": "Filtros",
@@ -2586,6 +2379,7 @@
       "delete": "Eliminar"
     },
     "jobDetail": {
+       "similarJobs": "Ofertas similares",
       "notFound": "Oferta não encontrada",
       "notFoundMessage": "Esta oferta não existe ou foi eliminada.",
       "backToJobs": "Voltar às ofertas",
@@ -2740,6 +2534,11 @@
       }
     },
     "applicationDetail": {
+      "upgradeForNotes": "Notas de entrevista e ferramentas de IA",
+    "upgradeForNotesDesc": "Atualize para o plano Pro ou Business para gerar perguntas, respostas e dicas, e tomar notas.",
+    "upgradeForSchedule": "Agendamento de entrevista",
+    "upgradeForScheduleDesc": "Atualize para o plano Pro ou Business para agendar entrevistas com o Calendly e o Jitsi.",
+    "viewPlans": "Ver planos",
       "back": "Voltar",
       "notFound": "Candidatura não encontrada.",
       "status": {
@@ -2785,133 +2584,73 @@
       },
       "accountSuspended": "A sua conta está suspensa."
     },
-     "companyDashboard": {
-      "stats": {
-        "trend": "{{trend}} esta semana",
-        "publishedJobs": "Ofertas ativas",
-        "totalApplications": "Candidaturas totais",
-        "newApplications": "Novas candidaturas",
-        "totalViews": "Visualizações totais"
-      },
-      "status": {
-        "draft": "Rascunho",
-        "pending": "Pendente",
-        "active": "Ativa",
-        "paused": "Em pausa",
-        "closed": "Fechada",
-        "expired": "Expirada",
-        "rejected": "Rejeitada"
-      },
-      "jobCard": {
-        "unspecifiedLocation": "Não especificado",
-        "views": "{{count}} visualização(ões)",
-        "applications": "{{count}} candidatura(s)",
-        "menu": {
-          "edit": "Editar",
-          "viewApplications": "Candidaturas",
-          "submitForValidation": "Submeter",
-          "validationRequired": "Validação necessária",
-          "cancelSubmission": "Cancelar submissão",
-          "freeBoost": "Impulsionar gratuitamente",
-          "pause": "Pausar",
-          "republish": "Republicar",
-          "delete": "Eliminar"
-        }
-      },
-      "applicationStatus": {
-        "pending": "Pendente",
-        "viewed": "Visualizada",
-        "shortlisted": "Pré-selecionada",
-        "interview": "Entrevista",
-        "accepted": "Aceita",
-        "rejected": "Rejeitada"
-      },
-      "toasts": {
-        "companyNotVerifiedMenu": "A sua empresa não está verificada.",
-        "loadError": "Erro ao carregar os dados.",
-        "deleteConfirm": "Eliminar a oferta \"{{title}}\"?",
-        "jobDeleted": "Oferta eliminada.",
-        "limitReached": "Atingiu o limite de {{limit}} ofertas ativas.",
-        "limitReachedDetailed": "Limite de {{limit}} ofertas atingido (ativas + pendentes: {{total}}).",
-        "offerPublished": "Oferta publicada.",
-        "statusUpdated": "Estado atualizado.",
-        "updateError": "Erro ao atualizar.",
-        "companyNotVerified": "A sua empresa não está verificada.",
-        "submittedForValidation": "Oferta submetida para validação.",
-        "submissionError": "Erro ao submeter.",
-        "submissionCancelled": "Submissão cancelada.",
-        "subscriptionCancelled": "Assinatura cancelada.",
-        "cancelError": "Erro ao cancelar.",
-        "boostActivated": "Impulso ativado por 7 dias.",
-        "boostAlreadyUsed": "Impulso já utilizado este mês.",
-        "boostError": "Erro ao impulsionar."
-      },
-      "cancelModal": {
-        "title": "Cancelar assinatura",
-        "description": "Cancelar a assinatura irá desativar as suas ofertas ativas e perderá as funcionalidades avançadas.",
-        "reasonLabel": "Motivo (opcional)",
-        "reasonPlaceholder": "Por que deseja cancelar?",
-        "consequencesTitle": "Consequências",
-        "consequences": [
-          "As suas ofertas ativas serão suspensas",
-          "Regressará ao plano Gratuito",
-          "As funcionalidades Pro/Business serão desativadas"
-        ],
-        "cancelButton": "Cancelar",
-        "confirmButton": "Cancelar a minha assinatura"
-      },
-      "noCompany": {
-        "title": "Nenhuma empresa",
-        "subtitle": "Crie a sua empresa para começar a publicar ofertas.",
-        "createButton": "Criar a minha empresa"
-      },
-      "companySelector": {
-        "owner": "Proprietário",
-        "member": "Membro",
-        "newCompany": "Nova empresa"
-      },
-      "header": {
-        "title": "Visão geral"
-      },
-      "profileButton": "Perfil",
-      "newOfferButton": "Nova oferta",
-      "jobsSection": {
-        "title": "Ofertas recentes",
-        "totalOffers": "{{count}} oferta(s) no total",
-        "viewAll": "Ver todas",
-        "noOffers": "Nenhuma oferta",
-        "publishButton": "Publicar oferta"
-      },
-      "applicationsSection": {
-        "title": "Últimas candidaturas",
-        "newCount": "{{count}} nova(s)",
-        "viewAll": "Ver todas",
-        "noApplications": "Nenhuma candidatura"
-      },
-      "companyProfileCard": {
-        "title": "Perfil da empresa",
-        "pendingValidation": "Validação pendente",
-        "employees": "{{size}} funcionários",
-        "founded": "Fundada em {{year}}",
-        "editProfile": "Editar perfil"
-      },
-      "subscriptionCard": {
-        "currentPlan": "Plano {{plan}}",
-        "changePlan": "Alterar",
-        "activeOffers": "Ofertas ativas",
-        "activePlanMessage": "O seu plano {{plan}} está ativo.",
-        "manageSubscription": "Gerir assinatura",
-        "cancelSubscription": "Cancelar assinatura",
-        "lastCancelReason": "Último cancelamento",
-        "cancelReasonQuote": "\"{{reason}}\"",
-        "freePlanMessage": "Atualize para um plano superior para mais funcionalidades.",
-        "freeBoostMessage": "Impulso gratuito disponível!"
-      },
-      "adminMessages": {
-        "title": "Mensagens da administração"
-      }
+ "companyDashboard": {
+    "stats": { "trend": "{{trend}} esta semana", "publishedJobs": "Ofertas ativas", "totalApplications": "Candidaturas totais", "newApplications": "Novas candidaturas", "totalViews": "Visualizações totais" },
+    "status": { "draft": "Rascunho", "pending": "Pendente", "active": "Ativa", "paused": "Em pausa", "closed": "Fechada", "expired": "Expirada", "rejected": "Rejeitada" },
+    "jobCard": {
+      "unspecifiedLocation": "Não especificado",
+      "views": "{{count}} visualização(ões)",
+      "applications": "{{count}} candidatura(s)",
+      "menu": { "edit": "Editar", "viewApplications": "Candidaturas", "submitForValidation": "Submeter", "validationRequired": "Validação necessária", "cancelSubmission": "Cancelar submissão", "freeBoost": "Impulsionar gratuitamente", "pause": "Pausar", "republish": "Republicar", "delete": "Eliminar" }
     },
+    "applicationStatus": { "pending": "Pendente", "viewed": "Visualizada", "shortlisted": "Pré-selecionada", "interview": "Entrevista", "accepted": "Aceita", "rejected": "Rejeitada" },
+    "toasts": {
+      "companyNotVerifiedMenu": "A sua empresa não está verificada.",
+      "loadError": "Erro ao carregar os dados.",
+      "deleteConfirm": "Eliminar a oferta \"{{title}}\"?",
+      "jobDeleted": "Oferta eliminada.",
+      "limitReached": "Atingiu o limite de {{limit}} ofertas ativas.",
+      "limitReachedDetailed": "Limite de {{limit}} ofertas atingido (ativas + pendentes: {{total}}).",
+      "offerPublished": "Oferta publicada.",
+      "statusUpdated": "Estado atualizado.",
+      "updateError": "Erro ao atualizar.",
+      "companyNotVerified": "A sua empresa não está verificada.",
+      "submittedForValidation": "Oferta submetida para validação.",
+      "submissionError": "Erro ao submeter.",
+      "submissionCancelled": "Submissão cancelada.",
+      "subscriptionCancelled": "Assinatura cancelada.",
+      "cancelError": "Erro ao cancelar.",
+      "boostActivated": "Impulso ativado por 7 dias.",
+      "boostAlreadyUsed": "Impulso já utilizado este mês.",
+      "boostError": "Erro ao impulsionar."
+    },
+    "cancelModal": {
+      "title": "Cancelar assinatura",
+      "description": "Cancelar a assinatura irá desativar as suas ofertas ativas e perderá as funcionalidades avançadas.",
+      "reasonLabel": "Motivo (opcional)",
+      "reasonPlaceholder": "Por que deseja cancelar?",
+      "consequencesTitle": "Consequências",
+      "consequences": ["As suas ofertas ativas serão suspensas", "Regressará ao plano Gratuito", "As funcionalidades Pro/Business serão desativadas"],
+      "cancelButton": "Cancelar",
+      "confirmButton": "Cancelar a minha assinatura"
+    },
+    "noCompany": { "title": "Nenhuma empresa", "subtitle": "Crie a sua empresa para começar a publicar ofertas.", "createButton": "Criar a minha empresa" },
+    "companySelector": { "owner": "Proprietário", "member": "Membro", "newCompany": "Nova empresa" },
+    "header": { "title": "Visão geral" },
+    "profileButton": "Perfil",
+    "newOfferButton": "Nova oferta",
+    "jobsSection": { "title": "Ofertas recentes", "totalOffers": "{{count}} oferta(s) no total", "viewAll": "Ver todas", "noOffers": "Nenhuma oferta", "publishButton": "Publicar oferta" },
+    "applicationsSection": { "title": "Últimas candidaturas", "newCount": "{{count}} nova(s)", "viewAll": "Ver todas", "noApplications": "Nenhuma candidatura" },
+    "companyProfileCard": { "title": "Perfil da empresa", "pendingValidation": "Validação pendente", "employees": "{{size}} funcionários", "founded": "Fundada em {{year}}", "editProfile": "Editar perfil" },
+    "subscriptionCard": {
+      "currentPlan": "Plano {{plan}}",
+      "changePlan": "Alterar",
+      "activeOffers": "Ofertas ativas",
+      "activePlanMessage": "O seu plano {{plan}} está ativo.",
+      "manageSubscription": "Gerir assinatura",
+      "cancelSubscription": "Cancelar assinatura",
+      "lastCancelReason": "Último cancelamento",
+      "cancelReasonQuote": "\"{{reason}}\"",
+      "freePlanMessage": "Atualize para um plano superior para mais funcionalidades.",
+      "freeBoostMessage": "Impulso gratuito disponível!"
+    },
+    "adminMessages": { "title": "Mensagens da administração" },
+    "multiCompanyLocked": "Multiempresa reservado ao plano Business",
+    "cvBank": { "title": "Banco de CV", "desc": "Aceda ao nosso viveiro de talentos.", "browse": "Percorrer CVs" }
+  },
     "candidateDashboard": {
+      "myCompanies": "Minhas empresas",
+    "accessCompany": "Aceder ao painel",
       "greeting": "Olá {{name}}",
       "activityPreview": "Aqui está um resumo da sua atividade recente.",
       "myProfile": "Meu perfil",
@@ -3021,6 +2760,24 @@
       }
     },
      "common": {
+      "previous": "Anterior",
+    "next": "Seguinte",
+      "city": "Cidade",
+    "all": "Todas",
+    "experienceLevel": "Nível de experiência",
+    "contractType": "Tipo de contrato",
+    "minSalary": "Salário mín.",
+    "availableOnly": "Apenas disponíveis",
+    "clearFilters": "Limpar filtros",
+    "sortByRecent": "Mais recentes",
+    "sortByName": "Nome",
+    "showFilters": "Mostrar filtros",
+    "hideFilters": "Ocultar filtros",
+    "available": "Disponível",
+    "unavailable": "Indisponível",
+       "searching": "Pesquisando...",
+    "companyRole": "Empresa",
+    "candidateRole": "Candidato",
       "comingSoon": "em breve",
       "pro": "Pro",
       "premium": "Premium",
@@ -3065,5 +2822,201 @@
     "countryGate": {
       "title": "Em breve disponível",
       "message": "O nosso serviço ainda não está disponível no seu país. Volte em breve!"
-    }
+    },
+    "team": {
+       "searchPlaceholder": "Pesquisar por email ou nome...",
+      "title": "Equipa",
+      "inviteTitle": "Convidar um membro",
+      "emailPlaceholder": "Email do membro",
+      "inviteButton": "Convidar",
+      "members": "Membros",
+      "noMembers": "Nenhum membro",
+      "pending": "Pendente",
+      "roles": {
+        "recruiter": "Recrutador",
+        "viewer": "Visualizador"
+      },
+      "roleUpdated": "Função atualizada",
+      "confirmRemove": "Remover este membro?",
+      "memberRemoved": "Membro removido",
+      "inviteSuccess": "Convite enviado"
+    },
+
+    "candidateBank": {
+      "title": "Banco de CV",
+      "subtitle": "Percorra os perfis dos candidatos disponíveis",
+      "searchPlaceholder": "Pesquisar por nome, competência, título…",
+      "candidatesFound": "candidato(s) encontrado(s)",
+      "upgradeTitle": "Banco de CV",
+      "upgradeDesc": "O banco de CV está reservado ao plano Business.",
+      "viewPlans": "Ver planos",
+      "noCandidates": "Nenhum candidato encontrado"
+    },
+    "companyDashboard.cvBank": {
+      "title": "Banco de CV",
+      "desc": "Aceda ao nosso viveiro de talentos disponíveis.",
+      "browse": "Percorrer CVs"
+    },
+    "candidateProfilePage": {
+      "title": "Perfil do candidato",
+      "subtitle": "Gerir o seu perfil profissional",
+      "save": "Guardar",
+      "saveChanges": "Guardar alterações",
+      "photo": {
+        "title": "Foto de perfil",
+        "hint": "JPG ou PNG, máx. 2 MB",
+        "change": "Alterar",
+        "delete": "Eliminar",
+        "updated": "Foto atualizada",
+        "uploadError": "Erro ao fazer upload",
+        "deleteConfirm": "Eliminar foto?",
+        "deleted": "Foto eliminada",
+        "deleteError": "Erro ao eliminar a foto"
+      },
+      "personalInfo": {
+        "sectionTitle": "Informações pessoais",
+        "sectionDesc": "Os seus contactos",
+        "firstName": "Nome",
+        "lastName": "Apelido",
+        "phone": "Telefone",
+        "phonePlaceholder": "+223 xx xx xx xx",
+        "city": "Cidade",
+        "selectCity": "Selecionar cidade"
+      },
+      "professionalProfile": {
+        "sectionTitle": "Perfil profissional",
+        "sectionDesc": "Descreva o seu cargo atual ou pretendido",
+        "title": "Título profissional",
+        "bio": "Resumo / Biografia",
+        "experienceLevel": "Nível de experiência",
+        "selectLevel": "Selecionar nível",
+        "yearsOfExperience": "Anos de experiência",
+        "available": "Disponível de imediato",
+        "openToRemote": "Aberto ao teletrabalho"
+      },
+      "cv": {
+        "sectionTitle": "Curriculum Vitae",
+        "sectionDesc": "Faça upload do seu CV (PDF, DOC, DOCX, máx. 5 MB)",
+        "uploaded": "CV carregado com sucesso",
+        "view": "Ver",
+        "change": "Alterar",
+        "delete": "Eliminar",
+        "uploadTitle": "Carregar o seu CV",
+        "uploadHint": "Formato PDF, DOC ou DOCX (máx. 5 MB)",
+        "chooseFile": "Escolher ficheiro",
+        "analyzeButton": "Analisar o seu CV com IA",
+        "invalidFormat": "Formato de ficheiro não suportado",
+        "fileTooLarge": "O ficheiro excede o tamanho máximo de 5 MB",
+        "uploadedToast": "CV carregado com sucesso",
+        "uploadError": "Erro ao carregar o CV",
+        "deleteConfirm": "Eliminar CV?",
+        "deletedToast": "CV eliminado",
+        "deleteError": "Erro ao eliminar o CV"
+      },
+      "documents": {
+        "sectionTitle": "Documentos complementares",
+        "sectionDesc": "Diplomas, certificados, etc.",
+        "typeDiploma": "Diploma",
+        "typeCertificate": "Certificado",
+        "typeOther": "Outro",
+        "addButton": "Adicionar documento",
+        "empty": "Nenhum documento adicionado",
+        "addedToast": "Documento adicionado",
+        "uploadError": "Erro ao carregar",
+        "deleteConfirm": "Eliminar este documento?",
+        "deletedToast": "Documento eliminado",
+        "deleteError": "Erro ao eliminar o documento"
+      },
+      "skills": {
+        "sectionTitle": "Competências",
+        "sectionDesc": "Lista das suas competências principais",
+        "placeholder": "Adicionar competência...",
+        "add": "Adicionar",
+        "empty": "Nenhuma competência adicionada",
+        "addedToast": "{{count}} competência(s) adicionada(s)",
+        "noneFound": "Nenhuma nova competência encontrada"
+      },
+      "experience": {
+        "sectionTitle": "Experiência profissional",
+        "sectionDesc": "O seu percurso",
+        "add": "Adicionar experiência",
+        "empty": "Nenhuma experiência adicionada",
+        "edit": "Editar",
+        "present": "Atualmente",
+        "jobTitle": "Cargo",
+        "company": "Empresa",
+        "location": "Local",
+        "startDate": "Data de início",
+        "endDate": "Data de fim",
+        "currentlyWorking": "Trabalho aqui atualmente",
+        "description": "Descrição",
+        "modalEditTitle": "Editar experiência",
+        "modalAddTitle": "Adicionar experiência",
+        "fillRequired": "Preencha os campos obrigatórios",
+        "save": "Guardar",
+        "saveNew": "Adicionar",
+        "cancel": "Cancelar"
+      },
+      "education": {
+        "sectionTitle": "Formação",
+        "sectionDesc": "O seu percurso académico",
+        "add": "Adicionar formação",
+        "empty": "Nenhuma formação adicionada",
+        "edit": "Editar",
+        "modalEditTitle": "Editar formação",
+        "modalAddTitle": "Adicionar formação",
+        "degree": "Diploma / Grau",
+        "school": "Instituição",
+        "field": "Área de estudo",
+        "year": "Ano de obtenção",
+        "fillRequired": "Preencha os campos obrigatórios",
+        "save": "Guardar",
+        "saveNew": "Adicionar",
+        "cancel": "Cancelar"
+      },
+      "links": {
+        "sectionTitle": "Links",
+        "sectionDesc": "Portefólio, LinkedIn, website..."
+      },
+      "salary": {
+        "sectionTitle": "Pretensão salarial",
+        "sectionDesc": "Salário mínimo e máximo pretendido",
+        "minSalary": "Salário mín.",
+        "maxSalary": "Salário máx."
+      },
+      "toasts": {
+        "fillRequired": "Preencha os campos obrigatórios",
+        "profileUpdated": "Perfil atualizado",
+        "saveError": "Erro ao guardar"
+      },
+      "cvAnalysis": {
+        "title": "Análise do CV por IA",
+        "description": "Cole o conteúdo textual do seu CV para receber sugestões.",
+        "placeholder": "Cole o seu CV aqui...",
+        "suggestions": "Sugestões de melhoria:",
+        "close": "Fechar",
+        "analyze": "Analisar",
+        "analyzing": "A analisar...",
+        "emptyText": "Insira um texto para analisar",
+        "doneToast": "Análise concluída",
+        "errorToast": "Erro na análise"
+      }
+    },
+    "profile": {
+      "visibility": {
+        "sectionTitle": "Visibilidade",
+        "sectionDesc": "Gerir a sua presença na base de CV",
+        "cvBankTitle": "Aparecer na base de CV",
+        "cvBankDesc": "Os recrutadores podem encontrá-lo e consultar o seu perfil mesmo que não se tenha candidatado.",
+        "enabled": "O seu perfil está agora visível na base de CV",
+        "disabled": "O seu perfil já não aparece na base de CV",
+        "error": "Erro ao atualizar"
+      }
+    },
+  "experienceLevels": {
+    "junior": "Júnior (0‑2 anos)",
+    "intermediaire": "Intermediário (2‑5 anos)",
+    "senior": "Sénior (5‑10 anos)",
+    "expert": "Especialista (10+ anos)"
+  }
 }

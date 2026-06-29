@@ -18,6 +18,7 @@
         "subtitle": "Vind vacatures per branche"
       },
       "jobs": {
+        "alreadyAppliedBadge": "Gesolliciteerd",
         "title": "Recente vacatures",
         "subtitle": "De nieuwste gepubliceerde kansen",
         "viewAll": "Bekijk alle vacatures",
@@ -95,6 +96,7 @@
       "currency": "Munteenheid"
     },
   "jobs": {
+    
     "remote": "Thuiswerk",
       "remoteFull": "100% thuiswerk",
       "remoteHybrid": "Hybride",
@@ -144,177 +146,138 @@
     "resultsFor": "Resultaten voor \"{{query}}\"",
     "viewResults": "Bekijk de {{count}} resultaten"
   },
-  "pricing": {
-    "downgradeBlocked": "U heeft {{active}} actieve vacature(s). Het doelabonnement staat slechts {{limit}} vacature(s) toe. Deactiveer of verwijder de overtollige voordat u van abonnement wisselt.",
-    "free": "Gratis",
-    "pro": "Pro",
-    "business": "Business",
-    "enterprise": "Enterprise",
-    "badge": "Tarieven",
-    "title": "Plannen ontworpen voor uw groei",
-    "subtitle": "Kies de formule die bij uw behoeften past en groei eenvoudig.",
-    "perMonth": "/maand",
-    "perYear": "/jaar",
-    "billedMonthly": "maandelijks gefactureerd",
-    "billedAnnually": "jaarlijks gefactureerd",
-    "mostPopular": "Populairste",
-    "currentPlan": "Huidig plan",
-    "toggle": {
-      "monthly": "Maandelijks",
-      "annual": "Jaarlijks",
-      "savePercent": "-20%"
-    },
-    "plans": {
-      "free": {
-        "name": "Gratis",
-        "description": "Om te starten en het platform te ontdekken.",
-        "features": {
-          "0": "{{count}} actieve vacatures",
-          "1": "{{count}} gebruiker",
-          "expiration": "Vervaldatum: {{days}} dagen",
-          "2": "Openbaar bedrijfsprofiel",
-          "3": "E-mailondersteuning"
+ "pricing": {
+  "free": "Gratis",
+      "badge": "Prijzen",
+      "title": "Plannen op maat van uw ambities",
+      "subtitle": "Kies het plan dat bij uw doelstellingen past.",
+      "mostPopular": "Meest gekozen",
+      "currentPlan": "Huidig abonnement",
+      "perMonth": "/maand",
+      "perMonthShort": "/mnd",
+      "billedAnnually": "Jaarlijks gefactureerd",
+      "billedMonthly": "Maandelijks gefactureerd",
+      "loading": "Laden...",
+      "toggle": {
+        "monthly": "Maandelijks",
+        "annual": "Jaarlijks",
+        "savePercent": "Bespaar 20%"
+      },
+      "plans": {
+        "free": {
+          "name": "Gratis",
+          "description": "Om te starten",
+          "features": {
+            "0": "{{count}} actieve vacature(s)",
+            "expiration": "{{days}} dagen voor verloop",
+            "2": "Geverifieerd profiel"
+          },
+          "limitations": {
+            "noInterviewTools": "Geen tools voor interviewplanning",
+            "noAiNotes": "Geen interviewnotities of AI",
+            "noCvBank": "Geen cv-bank",
+            "noMultiCompany": "Eén enkel bedrijf"
+          }
         },
-        "limitations": {
-          "0": "Geen statistieken",
-          "1": "Geen uitgelicht",
-          "2": "Geen API"
+        "pro": {
+          "name": "Pro",
+          "description": "Voor actieve recruiters",
+          "features": {
+            "0": "{{count}} actieve vacature(s)",
+            "expiration": "{{days}} dagen voor verloop",
+            "interviewTools": "Tools voor interviewplanning",
+            "aiNotes": "Interviewnotities & AI",
+            "verifiedProfile": "Pro-badge op uw profiel"
+          },
+          "limitations": {
+            "noCvBank": "Geen cv-bank",
+            "noMultiCompany": "Eén enkel bedrijf"
+          }
+        },
+        "business": {
+          "name": "Business",
+          "description": "Voor groeiende bedrijven",
+          "features": {
+            "0": "Onbeperkt vacatures",
+            "expiration": "{{days}} dagen voor verloop",
+            "interviewTools": "Tools voor interviewplanning",
+            "aiNotes": "Geavanceerde interviewnotities & AI",
+            "freeBoost": "1 gratis boost / maand",
+            "cvBank": "Onbeperkte cv-bank",
+            "multiCompany": "Onbeperkt multi-bedrijf",
+            "premiumBadge": "Prioritaire Premium-badge"
+          },
+          "limitations": {}
         }
       },
-      "pro": {
-        "name": "Pro",
-        "description": "Voor KMO's en regelmatige recruiters.",
-        "features": {
-          "0": "{{count}} actieve vacatures",
-          "1": "Tot {{count}} gebruikers",
-          "expiration": "Vervaldatum: {{days}} dagen",
-          "2": "Basisstatistieken",
-          "search": "Zoeken naar kandidaatprofielen",
-          "3": "Prioritaire ondersteuning",
-          "4": "Geverifieerd bedrijfsprofiel"
+      "actions": {
+        "backToFree": "Terug naar Gratis",
+        "manageSubscription": "Abonnement beheren",
+        "upgradeTo": "Upgraden naar {{plan}}",
+        "downgradeTo": "Downgraden naar {{plan}}",
+        "subscribeMonthly": "Maandelijks abonneren",
+        "subscribeAnnual": "Jaarlijks abonneren"
+      },
+      "comparison": {
+        "title": "Plannen vergelijken",
+        "subtitle": "Functies per plan",
+        "featureColumn": "Functie",
+        "freeColumn": "Gratis",
+        "proColumn": "Pro",
+        "businessColumn": "Business",
+        "values": {
+          "days": "{{count}} dagen",
+          "perMonth": "1 / maand",
+          "premium": "✓ (Premium)"
         },
-        "limitations": {
-          "0": "Geen data-export",
-          "1": "Geen API"
+        "rows": {
+          "activeOffers": "Actieve vacatures",
+          "expiration": "Verloop",
+          "interviewTools": "Interviewtools",
+          "aiNotes": "AI-notities & interview",
+          "cvBank": "Cv-bank",
+          "multiCompany": "Multi-bedrijf",
+          "freeBoost": "Gratis boost",
+          "verifiedProfile": "Geverifieerd profiel"
         }
       },
-      "business": {
-        "name": "Business",
-        "description": "Voor grote recruiters en bureaus.",
-        "features": {
-          "0": "Onbeperkte vacatures",
-          "1": "Onbeperkte gebruikers",
-          "expiration": "Vervaldatum: {{days}} dagen",
-          "2": "Geavanceerde statistieken",
-          "export": "Export van sollicitaties (CSV)",
-          "api": "Recruitment API",
-          "3": "Toegewijde ondersteuning",
-          "4": "1 gratis uitgelichte vacature / maand",
-          "5": "Premium bedrijfsprofiel"
-        }
-      }
+      "faq": {
+        "title": "Veelgestelde vragen",
+        "subtitle": "Alles over onze abonnementen",
+        "items": [
+          {
+            "question": "Kan ik op elk moment van abonnement veranderen?",
+            "answer": "Ja, u kunt op elk moment upgraden of downgraden. Wijzigingen gaan onmiddellijk in."
+          },
+          {
+            "question": "Zijn er verborgen kosten?",
+            "answer": "Geen verborgen kosten. U betaalt alleen de weergegeven prijs, zonder verrassingen."
+          },
+          {
+            "question": "Hoe zeg ik mijn abonnement op?",
+            "answer": "U kunt opzeggen vanuit uw bedrijfsdashboard. Uw abonnement blijft actief tot het einde van de betaalde periode."
+          }
+        ]
+      },
+      "cta": {
+        "title": "Heeft u een vraag?",
+        "subtitle": "Ons team staat voor u klaar.",
+        "button": "Neem contact op"
+      },
+      "loginBanner": {
+        "message": "Log in om van alle voordelen te genieten.",
+        "button": "Inloggen"
+      },
+      "toast": {
+        "mustLogin": "U moet ingelogd zijn om een abonnement af te sluiten.",
+        "noCompany": "U moet een bedrijf hebben om een abonnement af te sluiten.",
+        "checkoutError": "Betalingsfout.",
+        "mustLoginFree": "Log in om het Gratis abonnement te gebruiken.",
+        "alreadyFree": "U zit al op het Gratis abonnement.",
+        "cancelToFree": "Zeg uw abonnement op om terug te keren naar Gratis."
+      },
+      "downgradeBlocked": "U heeft {{active}} actieve vacature(s). Het beoogde abonnement staat slechts {{limit}} vacature(s) toe. Deactiveer of verwijder de overtollige voordat u van abonnement wisselt."
     },
-    "actions": {
-      "backToFree": "Terug naar gratis",
-      "upgradeTo": "Upgraden naar {{plan}}",
-      "downgradeTo": "Downgraden naar {{plan}}",
-      "subscribeMonthly": "Abonneren (maandelijks)",
-      "subscribeAnnual": "Abonneren (jaarlijks -20%)",
-      "manageSubscription": "Mijn abonnement beheren"
-    },
-    "comparison": {
-      "values": {
-    "expiration": "{{count}} dagen",
-    "boostPerMonth": "1 / maand"
-  },
-      "title": "Gedetailleerde vergelijking",
-      "subtitle": "Alle functies in één oogopslag",
-      "featureColumn": "Functionaliteit",
-      "freeColumn": "Gratis",
-      "proColumn": "Pro",
-      "businessColumn": "Business",
-      "rows": {
-        "activeOffers": "Actieve vacatures",
-        "teamMembers": "Teamleden",
-        "expiration": "Publicatieduur",
-        "candidates": "Sollicitaties",
-        "verifiedProfile": "Geverifieerd profiel",
-        "analytics": "Statistieken",
-        "searchProfiles": "Profielen zoeken",
-        "export": "CSV-export",
-        "api": "API",
-        "prioritySupport": "Prioritaire ondersteuning",
-        "freeBoost": "Gratis uitgelichte boost",
-        "customBranding": "Personalisatie (branding)"
-      }
-    },
-    "faq": {
-      "title": "Veelgestelde vragen",
-      "subtitle": "Alles over onze abonnementen",
-      "items": [
-        {
-          "question": "Hoe werkt het abonnement?",
-          "answer": "U kiest een plan (Pro of Business) met maandelijkse of jaarlijkse facturering. Het abonnement wordt automatisch verlengd per periode. U kunt op elk moment annuleren vanuit uw bedrijfsruimte, zonder kosten."
-        },
-        {
-          "question": "Kan ik op elk moment van plan wisselen?",
-          "answer": "Ja, u kunt op elk moment overstappen naar een ander plan. Als u een upgrade uitvoert, betaalt u alleen het verschil naar rato van de resterende dagen. Bij een downgrade gaat de wijziging in bij de volgende factureringsdatum."
-        },
-        {
-          "question": "Zijn er verborgen kosten of verplichtingen?",
-          "answer": "Geen verborgen kosten. De getoonde prijzen zijn de eindprijzen, inclusief belastingen. Er is geen langdurige verplichting: u kunt op elk moment annuleren."
-        },
-        {
-          "question": "Kan ik mijn abonnement annuleren?",
-          "answer": "Natuurlijk. Annulering gebeurt met één klik vanuit uw bedrijfsruimte, onder 'Abonnement'. Uw abonnement blijft actief tot het einde van de betaalde periode."
-        },
-        {
-          "question": "Blijven mijn vacatures online na het einde van het abonnement?",
-          "answer": "Ja, uw actieve vacatures blijven gepubliceerd tot hun normale vervaldatum. U kunt alleen geen nieuwe plaatsen als u de limiet van uw nieuwe plan hebt bereikt."
-        },
-        {
-          "question": "Welke betaalmethoden worden geaccepteerd?",
-          "answer": "Wij accepteren internationale bankkaarten (Visa, Mastercard, American Express) via Stripe, een PCI-DSS Level 1 gecertificeerde betalingsverwerker."
-        },
-        {
-          "question": "Hoe worden facturatiegegevens behandeld?",
-          "answer": "Uw facturatiegegevens worden veilig opgeslagen en nooit gedeeld met derden."
-        },
-        {
-          "question": "Bieden jullie oplossingen voor grote groepen?",
-          "answer": "Ja, wij bieden Enterprise-plannen op maat. Neem contact op met ons verkoopteam via de Contactpagina om uw behoeften te bespreken."
-        },
-        {
-          "question": "Kan ik het gratis plan voor onbepaalde tijd gebruiken?",
-          "answer": "Met het gratis plan kunt u het platform testen met 3 actieve vacatures. Het heeft geen tijdslimiet."
-        },
-        {
-          "question": "Wat gebeurt er als ik mijn vacaturelimiet overschrijd?",
-          "answer": "Als u de limiet van uw plan bereikt, kunt u geen nieuwe vacatures plaatsen. U kunt oude vacatures archiveren of upgraden naar een hoger plan."
-        },
-        {
-          "question": "Kan ik restitutie krijgen?",
-          "answer": "Wij bieden een 14-dagen garantie voor nieuwe abonnees. Als u niet tevreden bent, neem dan contact met ons op voor volledige restitutie."
-        }
-      ]
-    },
-    "cta": {
-      "title": "Een oplossing op maat?",
-      "subtitle": "Voor grote groepen creëren wij gepersonaliseerde aanbiedingen.",
-      "button": "Neem contact op met ons team"
-    },
-    "loginBanner": {
-      "message": "Log in om u te abonneren op een plan",
-      "button": "Inloggen"
-    },
-    "toast": {
-      "mustLogin": "U moet ingelogd zijn om u te abonneren",
-      "mustLoginFree": "Log in om het gratis plan te gebruiken",
-      "alreadyFree": "U zit al op het gratis plan",
-      "cancelToFree": "Zeg uw betaalde abonnement op om terug te keren naar gratis",
-      "checkoutError": "Fout bij doorverwijzen naar betaling"
-    }
-  },
 
   "login": {
         "title": "Inloggen",
@@ -1207,43 +1170,7 @@
     "accountCreated": "Uw account is aangemaakt en u bent lid geworden van het bedrijf!",
     "error": "Er is een fout opgetreden."
   },
-  "team": {
-    "removeTitle": "Lid verwijderen",
-    "removeMessageGeneric": "Weet u zeker dat u dit lid wilt verwijderen? Deze actie is onomkeerbaar.",
-    "leaveTitle": "Bedrijf verlaten",
-    "leaveMessage": "Weet u zeker dat u dit bedrijf wilt verlaten?",
-    "title": "Teambeheer",
-    "subtitle": "Bedrijf: {{company}}",
-    "inviteButton": "Lid uitnodigen",
-    "membersList": "Teamleden",
-    "noMembers": "Nog geen leden.",
-    "memberLimitReached": "Limiet van {{limit}} leden bereikt. Upgrade naar een hoger abonnement.",
-    "owner": "Eigenaar",
-    "leave": "Bedrijf verlaten",
-    "leaveConfirm": "Weet u zeker dat u dit bedrijf wilt verlaten?",
-    "removeConfirm": "{{name}} uit het team verwijderen?",
-    "status": { "pending": "In afwachting" },
-    "invite": {
-      "title": "Lid uitnodigen",
-      "email": "E-mailadres",
-      "emailRequired": "E-mail is verplicht.",
-      "role": "Rol",
-      "send": "Uitnodiging verzenden",
-      "cancel": "Annuleren"
-    },
-    "toasts": {
-      "loadError": "Fout bij laden team.",
-      "inviteSuccess": "Uitnodiging verzonden.",
-      "inviteError": "Fout bij verzenden uitnodiging.",
-      "roleUpdated": "Rol bijgewerkt.",
-      "roleError": "Fout bij bijwerken rol.",
-      "memberRemoved": "Lid verwijderd.",
-      "removeError": "Fout bij verwijderen lid.",
-      "leaveSuccess": "U heeft het bedrijf verlaten.",
-      "leaveError": "Fout bij verlaten bedrijf."
-    }
-},
-
+  
   "companiesPage": {
     "title": "Bedrijven",
     "subtitle": "Ontdek bedrijven die personeel zoeken via Actoos",
@@ -1722,6 +1649,7 @@
         "noPendingCompanies": "Geen bedrijven in afwachting."
       },
       "jobs": {
+        "alreadyAppliedBadge": "Gesolliciteerd",
         "searchPlaceholder": "Zoek een vacature of bedrijf...",
         "filterAll": "Alle vacatures",
         "filterPending": "In afwachting",
@@ -2366,6 +2294,8 @@
       }
     },
     "companyDetail": {
+      "similarCompanies": "Vergelijkbare bedrijven",
+    "jobsCount": "{{count}} vacature(s)",
       "back": "Terug naar bedrijven",
       "notFound": "Bedrijf niet gevonden.",
       "notFoundMessage": "Dit bedrijf bestaat niet of is verwijderd.",
@@ -2380,153 +2310,14 @@
       "email": "E-mail",
       "yourCompany": "Uw bedrijf"
     },
-    "candidateProfilePage": {
-      "back": "Terug",
-      "title": "Mijn kandidaatprofiel",
-      "subtitle": "Vul je profiel in om je kansen te vergroten.",
-      "save": "Opslaan",
-      "saveChanges": "Wijzigingen opslaan",
-      "toasts": {
-        "accountSuspended": "Je account is geschorst. Je kunt je profiel niet bewerken.",
-        "profileUpdated": "Profiel succesvol bijgewerkt.",
-        "saveError": "Fout bij het opslaan van het profiel.",
-        "fillRequired": "Vul de verplichte velden in (voornaam, achternaam, titel)."
-      },
-      "photo": {
-        "title": "Profielfoto",
-        "hint": "JPG of PNG, max. 2 MB.",
-        "change": "Bewerken",
-        "delete": "Verwijderen",
-        "updated": "Foto bijgewerkt.",
-        "uploadError": "Fout bij uploaden foto.",
-        "deleteConfirm": "Profielfoto verwijderen?",
-        "deleted": "Foto verwijderd.",
-        "deleteError": "Fout bij verwijderen foto."
-      },
-      "personalInfo": {
-        "sectionTitle": "Persoonlijke informatie",
-        "sectionDesc": "Deze informatie verschijnt op je openbare profiel.",
-        "firstName": "Voornaam",
-        "lastName": "Achternaam",
-        "phone": "Telefoon",
-        "phonePlaceholder": "+31 6 12345678",
-        "city": "Stad",
-        "selectCity": "Selecteer een stad"
-      },
-      "professionalProfile": {
-        "sectionTitle": "Professioneel profiel",
-        "sectionDesc": "Beschrijf je achtergrond en verwachtingen.",
-        "title": "Professionele titel",
-        "bio": "Profielsamenvatting",
-        "experienceLevel": "Ervaringsniveau",
-        "yearsOfExperience": "Aantal jaren ervaring",
-        "available": "Beschikbaar",
-        "openToRemote": "Open voor thuiswerk",
-        "selectLevel": "Selecteer een niveau"
-      },
-      "cv": {
-        "sectionTitle": "Hoofd-CV",
-        "sectionDesc": "Upload je CV in PDF-, DOC- of DOCX-formaat.",
-        "uploadTitle": "Upload je CV",
-        "uploadHint": "Geaccepteerde formaten: PDF, DOC, DOCX. Max. 5 MB.",
-        "chooseFile": "Bestand kiezen",
-        "uploaded": "CV geüpload",
-        "view": "Bekijken",
-        "change": "Bewerken",
-        "delete": "Verwijderen",
-        "uploadedToast": "CV succesvol geüpload.",
-        "uploadError": "Fout bij uploaden CV.",
-        "deleteConfirm": "Je CV verwijderen?",
-        "deletedToast": "CV verwijderd.",
-        "deleteError": "Fout bij verwijderen CV.",
-        "invalidFormat": "Niet-ondersteund formaat. Gebruik PDF, DOC of DOCX.",
-        "fileTooLarge": "Bestand mag niet groter zijn dan 5 MB.",
-        "analyzeButton": "Mijn CV analyseren met AI"
-      },
-      "documents": {
-        "sectionTitle": "Aanvullende documenten",
-        "sectionDesc": "Voeg diploma's, certificaten etc. toe.",
-        "typeDiploma": "Diploma",
-        "typeCertificate": "Certificaat",
-        "typeOther": "Anders",
-        "addButton": "Document toevoegen",
-        "empty": "Geen document toegevoegd.",
-        "addedToast": "Document toegevoegd.",
-        "uploadError": "Fout bij toevoegen document.",
-        "deleteConfirm": "Dit document verwijderen?",
-        "deletedToast": "Document verwijderd.",
-        "deleteError": "Fout bij verwijderen."
-      },
-      "skills": {
-        "sectionTitle": "Vaardigheden",
-        "sectionDesc": "Vaardigheden helpen recruiters je te vinden.",
-        "placeholder": "Vaardigheid toevoegen",
-        "add": "Toevoegen",
-        "empty": "Geen vaardigheden toegevoegd.",
-        "addedToast": "{{count}} vaardigheid/vaardigheden toegevoegd.",
-        "noneFound": "Geen vaardigheden in de tekst gevonden."
-      },
-      "experience": {
-        "sectionTitle": "Werkervaring",
-        "sectionDesc": "Voeg je meest relevante ervaring toe.",
-        "add": "Ervaring toevoegen",
-        "empty": "Geen ervaring toegevoegd.",
-        "present": "Heden",
-        "edit": "Bewerken",
-        "jobTitle": "Functietitel",
-        "company": "Bedrijf",
-        "location": "Locatie",
-        "startDate": "Startdatum",
-        "endDate": "Einddatum",
-        "currentlyWorking": "Ik werk hier momenteel",
-        "description": "Beschrijving",
-        "cancel": "Annuleren",
-        "save": "Wijzigingen opslaan",
-        "saveNew": "Ervaring toevoegen",
-        "modalEditTitle": "Ervaring bewerken",
-        "modalAddTitle": "Ervaring toevoegen",
-        "fillRequired": "Vul functietitel, bedrijf en startdatum in."
-      },
-      "education": {
-        "sectionTitle": "Opleidingen",
-        "sectionDesc": "Voeg je diploma's en trainingen toe.",
-        "add": "Opleiding toevoegen",
-        "empty": "Geen opleiding toegevoegd.",
-        "edit": "Bewerken",
-        "degree": "Diploma",
-        "school": "Onderwijsinstelling",
-        "field": "Studierichting",
-        "year": "Jaar behaald",
-        "cancel": "Annuleren",
-        "save": "Wijzigingen opslaan",
-        "saveNew": "Opleiding toevoegen",
-        "modalEditTitle": "Opleiding bewerken",
-        "modalAddTitle": "Opleiding toevoegen",
-        "fillRequired": "Vul diploma, school en jaar in."
-      },
-      "links": {
-        "sectionTitle": "Links",
-        "sectionDesc": "Voeg je LinkedIn, portfolio of andere links toe."
-      },
-      "salary": {
-        "sectionTitle": "Gewenst salaris",
-        "sectionDesc": "Geef een indicatieve schaal aan.",
-        "minSalary": "Minimumsalaris",
-        "maxSalary": "Maximumsalaris"
-      },
-      "cvAnalysis": {
-        "title": "AI CV-analyse",
-        "description": "Plak de inhoud van je CV om verbetersuggesties te krijgen.",
-        "placeholder": "Plak hier je CV-tekst...",
-        "suggestions": "Verbetersuggesties:",
-        "close": "Sluiten",
-        "analyze": "Analyseren",
-        "analyzing": "Analyseren...",
-        "emptyText": "Plak de inhoud van je CV.",
-        "doneToast": "Analyse voltooid.",
-        "errorToast": "Analysefout."
-      }
-    },
+
+  "experienceLevels": {
+    "junior": "Junior (0-2 jaar)",
+    "intermediaire": "Middelbaar (2-5 jaar)",
+    "senior": "Senior (5-10 jaar)",
+    "expert": "Expert (10+ jaar)"
+  },
+
     "settings": {
       "title": "Instellingen",
       "subtitle": "Beheer je account en voorkeuren.",
@@ -2604,6 +2395,7 @@
       }
     },
      "jobs": {
+      "alreadyAppliedBadge": "Gesolliciteerd",
       "searchPlaceholder": "Titel, vaardigheid of bedrijf…",
       "allCities": "Alle steden",
       "filters": "Filters",
@@ -2654,6 +2446,7 @@
       "delete": "Verwijderen"
     },
     "jobDetail": {
+      "similarJobs": "Vergelijkbare vacatures",
       "notFound": "Vacature niet gevonden",
       "notFoundMessage": "Deze vacature bestaat niet of is verwijderd.",
       "backToJobs": "Terug naar vacatures",
@@ -2808,6 +2601,11 @@
       }
     },
     "applicationDetail": {
+      "upgradeForNotes": "Interviewnotities en AI‑tools",
+    "upgradeForNotesDesc": "Upgrade naar het Pro- of Business‑abonnement om vragen, antwoorden en tips te genereren en notities te maken.",
+    "upgradeForSchedule": "Interview plannen",
+    "upgradeForScheduleDesc": "Upgrade naar het Pro- of Business‑abonnement om interviews te plannen met Calendly en Jitsi.",
+    "viewPlans": "Abonnementen bekijken",
       "back": "Terug",
       "notFound": "Sollicitatie niet gevonden.",
       "status": {
@@ -2853,133 +2651,73 @@
       },
       "accountSuspended": "Uw account is geschorst."
     },
-    "companyDashboard": {
-      "stats": {
-        "trend": "{{trend}} deze week",
-        "publishedJobs": "Actieve vacatures",
-        "totalApplications": "Totaal sollicitaties",
-        "newApplications": "Nieuwe sollicitaties",
-        "totalViews": "Totaal weergaven"
-      },
-      "status": {
-        "draft": "Concept",
-        "pending": "In afwachting",
-        "active": "Actief",
-        "paused": "Gepauzeerd",
-        "closed": "Gesloten",
-        "expired": "Verlopen",
-        "rejected": "Afgewezen"
-      },
-      "jobCard": {
-        "unspecifiedLocation": "Niet gespecificeerd",
-        "views": "{{count}} weergave(n)",
-        "applications": "{{count}} sollicitatie(s)",
-        "menu": {
-          "edit": "Bewerken",
-          "viewApplications": "Sollicitaties",
-          "submitForValidation": "Indienen",
-          "validationRequired": "Validatie vereist",
-          "cancelSubmission": "Indiening annuleren",
-          "freeBoost": "Gratis boosten",
-          "pause": "Pauzeren",
-          "republish": "Opnieuw publiceren",
-          "delete": "Verwijderen"
-        }
-      },
-      "applicationStatus": {
-        "pending": "In afwachting",
-        "viewed": "Bekeken",
-        "shortlisted": "Geselecteerd",
-        "interview": "Gesprek",
-        "accepted": "Geaccepteerd",
-        "rejected": "Afgewezen"
-      },
-      "toasts": {
-        "companyNotVerifiedMenu": "Uw bedrijf is niet geverifieerd.",
-        "loadError": "Fout bij het laden van gegevens.",
-        "deleteConfirm": "Vacature \"{{title}}\" verwijderen?",
-        "jobDeleted": "Vacature verwijderd.",
-        "limitReached": "U heeft de limiet van {{limit}} actieve vacatures bereikt.",
-        "limitReachedDetailed": "Limiet van {{limit}} vacatures bereikt (actief + in afwachting: {{total}}).",
-        "offerPublished": "Vacature gepubliceerd.",
-        "statusUpdated": "Status bijgewerkt.",
-        "updateError": "Fout bij bijwerken.",
-        "companyNotVerified": "Uw bedrijf is niet geverifieerd.",
-        "submittedForValidation": "Vacature ingediend voor validatie.",
-        "submissionError": "Fout bij indiening.",
-        "submissionCancelled": "Indiening geannuleerd.",
-        "subscriptionCancelled": "Abonnement opgezegd.",
-        "cancelError": "Fout bij opzeggen.",
-        "boostActivated": "Boost geactiveerd voor 7 dagen.",
-        "boostAlreadyUsed": "Boost deze maand al gebruikt.",
-        "boostError": "Fout bij boost."
-      },
-      "cancelModal": {
-        "title": "Abonnement opzeggen",
-        "description": "Het opzeggen van uw abonnement deactiveert uw actieve vacatures en u verliest geavanceerde functies.",
-        "reasonLabel": "Reden (optioneel)",
-        "reasonPlaceholder": "Waarom wilt u opzeggen?",
-        "consequencesTitle": "Gevolgen",
-        "consequences": [
-          "Uw actieve vacatures worden opgeschort",
-          "U wordt teruggezet naar het Gratis abonnement",
-          "Pro/Business-functies worden uitgeschakeld"
-        ],
-        "cancelButton": "Annuleren",
-        "confirmButton": "Mijn abonnement opzeggen"
-      },
-      "noCompany": {
-        "title": "Geen bedrijf",
-        "subtitle": "Maak uw bedrijf aan om vacatures te plaatsen.",
-        "createButton": "Mijn bedrijf aanmaken"
-      },
-      "companySelector": {
-        "owner": "Eigenaar",
-        "member": "Lid",
-        "newCompany": "Nieuw bedrijf"
-      },
-      "header": {
-        "title": "Overzicht"
-      },
-      "profileButton": "Profiel",
-      "newOfferButton": "Nieuwe vacature",
-      "jobsSection": {
-        "title": "Recente vacatures",
-        "totalOffers": "{{count}} vacature(s) in totaal",
-        "viewAll": "Alles bekijken",
-        "noOffers": "Geen vacatures",
-        "publishButton": "Vacature publiceren"
-      },
-      "applicationsSection": {
-        "title": "Nieuwste sollicitaties",
-        "newCount": "{{count}} nieuwe",
-        "viewAll": "Alles bekijken",
-        "noApplications": "Geen sollicitaties"
-      },
-      "companyProfileCard": {
-        "title": "Bedrijfsprofiel",
-        "pendingValidation": "Validatie in afwachting",
-        "employees": "{{size}} medewerkers",
-        "founded": "Opgericht in {{year}}",
-        "editProfile": "Profiel bewerken"
-      },
-      "subscriptionCard": {
-        "currentPlan": "Abonnement {{plan}}",
-        "changePlan": "Wijzigen",
-        "activeOffers": "Actieve vacatures",
-        "activePlanMessage": "Uw {{plan}} abonnement is actief.",
-        "manageSubscription": "Abonnement beheren",
-        "cancelSubscription": "Abonnement opzeggen",
-        "lastCancelReason": "Laatste opzegging",
-        "cancelReasonQuote": "\"{{reason}}\"",
-        "freePlanMessage": "Upgrade naar een hoger abonnement voor meer functies.",
-        "freeBoostMessage": "Gratis boost beschikbaar!"
-      },
-      "adminMessages": {
-        "title": "Beheerdersberichten"
-      }
+   "companyDashboard": {
+    "stats": { "trend": "{{trend}} deze week", "publishedJobs": "Actieve vacatures", "totalApplications": "Totaal sollicitaties", "newApplications": "Nieuwe sollicitaties", "totalViews": "Totaal weergaven" },
+    "status": { "draft": "Concept", "pending": "In afwachting", "active": "Actief", "paused": "Gepauzeerd", "closed": "Gesloten", "expired": "Verlopen", "rejected": "Afgewezen" },
+    "jobCard": {
+      "unspecifiedLocation": "Niet gespecificeerd",
+      "views": "{{count}} weergave(n)",
+      "applications": "{{count}} sollicitatie(s)",
+      "menu": { "edit": "Bewerken", "viewApplications": "Sollicitaties", "submitForValidation": "Indienen", "validationRequired": "Validatie vereist", "cancelSubmission": "Indiening annuleren", "freeBoost": "Gratis boosten", "pause": "Pauzeren", "republish": "Opnieuw publiceren", "delete": "Verwijderen" }
     },
+    "applicationStatus": { "pending": "In afwachting", "viewed": "Bekeken", "shortlisted": "Geselecteerd", "interview": "Gesprek", "accepted": "Geaccepteerd", "rejected": "Afgewezen" },
+    "toasts": {
+      "companyNotVerifiedMenu": "Uw bedrijf is niet geverifieerd.",
+      "loadError": "Fout bij het laden van gegevens.",
+      "deleteConfirm": "Vacature \"{{title}}\" verwijderen?",
+      "jobDeleted": "Vacature verwijderd.",
+      "limitReached": "U heeft de limiet van {{limit}} actieve vacatures bereikt.",
+      "limitReachedDetailed": "Limiet van {{limit}} vacatures bereikt (actief + in afwachting: {{total}}).",
+      "offerPublished": "Vacature gepubliceerd.",
+      "statusUpdated": "Status bijgewerkt.",
+      "updateError": "Fout bij bijwerken.",
+      "companyNotVerified": "Uw bedrijf is niet geverifieerd.",
+      "submittedForValidation": "Vacature ingediend voor validatie.",
+      "submissionError": "Fout bij indiening.",
+      "submissionCancelled": "Indiening geannuleerd.",
+      "subscriptionCancelled": "Abonnement opgezegd.",
+      "cancelError": "Fout bij opzeggen.",
+      "boostActivated": "Boost geactiveerd voor 7 dagen.",
+      "boostAlreadyUsed": "Boost deze maand al gebruikt.",
+      "boostError": "Fout bij boost."
+    },
+    "cancelModal": {
+      "title": "Abonnement opzeggen",
+      "description": "Het opzeggen van uw abonnement deactiveert uw actieve vacatures en u verliest geavanceerde functies.",
+      "reasonLabel": "Reden (optioneel)",
+      "reasonPlaceholder": "Waarom wilt u opzeggen?",
+      "consequencesTitle": "Gevolgen",
+      "consequences": ["Uw actieve vacatures worden opgeschort", "U wordt teruggezet naar het Gratis abonnement", "Pro/Business-functies worden uitgeschakeld"],
+      "cancelButton": "Annuleren",
+      "confirmButton": "Mijn abonnement opzeggen"
+    },
+    "noCompany": { "title": "Geen bedrijf", "subtitle": "Maak uw bedrijf aan om vacatures te plaatsen.", "createButton": "Mijn bedrijf aanmaken" },
+    "companySelector": { "owner": "Eigenaar", "member": "Lid", "newCompany": "Nieuw bedrijf" },
+    "header": { "title": "Overzicht" },
+    "profileButton": "Profiel",
+    "newOfferButton": "Nieuwe vacature",
+    "jobsSection": { "title": "Recente vacatures", "totalOffers": "{{count}} vacature(s) in totaal", "viewAll": "Alles bekijken", "noOffers": "Geen vacatures", "publishButton": "Vacature publiceren" },
+    "applicationsSection": { "title": "Nieuwste sollicitaties", "newCount": "{{count}} nieuwe", "viewAll": "Alles bekijken", "noApplications": "Geen sollicitaties" },
+    "companyProfileCard": { "title": "Bedrijfsprofiel", "pendingValidation": "Validatie in afwachting", "employees": "{{size}} medewerkers", "founded": "Opgericht in {{year}}", "editProfile": "Profiel bewerken" },
+    "subscriptionCard": {
+      "currentPlan": "Abonnement {{plan}}",
+      "changePlan": "Wijzigen",
+      "activeOffers": "Actieve vacatures",
+      "activePlanMessage": "Uw {{plan}} abonnement is actief.",
+      "manageSubscription": "Abonnement beheren",
+      "cancelSubscription": "Abonnement opzeggen",
+      "lastCancelReason": "Laatste opzegging",
+      "cancelReasonQuote": "\"{{reason}}\"",
+      "freePlanMessage": "Upgrade naar een hoger abonnement voor meer functies.",
+      "freeBoostMessage": "Gratis boost beschikbaar!"
+    },
+    "adminMessages": { "title": "Beheerdersberichten" },
+    "multiCompanyLocked": "Multi-bedrijf voorbehouden aan Business-abonnement",
+    "cvBank": { "title": "Cv-bank", "desc": "Krijg toegang tot onze talentenpool.", "browse": "Cv's doorbladeren" }
+  },
     "candidateDashboard": {
+       "myCompanies": "Mijn bedrijven",
+    "accessCompany": "Naar dashboard",
       "greeting": "Hallo {{name}}",
       "activityPreview": "Hier is een overzicht van uw recente activiteiten.",
       "myProfile": "Mijn profiel",
@@ -3089,6 +2827,24 @@
       }
     },
     "common": {
+      "previous": "Vorige",
+    "next": "Volgende",
+      "city": "Stad",
+    "all": "Alle",
+    "experienceLevel": "Ervaringsniveau",
+    "contractType": "Contracttype",
+    "minSalary": "Min. salaris",
+    "availableOnly": "Alleen beschikbare",
+    "clearFilters": "Filters wissen",
+    "sortByRecent": "Nieuwste",
+    "sortByName": "Naam",
+    "showFilters": "Toon filters",
+    "hideFilters": "Verberg filters",
+    "available": "Beschikbaar",
+    "unavailable": "Niet beschikbaar",
+      "searching": "Zoeken...",
+    "companyRole": "Bedrijf",
+    "candidateRole": "Kandidaat",
       "comingSoon": "binnenkort beschikbaar",
       "pro": "Pro",
       "premium": "Premium",
@@ -3133,7 +2889,204 @@
      "countryGate": {
       "title": "Binnenkort beschikbaar",
       "message": "Onze service is nog niet beschikbaar in uw land. Kom snel terug!"
-    }
+    },
+    "team": {
+      "searchPlaceholder": "Zoeken op e-mail of naam...",
+      "title": "Team",
+      "inviteTitle": "Lid uitnodigen",
+      "emailPlaceholder": "E-mail van het lid",
+      "inviteButton": "Uitnodigen",
+      "members": "Leden",
+      "noMembers": "Geen leden",
+      "pending": "In afwachting",
+      "roles": {
+        "recruiter": "Recruiter",
+        "viewer": "Bekijker"
+      },
+      "roleUpdated": "Rol bijgewerkt",
+      "confirmRemove": "Dit lid verwijderen?",
+      "memberRemoved": "Lid verwijderd",
+      "inviteSuccess": "Uitnodiging verzonden"
+    },
+
+ "candidateBank": {
+      "title": "Cv-bank",
+      "subtitle": "Blader door de profielen van beschikbare kandidaten",
+      "searchPlaceholder": "Zoeken op naam, vaardigheid, titel…",
+      "candidatesFound": "kandidaat(en) gevonden",
+      "upgradeTitle": "Cv-bank",
+      "upgradeDesc": "De cv-bank is voorbehouden aan het Business-abonnement.",
+      "viewPlans": "Abonnementen bekijken",
+      "noCandidates": "Geen kandidaten gevonden"
+    },
+    "companyDashboard.cvBank": {
+      "title": "Cv-bank",
+      "desc": "Krijg toegang tot onze pool beschikbare talenten.",
+      "browse": "Cv's doorbladeren"
+    },
+"candidateProfilePage": {
+      "title": "Kandidaatprofiel",
+      "subtitle": "Beheer je professionele profiel",
+      "save": "Opslaan",
+      "saveChanges": "Wijzigingen opslaan",
+      "photo": {
+        "title": "Profielfoto",
+        "hint": "JPG of PNG, max. 2 MB",
+        "change": "Wijzigen",
+        "delete": "Verwijderen",
+        "updated": "Foto bijgewerkt",
+        "uploadError": "Uploadfout",
+        "deleteConfirm": "Foto verwijderen?",
+        "deleted": "Foto verwijderd",
+        "deleteError": "Fout bij verwijderen foto"
+      },
+      "personalInfo": {
+        "sectionTitle": "Persoonlijke informatie",
+        "sectionDesc": "Uw contactgegevens",
+        "firstName": "Voornaam",
+        "lastName": "Achternaam",
+        "phone": "Telefoon",
+        "phonePlaceholder": "+223 xx xx xx xx",
+        "city": "Stad",
+        "selectCity": "Selecteer een stad"
+      },
+      "professionalProfile": {
+        "sectionTitle": "Professioneel profiel",
+        "sectionDesc": "Beschrijf uw huidige of gewenste functie",
+        "title": "Functietitel",
+        "bio": "Samenvatting / Bio",
+        "experienceLevel": "Ervaringsniveau",
+        "selectLevel": "Selecteer niveau",
+        "yearsOfExperience": "Jaren ervaring",
+        "available": "Onmiddellijk beschikbaar",
+        "openToRemote": "Sta open voor thuiswerk"
+      },
+      "cv": {
+        "sectionTitle": "Curriculum Vitae",
+        "sectionDesc": "Upload uw CV (PDF, DOC, DOCX, max. 5 MB)",
+        "uploaded": "CV succesvol geüpload",
+        "view": "Bekijken",
+        "change": "Wijzigen",
+        "delete": "Verwijderen",
+        "uploadTitle": "Uw CV uploaden",
+        "uploadHint": "Formaat PDF, DOC of DOCX (max. 5 MB)",
+        "chooseFile": "Bestand kiezen",
+        "analyzeButton": "Uw CV analyseren met AI",
+        "invalidFormat": "Niet-ondersteund bestandsformaat",
+        "fileTooLarge": "Het bestand is groter dan de maximale 5 MB",
+        "uploadedToast": "CV succesvol geüpload",
+        "uploadError": "Fout bij uploaden CV",
+        "deleteConfirm": "CV verwijderen?",
+        "deletedToast": "CV verwijderd",
+        "deleteError": "Fout bij verwijderen CV"
+      },
+      "documents": {
+        "sectionTitle": "Aanvullende documenten",
+        "sectionDesc": "Diploma's, certificaten, etc.",
+        "typeDiploma": "Diploma",
+        "typeCertificate": "Certificaat",
+        "typeOther": "Overig",
+        "addButton": "Document toevoegen",
+        "empty": "Geen documenten toegevoegd",
+        "addedToast": "Document toegevoegd",
+        "uploadError": "Uploadfout",
+        "deleteConfirm": "Dit document verwijderen?",
+        "deletedToast": "Document verwijderd",
+        "deleteError": "Fout bij verwijderen document"
+      },
+      "skills": {
+        "sectionTitle": "Vaardigheden",
+        "sectionDesc": "Lijst van uw belangrijkste vaardigheden",
+        "placeholder": "Vaardigheid toevoegen...",
+        "add": "Toevoegen",
+        "empty": "Geen vaardigheden opgegeven",
+        "addedToast": "{{count}} vaardigheid(en) toegevoegd",
+        "noneFound": "Geen nieuwe vaardigheden gevonden"
+      },
+      "experience": {
+        "sectionTitle": "Werkervaring",
+        "sectionDesc": "Uw loopbaan",
+        "add": "Ervaring toevoegen",
+        "empty": "Geen ervaring opgegeven",
+        "edit": "Bewerken",
+        "present": "Heden",
+        "jobTitle": "Functietitel",
+        "company": "Bedrijf",
+        "location": "Locatie",
+        "startDate": "Startdatum",
+        "endDate": "Einddatum",
+        "currentlyWorking": "Ik werk hier momenteel",
+        "description": "Beschrijving",
+        "modalEditTitle": "Ervaring bewerken",
+        "modalAddTitle": "Ervaring toevoegen",
+        "fillRequired": "Vul de verplichte velden in",
+        "save": "Opslaan",
+        "saveNew": "Toevoegen",
+        "cancel": "Annuleren"
+      },
+      "education": {
+        "sectionTitle": "Opleiding",
+        "sectionDesc": "Uw academische achtergrond",
+        "add": "Opleiding toevoegen",
+        "empty": "Geen opleiding opgegeven",
+        "edit": "Bewerken",
+        "modalEditTitle": "Opleiding bewerken",
+        "modalAddTitle": "Opleiding toevoegen",
+        "degree": "Diploma / Kwalificatie",
+        "school": "Instelling",
+        "field": "Studierichting",
+        "year": "Jaar behaald",
+        "fillRequired": "Vul de verplichte velden in",
+        "save": "Opslaan",
+        "saveNew": "Toevoegen",
+        "cancel": "Annuleren"
+      },
+      "links": {
+        "sectionTitle": "Links",
+        "sectionDesc": "Portfolio, LinkedIn, website..."
+      },
+      "salary": {
+        "sectionTitle": "Salarisindicatie",
+        "sectionDesc": "Gewenst minimum- en maximumsalaris",
+        "minSalary": "Min. salaris",
+        "maxSalary": "Max. salaris"
+      },
+      "toasts": {
+        "fillRequired": "Vul de verplichte velden in",
+        "profileUpdated": "Profiel bijgewerkt",
+        "saveError": "Fout bij opslaan"
+      },
+      "cvAnalysis": {
+        "title": "AI CV-analyse",
+        "description": "Plak de tekstuele inhoud van uw CV om suggesties te ontvangen.",
+        "placeholder": "Plak hier uw CV...",
+        "suggestions": "Verbeteringssuggesties:",
+        "close": "Sluiten",
+        "analyze": "Analyseren",
+        "analyzing": "Bezig met analyseren...",
+        "emptyText": "Voer tekst in om te analyseren",
+        "doneToast": "Analyse voltooid",
+        "errorToast": "Analysefout"
+      }
+    },
+    "profile": {
+      "visibility": {
+        "sectionTitle": "Zichtbaarheid",
+        "sectionDesc": "Beheer uw aanwezigheid in de CV-bank",
+        "cvBankTitle": "In de CV-bank verschijnen",
+        "cvBankDesc": "Recruiters kunnen u vinden en uw profiel bekijken, zelfs als u niet heeft gesolliciteerd.",
+        "enabled": "Uw profiel is nu zichtbaar in de CV-bank",
+        "disabled": "Uw profiel verschijnt niet langer in de CV-bank",
+        "error": "Fout bij bijwerken"
+      }
+    },
+  "experienceLevels": {
+    "junior": "Junior (0‑2 jaar)",
+    "intermediaire": "Middelbaar (2‑5 jaar)",
+    "senior": "Senior (5‑10 jaar)",
+    "expert": "Expert (10+ jaar)"
+  }
+ 
 
 
 }

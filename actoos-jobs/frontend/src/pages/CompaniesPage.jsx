@@ -166,7 +166,6 @@ const CompaniesPage = () => {
               <Card key={company.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
-                    {/* ✅ Conteneur corrigé : overflow-hidden + object-cover */}
                     <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center overflow-hidden shrink-0">
                       {company.logo_url ? (
                         <img 
@@ -185,7 +184,7 @@ const CompaniesPage = () => {
                         </h3>
                         {company.subscription_plan === 'pro' && (
                           <Badge className="ml-2 bg-blue-100 text-blue-700 border-blue-200">
-                            Pro
+                            {t('common.pro', 'Pro')}
                           </Badge>
                         )}
                         {company.subscription_plan === 'business' && (

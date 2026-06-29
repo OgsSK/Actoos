@@ -440,6 +440,7 @@ const CandidateProfilePage = () => {
     is_open_to_remote: false,
     desired_salary_min: '',
     desired_salary_max: '',
+    is_visible_in_cv_bank: false, // <-- new field
   });
 
   const [skills, setSkills] = useState([]);
@@ -502,6 +503,7 @@ const CandidateProfilePage = () => {
         is_open_to_remote: cp.is_open_to_remote || false,
         desired_salary_min: cp.desired_salary_min || '',
         desired_salary_max: cp.desired_salary_max || '',
+        is_visible_in_cv_bank: cp.is_visible_in_cv_bank ?? false, // <-- new field
       });
 
       setSkills(cp.skills || []);
@@ -764,6 +766,7 @@ const CandidateProfilePage = () => {
         experience: experiences,
         education,
         links,
+        is_visible_in_cv_bank: candidateInfo.is_visible_in_cv_bank, // <-- persist on full save
       }, { onConflict: 'user_id' });
 
       if (error) throw error;
@@ -1282,6 +1285,56 @@ const CandidateProfilePage = () => {
                     className="min-h-[44px]"
                   />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Visibilité – Banque de CV */}
+          <Card>
+            <CardContent className="p-6">
+              <SectionHeader
+                icon={Eye}
+                title={t('profile.visibility.sectionTitle', 'Visibilité')}
+                description={t('profile.visibility.sectionDesc', 'Gérez votre présence dans la banque de CV')}
+              />
+              {/* Banque de CV – visibilité */}
+              <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200">
+                <div className="flex-1 min-w-0 mr-4">
+                  <p className="font-medium text-slate-900">
+                    {t('profile.visibility.cvBankTitle', 'Apparaître dans la banque de CV')}
+                  </p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {t('profile.visibility.cvBankDesc', 'Les recruteurs pourront vous trouver et consulter votre profil même si vous n’avez pas postulé.')}
+                  </p>
+                </div>
+                <button
+                  onClick={async () => {
+                    const newValue = !candidateInfo.is_visible_in_cv_bank;
+                    const { error } = await supabase
+                      .from('candidate_profiles')
+                      .update({ is_visible_in_cv_bank: newValue })
+                      .eq('user_id', user.id);
+                    if (!error) {
+                      setCandidateInfo(prev => ({ ...prev, is_visible_in_cv_bank: newValue }));
+                      toast.success(
+                        newValue
+                          ? t('profile.visibility.enabled', 'Votre profil est maintenant visible dans la banque de CV')
+                          : t('profile.visibility.disabled', 'Votre profil n’apparaît plus dans la banque de CV')
+                      );
+                    } else {
+                      toast.error(t('profile.visibility.error', 'Erreur lors de la mise à jour'));
+                    }
+                  }}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                    candidateInfo.is_visible_in_cv_bank ? 'bg-blue-600' : 'bg-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                      candidateInfo.is_visible_in_cv_bank ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               </div>
             </CardContent>
           </Card>
