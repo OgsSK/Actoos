@@ -106,6 +106,19 @@ export default function ClientSpacePage() {
       if (!res.ok || data?.error) {
         setProjet(null);
       } else {
+        // ✅ Nettoyer le rendez-vous s'il est passé
+        if (data.booking_id && data.booking_start && new Date(data.booking_start) < new Date()) {
+          fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/clean-booking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project_id: data.id }),
+          }).catch(() => {});
+          // Mettre à jour l'état local immédiatement
+          data.booking_id = null;
+          data.booking_start = null;
+          data.booking_link = null;
+        }
+
         setProjet(data);
         setLastSyncAt(new Date());
         loadComments(data.id);
@@ -359,8 +372,6 @@ export default function ClientSpacePage() {
               <Calendar size={16} className="text-[#D4AF37]" /> {t[language].clientSchedule}
             </button>
           )}
-
-          {/* Bouton de paiement supprimé */}
         </div>
 
         {/* Timeline des étapes */}

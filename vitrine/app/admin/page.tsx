@@ -121,7 +121,21 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
       });
       const data = await res.json();
-      setProjets(Array.isArray(data) ? data : []);
+      const projectsData = Array.isArray(data) ? data : [];
+      const now = new Date();
+      for (const p of projectsData) {
+        if (p.booking_id && p.booking_start && new Date(p.booking_start) < now) {
+          fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/clean-booking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project_id: p.id }),
+          }).catch(() => {});
+          p.booking_id = null;
+          p.booking_start = null;
+          p.booking_link = null;
+        }
+      }
+      setProjets(projectsData);
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
