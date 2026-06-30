@@ -22,21 +22,28 @@ import {
   Loader2,
   ChevronLeft,
   Briefcase,
+  CheckCircle,
 } from 'lucide-react';
 
 import { CONTRACT_TYPES } from '../lib/utils';
 
-// ---------- SimpleJobCard (pour les suggestions) ----------
-const SimpleJobCard = ({ job, t, format }) => {
+// ---------- SimpleJobCard (offres similaires) ----------
+const SimpleJobCard = ({ job, t, format, applicationStatus }) => {
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   return (
-    <Link to={`/emplois/${job.id}`} className="block group h-full">
+    <Link to={`/emplois/${job.id}`} className="block group h-full relative">
+      {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
+        <Badge className="absolute top-2 left-2 bg-green-100 text-green-700 text-xs z-10">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          {t('jobs.alreadyAppliedBadge', 'Postulé')}
+        </Badge>
+      )}
       <Card className="hover:shadow-md transition-shadow h-full">
         <CardContent className="p-4 flex flex-col h-full">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 overflow-hidden">
               {job.company?.logo_url ? (
-                <img src={job.company.logo_url} alt="" className="w-6 h-6 object-contain" />
+                <img src={job.company.logo_url} alt="" className="w-full h-full object-cover" />
               ) : (
                 <Briefcase className="w-5 h-5 text-blue-600" />
               )}
@@ -76,10 +83,11 @@ const JobDetailPage = () => {
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
-  const [hasApplied, setHasApplied] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState(null);
   const [matchScore, setMatchScore] = useState(null);
   const [similarJobs, setSimilarJobs] = useState([]);
   const [similarLoading, setSimilarLoading] = useState(false);
+  const [similarApplications, setSimilarApplications] = useState({});
 
   const isCompany =
     user?.user_metadata?.role === 'company' ||
@@ -88,7 +96,6 @@ const JobDetailPage = () => {
 
   const isOwner = user?.id && job?.company?.owner_id === user.id;
 
-  // Réinitialisation à chaque changement d'id
   useEffect(() => {
     window.scrollTo(0, 0);
     setJob(null);
@@ -141,11 +148,13 @@ const JobDetailPage = () => {
   const checkExistingApplication = async () => {
     const { data } = await supabase
       .from('applications')
-      .select('id')
+      .select('status')
       .eq('job_id', job.id)
       .eq('candidate_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
-    setHasApplied(!!data);
+    setApplicationStatus(data ? data.status : null);
   };
 
   const checkIfSaved = async () => {
@@ -169,7 +178,6 @@ const JobDetailPage = () => {
     }
   };
 
-  // ✅ Charger les offres similaires après le chargement de l'offre
   useEffect(() => {
     if (!job) return;
     setSimilarLoading(true);
@@ -206,6 +214,19 @@ const JobDetailPage = () => {
         const { data, error } = await query;
         if (error) throw error;
         setSimilarJobs(data || []);
+
+        if (user && data && data.length > 0) {
+          const { data: appsData } = await supabase
+            .from('applications')
+            .select('job_id, status')
+            .eq('candidate_id', user.id)
+            .in('job_id', data.map(j => j.id));
+          const map = {};
+          (appsData || []).forEach(app => { map[app.job_id] = app.status; });
+          setSimilarApplications(map);
+        } else {
+          setSimilarApplications({});
+        }
       } catch (err) {
         console.error('Erreur chargement offres similaires:', err);
       } finally {
@@ -214,7 +235,7 @@ const JobDetailPage = () => {
     };
 
     fetchSimilar();
-  }, [job]);
+  }, [job, user]);
 
   const requireAuth = () => {
     if (!user) {
@@ -225,31 +246,45 @@ const JobDetailPage = () => {
     return true;
   };
 
+  // ✅ Nouvelle fonction handleApply avec réapplication
   const handleApply = async () => {
     if (!requireAuth()) return;
     if (isCompany) {
       toast.error(t('jobDetail.companyCannotApply'));
       return;
     }
-    if (hasApplied) {
+    if (applicationStatus === 'accepted' || applicationStatus === 'completed') {
       toast.info(t('jobDetail.alreadyAppliedMessage'));
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from('applications')
-        .insert({
-          job_id: job.id,
-          candidate_id: user.id,
-          status: 'pending',
-        });
+      // Si une candidature existe déjà (rejected, withdrawn...), on la met à jour
+      if (applicationStatus === 'rejected' || applicationStatus === 'withdrawn') {
+        const { error } = await supabase
+          .from('applications')
+          .update({ status: 'pending' })
+          .eq('job_id', job.id)
+          .eq('candidate_id', user.id);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Sinon, on insère une nouvelle candidature
+        const { error } = await supabase
+          .from('applications')
+          .insert({
+            job_id: job.id,
+            candidate_id: user.id,
+            status: 'pending',
+          });
 
-      setHasApplied(true);
+        if (error) throw error;
+      }
+
+      setApplicationStatus('pending');
       toast.success(t('jobDetail.applicationSent'));
 
+      // Notification
       try {
         const recruiterEmail = job.posted_by_user?.email || job.company?.owner?.email;
         const recruiterName = job.posted_by_user?.first_name
@@ -337,11 +372,10 @@ const JobDetailPage = () => {
 
         <Card className="rounded-3xl overflow-hidden">
           <CardContent className="p-6 sm:p-8">
-            {/* HEADER */}
             <div className="flex flex-col sm:flex-row items-start gap-6 mb-8">
-              <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center shrink-0">
+              <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
                 {job.company?.logo_url ? (
-                  <img src={job.company.logo_url} alt={job.company.name} className="w-16 h-16 object-contain" />
+                  <img src={job.company.logo_url} alt={job.company.name} className="w-full h-full object-cover" />
                 ) : (
                   <Building2 className="w-10 h-10 text-slate-400" />
                 )}
@@ -376,11 +410,10 @@ const JobDetailPage = () => {
                 </div>
               </div>
 
-              {/* ACTIONS */}
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 {!isOwner && !isCompany && !isAdmin && (
                   <>
-                    {hasApplied ? (
+                    {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' ? (
                       <Badge className="bg-green-100 text-green-700 text-sm px-4 py-2 w-full sm:w-auto text-center shrink-0">
                         ✅ {t('jobDetail.alreadyApplied')}
                       </Badge>
@@ -389,7 +422,9 @@ const JobDetailPage = () => {
                         onClick={handleApply}
                         className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto text-white"
                       >
-                        {t('jobDetail.apply')}
+                        {applicationStatus
+                          ? t('jobDetail.reapply', 'Repostuler')
+                          : t('jobDetail.apply', 'Postuler')}
                       </Button>
                     )}
                     <Button
@@ -409,7 +444,6 @@ const JobDetailPage = () => {
                 )}
               </div>
 
-              {/* Signalement */}
               {!isOwner && user && !isAdmin && (
                 <div className="w-full sm:w-auto mt-2 sm:mt-0">
                   <ReportButton itemType="job" itemId={job.id} reporterId={user.id} />
@@ -417,7 +451,6 @@ const JobDetailPage = () => {
               )}
             </div>
 
-            {/* DESCRIPTION – avec gestion du responsive */}
             <div className="prose max-w-none break-words">
               <h2>{t('jobDetail.descriptionTitle')}</h2>
               <div className="whitespace-pre-line break-words">{job.description}</div>
@@ -443,7 +476,6 @@ const JobDetailPage = () => {
           </CardContent>
         </Card>
 
-        {/* OFFRES SIMILAIRES */}
         {similarLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -455,7 +487,13 @@ const JobDetailPage = () => {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {similarJobs.map(simJob => (
-                <SimpleJobCard key={simJob.id} job={simJob} t={t} format={format} />
+                <SimpleJobCard
+                  key={simJob.id}
+                  job={simJob}
+                  t={t}
+                  format={format}
+                  applicationStatus={similarApplications[simJob.id] || null}
+                />
               ))}
             </div>
           </div>

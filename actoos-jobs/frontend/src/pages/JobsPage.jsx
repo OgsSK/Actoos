@@ -8,7 +8,6 @@ import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 import useCachedData from '../hooks/useCachedData';
-import useAppliedJobs from '../hooks/useAppliedJobs'; // ✅ hook pour les candidatures
 import { JobCardSkeleton } from '../components/ui/Skeleton';
 import {
   Search,
@@ -148,8 +147,8 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   );
 };
 
-// -------------------- Job Card --------------------
-const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, hasApplied }) => {
+// -------------------- Job Card (badge filtré) --------------------
+const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationStatus }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -329,8 +328,8 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, hasApplied }) 
                 🚀 {t('jobs.boosted')}
               </Badge>
             )}
-            {/* ✅ Badge "Postulé" avec la bonne clé */}
-            {hasApplied && (
+            {/* ✅ Badge filtré */}
+            {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
               <Badge className="bg-green-100 text-green-700 rounded-full">
                 ✅ {t('jobs.alreadyAppliedBadge', 'Postulé')}
               </Badge>
@@ -663,15 +662,13 @@ const JobsPage = () => {
   const { cities: filteredCities } = useCities(prefs.country);
   const { format } = useCurrencyFormatter();
 
-  // ✅ Récupération des IDs des offres où le candidat a postulé
-  const appliedJobIds = useAppliedJobs(user?.id);
-
   const [countryId, setCountryId] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [appliedStatuses, setAppliedStatuses] = useState({});
 
   const { data: categories } = useCachedData('job_categories', 'id, slug, name, icon', 'name');
   const [availableContractTypes, setAvailableContractTypes] = useState([]);
@@ -690,7 +687,6 @@ const JobsPage = () => {
 
   const conversionRate = RATES[prefs.currency] || 1;
 
-  // Récupération du countryId
   useEffect(() => {
     if (prefs.country) {
       supabase
@@ -704,7 +700,6 @@ const JobsPage = () => {
     }
   }, [prefs.country]);
 
-  // Chargement initial des jobs (tous, sans limite)
   useEffect(() => {
     const fetchJobs = async () => {
       setLoading(true);
@@ -744,7 +739,23 @@ const JobsPage = () => {
     }
   }, [countryId]);
 
-  // Chargement des filtres disponibles
+  useEffect(() => {
+    if (!user || jobs.length === 0) {
+      setAppliedStatuses({});
+      return;
+    }
+    supabase
+      .from('applications')
+      .select('job_id, status')
+      .eq('candidate_id', user.id)
+      .in('job_id', jobs.map(j => j.id))
+      .then(({ data }) => {
+        const map = {};
+        (data || []).forEach(app => { map[app.job_id] = app.status; });
+        setAppliedStatuses(map);
+      });
+  }, [user, jobs]);
+
   useEffect(() => {
     const loadFilterOptions = async () => {
       try {
@@ -773,7 +784,6 @@ const JobsPage = () => {
     loadFilterOptions();
   }, [countryId]);
 
-  // Récupération des jobs sauvegardés
   useEffect(() => {
     if (user) {
       supabase
@@ -786,12 +796,10 @@ const JobsPage = () => {
     }
   }, [user]);
 
-  // Reset de la page à 1 quand les filtres changent
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
 
-  // Filtrage et tri côté client avec plan d'abonnement
   const filteredJobs = useMemo(() => {
     let result = [...jobs];
 
@@ -848,7 +856,6 @@ const JobsPage = () => {
     return result;
   }, [jobs, filters, categories]);
 
-  // Pagination
   const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
   const paginatedJobs = filteredJobs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -923,7 +930,6 @@ const JobsPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
-      {/* Barre de recherche */}
       <div className="bg-white border-b border-slate-200 sticky top-16 lg:top-20 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -978,7 +984,6 @@ const JobsPage = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex gap-8">
-          {/* Sidebar filtres desktop */}
           <div className="hidden lg:block w-72 shrink-0">
             <div className="bg-white rounded-3xl border border-slate-200 p-4 sticky top-36">
               <FiltersSidebar
@@ -1006,7 +1011,6 @@ const JobsPage = () => {
               </div>
             </div>
 
-            {/* Badges de filtres actifs */}
             {activeFiltersCount > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
                 {filters.city && (
@@ -1072,7 +1076,6 @@ const JobsPage = () => {
               </div>
             )}
 
-            {/* Liste des offres */}
             {loading ? (
               <div className="space-y-4">
                 {[...Array(4)].map((_, i) => (
@@ -1100,12 +1103,11 @@ const JobsPage = () => {
                       onSave={handleSaveJob}
                       isSaved={savedJobs.includes(job.id)}
                       onEdit={handleEditJob}
-                      hasApplied={appliedJobIds.includes(job.id)}
+                      applicationStatus={appliedStatuses[job.id] || null}
                     />
                   ))}
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center gap-2 mt-8">
                     <Button
@@ -1145,7 +1147,6 @@ const JobsPage = () => {
         </div>
       </div>
 
-      {/* Filtres mobiles */}
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div

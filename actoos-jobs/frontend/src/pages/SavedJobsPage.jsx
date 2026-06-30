@@ -6,7 +6,10 @@ import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Loader2, ChevronLeft, Heart, MapPin, Banknote, RefreshCw } from 'lucide-react';
+import {
+  Loader2, ChevronLeft, Heart, MapPin, Banknote,
+  RefreshCw, Building2
+} from 'lucide-react';
 import { CONTRACT_TYPES } from '../lib/utils';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 
@@ -22,7 +25,7 @@ const SavedJobsPage = () => {
     setLoading(true);
     supabase
       .from('saved_jobs')
-      .select('job:jobs(id, title, contract_type, salary_min, salary_max, company:companies(name), city:cities(name))')
+      .select('job:jobs(id, title, contract_type, salary_min, salary_max, company:companies(name, logo_url), city:cities(name))')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
@@ -42,12 +45,16 @@ const SavedJobsPage = () => {
     fetchSaved();
   };
 
-  if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+  if (loading) return (
+    <div className="pt-20 flex justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* En-tête mobile-first : empilé sur mobile, en ligne sur desktop */}
+        {/* En-tête mobile-first */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <Link to="/dashboard">
@@ -56,7 +63,9 @@ const SavedJobsPage = () => {
                 {t('savedJobs.back')}
               </Button>
             </Link>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{t('savedJobs.title')}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+              {t('savedJobs.title')}
+            </h1>
           </div>
           <Button variant="outline" onClick={handleRefresh} className="gap-2 w-full sm:w-auto">
             <RefreshCw className="w-4 h-4" /> {t('savedJobs.refresh', 'Actualiser')}
@@ -64,7 +73,12 @@ const SavedJobsPage = () => {
         </div>
 
         {jobs.length === 0 ? (
-          <Card><CardContent className="p-8 text-center text-slate-500"><Heart className="w-12 h-12 mx-auto mb-4" />{t('savedJobs.noSaved')}</CardContent></Card>
+          <Card>
+            <CardContent className="p-8 text-center text-slate-500">
+              <Heart className="w-12 h-12 mx-auto mb-4" />
+              {t('savedJobs.noSaved')}
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-3">
             {jobs.map((job) => {
@@ -72,35 +86,60 @@ const SavedJobsPage = () => {
               return (
                 <Card key={job.id}>
                   <CardContent className="p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <Link to={`/emplois/${job.id}`} className="font-medium hover:text-blue-600 text-sm sm:text-base line-clamp-2">
-                          {job.title}
-                        </Link>
-                        <div className="text-xs sm:text-sm text-slate-500 flex flex-wrap gap-2 items-center mt-1">
-                          <span>{job.company?.name}</span>
-                          {job.city && <span className="flex items-center"><MapPin className="w-3 h-3 mr-1" />{job.city.name}</span>}
-                          {job.salary_min && job.salary_max && (
-                            <span className="flex items-center gap-1">
-                              <Banknote className="w-3 h-3" />
-                              {format(job.salary_min)} – {format(job.salary_max)}
-                            </span>
-                          )}
-                        </div>
+                    <div className="flex items-start gap-3">
+                      {/* Logo de l'entreprise */}
+                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
+                        {job.company?.logo_url ? (
+                          <img
+                            src={job.company.logo_url}
+                            alt={job.company.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Building2 className="w-5 h-5 text-slate-400" />
+                        )}
                       </div>
-                      <div className="flex items-center gap-2 self-end sm:self-auto">
-                        <Badge className={contract.color}>
-                          {t(`contractTypes.${job.contract_type}`, { defaultValue: contract.label })}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemove(job.id)}
-                          className="text-red-500 p-1"
-                          title={t('savedJobs.remove')}
-                        >
-                          <Heart className="w-4 h-4 fill-current" />
-                        </Button>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <Link
+                              to={`/emplois/${job.id}`}
+                              className="font-medium hover:text-blue-600 text-sm sm:text-base line-clamp-2"
+                            >
+                              {job.title}
+                            </Link>
+                            <div className="text-xs sm:text-sm text-slate-500 flex flex-wrap gap-2 items-center mt-1">
+                              <span>{job.company?.name}</span>
+                              {job.city && (
+                                <span className="flex items-center">
+                                  <MapPin className="w-3 h-3 mr-1" />
+                                  {job.city.name}
+                                </span>
+                              )}
+                              {job.salary_min && job.salary_max && (
+                                <span className="flex items-center gap-1">
+                                  <Banknote className="w-3 h-3" />
+                                  {format(job.salary_min)} – {format(job.salary_max)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                            <Badge className={contract.color}>
+                              {t(`contractTypes.${job.contract_type}`, { defaultValue: contract.label })}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemove(job.id)}
+                              className="text-red-500 p-1"
+                              title={t('savedJobs.remove')}
+                            >
+                              <Heart className="w-4 h-4 fill-current" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </CardContent>

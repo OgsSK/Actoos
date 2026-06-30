@@ -6,7 +6,9 @@ import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Loader2, ChevronLeft, FileText, RefreshCw, Banknote } from 'lucide-react';
+import {
+  Loader2, ChevronLeft, FileText, RefreshCw, Banknote, Building2
+} from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 
@@ -30,7 +32,7 @@ const MyApplicationsPage = () => {
     setLoading(true);
     supabase
       .from('applications')
-      .select('*, job:jobs(title, salary_min, salary_max, company:companies(name))')
+      .select('*, job:jobs(title, salary_min, salary_max, company:companies(name, logo_url))')
       .eq('candidate_id', user.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
@@ -47,12 +49,16 @@ const MyApplicationsPage = () => {
     fetchApplications();
   };
 
-  if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+  if (loading) return (
+    <div className="pt-20 flex justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* En-tête mobile-first : empilé sur mobile, en ligne sur desktop */}
+        {/* En-tête mobile-first */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <Link to="/dashboard">
@@ -61,7 +67,9 @@ const MyApplicationsPage = () => {
                 {t('myApplications.back')}
               </Button>
             </Link>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{t('myApplications.title')}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+              {t('myApplications.title')}
+            </h1>
           </div>
           <Button variant="outline" onClick={handleRefresh} className="gap-2 w-full sm:w-auto">
             <RefreshCw className="w-4 h-4" /> {t('myApplications.refresh')}
@@ -69,7 +77,12 @@ const MyApplicationsPage = () => {
         </div>
 
         {applications.length === 0 ? (
-          <Card><CardContent className="p-8 text-center text-slate-500"><FileText className="w-12 h-12 mx-auto mb-4" />{t('myApplications.noApplications')}</CardContent></Card>
+          <Card>
+            <CardContent className="p-8 text-center text-slate-500">
+              <FileText className="w-12 h-12 mx-auto mb-4" />
+              {t('myApplications.noApplications')}
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-3">
             {applications.map((app) => {
@@ -81,9 +94,24 @@ const MyApplicationsPage = () => {
               return (
                 <Link key={app.id} to={`/mes-candidatures/${app.id}`} className="block">
                   <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <CardContent className="p-4 flex items-start gap-3">
+                      {/* Logo de l'entreprise */}
+                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
+                        {app.job?.company?.logo_url ? (
+                          <img
+                            src={app.job.company.logo_url}
+                            alt={app.job.company.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Building2 className="w-5 h-5 text-slate-400" />
+                        )}
+                      </div>
+
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium hover:text-blue-600">{app.job?.title || t('myApplications.jobDefault')}</p>
+                        <p className="font-medium hover:text-blue-600">
+                          {app.job?.title || t('myApplications.jobDefault')}
+                        </p>
                         <p className="text-sm text-slate-500">{app.job?.company?.name}</p>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           <Badge className={status.color}>{status.label}</Badge>

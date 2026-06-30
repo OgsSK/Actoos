@@ -2159,6 +2159,8 @@
       }
     },
     "companyApplications": {
+       "withdrawConfirm": "Withdraw this application?",
+      "withdrawButton": "Withdraw",
       "back": "Back",
       "title": "Applications",
       "noApplications": "No applications received.",
@@ -2177,6 +2179,7 @@
         "rejected": "Rejected"
       },
       "toasts": {
+        "withdrawn": "Application withdrawn",
         "deleted": "Application deleted.",
         "deleteError": "Error during deletion."
       }
@@ -2378,6 +2381,9 @@
       "delete": "Delete"
     },
     "jobDetail": {
+      "home.jobs.alreadyAppliedBadge": "Applied",
+    "jobs.alreadyAppliedBadge": "Applied",
+      "reapply": "Reapply",
       "similarJobs": "Similar jobs",
       "notFound": "Offer not found",
       "notFoundMessage": "This offer does not exist or has been deleted.",
@@ -2533,6 +2539,49 @@
       }
     },
     "applicationDetail": {
+      "rejectionReasonPrompt": "Reason (optional):",
+      "notifyOtherCandidates": "Notify other candidates",
+      "notifyOtherCandidatesHelp": "Send an email to other candidates to inform them that the position has been filled.",
+      "otherCandidatesModalTitle": "Message to other candidates",
+      "otherCandidatesMessagePlaceholder": "Add a personalized message (optional)",
+      "sendNotifications": "Send",
+       "othersNotified": "{{count}} candidate(s) notified and rejected",
+      "finalizeHiring": "Finalize hiring",
+      "finalizeHelp": "All documents have been validated. You can finalize the recruitment.",
+      "finalizeButton": "Finalize hiring",
+      "finalizeModalTitle": "Message to the candidate",
+      "finalizeMessagePlaceholder": "Your personalized message (optional) – e.g.: Report tomorrow at 8am...",
+      "finalizeSuccess": "Recruitment finalized!",
+      "recruitmentCompleted": "Recruitment finalized",
+      "documentsProgress":"{{validated}}/{{total}} documents validated",
+      "documentNamePlaceholder": "Document name",
+      "addDocument": "Add a document",
+      "docTypes": {
+        "contract": "Signed contract",
+        "id_card": "ID card",
+        "diploma": "Diploma",
+        "other": "Other document"
+      },
+      "validate": "Validate",
+  "reject": "Reject",
+  "validated": "Validated",
+  "rejected": "Rejected",
+      "awaitingValidation": "Awaiting validation",
+    "documentValidated": "Document validated",
+    "documentRejected": "Document rejected",
+      "acceptTitle": "Confirm acceptance",
+    "acceptMessagePlaceholder": "Your personalized message (optional)",
+    "documentRequestMessagePlaceholder": "Personalized message (optional)",
+    "documentsReceived": "Documents received",
+    "pending": "Pending",
+    "view": "View",
+    "deleteRequest": "Delete this request?",
+    "editRequest": "Edit request",
+    "confirmDeleteRequest": "Request deleted",
+    "requestModified": "Request modified",
+    "selectAtLeastOneDoc": "Please select at least one document type",
+      "requestDocuments": "Documents to provide",
+      "sendDocumentRequest": "Request documents",
       "upgradeForNotes": "Interview notes & AI tools",
     "upgradeForNotesDesc": "Upgrade to the Pro or Business plan to generate questions, answers and tips, and take notes.",
     "upgradeForSchedule": "Interview scheduling",
@@ -2571,6 +2620,7 @@
       "generateAnswers": "Generate answers",
       "generateTips": "Generate tips",
       "toasts": {
+        "documentRequestSent": "Document request sent to candidate",
         "noteSaved": "Note saved.",
         "noteDeleted": "Note deleted.",
         "questionsGenerated": "Questions generated successfully.",
@@ -2594,6 +2644,8 @@
     },
     "applicationStatus": { "pending": "Pending", "viewed": "Viewed", "shortlisted": "Shortlisted", "interview": "Interview", "accepted": "Accepted", "rejected": "Rejected" },
     "toasts": {
+       
+      "documentRequestSent": "Document request sent to the candidate",
       "companyNotVerifiedMenu": "Your company is not verified.",
       "loadError": "Error loading data.",
       "deleteConfirm": "Delete offer \"{{title}}\"?",
@@ -2648,6 +2700,14 @@
     "cvBank": { "title": "CV Bank", "desc": "Access our pool of available talents.", "browse": "Browse CVs" }
   },
     "candidateDashboard": {
+      "contracts": {
+        "title": "My contracts"
+      },
+       "hiringDocuments": {
+        "title": "Requested documents",
+        "pendingCount": "{{count}} pending document(s)",
+        "uploadDocs": "Upload my documents"
+      },
       "myCompanies": "My companies",
     "accessCompany": "Access dashboard",
       "greeting": "Hello {{name}}",
@@ -3016,7 +3076,66 @@
     "intermediaire": "Intermediate (2-5 years)",
     "senior": "Senior (5-10 years)",
     "expert": "Expert (10+ years)"
-  }
+  },
+  "candidateDocuments": {
+    "hide": "Remove from list",
+    "replace": "Replace",
+    "replaceSuccess": "Document replaced successfully",
+    "delete": "Delete",
+    "deleteSuccess": "Document deleted",
+    "confirmDelete": "Delete this document?",
+    "offer": "Offer:",
+      "title": "Requested documents",
+      "noDocuments": "No document requests at the moment.",
+      "upload": "Upload",
+      "uploadSuccess": "Document uploaded successfully",
+      "viewUploaded": "View uploaded document",
+      "documentTypes": {
+        "contract": "Signed contract",
+        "id_card": "ID card",
+        "diploma": "Diploma",
+        "other": "Other document"
+      },
+      "status": {
+        "pending": "Pending",
+        "uploaded": "Uploaded",
+        "validated": "Validated",
+        "rejected": "Rejected"
+      }
+    },
+    "contract": {
+      "sign": "Sign the contract",
+      "fullNamePlaceholder": "Your full name",
+      "signFullNameRequired": "Please enter your full name",
+      "title": "Contract",
+      "modeUpload": "Upload a file",
+      "modeGenerate": "Generate automatically",
+      "upload": "Upload",
+      "viewUploaded": "View contract",
+      "contentPlaceholder": "Contract content (HTML supported)",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "renewable": "Renewable",
+      "create": "Create contract",
+      "updated": "Contract updated",
+      "created": "Contract created",
+      "send": "Send to candidate",
+      "sent": "Contract sent",
+      "download": "Download contract",
+      "period": "Period",
+      "terminate": "Terminate contract",
+      "terminateConfirm": "Terminate contract?",
+      "terminated": "Contract terminated",
+      "durationUpdated": "Duration updated",
+      "fileUploaded": "File uploaded",
+      "status": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "signed": "Signed",
+        "completed": "Completed",
+        "terminated": "Terminated"
+      }
+    }
 
 
   

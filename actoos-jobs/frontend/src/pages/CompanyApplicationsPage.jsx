@@ -49,7 +49,7 @@ const CompanyApplicationsPage = () => {
 
     const { data } = await supabase
       .from('applications')
-      .select('*, candidate:users(first_name, last_name, email), job:jobs(title)')
+      .select('*, candidate:users(first_name, last_name, email, avatar_url), job:jobs(title)')
       .in('job_id', jobIds)
       .order('created_at', { ascending: false });
 
@@ -57,19 +57,16 @@ const CompanyApplicationsPage = () => {
     setLoading(false);
   };
 
-  const handleDeleteApplication = async (appId) => {
-    if (!window.confirm(t('companyApplications.deleteConfirm'))) return;
-
+  const handleWithdrawApplication = async (appId) => {
+    if (!window.confirm(t('companyApplications.withdrawConfirm', 'Retirer cette candidature ?'))) return;
     try {
       const { error } = await supabase
         .from('applications')
-        .delete()
+        .update({ status: 'withdrawn' })
         .eq('id', appId);
-
       if (error) throw error;
-
-      toast.success(t('companyApplications.toasts.deleted'));
-      setApplications((prev) => prev.filter((app) => app.id !== appId));
+      toast.success(t('companyApplications.toasts.withdrawn', 'Candidature retirée'));
+      setApplications(prev => prev.filter(app => app.id !== appId));
     } catch (err) {
       console.error(err);
       toast.error(err.message || t('companyApplications.toasts.deleteError'));
@@ -84,6 +81,8 @@ const CompanyApplicationsPage = () => {
     );
   }
 
+  const visibleApplications = applications.filter(app => app.status !== 'withdrawn');
+
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -97,7 +96,7 @@ const CompanyApplicationsPage = () => {
           <h1 className="text-2xl font-bold text-slate-900">{t('companyApplications.title')}</h1>
         </div>
 
-        {applications.length === 0 ? (
+        {visibleApplications.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center text-slate-500">
               <Users className="w-12 h-12 mx-auto mb-4" />
@@ -106,7 +105,7 @@ const CompanyApplicationsPage = () => {
           </Card>
         ) : (
           <div className="space-y-3">
-            {applications.map((app) => {
+            {visibleApplications.map((app) => {
               const statusLabel = t(`companyApplications.status.${app.status}`, { defaultValue: app.status });
               const statusColors = {
                 pending: 'bg-blue-100 text-blue-700',
@@ -115,6 +114,7 @@ const CompanyApplicationsPage = () => {
                 interview: 'bg-green-100 text-green-700',
                 accepted: 'bg-green-100 text-green-700',
                 rejected: 'bg-red-100 text-red-700',
+                completed: 'bg-green-200 text-green-800',
               };
               const statusColor = statusColors[app.status] || 'bg-slate-100 text-slate-700';
 
@@ -125,6 +125,19 @@ const CompanyApplicationsPage = () => {
                       to={`/dashboard/entreprise/candidatures/${app.id}`}
                       className="flex-1 min-w-0 flex items-center gap-4"
                     >
+                      {/* Avatar du candidat */}
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
+                        {app.candidate?.avatar_url ? (
+                          <img
+                            src={app.candidate.avatar_url}
+                            alt={`${app.candidate.first_name} ${app.candidate.last_name}`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Users className="w-5 h-5 text-slate-400" />
+                        )}
+                      </div>
+
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-slate-900">
                           {app.candidate?.first_name} {app.candidate?.last_name}
@@ -141,14 +154,14 @@ const CompanyApplicationsPage = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-red-600 hover:bg-red-50 shrink-0"
+                      className="text-slate-600 hover:bg-slate-100 shrink-0"
                       onClick={(e) => {
                         e.preventDefault();
-                        handleDeleteApplication(app.id);
+                        handleWithdrawApplication(app.id);
                       }}
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
-                      {t('companyApplications.deleteButton')}
+                      {t('companyApplications.withdrawButton', 'Retirer')}
                     </Button>
                   </CardContent>
                 </Card>

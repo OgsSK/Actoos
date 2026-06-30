@@ -7,7 +7,6 @@ import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import { fetchCategories } from '../lib/data';
 import { useAuth } from '../contexts/AuthContext';
-import useAppliedJobs from '../hooks/useAppliedJobs'; // ✅ nouveau hook
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -216,12 +215,13 @@ const CategoriesSection = () => {
   );
 };
 
-const RecentJobsSection = ({ countryId, activeCompanyIds, appliedJobIds }) => { // ✅ reçoit appliedJobIds
+const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
   const { t } = useTranslation();
   const { user, isCompany, isCandidate } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
+  const [appliedStatuses, setAppliedStatuses] = useState({});
 
   useEffect(() => {
     if (!user) { setSavedJobs([]); return; }
@@ -298,7 +298,19 @@ const RecentJobsSection = ({ countryId, activeCompanyIds, appliedJobIds }) => { 
             return new Date(b.created_at) - new Date(a.created_at);
           });
 
-        setJobs([...boosted, ...nonBoosted].slice(0, 6));
+        const finalJobs = [...boosted, ...nonBoosted].slice(0, 6);
+        setJobs(finalJobs);
+
+        if (user && finalJobs.length > 0) {
+          const { data: appsData } = await supabase
+            .from('applications')
+            .select('job_id, status')
+            .eq('candidate_id', user.id)
+            .in('job_id', finalJobs.map(j => j.id));
+          const map = {};
+          (appsData || []).forEach(app => { map[app.job_id] = app.status; });
+          setAppliedStatuses(map);
+        }
       } catch (error) {
         console.error('Error fetching jobs:', error);
       } finally {
@@ -307,7 +319,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds, appliedJobIds }) => { 
     };
 
     fetchJobs();
-  }, [countryId, activeCompanyIds, t]);
+  }, [countryId, activeCompanyIds, user, t]);
 
   return (
     <section className="py-20 bg-slate-50">
@@ -342,7 +354,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds, appliedJobIds }) => { 
                 user={user}
                 onSave={handleSaveJob}
                 isSaved={savedJobs.includes(job.id)}
-                hasApplied={appliedJobIds.includes(job.id)} // ✅ transmis
+                applicationStatus={appliedStatuses[job.id] || null}
               />
             ))}
           </div>
@@ -353,7 +365,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds, appliedJobIds }) => { 
   );
 };
 
-const JobCard = ({ job, user, onSave, isSaved, hasApplied }) => { // ✅ nouvelle prop
+const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -387,8 +399,7 @@ const JobCard = ({ job, user, onSave, isSaved, hasApplied }) => { // ✅ nouvell
       <Card className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-slate-200 rounded-3xl overflow-hidden bg-white relative">
         {job.urgent && <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-medium px-3 py-1 text-center">{t('home.jobs.urgent')}</div>}
         <CardContent className="p-5 pt-3">
-          {/* ✅ Badge "Postulé" */}
-          {hasApplied && (
+          {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
             <Badge className="absolute top-2 left-2 bg-green-100 text-green-700 text-xs">
               ✅ {t('home.jobs.alreadyAppliedBadge', 'Postulé')}
             </Badge>
@@ -671,8 +682,7 @@ const Homepage = () => {
   const [countryLoading, setCountryLoading] = useState(true);
   const [activeCompanyIds, setActiveCompanyIds] = useState([]);
 
-  const { user } = useAuth(); // ✅ récupération de l'utilisateur pour le hook
-  const appliedJobIds = useAppliedJobs(user?.id); // ✅ hook pour les candidatures
+  const { user } = useAuth();
 
   const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
@@ -759,8 +769,6 @@ const Homepage = () => {
       const { count: candCount } = await queryCandidates;
       candsCount = candCount || 0;
 
-      console.log('Stats chargées :', { jobsCount, compsCount, candsCount });
-
       setActiveJobs(jobsCount);
       setCompanies(compsCount);
       setCandidates(candsCount);
@@ -778,7 +786,6 @@ const Homepage = () => {
       <RecentJobsSection
         countryId={countryId}
         activeCompanyIds={activeCompanyIds}
-        appliedJobIds={appliedJobIds} // ✅ transmission
       />
       <CompaniesSection countryId={countryId} />
       <HowItWorksSection />

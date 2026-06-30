@@ -2161,6 +2161,8 @@
       }
     },
     "companyApplications": {
+      "withdrawConfirm": "Ritirare questa candidatura?",
+      "withdrawButton": "Ritira",
       "back": "Indietro",
       "title": "Candidature",
       "noApplications": "Nessuna candidatura ricevuta.",
@@ -2179,6 +2181,7 @@
         "rejected": "Rifiutata"
       },
       "toasts": {
+        "withdrawn": "Candidatura ritirata",
         "deleted": "Candidatura eliminata.",
         "deleteError": "Errore durante l'eliminazione."
       }
@@ -2381,6 +2384,9 @@
       "delete": "Elimina"
     },
      "jobDetail": {
+      "home.jobs.alreadyAppliedBadge": "Candidato",
+    "jobs.alreadyAppliedBadge": "Candidato",
+      "reapply": "Ricandidati",
        "similarJobs": "Offerte simili",
       "notFound": "Offerta non trovata",
       "notFoundMessage": "Questa offerta non esiste o è stata eliminata.",
@@ -2536,6 +2542,49 @@
       }
     },
     "applicationDetail": {
+      "rejectionReasonPrompt": "Motivo (facoltativo):",
+      "notifyOtherCandidates": "Informa gli altri candidati",
+      "notifyOtherCandidatesHelp": "Invia un'email agli altri candidati per informarli che la posizione è stata occupata.",
+      "otherCandidatesModalTitle": "Messaggio agli altri candidati",
+      "otherCandidatesMessagePlaceholder": "Aggiungi un messaggio personalizzato (facoltativo)",
+      "sendNotifications": "Invia",
+      "othersNotified": "{{count}} candidato/i notificato/i e rifiutato/i",
+      "finalizeHiring": "Finalizza l'assunzione",
+      "finalizeHelp": "Tutti i documenti sono stati convalidati. Puoi finalizzare l'assunzione.",
+      "finalizeButton": "Finalizza l'assunzione",
+      "finalizeModalTitle": "Messaggio al candidato",
+      "finalizeMessagePlaceholder": "Il tuo messaggio personalizzato (facoltativo) – es.: Presentati domani alle 8...",
+      "finalizeSuccess": "Assunzione finalizzata!",
+      "recruitmentCompleted": "Assunzione finalizzata",
+      "documentsProgress":"{{validated}}/{{total}} documenti convalidati",
+      "documentNamePlaceholder": "Nome del documento",
+      "addDocument": "Aggiungi documento",
+      "docTypes": {
+        "contract": "Contratto firmato",
+        "id_card": "Documento d'identità",
+        "diploma": "Diploma",
+        "other": "Altro documento"
+      },
+      "validate": "Convalida",
+  "reject": "Rifiuta",
+  "validated": "Convalidato",
+  "rejected": "Rifiutato",
+      "awaitingValidation": "In attesa di convalida",
+    "documentValidated": "Documento convalidato",
+    "documentRejected": "Documento rifiutato",
+      "acceptTitle": "Conferma accettazione",
+    "acceptMessagePlaceholder": "Il tuo messaggio personalizzato (facoltativo)",
+    "documentRequestMessagePlaceholder": "Messaggio personalizzato (facoltativo)",
+    "documentsReceived": "Documenti ricevuti",
+    "pending": "In attesa",
+    "view": "Visualizza",
+    "deleteRequest": "Eliminare questa richiesta?",
+    "editRequest": "Modifica richiesta",
+    "confirmDeleteRequest": "Richiesta eliminata",
+    "requestModified": "Richiesta modificata",
+    "selectAtLeastOneDoc": "Seleziona almeno un tipo di documento",
+       "requestDocuments": "Documenti da fornire",
+      "sendDocumentRequest": "Richiedi documenti",
       "upgradeForNotes": "Note del colloquio e strumenti IA",
     "upgradeForNotesDesc": "Passa al piano Pro o Business per generare domande, risposte e consigli, e prendere appunti.",
     "upgradeForSchedule": "Pianificazione colloquio",
@@ -2574,6 +2623,7 @@
       "generateAnswers": "Genera risposte",
       "generateTips": "Genera suggerimenti",
       "toasts": {
+        "documentRequestSent": "Richiesta di documenti inviata al candidato",
         "noteSaved": "Nota salvata.",
         "noteDeleted": "Nota eliminata.",
         "questionsGenerated": "Domande generate con successo.",
@@ -2597,6 +2647,7 @@
     },
     "applicationStatus": { "pending": "In attesa", "viewed": "Visualizzata", "shortlisted": "Preselezionata", "interview": "Colloquio", "accepted": "Accettata", "rejected": "Rifiutata" },
     "toasts": {
+      "documentRequestSent": "Richiesta di documenti inviata al candidato",
       "companyNotVerifiedMenu": "La tua azienda non è verificata.",
       "loadError": "Errore durante il caricamento dei dati.",
       "deleteConfirm": "Eliminare l'offerta \"{{title}}\"?",
@@ -2651,6 +2702,14 @@
     "cvBank": { "title": "Banca CV", "desc": "Accedi al nostro bacino di talenti.", "browse": "Sfoglia i CV" }
   },
     "candidateDashboard": {
+       "contracts": {
+        "title": "I miei contratti"
+      },
+      "hiringDocuments": {
+        "title": "Documenti richiesti",
+        "pendingCount": "{{count}} documento/i in attesa",
+        "uploadDocs": "Carica i miei documenti"
+      },
       "myCompanies": "Le mie aziende",
     "accessCompany": "Accedi alla dashboard",
       "greeting": "Ciao {{name}}",
@@ -3021,7 +3080,66 @@
     "intermediaire": "Intermedio (2‑5 anni)",
     "senior": "Senior (5‑10 anni)",
     "expert": "Esperto (10+ anni)"
-  }
+  },
+  "candidateDocuments": {
+    "hide": "Rimuovi dalla lista",
+    "replace": "Sostituisci",
+    "replaceSuccess": "Documento sostituito con successo",
+    "delete": "Elimina",
+    "deleteSuccess": "Documento eliminato",
+    "confirmDelete": "Eliminare questo documento?",
+    "offer": "Offerta:",
+      "title": "Documenti richiesti",
+      "noDocuments": "Nessuna richiesta di documenti al momento.",
+      "upload": "Carica",
+      "uploadSuccess": "Documento inviato con successo",
+      "viewUploaded": "Vedi documento inviato",
+      "documentTypes": {
+        "contract": "Contratto firmato",
+        "id_card": "Documento d'identità",
+        "diploma": "Diploma",
+        "other": "Altro documento"
+      },
+      "status": {
+        "pending": "In attesa",
+        "uploaded": "Inviato",
+        "validated": "Convalidato",
+        "rejected": "Rifiutato"
+      }
+    },
+    "contract": {
+      "sign": "Firmare il contratto",
+      "fullNamePlaceholder": "Il tuo nome completo",
+      "signFullNameRequired": "Inserisci il tuo nome completo",
+      "title": "Contratto",
+      "modeUpload": "Carica file",
+      "modeGenerate": "Genera automaticamente",
+      "upload": "Carica",
+      "viewUploaded": "Vedi contratto",
+      "contentPlaceholder": "Contenuto del contratto (HTML supportato)",
+      "startDate": "Data di inizio",
+      "endDate": "Data di fine",
+      "renewable": "Rinnovabile",
+      "create": "Crea contratto",
+      "updated": "Contratto aggiornato",
+      "created": "Contratto creato",
+      "send": "Invia al candidato",
+      "sent": "Contratto inviato",
+      "download": "Scarica contratto",
+      "period": "Periodo",
+      "terminate": "Termina contratto",
+      "terminateConfirm": "Terminare il contratto?",
+      "terminated": "Contratto terminato",
+      "durationUpdated": "Durata aggiornata",
+      "fileUploaded": "File caricato",
+      "status": {
+        "draft": "Bozza",
+        "sent": "Inviato",
+        "signed": "Firmato",
+        "completed": "Completato",
+        "terminated": "Terminato"
+      }
+    }
  
 
 }

@@ -11,12 +11,24 @@ import { toast } from 'sonner';
 import {
   Loader2, ChevronLeft, Mail, Phone, MapPin, Calendar, Briefcase, User, FileText,
   ExternalLink, Video, Sparkles, RefreshCw, Trash2, Save, MessageSquare, Lightbulb,
-  CheckCircle, Crown
+  CheckCircle, Crown, XCircle, Clock, Plus, Send
 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 import { planHasFeature } from '../lib/planLimits';
 
-/* ---------- Bloc éditable avec gestion du curseur ---------- */
+/* ---------- Fonction d'extraction de message d'erreur ---------- */
+const getErrorMessage = (error, fallback = 'Une erreur est survenue') => {
+  if (!error) return fallback;
+  if (typeof error === 'string') return error;
+  if (error.json && typeof error.json === 'function') {
+    return error.statusText || String(error);
+  }
+  if (error.message) return error.message;
+  if (error.detail) return error.detail;
+  return fallback;
+};
+
+/* ---------- Bloc éditable ---------- */
 const EditableBlock = ({ title, icon: Icon, content, onChange, onSave, saving, onDelete, lastSaved, t }) => {
   const editableRef = useRef(null);
   const cursorPosRef = useRef(null);
@@ -134,6 +146,7 @@ const ApplicationDetailPage = () => {
   const [updating, setUpdating] = useState(false);
   const [customRoomName, setCustomRoomName] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [requestingDocs, setRequestingDocs] = useState(false);
 
   const [notes, setNotes] = useState({ personal: '', questions: '', answers: '', tips: '' });
   const [savingNotes, setSavingNotes] = useState(false);
@@ -148,7 +161,37 @@ const ApplicationDetailPage = () => {
   const [companyPlan, setCompanyPlan] = useState('free');
   const [planLoading, setPlanLoading] = useState(true);
 
-  // Récupération du plan de l'entreprise active
+  // Documents du candidat
+  const [candidateDocuments, setCandidateDocuments] = useState([]);
+
+  // Acceptation
+  const [acceptMessage, setAcceptMessage] = useState('');
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+
+  // Demande de documents
+  const [selectedDocTypes, setSelectedDocTypes] = useState(['contract', 'id_card', 'diploma']);
+  const [customDocFields, setCustomDocFields] = useState([]);
+  const customDocIdRef = useRef(1);
+  const [requestDocsMessage, setRequestDocsMessage] = useState('');
+
+  // Édition de demande
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editSelectedDocTypes, setEditSelectedDocTypes] = useState([]);
+  const [editCustomDocFields, setEditCustomDocFields] = useState([]);
+  const editDocIdRef = useRef(1);
+  const [editMessage, setEditMessage] = useState('');
+
+  // Finalisation de l'embauche
+  const [finalizeMessage, setFinalizeMessage] = useState('');
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [finalizingHiring, setFinalizingHiring] = useState(false);
+
+  // ✅ Notification des autres candidats
+  const [notifyingOthers, setNotifyingOthers] = useState(false);
+  const [showOtherCandidatesModal, setShowOtherCandidatesModal] = useState(false);
+  const [otherCandidatesMessage, setOtherCandidatesMessage] = useState('');
+
+  // Récupération du plan
   useEffect(() => {
     if (!activeCompanyId) {
       setCompanyPlan('free');
@@ -189,7 +232,7 @@ const ApplicationDetailPage = () => {
     const fetchData = async () => {
       const { data, error } = await supabase
         .from('applications')
-        .select('*, candidate:users(*), job:jobs(*)')
+        .select('*, candidate:users(*), job:jobs(*, company:companies(name))')
         .eq('id', id)
         .single();
       if (!error && data) {
@@ -200,6 +243,8 @@ const ApplicationDetailPage = () => {
           .eq('user_id', data.candidate.id)
           .maybeSingle();
         setCandidateProfile(cp || {});
+
+        await reloadDocuments();
 
         const { data: notesData } = await supabase
           .from('application_notes')
@@ -227,6 +272,16 @@ const ApplicationDetailPage = () => {
     };
     fetchData();
   }, [id, user]);
+
+  const reloadDocuments = async () => {
+    if (!id) return;
+    const { data: docs } = await supabase
+      .from('hiring_documents')
+      .select('id, document_type, status, file_url, created_at')
+      .eq('application_id', id)
+      .order('created_at', { ascending: false });
+    setCandidateDocuments(docs || []);
+  };
 
   const saveNote = useCallback(async (type, content) => {
     if (!id) return false;
@@ -290,8 +345,11 @@ const ApplicationDetailPage = () => {
       setNotes(prev => ({ ...prev, [type]: newContent }));
       await saveNote(type, newContent);
       toast.success(t('applicationDetail.toasts.questionsGenerated'));
-    } catch (err) { toast.error(err.message); }
-    finally { setGen(false); }
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('common.error')));
+    } finally {
+      setGen(false);
+    }
   };
 
   const buildInterviewContext = () => {
@@ -313,7 +371,7 @@ Profil candidat :
 - Bio : ${profile?.bio || ''}`.trim();
   };
 
-  const handleStatusChange = async (newStatus) => {
+  const handleStatusChange = async (newStatus, customMessage = '') => {
     setUpdating(true);
     let reason = null;
     if (newStatus === 'rejected') {
@@ -327,6 +385,7 @@ Profil candidat :
       const { error } = await supabase.from('applications').update(updates).eq('id', id);
       if (error) throw error;
       setApplication(prev => ({ ...prev, ...updates }));
+
       try {
         await apiFetch('/api/notify-status-change', {
           method: 'POST',
@@ -341,15 +400,232 @@ Profil candidat :
           }),
         });
       } catch (emailError) {
-        console.error("Erreur lors de l'envoi de l'email de notification :", emailError);
+        console.error("Erreur email notification :", emailError);
       }
+
+      if (newStatus === 'accepted') {
+        try {
+          await apiFetch('/api/notify-accepted-candidate', {
+            method: 'POST',
+            body: JSON.stringify({
+              candidate_email: application.candidate.email,
+              candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
+              job_title: application.job.title,
+              company_name: application.job.company?.name || '',
+              message: customMessage,
+              language: i18n.language,
+            }),
+          });
+        } catch (err) {
+          console.error("Erreur email acceptation :", err);
+        }
+      }
+
       toast.success(t('applicationDetail.toasts.statusUpdated'));
     } catch (err) {
-      toast.error(t('applicationDetail.toasts.updateError'));
+      toast.error(getErrorMessage(err, t('common.error')));
     } finally {
       setUpdating(false);
     }
   };
+
+  const handleRequestDocuments = async () => {
+    const customNames = customDocFields
+      .map(f => f.value.trim())
+      .filter(Boolean);
+    const typesToSend = [...selectedDocTypes, ...customNames];
+
+    if (typesToSend.length === 0) {
+      toast.error(t('applicationDetail.selectAtLeastOneDoc'));
+      return;
+    }
+
+    setRequestingDocs(true);
+    try {
+      await apiFetch('/api/hiring/request-documents', {
+        method: 'POST',
+        body: JSON.stringify({
+          application_id: application.id,
+          candidate_email: application.candidate.email,
+          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
+          job_title: application.job.title,
+          company_name: application.job.company?.name || '',
+          document_types: typesToSend,
+          message: requestDocsMessage,
+          language: i18n.language,
+        }),
+      });
+      toast.success(t('applicationDetail.toasts.documentRequestSent'));
+      setSelectedDocTypes(['contract', 'id_card', 'diploma']);
+      setCustomDocFields([]);
+      setRequestDocsMessage('');
+      await reloadDocuments();
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('common.error')));
+    } finally {
+      setRequestingDocs(false);
+    }
+  };
+
+  const handleDeleteDocumentRequest = async (docId) => {
+    if (!window.confirm(t('applicationDetail.deleteRequest'))) return;
+    const { error } = await supabase.from('hiring_documents').delete().eq('id', docId);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(t('applicationDetail.confirmDeleteRequest'));
+      await reloadDocuments();
+    }
+  };
+
+  const openEditModal = () => {
+    const types = candidateDocuments.map(d => d.document_type);
+    const standard = ['contract', 'id_card', 'diploma'];
+    const standardSelected = standard.filter(t => types.includes(t));
+    const customNames = types
+      .filter(t => !standard.includes(t))
+      .map(name => {
+        const id = editDocIdRef.current++;
+        return { id, value: name };
+      });
+
+    setEditSelectedDocTypes(standardSelected);
+    setEditCustomDocFields(customNames);
+    setEditMessage('');
+    setShowEditModal(true);
+  };
+
+  const handleEditDocuments = async () => {
+    const customNames = editCustomDocFields
+      .map(f => f.value.trim())
+      .filter(Boolean);
+    const typesToSend = [...editSelectedDocTypes, ...customNames];
+
+    if (typesToSend.length === 0) {
+      toast.error(t('applicationDetail.selectAtLeastOneDoc'));
+      return;
+    }
+    setShowEditModal(false);
+    try {
+      await supabase.from('hiring_documents').delete().eq('application_id', application.id);
+      await apiFetch('/api/hiring/request-documents', {
+        method: 'POST',
+        body: JSON.stringify({
+          application_id: application.id,
+          candidate_email: application.candidate.email,
+          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
+          job_title: application.job.title,
+          company_name: application.job.company?.name || '',
+          document_types: typesToSend,
+          message: editMessage,
+          language: i18n.language,
+        }),
+      });
+      toast.success(t('applicationDetail.requestModified'));
+      await reloadDocuments();
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('common.error')));
+    }
+  };
+
+  const handleValidateDocument = async (docId, docType) => {
+    try {
+      const { error } = await supabase
+        .from('hiring_documents')
+        .update({ status: 'validated' })
+        .eq('id', docId);
+      if (error) throw error;
+      toast.success(t('applicationDetail.documentValidated'));
+      await reloadDocuments();
+      apiFetch('/api/notify-document-validated', {
+        method: 'POST',
+        body: JSON.stringify({
+          candidate_email: application.candidate.email,
+          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
+          document_type: docType,
+          language: i18n.language,
+        }),
+      }).catch(console.error);
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('common.error')));
+    }
+  };
+
+  const handleRejectDocument = async (docId, docType) => {
+  const reason = window.prompt(t('applicationDetail.rejectionReasonPrompt', 'Raison (optionnelle) :'));
+  if (reason === null) return; // annulé
+
+  try {
+    const { error } = await supabase
+      .from('hiring_documents')
+      .update({ status: 'rejected' })
+      .eq('id', docId);
+    if (error) throw error;
+
+    toast.success(t('applicationDetail.documentRejected'));
+    await reloadDocuments();
+
+    apiFetch('/api/notify-document-rejected', {
+      method: 'POST',
+      body: JSON.stringify({
+        candidate_email: application.candidate.email,
+        candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
+        document_type: docType,
+        reason: reason || '',
+        language: i18n.language,
+      }),
+    }).catch(console.error);
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
+
+  // Finalisation de l'embauche
+  const handleFinalizeHiring = async (message) => {
+    setFinalizingHiring(true);
+    try {
+      await apiFetch('/api/hiring/finalize', {
+        method: 'POST',
+        body: JSON.stringify({
+          application_id: application.id,
+          message: message,
+          language: i18n.language,
+        }),
+      });
+      setApplication(prev => ({ ...prev, status: 'completed' }));
+      toast.success(t('applicationDetail.finalizeSuccess', 'Recrutement finalisé !'));
+      setFinalizeMessage('');
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('common.error')));
+    } finally {
+      setFinalizingHiring(false);
+    }
+  };
+
+  // ✅ Notification des autres candidats
+ const handleNotifyOtherCandidates = async (message) => {
+  setNotifyingOthers(true);
+  try {
+    const res = await apiFetch('/api/notify-other-candidates', {
+      method: 'POST',
+      body: JSON.stringify({
+        application_id: application.id,
+        message: message,
+        language: i18n.language,
+      }),
+    });
+    // Toast traduit avec le nombre reçu
+    toast.success(
+      t('applicationDetail.othersNotified', { count: res.count }, `${res.count} candidat(s) notifié(s)`)
+    );
+    setOtherCandidatesMessage('');
+  } catch (err) {
+    toast.error(err.detail || err.message || t('common.error'));
+  } finally {
+    setNotifyingOthers(false);
+    setShowOtherCandidatesModal(false);
+  }
+};
 
   const handleCreateMeeting = async () => {
     const room = customRoomName.trim() || `actoos-interview-${application.id}`;
@@ -361,8 +637,11 @@ Profil candidat :
       setApplication(prev => ({ ...prev, meeting_link: meetingLink }));
       setCustomRoomName('');
       toast.success(t('applicationDetail.toasts.linkUpdated'));
-    } catch (err) { toast.error(t('applicationDetail.toasts.updateError')); }
-    finally { setUpdating(false); }
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('common.error')));
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleDeleteMeeting = async () => {
@@ -372,8 +651,11 @@ Profil candidat :
       if (error) throw error;
       setApplication(prev => ({ ...prev, meeting_link: null }));
       toast.success(t('applicationDetail.toasts.linkDeleted'));
-    } catch (err) { toast.error(t('applicationDetail.toasts.updateError')); }
-    finally { setUpdating(false); }
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('common.error')));
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleSendEmail = async (type) => {
@@ -395,8 +677,11 @@ Profil candidat :
         })
       });
       toast.success(t('applicationDetail.toasts.emailSent'));
-    } catch (err) { toast.error(err.message); }
-    finally { setSendingEmail(false); }
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('common.error')));
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   if (loading || planLoading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
@@ -408,13 +693,37 @@ Profil candidat :
   const statusColors = {
     pending: 'bg-blue-100 text-blue-700', viewed: 'bg-slate-100 text-slate-700', shortlisted: 'bg-purple-100 text-purple-700',
     interview: 'bg-green-100 text-green-700', accepted: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700',
+    completed: 'bg-green-200 text-green-800'
   };
   const statusColor = statusColors[application.status] || 'bg-slate-100 text-slate-700';
+
+  const getDocumentLabel = (type) => {
+    const labels = {
+      contract: t('applicationDetail.docTypes.contract', 'Contrat signé'),
+      id_card: t('applicationDetail.docTypes.id_card', "Pièce d'identité"),
+      diploma: t('applicationDetail.docTypes.diploma', 'Diplôme'),
+    };
+    return labels[type] || type;
+  };
+
+  // Barre de progression des documents
+  const totalDocs = candidateDocuments.length;
+  const validatedDocs = candidateDocuments.filter(d => d.status === 'validated').length;
+  const progressPercent = totalDocs > 0 ? Math.round((validatedDocs / totalDocs) * 100) : 0;
+  const allDocsValidated = totalDocs > 0 && candidateDocuments.every(d => d.status === 'validated');
 
   return (
     <div className="min-h-0 bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <Link to="/dashboard/entreprise/candidatures"><Button variant="ghost" className="mb-6"><ChevronLeft className="w-4 h-4 mr-2" />{t('applicationDetail.back')}</Button></Link>
+
+        {/* Badge recrutement finalisé */}
+        {application.status === 'completed' && (
+          <div className="bg-green-100 text-green-700 rounded-xl p-4 text-center mb-6">
+            <CheckCircle className="w-8 h-8 mx-auto mb-2" />
+            <p className="font-semibold">{t('applicationDetail.recruitmentCompleted', 'Recrutement finalisé')}</p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Colonne de gauche (profil + notes) */}
@@ -451,237 +760,350 @@ Profil candidat :
             {application.cover_letter && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.coverLetter')}</h2><p className="text-slate-600 whitespace-pre-wrap">{application.cover_letter}</p></CardContent></Card>}
             {candidateProfile?.cv_url && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.cv')}</h2><a href={candidateProfile.cv_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl hover:bg-blue-100"><FileText className="w-4 h-4" /> {t('applicationDetail.viewCV')}</a></CardContent></Card>}
 
-            {/* Bloc Notes avec onglets (réservé Pro/Business) */}
+            {/* Bloc Notes */}
             {isProOrBusiness ? (
               <Card>
                 <CardContent className="p-6">
-                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-blue-600" /> {t('applicationDetail.interviewNotes')}
-                  </h3>
-
+                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><FileText className="w-5 h-5 text-blue-600" />{t('applicationDetail.interviewNotes')}</h3>
                   <div className="flex flex-wrap gap-2 mb-4 border-b border-slate-200 pb-px">
                     {TABS.map(tab => (
-                      <button
-                        key={tab.key}
-                        onClick={() => handleTabChange(tab.key)}
-                        className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
-                          activeNoteTab === tab.key
-                            ? 'bg-white text-blue-600 border-b-2 border-blue-600'
-                            : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1" />
-                        {t(`notes.${tab.key}`)}
+                      <button key={tab.key} onClick={() => handleTabChange(tab.key)} className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${activeNoteTab === tab.key ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>
+                        <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1" />{t(`notes.${tab.key}`)}
                       </button>
                     ))}
                   </div>
-
                   <div className="max-h-[60vh] overflow-y-auto">
-                    {activeNoteTab === 'personal' && (
-                      <EditableBlock title={t('notes.personal')} icon={FileText} content={notes.personal}
-                        onChange={(val) => setNotes(prev => ({ ...prev, personal: val }))}
-                        onSave={() => handleSaveNote('personal')} saving={savingNotes}
-                        onDelete={() => handleDeleteNote('personal')} lastSaved={lastSavedMap['personal']} t={t} />
-                    )}
+                    {activeNoteTab === 'personal' && <EditableBlock title={t('notes.personal')} icon={FileText} content={notes.personal} onChange={(val) => setNotes(prev => ({ ...prev, personal: val }))} onSave={() => handleSaveNote('personal')} saving={savingNotes} onDelete={() => handleDeleteNote('personal')} lastSaved={lastSavedMap['personal']} t={t} />}
                     {activeNoteTab === 'questions' && (
-                      <div className="space-y-3">
-                        <div className="flex justify-end">
-                          <Button variant="outline" size="sm" onClick={() => handleGenerate('questions')} disabled={generatingQuestions}>
-                            {generatingQuestions ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
-                            {t('applicationDetail.generateQuestions')}
-                          </Button>
-                        </div>
-                        <EditableBlock title={t('notes.questions')} icon={MessageSquare} content={notes.questions}
-                          onChange={(val) => setNotes(prev => ({ ...prev, questions: val }))}
-                          onSave={() => handleSaveNote('questions')} saving={savingNotes}
-                          onDelete={() => handleDeleteNote('questions')} lastSaved={lastSavedMap['questions']} t={t} />
-                      </div>
+                      <div className="space-y-3"><div className="flex justify-end"><Button variant="outline" size="sm" onClick={() => handleGenerate('questions')} disabled={generatingQuestions}>{generatingQuestions ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}{t('applicationDetail.generateQuestions')}</Button></div><EditableBlock title={t('notes.questions')} icon={MessageSquare} content={notes.questions} onChange={(val) => setNotes(prev => ({ ...prev, questions: val }))} onSave={() => handleSaveNote('questions')} saving={savingNotes} onDelete={() => handleDeleteNote('questions')} lastSaved={lastSavedMap['questions']} t={t} /></div>
                     )}
                     {activeNoteTab === 'answers' && (
-                      <div className="space-y-3">
-                        <div className="flex justify-end">
-                          <Button variant="outline" size="sm" onClick={() => handleGenerate('answers')} disabled={generatingAnswers || !notes.questions}>
-                            {generatingAnswers ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
-                            {t('applicationDetail.generateAnswers')}
-                          </Button>
-                        </div>
-                        <EditableBlock title={t('notes.answers')} icon={Sparkles} content={notes.answers}
-                          onChange={(val) => setNotes(prev => ({ ...prev, answers: val }))}
-                          onSave={() => handleSaveNote('answers')} saving={savingNotes}
-                          onDelete={() => handleDeleteNote('answers')} lastSaved={lastSavedMap['answers']} t={t} />
-                      </div>
+                      <div className="space-y-3"><div className="flex justify-end"><Button variant="outline" size="sm" onClick={() => handleGenerate('answers')} disabled={generatingAnswers || !notes.questions}>{generatingAnswers ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}{t('applicationDetail.generateAnswers')}</Button></div><EditableBlock title={t('notes.answers')} icon={Sparkles} content={notes.answers} onChange={(val) => setNotes(prev => ({ ...prev, answers: val }))} onSave={() => handleSaveNote('answers')} saving={savingNotes} onDelete={() => handleDeleteNote('answers')} lastSaved={lastSavedMap['answers']} t={t} /></div>
                     )}
                     {activeNoteTab === 'tips' && (
-                      <div className="space-y-3">
-                        <div className="flex justify-end">
-                          <Button variant="outline" size="sm" onClick={() => handleGenerate('tips')} disabled={generatingTips}>
-                            {generatingTips ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
-                            {t('applicationDetail.generateTips')}
-                          </Button>
-                        </div>
-                        <EditableBlock title={t('notes.tips')} icon={Lightbulb} content={notes.tips}
-                          onChange={(val) => setNotes(prev => ({ ...prev, tips: val }))}
-                          onSave={() => handleSaveNote('tips')} saving={savingNotes}
-                          onDelete={() => handleDeleteNote('tips')} lastSaved={lastSavedMap['tips']} t={t} />
-                      </div>
+                      <div className="space-y-3"><div className="flex justify-end"><Button variant="outline" size="sm" onClick={() => handleGenerate('tips')} disabled={generatingTips}>{generatingTips ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}{t('applicationDetail.generateTips')}</Button></div><EditableBlock title={t('notes.tips')} icon={Lightbulb} content={notes.tips} onChange={(val) => setNotes(prev => ({ ...prev, tips: val }))} onSave={() => handleSaveNote('tips')} saving={savingNotes} onDelete={() => handleDeleteNote('tips')} lastSaved={lastSavedMap['tips']} t={t} /></div>
                     )}
                   </div>
                 </CardContent>
               </Card>
             ) : (
-              <Card className="border-amber-200 bg-amber-50">
-                <CardContent className="p-6 text-center">
-                  <Crown className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-                  <p className="text-amber-800 font-medium">
-                    {t('applicationDetail.upgradeForNotes', 'Notes d’entretien et outils IA')}
-                  </p>
-                  <p className="text-sm text-amber-700 mt-2">
-                    {t('applicationDetail.upgradeForNotesDesc', 'Passez au plan Pro ou Business pour générer des questions, réponses et conseils, et prendre des notes.')}
-                  </p>
-                  <Link to="/tarifs">
-                    <Button className="mt-4 bg-amber-600 hover:bg-amber-700 text-white">
-                      {t('applicationDetail.viewPlans')}
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
+              <Card className="border-amber-200 bg-amber-50"><CardContent className="p-6 text-center"><Crown className="w-8 h-8 text-amber-500 mx-auto mb-2" /><p className="text-amber-800 font-medium">{t('applicationDetail.upgradeForNotes', 'Notes d’entretien et outils IA')}</p><p className="text-sm text-amber-700 mt-2">{t('applicationDetail.upgradeForNotesDesc', 'Passez au plan Pro ou Business pour générer des questions, réponses et conseils, et prendre des notes.')}</p><Link to="/tarifs"><Button className="mt-4 bg-amber-600 hover:bg-amber-700 text-white">{t('applicationDetail.viewPlans')}</Button></Link></CardContent></Card>
             )}
           </div>
 
-          {/* Colonne de droite : statut et entretien */}
+          {/* Colonne de droite */}
           <div className="space-y-6">
-            <Card>
-              <CardContent className="p-6 text-center">
-                <Badge className={`${statusColor} text-sm px-4 py-2`}>{statusLabel}</Badge>
-                <p className="text-xs text-slate-500 mt-2">{t('applicationDetail.receivedAt', { date: formatRelative(application.created_at) })}</p>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-6 text-center"><Badge className={`${statusColor} text-sm px-4 py-2`}>{statusLabel}</Badge><p className="text-xs text-slate-500 mt-2">{t('applicationDetail.receivedAt', { date: formatRelative(application.created_at) })}</p></CardContent></Card>
 
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">{t('applicationDetail.changeStatus')}</h3>
-                <div className="space-y-2">
-                  {Object.entries(statusColors).map(([key]) => (
-                    <button
-                      key={key}
-                      onClick={() => handleStatusChange(key)}
-                      disabled={updating || application.status === key}
-                      className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                        application.status === key ? 'bg-blue-50 text-blue-700 cursor-default' : 'hover:bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      {t(`applicationDetail.status.${key}`)}
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Section Entretien (réservée Pro/Business) */}
-            {isProOrBusiness ? (
+            {application.status !== 'completed' && (
               <Card>
                 <CardContent className="p-6">
-                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-600" /> {t('applicationDetail.scheduleInterview')}
-                  </h3>
-                  <div className="space-y-6">
-                    {/* Étape 1 */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span>
-                        <h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step1ChooseSlot')}</h4>
-                      </div>
-                      <div className="flex flex-wrap gap-2 ml-8">
-                        <a href="https://calendly.com/actoos/entretien" target="_blank" rel="noopener noreferrer"
-                           className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700">
-                          <Calendar className="w-4 h-4" /> {t('applicationDetail.openCalendly')}
-                        </a>
-                        <Button variant="outline" size="sm" onClick={() => handleSendEmail('calendly')} disabled={sendingEmail}>
-                          <Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Étape 2 */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span>
-                        <h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step2CreateLink')}</h4>
-                      </div>
-                      <div className="ml-8 space-y-3">
-                        {application.meeting_link ? (
-                          <>
-                            <div className="bg-blue-50 rounded-xl p-3 text-sm break-all">
-                              <a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
-                                {application.meeting_link}
-                              </a>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              <a href={application.meeting_link} target="_blank" rel="noopener noreferrer"
-                                 className="inline-flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-green-700">
-                                <Video className="w-4 h-4" /> {t('applicationDetail.joinMeeting')}
-                              </a>
-                              <Button variant="outline" size="sm" onClick={() => handleSendEmail('jitsi')} disabled={sendingEmail}>
-                                <Mail className="w-4 h-4 mr-1" /> {t('applicationDetail.sendEmail')}
-                              </Button>
-                            </div>
-                            <input type="text" placeholder={t('applicationDetail.newRoomPlaceholder')} value={customRoomName}
-                                   onChange={(e) => setCustomRoomName(e.target.value)}
-                                   className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                disabled={updating}
-                                onClick={handleCreateMeeting}
-                                className="flex-1 min-w-0 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 overflow-hidden"
-                              >
-                                <RefreshCw className="w-4 h-4 shrink-0" />
-                                <span className="btn-marquee flex-1 min-w-0">
-                                  <span>{t('applicationDetail.updateLink')}</span>
-                                </span>
-                              </button>
-                              <Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteMeeting} disabled={updating}>
-                                <Trash2 className="w-4 h-4" /> {t('applicationDetail.deleteLink')}
-                              </Button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <input type="text" placeholder={t('applicationDetail.roomPlaceholder')} value={customRoomName}
-                                   onChange={(e) => setCustomRoomName(e.target.value)}
-                                   className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" />
-                            <Button variant="outline" className="w-full" onClick={handleCreateMeeting} disabled={updating}>
-                              {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Video className="w-4 h-4 mr-2" />}
-                              {t('applicationDetail.generateJitsiLink')}
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                  <h3 className="font-semibold text-slate-900 mb-4">{t('applicationDetail.changeStatus')}</h3>
+                  <div className="space-y-2">
+                    {Object.entries(statusColors).filter(([key]) => key !== 'completed').map(([key]) => (
+                      <button key={key} onClick={() => key === 'accepted' ? setShowAcceptModal(true) : handleStatusChange(key)} disabled={updating || application.status === key}
+                        className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${application.status === key ? 'bg-blue-50 text-blue-700 cursor-default' : 'hover:bg-slate-100 text-slate-700'}`}>
+                        {t(`applicationDetail.status.${key}`)}
+                      </button>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
-            ) : (
-              <Card className="border-amber-200 bg-amber-50">
-                <CardContent className="p-6 text-center">
-                  <Calendar className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-                  <p className="text-amber-800 font-medium">
-                    {t('applicationDetail.upgradeForSchedule', 'Planification d’entretien')}
-                  </p>
-                  <p className="text-sm text-amber-700 mt-2">
-                    {t('applicationDetail.upgradeForScheduleDesc', 'Passez au plan Pro ou Business pour planifier des entretiens avec Calendly et Jitsi.')}
-                  </p>
-                  <Link to="/tarifs">
-                    <Button className="mt-4 bg-amber-600 hover:bg-amber-700 text-white">
-                      {t('applicationDetail.viewPlans')}
+            )}
+
+            {/* Demande de documents (personnalisable) */}
+            {application.status === 'accepted' && (
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4">{t('applicationDetail.requestDocuments')}</h3>
+
+                  <div className="space-y-2 mb-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={selectedDocTypes.includes('contract')} onChange={(e) => e.target.checked ? setSelectedDocTypes([...selectedDocTypes, 'contract']) : setSelectedDocTypes(selectedDocTypes.filter(t => t !== 'contract'))} className="rounded" />
+                      <span className="text-sm">{t('applicationDetail.docTypes.contract', 'Contrat signé')}</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={selectedDocTypes.includes('id_card')} onChange={(e) => e.target.checked ? setSelectedDocTypes([...selectedDocTypes, 'id_card']) : setSelectedDocTypes(selectedDocTypes.filter(t => t !== 'id_card'))} className="rounded" />
+                      <span className="text-sm">{t('applicationDetail.docTypes.id_card', "Pièce d'identité")}</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={selectedDocTypes.includes('diploma')} onChange={(e) => e.target.checked ? setSelectedDocTypes([...selectedDocTypes, 'diploma']) : setSelectedDocTypes(selectedDocTypes.filter(t => t !== 'diploma'))} className="rounded" />
+                      <span className="text-sm">{t('applicationDetail.docTypes.diploma', 'Diplôme')}</span>
+                    </label>
+                  </div>
+
+                  {/* Champs personnalisés avec bouton + */}
+                  <div className="space-y-3 mb-4">
+                    {customDocFields.map((field, index) => (
+                      <div key={field.id} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={field.value}
+                          onChange={(e) => {
+                            const newFields = customDocFields.map((f, i) =>
+                              i === index ? { ...f, value: e.target.value } : f
+                            );
+                            setCustomDocFields(newFields);
+                          }}
+                          placeholder={t('applicationDetail.customDocPlaceholder', 'Nom du document')}
+                          className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm min-w-0"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                          onClick={() => setCustomDocFields(prev => prev.filter(f => f.id !== field.id))}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        const id = customDocIdRef.current++;
+                        setCustomDocFields(prev => [...prev, { id, value: '' }]);
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      {t('applicationDetail.addDocument', 'Ajouter un document')}
                     </Button>
-                  </Link>
+                  </div>
+
+                  <textarea value={requestDocsMessage} onChange={(e) => setRequestDocsMessage(e.target.value)} placeholder={t('applicationDetail.documentRequestMessagePlaceholder')} className="w-full border border-slate-200 rounded-lg p-3 text-sm mb-4" rows={3} />
+                  <Button onClick={handleRequestDocuments} disabled={requestingDocs} className="w-full bg-green-600 hover:bg-green-700 text-white">
+                    {requestingDocs ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileText className="w-4 h-4 mr-2" />}{t('applicationDetail.sendDocumentRequest')}
+                  </Button>
                 </CardContent>
               </Card>
             )}
+
+            {/* Documents reçus */}
+            {candidateDocuments.length > 0 && (
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4">{t('applicationDetail.documentsReceived')}</h3>
+
+                  {totalDocs > 0 && (
+                    <div className="mb-4">
+                      <div className="flex justify-between text-xs text-slate-500 mb-1">
+                        <span>{t('applicationDetail.documentsProgress', { validated: validatedDocs, total: totalDocs }, `${validatedDocs}/${totalDocs} documents validés`)}</span>
+                        <span>{progressPercent}%</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-2">
+                        <div className="bg-green-500 h-2 rounded-full transition-all" style={{ width: `${progressPercent}%` }}></div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    {candidateDocuments.map(doc => {
+                      const isUploaded = doc.status === 'uploaded' || doc.status === 'validated';
+                      const isPending = doc.status === 'pending';
+                      const isAwaitingValidation = doc.status === 'uploaded';
+
+                      let statusBadge = null;
+                      if (doc.status === 'validated') statusBadge = (<Badge className="bg-green-100 text-green-700 border-0 text-xs"><CheckCircle className="w-3 h-3 mr-1" />{t('applicationDetail.validated')}</Badge>);
+                      else if (doc.status === 'rejected') statusBadge = (<Badge className="bg-red-100 text-red-700 border-0 text-xs"><XCircle className="w-3 h-3 mr-1" />{t('applicationDetail.rejected')}</Badge>);
+                      else if (isAwaitingValidation) statusBadge = (<Badge className="bg-blue-100 text-blue-700 border-0 text-xs"><Clock className="w-3 h-3 mr-1" />{t('applicationDetail.awaitingValidation')}</Badge>);
+                      else if (isPending) statusBadge = (<Badge className="bg-yellow-100 text-yellow-700 border-0 text-xs"><Clock className="w-3 h-3 mr-1" />{t('candidateDocuments.status.pending', 'En attente')}</Badge>);
+
+                      return (
+                        <div key={doc.id} className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-100">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0"><FileText className="w-4 h-4 text-slate-500" /></div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-slate-900 truncate">{getDocumentLabel(doc.document_type)}</p>
+                                {isUploaded && doc.file_url && (
+                                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs inline-flex items-center gap-1 mt-0.5"><FileText className="w-3 h-3" />{t('applicationDetail.view')}</a>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">{statusBadge}</div>
+                          </div>
+                          {isAwaitingValidation && (
+                            <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-200/60">
+                              <Button size="sm" variant="outline" className="text-green-600 border-green-300 hover:bg-green-50 flex-1 sm:flex-none" onClick={() => handleValidateDocument(doc.id, doc.document_type)}><CheckCircle className="w-4 h-4 mr-1" />{t('applicationDetail.validate')}</Button>
+                              <Button size="sm" variant="outline" className="text-red-600 border-red-300 hover:bg-red-50 flex-1 sm:flex-none" onClick={() => handleRejectDocument(doc.id, doc.document_type)}><XCircle className="w-4 h-4 mr-1" />{t('applicationDetail.reject')}</Button>
+                              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 p-1 ml-auto" onClick={() => handleDeleteDocumentRequest(doc.id)}><Trash2 className="w-4 h-4" /></Button>
+                            </div>
+                          )}
+                          {!isAwaitingValidation && (
+                            <div className="flex justify-end mt-3 pt-3 border-t border-slate-200/60">
+                              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 p-1" onClick={() => handleDeleteDocumentRequest(doc.id)}><Trash2 className="w-4 h-4" /></Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4"><Button variant="outline" size="sm" onClick={openEditModal}>{t('applicationDetail.editRequest')}</Button></div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ✅ Finalisation de l'embauche */}
+            {allDocsValidated && application.status === 'accepted' && (
+              <Card className="border-green-200 bg-green-50/50">
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    {t('applicationDetail.finalizeHiring', 'Finaliser l’embauche')}
+                  </h3>
+                  <p className="text-sm text-slate-600 mb-4">
+                    {t('applicationDetail.finalizeHelp', 'Tous les documents ont été validés. Vous pouvez finaliser le recrutement.')}
+                  </p>
+                  <Button
+                    onClick={() => setShowFinalizeModal(true)}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {t('applicationDetail.finalizeButton', 'Finaliser l’embauche')}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ✅ Notification des autres candidats (après finalisation) */}
+            {application.status === 'completed' && (
+              <Card className="border-slate-200 mt-4">
+                <CardContent className="p-4">
+                  <p className="text-sm text-slate-600 mb-3">
+                    {t('applicationDetail.notifyOtherCandidatesHelp', 'Informer les autres candidats que le poste est pourvu.')}
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowOtherCandidatesModal(true)}
+                    className="w-full"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {t('applicationDetail.notifyOtherCandidates', 'Informer les autres candidats')}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Section Entretien */}
+            {isProOrBusiness && application.status !== 'completed' ? (
+              <Card><CardContent className="p-6"><h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" />{t('applicationDetail.scheduleInterview')}</h3><div className="space-y-6"><div><div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span><h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step1ChooseSlot')}</h4></div><div className="flex flex-wrap gap-2 ml-8"><a href="https://calendly.com/actoos/entretien" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700"><Calendar className="w-4 h-4" />{t('applicationDetail.openCalendly')}</a><Button variant="outline" size="sm" onClick={() => handleSendEmail('calendly')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" />{t('applicationDetail.sendEmail')}</Button></div></div><div><div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span><h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step2CreateLink')}</h4></div><div className="ml-8 space-y-3">{application.meeting_link ? (<><div className="bg-blue-50 rounded-xl p-3 text-sm break-all"><a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">{application.meeting_link}</a></div><div className="flex flex-wrap gap-2"><a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-green-700"><Video className="w-4 h-4" />{t('applicationDetail.joinMeeting')}</a><Button variant="outline" size="sm" onClick={() => handleSendEmail('jitsi')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" />{t('applicationDetail.sendEmail')}</Button></div><input type="text" placeholder={t('applicationDetail.newRoomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" /><div className="flex flex-wrap gap-2"><button type="button" disabled={updating} onClick={handleCreateMeeting} className="flex-1 min-w-0 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 overflow-hidden"><RefreshCw className="w-4 h-4 shrink-0" /><span className="btn-marquee flex-1 min-w-0"><span>{t('applicationDetail.updateLink')}</span></span></button><Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteMeeting} disabled={updating}><Trash2 className="w-4 h-4" />{t('applicationDetail.deleteLink')}</Button></div></>) : (<><input type="text" placeholder={t('applicationDetail.roomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" /><Button variant="outline" className="w-full" onClick={handleCreateMeeting} disabled={updating}>{updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Video className="w-4 h-4 mr-2" />}{t('applicationDetail.generateJitsiLink')}</Button></>)}</div></div></div></CardContent></Card>
+            ) : isProOrBusiness ? (
+              <Card className="border-green-200 bg-green-50/50"><CardContent className="p-6 text-center"><CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" /><p className="font-semibold text-green-900">{t('applicationDetail.recruitmentCompleted', 'Recrutement finalisé')}</p></CardContent></Card>
+            ) : null}
           </div>
         </div>
       </div>
+
+      {/* Modal d'acceptation */}
+      {showAcceptModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">{t('applicationDetail.acceptTitle')}</h3>
+            <textarea value={acceptMessage} onChange={(e) => setAcceptMessage(e.target.value)} placeholder={t('applicationDetail.acceptMessagePlaceholder')} className="w-full border border-slate-200 rounded-lg p-3 text-sm mb-4" rows={4} />
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" onClick={() => setShowAcceptModal(false)}>{t('common.cancel', 'Annuler')}</Button>
+              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setShowAcceptModal(false); handleStatusChange('accepted', acceptMessage); setAcceptMessage(''); }}>{t('common.confirm', 'Confirmer')}</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de finalisation */}
+      {showFinalizeModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">
+              {t('applicationDetail.finalizeModalTitle', 'Message au candidat')}
+            </h3>
+            <textarea
+              value={finalizeMessage}
+              onChange={(e) => setFinalizeMessage(e.target.value)}
+              placeholder={t('applicationDetail.finalizeMessagePlaceholder', 'Votre message personnalisé (optionnel) – ex : Présentez-vous demain à 8h...')}
+              className="w-full border border-slate-200 rounded-lg p-3 text-sm mb-4"
+              rows={4}
+            />
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" onClick={() => setShowFinalizeModal(false)}>
+                {t('common.cancel', 'Annuler')}
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={finalizingHiring}
+                onClick={() => {
+                  setShowFinalizeModal(false);
+                  handleFinalizeHiring(finalizeMessage);
+                }}
+              >
+                {finalizingHiring ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {t('common.confirm', 'Confirmer')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de notification des autres candidats */}
+      {showOtherCandidatesModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">
+              {t('applicationDetail.otherCandidatesModalTitle', 'Message aux autres candidats')}
+            </h3>
+            <textarea
+              value={otherCandidatesMessage}
+              onChange={(e) => setOtherCandidatesMessage(e.target.value)}
+              placeholder={t('applicationDetail.otherCandidatesMessagePlaceholder', 'Ajouter un message personnalisé (optionnel)')}
+              className="w-full border border-slate-200 rounded-lg p-3 text-sm mb-4"
+              rows={4}
+            />
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" onClick={() => setShowOtherCandidatesModal(false)}>
+                {t('common.cancel', 'Annuler')}
+              </Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={notifyingOthers}
+                onClick={() => handleNotifyOtherCandidates(otherCandidatesMessage)}
+              >
+                {notifyingOthers ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {t('applicationDetail.sendNotifications', 'Envoyer')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'édition de la demande */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">{t('applicationDetail.editRequest')}</h3>
+            <div className="space-y-2 mb-4">
+              <label className="flex items-center gap-2"><input type="checkbox" checked={editSelectedDocTypes.includes('contract')} onChange={(e) => e.target.checked ? setEditSelectedDocTypes([...editSelectedDocTypes, 'contract']) : setEditSelectedDocTypes(editSelectedDocTypes.filter(t => t !== 'contract'))} /><span className="text-sm">{t('applicationDetail.docTypes.contract', 'Contrat signé')}</span></label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={editSelectedDocTypes.includes('id_card')} onChange={(e) => e.target.checked ? setEditSelectedDocTypes([...editSelectedDocTypes, 'id_card']) : setEditSelectedDocTypes(editSelectedDocTypes.filter(t => t !== 'id_card'))} /><span className="text-sm">{t('applicationDetail.docTypes.id_card', "Pièce d'identité")}</span></label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={editSelectedDocTypes.includes('diploma')} onChange={(e) => e.target.checked ? setEditSelectedDocTypes([...editSelectedDocTypes, 'diploma']) : setEditSelectedDocTypes(editSelectedDocTypes.filter(t => t !== 'diploma'))} /><span className="text-sm">{t('applicationDetail.docTypes.diploma', 'Diplôme')}</span></label>
+            </div>
+
+            <div className="space-y-3 mb-4">
+              {editCustomDocFields.map((field, index) => (
+                <div key={field.id} className="flex gap-2 items-center">
+                  <input type="text" value={field.value} onChange={(e) => { const newFields = editCustomDocFields.map((f, i) => i === index ? { ...f, value: e.target.value } : f); setEditCustomDocFields(newFields); }} placeholder={t('applicationDetail.customDocPlaceholder')} className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm min-w-0" />
+                  <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" onClick={() => setEditCustomDocFields(prev => prev.filter(f => f.id !== field.id))}><Trash2 className="w-4 h-4" /></Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" className="w-full" onClick={() => { const id = editDocIdRef.current++; setEditCustomDocFields(prev => [...prev, { id, value: '' }]); }}><Plus className="w-4 h-4 mr-2" />{t('applicationDetail.addDocument')}</Button>
+            </div>
+
+            <textarea value={editMessage} onChange={(e) => setEditMessage(e.target.value)} className="w-full border border-slate-200 rounded-lg p-3 text-sm mb-4" rows={3} placeholder={t('applicationDetail.documentRequestMessagePlaceholder')} />
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" onClick={() => setShowEditModal(false)}>{t('common.cancel', 'Annuler')}</Button>
+              <Button className="bg-blue-600 text-white" onClick={handleEditDocuments}>{t('common.confirm', 'Enregistrer')}</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

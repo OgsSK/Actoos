@@ -2158,6 +2158,8 @@
       }
     },
     "companyApplications": {
+      "withdrawConfirm": "¿Retirar esta candidatura?",
+      "withdrawButton": "Retirar",
       "back": "Volver",
       "title": "Candidaturas",
       "noApplications": "No se recibieron candidaturas.",
@@ -2176,6 +2178,7 @@
         "rejected": "Rechazada"
       },
       "toasts": {
+        "withdrawn": "Candidatura retirada",
         "deleted": "Candidatura eliminada.",
         "deleteError": "Error durante la eliminación."
       }
@@ -2378,6 +2381,9 @@
       "delete": "Eliminar"
     },
     "jobDetail": {
+       "home.jobs.alreadyAppliedBadge": "Postulado",
+    "jobs.alreadyAppliedBadge": "Postulado",
+      "reapply": "Reaplicar",
       "similarJobs": "Ofertas similares",
       "notFound": "Oferta no encontrada",
       "notFoundMessage": "Esta oferta no existe o ha sido eliminada.",
@@ -2533,6 +2539,49 @@
       }
     },
     "applicationDetail": {
+      "rejectionReasonPrompt": "Motivo (opcional):",
+      "notifyOtherCandidates": "Informar a otros candidatos",
+      "notifyOtherCandidatesHelp": "Enviar un correo electrónico a los demás candidatos para informarles de que el puesto ha sido cubierto.",
+      "otherCandidatesModalTitle": "Mensaje para otros candidatos",
+      "otherCandidatesMessagePlaceholder": "Añadir un mensaje personalizado (opcional)",
+      "sendNotifications": "Enviar",
+      "othersNotified": "{{count}} candidato(s) notificado(s) y rechazado(s)",
+      "finalizeHiring": "Finalizar la contratación",
+      "finalizeHelp": "Todos los documentos han sido validados. Puede finalizar la contratación.",
+      "finalizeButton": "Finalizar contratación",
+      "finalizeModalTitle": "Mensaje al candidato",
+      "finalizeMessagePlaceholder": "Su mensaje personalizado (opcional) – ej.: Preséntese mañana a las 8...",
+      "finalizeSuccess": "¡Contratación finalizada!",
+      "recruitmentCompleted": "Contratación finalizada",
+      "documentsProgress":"{{validated}}/{{total}} documentos validados",
+      "documentNamePlaceholder": "Nombre del documento",
+      "addDocument": "Añadir documento",
+      "docTypes": {
+        "contract": "Contrato firmado",
+        "id_card": "Documento de identidad",
+        "diploma": "Diploma",
+        "other": "Otro documento"
+      },
+      "validate": "Validar",
+  "reject": "Rechazar",
+  "validated": "Validado",
+  "rejected": "Rechazado",
+      "awaitingValidation": "En validación",
+    "documentValidated": "Documento validado",
+    "documentRejected": "Documento rechazado",
+      "acceptTitle": "Confirmar aceptación",
+    "acceptMessagePlaceholder": "Tu mensaje personalizado (opcional)",
+    "documentRequestMessagePlaceholder": "Mensaje personalizado (opcional)",
+    "documentsReceived": "Documentos recibidos",
+    "pending": "Pendiente",
+    "view": "Ver",
+    "deleteRequest": "¿Eliminar esta solicitud?",
+    "editRequest": "Modificar solicitud",
+    "confirmDeleteRequest": "Solicitud eliminada",
+    "requestModified": "Solicitud modificada",
+    "selectAtLeastOneDoc": "Por favor seleccione al menos un tipo de documento",
+       "requestDocuments": "Documentos a presentar",
+      "sendDocumentRequest": "Solicitar documentos",
       "upgradeForNotes": "Notas de entrevista y herramientas de IA",
     "upgradeForNotesDesc": "Actualízate al plan Pro o Business para generar preguntas, respuestas y consejos, y tomar notas.",
     "upgradeForSchedule": "Programación de entrevistas",
@@ -2571,6 +2620,8 @@
       "generateAnswers": "Generar respuestas",
       "generateTips": "Generar consejos",
       "toasts": {
+        
+        "documentRequestSent": "Solicitud de documentos enviada al candidato",
         "noteSaved": "Nota guardada.",
         "noteDeleted": "Nota eliminada.",
         "questionsGenerated": "Preguntas generadas correctamente.",
@@ -2594,6 +2645,7 @@
     },
     "applicationStatus": { "pending": "Pendiente", "viewed": "Vista", "shortlisted": "Preseleccionada", "interview": "Entrevista", "accepted": "Aceptada", "rejected": "Rechazada" },
     "toasts": {
+      "documentRequestSent": "Solicitud de documentos enviada al candidato",
       "companyNotVerifiedMenu": "Tu empresa no está verificada.",
       "loadError": "Error al cargar los datos.",
       "deleteConfirm": "¿Eliminar la oferta \"{{title}}\"?",
@@ -2648,6 +2700,14 @@
     "cvBank": { "title": "Banco de CV", "desc": "Accede a nuestra cantera de talentos.", "browse": "Explorar CVs" }
   },
      "candidateDashboard": {
+      "contracts": {
+        "title": "Mis contratos"
+      },
+      "hiringDocuments": {
+        "title": "Documentos solicitados",
+        "pendingCount": "{{count}} documento(s) pendiente(s)",
+        "uploadDocs": "Subir mis documentos"
+      },
       "myCompanies": "Mis empresas",
     "accessCompany": "Acceder al panel",
       "greeting": "Hola {{name}}",
@@ -3017,6 +3077,65 @@
     "intermediaire": "Intermedio (2‑5 años)",
     "senior": "Senior (5‑10 años)",
     "expert": "Experto (10+ años)"
-  }
+  },
+  "candidateDocuments": {
+    "hide": "Retirar de la lista",
+    "replace": "Reemplazar",
+    "replaceSuccess": "Documento reemplazado correctamente",
+    "delete": "Eliminar",
+    "deleteSuccess": "Documento eliminado",
+    "confirmDelete": "¿Eliminar este documento?",
+    "offer": "Oferta:",
+      "title": "Documentos solicitados",
+      "noDocuments": "No hay solicitudes de documentos por el momento.",
+      "upload": "Subir",
+      "uploadSuccess": "Documento enviado correctamente",
+      "viewUploaded": "Ver documento enviado",
+      "documentTypes": {
+        "contract": "Contrato firmado",
+        "id_card": "Documento de identidad",
+        "diploma": "Diploma",
+        "other": "Otro documento"
+      },
+      "status": {
+        "pending": "Pendiente",
+        "uploaded": "Enviado",
+        "validated": "Validado",
+        "rejected": "Rechazado"
+      }
+    },
+    "contract": {
+      "sign": "Firmar el contrato",
+      "fullNamePlaceholder": "Su nombre completo",
+      "signFullNameRequired": "Por favor, introduzca su nombre completo",
+      "title": "Contrato",
+      "modeUpload": "Subir archivo",
+      "modeGenerate": "Generar automáticamente",
+      "upload": "Subir",
+      "viewUploaded": "Ver contrato",
+      "contentPlaceholder": "Contenido del contrato (HTML soportado)",
+      "startDate": "Fecha de inicio",
+      "endDate": "Fecha de fin",
+      "renewable": "Renovable",
+      "create": "Crear contrato",
+      "updated": "Contrato actualizado",
+      "created": "Contrato creado",
+      "send": "Enviar al candidato",
+      "sent": "Contrato enviado",
+      "download": "Descargar contrato",
+      "period": "Período",
+      "terminate": "Terminar contrato",
+      "terminateConfirm": "¿Terminar contrato?",
+      "terminated": "Contrato terminado",
+      "durationUpdated": "Duración actualizada",
+      "fileUploaded": "Archivo subido",
+      "status": {
+        "draft": "Borrador",
+        "sent": "Enviado",
+        "signed": "Firmado",
+        "completed": "Finalizado",
+        "terminated": "Terminado"
+      }
+    }
 
 }

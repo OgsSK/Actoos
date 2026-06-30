@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { cn } from '../lib/utils';
+import { usePreferencesContext } from '../contexts/PreferencesContext'; // ✅ centralisé
 
 const LANGUAGES = [
   { code: 'ar', nativeName: 'العربية', flag: '🇸🇦' },
@@ -25,6 +26,7 @@ const normalizeLang = (lng = '') => lng.toLowerCase().split('-')[0];
 
 const LanguageSwitcher = ({ isTransparent = false, isMobile = false }) => {
   const { i18n } = useTranslation();
+  const { updatePrefs } = usePreferencesContext(); // ✅ hook du contexte
 
   const currentCode = normalizeLang(i18n.resolvedLanguage || i18n.language || 'fr');
 
@@ -35,6 +37,8 @@ const LanguageSwitcher = ({ isTransparent = false, isMobile = false }) => {
   const changeLanguage = async (code) => {
     try {
       await i18n.changeLanguage(code);
+      // ✅ Sauvegarde centralisée de la langue (en base + API + localStorage)
+      updatePrefs('language', code);
     } catch (error) {
       console.error('Erreur changement langue:', error);
     }
@@ -43,17 +47,14 @@ const LanguageSwitcher = ({ isTransparent = false, isMobile = false }) => {
   // Styles du bouton déclencheur adaptés au mode mobile
   const triggerClasses = cn(
     'h-11 gap-2 rounded-full border px-3.5 text-sm font-medium transition-all shrink-0 whitespace-nowrap shadow-none',
-    // Mode mobile compact
     isMobile
       ? 'h-8 gap-1 px-2 text-xs border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
       : '',
-    // Mode desktop (normal)
     !isMobile && isTransparent
       ? 'border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white'
       : !isMobile
         ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
         : '',
-    // Quand isMobile = true, isTransparent n'a pas d'effet car on garde le fond blanc pour la lisibilité
     isMobile && isTransparent ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50' : ''
   );
 
@@ -71,7 +72,7 @@ const LanguageSwitcher = ({ isTransparent = false, isMobile = false }) => {
 
   const nativeNameClasses = cn(
     'hidden xl:inline max-w-[120px] truncate',
-    isMobile && 'hidden' // Jamais affiché en mobile
+    isMobile && 'hidden'
   );
 
   const chevronClasses = cn(

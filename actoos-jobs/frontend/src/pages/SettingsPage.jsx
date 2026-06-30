@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import CountryCurrencySelector from '../components/CountryCurrencySelector';
 
+// Composant de texte défilant (pour les longs textes)
 const ScrollText = ({ children, className = '' }) => {
   const containerRef = useRef(null);
   const textRef = useRef(null);
@@ -27,15 +28,9 @@ const ScrollText = ({ children, className = '' }) => {
   }, [children]);
 
   return (
-    <span
-      ref={containerRef}
-      className={`inline-block overflow-hidden whitespace-nowrap max-w-full ${className}`}
-    >
-      <span
-        ref={textRef}
-        className={`inline-block ${shouldAnimate ? 'animate-scroll-text' : ''}`}
-        style={shouldAnimate ? { animation: 'scrollText 10s linear infinite' } : {}}
-      >
+    <span ref={containerRef} className={`inline-block overflow-hidden whitespace-nowrap max-w-full ${className}`}>
+      <span ref={textRef} className={`inline-block ${shouldAnimate ? 'animate-scroll-text' : ''}`}
+        style={shouldAnimate ? { animation: 'scrollText 10s linear infinite' } : {}}>
         {children}
       </span>
       <style>{`
@@ -224,12 +219,17 @@ const SettingsPage = () => {
         </div>
 
         <div className="space-y-4 sm:space-y-6">
-          {/* Informations du compte */}
+          {/* Informations du compte (avec avatar) */}
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
-                  <User className="w-5 h-5 text-blue-600" />
+                {/* Avatar ou icône par défaut */}
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0 overflow-hidden">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-5 h-5 text-blue-600" />
+                  )}
                 </div>
                 <div className="min-w-0">
                   <h2 className="font-semibold text-slate-900 text-sm sm:text-base">{t('settings.accountInfo.title')}</h2>

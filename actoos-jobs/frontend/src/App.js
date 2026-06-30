@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -59,6 +59,7 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const CandidateBankPage = lazy(() => import('./pages/CandidateBankPage'));
+const CandidateDocumentsPage = lazy(() => import('./pages/CandidateDocumentsPage')); // ✅ Nouvelle page
 
 // ---------- Scroll to top on route change ----------
 const ScrollToTop = () => {
@@ -117,6 +118,18 @@ const NotFoundPage = () => (
 // ---------- Main App Content ----------
 const AppContent = () => {
   const { user, signOut } = useAuth();
+
+  // 🔍 DEBUG : intercepte tous les toast.error pour trouver la source exacte
+  useEffect(() => {
+    const originalError = toast.error;
+    toast.error = function (...args) {
+      console.trace('🔴 toast.error intercepté ! Arguments :', args);
+      return originalError.apply(this, args);
+    };
+    return () => {
+      toast.error = originalError;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -178,6 +191,7 @@ const AppContent = () => {
               <Route path="/mes-candidatures/:id" element={<ProtectedRoute><ApplicationDetailCandidatePage /></ProtectedRoute>} />
               <Route path="/offres-sauvegardees" element={<ProtectedRoute><SavedJobsPage /></ProtectedRoute>} />
               <Route path="/alertes" element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
+              <Route path="/documents" element={<ProtectedRoute><CandidateDocumentsPage /></ProtectedRoute>} /> {/* ✅ Nouvelle route */}
 
               {/* ---------- Protected routes - Entreprise ---------- */}
               <Route path="/dashboard/entreprise" element={<ProtectedRoute><CompanyDashboard /></ProtectedRoute>} />

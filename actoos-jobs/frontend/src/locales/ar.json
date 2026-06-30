@@ -2160,6 +2160,8 @@
       }
     },
     "companyApplications": {
+      "withdrawConfirm": "سحب هذه الطلبية؟",
+      "withdrawButton": "سحب",
       "back": "رجوع",
       "title": "الطلبات",
       "noApplications": "لم يتم تلقي أي طلبات.",
@@ -2178,6 +2180,7 @@
         "rejected": "مرفوض"
       },
       "toasts": {
+        "withdrawn": "تم سحب الطلبية",
         "deleted": "تم حذف الطلب.",
         "deleteError": "خطأ أثناء الحذف."
       }
@@ -2380,6 +2383,9 @@
       "delete": "حذف"
     },
     "jobDetail": {
+       "home.jobs.alreadyAppliedBadge": "تم التقديم",
+    "jobs.alreadyAppliedBadge": "تم التقديم",
+      "reapply": "إعادة التقديم",
        "similarJobs": "وظائف مماثلة",
       "notFound": "العرض غير موجود",
       "notFoundMessage": "هذا العرض غير موجود أو تم حذفه.",
@@ -2535,6 +2541,49 @@
       }
     },
     "applicationDetail": {
+      "rejectionReasonPrompt": "السبب (اختياري):",
+      "notifyOtherCandidates": "إعلام المرشحين الآخرين",
+      "notifyOtherCandidatesHelp": "أرسل بريدًا إلكترونيًا إلى المرشحين الآخرين لإبلاغهم بأن الوظيفة قد شُغلت.",
+      "otherCandidatesModalTitle": "رسالة إلى المرشحين الآخرين",
+      "otherCandidatesMessagePlaceholder": "أضف رسالة مخصصة (اختياري)",
+      "sendNotifications": "إرسال",
+       "othersNotified": "تم إخطار {{count}} مرشح/مرشحين ورفضهم",
+      "finalizeHiring": "إنهاء التوظيف",
+      "finalizeHelp": "تم التحقق من جميع المستندات. يمكنك إنهاء التوظيف.",
+      "finalizeButton": "إنهاء التوظيف",
+      "finalizeModalTitle": "رسالة إلى المرشح",
+      "finalizeMessagePlaceholder": "رسالتك المخصصة (اختياري) – مثال: احضر غدًا الساعة 8...",
+      "finalizeSuccess": "تم إنهاء التوظيف!",
+      "recruitmentCompleted": "تم إنهاء التوظيف",
+      "documentsProgress":"{{validated}}/{{total}} مستندات تم التحقق منها",
+      "documentNamePlaceholder": "اسم المستند",
+      "addDocument": "إضافة مستند",
+      "docTypes": {
+        "contract": "عقد موقع",
+        "id_card": "بطاقة هوية",
+        "diploma": "شهادة",
+        "other": "مستند آخر"
+      },
+      "validate": "تحقق",
+  "reject": "رفض",
+  "validated": "تم التحقق",
+  "rejected": "مرفوض",
+       "awaitingValidation": "قيد التحقق",
+    "documentValidated": "تم التحقق من المستند",
+    "documentRejected": "تم رفض المستند",
+      "acceptTitle": "تأكيد القبول",
+    "acceptMessagePlaceholder": "رسالتك الشخصية (اختياري)",
+    "documentRequestMessagePlaceholder": "رسالة شخصية (اختياري)",
+    "documentsReceived": "المستندات المستلمة",
+    "pending": "قيد الانتظار",
+    "view": "عرض",
+    "deleteRequest": "حذف هذا الطلب؟",
+    "editRequest": "تعديل الطلب",
+    "confirmDeleteRequest": "تم حذف الطلب",
+    "requestModified": "تم تعديل الطلب",
+    "selectAtLeastOneDoc": "يرجى اختيار نوع مستند واحد على الأقل",
+      "requestDocuments": "المستندات المطلوب تقديمها",
+      "sendDocumentRequest": "طلب المستندات",
       "upgradeForNotes": "ملاحظات المقابلة وأدوات الذكاء الاصطناعي",
     "upgradeForNotesDesc": "قم بالترقية إلى خطة Pro أو Business لإنشاء الأسئلة والأجوبة والنصائح وتدوين الملاحظات.",
     "upgradeForSchedule": "جدولة المقابلة",
@@ -2573,6 +2622,7 @@
       "generateAnswers": "إنشاء إجابات",
       "generateTips": "إنشاء نصائح",
       "toasts": {
+        "documentRequestSent": "تم إرسال طلب المستندات إلى المرشح",
         "noteSaved": "تم حفظ الملاحظة.",
         "noteDeleted": "تم حذف الملاحظة.",
         "questionsGenerated": "تم إنشاء الأسئلة بنجاح.",
@@ -2596,6 +2646,7 @@
     },
     "applicationStatus": { "pending": "قيد الانتظار", "viewed": "تمت المشاهدة", "shortlisted": "قائمة مختصرة", "interview": "مقابلة", "accepted": "مقبولة", "rejected": "مرفوضة" },
     "toasts": {
+      "documentRequestSent": "تم إرسال طلب المستندات إلى المرشح",
       "companyNotVerifiedMenu": "شركتك غير موثقة.",
       "loadError": "خطأ في تحميل البيانات.",
       "deleteConfirm": "حذف العرض \"{{title}}\"؟",
@@ -2650,6 +2701,14 @@
     "cvBank": { "title": "بنك السير الذاتية", "desc": "الوصول إلى مجموعة المواهب المتاحة لدينا.", "browse": "تصفح السير الذاتية" }
   },
     "candidateDashboard": {
+       "contracts": {
+        "title": "عقودي"
+      },
+      "hiringDocuments": {
+        "title": "المستندات المطلوبة",
+        "pendingCount": "{{count}} مستند (مستندات) قيد الانتظار",
+        "uploadDocs": "تحميل مستنداتي"
+      },
       "myCompanies": "شركاتي",
     "accessCompany": "الوصول إلى لوحة التحكم",
       "greeting": "مرحباً {{name}}",
@@ -3019,7 +3078,66 @@
     "intermediaire": "متوسط (2-5 سنوات)",
     "senior": "أول (5-10 سنوات)",
     "expert": "خبير (10+ سنوات)"
-  }
+  },
+  "candidateDocuments": {
+    "hide": "إزالة من القائمة",
+    "replace": "استبدال",
+    "replaceSuccess": "تم استبدال المستند بنجاح",
+    "delete": "حذف",
+    "deleteSuccess": "تم حذف المستند",
+    "confirmDelete": "حذف هذا المستند؟",
+    "offer": "العرض:",
+      "title": "المستندات المطلوبة",
+      "noDocuments": "لا توجد طلبات مستندات حالياً.",
+      "upload": "تحميل",
+      "uploadSuccess": "تم إرسال المستند بنجاح",
+      "viewUploaded": "عرض المستند المرسل",
+      "documentTypes": {
+        "contract": "عقد موقع",
+        "id_card": "بطاقة هوية",
+        "diploma": "شهادة",
+        "other": "مستند آخر"
+      },
+      "status": {
+        "pending": "قيد الانتظار",
+        "uploaded": "تم الإرسال",
+        "validated": "تم التحقق",
+        "rejected": "مرفوض"
+      }
+    },
+    "contract": {
+      "sign": "توقيع العقد",
+      "fullNamePlaceholder": "اسمك الكامل",
+      "signFullNameRequired": "يرجى إدخال اسمك الكامل",
+      "title": "العقد",
+      "modeUpload": "تحميل ملف",
+      "modeGenerate": "إنشاء تلقائي",
+      "upload": "تحميل",
+      "viewUploaded": "عرض العقد",
+      "contentPlaceholder": "محتوى العقد (يدعم HTML)",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ النهاية",
+      "renewable": "قابل للتجديد",
+      "create": "إنشاء العقد",
+      "updated": "تم تحديث العقد",
+      "created": "تم إنشاء العقد",
+      "send": "إرسال إلى المرشح",
+      "sent": "تم إرسال العقد",
+      "download": "تحميل العقد",
+      "period": "الفترة",
+      "terminate": "إنهاء العقد",
+      "terminateConfirm": "إنهاء العقد؟",
+      "terminated": "تم إنهاء العقد",
+      "durationUpdated": "تم تحديث المدة",
+      "fileUploaded": "تم تحميل الملف",
+      "status": {
+        "draft": "مسودة",
+        "sent": "مُرسل",
+        "signed": "مُوقع",
+        "completed": "مكتمل",
+        "terminated": "منتهي"
+      }
+    }
 
 
 

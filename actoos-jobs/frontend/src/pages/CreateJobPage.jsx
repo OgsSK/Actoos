@@ -14,7 +14,7 @@ import { useCities } from '../hooks/useCities';
 import {
   Briefcase, MapPin, DollarSign, Calendar, Users,
   Plus, X, Save, Loader2, ChevronLeft, Send,
-  GraduationCap, ArrowRight
+  GraduationCap, ArrowRight, Building2
 } from 'lucide-react';
 import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { apiFetch } from '../lib/api';
@@ -71,25 +71,12 @@ const CreateJobPage = () => {
   const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
+    if (!user?.id || !activeCompanyId) return;
     fetchData();
-    if (id) {
-      fetchJob();
-    }
-  }, [id, activeCompanyId]);
+    if (id) fetchJob();
+  }, [id, activeCompanyId, user?.id]);
 
   const fetchData = async () => {
-    if (!user?.id) {
-      toast.error(t('createJob.toasts.userNotIdentified'));
-      navigate('/connexion');
-      return;
-    }
-
-    if (!activeCompanyId) {
-      toast.error(t('createJob.toasts.noCompanySelected'));
-      navigate('/dashboard/entreprise');
-      return;
-    }
-
     setLoading(true);
     try {
       const { data: comp, error: companyError } = await supabase
@@ -99,17 +86,12 @@ const CreateJobPage = () => {
         .single();
 
       if (companyError || !comp) {
-        toast.error(t('createJob.toasts.companyNotFound'));
+        // Redirection silencieuse si l'entreprise n'existe pas
         navigate('/dashboard/entreprise');
         return;
       }
 
-      if (!comp.is_active) {
-        toast.error(t('createJob.toasts.companySuspended'));
-        navigate('/dashboard/entreprise');
-        return;
-      }
-
+      // Stocke toujours l'entreprise, même suspendue
       setCompany(comp);
 
       const { data: catsData } = await supabase
@@ -341,28 +323,31 @@ const CreateJobPage = () => {
         : 'border-slate-200 focus:ring-blue-500'
     );
 
-  const isUnverified = company && !company.is_verified;
+  // ✅ Les bandeaux ne s'affichent qu'une fois le chargement terminé
+  const showUnverifiedBanner = !loading && company && !company.is_verified;
+  const showSuspendedBanner = !loading && company && !company.is_active;
 
   const getPublishButtonText = () => {
     if (id && (form.status === 'active' || form.status === 'paused')) {
       return t('createJob.updateOffer');
     }
-    if (isUnverified) {
+    if (showUnverifiedBanner) {
       return t('createJob.validationRequired');
     }
     return t('createJob.submitForValidation');
   };
 
   const isPublishDisabled = () => {
-    if (!company?.is_active) return true;
-    if (isUnverified) return true;
+    if (showSuspendedBanner) return true;
+    if (showUnverifiedBanner) return true;
     return saving;
   };
 
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20" data-testid="create-job-page">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-        {isUnverified && (
+        {/* Bandeau jaune pour entreprise non vérifiée */}
+        {showUnverifiedBanner && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,7 +361,8 @@ const CreateJobPage = () => {
           </div>
         )}
 
-        {!company?.is_active && (
+        {/* Bandeau rouge pour entreprise suspendue */}
+        {showSuspendedBanner && (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -396,32 +382,56 @@ const CreateJobPage = () => {
               <ChevronLeft className="w-4 h-4 mr-1" />
               <span className="hidden sm:inline">{t('createJob.back')}</span>
             </Button>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
-                {id ? t('createJob.titleEdit') : t('createJob.titleNew')}
-              </h1>
-              <p className="text-sm text-slate-600">{company?.name}</p>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
+                {company?.logo_url ? (
+                  <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+                  {id ? t('createJob.titleEdit') : t('createJob.titleNew')}
+                </h1>
+                <p className="text-sm text-slate-600 truncate">{company?.name}</p>
+              </div>
             </div>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving || !company?.is_active} type="button" className="flex-1 sm:flex-none">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-              {t('createJob.save')}
+            <Button
+              variant="outline"
+              onClick={() => handleSave(false)}
+              disabled={saving || showSuspendedBanner}
+              type="button"
+              className="flex-1 sm:flex-none overflow-hidden px-3 sm:px-4"
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" />
+              ) : (
+                <Save className="w-4 h-4 mr-2 shrink-0" />
+              )}
+              <span className="truncate">{t('createJob.save')}</span>
             </Button>
             <Button
               onClick={() => handleSave(true)}
               disabled={isPublishDisabled()}
-              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed flex-1 sm:flex-none"
+              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed flex-1 sm:flex-none overflow-hidden px-3 sm:px-4"
               data-testid="publish-job-btn"
               type="button"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              {getPublishButtonText()}
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" />
+              ) : (
+                <Send className="w-4 h-4 mr-2 shrink-0" />
+              )}
+              <span className="truncate">{getPublishButtonText()}</span>
             </Button>
           </div>
         </div>
 
         <div className="space-y-4 sm:space-y-6">
+          {/* Carte Informations de base */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -540,6 +550,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Carte Description */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.description')}</h2>
@@ -627,6 +638,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Carte Compétences */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.skills')}</h2>
@@ -640,9 +652,14 @@ const CreateJobPage = () => {
                   data-testid="job-skill-input"
                   className="flex-1"
                 />
-                <Button type="button" onClick={handleAddSkill} disabled={!newSkill.trim()} className="w-full sm:w-auto">
-                  <Plus className="w-4 h-4 mr-1" />
-                  {t('createJob.skills.add')}
+                <Button
+                  type="button"
+                  onClick={handleAddSkill}
+                  disabled={!newSkill.trim()}
+                  className="w-full sm:w-auto overflow-hidden px-3"
+                >
+                  <Plus className="w-4 h-4 mr-1 shrink-0" />
+                  <span className="truncate">{t('createJob.skills.add')}</span>
                 </Button>
               </div>
 
@@ -665,6 +682,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Carte Localisation */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -724,6 +742,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Carte Salaire */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -770,6 +789,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Carte Dates */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -801,23 +821,38 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Boutons de fin de formulaire */}
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2 sm:pt-4">
-            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving || !company?.is_active} type="button" className="w-full sm:w-auto">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-              {t('createJob.saveDraft')}
+            <Button
+              variant="outline"
+              onClick={() => handleSave(false)}
+              disabled={saving || showSuspendedBanner}
+              type="button"
+              className="w-full sm:w-auto overflow-hidden px-3 sm:px-4"
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" />
+              ) : (
+                <Save className="w-4 h-4 mr-2 shrink-0" />
+              )}
+              <span className="truncate">{t('createJob.saveDraft')}</span>
             </Button>
             <Button
               onClick={() => handleSave(true)}
               disabled={isPublishDisabled()}
-              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto"
+              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto overflow-hidden px-3 sm:px-4"
               data-testid="publish-job-btn-bottom"
               type="button"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              {getPublishButtonText()}
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" />
+              ) : (
+                <Send className="w-4 h-4 mr-2 shrink-0" />
+              )}
+              <span className="truncate">{getPublishButtonText()}</span>
             </Button>
           </div>
-          {isUnverified && (
+          {showUnverifiedBanner && (
             <p className="text-center text-xs text-amber-600 mt-1">
               {t('createJob.companyUnverified')}
             </p>
@@ -847,16 +882,19 @@ const CreateJobPage = () => {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
                 variant="outline"
-                className="rounded-2xl"
+                className="rounded-2xl overflow-hidden px-3 sm:px-4"
                 onClick={() => setShowLimitModal(false)}
                 type="button"
               >
-                {t('createJob.limitModal.later')}
+                <span className="truncate">{t('createJob.limitModal.later')}</span>
               </Button>
               <Link to="/tarifs" onClick={() => setShowLimitModal(false)}>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl w-full sm:w-auto" type="button">
-                  {t('createJob.limitModal.seePlans')}
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl w-full sm:w-auto overflow-hidden px-3 sm:px-4"
+                  type="button"
+                >
+                  <span className="truncate">{t('createJob.limitModal.seePlans')}</span>
+                  <ArrowRight className="w-4 h-4 ml-2 shrink-0" />
                 </Button>
               </Link>
             </div>

@@ -2226,6 +2226,8 @@
       }
     },
     "companyApplications": {
+      "withdrawConfirm": "Deze sollicitatie intrekken?",
+      "withdrawButton": "Intrekken",
       "back": "Terug",
       "title": "Sollicitaties",
       "noApplications": "Geen sollicitaties ontvangen.",
@@ -2244,6 +2246,7 @@
         "rejected": "Afgewezen"
       },
       "toasts": {
+        "withdrawn": "Sollicitatie ingetrokken",
         "deleted": "Sollicitatie verwijderd.",
         "deleteError": "Fout bij verwijderen."
       }
@@ -2446,6 +2449,9 @@
       "delete": "Verwijderen"
     },
     "jobDetail": {
+      "home.jobs.alreadyAppliedBadge": "Gesolliciteerd",
+    "jobs.alreadyAppliedBadge": "Gesolliciteerd",
+      "reapply": "Opnieuw solliciteren",
       "similarJobs": "Vergelijkbare vacatures",
       "notFound": "Vacature niet gevonden",
       "notFoundMessage": "Deze vacature bestaat niet of is verwijderd.",
@@ -2601,6 +2607,49 @@
       }
     },
     "applicationDetail": {
+      "rejectionReasonPrompt": "Reden (optioneel):",
+       "notifyOtherCandidates": "Andere kandidaten informeren",
+      "notifyOtherCandidatesHelp": "Stuur een e-mail naar de andere kandidaten om hen te laten weten dat de vacature is vervuld.",
+      "otherCandidatesModalTitle": "Bericht aan andere kandidaten",
+      "otherCandidatesMessagePlaceholder": "Voeg een persoonlijk bericht toe (optioneel)",
+      "sendNotifications": "Verzenden",
+      "othersNotified": "{{count}} kandidaat/kandidaten geïnformeerd en afgewezen",
+      "finalizeHiring": "Aanname voltooien",
+      "finalizeHelp": "Alle documenten zijn gevalideerd. U kunt de aanname voltooien.",
+      "finalizeButton": "Aanname voltooien",
+      "finalizeModalTitle": "Bericht aan de kandidaat",
+      "finalizeMessagePlaceholder": "Uw persoonlijke bericht (optioneel) – bijv.: Meld u morgen om 8 uur...",
+      "finalizeSuccess": "Aanname voltooid!",
+      "recruitmentCompleted": "Aanname voltooid",
+      "documentsProgress":"{{validated}}/{{total}} documenten gevalideerd",
+      "documentNamePlaceholder": "Naam van het document",
+      "addDocument": "Document toevoegen",
+      "docTypes": {
+        "contract": "Ondertekend contract",
+        "id_card": "Identiteitsbewijs",
+        "diploma": "Diploma",
+        "other": "Ander document"
+      },
+      "validate": "Valideren",
+  "reject": "Afwijzen",
+  "validated": "Gevalideerd",
+  "rejected": "Afgewezen",
+      "awaitingValidation": "In afwachting van validatie",
+    "documentValidated": "Document gevalideerd",
+    "documentRejected": "Document afgewezen",
+      "acceptTitle": "Acceptatie bevestigen",
+    "acceptMessagePlaceholder": "Uw persoonlijke bericht (optioneel)",
+    "documentRequestMessagePlaceholder": "Persoonlijk bericht (optioneel)",
+    "documentsReceived": "Ontvangen documenten",
+    "pending": "In afwachting",
+    "view": "Bekijken",
+    "deleteRequest": "Deze aanvraag verwijderen?",
+    "editRequest": "Aanvraag bewerken",
+    "confirmDeleteRequest": "Aanvraag verwijderd",
+    "requestModified": "Aanvraag gewijzigd",
+    "selectAtLeastOneDoc": "Selecteer minimaal één documenttype",
+       "requestDocuments": "Aan te leveren documenten",
+      "sendDocumentRequest": "Documenten aanvragen",
       "upgradeForNotes": "Interviewnotities en AI‑tools",
     "upgradeForNotesDesc": "Upgrade naar het Pro- of Business‑abonnement om vragen, antwoorden en tips te genereren en notities te maken.",
     "upgradeForSchedule": "Interview plannen",
@@ -2639,6 +2688,7 @@
       "generateAnswers": "Antwoorden genereren",
       "generateTips": "Tips genereren",
       "toasts": {
+        "documentRequestSent": "Documentaanvraag verzonden naar de kandidaat",
         "noteSaved": "Notitie opgeslagen.",
         "noteDeleted": "Notitie verwijderd.",
         "questionsGenerated": "Vragen succesvol gegenereerd.",
@@ -2662,6 +2712,7 @@
     },
     "applicationStatus": { "pending": "In afwachting", "viewed": "Bekeken", "shortlisted": "Geselecteerd", "interview": "Gesprek", "accepted": "Geaccepteerd", "rejected": "Afgewezen" },
     "toasts": {
+      "documentRequestSent": "Documentverzoek verzonden naar kandidaat",
       "companyNotVerifiedMenu": "Uw bedrijf is niet geverifieerd.",
       "loadError": "Fout bij het laden van gegevens.",
       "deleteConfirm": "Vacature \"{{title}}\" verwijderen?",
@@ -2716,6 +2767,14 @@
     "cvBank": { "title": "Cv-bank", "desc": "Krijg toegang tot onze talentenpool.", "browse": "Cv's doorbladeren" }
   },
     "candidateDashboard": {
+       "contracts": {
+        "title": "Mijn contracten"
+      },
+       "hiringDocuments": {
+        "title": "Gevraagde documenten",
+        "pendingCount": "{{count}} document(en) in afwachting",
+        "uploadDocs": "Mijn documenten uploaden"
+      },
        "myCompanies": "Mijn bedrijven",
     "accessCompany": "Naar dashboard",
       "greeting": "Hallo {{name}}",
@@ -3085,7 +3144,66 @@
     "intermediaire": "Middelbaar (2‑5 jaar)",
     "senior": "Senior (5‑10 jaar)",
     "expert": "Expert (10+ jaar)"
-  }
+  },
+  "candidateDocuments": {
+     "hide": "Verwijderen uit lijst",
+    "replace": "Vervangen",
+    "replaceSuccess": "Document succesvol vervangen",
+    "delete": "Verwijderen",
+    "deleteSuccess": "Document verwijderd",
+    "confirmDelete": "Dit document verwijderen?",
+    "offer": "Vacature:",
+      "title": "Gevraagde documenten",
+      "noDocuments": "Momenteel geen documentverzoeken.",
+      "upload": "Uploaden",
+      "uploadSuccess": "Document succesvol verzonden",
+      "viewUploaded": "Verzonden document bekijken",
+      "documentTypes": {
+        "contract": "Ondertekend contract",
+        "id_card": "Identiteitsbewijs",
+        "diploma": "Diploma",
+        "other": "Ander document"
+      },
+      "status": {
+        "pending": "In afwachting",
+        "uploaded": "Verzonden",
+        "validated": "Gevalideerd",
+        "rejected": "Afgewezen"
+      }
+    },
+    "contract": {
+      "sign": "Contract ondertekenen",
+      "fullNamePlaceholder": "Uw volledige naam",
+      "signFullNameRequired": "Voer uw volledige naam in",
+      "title": "Contract",
+      "modeUpload": "Bestand uploaden",
+      "modeGenerate": "Automatisch genereren",
+      "upload": "Uploaden",
+      "viewUploaded": "Contract bekijken",
+      "contentPlaceholder": "Inhoud van het contract (HTML ondersteund)",
+      "startDate": "Startdatum",
+      "endDate": "Einddatum",
+      "renewable": "Verlengbaar",
+      "create": "Contract aanmaken",
+      "updated": "Contract bijgewerkt",
+      "created": "Contract aangemaakt",
+      "send": "Naar kandidaat sturen",
+      "sent": "Contract verzonden",
+      "download": "Contract downloaden",
+      "period": "Periode",
+      "terminate": "Contract beëindigen",
+      "terminateConfirm": "Contract beëindigen?",
+      "terminated": "Contract beëindigd",
+      "durationUpdated": "Duur bijgewerkt",
+      "fileUploaded": "Bestand geüpload",
+      "status": {
+        "draft": "Concept",
+        "sent": "Verzonden",
+        "signed": "Ondertekend",
+        "completed": "Voltooid",
+        "terminated": "Beëindigd"
+      }
+    }
  
 
 

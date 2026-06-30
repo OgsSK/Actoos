@@ -970,6 +970,7 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
             except stripe.error.InvalidRequestError as e:
                 print(f"Stripe subscription already deleted or invalid: {e}")
         httpx.patch(
+            
             f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
             json={
                 "stripe_subscription_id": None,
@@ -1163,6 +1164,68 @@ async def notify_status_change(req: NotifyStatusChangeRequest):
     except Exception as e:
         print(f"[ERREUR] notify_status_change: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+class NotifyAcceptedCandidateRequest(BaseModel):
+    candidate_email: str
+    candidate_name: str
+    job_title: str
+    company_name: Optional[str] = ""
+    message: Optional[str] = None
+    language: Optional[str] = "fr"
+
+@app.post("/api/notify-accepted-candidate")
+async def notify_accepted_candidate(req: NotifyAcceptedCandidateRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        lang = req.language or "fr"
+
+        # Nettoyage du titre
+        import re
+        raw_title = (req.job_title or "").strip()
+        # Supprimer les préfixes numérotés
+        parts = re.split(r'\d+\.\s*', raw_title)
+        clean_title = ""
+        for part in parts:
+            part = part.strip().rstrip('.')
+            if part:
+                clean_title = part
+                break
+        if not clean_title:
+            clean_title = raw_title.split('\n')[0].strip().rstrip('.')
+        if len(clean_title) > 120:
+            clean_title = clean_title[:117] + '...'
+
+        # Nettoyage avancé du nom d'entreprise
+        raw_company = req.company_name or ""
+        company_name = raw_company.strip()
+        # Si c'est une chaîne vide, "null", "undefined", ou seulement des espaces → on ignore
+        if not company_name or company_name.lower() in ("null", "undefined") or company_name.isspace():
+            company_text = ""
+        else:
+            company_text = f" chez <strong>{company_name}</strong>"
+
+        # Log pour surveillance
+        print(f"[DEBUG] company_name reçu : '{req.company_name}' -> nettoyé : '{company_name}', company_text : '{company_text}'")
+
+        subject = f"Félicitations {req.candidate_name} ! Votre candidature a été acceptée"
+        subject = subject.replace('\n', ' ').replace('\r', ' ').strip()
+
+        html = f"""
+        <h2>Félicitations {req.candidate_name} !</h2>
+        <p>Votre candidature pour le poste <strong>{clean_title}</strong>{company_text} a été acceptée.</p>
+        {f"<p><strong>Message du recruteur :</strong> {req.message}</p>" if req.message else ""}
+        <p>Nous vous contacterons très prochainement pour les prochaines étapes.</p>
+        <p>À très bientôt,<br/>L'équipe Actoos Jobs</p>
+        """
+        await send_translated_email(req.candidate_email, subject, html, lang)
+        return {"success": True, "message": "Email envoyé au candidat."}
+    except Exception as e:
+        print(f"[ERREUR] notify-accepted-candidate : {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 
 @app.post("/api/send-job-alerts")
 async def send_job_alerts():
@@ -3066,6 +3129,415 @@ async def get_candidates_bank(
         "pageSize": page_size,
         "totalPages": -(-total // page_size)
     }
+class RequestDocumentsRequest(BaseModel):
+    application_id: str
+    candidate_email: str
+    candidate_name: str
+    job_title: str
+    company_name: Optional[str] = ""
+    document_types: list[str] = ['contract', 'id_card', 'diploma']
+    message: Optional[str] = None
+    language: Optional[str] = "fr"
+
+class UploadDocumentRequest(BaseModel):
+    application_id: str
+    document_type: str
+    file_data: str   # base64
+    filename: str
+
+
+
+@app.post("/api/hiring/request-documents")
+async def request_documents(req: RequestDocumentsRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # 1. Récupérer candidate_id et company_id (via jobs)
+    app_resp = httpx.get(
+        f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}&select=candidate_id,job:jobs(company_id)",
+        headers=headers,
+    )
+    if app_resp.status_code != 200:
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération de la candidature")
+    apps = app_resp.json()
+    if not isinstance(apps, list) or len(apps) == 0:
+        raise HTTPException(status_code=404, detail="Candidature introuvable")
+
+    app = apps[0]
+    candidate_id = app.get("candidate_id")
+    if not candidate_id:
+        raise HTTPException(status_code=400, detail="Candidat introuvable dans la candidature")
+
+    job_data = app.get("job") or {}
+    company_id = job_data.get("company_id") if isinstance(job_data, dict) else None
+    if not company_id:
+        raise HTTPException(status_code=400, detail="Impossible de récupérer l'entreprise liée à l'offre")
+
+    # 2. Créer les entrées dans hiring_documents
+    for doc_type in req.document_types:
+        insert_resp = httpx.post(
+            f"{supabase_url}/rest/v1/hiring_documents",
+            json={
+                "application_id": req.application_id,
+                "candidate_id": candidate_id,
+                "company_id": company_id,
+                "document_type": doc_type,
+                "status": "pending",
+            },
+            headers={**headers, "Prefer": "return=minimal"},
+        )
+        if insert_resp.status_code not in (200, 201):
+            print(f"Erreur insertion document {doc_type}: {insert_resp.text}")
+
+    # 3. Envoyer l'email au candidat (sujet nettoyé)
+    doc_labels = {
+        "contract": "Contrat signé",
+        "id_card": "Pièce d'identité",
+        "diploma": "Diplôme",
+        "other": "Autre document",
+    }
+    lang = req.language or "fr"
+    # Sujet sans retour à la ligne
+    subject = clean_subject(f"Documents à fournir pour votre candidature - {req.job_title}")
+    html = f"""
+    <h2>Bonjour {req.candidate_name},</h2>
+    <p>Félicitations pour l'acceptation de votre candidature au poste <strong>{req.job_title}</strong> chez <strong>{req.company_name}</strong>.</p>
+    <p>Afin de finaliser votre dossier, merci de fournir le(s) document(s) suivant(s) :</p>
+    <ul>{''.join(f'<li>{doc_labels.get(d, d)}</li>' for d in req.document_types)}</ul>
+    {f"<p><strong>Message du recruteur :</strong> {req.message}</p>" if req.message else ""}
+    <p>Connectez-vous sur <a href='https://jobs.actoos.com/dashboard/candidat'>votre espace candidat</a> pour téléverser ces documents.</p>
+    <p>À bientôt,<br/>L'équipe Actoos Jobs</p>
+    """
+    await send_translated_email(req.candidate_email, subject, html, lang)
+
+    return {"success": True, "message": "Demande envoyée et email notifié."}
+
+
+
+
+@app.post("/api/hiring/upload-document")
+async def upload_document(req: UploadDocumentRequest):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # 1. Trouver une demande modifiable (statut différent de 'validated')
+    get_resp = httpx.get(
+        f"{supabase_url}/rest/v1/hiring_documents?application_id=eq.{req.application_id}&document_type=eq.{req.document_type}&status=not.eq.validated",
+        headers=headers
+    )
+    if get_resp.status_code != 200:
+        raise HTTPException(status_code=500, detail="Erreur récupération document")
+    docs = get_resp.json()
+    if not isinstance(docs, list) or len(docs) == 0:
+        raise HTTPException(status_code=404, detail="Aucune demande de document modifiable trouvée")
+
+    doc = docs[0]  # on cible le premier document correspondant
+
+    # 2. Upload du fichier (écrase si existant grâce à x-upsert)
+    try:
+        file_bytes = base64.b64decode(req.file_data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Données base64 invalides: {str(e)}")
+
+    file_path = f"{req.application_id}/{req.document_type}/{req.filename}"
+    upload_resp = httpx.post(
+        f"{supabase_url}/storage/v1/object/hiring-documents/{file_path}",
+        headers={**headers, "Content-Type": "application/octet-stream", "x-upsert": "true"},
+        content=file_bytes
+    )
+    if upload_resp.status_code not in (200, 201):
+        raise HTTPException(status_code=500, detail=f"Erreur upload fichier: {upload_resp.text}")
+
+    file_url = f"{supabase_url}/storage/v1/object/public/hiring-documents/{file_path}"
+
+    # 3. Mettre à jour le document (id exact)
+    update_resp = httpx.patch(
+        f"{supabase_url}/rest/v1/hiring_documents?id=eq.{doc['id']}",
+        json={"file_url": file_url, "status": "uploaded", "updated_at": "now()"},
+        headers=headers
+    )
+    if update_resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail=f"Erreur mise à jour document: {update_resp.text}")
+
+    # 4. Notifier le recruteur (ne bloque pas l'upload en cas d'échec)
+    try:
+        app_resp = httpx.get(
+            f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}&select=candidate:users(first_name,last_name),job:jobs(company:companies(owner_id,name))",
+            headers=headers
+        )
+        if app_resp.status_code == 200:
+            apps = app_resp.json()
+            if apps:
+                app = apps[0]
+                candidate = app.get("candidate") or {}
+                job = app.get("job") or {}
+                company = job.get("company") or {}
+                owner_id = company.get("owner_id")
+                if owner_id:
+                    owner_resp = httpx.get(
+                        f"{supabase_url}/rest/v1/users?id=eq.{owner_id}&select=email,first_name",
+                        headers=headers
+                    )
+                    if owner_resp.status_code == 200:
+                        owners = owner_resp.json()
+                        if owners:
+                            owner_email = owners[0].get("email")
+                            owner_first_name = owners[0].get("first_name") or "Recruteur"
+                            if owner_email:
+                                lang_recruiter = get_user_language(email=owner_email) or "en"
+                                candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+                                company_name = company.get("name") or "votre entreprise"
+                                doc_label = req.document_type
+                                subject = f"📎 {candidate_name} a téléversé un document – {doc_label}"
+                                html = f"""
+                                <h2>Bonjour {owner_first_name},</h2>
+                                <p>Le candidat <strong>{candidate_name}</strong> vient de téléverser le document <strong>{doc_label}</strong>.</p>
+                                <p>Rendez-vous sur <a href='https://jobs.actoos.com/dashboard/entreprise/candidatures/{req.application_id}'>la page de la candidature</a> pour le consulter.</p>
+                                """
+                                await send_translated_email(owner_email, subject, html, lang_recruiter)
+    except Exception as e:
+        print(f"Erreur notification recruteur: {e}")
+
+    return {"success": True, "file_url": file_url}
+
+from fastapi import Depends
+# Dépendance get_current_active_user déjà existante
+
+@app.get("/api/candidate/documents")
+async def get_candidate_documents(user_id: str = Depends(get_current_active_user)):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    docs_resp = httpx.get(
+        f"{supabase_url}/rest/v1/hiring_documents"
+        f"?candidate_id=eq.{user_id}"
+        f"&select=id,document_type,status,file_url,application_id,created_at"
+        f"&order=created_at.desc",
+        headers=headers,
+    )
+    if docs_resp.status_code != 200:
+        raise HTTPException(status_code=500, detail="Erreur récupération documents")
+    return docs_resp.json()
+# ----- Notification de validation/rejet d'un document -----
+class NotifyDocumentValidationRequest(BaseModel):
+    candidate_email: str
+    candidate_name: str
+    document_type: str
+    language: Optional[str] = "fr"
+
+@app.post("/api/notify-document-validated")
+async def notify_document_validated(req: NotifyDocumentValidationRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        lang = req.language or "fr"
+        doc_labels = {
+            "contract": "Contrat signé",
+            "id_card": "Pièce d'identité",
+            "diploma": "Diplôme",
+            "other": "Autre document",
+        }
+        doc_label = doc_labels.get(req.document_type, req.document_type)
+        subject = f"Votre document \"{doc_label}\" a été validé"
+        html = f"""
+        <h2>Bonjour {req.candidate_name},</h2>
+        <p>Votre document <strong>{doc_label}</strong> a été validé par l'entreprise.</p>
+        <p>Consultez votre espace candidat pour suivre l'avancement de votre dossier.</p>
+        <p>Cordialement,<br/>L'équipe Actoos Jobs</p>
+        """
+        await send_translated_email(req.candidate_email, subject, html, lang)
+        return {"success": True, "message": "Email envoyé au candidat."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class NotifyDocumentRejectedRequest(BaseModel):
+    candidate_email: str
+    candidate_name: str
+    document_type: str
+    reason: Optional[str] = None
+    language: Optional[str] = "fr"
+
+@app.post("/api/notify-document-rejected")
+async def notify_document_rejected(req: NotifyDocumentRejectedRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        lang = req.language or "fr"
+        subject = f"Votre document \"{req.document_type}\" a été refusé"
+        html = f"""
+        <h2>Bonjour {req.candidate_name},</h2>
+        <p>Le document <strong>{req.document_type}</strong> que vous avez envoyé a été refusé.</p>
+        {f"<p><strong>Raison :</strong> {req.reason}</p>" if req.reason else ""}
+        <p>Vous pouvez le remplacer depuis votre espace candidat.</p>
+        """
+        await send_translated_email(req.candidate_email, subject, html, lang)
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@app.post("/api/user/language")
+async def update_user_language(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    language = data.get("language")
+
+    if not user_id or not language:
+        raise HTTPException(status_code=400, detail="user_id et language requis")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Récupérer les préférences actuelles
+    user_resp = httpx.get(
+        f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=preferences",
+        headers=headers
+    )
+    if user_resp.status_code != 200 or not user_resp.json():
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+
+    current_prefs = user_resp.json()[0].get("preferences") or {}
+    current_prefs["language"] = language
+
+    # Mettre à jour
+    update_resp = httpx.patch(
+        f"{supabase_url}/rest/v1/users?id=eq.{user_id}",
+        json={"preferences": current_prefs},
+        headers=headers
+    )
+    if update_resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Erreur mise à jour")
+
+    return {"success": True, "language": language}
+class FinalizeHiringRequest(BaseModel):
+    application_id: str
+    message: Optional[str] = None
+    language: Optional[str] = "fr"
+
+@app.post("/api/hiring/finalize")
+async def finalize_hiring(req: FinalizeHiringRequest):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # 1. Récupérer la candidature
+    app_resp = httpx.get(
+        f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}&select=id,status,candidate:users(email,first_name,last_name),job:jobs(title,company:companies(name))",
+        headers=headers
+    )
+    if app_resp.status_code != 200 or not app_resp.json():
+        raise HTTPException(status_code=404, detail="Candidature introuvable")
+    app = app_resp.json()[0]
+
+    # 2. Vérifier le statut
+    if app["status"] != "accepted":
+        raise HTTPException(status_code=400, detail="La candidature doit être acceptée avant d'être finalisée")
+
+    # 3. Mettre à jour le statut
+    update_resp = httpx.patch(
+        f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}",
+        json={"status": "completed"},
+        headers=headers
+    )
+    if update_resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Erreur lors de la finalisation")
+
+    # 4. Envoyer l'email au candidat
+    candidate = app.get("candidate", {})
+    candidate_email = candidate.get("email")
+    if candidate_email:
+        candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+        job_title = app.get("job", {}).get("title", "")
+        company_name = app.get("job", {}).get("company", {}).get("name", "votre entreprise")
+        lang = req.language or "fr"
+
+        subject = f"Félicitations {candidate_name}, votre recrutement est confirmé !"
+
+        # Corps de l'email combinant félicitations + message personnalisé
+        html = f"""
+        <h2>Félicitations {candidate_name} !</h2>
+        <p>Nous avons le plaisir de vous confirmer que votre candidature pour le poste de <strong>{job_title}</strong> chez <strong>{company_name}</strong> a été retenue.</p>
+        {f"<p><strong>Message du recruteur :</strong><br/>{req.message}</p>" if req.message else ""}
+        <p>L'équipe {company_name} vous contactera pour les modalités de votre arrivée.</p>
+        <p>À très bientôt,<br/>L'équipe Actoos Jobs</p>
+        """
+        await send_translated_email(candidate_email, subject, html, lang)
+
+    return {"success": True, "message": "Recrutement finalisé"}
+class NotifyOtherCandidatesRequest(BaseModel):
+    application_id: str
+    message: Optional[str] = None   # message personnalisé optionnel
+    language: Optional[str] = "fr"
+@app.post("/api/notify-other-candidates")
+async def notify_other_candidates(req: NotifyOtherCandidatesRequest):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # 1. Récupérer l'offre liée à cette candidature
+    app_resp = httpx.get(
+        f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}&select=job_id,job:jobs(title,company:companies(name))",
+        headers=headers
+    )
+    if app_resp.status_code != 200 or not app_resp.json():
+        raise HTTPException(status_code=404, detail="Candidature introuvable")
+    app = app_resp.json()[0]
+    job_id = app["job_id"]
+    job_title = app.get("job", {}).get("title", "")
+    company_name = app.get("job", {}).get("company", {}).get("name", "")
+
+    # 2. Récupérer tous les autres candidats (ni acceptés, ni rejetés, ni completed)
+    others_resp = httpx.get(
+        f"{supabase_url}/rest/v1/applications?job_id=eq.{job_id}&select=id,candidate:users(email,first_name,last_name)&status=not.in.(accepted,rejected,completed)",
+        headers=headers
+    )
+    if others_resp.status_code != 200:
+        raise HTTPException(status_code=500, detail="Erreur récupération autres candidats")
+    others = others_resp.json()
+
+    # 3. Mettre à jour le statut de toutes ces candidatures vers "rejected"
+    if others:
+        ids_to_reject = [c["id"] for c in others]
+        ids_filter = ",".join(ids_to_reject)
+        patch_resp = httpx.patch(
+            f"{supabase_url}/rest/v1/applications?id=in.({ids_filter})",
+            json={"status": "rejected"},
+            headers=headers
+        )
+        if patch_resp.status_code not in (200, 204):
+            print(f"[WARN] Échec mise à jour statuts: {patch_resp.text}")
+
+    # 4. Envoyer un email à chacun dans sa propre langue
+    subject = f"Votre candidature pour le poste de {job_title}"
+    base_message = f"Nous vous remercions d'avoir postulé au poste de {job_title} chez {company_name}. Après examen de toutes les candidatures, nous avons décidé de poursuivre avec un autre candidat."
+    if req.message:
+        base_message += f"\n\nMessage du recruteur : {req.message}"
+
+    for other in others:
+        candidate = other.get("candidate", {})
+        email = candidate.get("email")
+        if email:
+            name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+            html = f"""
+            <h2>Bonjour {name},</h2>
+            <p>{base_message}</p>
+            <p>Nous vous souhaitons beaucoup de succès dans vos recherches.</p>
+            <p>L'équipe Actoos Jobs</p>
+            """
+            candidate_lang = get_user_language(email=email) or "fr"
+            await send_translated_email(email, subject, html, candidate_lang)
+
+    return {"success": True, "count": len(others)}
+
+
+
+
+
 
 if os.path.isdir(BUILD_DIR):
     app.mount("/static", StaticFiles(directory=os.path.join(BUILD_DIR, "static")), name="static")

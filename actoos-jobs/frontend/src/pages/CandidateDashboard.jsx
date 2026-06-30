@@ -27,8 +27,10 @@ import {
   BookOpen,
   Upload,
   Mail,
+  Building2,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
+import { toast } from 'sonner';
 
 // ---------- Stats Card ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
@@ -102,14 +104,20 @@ const ApplicationCard = ({ application }) => {
   const StatusIcon = statusIcons[application.status] || Clock;
   const statusColor = statusColors[application.status] || 'bg-yellow-100 text-yellow-700';
 
+  const logoUrl = application.job?.company?.logo_url;
+
   return (
     <Link
       to={`/mes-candidatures/${application.id}`}
       className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors"
     >
       <div className="flex items-start gap-3 w-full min-w-0">
-        <div className="w-11 h-11 sm:w-12 sm:h-12 bg-white rounded-xl flex items-center justify-center border border-slate-200 shrink-0">
-          <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />
+        <div className="w-11 h-11 sm:w-12 sm:h-12 bg-white rounded-xl flex items-center justify-center border border-slate-200 shrink-0 overflow-hidden">
+          {logoUrl ? (
+            <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -136,12 +144,17 @@ const ApplicationCard = ({ application }) => {
 const SavedJobCard = ({ job, onRemove }) => {
   const { t } = useTranslation();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
+  const logoUrl = job.company?.logo_url;
 
   return (
     <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">
       <div className="flex items-start gap-3">
-        <div className="w-11 h-11 sm:w-12 sm:h-12 bg-white rounded-xl flex items-center justify-center border border-slate-200 shrink-0">
-          <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />
+        <div className="w-11 h-11 sm:w-12 sm:h-12 bg-white rounded-xl flex items-center justify-center border border-slate-200 shrink-0 overflow-hidden">
+          {logoUrl ? (
+            <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -240,6 +253,7 @@ const CandidateDashboard = () => {
   const [savedJobs, setSavedJobs] = useState([]);
   const [alertsCount, setAlertsCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [hiringDocuments, setHiringDocuments] = useState([]);
 
   const profileCompletion = useMemo(() => {
     if (!profile) return 0;
@@ -276,6 +290,7 @@ const CandidateDashboard = () => {
 
     setLoading(true);
     try {
+      // Candidatures
       const { data: appsData } = await supabase
         .from('applications')
         .select(`
@@ -291,9 +306,9 @@ const CandidateDashboard = () => {
         .eq('candidate_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5);
-
       setApplications(appsData || []);
 
+      // Offres sauvegardées
       const { data: savedData } = await supabase
         .from('saved_jobs')
         .select(`
@@ -309,16 +324,44 @@ const CandidateDashboard = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(5);
-
       setSavedJobs(savedData?.map((s) => s.job).filter(Boolean) || []);
 
+      // Alertes
       const { count } = await supabase
         .from('job_alerts')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('is_active', true);
-
       setAlertsCount(count || 0);
+
+      // Documents demandés
+      const { data: docsData, error: docsError } = await supabase
+        .from('hiring_documents')
+        .select('id, document_type, status, file_url, application_id, created_at')
+        .eq('candidate_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (docsError) {
+        console.error('Erreur chargement documents:', docsError);
+        setHiringDocuments([]);
+      } else {
+        const appIds = (docsData || []).map(d => d.application_id).filter(Boolean);
+        let jobsMap = {};
+        if (appIds.length > 0) {
+          const { data: apps } = await supabase
+            .from('applications')
+            .select('id, job:jobs(title)')
+            .in('id', appIds);
+          (apps || []).forEach(app => {
+            jobsMap[app.id] = app.job?.title || 'Offre inconnue';
+          });
+        }
+        const enriched = (docsData || []).map(doc => ({
+          ...doc,
+          jobTitle: jobsMap[doc.application_id] || 'Offre inconnue',
+        }));
+        setHiringDocuments(enriched);
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -540,6 +583,31 @@ const CandidateDashboard = () => {
                 </Link>
               </CardContent>
             </Card>
+
+            {/* ✅ Hiring Documents */}
+            {hiringDocuments.length > 0 && (
+              <Card className="border-slate-200 overflow-hidden">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    {t('candidateDashboard.hiringDocuments.title', 'Documents demandés')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-slate-600">
+                    {t('candidateDashboard.hiringDocuments.pendingCount', {
+                      count: hiringDocuments.filter(d => d.status === 'pending').length
+                    })}
+                  </p>
+                  <Link to="/documents">
+                    <Button variant="outline" className="w-full min-h-[44px]">
+                      <Upload className="w-4 h-4 mr-2" />
+                      {t('candidateDashboard.hiringDocuments.uploadDocs', 'Téléverser mes documents')}
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Tips */}
             <Card className="border-blue-200 bg-blue-50 overflow-hidden">

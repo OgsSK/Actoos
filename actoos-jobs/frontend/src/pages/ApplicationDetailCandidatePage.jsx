@@ -57,9 +57,9 @@ const ApplicationDetailCandidatePage = () => {
         <Card>
           <CardContent className="p-6 sm:p-8 space-y-6">
             <div className="flex items-start gap-4">
-              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center shrink-0">
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
                 {job?.company?.logo_url ? (
-                  <img src={job.company.logo_url} alt={job.company.name} className="w-12 h-12 object-contain" />
+                  <img src={job.company.logo_url} alt={job.company.name} className="w-full h-full object-cover" />
                 ) : (
                   <Building2 className="w-8 h-8 text-slate-400" />
                 )}

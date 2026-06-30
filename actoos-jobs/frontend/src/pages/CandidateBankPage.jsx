@@ -21,7 +21,7 @@ const PAGE_SIZE = 12;
 
 const CandidateBankPage = () => {
   const { t } = useTranslation();
-  const { user, profile, activeCompanyId } = useAuth();
+  const { user, activeCompanyId } = useAuth();
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -146,78 +146,84 @@ const CandidateBankPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* En-tête */}
         <div className="mb-6">
-          <Link to="/dashboard/entreprise" className="inline-flex items-center text-sm text-slate-600 hover:text-slate-900 mb-4">
+          <Link to="/dashboard/entreprise" className="inline-flex items-center text-sm text-slate-600 hover:text-slate-900 mb-4 min-h-[44px]">
             <ChevronLeft className="w-4 h-4 mr-1" />
             {t('applicationDetail.back')}
           </Link>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">{t('candidateBank.title')}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{t('candidateBank.title')}</h1>
               <p className="text-slate-600 mt-1">{t('candidateBank.subtitle')}</p>
             </div>
-            <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
+            <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="w-full sm:w-auto min-h-[44px]">
               <Filter className="w-4 h-4 mr-2" />
               {showFilters ? t('common.hideFilters') : t('common.showFilters')}
             </Button>
           </div>
         </div>
 
+        {/* Barre de recherche */}
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <Input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder={t('candidateBank.searchPlaceholder')}
-            className="pl-10"
+            className="pl-10 w-full"
           />
         </div>
 
+        {/* Filtres (affichage conditionnel) */}
         {showFilters && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.city')}</label>
-              <select value={cityFilter} onChange={(e) => { setCityFilter(e.target.value); setPage(1); }} className="w-full h-10 border border-slate-200 rounded-lg px-3">
-                <option value="">{t('common.all')}</option>
-                {cities.map(city => (
-                  <option key={city.id} value={city.id}>{city.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.experienceLevel')}</label>
-              <select value={expLevelFilter} onChange={(e) => { setExpLevelFilter(e.target.value); setPage(1); }} className="w-full h-10 border border-slate-200 rounded-lg px-3">
-                <option value="">{t('common.all')}</option>
-                {EXPERIENCE_LEVELS.map(level => (
-                  <option key={level} value={level}>{t(`experienceLevels.${level}`)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.contractType')}</label>
-              <select value={contractFilter} onChange={(e) => { setContractFilter(e.target.value); setPage(1); }} className="w-full h-10 border border-slate-200 rounded-lg px-3">
-                <option value="">{t('common.all')}</option>
-                {CONTRACT_TYPES.map(ct => (
-                  <option key={ct} value={ct}>{t(`contractTypes.${ct}`)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.minSalary')}</label>
-              <Input type="number" value={salaryMinFilter} onChange={(e) => { setSalaryMinFilter(e.target.value); setPage(1); }} placeholder="FCFA" />
-            </div>
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="available" checked={isAvailableOnly} onChange={(e) => { setIsAvailableOnly(e.target.checked); setPage(1); }} />
-              <label htmlFor="available" className="text-sm text-slate-700">{t('common.availableOnly')}</label>
-            </div>
-            <div className="flex items-end">
-              <Button variant="ghost" onClick={clearFilters} size="sm">
-                <X className="w-4 h-4 mr-1" /> {t('common.clearFilters')}
-              </Button>
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.city')}</label>
+                <select value={cityFilter} onChange={(e) => { setCityFilter(e.target.value); setPage(1); }} className="w-full h-10 border border-slate-200 rounded-lg px-3">
+                  <option value="">{t('common.all')}</option>
+                  {cities.map(city => (
+                    <option key={city.id} value={city.id}>{city.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.experienceLevel')}</label>
+                <select value={expLevelFilter} onChange={(e) => { setExpLevelFilter(e.target.value); setPage(1); }} className="w-full h-10 border border-slate-200 rounded-lg px-3">
+                  <option value="">{t('common.all')}</option>
+                  {EXPERIENCE_LEVELS.map(level => (
+                    <option key={level} value={level}>{t(`experienceLevels.${level}`)}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.contractType')}</label>
+                <select value={contractFilter} onChange={(e) => { setContractFilter(e.target.value); setPage(1); }} className="w-full h-10 border border-slate-200 rounded-lg px-3">
+                  <option value="">{t('common.all')}</option>
+                  {CONTRACT_TYPES.map(ct => (
+                    <option key={ct} value={ct}>{t(`contractTypes.${ct}`)}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.minSalary')}</label>
+                <Input type="number" value={salaryMinFilter} onChange={(e) => { setSalaryMinFilter(e.target.value); setPage(1); }} placeholder="FCFA" />
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="available" checked={isAvailableOnly} onChange={(e) => { setIsAvailableOnly(e.target.checked); setPage(1); }} />
+                <label htmlFor="available" className="text-sm text-slate-700">{t('common.availableOnly')}</label>
+              </div>
+              <div className="flex items-end">
+                <Button variant="ghost" onClick={clearFilters} size="sm" className="min-h-[44px]">
+                  <X className="w-4 h-4 mr-1" /> {t('common.clearFilters')}
+                </Button>
+              </div>
             </div>
           </div>
         )}
 
+        {/* Tri et compteur */}
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-slate-500">{totalCount} {t('candidateBank.candidatesFound')}</p>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="h-10 border border-slate-200 rounded-lg px-3 text-sm">
@@ -226,6 +232,7 @@ const CandidateBankPage = () => {
           </select>
         </div>
 
+        {/* Résultats */}
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
         ) : candidates.length === 0 ? (
@@ -243,7 +250,7 @@ const CandidateBankPage = () => {
                 return (
                   <Link key={c.user_id} to={`/candidat/${c.user_id}?from=cv-bank`} className="block group">
                     <Card className="hover:shadow-lg transition-shadow h-full flex flex-col">
-                      <CardContent className="p-6 flex-1 flex flex-col">
+                      <CardContent className="p-4 sm:p-6 flex-1 flex flex-col">
                         <div className="flex items-start gap-4 mb-4">
                           <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden shrink-0">
                             {c.user?.avatar_url ? (
@@ -277,20 +284,20 @@ const CandidateBankPage = () => {
                         <div className="text-sm text-slate-600 space-y-2 mt-auto">
                           {lastExperience && (
                             <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-slate-400" />
+                              <Clock className="w-4 h-4 text-slate-400 shrink-0" />
                               <span className="truncate">{lastExperience.title} – {lastExperience.company}</span>
                             </div>
                           )}
                           {lastEducation && (
                             <div className="flex items-center gap-2">
-                              <BookOpen className="w-4 h-4 text-slate-400" />
+                              <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
                               <span className="truncate">{lastEducation.title} – {lastEducation.school || lastEducation.institution}</span>
                             </div>
                           )}
                           {c.desired_salary_min || c.desired_salary_max ? (
                             <div className="flex items-center gap-2">
-                              <DollarSign className="w-4 h-4 text-slate-400" />
-                              <span>
+                              <DollarSign className="w-4 h-4 text-slate-400 shrink-0" />
+                              <span className="truncate">
                                 {c.desired_salary_min ? `${c.desired_salary_min.toLocaleString()} FCFA` : ''}
                                 {c.desired_salary_min && c.desired_salary_max ? ' – ' : ''}
                                 {c.desired_salary_max ? `${c.desired_salary_max.toLocaleString()} FCFA` : ''}
@@ -302,18 +309,28 @@ const CandidateBankPage = () => {
                         <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
                           <div className="flex items-center gap-2">
                             {c.is_available ? (
-                              <Badge className="bg-green-100 text-green-700">{t('common.available')}</Badge>
+                              <Badge className="bg-green-100 text-green-700 text-xs">{t('common.available')}</Badge>
                             ) : (
-                              <Badge className="bg-slate-100 text-slate-500">{t('common.unavailable')}</Badge>
+                              <Badge className="bg-slate-100 text-slate-500 text-xs">{t('common.unavailable')}</Badge>
                             )}
                             {c.experience_level && (
-                              <Badge className="bg-blue-50 text-blue-700">{t(`experienceLevels.${c.experience_level}`)}</Badge>
+                              <Badge className="bg-blue-50 text-blue-700 text-xs">{t(`experienceLevels.${c.experience_level}`)}</Badge>
                             )}
                           </div>
                           {c.cv_url && (
-                            <a href={c.cv_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-blue-600 hover:text-blue-700">
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                window.open(c.cv_url, '_blank', 'noopener,noreferrer');
+                              }}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); window.open(c.cv_url, '_blank', 'noopener,noreferrer'); } }}
+                              className="text-blue-600 hover:text-blue-700 cursor-pointer"
+                            >
                               <Download className="w-4 h-4" />
-                            </a>
+                            </span>
                           )}
                         </div>
                       </CardContent>
@@ -325,13 +342,13 @@ const CandidateBankPage = () => {
 
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-2 mt-8">
-                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="min-h-[44px] min-w-[44px]">
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <span className="text-sm text-slate-600">
+                <span className="text-sm text-slate-600 px-2">
                   {page} / {totalPages}
                 </span>
-                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="min-h-[44px] min-w-[44px]">
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>

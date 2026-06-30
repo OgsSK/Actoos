@@ -1,3 +1,4 @@
+// CompanyDashboard.js
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
@@ -49,8 +50,8 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
   );
 };
 
-// ---------- CompanyJobCard ----------
-const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForReview, onCancelSubmission, isCompanyVerified, isBusinessPlan, onFreeBoost }) => {
+// ---------- CompanyJobCard (avec logo) ----------
+const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForReview, onCancelSubmission, isCompanyVerified, isBusinessPlan, onFreeBoost, companyLogo }) => {
   const { t } = useTranslation();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   const buttonRef = useRef(null);
@@ -111,6 +112,15 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   return (
     <div className="flex flex-col gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">
       <div className="flex items-start justify-between gap-3">
+        {/* Logo de l'entreprise */}
+        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 overflow-hidden border border-slate-200">
+          {companyLogo ? (
+            <img src={companyLogo} alt="Logo" className="w-full h-full object-cover" />
+          ) : (
+            <Building2 className="w-6 h-6 text-slate-400" />
+          )}
+        </div>
+
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-2">
             <Link to={`/emplois/${job.id}`} className="font-semibold text-slate-900 hover:text-blue-600 text-sm sm:text-base" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{job.title}</Link>
@@ -137,7 +147,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   );
 };
 
-// ---------- ApplicationCard ----------
+// ---------- ApplicationCard (affichage avatar) ----------
 const ApplicationCard = ({ application }) => {
   const { t } = useTranslation();
   const statusIcons = { pending: Clock, viewed: Eye, shortlisted: CheckCircle, interview: Calendar, accepted: CheckCircle, rejected: XCircle };
@@ -145,10 +155,18 @@ const ApplicationCard = ({ application }) => {
   const statusLabel = t(`companyDashboard.applicationStatus.${application.status}`, { defaultValue: application.status });
   const StatusIcon = statusIcons[application.status] || Clock;
   const statusColor = statusColors[application.status] || 'bg-slate-100 text-slate-700';
+  
   return (
     <Link to={`/dashboard/entreprise/candidatures/${application.id}`} className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">
       <div className="flex items-start gap-3 w-full min-w-0">
-        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-200 shrink-0"><Users className="w-5 h-5 text-slate-400" /></div>
+        {/* Avatar du candidat */}
+        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-200 shrink-0 overflow-hidden">
+          {application.candidate?.avatar_url ? (
+            <img src={application.candidate.avatar_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <Users className="w-5 h-5 text-slate-400" />
+          )}
+        </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-slate-900 line-clamp-2">{application.candidate?.first_name} {application.candidate?.last_name}</p>
           <p className="text-sm text-slate-500 line-clamp-1">{application.job?.title}</p>
@@ -202,6 +220,7 @@ const CompanyDashboard = () => {
   const [cancelling, setCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [stats, setStats] = useState({ totalJobs: 0, activeJobs: 0, totalApplications: 0, newApplications: 0 });
+  const [pendingDocsCount, setPendingDocsCount] = useState(0); // ✅ Nouvel état
   const hasLoaded = useRef(false);
 
   const fetchUserCompanies = useCallback(async () => {
@@ -226,14 +245,14 @@ const CompanyDashboard = () => {
       if (!comp) return;
       setCompany(comp);
 
-      // ✅ Compter les offres actives (toutes, sans limite)
+      // Compter les offres actives
       const { count: activeJobsCount } = await supabase
         .from('jobs')
         .select('id', { count: 'exact', head: true })
         .eq('company_id', comp.id)
         .eq('status', 'active');
 
-      // Récupérer les 10 dernières offres pour l'affichage
+      // Récupérer les 10 dernières offres
       const { data: jobsData } = await supabase
         .from('jobs')
         .select('*, city:cities(name)')
@@ -246,13 +265,27 @@ const CompanyDashboard = () => {
       if (jobsData?.length) {
         const { data } = await supabase
           .from('applications')
-          .select(`*, candidate:users(first_name, last_name, email), job:jobs(title)`)
+          .select(`*, candidate:users(first_name, last_name, email, avatar_url), job:jobs(title)`)
           .in('job_id', jobsData.map(j => j.id))
           .order('created_at', { ascending: false })
           .limit(10);
         appsData = data || [];
       }
       setApplications(appsData);
+
+      // ✅ Compter les documents en attente de validation (uploaded) pour cette entreprise
+      const { count: docsCount, error: docsError } = await supabase
+        .from('hiring_documents')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('status', 'uploaded');
+
+      if (docsError) {
+        console.error('Erreur comptage documents:', docsError);
+        setPendingDocsCount(0);
+      } else {
+        setPendingDocsCount(docsCount || 0);
+      }
 
       setStats({
         totalJobs: jobsData?.length || 0,
@@ -282,7 +315,6 @@ const CompanyDashboard = () => {
     load();
   }, [user, fetchUserCompanies]);
 
-  // ✅ Recharger la liste des entreprises à chaque changement (entreprise active ou plan)
   useEffect(() => {
     if (user) {
       fetchUserCompanies().then(updated => setCompanies(updated));
@@ -341,7 +373,6 @@ const CompanyDashboard = () => {
       setShowCancelModal(false);
       await fetchCompanyData(company.id);
       await refreshProfile();
-      // ✅ Recharger la liste complète des entreprises
       const updatedCompanies = await fetchUserCompanies();
       setCompanies(updatedCompanies);
     } catch (err) {
@@ -375,7 +406,6 @@ const CompanyDashboard = () => {
   const jobsLimit = getPlanLimit(plan, 'jobs');
   const planLabel = plan === 'free' ? t('pricing.free') : plan.charAt(0).toUpperCase() + plan.slice(1);
 
-  // ✅ Droits de création d'entreprise : basé sur la présence d'au moins une entreprise Business/Enterprise
   const ownedCompaniesCount = companies.filter(c => c.owner_id === user?.id).length;
   const hasBusinessCompany = companies.some(
     c => c.owner_id === user?.id && (c.subscription_plan === 'business' || c.subscription_plan === 'enterprise')
@@ -385,8 +415,8 @@ const CompanyDashboard = () => {
   const hasCVBank = planHasFeature(plan, 'canAccessCvBank');
   const isBusinessPlan = plan === 'business' || plan === 'enterprise';
 
-  // ✅ Utiliser le vrai total actif
   const activeJobsCount = stats.activeJobs;
+  const isOwner = company?.owner_id === user?.id;
 
   if (loading) return <DashboardSkeleton />;
 
@@ -451,7 +481,23 @@ const CompanyDashboard = () => {
                 {jobs.length === 0 ? (
                   <div className="text-center py-8"><Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" /><p className="text-slate-600 mb-4">{t('companyDashboard.jobsSection.noOffers')}</p><Link to="/dashboard/entreprise/offres/nouvelle"><Button className="min-h-[44px]">{t('companyDashboard.jobsSection.publishButton')}</Button></Link></div>
                 ) : (
-                  <div className="space-y-3">{jobs.map(job => (<CompanyJobCard key={job.id} job={job} onEdit={handleEditJob} onDelete={handleDeleteJob} onToggleStatus={handleToggleJobStatus} onSubmitForReview={handleSubmitForReview} onCancelSubmission={handleCancelSubmission} isCompanyVerified={company?.is_verified ?? false} isBusinessPlan={isBusinessPlan} onFreeBoost={handleFreeBoost} />))}</div>
+                  <div className="space-y-3">
+                    {jobs.map(job => (
+                      <CompanyJobCard
+                        key={job.id}
+                        job={job}
+                        onEdit={handleEditJob}
+                        onDelete={handleDeleteJob}
+                        onToggleStatus={handleToggleJobStatus}
+                        onSubmitForReview={handleSubmitForReview}
+                        onCancelSubmission={handleCancelSubmission}
+                        isCompanyVerified={company?.is_verified ?? false}
+                        isBusinessPlan={isBusinessPlan}
+                        onFreeBoost={handleFreeBoost}
+                        companyLogo={company?.logo_url}
+                      />
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -520,6 +566,34 @@ const CompanyDashboard = () => {
                   <p className="text-sm text-purple-700 mb-4">{t('companyDashboard.cvBank.desc', 'Accédez à notre vivier de talents disponibles.')}</p>
                   <Link to="/dashboard/entreprise/cv-bank">
                     <Button variant="outline" className="w-full border-purple-300 text-purple-700 hover:bg-purple-100"><Search className="w-4 h-4 mr-2" />{t('companyDashboard.cvBank.browse', 'Parcourir les CV')}</Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ✅ Nouveau : Documents à valider */}
+            {pendingDocsCount > 0 && (
+              <Card className="border-blue-200 bg-blue-50 overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    <h3 className="font-semibold text-blue-900">
+                      {t('companyDashboard.pendingDocuments.title', 'Documents à valider')}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    {t('companyDashboard.pendingDocuments.count', {
+                      count: pendingDocsCount
+                    }, `${pendingDocsCount} document(s) en attente de validation.`)}
+                  </p>
+                  <Link to="/dashboard/entreprise/candidatures">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 w-full border-blue-300 text-blue-700 hover:bg-blue-100"
+                    >
+                      {t('companyDashboard.pendingDocuments.viewApplications', 'Voir les candidatures')}
+                    </Button>
                   </Link>
                 </CardContent>
               </Card>

@@ -23,7 +23,8 @@ import {
   CheckCircle,
   Send,
   XCircle,
-  Zap
+  Zap,
+  Building2,
 } from 'lucide-react';
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
@@ -45,7 +46,7 @@ const statusColors = {
   pending: 'bg-yellow-100 text-yellow-700',
 };
 
-const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusinessPlan }) => {
+const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusinessPlan, companyLogo }) => {
   const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -165,8 +166,13 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-4 hover:border-blue-200 transition-colors overflow-visible">
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-          <Briefcase className="w-6 h-6 text-slate-400" />
+        {/* Logo de l'entreprise */}
+        <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
+          {companyLogo ? (
+            <img src={companyLogo} alt="Logo" className="w-full h-full object-cover" />
+          ) : (
+            <Building2 className="w-6 h-6 text-slate-400" />
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -268,10 +274,10 @@ const CompanyJobsPage = () => {
   useEffect(() => {
     if (user && activeCompanyId) {
       fetchJobs();
-      // Récupérer l'entreprise juste pour le plan (boost gratuit)
+      // Récupérer l'entreprise pour le plan ET le logo
       supabase
         .from('companies')
-        .select('subscription_plan')
+        .select('subscription_plan, logo_url')
         .eq('id', activeCompanyId)
         .single()
         .then(({ data }) => setCompany(data));
@@ -396,6 +402,7 @@ const CompanyJobsPage = () => {
   };
 
   const isBusinessPlan = company?.subscription_plan === 'business';
+  const companyLogo = company?.logo_url;
 
   if (loading) {
     return (
@@ -459,6 +466,7 @@ const CompanyJobsPage = () => {
                 onToggleStatus={handleToggleJobStatus}
                 onFreeBoost={handleFreeBoost}
                 isBusinessPlan={isBusinessPlan}
+                companyLogo={companyLogo}
               />
             ))}
           </div>

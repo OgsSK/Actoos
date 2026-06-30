@@ -23,7 +23,7 @@ import {
   Clock,
   Banknote,
   AlertTriangle,
-  Star,
+  CheckCircle,
 } from 'lucide-react';
 
 import { toast } from 'sonner';
@@ -37,7 +37,7 @@ const SimpleCompanyCard = ({ company, t }) => (
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 overflow-hidden">
             {company.logo_url ? (
-              <img src={company.logo_url} alt={company.name} className="w-6 h-6 object-contain" />
+              <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
             ) : (
               <Building2 className="w-5 h-5 text-blue-600" />
             )}
@@ -83,6 +83,9 @@ const CompanyDetailPage = () => {
   const [similarCompanies, setSimilarCompanies] = useState([]);
   const [similarLoading, setSimilarLoading] = useState(false);
 
+  // Statuts de candidature pour les offres affichées
+  const [appliedStatuses, setAppliedStatuses] = useState({});
+
   useEffect(() => {
     window.scrollTo(0, 0);
     setCompany(null);
@@ -93,6 +96,24 @@ const CompanyDetailPage = () => {
     fetchCompany();
     fetchJobs();
   }, [id]);
+
+  // Charger les statuts de candidature une fois les jobs récupérés
+  useEffect(() => {
+    if (!user || jobs.length === 0) {
+      setAppliedStatuses({});
+      return;
+    }
+    supabase
+      .from('applications')
+      .select('job_id, status')
+      .eq('candidate_id', user.id)
+      .in('job_id', jobs.map(j => j.id))
+      .then(({ data }) => {
+        const map = {};
+        (data || []).forEach(app => { map[app.job_id] = app.status; });
+        setAppliedStatuses(map);
+      });
+  }, [user, jobs]);
 
   const fetchCompany = async () => {
     try {
@@ -146,7 +167,7 @@ const CompanyDetailPage = () => {
     }
   };
 
-  // ✅ Charger les entreprises similaires après le chargement de l'entreprise
+  // Charger les entreprises similaires après le chargement de l'entreprise
   useEffect(() => {
     if (!company) return;
     setSimilarLoading(true);
@@ -159,11 +180,10 @@ const CompanyDetailPage = () => {
           .eq('is_verified', true)
           .eq('is_active', true)
           .neq('id', company.id)
-          .order('subscription_plan', { ascending: false }) // business > pro > free
+          .order('subscription_plan', { ascending: false })
           .order('name')
           .limit(6);
 
-        // Similarité : même industrie OU même ville
         if (company.industry) {
           query = query.or(`industry.eq.${company.industry},city_id.eq.${company.city_id || ''}`);
         } else if (company.city_id) {
@@ -173,7 +193,6 @@ const CompanyDetailPage = () => {
         const { data, error } = await query;
         if (error) throw error;
 
-        // Récupérer le nombre d'offres actives pour chaque entreprise
         const enriched = await Promise.all(
           (data || []).map(async (comp) => {
             const { count } = await supabase
@@ -248,12 +267,12 @@ const CompanyDetailPage = () => {
         <Card className="rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
           <CardContent className="p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row items-start gap-6 mb-8">
-              <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center shrink-0">
+              <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden">
                 {company.logo_url ? (
                   <img
                     src={company.logo_url}
                     alt={company.name}
-                    className="w-20 h-20 object-contain"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <Building2 className="w-12 h-12 text-slate-400" />
@@ -366,9 +385,10 @@ const CompanyDetailPage = () => {
             <div className="grid gap-4">
               {jobs.map((job) => {
                 const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
+                const applicationStatus = appliedStatuses[job.id];
                 return (
                   <Link key={job.id} to={`/emplois/${job.id}`}>
-                    <Card className="hover:shadow-md transition-shadow cursor-pointer border border-slate-200">
+                    <Card className="hover:shadow-md transition-shadow cursor-pointer border border-slate-200 relative">
                       <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-slate-900 hover:text-blue-600 line-clamp-1">
@@ -389,6 +409,13 @@ const CompanyDetailPage = () => {
                                 <Banknote className="w-4 h-4" />
                                 {format(job.salary_min)} – {format(job.salary_max)}
                               </span>
+                            )}
+                            {/* ✅ Badge "Postulé" filtré */}
+                            {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
+                              <Badge className="bg-green-100 text-green-700 rounded-full text-xs">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                {t('jobs.alreadyAppliedBadge', 'Postulé')}
+                              </Badge>
                             )}
                           </div>
                         </div>
