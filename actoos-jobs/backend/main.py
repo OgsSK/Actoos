@@ -95,10 +95,11 @@ async def get_current_active_user(request: Request) -> str:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable")
 
     user = user_data[0]
-    if not user.get("is_active", True):
-        raise HTTPException(status_code=403, detail="Votre compte est désactivé. Contactez le support.")
-    if user.get("is_banned", False):
-        raise HTTPException(status_code=403, detail="Votre compte a été banni.")
+    # ✅ Suspensions et bannissements utilisateur désactivés pour la v1
+    # if not user.get("is_active", True):
+    #     raise HTTPException(status_code=403, detail="Votre compte est désactivé. Contactez le support.")
+    # if user.get("is_banned", False):
+    #     raise HTTPException(status_code=403, detail="Votre compte a été banni.")
     return user_id
 
 # ----- Fonction utilitaire de vérification du rôle dans une entreprise -----
@@ -2569,45 +2570,7 @@ async def unban_user(request: Request):
         await send_translated_email(user["email"], subject, html, lang)
     return {"success": True, "message": "Utilisateur débanni et réactivé"}
 
-@app.post("/api/auth/check-suspension")
-async def check_suspension(request: Request):
-    data = await request.json()
-    user_id = data.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="user_id requis")
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    user_resp = httpx.get(
-        f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=is_active,suspended_until,email,first_name",
-        headers=headers
-    )
-    users = user_resp.json()
-    if not users:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    user = users[0]
-    is_active = user.get("is_active", True)
-    suspended_until = user.get("suspended_until")
-    if not is_active and suspended_until:
-        try:
-            suspended_until_dt = datetime.fromisoformat(suspended_until.replace("Z", "+00:00"))
-            now = datetime.now(timezone.utc)
-            if now >= suspended_until_dt:
-                httpx.patch(
-                    f"{supabase_url}/rest/v1/users?id=eq.{user_id}",
-                    json={"is_active": True, "suspended_until": None},
-                    headers=headers
-                )
-                if user.get("email"):
-                    lang = get_user_language(email=user["email"], request=request)
-                    subject = "Votre compte a été réactivé"
-                    first_name = user.get("first_name") or "Utilisateur"
-                    html = email_account_reactivated(first_name)
-                    await send_translated_email(user["email"], subject, html, lang)
-                return {"active": True, "message": "Suspension levée automatiquement"}
-        except Exception as e:
-            print(f"Erreur vérification suspension: {e}")
-    return {"active": is_active}
+
 
 @app.post("/api/company/check-suspension/{company_id}")
 async def check_company_suspension(company_id: str, request: Request):
