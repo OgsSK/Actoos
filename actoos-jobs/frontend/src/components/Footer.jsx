@@ -6,12 +6,31 @@ import FooterPreferences from '../components/FooterPreferences';
 
 const Footer = () => {
   const { t } = useTranslation();
-  const { isCandidate, isCompany } = useAuth();
+  const { isCandidate, isCompany, isAdmin, user, activeCompanyId } = useAuth();
+
+  // --- Liens dynamiques pour la section Candidats ---
+  const candidateDashboardLink = user
+    ? (isCandidate
+        ? '/dashboard/candidat'
+        : isCompany
+          ? '/inscription'            // entreprise → création compte candidat
+          : '/admin')                 // admin → dashboard admin (ou changer si souhaité)
+    : '/connexion';
+
+  // --- Liens dynamiques pour la section Entreprises ---
+  const companyPublishLink = user && isCompany
+    ? (activeCompanyId ? '/dashboard/entreprise/offres/nouvelle' : '/dashboard/entreprise/creer')
+    : '/inscription?type=entreprise';
+
+  const companyDashboardLink = user && isCompany
+    ? (activeCompanyId ? '/dashboard/entreprise' : '/dashboard/entreprise/creer')
+    : '/inscription?type=entreprise';
 
   return (
     <footer className="border-t border-slate-800 bg-slate-950 text-slate-300">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-2 xl:grid-cols-4">
+          {/* Logo et description */}
           <div>
             <Link to="/" className="text-2xl font-semibold tracking-tight text-white">
               Actoos <span className="text-blue-500">Jobs</span>
@@ -21,6 +40,7 @@ const Footer = () => {
             </p>
           </div>
 
+          {/* Section Candidats */}
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-white">
               {t('footer.sections.candidates.title')}
@@ -31,13 +51,15 @@ const Footer = () => {
                   {t('footer.sections.candidates.links.search')}
                 </Link>
               </li>
+              {!user && (
+                <li>
+                  <Link to="/inscription" className="transition-colors hover:text-white">
+                    {t('footer.sections.candidates.links.createAccount')}
+                  </Link>
+                </li>
+              )}
               <li>
-                <Link to="/inscription" className="transition-colors hover:text-white">
-                  {t('footer.sections.candidates.links.createAccount')}
-                </Link>
-              </li>
-              <li>
-                <Link to="/dashboard" className="transition-colors hover:text-white">
+                <Link to={candidateDashboardLink} className="transition-colors hover:text-white">
                   {t('footer.sections.candidates.links.dashboard')}
                 </Link>
               </li>
@@ -51,18 +73,19 @@ const Footer = () => {
             </ul>
           </div>
 
+          {/* Section Entreprises */}
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-white">
               {t('footer.sections.companies.title')}
             </h3>
             <ul className="mt-4 space-y-3 text-sm text-slate-400">
               <li>
-                <Link to="/inscription?type=entreprise" className="transition-colors hover:text-white">
+                <Link to={companyPublishLink} className="transition-colors hover:text-white">
                   {t('footer.sections.companies.links.publishOffer')}
                 </Link>
               </li>
               <li>
-                <Link to="/dashboard/entreprise" className="transition-colors hover:text-white">
+                <Link to={companyDashboardLink} className="transition-colors hover:text-white">
                   {t('footer.sections.companies.links.dashboard')}
                 </Link>
               </li>
@@ -76,6 +99,7 @@ const Footer = () => {
             </ul>
           </div>
 
+          {/* Section Informations */}
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-white">
               {t('footer.sections.info.title')}

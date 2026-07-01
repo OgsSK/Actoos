@@ -217,7 +217,7 @@ const CategoriesSection = () => {
 
 const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
   const { t } = useTranslation();
-  const { user, isCompany, isCandidate } = useAuth();
+  const { user, isCompany, isCandidate, activeCompanyId } = useAuth(); // ✅ ajout de activeCompanyId
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
@@ -331,7 +331,10 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
             <h3 className="text-lg font-semibold text-slate-900 mb-2">{t('home.jobs.noJobsTitle')}</h3>
             <p className="text-slate-600 mb-4">{t('home.jobs.noJobsText')}</p>
             {user && isCompany ? (
-              <Link to="/dashboard/entreprise/offres/nouvelle" className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 text-sm font-medium">
+              <Link
+                to={activeCompanyId ? "/dashboard/entreprise/offres/nouvelle" : "/dashboard/entreprise/creer"}
+                className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 text-sm font-medium"
+              >
                 <Plus className="w-4 h-4" />
                 {t('home.jobs.postJob')}
               </Link>
@@ -577,7 +580,7 @@ const HowItWorksSection = () => {
 
 const CompanyCTASection = ({ stats }) => {
   const { t } = useTranslation();
-  const { isCompany } = useAuth();
+  const { isCompany, activeCompanyId } = useAuth(); // ✅ ajout de activeCompanyId
   const { activeJobs, companies, candidates } = stats || {};
 
   const features = [
@@ -607,7 +610,7 @@ const CompanyCTASection = ({ stats }) => {
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               {isCompany ? (
-                <Link to="/dashboard/entreprise/offres/nouvelle">
+                <Link to={activeCompanyId ? "/dashboard/entreprise/offres/nouvelle" : "/dashboard/entreprise/creer"}>
                   <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-8 h-14 text-base shadow-lg">
                     <Plus className="w-4 h-4 mr-2" /> {t('home.cta.publishJob')}
                   </Button>
@@ -661,6 +664,7 @@ const CompanyCTASection = ({ stats }) => {
 
 const WhyChooseSection = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();   // ✅ récupération de l'utilisateur
   const reasons = [
     { icon: Globe, title: t('home.why.title1'), description: t('home.why.desc1') },
     { icon: Building2, title: t('home.why.title2'), description: t('home.why.desc2') },
@@ -670,7 +674,36 @@ const WhyChooseSection = () => {
     { icon: TrendingUp, title: t('home.why.title6'), description: t('home.why.desc6') },
   ];
   return (
-    <section className="py-20 bg-slate-50"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="text-center mb-12"><h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-display">{t('home.why.mainTitle')}</h2><p className="text-slate-600 mt-3 max-w-2xl mx-auto">{t('home.why.mainSubtitle')}</p></div><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">{reasons.map((reason) => (<Card key={reason.title} className="border-0 shadow-lg bg-white rounded-3xl hover:shadow-xl transition-all duration-300"><CardContent className="p-6 text-center"><div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><reason.icon className="w-7 h-7 text-blue-600" /></div><h3 className="font-semibold text-slate-900 mb-2">{reason.title}</h3><p className="text-slate-600 text-sm">{reason.description}</p></CardContent></Card>))}</div><div className="text-center mt-12"><Link to="/inscription"><Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl">{t('home.why.createAccount')} <ArrowRight className="w-4 h-4 ml-2" /></Button></Link></div></div></section>
+    <section className="py-20 bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 font-display">{t('home.why.mainTitle')}</h2>
+          <p className="text-slate-600 mt-3 max-w-2xl mx-auto">{t('home.why.mainSubtitle')}</p>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {reasons.map((reason) => (
+            <Card key={reason.title} className="border-0 shadow-lg bg-white rounded-3xl hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <reason.icon className="w-7 h-7 text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-slate-900 mb-2">{reason.title}</h3>
+                <p className="text-slate-600 text-sm">{reason.description}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        {!user && (
+          <div className="text-center mt-12">
+            <Link to="/inscription">
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl">
+                {t('home.why.createAccount')} <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
+    </section>
   );
 };
 
