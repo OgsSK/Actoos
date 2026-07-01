@@ -25,6 +25,7 @@ import {
   XCircle,
   Zap,
   Building2,
+  RefreshCw,
 } from 'lucide-react';
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
@@ -53,14 +54,20 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
   const menuButtonRef = useRef(null);
 
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
-  const statusLabel = t(`companyJobs.status.${job.status}`, { defaultValue: job.status });
-  const StatusIcon = statusIcons[job.status] || FileText;
+
+  // ✅ Détection d'expiration pour les jobs actifs
+  const now = new Date();
+  const isExpired = job.status === 'active' && job.expires_at && new Date(job.expires_at) < now;
+  const effectiveStatus = isExpired ? 'expired' : job.status;
+  const statusLabel = t(`companyJobs.status.${effectiveStatus}`, { defaultValue: effectiveStatus });
+  const StatusIcon = statusIcons[effectiveStatus] || FileText;
 
   const updateMenuPosition = () => {
     if (!menuButtonRef.current) return;
     const rect = menuButtonRef.current.getBoundingClientRect();
     const menuWidth = 240;
-    const menuHeight = isBusinessPlan ? 310 : 260;
+    // Hauteur ajustée selon les options affichées
+    const menuHeight = isBusinessPlan && effectiveStatus === 'active' ? 310 : 260;
     const padding = 12;
     const gap = 8;
     const left = Math.max(
@@ -109,7 +116,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
               {t('companyJobs.menu.edit')}
             </button>
 
-            {job.status === 'active' && (
+            {effectiveStatus === 'active' && (
               <>
                 <button
                   onClick={() => { onToggleStatus(job, 'paused'); setShowMenu(false); }}
@@ -130,7 +137,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
               </>
             )}
 
-            {job.status === 'paused' && (
+            {effectiveStatus === 'paused' && (
               <button
                 onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"
@@ -140,7 +147,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
               </button>
             )}
 
-            {(job.status === 'draft' || job.status === 'closed' || job.status === 'expired') && (
+            {(effectiveStatus === 'draft' || effectiveStatus === 'closed') && (
               <button
                 onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"
@@ -190,7 +197,7 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
               {job.title}
             </Link>
 
-            <Badge className={`${statusColors[job.status] || ''} border-0 text-xs flex items-center gap-1`}>
+            <Badge className={`${statusColors[effectiveStatus] || ''} border-0 text-xs flex items-center gap-1`}>
               <StatusIcon className="w-3 h-3" />
               {statusLabel}
             </Badge>
@@ -238,14 +245,25 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 mt-4">
-        <Button
-          variant="outline"
-          className="w-full sm:w-auto min-h-[44px]"
-          onClick={() => onEdit(job)}
-        >
-          <Edit className="w-4 h-4 mr-2" />
-          {t('companyJobs.menu.edit')}
-        </Button>
+        {effectiveStatus === 'expired' ? (
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto min-h-[44px] text-green-600 border-green-300 hover:bg-green-50"
+            onClick={() => onToggleStatus(job, 'active')}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            {t('companyJobs.menu.reactivate', 'Réactiver')}
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto min-h-[44px]"
+            onClick={() => onEdit(job)}
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            {t('companyJobs.menu.edit')}
+          </Button>
+        )}
 
         <Button
           variant="outline"
@@ -274,7 +292,6 @@ const CompanyJobsPage = () => {
   useEffect(() => {
     if (user && activeCompanyId) {
       fetchJobs();
-      // Récupérer l'entreprise pour le plan ET le logo
       supabase
         .from('companies')
         .select('subscription_plan, logo_url')
@@ -326,8 +343,11 @@ const CompanyJobsPage = () => {
     try {
       const updates = { status: newStatus };
 
-      if (newStatus === 'active' && !job.published_at) {
-        updates.published_at = new Date().toISOString();
+      if (newStatus === 'active') {
+        if (!job.published_at) {
+          updates.published_at = new Date().toISOString();
+        }
+        // Toujours recalculer l'expiration pour une réactivation
         updates.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       }
 

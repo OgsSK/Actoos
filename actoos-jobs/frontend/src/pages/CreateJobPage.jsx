@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import {
-  Briefcase, MapPin, DollarSign, Calendar, Users,
+  Briefcase, MapPin, DollarSign, Users,
   Plus, X, Save, Loader2, ChevronLeft, Send,
   GraduationCap, ArrowRight, Building2
 } from 'lucide-react';
@@ -62,8 +62,6 @@ const CreateJobPage = () => {
     remote_type: '',
     positions_count: 1,
     skills_required: [],
-    application_deadline: '',
-    start_date: '',
     is_urgent: false,
     status: 'draft'
   });
@@ -86,12 +84,10 @@ const CreateJobPage = () => {
         .single();
 
       if (companyError || !comp) {
-        // Redirection silencieuse si l'entreprise n'existe pas
         navigate('/dashboard/entreprise');
         return;
       }
 
-      // Stocke toujours l'entreprise, même suspendue
       setCompany(comp);
 
       const { data: catsData } = await supabase
@@ -139,8 +135,6 @@ const CreateJobPage = () => {
         remote_type: data.remote_type || '',
         positions_count: data.positions_count || 1,
         skills_required: data.skills_required || [],
-        application_deadline: data.application_deadline || '',
-        start_date: data.start_date || '',
         is_urgent: data.is_urgent || false,
         status: data.status || 'draft'
       });
@@ -184,13 +178,7 @@ const CreateJobPage = () => {
     setSaving(true);
     try {
       const safeTitle = (form.title || '').substring(0, 200);
-
-      const { data: country } = await supabase
-        .from('countries')
-        .select('id')
-        .eq('code', prefs.country || 'BE')
-        .single();
-      const countryId = country?.id;
+      const countryId = company?.country_id || null;
 
       let finalStatus = form.status;
 
@@ -256,8 +244,6 @@ const CreateJobPage = () => {
         remote_type: form.is_remote ? form.remote_type : null,
         positions_count: parseInt(form.positions_count) || 1,
         skills_required: form.skills_required.length > 0 ? form.skills_required : null,
-        application_deadline: form.application_deadline || null,
-        start_date: form.start_date || null,
         is_urgent: form.is_urgent,
         status: finalStatus
       };
@@ -323,7 +309,6 @@ const CreateJobPage = () => {
         : 'border-slate-200 focus:ring-blue-500'
     );
 
-  // ✅ Les bandeaux ne s'affichent qu'une fois le chargement terminé
   const showUnverifiedBanner = !loading && company && !company.is_verified;
   const showSuspendedBanner = !loading && company && !company.is_active;
 
@@ -346,7 +331,6 @@ const CreateJobPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20" data-testid="create-job-page">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-        {/* Bandeau jaune pour entreprise non vérifiée */}
         {showUnverifiedBanner && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
@@ -361,7 +345,6 @@ const CreateJobPage = () => {
           </div>
         )}
 
-        {/* Bandeau rouge pour entreprise suspendue */}
         {showSuspendedBanner && (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center shrink-0">
@@ -431,7 +414,6 @@ const CreateJobPage = () => {
         </div>
 
         <div className="space-y-4 sm:space-y-6">
-          {/* Carte Informations de base */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -550,7 +532,6 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Carte Description */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.description')}</h2>
@@ -638,7 +619,6 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Carte Compétences */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.skills')}</h2>
@@ -682,7 +662,6 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Carte Localisation */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -742,7 +721,6 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Carte Salaire */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -789,39 +767,6 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Carte Dates */}
-          <Card>
-            <CardContent className="p-4 sm:p-6 space-y-4">
-              <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-600" />
-                {t('createJob.sections.dates')}
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.applicationDeadline')}</label>
-                  <Input
-                    type="date"
-                    value={form.application_deadline}
-                    onChange={(e) => setForm({ ...form, application_deadline: e.target.value })}
-                    min={new Date().toISOString().split('T')[0]}
-                    data-testid="job-deadline-input"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.startDate')}</label>
-                  <Input
-                    type="date"
-                    value={form.start_date}
-                    onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                    data-testid="job-start-date-input"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Boutons de fin de formulaire */}
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2 sm:pt-4">
             <Button
               variant="outline"

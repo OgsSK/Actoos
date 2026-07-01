@@ -328,7 +328,6 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
                 🚀 {t('jobs.boosted')}
               </Badge>
             )}
-            {/* ✅ Badge filtré */}
             {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
               <Badge className="bg-green-100 text-green-700 rounded-full">
                 ✅ {t('jobs.alreadyAppliedBadge', 'Postulé')}
@@ -663,6 +662,7 @@ const JobsPage = () => {
   const { format } = useCurrencyFormatter();
 
   const [countryId, setCountryId] = useState(null);
+  const [countryLoaded, setCountryLoaded] = useState(false);   // ✅ nouveau
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
@@ -687,6 +687,7 @@ const JobsPage = () => {
 
   const conversionRate = RATES[prefs.currency] || 1;
 
+  // Chargement du countryId
   useEffect(() => {
     if (prefs.country) {
       supabase
@@ -694,16 +695,28 @@ const JobsPage = () => {
         .select('id')
         .eq('code', prefs.country)
         .single()
-        .then(({ data }) => setCountryId(data?.id || null));
+        .then(({ data }) => {
+          setCountryId(data?.id || null);
+          setCountryLoaded(true);
+        })
+        .catch(() => {
+          setCountryId(null);
+          setCountryLoaded(true);
+        });
     } else {
       setCountryId(null);
+      setCountryLoaded(true);
     }
   }, [prefs.country]);
 
+  // Chargement des jobs (se déclenche quand countryId ET countryLoaded sont prêts)
   useEffect(() => {
+    if (!countryLoaded) return;   // ✅ attend que le pays soit chargé
+
     const fetchJobs = async () => {
       setLoading(true);
       try {
+        const now = new Date().toISOString();
         let query = supabase
           .from('jobs')
           .select(`
@@ -713,7 +726,8 @@ const JobsPage = () => {
             company:companies(name, logo_url, is_verified, owner_id, subscription_plan),
             city:cities(name)
           `)
-          .eq('status', 'active');
+          .eq('status', 'active')
+          .or(`expires_at.is.null,expires_at.gte.${now}`);
 
         if (countryId) {
           query = query.eq('country_id', countryId);
@@ -732,12 +746,8 @@ const JobsPage = () => {
       }
     };
 
-    if (countryId !== null) {
-      fetchJobs();
-    } else {
-      setLoading(false);
-    }
-  }, [countryId]);
+    fetchJobs();
+  }, [countryId, countryLoaded]);
 
   useEffect(() => {
     if (!user || jobs.length === 0) {

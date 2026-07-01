@@ -24,8 +24,8 @@ const CreateCompanyPage = () => {
 
   const { prefs } = usePreferencesContext();
 
-  // Par défaut : le pays préféré de l'utilisateur, sinon Belgique
-  const [selectedCountry, setSelectedCountry] = useState(prefs.country || 'BE');
+  // ✅ État initial vide, sera rempli par le useEffect
+  const [selectedCountry, setSelectedCountry] = useState('');
   const [countries, setCountries] = useState([]);
 
   const { cities: filteredCities } = useCities(selectedCountry);
@@ -50,18 +50,21 @@ const CreateCompanyPage = () => {
   const COMPANY_SIZES = Object.keys(t('createCompany.sizes', { returnObjects: true }));
   const INDUSTRIES = t('createCompany.industries', { returnObjects: true }) || [];
 
+  // ✅ Charger les pays et définir le pays par défaut
   useEffect(() => {
     supabase.from('countries').select('code, name').order('name').then(({ data }) => {
-      setCountries(data || []);
+      if (data && data.length > 0) {
+        setCountries(data);
+        // Si l'utilisateur a déjà un pays préféré ET qu'il fait partie de la liste, on le prend
+        if (prefs.country && data.some(c => c.code === prefs.country)) {
+          setSelectedCountry(prefs.country);
+        } else if (!prefs.country) {
+          // Aucune préférence : on prend le premier pays de la liste
+          setSelectedCountry(data[0].code);
+        }
+      }
     });
-  }, []);
-
-  // Synchronise le pays sélectionné avec les préférences de l'utilisateur
-  useEffect(() => {
-    if (prefs.country && prefs.country !== selectedCountry) {
-      setSelectedCountry(prefs.country);
-    }
-  }, [prefs.country]);
+  }, [prefs.country]); // dépend de prefs.country pour se mettre à jour si la préférence change
 
   // Upload de logo directement vers Supabase Storage
   const handleLogoUpload = async (e) => {

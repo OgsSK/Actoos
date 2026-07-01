@@ -1250,7 +1250,8 @@ async def send_job_alerts():
         if not user_email or not user_id:
             continue
         last_sent = alert.get("last_sent_at")
-        now = datetime.utcnow()
+        # ✅ now est maintenant offset-aware (UTC)
+        now = datetime.now(timezone.utc)
         freq = alert.get("frequency", "daily")
         if last_sent:
             last_sent_dt = datetime.fromisoformat(last_sent.replace("Z", "+00:00"))

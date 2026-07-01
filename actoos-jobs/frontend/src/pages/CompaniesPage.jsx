@@ -72,11 +72,13 @@ const CompaniesPage = () => {
 
       if (data && data.length > 0) {
         const companyIds = data.map(c => c.id);
+        const now = new Date().toISOString();                     // ✅ date actuelle
         const { data: activeJobs } = await supabase
           .from('jobs')
           .select('company_id')
           .in('company_id', companyIds)
-          .eq('status', 'active');
+          .eq('status', 'active')
+          .or(`expires_at.is.null,expires_at.gte.${now}`);       // ✅ exclut les offres expirées
 
         const countMap = {};
         (activeJobs || []).forEach(row => {

@@ -217,7 +217,7 @@ const CategoriesSection = () => {
 
 const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
   const { t } = useTranslation();
-  const { user, isCompany, isCandidate, activeCompanyId } = useAuth(); // ✅ ajout de activeCompanyId
+  const { user, isCompany, isCandidate, activeCompanyId } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
@@ -251,10 +251,12 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
 
     const fetchJobs = async () => {
       try {
+        const now = new Date().toISOString();
         let query = supabase
           .from('jobs')
           .select(`id, title, contract_type, salary_min, salary_max, created_at, is_urgent, is_remote, remote_type, boosted_until, company:companies(name, logo_url, owner_id, subscription_plan), city:cities(name)`)
           .eq('status', 'active')
+          .or(`expires_at.is.null,expires_at.gte.${now}`)
           .in('company_id', activeCompanyIds)
           .order('boosted_until', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
@@ -267,7 +269,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
         const { data, error } = await query;
         if (error) throw error;
 
-        const now = new Date();
+        const nowDate = new Date();
         const planPriority = { business: 3, pro: 2, free: 1 };
 
         let formattedJobs = (data || []).map((job) => ({
@@ -288,9 +290,9 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
           company_plan: job.company?.subscription_plan || 'free',
         }));
 
-        const boosted = formattedJobs.filter(j => j.boosted_until && new Date(j.boosted_until) > now)
+        const boosted = formattedJobs.filter(j => j.boosted_until && new Date(j.boosted_until) > nowDate)
           .sort((a, b) => new Date(b.boosted_until) - new Date(a.boosted_until) || new Date(b.created_at) - new Date(a.created_at));
-        const nonBoosted = formattedJobs.filter(j => !j.boosted_until || new Date(j.boosted_until) <= now)
+        const nonBoosted = formattedJobs.filter(j => !j.boosted_until || new Date(j.boosted_until) <= nowDate)
           .sort((a, b) => {
             const pa = planPriority[a.company_plan] || 0;
             const pb = planPriority[b.company_plan] || 0;
@@ -580,7 +582,7 @@ const HowItWorksSection = () => {
 
 const CompanyCTASection = ({ stats }) => {
   const { t } = useTranslation();
-  const { isCompany, activeCompanyId } = useAuth(); // ✅ ajout de activeCompanyId
+  const { isCompany, activeCompanyId } = useAuth();
   const { activeJobs, companies, candidates } = stats || {};
 
   const features = [
@@ -664,7 +666,7 @@ const CompanyCTASection = ({ stats }) => {
 
 const WhyChooseSection = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();   // ✅ récupération de l'utilisateur
+  const { user } = useAuth();
   const reasons = [
     { icon: Globe, title: t('home.why.title1'), description: t('home.why.desc1') },
     { icon: Building2, title: t('home.why.title2'), description: t('home.why.desc2') },
@@ -776,10 +778,12 @@ const Homepage = () => {
       let candsCount = 0;
 
       if (activeCompanyIds.length > 0) {
+        const now = new Date().toISOString();
         const { count } = await supabase
           .from('jobs')
           .select('id', { count: 'exact', head: true })
           .eq('status', 'active')
+          .or(`expires_at.is.null,expires_at.gte.${now}`)
           .in('company_id', activeCompanyIds);
         jobsCount = count || 0;
       }

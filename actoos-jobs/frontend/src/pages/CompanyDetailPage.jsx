@@ -143,6 +143,7 @@ const CompanyDetailPage = () => {
 
   const fetchJobs = async () => {
     try {
+      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('jobs')
         .select(`
@@ -156,6 +157,7 @@ const CompanyDetailPage = () => {
         `)
         .eq('company_id', id)
         .eq('status', 'active')
+        .or(`expires_at.is.null,expires_at.gte.${now}`)   // ✅ exclut les offres expirées
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -193,13 +195,15 @@ const CompanyDetailPage = () => {
         const { data, error } = await query;
         if (error) throw error;
 
+        const now = new Date().toISOString();
         const enriched = await Promise.all(
           (data || []).map(async (comp) => {
             const { count } = await supabase
               .from('jobs')
               .select('id', { count: 'exact', head: true })
               .eq('company_id', comp.id)
-              .eq('status', 'active');
+              .eq('status', 'active')
+              .or(`expires_at.is.null,expires_at.gte.${now}`);   // ✅ exclut les offres expirées
             return { ...comp, jobs_count: count || 0 };
           })
         );
@@ -410,7 +414,6 @@ const CompanyDetailPage = () => {
                                 {format(job.salary_min)} – {format(job.salary_max)}
                               </span>
                             )}
-                            {/* ✅ Badge "Postulé" filtré */}
                             {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
                               <Badge className="bg-green-100 text-green-700 rounded-full text-xs">
                                 <CheckCircle className="w-3 h-3 mr-1" />
