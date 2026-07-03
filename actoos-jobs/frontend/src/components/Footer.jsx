@@ -136,9 +136,10 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-8 border-t border-slate-800 pt-6 text-sm text-slate-500">
-          <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
-        </div>
+        <div className="mt-8 border-t border-slate-800 pt-6 text-sm text-slate-500 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+  <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
+  <p className="text-xs text-slate-600">v1.0.0</p>
+</div>
       </div>
     </footer>
   );
