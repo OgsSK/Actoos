@@ -19,8 +19,8 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import { toast } from 'sonner';
 
-// ---------- Barre de recherche principale ----------
-const SearchHero = ({ cities }) => {
+// ---------- Barre de recherche (tags dynamiques + défilement mobile) ----------
+const SearchHero = ({ cities, categories = [] }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState('');
@@ -28,14 +28,6 @@ const SearchHero = ({ cities }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [recentSearches, setRecentSearches] = useState([]);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('actoos_recent_searches');
-      if (stored) setRecentSearches(JSON.parse(stored));
-    } catch {}
-  }, []);
 
   useEffect(() => {
     if (keyword.trim().length < 2) {
@@ -57,13 +49,14 @@ const SearchHero = ({ cities }) => {
   const handleSearch = (e) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (keyword) { params.set('q', keyword); }
+    if (keyword) params.set('q', keyword);
     if (location) params.set('location', location);
     navigate(`/emplois?${params.toString()}`);
     setShowSuggestions(false);
   };
 
-  const popularSearches = ['Développeur', 'Marketing', 'Designer', 'Finance', 'Commercial', 'Data'];
+  // ✅ Tags dynamiques : les 6 premières catégories (hors "Autre", déjà triées par popularité)
+  const categoryTags = categories.filter(cat => cat.slug !== 'other' && cat.slug !== 'autre').slice(0, 6);
 
   return (
     <section className="relative bg-gradient-to-br from-slate-50 via-blue-50 to-white pt-20 pb-16 sm:pt-28 sm:pb-24">
@@ -111,13 +104,32 @@ const SearchHero = ({ cities }) => {
           </Button>
         </form>
 
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {popularSearches.map((term) => (
-            <button key={term} onClick={() => { setKeyword(term); navigate(`/emplois?q=${encodeURIComponent(term)}`); }}
-              className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-colors">
-              {term}
-            </button>
-          ))}
+        {/* Tags dynamiques – défilement horizontal sur mobile */}
+        <div className="mt-6">
+          {/* Mobile : scroll horizontal */}
+          <div className="flex lg:hidden overflow-x-auto gap-2 pb-2 scrollbar-hide -mx-4 px-4 snap-x">
+            {categoryTags.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => navigate(`/emplois?category=${encodeURIComponent(cat.slug)}`)}
+                className="flex-shrink-0 snap-start px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-colors whitespace-nowrap"
+              >
+                {t(`categories.${cat.slug}`, cat.name)}
+              </button>
+            ))}
+          </div>
+          {/* Desktop : grille flexible centrée */}
+          <div className="hidden lg:flex flex-wrap justify-center gap-2">
+            {categoryTags.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => navigate(`/emplois?category=${encodeURIComponent(cat.slug)}`)}
+                className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-colors"
+              >
+                {t(`categories.${cat.slug}`, cat.name)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -125,17 +137,11 @@ const SearchHero = ({ cities }) => {
 };
 
 // ---------- Catégories avec défilement horizontal (flèches conditionnelles) ----------
-const CategoriesStrip = () => {
+const CategoriesStrip = ({ categories = [] }) => {
   const { t } = useTranslation();
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-
-  useEffect(() => {
-    fetchCategories().then(data => { setCategories(data || []); setLoading(false); });
-  }, []);
 
   const checkScroll = () => {
     const el = scrollRef.current;
@@ -161,7 +167,7 @@ const CategoriesStrip = () => {
     if (scrollRef.current) { scrollRef.current.scrollBy({ left: direction * 300, behavior: 'smooth' }); }
   };
 
-  if (loading || categories.length === 0) return null;
+  if (categories.length === 0) return null;
 
   return (
     <section className="py-8 bg-white border-b border-slate-100">
@@ -428,6 +434,7 @@ const Homepage = () => {
   const [countryId, setCountryId] = useState(null);
   const [countryLoading, setCountryLoading] = useState(true);
   const [activeCompanyIds, setActiveCompanyIds] = useState([]);
+  const [categories, setCategories] = useState([]);
   const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
 
@@ -446,10 +453,52 @@ const Homepage = () => {
     q.then(({ data }) => setActiveCompanyIds(data ? data.map(c => c.id) : []));
   }, [countryId, countryLoading]);
 
+  // ✅ Chargement des catégories avec comptage d'offres actives pour les trier par popularité,
+  //    et "Autre" (slug 'other' ou 'autre') toujours à la fin.
+  useEffect(() => {
+    const loadPopularCategories = async () => {
+      try {
+        const allCategories = await fetchCategories();
+        const now = new Date().toISOString();
+        const categoriesWithCount = await Promise.all(
+          allCategories.map(async (cat) => {
+            const { count } = await supabase
+              .from('jobs')
+              .select('id', { count: 'exact', head: true })
+              .eq('category_id', cat.id)
+              .eq('status', 'active')
+              .or(`expires_at.is.null,expires_at.gte.${now}`);
+            return { ...cat, jobsCount: count || 0 };
+          })
+        );
+
+        const isOther = (cat) => cat.slug === 'other' || cat.slug === 'autre';
+        const otherCategory = categoriesWithCount.find(isOther);
+        const otherCategories = categoriesWithCount.filter(cat => !isOther(cat));
+
+        otherCategories.sort((a, b) => {
+          if (b.jobsCount !== a.jobsCount) return b.jobsCount - a.jobsCount;
+          return (a.name || '').localeCompare(b.name || '');
+        });
+
+        const sortedCategories = otherCategory
+          ? [...otherCategories, otherCategory]
+          : otherCategories;
+
+        setCategories(sortedCategories);
+      } catch (error) {
+        console.error('Erreur chargement catégories populaires:', error);
+        const fallback = await fetchCategories();
+        setCategories(fallback || []);
+      }
+    };
+    loadPopularCategories();
+  }, []);
+
   return (
     <div className="min-h-screen">
-      <SearchHero cities={filteredCities} />
-      <CategoriesStrip />
+      <SearchHero cities={filteredCities} categories={categories} />
+      <CategoriesStrip categories={categories} />
       <RecentJobsSection countryId={countryId} activeCompanyIds={activeCompanyIds} />
       <CitiesSection cities={filteredCities} />
       <HowItWorksSection />
