@@ -1,29 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sendActoosEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, message, html, to } = body;
+    const { to, subject, title, message, buttonText, buttonUrl, language } = body;
 
-    // Si le champ "to" est présent, on l'utilise, sinon on envoie à contact@actoos.com
-    const recipient = to || 'contact@actoos.com';
+    if (!to || !subject || !title || !message) {
+      return NextResponse.json({ error: 'Champs obligatoires manquants' }, { status: 400 });
+    }
 
-    const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/handle-request', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'send-email',
-        name,
-        email: recipient,
-        message,
-        html,
-      }),
+    const result = await sendActoosEmail({
+      to,
+      subject,
+      title,
+      message,
+      buttonText,
+      buttonUrl,
+      lang: language || 'fr',
     });
 
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
-  } catch (error) {
-    console.error('send-project-email error:', error);
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+    if (result.success) {
+      return NextResponse.json({ success: true });
+    } else {
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

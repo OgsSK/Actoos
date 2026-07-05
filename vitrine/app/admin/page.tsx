@@ -215,41 +215,39 @@ export default function AdminPage() {
   };
 
   const updatePaymentStatus = async (id: string, paymentStatus: string) => {
-  setActionLoading(id);
-  try {
-    const updates: any = { payment_status: normalizeStatus(paymentStatus) };
-    const projet = projets.find(p => p.id === id);
-    if (!projet) return;
+    setActionLoading(id);
+    try {
+      const updates: any = { payment_status: normalizeStatus(paymentStatus) };
+      const projet = projets.find(p => p.id === id);
+      if (!projet) return;
 
-    if (normalizeStatus(paymentStatus) === 'complet') {
-      // Paiement complet : on met paid_amount = payment_amount
-      if (projet.payment_amount) {
-        updates.paid_amount = projet.payment_amount;
-      }
-    } else if (normalizeStatus(paymentStatus) === 'acompte_payé') {
-      // Acompte payé : demander le montant
-      const amountStr = prompt('Montant payé (€) ?', (projet.payment_amount - (projet.paid_amount || 0)).toString());
-      if (amountStr) {
-        const amount = parseFloat(amountStr);
-        if (!isNaN(amount) && amount > 0) {
-          updates.paid_amount = (projet.paid_amount || 0) + amount;
+      if (normalizeStatus(paymentStatus) === 'complet') {
+        if (projet.payment_amount) {
+          updates.paid_amount = projet.payment_amount;
+        }
+      } else if (normalizeStatus(paymentStatus) === 'acompte_payé') {
+        const amountStr = prompt('Montant payé (€) ?', (projet.payment_amount - (projet.paid_amount || 0)).toString());
+        if (amountStr) {
+          const amount = parseFloat(amountStr);
+          if (!isNaN(amount) && amount > 0) {
+            updates.paid_amount = (projet.paid_amount || 0) + amount;
+          }
         }
       }
+
+      await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id, ...updates }),
+      });
+
+      setProjets(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    } catch (err) {
+      alert(t[language].adminError);
+    } finally {
+      setActionLoading(null);
     }
-
-    await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/update-projet', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ id, ...updates }),
-    });
-
-    setProjets(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
-  } catch (err) {
-    alert(t[language].adminError);
-  } finally {
-    setActionLoading(null);
-  }
-};
+  };
 
   const updateMaturity = async (id: string, value: number) => {
     try {
@@ -261,6 +259,7 @@ export default function AdminPage() {
     } catch (err) { console.error(err); }
   };
 
+  // ========== GESTION DES EMAILS AVEC NOUVEAU FORMAT ==========
   const handleDecision = async (projet: any, action: 'accept' | 'archive' | 'refuse') => {
     if (action === 'refuse') {
       const reason = prompt(t[language].adminRefuseReasonPrompt);
@@ -272,13 +271,24 @@ export default function AdminPage() {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ id: projet.id, action: 'refuse', decision_message: reason }),
         });
+
+        // Email de refus
         await fetch('/api/send-project-email', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: projet.client_email, name: projet.client_name, email: projet.client_email, message: reason,
-            html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1f2937"><h2 style="color:#DC2626">${t[language].adminRefuseEmailTitle}</h2><p>${t[language].adminHello} ${projet.client_name},</p><p>${t[language].adminRefuseEmailBody1} <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong>.</p><p>${t[language].adminRefuseEmailBody2}</p><p><strong>${t[language].adminReason} :</strong> ${reason}</p><p>${t[language].adminRegards}</p><p><strong>${t[language].adminTeam}</strong></p></div>`,
+            to: projet.client_email,
+            subject: t[language].adminRefuseEmailTitle || (language === 'en' ? 'Update about your project' : 'Suite de votre projet'),
+            title: language === 'en' ? '📋 Project update' : '📋 Suite de votre projet',
+            message: language === 'en'
+              ? `Hello ${projet.client_name},<br><br>After careful review, we regret to inform you that we cannot move forward with your project <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong> at this time.<br><br>Reason: ${reason}<br><br>Feel free to reach out if you have any questions.`
+              : `Bonjour ${projet.client_name},<br><br>Après étude approfondie, nous sommes au regret de ne pas donner suite à votre projet <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong> pour le moment.<br><br>Motif : ${reason}<br><br>N'hésitez pas à nous contacter si vous avez des questions.`,
+            buttonText: language === 'en' ? 'Contact us' : 'Nous contacter',
+            buttonUrl: 'mailto:contact@actoos.com',
+            language,
           }),
         });
+
         setProjets(prev => prev.filter(p => p.id !== projet.id));
       } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
     } else if (action === 'accept') {
@@ -289,13 +299,24 @@ export default function AdminPage() {
           body: JSON.stringify({ id: projet.id, action: 'accept' }),
         });
         const clientLink = `https://actoos.com/client/${projet.client_token}`;
+
+        // Email d'acceptation
         await fetch('/api/send-project-email', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: projet.client_email, name: projet.client_name, email: projet.client_email, message: t[language].adminAcceptEmailSubject,
-            html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1f2937"><h2 style="color:#10B981">${t[language].adminAcceptEmailTitle}</h2><p>${t[language].adminHello} ${projet.client_name},</p><p>${t[language].adminAcceptEmailBody} <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong>.</p><p>🔗 <strong>${t[language].adminFollowLink} :</strong><br><a href="${clientLink}" style="color:#D4AF37;font-weight:bold">${clientLink}</a></p><p>📧 <a href="mailto:contact@actoos.com" style="color:#D4AF37">contact@actoos.com</a></p><p>${t[language].adminRegards}</p><p><strong>${t[language].adminTeam}</strong></p></div>`,
+            to: projet.client_email,
+            subject: language === 'en' ? 'Your project has been accepted!' : 'Votre projet a été accepté !',
+            title: language === 'en' ? '🎉 Project accepted!' : '🎉 Projet accepté !',
+            message: language === 'en'
+              ? `Hello ${projet.client_name},<br><br>We are pleased to inform you that your project <strong>${projet.brief?.projectName || 'your project'}</strong> has been accepted!<br><br>Our team will contact you shortly to discuss the next steps.`
+              : `Bonjour ${projet.client_name},<br><br>Nous avons le plaisir de vous annoncer que votre projet <strong>${projet.brief?.projectName || 'votre projet'}</strong> a été accepté !<br><br>Notre équipe vous contactera très prochainement pour échanger sur les prochaines étapes.`,
+            buttonText: language === 'en' ? 'View my project' : 'Voir mon projet',
+            buttonUrl: clientLink,
+            language,
           }),
         });
+
         setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, status: 'gagné' } : p));
       } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
     } else if (action === 'archive') {
@@ -326,10 +347,18 @@ export default function AdminPage() {
     setActionLoading(projet.id);
     try {
       await fetch('/api/send-project-email', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: projet.client_email, name: projet.client_name, email: projet.client_email, message: t[language].adminFollowUpSubject,
-          html: `<h2>${t[language].adminHello} ${projet.client_name},</h2><p>${t[language].adminFollowUpBody} <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong>.</p><a href="https://actoos.com/client/${projet.client_token}">Voir le projet</a>`,
+          to: projet.client_email,
+          subject: t[language].adminFollowUpSubject,
+          title: language === 'en' ? 'Follow-up' : 'Relance',
+          message: language === 'en'
+            ? `Hello ${projet.client_name},<br><br>${t[language].adminFollowUpBody} <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong>.`
+            : `Bonjour ${projet.client_name},<br><br>${t[language].adminFollowUpBody} <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong>.`,
+          buttonText: language === 'en' ? 'View project' : 'Voir le projet',
+          buttonUrl: `https://actoos.com/client/${projet.client_token}`,
+          language,
         }),
       });
       alert(`${t[language].adminFollowUpSent} ${projet.client_email}`);
@@ -357,13 +386,24 @@ export default function AdminPage() {
           body: JSON.stringify({ id: projet.id, payment_link: data.url, payment_amount: parseFloat(amount), payment_status: 'devis_envoyé' }),
         });
         setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, payment_link: data.url, payment_amount: parseFloat(amount), payment_status: 'devis_envoyé' } : p));
+
+        // Email avec le lien de paiement
         await fetch('/api/send-project-email', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: projet.client_email, name: projet.client_name, email: projet.client_email, message: t[language].adminPaymentLinkSubject,
-            html: `<h2>${t[language].adminHello} ${projet.client_name},</h2><p>${t[language].adminPaymentLinkBody} <a href="${data.url}">${t[language].adminPay} ${amount}€</a></p>`,
+            to: projet.client_email,
+            subject: t[language].adminPaymentLinkSubject,
+            title: language === 'en' ? 'Payment link' : 'Lien de paiement',
+            message: language === 'en'
+              ? `Hello ${projet.client_name},<br><br>Here is your payment link: <a href="${data.url}">Pay ${amount}€</a>`
+              : `Bonjour ${projet.client_name},<br><br>Voici votre lien de paiement : <a href="${data.url}">Payer ${amount}€</a>`,
+            buttonText: language === 'en' ? 'Pay now' : 'Payer maintenant',
+            buttonUrl: data.url,
+            language,
           }),
         });
+
         alert(t[language].adminPaymentLinkCreated);
       }
     } catch { alert(t[language].adminError); } finally { setActionLoading(null); }
@@ -376,10 +416,16 @@ export default function AdminPage() {
     setEmailSending(true);
     try {
       await fetch('/api/send-project-email', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: emailForm.projet.client_email, name: emailForm.projet.client_name, email: emailForm.projet.client_email, message: emailForm.body,
-          html: `<h2>${emailForm.subject}</h2><p>${emailForm.body}</p>`,
+          to: emailForm.projet.client_email,
+          subject: emailForm.subject,
+          title: language === 'en' ? 'Message from Actoos' : 'Message de Actoos',
+          message: emailForm.body,
+          buttonText: language === 'en' ? 'View project' : 'Voir le projet',
+          buttonUrl: `https://actoos.com/client/${emailForm.projet.client_token}`,
+          language,
         }),
       });
       alert(t[language].adminEmailSent); setEmailForm(null);
@@ -408,7 +454,6 @@ export default function AdminPage() {
     }
   };
 
-  // Nouvelle fonction : remettre un projet en décision (statut nouveau)
   const handleResetDecision = async (projet: any) => {
     if (!confirm(t[language].adminResetDecisionConfirm)) return;
     setActionLoading(projet.id);
@@ -426,28 +471,27 @@ export default function AdminPage() {
     }
   };
 
-  // Nouvelle fonction : supprimer définitivement un projet via l'Edge Function delete-project
-const handleDeletePermanently = async (projet: any) => {
-  if (!confirm(t[language].adminDeletePermanentlyConfirm)) return;
-  setActionLoading(projet.id);
-  try {
-    const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-project', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: projet.id }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setProjets(prev => prev.filter(p => p.id !== projet.id));
-    } else {
+  const handleDeletePermanently = async (projet: any) => {
+    if (!confirm(t[language].adminDeletePermanentlyConfirm)) return;
+    setActionLoading(projet.id);
+    try {
+      const res = await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/delete-project', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: projet.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProjets(prev => prev.filter(p => p.id !== projet.id));
+      } else {
+        alert(t[language].adminError);
+      }
+    } catch (err) {
       alert(t[language].adminError);
+    } finally {
+      setActionLoading(null);
     }
-  } catch (err) {
-    alert(t[language].adminError);
-  } finally {
-    setActionLoading(null);
-  }
-};
+  };
 
   const handleAddAdminComment = async () => {
     if (!adminComment.trim() || !selectedProject) return;
@@ -524,7 +568,6 @@ const handleDeletePermanently = async (projet: any) => {
     avgMaturity: activeProjets.length > 0 ? Math.round(activeProjets.reduce((sum, p) => sum + (p.brief?.maturityScore || 0), 0) / activeProjets.length) : 0,
     avgPriority: activeProjets.length > 0 ? Math.round(activeProjets.reduce((sum, p) => sum + (p.brief?.priorityScore || 0), 0) / activeProjets.length) : 0,
   };
-  // Correction : seuls les projets "nouveau" sont en attente de décision
   const pendingDecisions = activeProjets.filter(p => p.status === 'nouveau').length;
   const pendingProjects = activeProjets.filter(p => p.status === 'gagné' || p.status === 'en_cours' || p.status === 'livré').length;
   const archivedCount = archivedProjets.length;
@@ -903,7 +946,6 @@ const handleDeletePermanently = async (projet: any) => {
         {/* ========== DÉCISION ========== */}
         {activeTab === 'decision' && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {/* Correction : affiche uniquement les projets "nouveau" */}
             {activeProjets.filter(p => p.status === 'nouveau').map(projet => (
               <div key={projet.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
                 <h3 className="font-bold text-lg mb-1">{projet.brief?.projectName || t[language].adminUntitled}</h3>

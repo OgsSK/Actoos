@@ -46,7 +46,7 @@ function generateUUID() {
     return crypto.randomUUID();
   }
   // Fallback manuel pour les environnements sans crypto.randomUUID
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
@@ -68,7 +68,7 @@ function renderMessageContent(text: string) {
     if (i < matches.length) {
       elements.push(
         <a key={`l-${i}`} href={matches[i]} target="_blank" rel="noopener noreferrer"
-           className="text-blue-500 underline hover:text-blue-700 break-all">
+          className="text-blue-500 underline hover:text-blue-700 break-all">
           {matches[i]}
         </a>
       );
@@ -189,16 +189,13 @@ export default function ProjectChatBot() {
   }, [loading]);
 
   // Chargement initial avec message traduit
-  // Chargement initial avec message traduit
   useEffect(() => {
     const saved = loadMessages();
     if (saved.length > 0) {
-      // Vérifier si le premier message est le message d’accueil
       const firstMsg = saved[0];
       const welcomeFr = t.fr?.chatWelcome;
       const welcomeEn = t.en?.chatWelcome;
       const isWelcome = (welcomeFr && firstMsg.content === welcomeFr) || (welcomeEn && firstMsg.content === welcomeEn);
-      // Si c’est le message d’accueil et que la langue a changé, on le met à jour
       if (isWelcome && firstMsg.content !== t[language]?.chatWelcome) {
         saved[0] = { ...firstMsg, content: t[language]?.chatWelcome || welcomeFr || '' };
         saveMessages(saved);
@@ -214,6 +211,7 @@ export default function ProjectChatBot() {
       setMessages([{ id: generateId(), role: 'assistant', content: welcomeText }]);
     }
   }, [language]);
+
   // Sauvegarde automatique
   useEffect(() => {
     if (messages.length > 0) saveMessages(messages);
@@ -288,7 +286,7 @@ export default function ProjectChatBot() {
             try {
               const parsed = JSON.parse(match[0]);
               if (parsed.briefing) return parsed;
-            } catch {}
+            } catch { }
           }
         }
         return null;
@@ -441,7 +439,7 @@ export default function ProjectChatBot() {
             try {
               const parsed = JSON.parse(match[0]);
               if (parsed.briefing) return parsed;
-            } catch {}
+            } catch { }
           }
         }
         return null;
@@ -469,15 +467,14 @@ export default function ProjectChatBot() {
     }
   };
 
-  // ----- Soumission finale -----
+  // ----- Soumission finale (MODIFIÉE) -----
   const handleSubmitProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!submitForm.name.trim() || !submitForm.email.trim()) return;
 
     setLoading(true);
-    // ✅ Correction : utilise une fonction de génération d'UUID compatible partout
     const clientToken = generateUUID();
-    
+
     try {
       await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/handle-request', {
         method: 'POST',
@@ -493,104 +490,43 @@ export default function ProjectChatBot() {
         }),
       });
     } catch {
-      // Ne pas bloquer l'envoi si la sauvegarde échoue
+      // Ne pas bloquer si la sauvegarde échoue
     }
-    
-    try {
-      const html = `
-        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 650px; margin: 0 auto; color: #1f2937; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-          <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 32px 24px; text-align: center;">
-            <h1 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800;">✨ ${language === 'en' ? 'New project' : 'Nouveau projet'}</h1>
-            <p style="color: #475569; margin: 8px 0 0; font-size: 14px;">${language === 'en' ? 'Submitted from Agent Actoos' : "Soumis depuis l'Agent Actoos"}</p>
-          </div>
-          <div style="padding: 24px;">
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-              <tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b; width: 120px;">${language === 'en' ? 'Client' : 'Client'}</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.name}</td></tr>
-              <tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b;">Email</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.email}</td></tr>
-              ${submitForm.message ? `<tr><td style="padding: 8px 12px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Message' : 'Message'}</td><td style="padding: 8px 12px; color: #0f172a;">${submitForm.message}</td></tr>` : ''}
-            </table>
-            ${currentBrief ? `
-            <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-              <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">📋</span> ${language === 'en' ? 'Structured Brief' : 'Brief structuré'}
-              </h2>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b; width: 130px;">${language === 'en' ? 'Project name' : 'Nom du projet'}</td><td style="padding: 6px 8px; color: #0f172a; font-weight: 600;">${currentBrief.projectName || 'N/A'}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Objective' : 'Objectif'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.objective || 'N/A'}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Type</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.type}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Complexity' : 'Complexité'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.complexity}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Features' : 'Fonctionnalités'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.features.join(', ')}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Pages' : 'Pages'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.pages.join(', ')}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Roles' : 'Rôles'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.roles.join(', ')}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Modules' : 'Modules'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.modules?.join(', ') || 'N/A'}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Architecture</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.architecture}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">Stack</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.stack?.join(', ') || 'N/A'}</td></tr>
-                <tr><td style="padding: 6px 8px; font-weight: 600; color: #64748b;">${language === 'en' ? 'Priority' : 'Priorité'}</td><td style="padding: 6px 8px; color: #0f172a;">${currentBrief.priority || 'Standard'}</td></tr>
-              </table>
-            </div>
-            ` : ''}
-            <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
-              <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">💬</span> ${language === 'en' ? 'Conversation' : 'Conversation'}
-              </h2>
-              ${messages
-                .map(
-                  (m) => `
-                <div style="margin-bottom: 12px; padding: 10px 14px; background: ${m.role === 'user' ? '#D4AF37' : '#ffffff'}; color: ${m.role === 'user' ? '#ffffff' : '#0f172a'}; border-radius: 12px; border: 1px solid ${m.role === 'user' ? '#D4AF37' : '#e5e7eb'};">
-                  <div style="font-size: 11px; font-weight: 600; margin-bottom: 4px; color: ${m.role === 'user' ? '#fef3c7' : '#64748b'};">${m.role === 'user' ? '👤 Client' : '🤖 Agent Actoos'}</div>
-                  <div style="font-size: 14px; line-height: 1.5;">${m.content}</div>
-                </div>
-              `,
-                )
-                .join('')}
-            </div>
-          </div>
-          <div style="background: #f1f5f9; padding: 16px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
-            <p style="color: #64748b; font-size: 12px; margin: 0;">${language === 'en' ? 'Sent from Actoos showcase' : 'Envoyé depuis la vitrine Actoos'} • <a href="https://actoos.com" style="color: #D4AF37;">actoos.com</a></p>
-          </div>
-        </div>
-      `;
 
-      const res = await fetch('/api/send-project-email', {
+    try {
+      // Email à l'admin
+      const adminRes = await fetch('/api/send-project-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: submitForm.name,
-          email: submitForm.email,
-          message: submitForm.message,
           to: 'contact@actoos.com',
-          html,
+          subject: language === 'en' ? 'New project submitted - Actoos' : 'Nouveau projet soumis - Actoos',
+          title: language === 'en' ? '📋 New project' : '📋 Nouveau projet',
+          message: language === 'en'
+            ? `A new project <strong>${currentBrief?.projectName || 'project'}</strong> has been submitted by ${submitForm.name} (${submitForm.email}).<br><br>${submitForm.message ? 'Message: ' + submitForm.message + '<br><br>' : ''}Please review the details in the admin panel.`
+            : `Un nouveau projet <strong>${currentBrief?.projectName || 'projet'}</strong> a été soumis par ${submitForm.name} (${submitForm.email}).<br><br>${submitForm.message ? 'Message : ' + submitForm.message + '<br><br>' : ''}Veuillez consulter les détails dans le panneau d'administration.`,
+          buttonText: language === 'en' ? 'View project' : 'Voir le projet',
+          buttonUrl: `https://actoos.com/admin/projects/${clientToken}`,
+          language,
         }),
       });
-      const data = await res.json();
+      const adminData = await adminRes.json();
 
-      if (data.success) {
+      if (adminData.success) {
+        // Email au client
         await fetch('/api/send-project-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: submitForm.name,
-            email: submitForm.email,
             to: submitForm.email,
-            html: `
-<div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1f2937;">
-  <div style="background: linear-gradient(135deg, #D4AF37 0%, #F5D78E 100%); padding: 24px; text-align: center; border-radius: 16px 16px 0 0;">
-    <h1 style="color: #0f172a; margin: 0; font-size: 20px;">✨ ${language === 'en' ? 'Project received!' : 'Projet bien reçu !'}</h1>
-  </div>
-  <div style="padding: 24px; background: #ffffff; border-radius: 0 0 16px 16px; border: 1px solid #e5e7eb;">
-    <p>${language === 'en' ? 'Hello' : 'Bonjour'} ${submitForm.name},</p>
-    <p>${language === 'en' ? 'We have received your project' : 'Nous avons bien reçu votre projet'} <strong>${currentBrief?.projectName || (language === 'en' ? 'your project' : 'votre projet')}</strong>.</p>
-    <p>${language === 'en' ? 'Our team will review it and get back to you within' : "Notre équipe l'étudie avec attention et reviendra vers vous sous"} <strong>${language === 'en' ? '24 business hours' : '24h ouvrées'}</strong>.</p>
-    <p>🔗 ${language === 'en' ? 'Track your project progress here:' : "Suivez l'avancement de votre projet ici :"}<br>
-     <a href="https://actoos.com/client/${clientToken}" style="color: #D4AF37; font-weight: bold;">https://actoos.com/client/${clientToken}</a>
-    </p>
-    <p>${language === 'en' ? 'You can contact us anytime:' : 'En attendant, vous pouvez nous contacter à tout moment :'}</p>
-    <p>📧 <a href="mailto:contact@actoos.com" style="color: #D4AF37;">contact@actoos.com</a></p>
-    <p>${language === 'en' ? 'Best regards' : 'À très bientôt'},</p>
-    <p><strong>${language === 'en' ? 'The Actoos team' : "L'équipe Actoos"}</strong></p>
-  </div>
-</div>
-`,
+            subject: language === 'en' ? 'Project received - Actoos' : 'Projet bien reçu - Actoos',
+            title: language === 'en' ? '✨ Project received!' : '✨ Projet bien reçu !',
+            message: language === 'en'
+              ? `Hello ${submitForm.name},<br><br>We have received your project <strong>${currentBrief?.projectName || 'your project'}</strong>.<br><br>Our team will review it and get back to you within <strong>24 business hours</strong>.`
+              : `Bonjour ${submitForm.name},<br><br>Nous avons bien reçu votre projet <strong>${currentBrief?.projectName || 'votre projet'}</strong>.<br><br>Notre équipe l'étudie avec attention et reviendra vers vous sous <strong>24h ouvrées</strong>.`,
+            buttonText: language === 'en' ? 'Track my project' : 'Suivre mon projet',
+            buttonUrl: `https://actoos.com/client/${clientToken}`,
+            language,
           }),
         });
 
