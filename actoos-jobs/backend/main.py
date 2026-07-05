@@ -15,6 +15,8 @@ import uuid
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
 
+LOGO_URL = "https://anfamlpwootbrzswnpyp.supabase.co/storage/v1/object/public/logos/actoos.png"
+
 env_path = Path(__file__).parent / '.env'
 load_dotenv(dotenv_path=env_path)
 print(f"✅ Chargement du .env depuis : {env_path}")
@@ -637,16 +639,117 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
             print(f"[Email] Corps traduit (début) : {translated_html[:100]}...")
 
             subject = translated_subject
-            html = translated_html
+            body_content = translated_html
         else:
             subject = subject_fr
-            html = html_fr
+            body_content = html_fr
+
+        # --- Pied de page multilingue ---
+        footer_texts = {
+            "fr": {
+                "copyright": f"© {datetime.utcnow().year} Actoos. Tous droits réservés.",
+                "cgu": "CGU",
+                "privacy": "Confidentialité",
+                "contact": "Contact",
+            },
+            "en": {
+                "copyright": f"© {datetime.utcnow().year} Actoos. All rights reserved.",
+                "cgu": "Terms",
+                "privacy": "Privacy",
+                "contact": "Contact",
+            },
+            "ar": {
+                "copyright": f"© {datetime.utcnow().year} Actoos. جميع الحقوق محفوظة.",
+                "cgu": "الشروط",
+                "privacy": "الخصوصية",
+                "contact": "اتصل",
+            },
+            "de": {
+                "copyright": f"© {datetime.utcnow().year} Actoos. Alle Rechte vorbehalten.",
+                "cgu": "AGB",
+                "privacy": "Datenschutz",
+                "contact": "Kontakt",
+            },
+            "es": {
+                "copyright": f"© {datetime.utcnow().year} Actoos. Todos los derechos reservados.",
+                "cgu": "Términos",
+                "privacy": "Privacidad",
+                "contact": "Contacto",
+            },
+            "it": {
+                "copyright": f"© {datetime.utcnow().year} Actoos. Tutti i diritti riservati.",
+                "cgu": "Termini",
+                "privacy": "Privacy",
+                "contact": "Contatto",
+            },
+            "nl": {
+                "copyright": f"© {datetime.utcnow().year} Actoos. Alle rechten voorbehouden.",
+                "cgu": "Voorwaarden",
+                "privacy": "Privacy",
+                "contact": "Contact",
+            },
+            "pt": {
+                "copyright": f"© {datetime.utcnow().year} Actoos. Todos os direitos reservados.",
+                "cgu": "Termos",
+                "privacy": "Privacidade",
+                "contact": "Contato",
+            },
+        }
+
+        # Langue par défaut : français
+        t = footer_texts.get(language, footer_texts["fr"])
+        copyright = t["copyright"]
+        cgu = t["cgu"]
+        privacy = t["privacy"]
+        contact = t["contact"]
+
+        # --- Template moderne avec logo ---
+        logo_url = LOGO_URL  # constante définie plus haut
+        full_html = f"""
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head><meta charset="UTF-8"></head>
+        <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial,Helvetica,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8; padding:30px 0;">
+                <tr>
+                    <td align="center">
+                        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+                            <!-- Logo -->
+                            <tr>
+                                <td style="padding:24px 30px 16px; text-align:left;">
+                                   <img src="{logo_url}" alt="Actoos" style="width:90px; height:auto; border:none; display:block;" />
+                                </td>
+                            </tr>
+                            <!-- Contenu -->
+                            <tr>
+                                <td style="padding:0 30px 24px;">
+                                    {body_content}
+                                </td>
+                            </tr>
+                            <!-- Pied de page multilingue -->
+                            <tr>
+                                <td style="padding:16px 30px; background-color:#f9fafb; border-top:1px solid #e5e7eb; font-size:12px; color:#6b7280;">
+                                    <p style="margin:0 0 8px;">{copyright}</p>
+                                    <p style="margin:0;">
+                                        <a href="https://jobs.actoos.com/cgu" style="color:#6b7280; text-decoration:underline;">{cgu}</a> ·
+                                        <a href="https://jobs.actoos.com/confidentialite" style="color:#6b7280; text-decoration:underline;">{privacy}</a> ·
+                                        <a href="https://jobs.actoos.com/contact" style="color:#6b7280; text-decoration:underline;">{contact}</a>
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """
 
         resend.Emails.send({
             "from": "Actoos Jobs <noreply@actoos.com>",
             "to": [to_email],
             "subject": subject,
-            "html": html
+            "html": full_html
         })
         print(f"[Email] Envoyé à {to_email} avec sujet final : {subject}")
     except Exception as e:

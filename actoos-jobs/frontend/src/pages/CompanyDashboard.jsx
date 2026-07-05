@@ -50,7 +50,7 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
   );
 };
 
-// ---------- CompanyJobCard (avec logo + expiration) ----------
+// ---------- CompanyJobCard ----------
 const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForReview, onCancelSubmission, isCompanyVerified, isBusinessPlan, onFreeBoost, companyLogo }) => {
   const { t } = useTranslation();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -60,7 +60,6 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   const { format } = useCurrencyFormatter();
   const { prefs } = usePreferencesContext();
 
-  // ✅ Statut effectif tenant compte de l'expiration
   const now = new Date();
   const isExpired = job.status === 'active' && job.expires_at && new Date(job.expires_at) < now;
   const effectiveStatus = isExpired ? 'expired' : job.status;
@@ -93,7 +92,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
           <button onClick={() => { onEdit(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"><Edit className="w-4 h-4" />{t('companyDashboard.jobCard.menu.edit')}</button>
         )}
         <Link to="/dashboard/entreprise/candidatures" onClick={() => setShowMenu(false)} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"><Users className="w-4 h-4" />{t('companyDashboard.jobCard.menu.viewApplications')}</Link>
-        {effectiveStatus === 'draft' && (
+        {(effectiveStatus === 'draft' || effectiveStatus === 'rejected') && (
           <button onClick={() => { if (!isCompanyVerified) { toast.error(t('companyDashboard.toasts.companyNotVerifiedMenu')); setShowMenu(false); return; } onSubmitForReview(job); setShowMenu(false); }} disabled={!isCompanyVerified} className={cn('w-full flex items-center gap-2 px-4 py-3 text-sm', isCompanyVerified ? 'text-blue-600 hover:bg-slate-50' : 'text-slate-400 cursor-not-allowed')}><Send className="w-4 h-4" />{isCompanyVerified ? t('companyDashboard.jobCard.menu.submitForValidation') : t('companyDashboard.jobCard.menu.validationRequired')}</button>
         )}
         {effectiveStatus === 'pending' && (
@@ -109,10 +108,11 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
           <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"><CheckCircle className="w-4 h-4" />{t('companyDashboard.jobCard.menu.republish')}</button>
         )}
         {effectiveStatus === 'expired' && (
-          <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50">
-            <RefreshCw className="w-4 h-4" />
-            {t('companyJobs.menu.reactivate')}
-          </button>
+          <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"><RefreshCw className="w-4 h-4" />{t('companyJobs.menu.reactivate')}</button>
+        )}
+        {/* Publier directement retiré pour "draft" et "rejected" – déjà validé pour "closed" */}
+        {effectiveStatus === 'closed' && (
+          <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"><Send className="w-4 h-4" />{t('companyDashboard.jobCard.menu.publish')}</button>
         )}
         {effectiveStatus !== 'pending' && (
           <button onClick={() => { onDelete(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" />{t('companyDashboard.jobCard.menu.delete')}</button>
@@ -140,10 +140,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
             <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.city?.name || t('companyDashboard.jobCard.unspecifiedLocation')}</span>
             <Badge className={cn(contractInfo.color, 'border-0 text-xs')}>{contractInfo.label}</Badge>
             {job.salary_min && job.salary_max && (
-              <span className="flex items-center gap-1">
-                <Banknote className="w-3 h-3" />
-                {format(job.salary_min)} – {format(job.salary_max)}
-              </span>
+              <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{format(job.salary_min)} – {format(job.salary_max)}</span>
             )}
             <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{t('companyDashboard.jobCard.views', { count: job.views_count || 0 })}</span>
             <span className="flex items-center gap-1"><FileText className="w-3 h-3" />{t('companyDashboard.jobCard.applications', { count: job.applications_count || 0 })}</span>
@@ -157,7 +154,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   );
 };
 
-// ---------- ApplicationCard (affichage avatar) ----------
+// ---------- ApplicationCard ----------
 const ApplicationCard = ({ application }) => {
   const { t } = useTranslation();
   const statusIcons = { pending: Clock, viewed: Eye, shortlisted: CheckCircle, interview: Calendar, accepted: CheckCircle, rejected: XCircle };
@@ -169,7 +166,6 @@ const ApplicationCard = ({ application }) => {
   return (
     <Link to={`/dashboard/entreprise/candidatures/${application.id}`} className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">
       <div className="flex items-start gap-3 w-full min-w-0">
-        {/* Avatar du candidat */}
         <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-200 shrink-0 overflow-hidden">
           {application.candidate?.avatar_url ? (
             <img src={application.candidate.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -247,76 +243,72 @@ const CompanyDashboard = () => {
     fetchCompanyData(companyId);
   };
 
-// Dans CompanyDashboard.jsx, remplacer le bloc fetchCompanyData par celui-ci :
+  const fetchCompanyData = async (companyId) => {
+    setLoading(true);
+    try {
+      if (!companyId) return;
+      const { data: comp } = await supabase.from('companies').select('*').eq('id', companyId).single();
+      if (!comp) return;
+      setCompany(comp);
 
-const fetchCompanyData = async (companyId) => {
-  setLoading(true);
-  try {
-    if (!companyId) return;
-    const { data: comp } = await supabase.from('companies').select('*').eq('id', companyId).single();
-    if (!comp) return;
-    setCompany(comp);
+      const now = new Date().toISOString();
 
-    const now = new Date().toISOString();
+      // Compter les offres réellement actives (non expirées)
+      const { count: activeJobsCount } = await supabase
+        .from('jobs')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', comp.id)
+        .eq('status', 'active')
+        .or(`expires_at.is.null,expires_at.gte.${now}`);
 
-    // Compter les offres réellement actives (non expirées)
-    const { count: activeJobsCount } = await supabase
-      .from('jobs')
-      .select('id', { count: 'exact', head: true })
-      .eq('company_id', comp.id)
-      .eq('status', 'active')
-      .or(`expires_at.is.null,expires_at.gte.${now}`);
+      // Récupérer les 10 dernières offres actives (non expirées)
+    // Récupérer les 10 dernières offres (tous statuts confondus)
+const { data: jobsData } = await supabase
+  .from('jobs')
+  .select('*, city:cities(name)')
+  .eq('company_id', comp.id)
+  .order('created_at', { ascending: false })
+  .limit(10);
+setJobs(jobsData || []);
 
-    // Récupérer les 10 dernières offres actives (non expirées)
-    const { data: jobsData } = await supabase
-      .from('jobs')
-      .select('*, city:cities(name)')
-      .eq('company_id', comp.id)
-      .eq('status', 'active')
-      .or(`expires_at.is.null,expires_at.gte.${now}`)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    setJobs(jobsData || []);
+      let appsData = [];
+      if (jobsData?.length) {
+        const { data } = await supabase
+          .from('applications')
+          .select(`*, candidate:users(first_name, last_name, email, avatar_url), job:jobs(title)`)
+          .in('job_id', jobsData.map(j => j.id))
+          .order('created_at', { ascending: false })
+          .limit(10);
+        appsData = data || [];
+      }
+      setApplications(appsData);
 
-    let appsData = [];
-    if (jobsData?.length) {
-      const { data } = await supabase
-        .from('applications')
-        .select(`*, candidate:users(first_name, last_name, email, avatar_url), job:jobs(title)`)
-        .in('job_id', jobsData.map(j => j.id))
-        .order('created_at', { ascending: false })
-        .limit(10);
-      appsData = data || [];
+      const { count: docsCount, error: docsError } = await supabase
+        .from('hiring_documents')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('status', 'uploaded');
+
+      if (docsError) {
+        console.error('Erreur comptage documents:', docsError);
+        setPendingDocsCount(0);
+      } else {
+        setPendingDocsCount(docsCount || 0);
+      }
+
+      setStats({
+        totalJobs: jobsData?.length || 0,
+        activeJobs: activeJobsCount || 0,
+        totalApplications: appsData.length,
+        newApplications: appsData.filter(app => app.status === 'pending').length,
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error(t('companyDashboard.toasts.loadError'));
+    } finally {
+      setLoading(false);
     }
-    setApplications(appsData);
-
-    // Compter les documents en attente de validation
-    const { count: docsCount, error: docsError } = await supabase
-      .from('hiring_documents')
-      .select('id', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .eq('status', 'uploaded');
-
-    if (docsError) {
-      console.error('Erreur comptage documents:', docsError);
-      setPendingDocsCount(0);
-    } else {
-      setPendingDocsCount(docsCount || 0);
-    }
-
-    setStats({
-      totalJobs: jobsData?.length || 0,
-      activeJobs: activeJobsCount || 0,
-      totalApplications: appsData.length,
-      newApplications: appsData.filter(app => app.status === 'pending').length,
-    });
-  } catch (err) {
-    console.error(err);
-    toast.error(t('companyDashboard.toasts.loadError'));
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     if (!user || hasLoaded.current) return;
@@ -342,6 +334,12 @@ const fetchCompanyData = async (companyId) => {
   const handleDeleteJob = async (job) => { if (!window.confirm(t('companyDashboard.toasts.deleteConfirm', { title: job.title }))) return; await supabase.from('jobs').delete().eq('id', job.id); setJobs(prev => prev.filter(j => j.id !== job.id)); toast.success(t('companyDashboard.toasts.jobDeleted')); };
   
   const handleToggleJobStatus = async (job, newStatus) => {
+    // ✅ Sécurité : empêcher la publication directe d'un brouillon ou d'une offre rejetée
+    if (newStatus === 'active' && (job.status === 'draft' || job.status === 'rejected')) {
+      toast.error(t('companyDashboard.toasts.submitForValidationRequired', 'Cette offre doit être soumise pour validation avant publication.'));
+      return;
+    }
+
     if (newStatus === 'active') {
       const { count: activeCount } = await supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'active');
       const plan = company?.subscription_plan || 'free';
@@ -355,7 +353,6 @@ const fetchCompanyData = async (companyId) => {
         if (!job.published_at) {
           updates.published_at = new Date().toISOString();
         }
-        // Toujours recalculer l'expiration pour une réactivation
         updates.expires_at = new Date(Date.now() + getExpirationDays(plan) * 24 * 60 * 60 * 1000).toISOString();
       }
       await supabase.from('jobs').update(updates).eq('id', job.id);
@@ -420,18 +417,14 @@ const fetchCompanyData = async (companyId) => {
     }
   };
 
-  const handleOpenPortal = () => {
-    window.location.href = '/tarifs';
-  };
+  const handleOpenPortal = () => { window.location.href = '/tarifs'; };
 
   const plan = company?.subscription_plan || 'free';
   const jobsLimit = getPlanLimit(plan, 'jobs');
   const planLabel = plan === 'free' ? t('pricing.free') : plan.charAt(0).toUpperCase() + plan.slice(1);
 
   const ownedCompaniesCount = companies.filter(c => c.owner_id === user?.id).length;
-  const hasBusinessCompany = companies.some(
-    c => c.owner_id === user?.id && (c.subscription_plan === 'business' || c.subscription_plan === 'enterprise')
-  );
+  const hasBusinessCompany = companies.some(c => c.owner_id === user?.id && (c.subscription_plan === 'business' || c.subscription_plan === 'enterprise'));
   const canCreateCompany = hasBusinessCompany || ownedCompaniesCount === 0;
 
   const hasCVBank = planHasFeature(plan, 'canAccessCvBank');
@@ -466,9 +459,7 @@ const fetchCompanyData = async (companyId) => {
           {canCreateCompany ? (
             <Link to="/dashboard/entreprise/creer" className="ml-auto"><Button variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" /> {t('companyDashboard.companySelector.newCompany')}</Button></Link>
           ) : (
-            <div className="ml-auto text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-full whitespace-nowrap">
-              🔒 {t('companyDashboard.multiCompanyLocked', 'Multi-entreprise réservé au plan Business')}
-            </div>
+            <div className="ml-auto text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-full whitespace-nowrap">🔒 {t('companyDashboard.multiCompanyLocked', 'Multi-entreprise réservé au plan Business')}</div>
           )}
         </div>
 
@@ -604,16 +595,10 @@ const fetchCompanyData = async (companyId) => {
                     </h3>
                   </div>
                   <p className="text-sm text-blue-700">
-                    {t('companyDashboard.pendingDocuments.count', {
-                      count: pendingDocsCount
-                    }, `${pendingDocsCount} document(s) en attente de validation.`)}
+                    {t('companyDashboard.pendingDocuments.count', { count: pendingDocsCount }, `${pendingDocsCount} document(s) en attente de validation.`)}
                   </p>
                   <Link to="/dashboard/entreprise/candidatures">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 w-full border-blue-300 text-blue-700 hover:bg-blue-100"
-                    >
+                    <Button variant="outline" size="sm" className="mt-2 w-full border-blue-300 text-blue-700 hover:bg-blue-100">
                       {t('companyDashboard.pendingDocuments.viewApplications', 'Voir les candidatures')}
                     </Button>
                   </Link>

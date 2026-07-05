@@ -66,7 +66,6 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
     if (!menuButtonRef.current) return;
     const rect = menuButtonRef.current.getBoundingClientRect();
     const menuWidth = 240;
-    // Hauteur ajustée selon les options affichées
     const menuHeight = isBusinessPlan && effectiveStatus === 'active' ? 310 : 260;
     const padding = 12;
     const gap = 8;
@@ -147,7 +146,8 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
               </button>
             )}
 
-            {(effectiveStatus === 'draft' || effectiveStatus === 'closed') && (
+            {/* ✅ "Publier" retiré pour "draft" – seul "closed" peut être republié directement */}
+            {effectiveStatus === 'closed' && (
               <button
                 onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"
@@ -340,6 +340,12 @@ const CompanyJobsPage = () => {
   };
 
   const handleToggleJobStatus = async (job, newStatus) => {
+    // ✅ Sécurité : empêcher la publication directe d'un brouillon ou d'une offre rejetée
+    if (newStatus === 'active' && (job.status === 'draft' || job.status === 'rejected')) {
+      toast.error(t('companyJobs.toasts.submitForReviewFirst', "Cette offre doit d'abord être soumise pour validation."));
+      return;
+    }
+
     try {
       const updates = { status: newStatus };
 
