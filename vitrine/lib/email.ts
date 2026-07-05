@@ -12,16 +12,16 @@ interface ActoosEmail {
   lang?: 'fr' | 'en';
 }
 
-const footerTexts = {
+const footerTexts: Record<string, Record<string, string>> = {
   fr: {
-    rights: '© 2026 Actoos. Tous droits réservés.',
-    legal: 'Mentions légales',
+    copyright: '© 2026 Actoos. Tous droits réservés.',
+    terms: 'CGU',
     privacy: 'Confidentialité',
     contact: 'Contact',
   },
   en: {
-    rights: '© 2026 Actoos. All rights reserved.',
-    legal: 'Legal notice',
+    copyright: '© 2026 Actoos. All rights reserved.',
+    terms: 'Terms',
     privacy: 'Privacy',
     contact: 'Contact',
   },
@@ -39,33 +39,54 @@ export async function sendActoosEmail({
   const logoUrl = 'https://actoos.com/logo-icon.png';
   const ft = footerTexts[lang] || footerTexts.fr;
 
-  const html = `
-    <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1f2937; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-      <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 24px; text-align: center;">
-        <img src="${logoUrl}" alt="Actoos" style="height: 40px; margin-bottom: 12px;" />
-        <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">${title}</h1>
-      </div>
-      <div style="padding: 32px 24px;">
-        <p style="font-size: 16px; line-height: 1.6; color: #374151; margin: 0 0 20px;">
-          ${message}
-        </p>
-        ${buttonText && buttonUrl ? `
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${buttonUrl}" style="display: inline-block; background: #D4AF37; color: #0f172a; padding: 14px 32px; border-radius: 12px; font-weight: 700; text-decoration: none; font-size: 15px;">
-            ${buttonText}
-          </a>
-        </div>
-        ` : ''}
-      </div>
-      <div style="background: #f8fafc; padding: 20px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
-        <p style="font-size: 12px; color: #64748b; margin: 0 0 8px;">${ft.rights}</p>
-        <p style="font-size: 12px; color: #94a3b8; margin: 0;">
-          <a href="https://actoos.com/legal" style="color: #94a3b8; text-decoration: underline;">${ft.legal}</a> · 
-          <a href="https://actoos.com/privacy" style="color: #94a3b8; text-decoration: underline;">${ft.privacy}</a> · 
-          <a href="mailto:contact@actoos.com" style="color: #94a3b8; text-decoration: underline;">${ft.contact}</a>
-        </p>
-      </div>
-    </div>
+  const fullHtml = `
+    <!DOCTYPE html>
+    <html lang="${lang}">
+    <head><meta charset="UTF-8"></head>
+    <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial,Helvetica,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8; padding:40px 0;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+              <!-- Logo -->
+              <tr>
+                <td style="padding:28px 30px 20px; text-align:left;">
+                  <img src="${logoUrl}" alt="Actoos" style="width:90px; height:auto; border:none; display:block;" />
+                </td>
+              </tr>
+              <!-- Contenu -->
+              <tr>
+                <td style="padding:0 30px 24px;">
+                  <h2 style="font-size:20px; font-weight:700; margin:0 0 12px; color:#1a1a1a;">${title}</h2>
+                  <p style="font-size:15px; line-height:1.6; color:#4a4a4a; margin:0 0 24px;">
+                    ${message}
+                  </p>
+                  ${buttonText && buttonUrl ? `
+                  <div style="text-align:left; margin-bottom:24px;">
+                    <a href="${buttonUrl}" style="display:inline-block; background-color:#D4AF37; color:#ffffff; padding:12px 28px; border-radius:6px; font-weight:600; text-decoration:none; font-size:15px;">
+                      ${buttonText}
+                    </a>
+                  </div>
+                  ` : ''}
+                </td>
+              </tr>
+              <!-- Footer -->
+              <tr>
+                <td style="padding:16px 30px; background-color:#f9fafb; border-top:1px solid #e5e7eb; font-size:12px; color:#6b7280;">
+                  <p style="margin:0 0 8px;">${ft.copyright}</p>
+                  <p style="margin:0;">
+                    <a href="https://actoos.com/legal" style="color:#6b7280; text-decoration:underline;">${ft.terms}</a> ·
+                    <a href="https://actoos.com/privacy" style="color:#6b7280; text-decoration:underline;">${ft.privacy}</a> ·
+                    <a href="mailto:contact@actoos.com" style="color:#6b7280; text-decoration:underline;">${ft.contact}</a>
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
   `;
 
   try {
@@ -73,7 +94,7 @@ export async function sendActoosEmail({
       from: 'Actoos <noreply@actoos.com>',
       to,
       subject,
-      html,
+      html: fullHtml,
     });
     return { success: true, data };
   } catch (error: any) {

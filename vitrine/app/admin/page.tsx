@@ -259,8 +259,10 @@ export default function AdminPage() {
     } catch (err) { console.error(err); }
   };
 
-  // ========== GESTION DES EMAILS AVEC NOUVEAU FORMAT ==========
+  // ========== FONCTIONS EMAIL AVEC NOUVEAU FORMAT + LANGUE PROJET ==========
   const handleDecision = async (projet: any, action: 'accept' | 'archive' | 'refuse') => {
+    const projLang = projet.language || 'fr';
+
     if (action === 'refuse') {
       const reason = prompt(t[language].adminRefuseReasonPrompt);
       if (!reason) return;
@@ -272,25 +274,25 @@ export default function AdminPage() {
           body: JSON.stringify({ id: projet.id, action: 'refuse', decision_message: reason }),
         });
 
-        // Email de refus
         await fetch('/api/send-project-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: projet.client_email,
-            subject: t[language].adminRefuseEmailTitle || (language === 'en' ? 'Update about your project' : 'Suite de votre projet'),
-            title: language === 'en' ? '📋 Project update' : '📋 Suite de votre projet',
-            message: language === 'en'
-              ? `Hello ${projet.client_name},<br><br>After careful review, we regret to inform you that we cannot move forward with your project <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong> at this time.<br><br>Reason: ${reason}<br><br>Feel free to reach out if you have any questions.`
-              : `Bonjour ${projet.client_name},<br><br>Après étude approfondie, nous sommes au regret de ne pas donner suite à votre projet <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong> pour le moment.<br><br>Motif : ${reason}<br><br>N'hésitez pas à nous contacter si vous avez des questions.`,
-            buttonText: language === 'en' ? 'Contact us' : 'Nous contacter',
+            subject: projLang === 'en' ? 'Update about your project' : 'Suite de votre projet',
+            title: projLang === 'en' ? '📋 Project update' : '📋 Suite de votre projet',
+            message: projLang === 'en'
+              ? `Hello ${projet.client_name},<br><br>After careful review, we regret to inform you that we cannot move forward with your project <strong>${projet.brief?.projectName || 'your project'}</strong> at this time.<br><br>Reason: ${reason}<br><br>Feel free to reach out if you have any questions.`
+              : `Bonjour ${projet.client_name},<br><br>Après étude approfondie, nous sommes au regret de ne pas donner suite à votre projet <strong>${projet.brief?.projectName || 'votre projet'}</strong> pour le moment.<br><br>Motif : ${reason}<br><br>N'hésitez pas à nous contacter si vous avez des questions.`,
+            buttonText: projLang === 'en' ? 'Contact us' : 'Nous contacter',
             buttonUrl: 'mailto:contact@actoos.com',
-            language,
+            language: projLang,
           }),
         });
 
         setProjets(prev => prev.filter(p => p.id !== projet.id));
       } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
+
     } else if (action === 'accept') {
       setActionLoading(projet.id);
       try {
@@ -300,25 +302,25 @@ export default function AdminPage() {
         });
         const clientLink = `https://actoos.com/client/${projet.client_token}`;
 
-        // Email d'acceptation
         await fetch('/api/send-project-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: projet.client_email,
-            subject: language === 'en' ? 'Your project has been accepted!' : 'Votre projet a été accepté !',
-            title: language === 'en' ? '🎉 Project accepted!' : '🎉 Projet accepté !',
-            message: language === 'en'
+            subject: projLang === 'en' ? 'Your project has been accepted!' : 'Votre projet a été accepté !',
+            title: projLang === 'en' ? '🎉 Project accepted!' : '🎉 Projet accepté !',
+            message: projLang === 'en'
               ? `Hello ${projet.client_name},<br><br>We are pleased to inform you that your project <strong>${projet.brief?.projectName || 'your project'}</strong> has been accepted!<br><br>Our team will contact you shortly to discuss the next steps.`
               : `Bonjour ${projet.client_name},<br><br>Nous avons le plaisir de vous annoncer que votre projet <strong>${projet.brief?.projectName || 'votre projet'}</strong> a été accepté !<br><br>Notre équipe vous contactera très prochainement pour échanger sur les prochaines étapes.`,
-            buttonText: language === 'en' ? 'View my project' : 'Voir mon projet',
+            buttonText: projLang === 'en' ? 'View my project' : 'Voir mon projet',
             buttonUrl: clientLink,
-            language,
+            language: projLang,
           }),
         });
 
         setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, status: 'gagné' } : p));
       } catch (err) { alert(t[language].adminError); } finally { setActionLoading(null); }
+
     } else if (action === 'archive') {
       if (!confirm(t[language].adminArchiveConfirm)) return;
       setActionLoading(projet.id);
@@ -345,20 +347,21 @@ export default function AdminPage() {
 
   const relancer = async (projet: any) => {
     setActionLoading(projet.id);
+    const projLang = projet.language || 'fr';
     try {
       await fetch('/api/send-project-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: projet.client_email,
-          subject: t[language].adminFollowUpSubject,
-          title: language === 'en' ? 'Follow-up' : 'Relance',
-          message: language === 'en'
-            ? `Hello ${projet.client_name},<br><br>${t[language].adminFollowUpBody} <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong>.`
-            : `Bonjour ${projet.client_name},<br><br>${t[language].adminFollowUpBody} <strong>${projet.brief?.projectName || t[language].adminYourProject}</strong>.`,
-          buttonText: language === 'en' ? 'View project' : 'Voir le projet',
+          subject: projLang === 'en' ? 'Follow-up - Actoos' : 'Relance - Actoos',
+          title: projLang === 'en' ? 'Follow-up' : 'Relance',
+          message: projLang === 'en'
+            ? `Hello ${projet.client_name},<br><br>${t[projLang].adminFollowUpBody} <strong>${projet.brief?.projectName || t[projLang].adminYourProject}</strong>.`
+            : `Bonjour ${projet.client_name},<br><br>${t[projLang].adminFollowUpBody} <strong>${projet.brief?.projectName || t[projLang].adminYourProject}</strong>.`,
+          buttonText: projLang === 'en' ? 'View project' : 'Voir le projet',
           buttonUrl: `https://actoos.com/client/${projet.client_token}`,
-          language,
+          language: projLang,
         }),
       });
       alert(`${t[language].adminFollowUpSent} ${projet.client_email}`);
@@ -387,20 +390,20 @@ export default function AdminPage() {
         });
         setProjets(prev => prev.map(p => p.id === projet.id ? { ...p, payment_link: data.url, payment_amount: parseFloat(amount), payment_status: 'devis_envoyé' } : p));
 
-        // Email avec le lien de paiement
+        const projLang = projet.language || 'fr';
         await fetch('/api/send-project-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: projet.client_email,
-            subject: t[language].adminPaymentLinkSubject,
-            title: language === 'en' ? 'Payment link' : 'Lien de paiement',
-            message: language === 'en'
+            subject: projLang === 'en' ? 'Payment link - Actoos' : 'Lien de paiement - Actoos',
+            title: projLang === 'en' ? 'Payment link' : 'Lien de paiement',
+            message: projLang === 'en'
               ? `Hello ${projet.client_name},<br><br>Here is your payment link: <a href="${data.url}">Pay ${amount}€</a>`
               : `Bonjour ${projet.client_name},<br><br>Voici votre lien de paiement : <a href="${data.url}">Payer ${amount}€</a>`,
-            buttonText: language === 'en' ? 'Pay now' : 'Payer maintenant',
+            buttonText: projLang === 'en' ? 'Pay now' : 'Payer maintenant',
             buttonUrl: data.url,
-            language,
+            language: projLang,
           }),
         });
 
@@ -414,6 +417,7 @@ export default function AdminPage() {
   const sendEmailToClient = async () => {
     if (!emailForm) return;
     setEmailSending(true);
+    const projLang = emailForm.projet.language || 'fr';
     try {
       await fetch('/api/send-project-email', {
         method: 'POST',
@@ -421,11 +425,11 @@ export default function AdminPage() {
         body: JSON.stringify({
           to: emailForm.projet.client_email,
           subject: emailForm.subject,
-          title: language === 'en' ? 'Message from Actoos' : 'Message de Actoos',
+          title: projLang === 'en' ? 'Message from Actoos' : 'Message de Actoos',
           message: emailForm.body,
-          buttonText: language === 'en' ? 'View project' : 'Voir le projet',
+          buttonText: projLang === 'en' ? 'View project' : 'Voir le projet',
           buttonUrl: `https://actoos.com/client/${emailForm.projet.client_token}`,
-          language,
+          language: projLang,
         }),
       });
       alert(t[language].adminEmailSent); setEmailForm(null);
@@ -919,7 +923,6 @@ export default function AdminPage() {
                       <button onClick={() => openEmailForm(projet)} title={t[language].adminSendEmail} className="p-2 rounded-lg hover:bg-indigo-50 text-indigo-600"><Mail size={14} /></button>
                       <button onClick={() => setSelectedProject(projet)} title={t[language].adminViewDetails} className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"><EyeIcon size={14} /></button>
 
-                      {/* Nouveaux boutons */}
                       <button
                         onClick={() => handleResetDecision(projet)}
                         disabled={projet.status === 'en_cours' || projet.status === 'livré'}

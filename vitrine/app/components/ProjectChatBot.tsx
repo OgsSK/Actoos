@@ -479,15 +479,16 @@ export default function ProjectChatBot() {
       await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/handle-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'save-project',
-          client_name: submitForm.name,
-          client_email: submitForm.email,
-          client_message: submitForm.message,
-          brief: currentBrief,
-          client_token: clientToken,
-          conversation: messages.map(m => ({ role: m.role, content: m.content })),
-        }),
+       body: JSON.stringify({
+  action: 'save-project',
+  client_name: submitForm.name,
+  client_email: submitForm.email,
+  client_message: submitForm.message,
+  brief: currentBrief,
+  client_token: clientToken,
+  conversation: messages.map(m => ({ role: m.role, content: m.content })),
+  language,
+}),
       });
     } catch {
       // Ne pas bloquer si la sauvegarde échoue
