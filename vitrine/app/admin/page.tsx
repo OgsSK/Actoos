@@ -259,9 +259,9 @@ export default function AdminPage() {
     } catch (err) { console.error(err); }
   };
 
-  // ========== FONCTIONS EMAIL AVEC NOUVEAU FORMAT + LANGUE PROJET ==========
+  // ========== FONCTIONS EMAIL (langue du projet) ==========
   const handleDecision = async (projet: any, action: 'accept' | 'archive' | 'refuse') => {
-    const projLang = projet.language || 'fr';
+    const projLang = projet.language || 'fr';   // langue du projet
 
     if (action === 'refuse') {
       const reason = prompt(t[language].adminRefuseReasonPrompt);
@@ -347,7 +347,7 @@ export default function AdminPage() {
 
   const relancer = async (projet: any) => {
     setActionLoading(projet.id);
-    const projLang = projet.language || 'fr';
+    const projLang = projet.language || 'fr';   // langue du projet
     try {
       await fetch('/api/send-project-email', {
         method: 'POST',
@@ -417,16 +417,16 @@ export default function AdminPage() {
   const sendEmailToClient = async () => {
     if (!emailForm) return;
     setEmailSending(true);
-    const projLang = emailForm.projet.language || 'fr';
+    const projLang = emailForm.projet.language || 'fr';   // langue du projet
     try {
       await fetch('/api/send-project-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: emailForm.projet.client_email,
-          subject: emailForm.subject,
+          subject: emailForm.subject,           // le sujet saisi manuellement
           title: projLang === 'en' ? 'Message from Actoos' : 'Message de Actoos',
-          message: emailForm.body,
+          message: emailForm.body,              // corps saisi manuellement
           buttonText: projLang === 'en' ? 'View project' : 'Voir le projet',
           buttonUrl: `https://actoos.com/client/${emailForm.projet.client_token}`,
           language: projLang,
