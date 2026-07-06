@@ -1,20 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../../lib/translations';
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
 
-export default function SignupPage() {
+function SignupContent() {
   const { language, setLanguage } = useLanguage();
   const { signUp, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +22,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
 
   if (user) {
-    router.push('/');
+    router.push(redirect);
     return null;
   }
 
@@ -129,5 +128,13 @@ export default function SignupPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin" /></div>}>
+      <SignupContent />
+    </Suspense>
   );
 }

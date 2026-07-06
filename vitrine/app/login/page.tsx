@@ -1,29 +1,27 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../../lib/translations';
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginContent() {
   const { language, setLanguage } = useLanguage();
   const { signIn, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Si déjà connecté, rediriger vers l'accueil
   if (user) {
-    router.push('/');
+    router.push(redirect);
     return null;
   }
 
@@ -42,7 +40,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900">
-      {/* Navbar identique aux autres pages */}
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-xl z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-3">
@@ -53,18 +50,8 @@ export default function LoginPage() {
           </Link>
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-4 text-[11px] font-black uppercase tracking-widest text-slate-400">
-              <button
-                onClick={() => setLanguage('fr')}
-                className={`${language === 'fr' ? 'text-slate-900 underline' : 'hover:text-black'}`}
-              >
-                FR
-              </button>
-              <button
-                onClick={() => setLanguage('en')}
-                className={`${language === 'en' ? 'text-slate-900 underline' : 'hover:text-black'}`}
-              >
-                EN
-              </button>
+              <button onClick={() => setLanguage('fr')} className={`${language === 'fr' ? 'text-slate-900 underline' : 'hover:text-black'}`}>FR</button>
+              <button onClick={() => setLanguage('en')} className={`${language === 'en' ? 'text-slate-900 underline' : 'hover:text-black'}`}>EN</button>
             </div>
             <Link href="/" className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-bold">
               <ArrowLeft size={18} />
@@ -136,5 +123,13 @@ export default function LoginPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin" /></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
