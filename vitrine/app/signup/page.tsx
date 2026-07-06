@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -12,6 +12,9 @@ export default function SignupPage() {
   const { language, setLanguage } = useLanguage();
   const { signUp, user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/';
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,7 +36,6 @@ export default function SignupPage() {
       setError(error);
       setLoading(false);
     } else {
-      const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
       router.push(redirect);
     }
   };
@@ -120,7 +122,7 @@ export default function SignupPage() {
         <div className="mt-6 text-center text-sm text-slate-500">
           <p>
             {language === 'en' ? 'Already have an account?' : 'Déjà un compte ?'}{' '}
-            <Link href={`/login?redirect=${encodeURIComponent(new URLSearchParams(window.location.search).get('redirect') || '/')}`} className="text-[#D4AF37] font-bold hover:underline">
+            <Link href={`/login?redirect=${encodeURIComponent(redirect)}`} className="text-[#D4AF37] font-bold hover:underline">
               {language === 'en' ? 'Log in' : 'Se connecter'}
             </Link>
           </p>

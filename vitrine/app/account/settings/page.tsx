@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,14 +20,19 @@ export default function AccountSettingsPage() {
 
   // Changer email
   const [newEmail, setNewEmail] = useState('');
-  const [currentPasswordForEmail, setCurrentPasswordForEmail] = useState('');
 
   // Changer mot de passe
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
+  // Redirection si non connecté (dans un useEffect pour éviter les erreurs SSR)
+  useEffect(() => {
+    if (!user) {
+      router.push('/login');
+    }
+  }, [user, router]);
+
+  // Pendant la redirection, ne rien afficher
   if (!user) {
-    router.push('/login');
     return null;
   }
 
