@@ -7,9 +7,10 @@ import {
   PanelLeftClose, Menu, X,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { t } from '../../lib/translations';
 
-// ----- Types -----
+// ----- Types (inchangés) -----
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -40,12 +41,11 @@ interface ProjectBrief {
   [key: string]: any;
 }
 
-// ----- UUID v4 universel -----
+// ----- UUID v4 universel (inchangé) -----
 function generateUUID() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  // Fallback manuel pour les environnements sans crypto.randomUUID
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -53,7 +53,7 @@ function generateUUID() {
   });
 }
 
-// ----- Rendu des URLs cliquables -----
+// ----- Rendu des URLs cliquables (inchangé) -----
 function renderMessageContent(text: string) {
   if (text.includes('<a href=')) {
     return <span dangerouslySetInnerHTML={{ __html: text }} />;
@@ -68,7 +68,7 @@ function renderMessageContent(text: string) {
     if (i < matches.length) {
       elements.push(
         <a key={`l-${i}`} href={matches[i]} target="_blank" rel="noopener noreferrer"
-          className="text-blue-500 underline hover:text-blue-700 break-all">
+           className="text-blue-500 underline hover:text-blue-700 break-all">
           {matches[i]}
         </a>
       );
@@ -77,7 +77,7 @@ function renderMessageContent(text: string) {
   return <>{elements}</>;
 }
 
-// ----- Persistance intelligente -----
+// ----- Persistance intelligente (inchangé) -----
 const STORAGE_KEY = 'actoos-chat-messages';
 
 const isReload = () => {
@@ -115,6 +115,7 @@ type Step = (typeof stepOrder)[number];
 // ----- Composant -----
 export default function ProjectChatBot() {
   const { language } = useLanguage();
+  const { user } = useAuth(); // ✅ récupération de l'utilisateur connecté
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -137,7 +138,7 @@ export default function ProjectChatBot() {
 
   const generateId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-  // Détection mobile
+  // Détection mobile (inchangée)
   useEffect(() => {
     const update = () => {
       const mobile = window.innerWidth < 1024;
@@ -171,7 +172,7 @@ export default function ProjectChatBot() {
     }
   };
 
-  // Scroll & focus
+  // Scroll & focus (inchangés)
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
@@ -188,7 +189,7 @@ export default function ProjectChatBot() {
     }
   }, [loading]);
 
-  // Chargement initial avec message traduit
+  // Chargement initial avec message traduit (inchangé)
   useEffect(() => {
     const saved = loadMessages();
     if (saved.length > 0) {
@@ -212,7 +213,7 @@ export default function ProjectChatBot() {
     }
   }, [language]);
 
-  // Sauvegarde automatique
+  // Sauvegarde automatique (inchangée)
   useEffect(() => {
     if (messages.length > 0) saveMessages(messages);
   }, [messages]);
@@ -245,7 +246,7 @@ export default function ProjectChatBot() {
     return entries;
   }, [currentBrief, language]);
 
-  // ----- Envoi / discussion -----
+  // ----- Envoi / discussion (inchangé) -----
   const handleSend = async (content?: string) => {
     const messageContent = content || input.trim();
     if (!messageContent || loading) return;
@@ -479,21 +480,23 @@ export default function ProjectChatBot() {
       await fetch('https://mgsantsreaybhsxyxzve.supabase.co/functions/v1/handle-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({
-  action: 'save-project',
-  client_name: submitForm.name,
-  client_email: submitForm.email,
-  client_message: submitForm.message,
-  brief: currentBrief,
-  client_token: clientToken,
-  conversation: messages.map(m => ({ role: m.role, content: m.content })),
-  language,
-}),
+        body: JSON.stringify({
+          action: 'save-project',
+          client_name: submitForm.name,
+          client_email: submitForm.email,
+          client_message: submitForm.message,
+          brief: currentBrief,
+          client_token: clientToken,
+          conversation: messages.map(m => ({ role: m.role, content: m.content })),
+          language,
+          user_id: user?.id || null, // ✅ liaison avec l'utilisateur connecté
+        }),
       });
     } catch {
       // Ne pas bloquer si la sauvegarde échoue
     }
 
+    // Suite de la fonction (emails, etc.) inchangée
     try {
       // Email à l'admin
       const adminRes = await fetch('/api/send-project-email', {
@@ -727,11 +730,21 @@ export default function ProjectChatBot() {
                 </div>
               )}
 
-              {/* Bouton Valider */}
+              {/* Bouton Valider (pré-remplissage si connecté) */}
               {currentBrief && !showSubmitForm && step !== 'soumettre' && (
                 <div className="flex justify-center mt-4">
                   <button
-                    onClick={() => setShowSubmitForm(true)}
+                    onClick={() => {
+                      // ✅ Pré-remplir le formulaire avec les informations de l'utilisateur connecté
+                      if (user) {
+                        setSubmitForm({
+                          name: user.user_metadata?.name || '',
+                          email: user.email || '',
+                          message: '',
+                        });
+                      }
+                      setShowSubmitForm(true);
+                    }}
                     className="w-full sm:w-auto px-5 sm:px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white rounded-3xl font-bold text-sm shadow-lg shadow-amber-500/20 hover:scale-[1.02] transition-all inline-flex items-center justify-center gap-2"
                   >
                     <FileText size={16} />

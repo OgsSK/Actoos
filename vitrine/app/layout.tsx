@@ -3,6 +3,7 @@ import './globals.css';
 import CookieConsent from './components/CookieConsent';
 import { ProjectProvider } from './context/ProjectContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
   title: 'ACTOOS - Empowering Action. Delivering Progress.',
@@ -61,12 +62,14 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="antialiased">
-        <LanguageProvider>
-          <ProjectProvider>
-            {children}
-            <CookieConsent />
-          </ProjectProvider>
-        </LanguageProvider>
+        <AuthProvider>
+          <LanguageProvider>
+            <ProjectProvider>
+              {children}
+              <CookieConsent />
+            </ProjectProvider>
+          </LanguageProvider>
+        </AuthProvider>
       </body>
     </html>
   );

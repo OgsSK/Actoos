@@ -577,7 +577,80 @@ export const t: Record<string, Record<string, string>> = {
 
 
 
+
+// Section login
+adminLogout: { fr: "Déconnexion", en: "Logout" },
+loginTitle: { fr: "Connexion", en: "Log in" },
+loginEmail: { fr: "Email", en: "Email" },
+loginPassword: { fr: "Mot de passe", en: "Password" },
+loginButton: { fr: "Se connecter", en: "Log in" },
+loginNoAccount: { fr: "Pas encore de compte ?", en: "Don't have an account?" },
+loginSignUp: { fr: "S'inscrire", en: "Sign up" },
+loginForgotPassword: { fr: "Mot de passe oublié ?", en: "Forgot password?" },
+// Section signup
+signupTitle: { fr: "Créer un compte", en: "Create an account" },
+signupName: { fr: "Votre nom", en: "Your name" },
+signupEmail: { fr: "Email", en: "Email" },
+signupPassword: { fr: "Mot de passe", en: "Password" },
+signupButton: { fr: "Créer mon compte", en: "Create account" },
+signupHaveAccount: { fr: "Déjà un compte ?", en: "Already have an account?" },
+signupLogin: { fr: "Se connecter", en: "Log in" },
+resetPasswordTitle: { fr: "Réinitialiser le mot de passe", en: "Reset your password" },
+resetPasswordSubtitle: { fr: "Entrez votre adresse email et nous vous enverrons un lien de réinitialisation.", en: "Enter your email address and we'll send you a password reset link." },
+resetPasswordButton: { fr: "Envoyer le lien", en: "Send reset link" },
+resetPasswordBack: { fr: "Retour à la connexion", en: "Back to login" },
+resetPasswordSuccessTitle: { fr: "Vérifiez vos emails", en: "Check your email" },
+resetPasswordSuccessMessage: { fr: "Si un compte existe avec cet email, vous recevrez un lien de réinitialisation dans quelques instants.", en: "If an account exists with this email, you will receive a reset link shortly." },
+// Section account settings
+accountSettingsTitle: { fr: "Paramètres du compte", en: "Account settings" },
+accountSettingsEmailTab: { fr: "Changer l'email", en: "Change email" },
+accountSettingsPasswordTab: { fr: "Changer le mot de passe", en: "Change password" },
+accountSettingsDeleteTab: { fr: "Supprimer le compte", en: "Delete account" },
+accountSettingsCurrentEmail: { fr: "Email actuel", en: "Current email" },
+accountSettingsNewEmail: { fr: "Nouvel email", en: "New email" },
+accountSettingsUpdateEmail: { fr: "Mettre à jour l'email", en: "Update email" },
+accountSettingsNewPassword: { fr: "Nouveau mot de passe", en: "New password" },
+accountSettingsUpdatePassword: { fr: "Mettre à jour le mot de passe", en: "Update password" },
+accountSettingsDeleteWarning: { fr: "Cette action est irréversible. Toutes vos données seront supprimées définitivement.", en: "This action is irreversible. All your data will be permanently deleted." },
+accountSettingsDeleteButton: { fr: "Supprimer mon compte", en: "Delete my account" },
+accountSettingsSuccessEmail: { fr: "Un email de confirmation a été envoyé à votre nouvelle adresse.", en: "A confirmation email has been sent to your new address." },
+accountSettingsSuccessPassword: { fr: "Mot de passe mis à jour avec succès.", en: "Password updated successfully." },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   en: {
     navProducts: "Products",
     navExpertise: "Expertise",
