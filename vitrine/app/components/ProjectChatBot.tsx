@@ -7,10 +7,9 @@ import {
   PanelLeftClose, Menu, X,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { t } from '../../lib/translations';
 
-// ----- Types (inchangés) -----
+// ----- Types -----
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -41,7 +40,7 @@ interface ProjectBrief {
   [key: string]: any;
 }
 
-// ----- UUID v4 universel (inchangé) -----
+// ----- UUID v4 universel -----
 function generateUUID() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -53,7 +52,7 @@ function generateUUID() {
   });
 }
 
-// ----- Rendu des URLs cliquables (inchangé) -----
+// ----- Rendu des URLs cliquables -----
 function renderMessageContent(text: string) {
   if (text.includes('<a href=')) {
     return <span dangerouslySetInnerHTML={{ __html: text }} />;
@@ -77,7 +76,7 @@ function renderMessageContent(text: string) {
   return <>{elements}</>;
 }
 
-// ----- Persistance intelligente (inchangé) -----
+// ----- Persistance intelligente -----
 const STORAGE_KEY = 'actoos-chat-messages';
 
 const isReload = () => {
@@ -115,7 +114,6 @@ type Step = (typeof stepOrder)[number];
 // ----- Composant -----
 export default function ProjectChatBot() {
   const { language } = useLanguage();
-  const { user } = useAuth(); // ✅ récupération de l'utilisateur connecté
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -138,7 +136,7 @@ export default function ProjectChatBot() {
 
   const generateId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-  // Détection mobile (inchangée)
+  // Détection mobile
   useEffect(() => {
     const update = () => {
       const mobile = window.innerWidth < 1024;
@@ -172,7 +170,7 @@ export default function ProjectChatBot() {
     }
   };
 
-  // Scroll & focus (inchangés)
+  // Scroll & focus
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
@@ -189,7 +187,7 @@ export default function ProjectChatBot() {
     }
   }, [loading]);
 
-  // Chargement initial avec message traduit (inchangé)
+  // Chargement initial avec message traduit
   useEffect(() => {
     const saved = loadMessages();
     if (saved.length > 0) {
@@ -213,7 +211,7 @@ export default function ProjectChatBot() {
     }
   }, [language]);
 
-  // Sauvegarde automatique (inchangée)
+  // Sauvegarde automatique
   useEffect(() => {
     if (messages.length > 0) saveMessages(messages);
   }, [messages]);
@@ -246,7 +244,7 @@ export default function ProjectChatBot() {
     return entries;
   }, [currentBrief, language]);
 
-  // ----- Envoi / discussion (inchangé) -----
+  // ----- Envoi / discussion -----
   const handleSend = async (content?: string) => {
     const messageContent = content || input.trim();
     if (!messageContent || loading) return;
@@ -468,7 +466,7 @@ export default function ProjectChatBot() {
     }
   };
 
-  // ----- Soumission finale (MODIFIÉE) -----
+  // ----- Soumission finale (sans user_id) -----
   const handleSubmitProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!submitForm.name.trim() || !submitForm.email.trim()) return;
@@ -489,14 +487,12 @@ export default function ProjectChatBot() {
           client_token: clientToken,
           conversation: messages.map(m => ({ role: m.role, content: m.content })),
           language,
-          user_id: user?.id || null, // ✅ liaison avec l'utilisateur connecté
         }),
       });
     } catch {
       // Ne pas bloquer si la sauvegarde échoue
     }
 
-    // Suite de la fonction (emails, etc.) inchangée
     try {
       // Email à l'admin
       const adminRes = await fetch('/api/send-project-email', {
@@ -730,21 +726,11 @@ export default function ProjectChatBot() {
                 </div>
               )}
 
-              {/* Bouton Valider (pré-remplissage si connecté) */}
+              {/* Bouton Valider (sans pré-remplissage) */}
               {currentBrief && !showSubmitForm && step !== 'soumettre' && (
                 <div className="flex justify-center mt-4">
                   <button
-                    onClick={() => {
-                      // ✅ Pré-remplir le formulaire avec les informations de l'utilisateur connecté
-                      if (user) {
-                        setSubmitForm({
-                          name: user.user_metadata?.name || '',
-                          email: user.email || '',
-                          message: '',
-                        });
-                      }
-                      setShowSubmitForm(true);
-                    }}
+                    onClick={() => setShowSubmitForm(true)}
                     className="w-full sm:w-auto px-5 sm:px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-amber-500 text-white rounded-3xl font-bold text-sm shadow-lg shadow-amber-500/20 hover:scale-[1.02] transition-all inline-flex items-center justify-center gap-2"
                   >
                     <FileText size={16} />

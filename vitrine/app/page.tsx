@@ -3,19 +3,17 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { 
-  Code, Smartphone, Globe, ArrowRight, Layers, Menu, X, User 
+  Code, Smartphone, Globe, ArrowRight, Layers, Menu, X 
 } from 'lucide-react';
 import ProjectChatBot from './components/ProjectChatBot';
 import FadeInSection from './components/FadeInSection';
 import { useLanguage } from './context/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { t } from '../lib/translations';
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
 
   // Ferme automatiquement le menu mobile quand on change de page
   useEffect(() => {
@@ -38,7 +36,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-amber-50">
       
       {/* NAVIGATION */}
-      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-xl z-50 border-b border-slate-100">
+      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-xl z-40 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <img 
@@ -56,8 +54,8 @@ export default function HomePage() {
             </div>
           </div>
           
-          {/* Desktop menu avec sélecteur de langue ET connexion */}
-          <div className="hidden md:flex items-center space-x-6 text-[11px] font-black uppercase tracking-widest text-slate-400">
+          {/* Desktop menu avec sélecteur de langue */}
+          <div className="hidden md:flex items-center space-x-10 text-[11px] font-black uppercase tracking-widest text-slate-400">
             <button
               onClick={() => setLanguage('fr')}
               className={`${language === 'fr' ? 'text-slate-900 underline' : 'hover:text-black'}`}
@@ -75,103 +73,103 @@ export default function HomePage() {
             <a href="/a-propos" className="hover:text-black transition-colors">{t[language].navAbout}</a>
             <a href="/philosophie" className="hover:text-black transition-colors">{t[language].navPhilosophy}</a>
             <a href="#chatbot" className="hover:text-black transition-colors">{t[language].navProject}</a>
-            
-            {/* Bouton Connexion / Mon compte */}
-            {!user ? (
-              <a
-                href="/login"
-                className="bg-slate-950 text-white px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-[#D4AF37] transition-all"
-              >
-                {t[language].loginButton || 'Connexion'}
-              </a>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <a
-                  href="/account/settings"
-                  className="text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-1"
-                  title={t[language].accountSettingsTitle || 'Paramètres'}
-                >
-                  <User size={18} />
-                  <span className="hidden xl:inline text-xs">{user.email?.split('@')[0]}</span>
-                </a>
-                <button
-                  onClick={() => signOut()}
-                  className="text-slate-400 hover:text-red-500 transition-colors text-xs"
-                >
-                  {t[language].adminLogout || 'Déconnexion'}
-                </button>
-              </div>
-            )}
           </div>
 
+          {/* Bouton hamburger */}
           <button 
             className="md:hidden p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Ouvrir le menu"
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            <Menu size={24} />
           </button>
         </div>
-
-        {/* Mobile menu avec overlay – fermeture automatique au clic en dehors */}
-        {mobileMenuOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-40 bg-black/30 md:hidden"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-            <div className="absolute top-full left-0 right-0 z-50 md:hidden bg-white border-t border-slate-100 px-6 py-4 space-y-4 shadow-xl">
-              <div className="flex items-center space-x-6 text-sm font-black uppercase">
-                <button
-                  onClick={() => { setLanguage('fr'); setMobileMenuOpen(false); }}
-                  className={`${language === 'fr' ? 'text-slate-900 underline' : 'text-slate-400 hover:text-black'}`}
-                >
-                  FR
-                </button>
-                <button
-                  onClick={() => { setLanguage('en'); setMobileMenuOpen(false); }}
-                  className={`${language === 'en' ? 'text-slate-900 underline' : 'text-slate-400 hover:text-black'}`}
-                >
-                  EN
-                </button>
-              </div>
-              <a href="/produits" className="block text-sm font-bold text-slate-600 hover:text-black" onClick={() => setMobileMenuOpen(false)}>{t[language].navProducts}</a>
-              <a href="/expertise" className="block text-sm font-bold text-slate-600 hover:text-black" onClick={() => setMobileMenuOpen(false)}>{t[language].navExpertise}</a>
-              <a href="/a-propos" className="block text-sm font-bold text-slate-600 hover:text-black" onClick={() => setMobileMenuOpen(false)}>{t[language].navAbout}</a>
-              <a href="/philosophie" className="block text-sm font-bold text-slate-600 hover:text-black" onClick={() => setMobileMenuOpen(false)}>{t[language].navPhilosophy}</a>
-              <a href="#chatbot" className="block text-sm font-bold text-slate-600 hover:text-black" onClick={() => setMobileMenuOpen(false)}>{t[language].navProject}</a>
-              
-              {!user ? (
-                <a
-                  href="/login"
-                  className="block bg-slate-950 text-white px-4 py-2 rounded-full text-center text-sm font-bold uppercase tracking-widest"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {t[language].loginButton || 'Connexion'}
-                </a>
-              ) : (
-                <div className="space-y-2 border-t pt-3">
-                  <a
-                    href="/account/settings"
-                    className="block text-sm font-bold text-slate-600 hover:text-black"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {t[language].accountSettingsTitle || 'Paramètres'}
-                  </a>
-                  <button
-                    onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                    className="block text-sm font-bold text-red-500 hover:text-red-700"
-                  >
-                    {t[language].adminLogout || 'Déconnexion'}
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
-        )}
       </nav>
 
-      {/* Le reste du contenu de la page reste inchangé */}
+      {/* OVERLAY + DRAWER (menu mobile) */}
+      {/* Overlay sombre */}
+      <div
+        className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 md:hidden ${
+          mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+
+      {/* Drawer latéral */}
+      <div
+        className={`fixed top-0 right-0 z-50 h-full w-80 max-w-[85vw] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden ${
+          mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          {/* En-tête du drawer */}
+          <div className="flex items-center justify-between p-6 border-b border-slate-100">
+            <span className="font-black text-lg">Menu</span>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2 -mr-2"
+              aria-label="Fermer le menu"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Liens de navigation */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex items-center space-x-6 text-sm font-black uppercase">
+              <button
+                onClick={() => { setLanguage('fr'); setMobileMenuOpen(false); }}
+                className={`${language === 'fr' ? 'text-slate-900 underline' : 'text-slate-400 hover:text-black'}`}
+              >
+                FR
+              </button>
+              <button
+                onClick={() => { setLanguage('en'); setMobileMenuOpen(false); }}
+                className={`${language === 'en' ? 'text-slate-900 underline' : 'text-slate-400 hover:text-black'}`}
+              >
+                EN
+              </button>
+            </div>
+            
+            <a 
+              href="/produits" 
+              className="block text-base font-bold text-slate-600 hover:text-black py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t[language].navProducts}
+            </a>
+            <a 
+              href="/expertise" 
+              className="block text-base font-bold text-slate-600 hover:text-black py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t[language].navExpertise}
+            </a>
+            <a 
+              href="/a-propos" 
+              className="block text-base font-bold text-slate-600 hover:text-black py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t[language].navAbout}
+            </a>
+            <a 
+              href="/philosophie" 
+              className="block text-base font-bold text-slate-600 hover:text-black py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t[language].navPhilosophy}
+            </a>
+            <a 
+              href="#chatbot" 
+              className="block text-base font-bold text-slate-600 hover:text-black py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t[language].navProject}
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* HERO */}
       <FadeInSection>
         <header className="pt-32 md:pt-48 pb-20 md:pb-32 px-6 max-w-7xl mx-auto flex flex-col items-center text-center">
