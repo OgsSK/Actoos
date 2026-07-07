@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { usePreferences } from '../hooks/usePreferences';
+import { usePreferencesContext } from '../contexts/PreferencesContext'; // ✅ Utilisation du contexte partagé
 import useAllowedCountries from '../hooks/useAllowedCountries';
 import { supabase } from '../lib/supabase';
 import { Loader2 } from 'lucide-react';
 
 const CountryCurrencySelector = () => {
   const { t } = useTranslation();
-  const { prefs, updatePrefs } = usePreferences();
+  const { prefs, updatePrefs } = usePreferencesContext(); // ✅ Contexte commun avec Header/Footer
   const [countries, setCountries] = useState([]);
   const [availableCurrencies, setAvailableCurrencies] = useState([]);
   const [loading, setLoading] = useState(true);
