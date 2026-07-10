@@ -11,6 +11,9 @@ import { Badge } from '../components/ui/badge';
 import AIAssistant from '../components/AIAssistant';
 import EditableLinks from '../components/EditableLinks';
 import { toast } from 'sonner';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+
 import {
   User, Briefcase, FileText, GraduationCap, Award,
   MapPin, Globe, Plus, X, Save, Loader2,
@@ -875,12 +878,13 @@ const CandidateProfilePage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.personalInfo.phone')}</label>
-                  {/* ✅ Placeholder international explicite */}
-                  <Input
+                  <PhoneInput
+                    international
+                    defaultCountry="US"
                     value={personalInfo.phone}
-                    onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
-                    placeholder="+1 (555) 000-0000"
-                    className="min-h-[44px]"
+                    onChange={(value) => setPersonalInfo({ ...personalInfo, phone: value || '' })}
+                    placeholder={t('candidateProfilePage.personalInfo.phonePlaceholder')}
+                    className="w-full"
                   />
                 </div>
                 <div>

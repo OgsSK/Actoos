@@ -10,6 +10,9 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { toast } from 'sonner';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+
 import {
   Building2, Globe, Mail, Phone, MapPin, Calendar,
   Loader2, ChevronLeft, Save, Image, Trash2
@@ -411,12 +414,13 @@ const handleDeleteCompany = async () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     <Phone className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.phone')}
                   </label>
-                  {/* ✅ Placeholder international identique à la création */}
-                  <Input
+                  <PhoneInput
+                    international
+                    defaultCountry={selectedCountry || 'US'}
                     value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder="+1 (555) 000-0000"
-                    className="min-h-[44px]"
+                    onChange={(value) => setForm({ ...form, phone: value || '' })}
+                    placeholder={t('companyProfile.placeholders.phone')}
+                    className="w-full"
                   />
                 </div>
                 <div>
