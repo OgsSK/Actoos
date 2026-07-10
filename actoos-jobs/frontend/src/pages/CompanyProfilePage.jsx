@@ -11,12 +11,55 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { toast } from 'sonner';
 import PhoneInput from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
 
 import {
   Building2, Globe, Mail, Phone, MapPin, Calendar,
   Loader2, ChevronLeft, Save, Image, Trash2
 } from 'lucide-react';
+
+// Style injecté pour le composant PhoneInput
+const phoneInputStyles = `
+.PhoneInput {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0 12px;
+  background-color: white;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.PhoneInput:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+}
+.PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+.PhoneInputCountryIcon {
+  width: 1.2em;
+  height: 1.2em;
+}
+.PhoneInputCountrySelect {
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.PhoneInputInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.875rem;
+  color: #334155;
+  background: transparent;
+  padding-left: 4px;
+}
+.PhoneInputInput::placeholder {
+  color: #94a3b8;
+}
+`;
 
 const INDUSTRY_KEYS = [
   'tech', 'finance', 'telecom', 'commerce', 'manufacturing',
@@ -247,6 +290,9 @@ const handleDeleteCompany = async () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20 pb-24 sm:pb-10" data-testid="company-profile-page">
+      {/* Injection du style pour PhoneInput */}
+      <style>{phoneInputStyles}</style>
+
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* En-tête avec bouton retour et bouton Enregistrer (desktop) */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
