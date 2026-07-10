@@ -411,10 +411,11 @@ const handleDeleteCompany = async () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     <Phone className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.phone')}
                   </label>
+                  {/* ✅ Placeholder international identique à la création */}
                   <Input
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder={t('companyProfile.placeholders.phone')}
+                    placeholder="+1 (555) 000-0000"
                     className="min-h-[44px]"
                   />
                 </div>
@@ -515,7 +516,7 @@ const handleDeleteCompany = async () => {
         </div>
       </div>
 
-      {/* Barre sticky en bas pour mobile (comme dans profil candidat) */}
+      {/* Barre sticky en bas pour mobile */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 sm:hidden z-40">
         <Button
           type="button"

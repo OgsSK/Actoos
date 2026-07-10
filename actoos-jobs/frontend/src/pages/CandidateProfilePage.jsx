@@ -440,7 +440,7 @@ const CandidateProfilePage = () => {
     is_open_to_remote: false,
     desired_salary_min: '',
     desired_salary_max: '',
-    is_visible_in_cv_bank: false, // <-- new field
+    is_visible_in_cv_bank: false,
   });
 
   const [skills, setSkills] = useState([]);
@@ -503,7 +503,7 @@ const CandidateProfilePage = () => {
         is_open_to_remote: cp.is_open_to_remote || false,
         desired_salary_min: cp.desired_salary_min || '',
         desired_salary_max: cp.desired_salary_max || '',
-        is_visible_in_cv_bank: cp.is_visible_in_cv_bank ?? false, // <-- new field
+        is_visible_in_cv_bank: cp.is_visible_in_cv_bank ?? false,
       });
 
       setSkills(cp.skills || []);
@@ -538,7 +538,6 @@ const CandidateProfilePage = () => {
     setDocuments(data || []);
   };
 
-  // ✅ UPLOAD DIRECT VERS SUPABASE STORAGE (corrigé)
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -766,7 +765,7 @@ const CandidateProfilePage = () => {
         experience: experiences,
         education,
         links,
-        is_visible_in_cv_bank: candidateInfo.is_visible_in_cv_bank, // <-- persist on full save
+        is_visible_in_cv_bank: candidateInfo.is_visible_in_cv_bank,
       }, { onConflict: 'user_id' });
 
       if (error) throw error;
@@ -796,7 +795,6 @@ const CandidateProfilePage = () => {
               <p className="text-sm text-slate-600">{t('candidateProfilePage.subtitle')}</p>
             </div>
           </div>
-          {/* Bouton sauvegarde desktop uniquement (mobile via barre sticky) */}
           <Button
             onClick={handleSave}
             disabled={saving}
@@ -877,10 +875,11 @@ const CandidateProfilePage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.personalInfo.phone')}</label>
+                  {/* ✅ Placeholder international explicite */}
                   <Input
                     value={personalInfo.phone}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
-                    placeholder={t('candidateProfilePage.personalInfo.phonePlaceholder')}
+                    placeholder="+1 (555) 000-0000"
                     className="min-h-[44px]"
                   />
                 </div>
@@ -1297,7 +1296,6 @@ const CandidateProfilePage = () => {
                 title={t('profile.visibility.sectionTitle', 'Visibilité')}
                 description={t('profile.visibility.sectionDesc', 'Gérez votre présence dans la banque de CV')}
               />
-              {/* Banque de CV – visibilité */}
               <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200">
                 <div className="flex-1 min-w-0 mr-4">
                   <p className="font-medium text-slate-900">
