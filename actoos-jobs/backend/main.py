@@ -50,8 +50,8 @@ SUPPORTED_CURRENCIES = {
 SUBSCRIPTION_PLANS = {
     "pro_monthly": {"amount": 49000, "name": "Plan Pro - Mensuel", "type": "subscription", "interval": "month"},
     "pro_annual": {"amount": 470400, "name": "Plan Pro - Annuel (-20%)", "type": "subscription", "interval": "year"},
-    "business_monthly": {"amount": 149000, "name": "Plan Business - Mensuel", "type": "subscription", "interval": "month"},
-    "business_annual": {"amount": 1430400, "name": "Plan Business - Annuel (-20%)", "type": "subscription", "interval": "year"},
+    "business_monthly": {"amount": 84618, "name": "Plan Business - Mensuel", "type": "subscription", "interval": "month"},
+    "business_annual": {"amount": 812110, "name": "Plan Business - Annuel (-20%)", "type": "subscription", "interval": "year"},
 }
 BOOST_PACKAGES = {
     "boost_7": {"amount": 9990, "name": "Boost 7 jours", "days": 7},
@@ -144,6 +144,7 @@ class CheckoutRequest(BaseModel):
     job_id: Optional[str] = None
     user_email: Optional[str] = None
     metadata: Optional[Dict[str, str]] = None
+    preferred_currency: Optional[str] = "XOF"  # ← nouveau champ
 
 class ContactRequest(BaseModel):
     name: str
@@ -809,11 +810,11 @@ async def get_pricing():
 async def get_currencies():
     return {"currencies": SUPPORTED_CURRENCIES, "default": "XOF"}
 
-# ✅ Correction : utilisation de company_id pour cibler l'entreprise exacte
 @app.post("/api/checkout/session")
 async def create_checkout_session(checkout_request: CheckoutRequest, request: Request):
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
+
     user_id = checkout_request.user_id
     company_id = checkout_request.company_id
     if not user_id:
@@ -825,14 +826,34 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
     if package_id in SUBSCRIPTION_PLANS:
         package = SUBSCRIPTION_PLANS[package_id]
         mode = "subscription"
-        preferred_currency = (checkout_request.metadata or {}).get("currency", "xof")
-        if preferred_currency.upper() not in SUPPORTED_CURRENCIES:
-            preferred_currency = "xof"
+
+        # ---------- Devise choisie par l'utilisateur ----------
+        currency = (checkout_request.preferred_currency or "XOF").upper()
+        if currency not in SUPPORTED_CURRENCIES:
+            currency = "XOF"
+
+        # Taux de conversion FCFA → devise cible (identiques au frontend)
+        RATES_TO_XOF = {
+            "XOF": 1, "EUR": 655.957, "USD": 603.5, "MAD": 60.5,
+            "GBP": 754.2, "BRL": 115.3, "ARS": 0.72, "NGN": 0.4, "ZAR": 32.5,
+            "SAR": 160.9, "AED": 164.3, "EGP": 19.5, "DZD": 4.48, "TND": 194.5,
+            "CHF": 722.3, "XAF": 1, "GNF": 0.07, "CDF": 0.22, "MGA": 0.15
+        }
+
+        amount_fcfa = package["amount"]
+        rate = RATES_TO_XOF.get(currency, 1)
+        converted_amount = round(amount_fcfa / rate)     # ← arrondi correct
+
+        # Gestion des sous-unités (centimes) pour les devises qui en ont
+        if currency in ("EUR", "USD", "GBP", "MAD", "BRL", "ARS", "NGN", "ZAR",
+                        "SAR", "AED", "EGP", "DZD", "TND", "CHF"):
+            converted_amount = converted_amount * 100
+
         line_item = {
             'price_data': {
-                'currency': preferred_currency.lower(),
+                'currency': currency.lower(),
                 'product_data': {'name': package["name"]},
-                'unit_amount': int(package["amount"]),
+                'unit_amount': converted_amount,
                 'recurring': {'interval': package["interval"]},
             },
             'quantity': 1,
@@ -841,9 +862,11 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
         raise HTTPException(status_code=400, detail="Boosts non disponibles pour le moment")
     else:
         raise HTTPException(status_code=400, detail="Invalid package")
+
     origin = checkout_request.origin_url
     success_url = f"{origin}/paiement/succes?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin}/paiement/annule"
+
     metadata = {
         "package_id": package_id,
         "package_name": package["name"],
@@ -858,7 +881,7 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
     if checkout_request.metadata:
         metadata.update(checkout_request.metadata)
 
-    # Vérification downgrade pour l'entreprise spécifique
+    # ---------- Vérification downgrade ----------
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if supabase_url and supabase_key:
@@ -872,11 +895,13 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
             raise HTTPException(status_code=404, detail="Entreprise non trouvée ou non autorisée")
         company = companies[0]
         current_plan = company.get("subscription_plan", "free")
+
         target_plan = "free"
         if "pro" in package_id:
             target_plan = "pro"
         elif "business" in package_id:
             target_plan = "business"
+
         plan_rank = {"free": 0, "pro": 1, "business": 2, "enterprise": 3}
         if plan_rank.get(target_plan, 0) < plan_rank.get(current_plan, 0):
             jobs_resp = httpx.get(
@@ -888,16 +913,21 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
                 active_jobs = int(jobs_resp.headers["content-range"].split("/")[1])
             target_limit = get_plan_limit_static(target_plan, "jobs")
             if active_jobs > target_limit:
-                raise HTTPException(status_code=400, detail=f"DOWNGRADE_BLOCKED:{active_jobs}:{target_limit}")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"DOWNGRADE_BLOCKED:{active_jobs}:{target_limit}"
+                )
 
+    # ---------- Langue Stripe ----------
     STRIPE_LOCALES = {
-        'ar', 'bg', 'cs', 'da', 'de', 'el', 'en', 'es', 'et', 'fi', 'fil',
-        'fr', 'he', 'hr', 'hu', 'id', 'it', 'ja', 'ko', 'lt', 'lv', 'ms',
-        'mt', 'nb', 'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sv', 'th',
-        'tr', 'vi', 'zh'
+        'auto', 'bg', 'cs', 'da', 'de', 'el', 'en', 'en-GB', 'es', 'es-419',
+        'et', 'fi', 'fil', 'fr', 'fr-CA', 'hr', 'hu', 'id', 'it', 'ja',
+        'ko', 'lt', 'lv', 'ms', 'mt', 'nb', 'nl', 'pl', 'pt', 'pt-BR',
+        'ro', 'ru', 'sk', 'sl', 'sv', 'th', 'tr', 'vi', 'zh', 'zh-HK', 'zh-TW'
     }
     user_language = get_user_language(email=checkout_request.user_email or "", request=request)
     stripe_locale = user_language if user_language in STRIPE_LOCALES else 'auto'
+
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -912,7 +942,7 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
             "session_id": session.id,
             "package_id": package_id,
             "amount": package["amount"],
-            "currency": preferred_currency.lower(),
+            "currency": currency.lower(),
             "status": "pending",
             "payment_status": "initiated",
             "metadata": metadata

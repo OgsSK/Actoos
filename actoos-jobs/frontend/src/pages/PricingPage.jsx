@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
+import { usePreferencesContext } from '../contexts/PreferencesContext'; // ← nouveau
 import { PLAN_LIMITS } from '../lib/planLimits';
 import {
   Loader2, Check, Zap, Crown, Building2, ArrowRight, AlertCircle,
@@ -19,8 +20,8 @@ const FALLBACK_PRICING = {
   subscriptions: {
     pro_monthly: { amount: 49000, name: "Plan Pro - Mensuel", type: "subscription", interval: "month" },
     pro_annual: { amount: 470400, name: "Plan Pro - Annuel (-20%)", type: "subscription", interval: "year" },
-    business_monthly: { amount: 149000, name: "Plan Business - Mensuel", type: "subscription", interval: "month" },
-    business_annual: { amount: 1430400, name: "Plan Business - Annuel (-20%)", type: "subscription", interval: "year" },
+    business_monthly: { amount: 84618, name: "Plan Business - Mensuel", type: "subscription", interval: "month" },
+    business_annual: { amount: 812110, name: "Plan Business - Annuel (-20%)", type: "subscription", interval: "year" },
   },
   boosts: {},
   currency: "XOF"
@@ -33,6 +34,7 @@ const PricingPage = () => {
   const { t } = useTranslation();
   const { user, activeCompanyId } = useAuth();
   const { format } = useCurrencyFormatter();
+  const { prefs } = usePreferencesContext(); // ← récupération des préférences
   const [pricing, setPricing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(null);
@@ -129,6 +131,7 @@ const PricingPage = () => {
           user_email: user.email,
           user_id: user.id,
           company_id: companyId,
+          preferred_currency: prefs.currency || 'XOF',   // ← devise de l'utilisateur
         }),
       });
       const result = await response.json();
@@ -240,8 +243,8 @@ const PricingPage = () => {
 
   const proMonthly = subscriptions?.pro_monthly?.amount || 49000;
   const proAnnual = subscriptions?.pro_annual?.amount || 470400;
-  const businessMonthly = subscriptions?.business_monthly?.amount || 149000;
-  const businessAnnual = subscriptions?.business_annual?.amount || 1430400;
+  const businessMonthly = subscriptions?.business_monthly?.amount || 84618;
+  const businessAnnual = subscriptions?.business_annual?.amount || 812110;
 
   const currentPlan = company?.subscription_plan || 'free';
 
