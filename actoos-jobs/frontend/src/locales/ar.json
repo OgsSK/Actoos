@@ -2584,11 +2584,16 @@
     "selectAtLeastOneDoc": "يرجى اختيار نوع مستند واحد على الأقل",
       "requestDocuments": "المستندات المطلوب تقديمها",
       "sendDocumentRequest": "طلب المستندات",
+       "upgradeForNotesTitle": "🚀 افتح أدوات التوظيف الذكية",
+      "upgradeForNotesDesc": "مع خطة Pro أو Business، قم تلقائيًا بإنشاء أسئلة مقابلة ذات صلة، نصائح مخصصة، وقم بتدوين الملاحظات مباشرة في التطبيق. قم بالتوظيف بشكل أفضل وأسرع.",
+      "upgradeForInterviewTitle": "📅 نظم مقابلاتك دون عناء",
+      "upgradeForInterviewDesc": "مع خطط Pro أو Business، أنشئ روابط مؤتمرات الفيديو بنقرة واحدة، وأرسل الدعوات تلقائيًا، وأدر فترات Calendly الخاصة بك من التطبيق. قدم تجربة احترافية لمرشحيك.",
+      "viewPlans": "أزيد السرعة →",
       "upgradeForNotes": "ملاحظات المقابلة وأدوات الذكاء الاصطناعي",
-    "upgradeForNotesDesc": "قم بالترقية إلى خطة Pro أو Business لإنشاء الأسئلة والأجوبة والنصائح وتدوين الملاحظات.",
+    
     "upgradeForSchedule": "جدولة المقابلة",
     "upgradeForScheduleDesc": "قم بالترقية إلى خطة Pro أو Business لجدولة المقابلات باستخدام Calendly وJitsi.",
-    "viewPlans": "عرض الخطط",
+    
       "back": "رجوع",
       "notFound": "الطلب غير موجود.",
       "status": {

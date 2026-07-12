@@ -2474,11 +2474,16 @@
     "selectAtLeastOneDoc": "Veuillez sélectionner au moins un type de document",
     "requestDocuments": "Documents à fournir",
     "sendDocumentRequest": "Demander les documents",
+    "upgradeForNotesTitle": "🚀 Débloquez les outils de recrutement intelligents",
+    "upgradeForNotesDesc": "Avec le plan Pro ou Business, générez automatiquement des questions d’entretien pertinentes, des conseils personnalisés et prenez des notes directement dans l’application. Recrutez mieux, plus vite.",
+    "upgradeForInterviewTitle": "📅 Organisez vos entretiens sans effort",
+    "upgradeForInterviewDesc": "Avec les plans Pro ou Business, créez des liens de visioconférence en un clic, envoyez des invitations automatiquement et gérez vos créneaux Calendly depuis l’application. Offrez une expérience professionnelle à vos candidats.",
+    "viewPlans": "Je passe à la vitesse supérieure →",
     "upgradeForNotes": "Notes d’entretien et outils IA",
-  "upgradeForNotesDesc": "Passez au plan Pro ou Business pour générer des questions, réponses et conseils, et prendre des notes.",
+  
   "upgradeForSchedule": "Planification d’entretien",
   "upgradeForScheduleDesc": "Passez au plan Pro ou Business pour planifier des entretiens avec Calendly et Jitsi.",
-  "viewPlans": "Voir les plans",
+  
     "back": "Retour",
     "notFound": "Candidature introuvable.",
     "status": {

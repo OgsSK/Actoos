@@ -10,64 +10,72 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { toast } from 'sonner';
-import PhoneInput from 'react-phone-number-input';
 
 import {
   Building2, Globe, Mail, Phone, MapPin, Calendar,
   Loader2, ChevronLeft, Save, Image, Trash2
 } from 'lucide-react';
 
-// Style injecté pour le composant PhoneInput
-const phoneInputStyles = `
-.PhoneInput {
-  display: flex;
-  align-items: center;
-  height: 44px;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  padding: 0 12px;
-  background-color: white;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.PhoneInput:focus-within {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
-}
-.PhoneInputCountry {
-  display: flex;
-  align-items: center;
-  margin-right: 8px;
-}
-.PhoneInputCountryIcon {
-  width: 1.2em;
-  height: 1.2em;
-}
-.PhoneInputCountrySelect {
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-.PhoneInputInput {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 0.875rem;
-  color: #334155;
-  background: transparent;
-  padding-left: 4px;
-}
-.PhoneInputInput::placeholder {
-  color: #94a3b8;
-}
-`;
+// ---------- Drapeau emoji ----------
+const getFlagEmoji = (countryCode) => {
+  if (!countryCode) return '';
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt());
+  return String.fromCodePoint(...codePoints);
+};
 
-const INDUSTRY_KEYS = [
-  'tech', 'finance', 'telecom', 'commerce', 'manufacturing',
-  'agriculture', 'construction', 'transport', 'health',
-  'education', 'tourism', 'services', 'ngo', 'public', 'other'
-];
-
-const COMPANY_SIZE_KEYS = ['1-10', '11-50', '51-200', '201-500', '500+'];
+// Placeholders dynamiques par pays (numéro local, sans indicatif)
+const placeholderByCountry = {
+  'US': '555 000 0000',
+  'CA': '555 000 0000',
+  'FR': '6 12 34 56 78',
+  'CI': '05 00 00 00',
+  'SN': '70 123 45 67',
+  'ML': '70 00 00 00',
+  'BF': '70 00 00 00',
+  'NE': '90 00 00 00',
+  'TG': '90 00 00 00',
+  'BJ': '90 00 00 00',
+  'CM': '6 12 34 56 78',
+  'GA': '01 23 45 67',
+  'CG': '01 23 45 67',
+  'CD': '81 000 00 00',
+  'NG': '801 234 5678',
+  'GH': '50 123 4567',
+  'ZA': '82 123 4567',
+  'KE': '712 345 678',
+  'UG': '712 345 678',
+  'TZ': '712 345 678',
+  'RW': '788 000 000',
+  'BI': '79 000 000',
+  'MA': '06 12 34 56 78',
+  'DZ': '0550 12 34 56',
+  'TN': '20 123 456',
+  'EG': '10 1234 5678',
+  'SA': '50 000 0000',
+  'AE': '50 000 0000',
+  'UK': '7700 900 000',
+  'GB': '7700 900 000',
+  'DE': '1512 3456789',
+  'IT': '312 345 6789',
+  'ES': '612 34 56 78',
+  'PT': '912 345 678',
+  'NL': '06 12345678',
+  'BE': '470 12 34 56',
+  'CH': '76 123 45 67',
+  'AT': '664 123456',
+  'IN': '98765 43210',
+  'CN': '138 0000 0000',
+  'JP': '090 1234 5678',
+  'KR': '010 1234 5678',
+  'AU': '412 345 678',
+  'NZ': '21 123 4567',
+  'BR': '11 91234 5678',
+  'AR': '11 1234 5678',
+  'MX': '55 1234 5678',
+};
 
 const CompanyProfilePage = () => {
   const { t } = useTranslation();
@@ -93,12 +101,16 @@ const CompanyProfilePage = () => {
     size: '',
     website: '',
     email: '',
-    phone: '',
+    phone: '',          // numéro local uniquement
     city_id: '',
     address: '',
     founded_year: '',
     logo_url: '',
   });
+
+  // ✅ Récupération des listes traduites
+  const INDUSTRIES = t('createCompany.industries', { returnObjects: true }) || [];
+  const COMPANY_SIZES = t('createCompany.sizes', { returnObjects: true }) || {};
 
   useEffect(() => {
     if (!user || !activeCompanyId) {
@@ -113,7 +125,7 @@ const CompanyProfilePage = () => {
   const fetchCountries = async () => {
     const { data } = await supabase
       .from('countries')
-      .select('code, name')
+      .select('code, name, phone_code')
       .order('name');
     setCountries(data || []);
   };
@@ -141,7 +153,7 @@ const CompanyProfilePage = () => {
       size: company.size || '',
       website: company.website || '',
       email: company.email || '',
-      phone: company.phone || '',
+      phone: company.phone || '', // on garde la valeur existante, même si elle contient déjà l'indicatif (sera géré par l'extraction si besoin)
       city_id: company.city_id || '',
       address: company.address || '',
       founded_year: company.founded_year ? String(company.founded_year) : '',
@@ -222,7 +234,7 @@ const CompanyProfilePage = () => {
           ? (form.website.startsWith('http') ? form.website : `https://${form.website}`)
           : null,
         email: form.email || null,
-        phone: form.phone || null,
+        phone: form.phone || null, // numéro local uniquement
         city_id: form.city_id || null,
         country_id: country?.id || null,
         address: form.address || null,
@@ -243,27 +255,27 @@ const CompanyProfilePage = () => {
     }
   };
 
-const handleDeleteCompany = async () => {
-  if (!window.confirm(t('companyProfile.deleteConfirm'))) return;
+  const handleDeleteCompany = async () => {
+    if (!window.confirm(t('companyProfile.deleteConfirm'))) return;
 
-  setDeleting(true);
-  try {
-    await apiFetch('/api/company/delete', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: user.id,
-        company_id: activeCompanyId,
-      }),
-    });
-    toast.success(t('companyProfile.toasts.companyDeleted'));
-    navigate('/dashboard/entreprise');
-  } catch (err) {
-    toast.error(err.message || t('companyProfile.toasts.deleteError'));
-  } finally {
-    setDeleting(false);
-  }
-};
+    setDeleting(true);
+    try {
+      await apiFetch('/api/company/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          company_id: activeCompanyId,
+        }),
+      });
+      toast.success(t('companyProfile.toasts.companyDeleted'));
+      navigate('/dashboard/entreprise');
+    } catch (err) {
+      toast.error(err.message || t('companyProfile.toasts.deleteError'));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -288,11 +300,10 @@ const handleDeleteCompany = async () => {
     );
   }
 
+  const phonePlaceholder = placeholderByCountry[selectedCountry] || t('companyProfile.placeholders.phone') || "50 00 00 00";
+
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20 pb-24 sm:pb-10" data-testid="company-profile-page">
-      {/* Injection du style pour PhoneInput */}
-      <style>{phoneInputStyles}</style>
-
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* En-tête avec bouton retour et bouton Enregistrer (desktop) */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -402,10 +413,8 @@ const handleDeleteCompany = async () => {
                     className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">{t('companyProfile.options.selectIndustry')}</option>
-                    {INDUSTRY_KEYS.map(key => (
-                      <option key={key} value={t(`industries.${key}`)}>
-                        {t(`industries.${key}`)}
-                      </option>
+                    {INDUSTRIES.map((ind, i) => (
+                      <option key={i} value={ind}>{ind}</option>
                     ))}
                   </select>
                 </div>
@@ -419,10 +428,8 @@ const handleDeleteCompany = async () => {
                     className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">{t('companyProfile.options.selectSize')}</option>
-                    {COMPANY_SIZE_KEYS.map(size => (
-                      <option key={size} value={size}>
-                        {t(`companyProfile.sizes.${size}`)}
-                      </option>
+                    {Object.entries(COMPANY_SIZES).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
                     ))}
                   </select>
                 </div>
@@ -454,20 +461,33 @@ const handleDeleteCompany = async () => {
                 </div>
               </div>
 
-              {/* Téléphone / Année de création */}
+              {/* Téléphone avec placeholder dynamique */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     <Phone className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.phone')}
                   </label>
-                  <PhoneInput
-                    international
-                    defaultCountry={selectedCountry || 'US'}
-                    value={form.phone}
-                    onChange={(value) => setForm({ ...form, phone: value || '' })}
-                    placeholder={t('companyProfile.placeholders.phone')}
-                    className="w-full"
-                  />
+                  <div className="flex items-stretch">
+                    <select
+                      value={selectedCountry || ''}
+                      onChange={(e) => setSelectedCountry(e.target.value)}
+                      className="h-10 min-h-[44px] px-2 border border-r-0 border-slate-200 rounded-l-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ minWidth: '90px' }}
+                    >
+                      {countries.map(c => (
+                        <option key={c.code} value={c.code}>
+                          {getFlagEmoji(c.code)} +{c.phone_code || '?'}
+                        </option>
+                      ))}
+                    </select>
+                    <Input
+                      type="tel"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      placeholder={phonePlaceholder}
+                      className="min-h-[44px] flex-1 rounded-l-none"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -485,7 +505,7 @@ const handleDeleteCompany = async () => {
                 </div>
               </div>
 
-              {/* Pays / Ville */}
+              {/* Pays (principal) et Ville */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -531,7 +551,7 @@ const handleDeleteCompany = async () => {
                 />
               </div>
 
-              {/* Bouton enregistrer dans le formulaire (visible sur mobile si l'utilisateur scroll) */}
+              {/* Bouton enregistrer */}
               <Button
                 type="submit"
                 className="w-full bg-blue-600 text-white hover:bg-blue-700 min-h-[44px]"

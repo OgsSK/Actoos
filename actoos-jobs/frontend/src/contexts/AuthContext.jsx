@@ -37,6 +37,9 @@ export const AuthProvider = ({ children }) => {
       candidate_profile: null,
       subscription_plan: 'free',
       hasCompanies: false,
+      // ✅ Valeurs par défaut pour éviter les déconnexions intempestives
+      is_active: true,
+      is_banned: false,
     };
   }, []);
 

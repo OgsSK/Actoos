@@ -10,10 +10,12 @@ import {
   Building2, MapPin, Users, Globe, Search, Briefcase, CheckCircle, Loader2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { usePreferencesContext } from '../contexts/PreferencesContext'; // ✅ import ajouté
 
 const CompaniesPage = () => {
   const { t } = useTranslation();
   const { isCompany, profile, signOut } = useAuth();
+  const { prefs } = usePreferencesContext(); // ✅ récupération des préférences (pays)
   const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +31,7 @@ const CompaniesPage = () => {
     }
   }, [profile, signOut, navigate]);
 
+  // Récupération des secteurs existants dans les entreprises
   useEffect(() => {
     const fetchIndustries = async () => {
       const { data, error } = await supabase
@@ -36,7 +39,7 @@ const CompaniesPage = () => {
         .select('industry')
         .eq('is_active', true)
         .not('industry', 'is', null);
-      
+
       if (!error && data) {
         const unique = [...new Set(data.map(c => c.industry).filter(Boolean))].sort();
         setIndustries(unique);
@@ -45,13 +48,25 @@ const CompaniesPage = () => {
     fetchIndustries();
   }, []);
 
+  // ✅ Chargement des entreprises filtré par pays (si défini)
   useEffect(() => {
     fetchCompanies();
-  }, [searchQuery, selectedIndustry]);
+  }, [searchQuery, selectedIndustry, prefs.country]); // on écoute aussi prefs.country
 
   const fetchCompanies = async () => {
     setLoading(true);
     try {
+      // 1. Récupérer l'ID du pays à partir du code préféré
+      let countryId = null;
+      if (prefs.country) {
+        const { data: country } = await supabase
+          .from('countries')
+          .select('id')
+          .eq('code', prefs.country)
+          .single();
+        countryId = country?.id || null;
+      }
+
       let query = supabase
         .from('companies')
         .select(`*, city:cities(name)`)
@@ -59,6 +74,11 @@ const CompaniesPage = () => {
         .eq('is_verified', true)
         .order('subscription_plan', { ascending: false })
         .order('name');
+
+      // ✅ Filtre par pays, si un pays est sélectionné
+      if (countryId) {
+        query = query.eq('country_id', countryId);
+      }
 
       if (searchQuery) {
         query = query.ilike('name', `%${searchQuery}%`);
@@ -72,13 +92,13 @@ const CompaniesPage = () => {
 
       if (data && data.length > 0) {
         const companyIds = data.map(c => c.id);
-        const now = new Date().toISOString();                     // ✅ date actuelle
+        const now = new Date().toISOString();
         const { data: activeJobs } = await supabase
           .from('jobs')
           .select('company_id')
           .in('company_id', companyIds)
           .eq('status', 'active')
-          .or(`expires_at.is.null,expires_at.gte.${now}`);       // ✅ exclut les offres expirées
+          .or(`expires_at.is.null,expires_at.gte.${now}`);
 
         const countMap = {};
         (activeJobs || []).forEach(row => {

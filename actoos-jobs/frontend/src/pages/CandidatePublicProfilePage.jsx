@@ -22,17 +22,14 @@ const CandidatePublicProfilePage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const from = searchParams.get('from'); // 'cv-bank' ou autre
+  const from = searchParams.get('from');
   const { user: currentUser, profile: currentProfile } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reporting, setReporting] = useState(false);
   const [suspended, setSuspended] = useState(false);
 
-  // Détermine l'URL de retour selon l'origine
   const backUrl = from === 'cv-bank' ? '/dashboard/entreprise/cv-bank' : '/dashboard/entreprise/candidatures';
-
-  console.log("CandidatePublicProfilePage - ID du candidat :", id);
 
   useEffect(() => {
     if (id) fetchProfile();
@@ -40,19 +37,15 @@ const CandidatePublicProfilePage = () => {
 
   const fetchProfile = async () => {
     const url = `/api/candidate/${id}`;
-    console.log("🔍 Appel à :", url);
     try {
       const data = await apiFetch(url);
-      console.log("✅ Réponse :", data);
       if (data.is_active === false || data.is_banned === true) {
-        console.log("⛔ Profil suspendu/banni");
         setSuspended(true);
         setProfile(null);
       } else {
         setProfile(data);
       }
     } catch (err) {
-      console.error("❌ Erreur chargement profil candidat:", err);
       toast.error(t('candidateProfile.notFound'));
     } finally {
       setLoading(false);
@@ -60,7 +53,6 @@ const CandidatePublicProfilePage = () => {
   };
 
   const isCurrentUserRestricted = !currentUser || !currentProfile?.is_active || currentProfile?.is_banned;
-  console.log("Utilisateur courant restreint ?", isCurrentUserRestricted);
 
   const handleReport = async () => {
     if (!currentUser) {
@@ -109,10 +101,14 @@ const CandidatePublicProfilePage = () => {
   }
   if (!profile) return <div className="pt-20 text-center">{t('candidateProfile.notFound')}</div>;
 
+  // Formatage du téléphone pour lien cliquable
+  const rawPhone = profile.phone || '';
+  const cleanPhone = rawPhone.replace(/\s/g, '');
+  const telLink = cleanPhone ? `tel:${cleanPhone}` : null;
+
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* ✅ Bouton retour intelligent */}
         <Link to={backUrl}>
           <Button variant="ghost" className="mb-6">
             <ChevronLeft className="w-4 h-4 mr-2" />
@@ -134,13 +130,32 @@ const CandidatePublicProfilePage = () => {
                   </div>
                   <div className="flex-1">
                     <h1 className="text-2xl font-bold text-slate-900">{profile.first_name} {profile.last_name}</h1>
-                    <p className="text-slate-600 flex items-center gap-2 mt-1"><Mail className="w-4 h-4" /> {profile.email}</p>
-                    {profile.phone && <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {profile.phone}</p>}
+                    
+                    {/* ✅ Email cliquable */}
+                    <p className="text-slate-600 flex items-center gap-2 mt-1">
+                      <Mail className="w-4 h-4" />
+                      <a href={`mailto:${profile.email}`} className="text-blue-600 hover:underline">
+                        {profile.email}
+                      </a>
+                    </p>
+                    
+                    {profile.phone && (
+                      <p className="text-slate-600 flex items-center gap-2 mt-1">
+                        <Phone className="w-4 h-4" />
+                        {telLink ? (
+                          <a href={telLink} className="text-blue-600 hover:underline font-mono">{profile.phone}</a>
+                        ) : (
+                          <span className="font-mono">{profile.phone}</span>
+                        )}
+                      </p>
+                    )}
                     {profile.city && <p className="text-slate-600 flex items-center gap-2 mt-1"><MapPin className="w-4 h-4" /> {profile.city}</p>}
                     
                     {profile.links?.length > 0 && (
                       <div className="mt-6">
-                        <h3 className="text-sm font-semibold text-slate-900 mb-3">{t('profile.links.title')}</h3>
+                        <h3 className="text-sm font-semibold text-slate-900 mb-3">
+                          {t('candidateProfilePage.links.sectionTitle', 'Liens')}
+                        </h3>
                         <div className="space-y-2">
                           {profile.links.map((link, index) => (
                             <a

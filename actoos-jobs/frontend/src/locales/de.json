@@ -2689,11 +2689,16 @@
     "selectAtLeastOneDoc": "Bitte wählen Sie mindestens einen Dokumenttyp aus",
       "requestDocuments": "Vorzulegende Dokumente",
       "sendDocumentRequest": "Dokumente anfordern",
+      "upgradeForNotesTitle": "🚀 Intelligente Recruiting-Tools freischalten",
+      "upgradeForNotesDesc": "Mit dem Pro- oder Business-Tarif generieren Sie automatisch relevante Interviewfragen, personalisierte Tipps und machen Notizen direkt in der App. Recruitieren Sie besser, schneller.",
+      "upgradeForInterviewTitle": "📅 Organisieren Sie Ihre Vorstellungsgespräche mühelos",
+      "upgradeForInterviewDesc": "Mit Pro- oder Business-Tarifen erstellen Sie Videokonferenz-Links mit einem Klick, versenden Einladungen automatisch und verwalten Ihre Calendly-Zeitfenster direkt in der App. Bieten Sie Ihren Kandidaten ein professionelles Erlebnis.",
+      "viewPlans": "Ich lege einen Gang zu →",
       "upgradeForNotes": "Interviewnotizen & KI‑Tools",
-    "upgradeForNotesDesc": "Steigen Sie auf den Pro‑ oder Business‑Tarif um, um Fragen, Antworten und Tipps zu generieren und Notizen zu erstellen.",
+    
     "upgradeForSchedule": "Terminplanung für Interviews",
     "upgradeForScheduleDesc": "Steigen Sie auf den Pro‑ oder Business‑Tarif um, um Interviews mit Calendly und Jitsi zu planen.",
-    "viewPlans": "Tarife ansehen",
+    
       "back": "Zurück",
       "notFound": "Bewerbung nicht gefunden.",
       "status": {

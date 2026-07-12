@@ -16,6 +16,7 @@ import {
   MapPin,
   Globe,
   Mail,
+  Phone,
   Users,
   ChevronLeft,
   Building2,
@@ -24,6 +25,8 @@ import {
   Banknote,
   AlertTriangle,
   CheckCircle,
+  Calendar,
+  MapPinned,
 } from 'lucide-react';
 
 import { toast } from 'sonner';
@@ -83,7 +86,6 @@ const CompanyDetailPage = () => {
   const [similarCompanies, setSimilarCompanies] = useState([]);
   const [similarLoading, setSimilarLoading] = useState(false);
 
-  // Statuts de candidature pour les offres affichées
   const [appliedStatuses, setAppliedStatuses] = useState({});
 
   useEffect(() => {
@@ -97,7 +99,6 @@ const CompanyDetailPage = () => {
     fetchJobs();
   }, [id]);
 
-  // Charger les statuts de candidature une fois les jobs récupérés
   useEffect(() => {
     if (!user || jobs.length === 0) {
       setAppliedStatuses({});
@@ -122,6 +123,7 @@ const CompanyDetailPage = () => {
         .select(`
           *,
           city:cities(name),
+          country:countries(code, name, phone_code),
           owner:users!owner_id(is_banned)
         `)
         .eq('id', id)
@@ -157,7 +159,7 @@ const CompanyDetailPage = () => {
         `)
         .eq('company_id', id)
         .eq('status', 'active')
-        .or(`expires_at.is.null,expires_at.gte.${now}`)   // ✅ exclut les offres expirées
+        .or(`expires_at.is.null,expires_at.gte.${now}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -169,7 +171,6 @@ const CompanyDetailPage = () => {
     }
   };
 
-  // Charger les entreprises similaires après le chargement de l'entreprise
   useEffect(() => {
     if (!company) return;
     setSimilarLoading(true);
@@ -203,7 +204,7 @@ const CompanyDetailPage = () => {
               .select('id', { count: 'exact', head: true })
               .eq('company_id', comp.id)
               .eq('status', 'active')
-              .or(`expires_at.is.null,expires_at.gte.${now}`);   // ✅ exclut les offres expirées
+              .or(`expires_at.is.null,expires_at.gte.${now}`);
             return { ...comp, jobs_count: count || 0 };
           })
         );
@@ -258,6 +259,11 @@ const CompanyDetailPage = () => {
     );
   }
 
+  // Construction du numéro de téléphone complet
+  const phoneCode = company.country?.phone_code || '';
+  const displayPhone = phoneCode && company.phone ? `+${phoneCode} ${company.phone}` : company.phone;
+  const telLink = phoneCode && company.phone ? `tel:+${phoneCode}${company.phone.replace(/\s/g, '')}` : (company.phone ? `tel:${company.phone}` : null);
+
   return (
     <div key={id} className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -302,11 +308,19 @@ const CompanyDetailPage = () => {
                   <Badge className="mt-3">{company.industry}</Badge>
                 )}
 
+                {/* Toutes les informations de contact */}
                 <div className="flex flex-wrap gap-4 mt-5 text-sm text-slate-600">
                   {company.city && (
                     <span className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
                       {company.city.name}
+                    </span>
+                  )}
+
+                  {company.country && (
+                    <span className="flex items-center gap-1">
+                      <MapPinned className="w-4 h-4" />
+                      {t(`countries.${company.country.code}`, company.country.name)}
                     </span>
                   )}
 
@@ -337,6 +351,34 @@ const CompanyDetailPage = () => {
                       <Mail className="w-4 h-4" />
                       {t('companyDetail.email')}
                     </a>
+                  )}
+
+                  {company.phone && (
+                    <span className="flex items-center gap-1">
+                      <Phone className="w-4 h-4" />
+                      {telLink ? (
+                        <a href={telLink} className="text-blue-600 hover:underline font-mono">
+                          {displayPhone}
+                        </a>
+                      ) : (
+                        <span className="font-mono">{displayPhone}</span>
+                      )}
+                    </span>
+                  )}
+
+                  {company.address && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      <span>{company.address}</span>
+                    </span>
+                  )}
+
+                  {company.founded_year && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {/* ✅ Utilisation de la clé déjà traduite companyProfile.labels.foundedYear */}
+                      {t('companyProfile.labels.foundedYear', 'Année de création')} : {company.founded_year}
+                    </span>
                   )}
                 </div>
 
@@ -369,6 +411,7 @@ const CompanyDetailPage = () => {
           </CardContent>
         </Card>
 
+        {/* Offres d'emploi */}
         <div className="mt-10">
           <h2 className="text-2xl font-bold text-slate-900 mb-6">
             {t('companyDetail.jobs')}{jobs.length > 0 && ` (${jobs.length})`}
@@ -435,7 +478,7 @@ const CompanyDetailPage = () => {
           )}
         </div>
 
-        {/* ENTREPRISES SIMILAIRES */}
+        {/* Entreprises similaires */}
         {similarLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />

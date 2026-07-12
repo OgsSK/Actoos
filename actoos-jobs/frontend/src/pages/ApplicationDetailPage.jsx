@@ -157,41 +157,33 @@ const ApplicationDetailPage = () => {
   const [generatingAnswers, setGeneratingAnswers] = useState(false);
   const [generatingTips, setGeneratingTips] = useState(false);
 
-  // Plan de l'entreprise active
   const [companyPlan, setCompanyPlan] = useState('free');
   const [planLoading, setPlanLoading] = useState(true);
 
-  // Documents du candidat
   const [candidateDocuments, setCandidateDocuments] = useState([]);
 
-  // Acceptation
   const [acceptMessage, setAcceptMessage] = useState('');
   const [showAcceptModal, setShowAcceptModal] = useState(false);
 
-  // Demande de documents
   const [selectedDocTypes, setSelectedDocTypes] = useState(['contract', 'id_card', 'diploma']);
   const [customDocFields, setCustomDocFields] = useState([]);
   const customDocIdRef = useRef(1);
   const [requestDocsMessage, setRequestDocsMessage] = useState('');
 
-  // Édition de demande
   const [showEditModal, setShowEditModal] = useState(false);
   const [editSelectedDocTypes, setEditSelectedDocTypes] = useState([]);
   const [editCustomDocFields, setEditCustomDocFields] = useState([]);
   const editDocIdRef = useRef(1);
   const [editMessage, setEditMessage] = useState('');
 
-  // Finalisation de l'embauche
   const [finalizeMessage, setFinalizeMessage] = useState('');
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [finalizingHiring, setFinalizingHiring] = useState(false);
 
-  // ✅ Notification des autres candidats
   const [notifyingOthers, setNotifyingOthers] = useState(false);
   const [showOtherCandidatesModal, setShowOtherCandidatesModal] = useState(false);
   const [otherCandidatesMessage, setOtherCandidatesMessage] = useState('');
 
-  // Récupération du plan
   useEffect(() => {
     if (!activeCompanyId) {
       setCompanyPlan('free');
@@ -552,35 +544,34 @@ Profil candidat :
   };
 
   const handleRejectDocument = async (docId, docType) => {
-  const reason = window.prompt(t('applicationDetail.rejectionReasonPrompt', 'Raison (optionnelle) :'));
-  if (reason === null) return; // annulé
+    const reason = window.prompt(t('applicationDetail.rejectionReasonPrompt', 'Raison (optionnelle) :'));
+    if (reason === null) return;
 
-  try {
-    const { error } = await supabase
-      .from('hiring_documents')
-      .update({ status: 'rejected' })
-      .eq('id', docId);
-    if (error) throw error;
+    try {
+      const { error } = await supabase
+        .from('hiring_documents')
+        .update({ status: 'rejected' })
+        .eq('id', docId);
+      if (error) throw error;
 
-    toast.success(t('applicationDetail.documentRejected'));
-    await reloadDocuments();
+      toast.success(t('applicationDetail.documentRejected'));
+      await reloadDocuments();
 
-    apiFetch('/api/notify-document-rejected', {
-      method: 'POST',
-      body: JSON.stringify({
-        candidate_email: application.candidate.email,
-        candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
-        document_type: docType,
-        reason: reason || '',
-        language: i18n.language,
-      }),
-    }).catch(console.error);
-  } catch (err) {
-    toast.error(err.message);
-  }
-};
+      apiFetch('/api/notify-document-rejected', {
+        method: 'POST',
+        body: JSON.stringify({
+          candidate_email: application.candidate.email,
+          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
+          document_type: docType,
+          reason: reason || '',
+          language: i18n.language,
+        }),
+      }).catch(console.error);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
 
-  // Finalisation de l'embauche
   const handleFinalizeHiring = async (message) => {
     setFinalizingHiring(true);
     try {
@@ -602,30 +593,28 @@ Profil candidat :
     }
   };
 
-  // ✅ Notification des autres candidats
- const handleNotifyOtherCandidates = async (message) => {
-  setNotifyingOthers(true);
-  try {
-    const res = await apiFetch('/api/notify-other-candidates', {
-      method: 'POST',
-      body: JSON.stringify({
-        application_id: application.id,
-        message: message,
-        language: i18n.language,
-      }),
-    });
-    // Toast traduit avec le nombre reçu
-    toast.success(
-      t('applicationDetail.othersNotified', { count: res.count }, `${res.count} candidat(s) notifié(s)`)
-    );
-    setOtherCandidatesMessage('');
-  } catch (err) {
-    toast.error(err.detail || err.message || t('common.error'));
-  } finally {
-    setNotifyingOthers(false);
-    setShowOtherCandidatesModal(false);
-  }
-};
+  const handleNotifyOtherCandidates = async (message) => {
+    setNotifyingOthers(true);
+    try {
+      const res = await apiFetch('/api/notify-other-candidates', {
+        method: 'POST',
+        body: JSON.stringify({
+          application_id: application.id,
+          message: message,
+          language: i18n.language,
+        }),
+      });
+      toast.success(
+        t('applicationDetail.othersNotified', { count: res.count }, `${res.count} candidat(s) notifié(s)`)
+      );
+      setOtherCandidatesMessage('');
+    } catch (err) {
+      toast.error(err.detail || err.message || t('common.error'));
+    } finally {
+      setNotifyingOthers(false);
+      setShowOtherCandidatesModal(false);
+    }
+  };
 
   const handleCreateMeeting = async () => {
     const room = customRoomName.trim() || `actoos-interview-${application.id}`;
@@ -706,18 +695,20 @@ Profil candidat :
     return labels[type] || type;
   };
 
-  // Barre de progression des documents
   const totalDocs = candidateDocuments.length;
   const validatedDocs = candidateDocuments.filter(d => d.status === 'validated').length;
   const progressPercent = totalDocs > 0 ? Math.round((validatedDocs / totalDocs) * 100) : 0;
   const allDocsValidated = totalDocs > 0 && candidateDocuments.every(d => d.status === 'validated');
+
+  const rawPhone = candidate?.phone || '';
+  const cleanPhone = rawPhone.replace(/\s/g, '');
+  const telLink = cleanPhone ? `tel:${cleanPhone}` : null;
 
   return (
     <div className="min-h-0 bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <Link to="/dashboard/entreprise/candidatures"><Button variant="ghost" className="mb-6"><ChevronLeft className="w-4 h-4 mr-2" />{t('applicationDetail.back')}</Button></Link>
 
-        {/* Badge recrutement finalisé */}
         {application.status === 'completed' && (
           <div className="bg-green-100 text-green-700 rounded-xl p-4 text-center mb-6">
             <CheckCircle className="w-8 h-8 mx-auto mb-2" />
@@ -726,7 +717,6 @@ Profil candidat :
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Colonne de gauche (profil + notes) */}
           <div className="md:col-span-2 space-y-6">
             <Card>
               <CardContent className="p-6 sm:p-8">
@@ -736,8 +726,10 @@ Profil candidat :
                   </div>
                   <div className="min-w-0">
                     <h1 className="text-2xl font-bold text-slate-900">{candidate?.first_name} {candidate?.last_name}</h1>
-                    <p className="text-slate-600 flex items-center gap-2 mt-1"><Mail className="w-4 h-4" /> {candidate?.email}</p>
-                    {candidate?.phone && <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {candidate.phone}</p>}
+                    <p className="text-slate-600 flex items-center gap-2 mt-1"><Mail className="w-4 h-4" /> <a href={`mailto:${candidate?.email}`} className="text-blue-600 hover:underline">{candidate?.email}</a></p>
+                    {candidate?.phone && (
+                      <p className="text-slate-600 flex items-center gap-2 mt-1"><Phone className="w-4 h-4" /> {telLink ? <a href={telLink} className="text-blue-600 hover:underline font-mono">{candidate.phone}</a> : <span className="font-mono">{candidate.phone}</span>}</p>
+                    )}
                     {candidate?.city?.name && <p className="text-slate-600 flex items-center gap-2 mt-1"><MapPin className="w-4 h-4" /> {candidate.city.name}</p>}
                     {candidate?.id && (
                       <Link to={`/candidat/${candidate.id}`} className="inline-flex items-center gap-1 mt-3 text-blue-600 hover:underline text-sm">
@@ -760,7 +752,7 @@ Profil candidat :
             {application.cover_letter && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.coverLetter')}</h2><p className="text-slate-600 whitespace-pre-wrap">{application.cover_letter}</p></CardContent></Card>}
             {candidateProfile?.cv_url && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.cv')}</h2><a href={candidateProfile.cv_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl hover:bg-blue-100"><FileText className="w-4 h-4" /> {t('applicationDetail.viewCV')}</a></CardContent></Card>}
 
-            {/* Bloc Notes */}
+            {/* Bloc Notes d'entretien (version Pro/Business) */}
             {isProOrBusiness ? (
               <Card>
                 <CardContent className="p-6">
@@ -811,7 +803,6 @@ Profil candidat :
               </Card>
             )}
 
-            {/* Demande de documents (personnalisable) */}
             {application.status === 'accepted' && (
               <Card>
                 <CardContent className="p-6">
@@ -832,7 +823,6 @@ Profil candidat :
                     </label>
                   </div>
 
-                  {/* Champs personnalisés avec bouton + */}
                   <div className="space-y-3 mb-4">
                     {customDocFields.map((field, index) => (
                       <div key={field.id} className="flex gap-2 items-center">
@@ -880,7 +870,6 @@ Profil candidat :
               </Card>
             )}
 
-            {/* Documents reçus */}
             {candidateDocuments.length > 0 && (
               <Card>
                 <CardContent className="p-4 sm:p-6">
@@ -945,7 +934,6 @@ Profil candidat :
               </Card>
             )}
 
-            {/* ✅ Finalisation de l'embauche */}
             {allDocsValidated && application.status === 'accepted' && (
               <Card className="border-green-200 bg-green-50/50">
                 <CardContent className="p-6">
@@ -967,7 +955,6 @@ Profil candidat :
               </Card>
             )}
 
-            {/* ✅ Notification des autres candidats (après finalisation) */}
             {application.status === 'completed' && (
               <Card className="border-slate-200 mt-4">
                 <CardContent className="p-4">
@@ -986,9 +973,9 @@ Profil candidat :
               </Card>
             )}
 
-            {/* Section Entretien */}
+            {/* Section Planifier un entretien (Jitsi uniquement, sans Calendly) */}
             {isProOrBusiness && application.status !== 'completed' ? (
-              <Card><CardContent className="p-6"><h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" />{t('applicationDetail.scheduleInterview')}</h3><div className="space-y-6"><div><div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span><h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step1ChooseSlot')}</h4></div><div className="flex flex-wrap gap-2 ml-8"><a href="https://calendly.com/actoos/entretien" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700"><Calendar className="w-4 h-4" />{t('applicationDetail.openCalendly')}</a><Button variant="outline" size="sm" onClick={() => handleSendEmail('calendly')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" />{t('applicationDetail.sendEmail')}</Button></div></div><div><div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span><h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step2CreateLink')}</h4></div><div className="ml-8 space-y-3">{application.meeting_link ? (<><div className="bg-blue-50 rounded-xl p-3 text-sm break-all"><a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">{application.meeting_link}</a></div><div className="flex flex-wrap gap-2"><a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-green-700"><Video className="w-4 h-4" />{t('applicationDetail.joinMeeting')}</a><Button variant="outline" size="sm" onClick={() => handleSendEmail('jitsi')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" />{t('applicationDetail.sendEmail')}</Button></div><input type="text" placeholder={t('applicationDetail.newRoomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" /><div className="flex flex-wrap gap-2"><button type="button" disabled={updating} onClick={handleCreateMeeting} className="flex-1 min-w-0 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 overflow-hidden"><RefreshCw className="w-4 h-4 shrink-0" /><span className="btn-marquee flex-1 min-w-0"><span>{t('applicationDetail.updateLink')}</span></span></button><Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteMeeting} disabled={updating}><Trash2 className="w-4 h-4" />{t('applicationDetail.deleteLink')}</Button></div></>) : (<><input type="text" placeholder={t('applicationDetail.roomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" /><Button variant="outline" className="w-full" onClick={handleCreateMeeting} disabled={updating}>{updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Video className="w-4 h-4 mr-2" />}{t('applicationDetail.generateJitsiLink')}</Button></>)}</div></div></div></CardContent></Card>
+              <Card><CardContent className="p-6"><h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" />{t('applicationDetail.scheduleInterview')}</h3><div className="space-y-6"><div><div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span><h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step2CreateLink')}</h4></div><div className="ml-8 space-y-3">{application.meeting_link ? (<><div className="bg-blue-50 rounded-xl p-3 text-sm break-all"><a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">{application.meeting_link}</a></div><div className="flex flex-wrap gap-2"><a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-green-700"><Video className="w-4 h-4" />{t('applicationDetail.joinMeeting')}</a><Button variant="outline" size="sm" onClick={() => handleSendEmail('jitsi')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" />{t('applicationDetail.sendEmail')}</Button></div><input type="text" placeholder={t('applicationDetail.newRoomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" /><div className="flex flex-wrap gap-2"><button type="button" disabled={updating} onClick={handleCreateMeeting} className="flex-1 min-w-0 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 overflow-hidden"><RefreshCw className="w-4 h-4 shrink-0" /><span className="btn-marquee flex-1 min-w-0"><span>{t('applicationDetail.updateLink')}</span></span></button><Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteMeeting} disabled={updating}><Trash2 className="w-4 h-4" />{t('applicationDetail.deleteLink')}</Button></div></>) : (<><input type="text" placeholder={t('applicationDetail.roomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" /><Button variant="outline" className="w-full" onClick={handleCreateMeeting} disabled={updating}>{updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Video className="w-4 h-4 mr-2" />}{t('applicationDetail.generateJitsiLink')}</Button></>)}</div></div></div></CardContent></Card>
             ) : isProOrBusiness ? (
               <Card className="border-green-200 bg-green-50/50"><CardContent className="p-6 text-center"><CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" /><p className="font-semibold text-green-900">{t('applicationDetail.recruitmentCompleted', 'Recrutement finalisé')}</p></CardContent></Card>
             ) : null}
@@ -996,7 +983,6 @@ Profil candidat :
         </div>
       </div>
 
-      {/* Modal d'acceptation */}
       {showAcceptModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
@@ -1010,7 +996,6 @@ Profil candidat :
         </div>
       )}
 
-      {/* Modal de finalisation */}
       {showFinalizeModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
@@ -1044,7 +1029,6 @@ Profil candidat :
         </div>
       )}
 
-      {/* Modal de notification des autres candidats */}
       {showOtherCandidatesModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
@@ -1075,7 +1059,6 @@ Profil candidat :
         </div>
       )}
 
-      {/* Modal d'édition de la demande */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
@@ -1085,7 +1068,6 @@ Profil candidat :
               <label className="flex items-center gap-2"><input type="checkbox" checked={editSelectedDocTypes.includes('id_card')} onChange={(e) => e.target.checked ? setEditSelectedDocTypes([...editSelectedDocTypes, 'id_card']) : setEditSelectedDocTypes(editSelectedDocTypes.filter(t => t !== 'id_card'))} /><span className="text-sm">{t('applicationDetail.docTypes.id_card', "Pièce d'identité")}</span></label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={editSelectedDocTypes.includes('diploma')} onChange={(e) => e.target.checked ? setEditSelectedDocTypes([...editSelectedDocTypes, 'diploma']) : setEditSelectedDocTypes(editSelectedDocTypes.filter(t => t !== 'diploma'))} /><span className="text-sm">{t('applicationDetail.docTypes.diploma', 'Diplôme')}</span></label>
             </div>
-
             <div className="space-y-3 mb-4">
               {editCustomDocFields.map((field, index) => (
                 <div key={field.id} className="flex gap-2 items-center">
@@ -1095,7 +1077,6 @@ Profil candidat :
               ))}
               <Button variant="outline" size="sm" className="w-full" onClick={() => { const id = editDocIdRef.current++; setEditCustomDocFields(prev => [...prev, { id, value: '' }]); }}><Plus className="w-4 h-4 mr-2" />{t('applicationDetail.addDocument')}</Button>
             </div>
-
             <textarea value={editMessage} onChange={(e) => setEditMessage(e.target.value)} className="w-full border border-slate-200 rounded-lg p-3 text-sm mb-4" rows={3} placeholder={t('applicationDetail.documentRequestMessagePlaceholder')} />
             <div className="flex gap-2 justify-end">
               <Button variant="ghost" onClick={() => setShowEditModal(false)}>{t('common.cancel', 'Annuler')}</Button>

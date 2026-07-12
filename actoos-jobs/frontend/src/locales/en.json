@@ -2582,11 +2582,16 @@
     "selectAtLeastOneDoc": "Please select at least one document type",
       "requestDocuments": "Documents to provide",
       "sendDocumentRequest": "Request documents",
+      "upgradeForNotesTitle": "🚀 Unlock smart recruitment tools",
+      "upgradeForNotesDesc": "With the Pro or Business plan, automatically generate relevant interview questions, personalised tips, and take notes directly in the app. Recruit better, faster.",
+      "upgradeForInterviewTitle": "📅 Schedule your interviews effortlessly",
+      "upgradeForInterviewDesc": "With Pro or Business plans, create video conference links in one click, send invitations automatically, and manage your Calendly slots from the app. Offer a professional experience to your candidates.",
+      "viewPlans": "I step up a gear →",
       "upgradeForNotes": "Interview notes & AI tools",
-    "upgradeForNotesDesc": "Upgrade to the Pro or Business plan to generate questions, answers and tips, and take notes.",
+    
     "upgradeForSchedule": "Interview scheduling",
     "upgradeForScheduleDesc": "Upgrade to the Pro or Business plan to schedule interviews with Calendly and Jitsi.",
-    "viewPlans": "View plans",
+    
       "back": "Back",
       "notFound": "Application not found.",
       "status": {

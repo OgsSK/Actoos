@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
@@ -11,7 +12,6 @@ import { Badge } from '../components/ui/badge';
 import AIAssistant from '../components/AIAssistant';
 import EditableLinks from '../components/EditableLinks';
 import { toast } from 'sonner';
-import PhoneInput from 'react-phone-number-input';
 
 import {
   User, Briefcase, FileText, GraduationCap, Award,
@@ -21,49 +21,97 @@ import {
 } from 'lucide-react';
 import { cn, EXPERIENCE_LEVELS } from '../lib/utils';
 
-// ---------- Style injecté pour PhoneInput ----------
-const phoneInputStyles = `
-.PhoneInput {
-  display: flex;
-  align-items: center;
-  height: 44px;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  padding: 0 12px;
-  background-color: white;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.PhoneInput:focus-within {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
-}
-.PhoneInputCountry {
-  display: flex;
-  align-items: center;
-  margin-right: 8px;
-}
-.PhoneInputCountryIcon {
-  width: 1.2em;
-  height: 1.2em;
-}
-.PhoneInputCountrySelect {
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-.PhoneInputInput {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 0.875rem;
-  color: #334155;
-  background: transparent;
-  padding-left: 4px;
-}
-.PhoneInputInput::placeholder {
-  color: #94a3b8;
-}
-`;
+// ---------- Drapeau emoji ----------
+const getFlagEmoji = (countryCode) => {
+  if (!countryCode) return '';
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt());
+  return String.fromCodePoint(...codePoints);
+};
+
+// Placeholders par pays (numéro local, sans indicatif)
+const placeholderByCountry = {
+  'US': '555 000 0000',
+  'CA': '555 000 0000',
+  'FR': '6 12 34 56 78',
+  'CI': '05 00 00 00',
+  'SN': '70 123 45 67',
+  'ML': '70 00 00 00',
+  'BF': '70 00 00 00',
+  'NE': '90 00 00 00',
+  'TG': '90 00 00 00',
+  'BJ': '90 00 00 00',
+  'CM': '6 12 34 56 78',
+  'GA': '01 23 45 67',
+  'CG': '01 23 45 67',
+  'CD': '81 000 00 00',
+  'NG': '801 234 5678',
+  'GH': '50 123 4567',
+  'ZA': '82 123 4567',
+  'KE': '712 345 678',
+  'UG': '712 345 678',
+  'TZ': '712 345 678',
+  'RW': '788 000 000',
+  'BI': '79 000 000',
+  'MA': '06 12 34 56 78',
+  'DZ': '0550 12 34 56',
+  'TN': '20 123 456',
+  'EG': '10 1234 5678',
+  'SA': '50 000 0000',
+  'AE': '50 000 0000',
+  'UK': '7700 900 000',
+  'GB': '7700 900 000',
+  'DE': '1512 3456789',
+  'IT': '312 345 6789',
+  'ES': '612 34 56 78',
+  'PT': '912 345 678',
+  'NL': '06 12345678',
+  'BE': '470 12 34 56',
+  'CH': '76 123 45 67',
+  'AT': '664 123456',
+  'IN': '98765 43210',
+  'CN': '138 0000 0000',
+  'JP': '090 1234 5678',
+  'KR': '010 1234 5678',
+  'AU': '412 345 678',
+  'NZ': '21 123 4567',
+  'BR': '11 91234 5678',
+  'AR': '11 1234 5678',
+  'MX': '55 1234 5678',
+};
+
+// Longueurs maximales du numéro local (sans indicatif) pour quelques pays
+const maxLocalLengthByCode = {
+  'US': 10, 'CA': 10, 'FR': 9, 'CI': 8, 'SN': 7, 'BF': 8, 'ML': 8, 'NE': 8,
+  'TG': 8, 'BJ': 8, 'CM': 8, 'GA': 7, 'CG': 7, 'CD': 7, 'CF': 7, 'TD': 7,
+  'GQ': 7, 'NG': 7, 'GH': 7, 'LR': 7, 'SL': 7, 'GM': 7, 'GW': 7, 'GN': 7,
+  'MA': 9, 'DZ': 9, 'TN': 8, 'LY': 9, 'EG': 9, 'SD': 9, 'SS': 9, 'ET': 9,
+  'ER': 7, 'DJ': 7, 'SO': 7, 'KE': 9, 'UG': 9, 'RW': 9, 'BI': 8, 'TZ': 9,
+  'AO': 9, 'ZM': 9, 'MW': 9, 'MZ': 9, 'ZW': 9, 'BW': 9, 'NA': 9, 'ZA': 9,
+  'LS': 9, 'SZ': 9, 'MG': 9, 'MU': 7, 'SC': 7, 'KM': 7, 'CV': 7, 'ST': 7,
+};
+
+// Extraction numéro local
+const extractPhoneInfo = (fullPhone, countries) => {
+  if (!fullPhone || !fullPhone.startsWith('+')) return { local: fullPhone, countryCode: null };
+  let bestMatch = null;
+  for (const c of countries) {
+    if (c.phone_code && fullPhone.startsWith(`+${c.phone_code}`)) {
+      if (!bestMatch || c.phone_code.length > bestMatch.phone_code.length) {
+        bestMatch = c;
+      }
+    }
+  }
+  if (bestMatch) {
+    return {
+      local: fullPhone.slice(bestMatch.phone_code.length + 1).trim(),
+      countryCode: bestMatch.code,
+    };
+  }
+  return { local: fullPhone, countryCode: null };
+};
 
 // ---------- Section Header ----------
 const SectionHeader = ({ icon: Icon, title, description, action }) => (
@@ -460,6 +508,7 @@ const CvAnalysisModal = ({ isOpen, onClose, cvText, onTextChange, onAnalyze, ana
 const CandidateProfilePage = () => {
   const { t, i18n } = useTranslation();
   const { user, profile, updateProfile, refreshProfile } = useAuth();
+  const { prefs } = usePreferencesContext();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const photoInputRef = useRef(null);
@@ -467,12 +516,14 @@ const CandidateProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [cities, setCities] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [selectedPhoneCountry, setSelectedPhoneCountry] = useState(prefs.country || 'US');
   const [errors, setErrors] = useState({});
 
   const [personalInfo, setPersonalInfo] = useState({
     first_name: '',
     last_name: '',
-    phone: '',
+    phone: '',        // numéro local uniquement
     city_id: '',
     avatar_url: '',
   });
@@ -520,7 +571,16 @@ const CandidateProfilePage = () => {
       setCities(data || []);
     };
     fetchCities();
+    fetchCountries();
   }, []);
+
+  const fetchCountries = async () => {
+    const { data } = await supabase
+      .from('countries')
+      .select('code, name, phone_code')
+      .order('name');
+    setCountries(data || []);
+  };
 
   useEffect(() => {
     if (user) {
@@ -529,15 +589,21 @@ const CandidateProfilePage = () => {
     }
   }, [user]);
 
+  // Extraction du téléphone une fois pays et profil chargés
   useEffect(() => {
-    if (profile) {
+    if (profile && countries.length > 0) {
+      const { local, countryCode } = extractPhoneInfo(profile.phone || '', countries);
+
       setPersonalInfo({
         first_name: profile.first_name || '',
         last_name: profile.last_name || '',
-        phone: profile.phone || '',
+        phone: local,
         city_id: profile.city_id || '',
         avatar_url: profile.avatar_url || '',
       });
+
+      if (countryCode) setSelectedPhoneCountry(countryCode);
+      else setSelectedPhoneCountry(prefs.country || 'US');
 
       const cp = profile.candidate_profile || {};
       setCandidateInfo({
@@ -557,7 +623,7 @@ const CandidateProfilePage = () => {
       setEducation(cp.education || []);
       setCvUrl(cp.cv_url || '');
     }
-  }, [profile]);
+  }, [profile, countries, prefs.country]);
 
   const fetchLinks = async () => {
     if (!user) return;
@@ -792,9 +858,19 @@ const CandidateProfilePage = () => {
       return;
     }
 
+    // Reconstruction du numéro international complet
+    const selectedCountryData = countries.find(c => c.code === selectedPhoneCountry);
+    const phoneCode = selectedCountryData?.phone_code || '';
+    const fullPhone = phoneCode && personalInfo.phone ? `+${phoneCode} ${personalInfo.phone}` : personalInfo.phone;
+
     setSaving(true);
     try {
-      const cleanedPersonalInfo = { ...personalInfo, email: user.email, city_id: personalInfo.city_id || null };
+      const cleanedPersonalInfo = {
+        ...personalInfo,
+        email: user.email,
+        city_id: personalInfo.city_id || null,
+        phone: fullPhone,  // numéro complet sauvegardé
+      };
       await updateProfile(cleanedPersonalInfo);
 
       const { error } = await supabase.from('candidate_profiles').upsert({
@@ -827,11 +903,12 @@ const CandidateProfilePage = () => {
     }
   };
 
+  // Déterminer la longueur maximale du numéro local
+  const maxLocalLength = maxLocalLengthByCode[selectedPhoneCountry] || 15;
+  const phonePlaceholder = placeholderByCountry[selectedPhoneCountry] || t('candidateProfilePage.personalInfo.phonePlaceholder') || 'Numéro local';
+
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20 pb-24 sm:pb-10">
-      {/* Injection du style pour PhoneInput */}
-      <style>{phoneInputStyles}</style>
-
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* En-tête responsive */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -922,16 +999,36 @@ const CandidateProfilePage = () => {
                     className={cn('min-h-[44px]', errors.last_name ? 'border-red-500 focus-visible:ring-red-500' : '')}
                   />
                 </div>
+                {/* Téléphone avec sélecteur de pays + maxLength */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.personalInfo.phone')}</label>
-                  <PhoneInput
-                    international
-                    defaultCountry="US"
-                    value={personalInfo.phone}
-                    onChange={(value) => setPersonalInfo({ ...personalInfo, phone: value || '' })}
-                    placeholder={t('candidateProfilePage.personalInfo.phonePlaceholder')}
-                    className="w-full"
-                  />
+                  <div className="flex items-stretch">
+                    <select
+                      value={selectedPhoneCountry}
+                      onChange={(e) => setSelectedPhoneCountry(e.target.value)}
+                      className="h-10 min-h-[44px] px-2 border border-r-0 border-slate-200 rounded-l-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ minWidth: '90px' }}
+                    >
+                      {countries.map(c => (
+                        <option key={c.code} value={c.code}>
+                          {getFlagEmoji(c.code)} +{c.phone_code || '?'}
+                        </option>
+                      ))}
+                    </select>
+                    <Input
+                      type="tel"
+                      value={personalInfo.phone}
+                      onChange={(e) => {
+                        // Limiter la longueur côté client
+                        if (e.target.value.replace(/\D/g, '').length <= maxLocalLength) {
+                          setPersonalInfo({ ...personalInfo, phone: e.target.value });
+                        }
+                      }}
+                      placeholder={phonePlaceholder}
+                      className="min-h-[44px] flex-1 rounded-l-none"
+                      maxLength={maxLocalLength + 3} // +3 pour les espaces éventuels
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.personalInfo.city')}</label>
@@ -1404,20 +1501,14 @@ const CandidateProfilePage = () => {
 
       <ExperienceModal
         isOpen={showExpModal}
-        onClose={() => {
-          setShowExpModal(false);
-          setEditingExp(null);
-        }}
+        onClose={() => { setShowExpModal(false); setEditingExp(null); }}
         onSave={handleSaveExperience}
         experience={editingExp}
         t={t}
       />
       <EducationModal
         isOpen={showEduModal}
-        onClose={() => {
-          setShowEduModal(false);
-          setEditingEdu(null);
-        }}
+        onClose={() => { setShowEduModal(false); setEditingEdu(null); }}
         onSave={handleSaveEducation}
         education={editingEdu}
         t={t}

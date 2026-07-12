@@ -1430,8 +1430,9 @@ async def get_candidate_public_profile(candidate_id: str):
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
+        # ✅ Ajout du champ phone dans la sélection
         user_resp = httpx.get(
-            f"{supabase_url}/rest/v1/users?id=eq.{candidate_id}&select=id,email,first_name,last_name,avatar_url,is_active,is_banned",
+            f"{supabase_url}/rest/v1/users?id=eq.{candidate_id}&select=id,email,first_name,last_name,phone,avatar_url,is_active,is_banned",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         users = user_resp.json()
@@ -1461,6 +1462,7 @@ async def get_candidate_public_profile(candidate_id: str):
             "email": user.get("email"),
             "first_name": user.get("first_name") or "",
             "last_name": user.get("last_name") or "",
+            "phone": user.get("phone"),          # ✅ Ajouté
             "avatar_url": user.get("avatar_url"),
             "is_active": user.get("is_active"),
             "is_banned": user.get("is_banned"),

@@ -10,7 +10,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import {
   Loader2, Search, MapPin, Briefcase, Clock, Filter, ChevronLeft, ChevronRight,
-  Crown, Download, DollarSign, BookOpen, X
+  Crown, Download, DollarSign, BookOpen, X, Phone
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -247,6 +247,10 @@ const CandidateBankPage = () => {
                 const fullName = `${c.user?.first_name || ''} ${c.user?.last_name || ''}`.trim();
                 const lastExperience = c.experience?.length > 0 ? c.experience[0] : null;
                 const lastEducation = c.education?.length > 0 ? c.education[0] : null;
+                const phone = c.user?.phone;
+                // Lien téléphone cliquable si présent
+                const telLink = phone ? `tel:${phone.replace(/\s/g, '')}` : null;
+
                 return (
                   <Link key={c.user_id} to={`/candidat/${c.user_id}?from=cv-bank`} className="block group">
                     <Card className="hover:shadow-lg transition-shadow h-full flex flex-col">
@@ -265,6 +269,23 @@ const CandidateBankPage = () => {
                             {c.city && (
                               <span className="flex items-center gap-1 text-sm text-slate-500 mt-1">
                                 <MapPin className="w-3 h-3" />{c.city.name}
+                              </span>
+                            )}
+                            {/* Affichage du téléphone */}
+                            {phone && (
+                              <span className="flex items-center gap-1 text-sm text-slate-500 mt-1">
+                                <Phone className="w-3 h-3" />
+                                {telLink ? (
+                                  <a
+                                    href={telLink}
+                                    onClick={(e) => e.stopPropagation()} // éviter la navigation vers le profil
+                                    className="text-blue-600 hover:underline font-mono text-xs"
+                                  >
+                                    {phone}
+                                  </a>
+                                ) : (
+                                  <span className="text-slate-600 text-xs font-mono">{phone}</span>
+                                )}
                               </span>
                             )}
                           </div>
