@@ -153,7 +153,6 @@ const CandidateBankPage = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{t('candidateBank.title')}</h1>
               <p className="text-slate-600 mt-1">{t('candidateBank.subtitle')}</p>
             </div>
-            {/* Bouton de bascule des filtres (mobile uniquement) */}
             <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="w-full sm:w-auto lg:hidden min-h-[44px]">
               <Filter className="w-4 h-4 mr-2" />
               {showFilters ? t('common.hideFilters') : t('common.showFilters')}
@@ -173,7 +172,7 @@ const CandidateBankPage = () => {
         </div>
 
         <div className="lg:flex lg:gap-6">
-          {/* Filtres – colonne latérale sur desktop */}
+          {/* Filtres (colonne latérale desktop) */}
           <div className={`lg:w-64 lg:shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
             <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 mb-6 lg:mb-0">
               <div className="flex justify-between items-center mb-4 lg:hidden">
@@ -254,7 +253,7 @@ const CandidateBankPage = () => {
                       <Link key={c.user_id} to={`/candidat/${c.user_id}?from=cv-bank`} className="block group">
                         <Card className="hover:shadow-lg transition-shadow h-full flex flex-col">
                           <CardContent className="p-4 sm:p-6 flex-1 flex flex-col min-w-0">
-                            {/* En-tête profil */}
+                            {/* Profil */}
                             <div className="flex items-start gap-4 mb-4 min-w-0">
                               <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden shrink-0">
                                 {c.user?.avatar_url ? (
@@ -267,13 +266,13 @@ const CandidateBankPage = () => {
                                 <h3 className="font-semibold text-slate-900 truncate group-hover:text-blue-600">{fullName}</h3>
                                 {c.title && <p className="text-sm text-slate-500 truncate">{c.title}</p>}
                                 {c.city && (
-                                  <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
+                                  <div className="flex items-center gap-1 text-sm text-slate-500 mt-1 min-w-0">
                                     <MapPin className="w-3 h-3 shrink-0" />
                                     <span className="truncate">{c.city.name}</span>
                                   </div>
                                 )}
                                 {phone && (
-                                  <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
+                                  <div className="flex items-center gap-1 text-sm text-slate-500 mt-1 min-w-0">
                                     <Phone className="w-3 h-3 shrink-0" />
                                     {telLink ? (
                                       <a
@@ -303,22 +302,22 @@ const CandidateBankPage = () => {
                               </div>
                             )}
 
-                            {/* Expérience, formation, salaire */}
+                            {/* Infos détaillées */}
                             <div className="text-sm text-slate-600 space-y-2 mt-auto min-w-0">
                               {lastExperience && (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
                                   <Clock className="w-4 h-4 text-slate-400 shrink-0" />
                                   <div className="truncate">{lastExperience.title} – {lastExperience.company}</div>
                                 </div>
                               )}
                               {lastEducation && (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
                                   <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
                                   <div className="truncate">{lastEducation.title} – {lastEducation.school || lastEducation.institution}</div>
                                 </div>
                               )}
                               {c.desired_salary_min || c.desired_salary_max ? (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
                                   <DollarSign className="w-4 h-4 text-slate-400 shrink-0" />
                                   <div className="truncate">
                                     {c.desired_salary_min ? `${c.desired_salary_min.toLocaleString()} FCFA` : ''}
@@ -329,7 +328,7 @@ const CandidateBankPage = () => {
                               ) : null}
                             </div>
 
-                            {/* Disponibilité + téléchargement CV */}
+                            {/* Disponibilité + CV */}
                             <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
                               <div className="flex items-center gap-2">
                                 {c.is_available ? (
