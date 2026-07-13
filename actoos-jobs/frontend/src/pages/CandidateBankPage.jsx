@@ -172,7 +172,7 @@ const CandidateBankPage = () => {
         </div>
 
         <div className="lg:flex lg:gap-6">
-          {/* Filtres (colonne latérale desktop) */}
+          {/* Filtres */}
           <div className={`lg:w-64 lg:shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
             <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 mb-6 lg:mb-0">
               <div className="flex justify-between items-center mb-4 lg:hidden">
@@ -250,8 +250,8 @@ const CandidateBankPage = () => {
                     const telLink = phone ? `tel:${phone.replace(/\s/g, '')}` : null;
 
                     return (
-                      <Link key={c.user_id} to={`/candidat/${c.user_id}?from=cv-bank`} className="block group">
-                        <Card className="hover:shadow-lg transition-shadow h-full flex flex-col">
+                      <Link key={c.user_id} to={`/candidat/${c.user_id}?from=cv-bank`} className="block group min-w-0">
+                        <Card className="hover:shadow-lg transition-shadow h-full flex flex-col overflow-hidden">
                           <CardContent className="p-4 sm:p-6 flex-1 flex flex-col min-w-0">
                             {/* Profil */}
                             <div className="flex items-start gap-4 mb-4 min-w-0">
@@ -302,7 +302,7 @@ const CandidateBankPage = () => {
                               </div>
                             )}
 
-                            {/* Infos détaillées */}
+                            {/* Expérience, formation, salaire */}
                             <div className="text-sm text-slate-600 space-y-2 mt-auto min-w-0">
                               {lastExperience && (
                                 <div className="flex items-center gap-2 min-w-0">
