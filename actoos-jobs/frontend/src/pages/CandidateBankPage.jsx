@@ -41,14 +41,12 @@ const CandidateBankPage = () => {
   const [cities, setCities] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Chargement des villes
   useEffect(() => {
     supabase.from('cities').select('id, name').order('name').then(({ data }) => {
       if (data) setCities(data);
     });
   }, []);
 
-  // Récupération du plan
   useEffect(() => {
     if (!activeCompanyId) {
       setCompanyPlan('free');
@@ -155,7 +153,7 @@ const CandidateBankPage = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{t('candidateBank.title')}</h1>
               <p className="text-slate-600 mt-1">{t('candidateBank.subtitle')}</p>
             </div>
-            {/* Bouton pour mobile (toggle des filtres) */}
+            {/* Bouton de bascule des filtres (mobile uniquement) */}
             <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="w-full sm:w-auto lg:hidden min-h-[44px]">
               <Filter className="w-4 h-4 mr-2" />
               {showFilters ? t('common.hideFilters') : t('common.showFilters')}
@@ -163,7 +161,7 @@ const CandidateBankPage = () => {
           </div>
         </div>
 
-        {/* Barre de recherche (toujours visible) */}
+        {/* Barre de recherche */}
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <Input
@@ -175,7 +173,7 @@ const CandidateBankPage = () => {
         </div>
 
         <div className="lg:flex lg:gap-6">
-          {/* Filtres : version mobile (toggle) et version desktop (colonne latérale) */}
+          {/* Filtres – colonne latérale sur desktop */}
           <div className={`lg:w-64 lg:shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
             <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 mb-6 lg:mb-0">
               <div className="flex justify-between items-center mb-4 lg:hidden">
@@ -227,7 +225,6 @@ const CandidateBankPage = () => {
 
           {/* Résultats */}
           <div className="flex-1 min-w-0">
-            {/* Tri et compteur */}
             <div className="flex justify-between items-center mb-4">
               <p className="text-sm text-slate-500">{totalCount} {t('candidateBank.candidatesFound')}</p>
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="h-10 border border-slate-200 rounded-lg px-3 text-sm">
@@ -256,8 +253,9 @@ const CandidateBankPage = () => {
                     return (
                       <Link key={c.user_id} to={`/candidat/${c.user_id}?from=cv-bank`} className="block group">
                         <Card className="hover:shadow-lg transition-shadow h-full flex flex-col">
-                          <CardContent className="p-4 sm:p-6 flex-1 flex flex-col">
-                            <div className="flex items-start gap-4 mb-4">
+                          <CardContent className="p-4 sm:p-6 flex-1 flex flex-col min-w-0">
+                            {/* En-tête profil */}
+                            <div className="flex items-start gap-4 mb-4 min-w-0">
                               <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden shrink-0">
                                 {c.user?.avatar_url ? (
                                   <img src={c.user.avatar_url} alt={fullName} className="w-full h-full object-cover" />
@@ -269,29 +267,31 @@ const CandidateBankPage = () => {
                                 <h3 className="font-semibold text-slate-900 truncate group-hover:text-blue-600">{fullName}</h3>
                                 {c.title && <p className="text-sm text-slate-500 truncate">{c.title}</p>}
                                 {c.city && (
-                                  <span className="flex items-center gap-1 text-sm text-slate-500 mt-1">
-                                    <MapPin className="w-3 h-3" />{c.city.name}
-                                  </span>
+                                  <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
+                                    <MapPin className="w-3 h-3 shrink-0" />
+                                    <span className="truncate">{c.city.name}</span>
+                                  </div>
                                 )}
                                 {phone && (
-                                  <span className="flex items-center gap-1 text-sm text-slate-500 mt-1">
-                                    <Phone className="w-3 h-3" />
+                                  <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
+                                    <Phone className="w-3 h-3 shrink-0" />
                                     {telLink ? (
                                       <a
                                         href={telLink}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="text-blue-600 hover:underline font-mono text-xs"
+                                        className="text-blue-600 hover:underline font-mono text-xs truncate"
                                       >
                                         {phone}
                                       </a>
                                     ) : (
-                                      <span className="text-slate-600 text-xs font-mono">{phone}</span>
+                                      <span className="text-slate-600 text-xs font-mono truncate">{phone}</span>
                                     )}
-                                  </span>
+                                  </div>
                                 )}
                               </div>
                             </div>
 
+                            {/* Compétences */}
                             {c.skills?.length > 0 && (
                               <div className="flex flex-wrap gap-2 mb-4">
                                 {c.skills.slice(0, 5).map(skill => (
@@ -303,31 +303,33 @@ const CandidateBankPage = () => {
                               </div>
                             )}
 
-                            <div className="text-sm text-slate-600 space-y-2 mt-auto">
+                            {/* Expérience, formation, salaire */}
+                            <div className="text-sm text-slate-600 space-y-2 mt-auto min-w-0">
                               {lastExperience && (
                                 <div className="flex items-center gap-2">
                                   <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                                  <span className="truncate">{lastExperience.title} – {lastExperience.company}</span>
+                                  <div className="truncate">{lastExperience.title} – {lastExperience.company}</div>
                                 </div>
                               )}
                               {lastEducation && (
                                 <div className="flex items-center gap-2">
                                   <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
-                                  <span className="truncate">{lastEducation.title} – {lastEducation.school || lastEducation.institution}</span>
+                                  <div className="truncate">{lastEducation.title} – {lastEducation.school || lastEducation.institution}</div>
                                 </div>
                               )}
                               {c.desired_salary_min || c.desired_salary_max ? (
                                 <div className="flex items-center gap-2">
                                   <DollarSign className="w-4 h-4 text-slate-400 shrink-0" />
-                                  <span className="truncate">
+                                  <div className="truncate">
                                     {c.desired_salary_min ? `${c.desired_salary_min.toLocaleString()} FCFA` : ''}
                                     {c.desired_salary_min && c.desired_salary_max ? ' – ' : ''}
                                     {c.desired_salary_max ? `${c.desired_salary_max.toLocaleString()} FCFA` : ''}
-                                  </span>
+                                  </div>
                                 </div>
                               ) : null}
                             </div>
 
+                            {/* Disponibilité + téléchargement CV */}
                             <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
                               <div className="flex items-center gap-2">
                                 {c.is_available ? (
@@ -349,7 +351,7 @@ const CandidateBankPage = () => {
                                     window.open(c.cv_url, '_blank', 'noopener,noreferrer');
                                   }}
                                   onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); window.open(c.cv_url, '_blank', 'noopener,noreferrer'); } }}
-                                  className="text-blue-600 hover:text-blue-700 cursor-pointer"
+                                  className="text-blue-600 hover:text-blue-700 cursor-pointer shrink-0"
                                 >
                                   <Download className="w-4 h-4" />
                                 </span>
