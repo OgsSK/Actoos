@@ -15,6 +15,7 @@ import uuid
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
 
+
 LOGO_URL = "https://anfamlpwootbrzswnpyp.supabase.co/storage/v1/object/public/logos/actoos.png"
 
 env_path = Path(__file__).parent / '.env'
@@ -38,6 +39,8 @@ resend.api_key = os.environ.get("RESEND_API_KEY", "re_HSsCQxUj_HvzYvhZDoJzEHBciW
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+
 
 SUPPORTED_CURRENCIES = {
     "XOF": "FCFA", "EUR": "EUR", "USD": "USD", "MAD": "MAD",
@@ -823,45 +826,44 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
         raise HTTPException(status_code=400, detail="company_id requis")
 
     package_id = checkout_request.package_id
-    if package_id in SUBSCRIPTION_PLANS:
-        package = SUBSCRIPTION_PLANS[package_id]
-        mode = "subscription"
-
-        # ---------- Devise choisie par l'utilisateur ----------
-        currency = (checkout_request.preferred_currency or "XOF").upper()
-        if currency not in SUPPORTED_CURRENCIES:
-            currency = "XOF"
-
-        # Taux de conversion FCFA → devise cible (identiques au frontend)
-        RATES_TO_XOF = {
-            "XOF": 1, "EUR": 655.957, "USD": 603.5, "MAD": 60.5,
-            "GBP": 754.2, "BRL": 115.3, "ARS": 0.72, "NGN": 0.4, "ZAR": 32.5,
-            "SAR": 160.9, "AED": 164.3, "EGP": 19.5, "DZD": 4.48, "TND": 194.5,
-            "CHF": 722.3, "XAF": 1, "GNF": 0.07, "CDF": 0.22, "MGA": 0.15
-        }
-
-        amount_fcfa = package["amount"]
-        rate = RATES_TO_XOF.get(currency, 1)
-        converted_amount = round(amount_fcfa / rate)     # ← arrondi correct
-
-        # Gestion des sous-unités (centimes) pour les devises qui en ont
-        if currency in ("EUR", "USD", "GBP", "MAD", "BRL", "ARS", "NGN", "ZAR",
-                        "SAR", "AED", "EGP", "DZD", "TND", "CHF"):
-            converted_amount = converted_amount * 100
-
-        line_item = {
-            'price_data': {
-                'currency': currency.lower(),
-                'product_data': {'name': package["name"]},
-                'unit_amount': converted_amount,
-                'recurring': {'interval': package["interval"]},
-            },
-            'quantity': 1,
-        }
-    elif package_id in BOOST_PACKAGES:
-        raise HTTPException(status_code=400, detail="Boosts non disponibles pour le moment")
-    else:
+    if package_id not in SUBSCRIPTION_PLANS:
         raise HTTPException(status_code=400, detail="Invalid package")
+
+    package = SUBSCRIPTION_PLANS[package_id]
+    mode = "subscription"
+
+    # ---------- Devise choisie par l'utilisateur ----------
+    currency = (checkout_request.preferred_currency or "XOF").upper()
+    if currency not in SUPPORTED_CURRENCIES:
+        currency = "XOF"
+
+    # Taux de conversion FCFA → devise cible (identiques au frontend)
+    RATES_TO_XOF = {
+        "XOF": 1, "EUR": 655.957, "USD": 603.5, "MAD": 60.5,
+        "GBP": 754.2, "BRL": 115.3, "ARS": 0.72, "NGN": 0.4, "ZAR": 32.5,
+        "SAR": 160.9, "AED": 164.3, "EGP": 19.5, "DZD": 4.48, "TND": 194.5,
+        "CHF": 722.3, "XAF": 1, "GNF": 0.07, "CDF": 0.22, "MGA": 0.15
+    }
+    rate = RATES_TO_XOF.get(currency, 1)
+
+    # ---------- Calcul du montant (prix normal) ----------
+    amount_fcfa = package["amount"]
+    converted_amount = round(amount_fcfa / rate)
+
+    # Gestion des sous-unités (centimes) pour les devises qui en ont
+    if currency in ("EUR", "USD", "GBP", "MAD", "BRL", "ARS", "NGN", "ZAR",
+                    "SAR", "AED", "EGP", "DZD", "TND", "CHF"):
+        converted_amount = converted_amount * 100
+
+    line_item = {
+        'price_data': {
+            'currency': currency.lower(),
+            'product_data': {'name': package["name"]},
+            'unit_amount': converted_amount,
+            'recurring': {'interval': package["interval"]},
+        },
+        'quantity': 1,
+    }
 
     origin = checkout_request.origin_url
     success_url = f"{origin}/paiement/succes?session_id={{CHECKOUT_SESSION_ID}}"
@@ -887,7 +889,7 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
     if supabase_url and supabase_key:
         headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         company_resp = httpx.get(
-            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id,subscription_plan",
+            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id,subscription_plan,launch_coupon_used",
             headers=headers
         )
         companies = company_resp.json()
@@ -895,6 +897,7 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
             raise HTTPException(status_code=404, detail="Entreprise non trouvée ou non autorisée")
         company = companies[0]
         current_plan = company.get("subscription_plan", "free")
+        launch_used = company.get("launch_coupon_used", False)   # <-- Récupération du flag
 
         target_plan = "free"
         if "pro" in package_id:
@@ -918,6 +921,27 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
                     detail=f"DOWNGRADE_BLOCKED:{active_jobs}:{target_limit}"
                 )
 
+        # ---------- Application automatique des coupons de lancement (si pas déjà utilisé) ----------
+        discounts = None
+        if package_id == "business_monthly" and not launch_used:
+            discounts = [{"coupon": "N9rSzhf6"}]          # ← ID réel de LAUNCH-MENSUEL
+        elif package_id == "business_annual" and not launch_used:
+            discounts = [{"coupon": "bJA4SCvq"}]          # ← ID réel de LAUNCH-ANNUEL
+
+        # Si le coupon doit être appliqué, on marque immédiatement le flag pour éviter les doubles usages
+        # (Idéalement, cette mise à jour se fait dans le webhook checkout.session.completed)
+        if discounts is not None:
+            try:
+                httpx.patch(
+                    f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
+                    headers=headers,
+                    json={"launch_coupon_used": True}
+                )
+            except Exception as e:
+                logger.error(f"Erreur mise à jour launch_coupon_used: {e}")
+                # Ne pas bloquer la création de la session, le pire est que le flag ne soit pas mis
+                pass
+
     # ---------- Langue Stripe ----------
     STRIPE_LOCALES = {
         'auto', 'bg', 'cs', 'da', 'de', 'el', 'en', 'en-GB', 'es', 'es-419',
@@ -937,11 +961,12 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
             cancel_url=cancel_url,
             metadata=metadata,
             locale=stripe_locale,
+            discounts=discounts,                # coupon automatique
         )
         payment_transactions[session.id] = {
             "session_id": session.id,
             "package_id": package_id,
-            "amount": package["amount"],
+            "amount": amount_fcfa,
             "currency": currency.lower(),
             "status": "pending",
             "payment_status": "initiated",
@@ -1029,14 +1054,24 @@ async def stripe_webhook(request: Request):
                             elif "business" in package_id:
                                 plan_name = "business"
 
+                            # Mise à jour de l'abonnement
+                            update_data = {
+                                "subscription_plan": plan_name,
+                                "stripe_subscription_id": session.subscription,
+                                "stripe_customer_id": session.customer,
+                                "subscription_expires_at": None
+                            }
+
+                            # 🔒 Vérifier si le coupon de lancement a été appliqué
+                            if session.get("total_details") and session["total_details"].get("discounts"):
+                                applied_coupons = [d["discount"]["coupon"]["id"] for d in session["total_details"]["discounts"]]
+                                launch_coupon_ids = ["N9rSzhf6", "bJA4SCvq"]  # ID de LAUNCH-MENSUEL et LAUNCH-ANNUEL
+                                if any(cid in applied_coupons for cid in launch_coupon_ids):
+                                    update_data["launch_coupon_used"] = True
+
                             await client.patch(
                                 f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
-                                json={
-                                    "subscription_plan": plan_name,
-                                    "stripe_subscription_id": session.subscription,
-                                    "stripe_customer_id": session.customer,
-                                    "subscription_expires_at": None
-                                },
+                                json=update_data,
                                 headers=headers
                             )
 
@@ -1053,6 +1088,21 @@ async def stripe_webhook(request: Request):
             session = event.data.object
             if session.id in payment_transactions:
                 payment_transactions[session.id]["status"] = "expired"
+
+            # ⚠️ Si la session expire, on peut remettre le flag à False pour l'entreprise
+            # (utile si on l'a marqué à True prématurément dans /checkout/session)
+            supabase_url = os.getenv("SUPABASE_URL")
+            supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            if supabase_url and supabase_key and session.metadata:
+                company_id = session.metadata.get("company_id")
+                if company_id:
+                    async with httpx.AsyncClient(timeout=5.0) as client:
+                        headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+                        await client.patch(
+                            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
+                            json={"launch_coupon_used": False},
+                            headers=headers
+                        )
 
     except Exception as e:
         print(f"Webhook processing error: {e}")
@@ -3632,6 +3682,14 @@ async def notify_other_candidates(req: NotifyOtherCandidatesRequest):
             await send_translated_email(email, subject, html, candidate_lang)
 
     return {"success": True, "count": len(others)}
+
+
+
+
+
+
+
+
 
 
 

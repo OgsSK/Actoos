@@ -221,138 +221,7 @@
   "noJobsText": "Revenez bientôt pour découvrir de nouvelles opportunités.",
   "seeJobs": "Voir les offres"
   },
- "pricing": {
-  "free": "Gratuit",
-      "badge": "Tarifs",
-      "title": "Des plans taillés pour vos ambitions",
-      "subtitle": "Choisissez le plan qui correspond à vos objectifs.",
-      "mostPopular": "Le plus populaire",
-      "currentPlan": "Plan actuel",
-      "perMonth": "/mois",
-      "perMonthShort": "/mois",
-      "billedAnnually": "Facturé annuellement",
-      "billedMonthly": "Facturé mensuellement",
-      "loading": "Chargement...",
-      "toggle": {
-        "monthly": "Mensuel",
-        "annual": "Annuel",
-        "savePercent": "Économisez 20%"
-      },
-      "plans": {
-        "free": {
-          "name": "Gratuit",
-          "description": "Pour commencer",
-          "features": {
-            "0": "{{count}} offre(s) active(s)",
-            "expiration": "{{days}} jours avant expiration",
-            "2": "Profil vérifié"
-          },
-          "limitations": {
-            "noInterviewTools": "Pas d'outils de planification d'entretien",
-            "noAiNotes": "Pas de notes d'entretien ni d'IA",
-            "noCvBank": "Pas de banque de CV",
-            "noMultiCompany": "Une seule entreprise"
-          }
-        },
-        "pro": {
-          "name": "Pro",
-          "description": "Pour les recruteurs actifs",
-          "features": {
-            "0": "{{count}} offre(s) active(s)",
-            "expiration": "{{days}} jours avant expiration",
-            "interviewTools": "Outils de planification d'entretien",
-            "aiNotes": "Notes d'entretien et IA",
-            "verifiedProfile": "Badge Pro sur votre profil"
-          },
-          "limitations": {
-            "noCvBank": "Pas de banque de CV",
-            "noMultiCompany": "Une seule entreprise"
-          }
-        },
-        "business": {
-          "name": "Business",
-          "description": "Pour les entreprises en croissance",
-          "features": {
-            "0": "Offres illimitées",
-            "expiration": "{{days}} jours avant expiration",
-            "interviewTools": "Outils de planification d'entretien",
-            "aiNotes": "Notes d'entretien et IA avancée",
-            "freeBoost": "1 boost gratuit / mois",
-            "cvBank": "Banque de CV illimitée",
-            "multiCompany": "Multi-entreprise illimitée",
-            "premiumBadge": "Badge Premium prioritaire"
-          },
-          "limitations": {}
-        }
-      },
-      "actions": {
-        "backToFree": "Revenir au Gratuit",
-        "manageSubscription": "Gérer mon abonnement",
-        "upgradeTo": "Passer au plan {{plan}}",
-        "downgradeTo": "Revenir au plan {{plan}}",
-        "subscribeMonthly": "S'abonner mensuellement",
-        "subscribeAnnual": "S'abonner annuellement"
-      },
-      "comparison": {
-        "title": "Comparer les plans",
-        "subtitle": "Fonctionnalités par plan",
-        "featureColumn": "Fonctionnalité",
-        "freeColumn": "Gratuit",
-        "proColumn": "Pro",
-        "businessColumn": "Business",
-        "values": {
-          "days": "{{count}} jours",
-          "perMonth": "1 / mois",
-          "premium": "✓ (Premium)"
-        },
-        "rows": {
-          "activeOffers": "Offres actives",
-          "expiration": "Expiration",
-          "interviewTools": "Outils d'entretien",
-          "aiNotes": "Notes IA et entretien",
-          "cvBank": "Banque de CV",
-          "multiCompany": "Multi-entreprise",
-          "freeBoost": "Boost gratuit",
-          "verifiedProfile": "Profil vérifié"
-        }
-      },
-      "faq": {
-        "title": "Foire aux questions",
-        "subtitle": "Tout savoir sur nos plans",
-        "items": [
-          {
-            "question": "Puis-je changer de plan à tout moment ?",
-            "answer": "Oui, vous pouvez passer à un plan supérieur ou inférieur à tout moment. Les modifications prennent effet immédiatement."
-          },
-          {
-            "question": "Y a-t-il des frais cachés ?",
-            "answer": "Aucun frais caché. Vous payez uniquement le prix affiché, sans surprise."
-          },
-          {
-            "question": "Comment résilier mon abonnement ?",
-            "answer": "Vous pouvez résilier depuis votre tableau de bord entreprise. Votre abonnement restera actif jusqu'à la fin de la période payée."
-          }
-        ]
-      },
-      "cta": {
-        "title": "Une question ?",
-        "subtitle": "Notre équipe est là pour vous aider.",
-        "button": "Nous contacter"
-      },
-      "loginBanner": {
-        "message": "Connectez-vous pour profiter de tous les avantages.",
-        "button": "Se connecter"
-      },
-      "toast": {
-        "mustLogin": "Vous devez être connecté pour souscrire.",
-        "noCompany": "Vous devez avoir une entreprise pour souscrire.",
-        "checkoutError": "Une erreur est survenue lors du paiement.",
-        "mustLoginFree": "Connectez-vous pour utiliser le plan Gratuit.",
-        "alreadyFree": "Vous êtes déjà sur le plan Gratuit.",
-        "cancelToFree": "Résiliez votre abonnement pour revenir au plan Gratuit."
-      },
-      "downgradeBlocked": "Vous avez {{active}} offre(s) active(s). Le plan cible n'autorise que {{limit}} offre(s). Désactivez ou supprimez celles en trop avant de changer de plan."
-    },
+
   
   "auth": {
     "login": {
@@ -1022,6 +891,21 @@
   },
  
   "categories": {
+    "horeca": "Horeca",
+  "immobilier": "Immobilier",
+  "art-design": "Art et Design",
+  "audiovisuel-medias": "Audiovisuel et Médias",
+  "energie-environnement": "Énergie et Environnement",
+  "sport-loisirs": "Sport et Loisirs",
+  "services-personne": "Services à la personne",
+  "securite-defense": "Sécurité et Défense",
+  "telecom": "Télécommunications",
+  "automobile-mecanique": "Automobile et Mécanique",
+  "mode-textile": "Mode et Textile",
+  "pharma-biotech": "Pharmaceutique et Biotech",
+  "edition-journalisme": "Édition et Journalisme",
+  "conseil-audit": "Conseil et Audit",
+  "telemarketing-callcenter": "Télémarketing et Centre d'appels",
   "administration": "Administration",
   "agriculture": "Agriculture et Environnement",
   "autre": "Autre",
@@ -3101,7 +2985,157 @@
       "completed": "Finalisé",
       "terminated": "Terminé"
     }
-  }
+  },
+  "pricing": {
+    "free": "Gratuit",
+     "launchOffer": {
+      "badge": "Offre de lancement",
+      "monthlyPrice": "0 €",
+      "monthlyDescription": "Pendant 3 mois, puis {{price}}/mois",
+      "annualPrice": "49 €",
+      "annualDescription": "La première année, puis {{price}}/an",
+      "perMonth": "/mois",
+      "perYear": "/an"
+    },
+  "launchBanner": {
+      "title": "Accès anticipé",
+      "description": "Profitez de conditions exclusives pendant notre phase de lancement.",
+      "codeMonthly": "Code : LAUNCH-MENSUEL",
+      "codeAnnual": "Code : LAUNCH-ANNUEL"
+    },
+    "launchBadgeMonthly": "🎉 Lancement : 3 mois gratuits avec le code <strong>LAUNCH-MENSUEL</strong>",
+    "launchBadgeAnnual": "🎉 Lancement : 49 €/an avec le code <strong>LAUNCH-ANNUEL</strong>"
+,
+  "badge": "Tarifs",
+  "title": "Des plans taillés pour vos ambitions",
+  "subtitle": "Choisissez le plan qui correspond à vos objectifs.",
+  "mostPopular": "Le plus populaire",
+  "currentPlan": "Plan actuel",
+  "perMonth": "/mois",
+  "perMonthShort": "/mois",
+  "billedAnnually": "Facturé annuellement",
+  "billedMonthly": "Facturé mensuellement",
+  "loading": "Chargement...",
+  "toggle": {
+    "monthly": "Mensuel",
+    "annual": "Annuel",
+    "savePercent": "Économisez 20 %"
+  },
+  "plans": {
+    "free": {
+      "name": "Gratuit",
+      "description": "Pour commencer",
+      "features": {
+        "0": "{{count}} offre(s) active(s)",
+        "expiration": "{{days}} jours avant expiration",
+        "2": "Profil vérifié"
+      },
+      "limitations": {
+        "noInterviewTools": "Pas d'outils de planification d'entretien",
+        "noAiNotes": "Pas de notes d'entretien ni d'IA",
+        "noCvBank": "Pas de banque de CV",
+        "noMultiCompany": "Une seule entreprise"
+      }
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Pour les recruteurs actifs",
+      "features": {
+        "0": "{{count}} offre(s) active(s)",
+        "expiration": "{{days}} jours avant expiration",
+        "interviewTools": "Outils de planification d'entretien",
+        "aiNotes": "Notes d'entretien et IA",
+        "verifiedProfile": "Badge Pro sur votre profil"
+      },
+      "limitations": {
+        "noCvBank": "Pas de banque de CV",
+        "noMultiCompany": "Une seule entreprise"
+      }
+    },
+    "business": {
+      "name": "Business",
+      "description": "Pour les entreprises en croissance",
+      "features": {
+        "0": "Offres illimitées",
+        "expiration": "{{days}} jours avant expiration",
+        "interviewTools": "Outils de planification d'entretien",
+        "aiNotes": "Notes d'entretien et IA avancée",
+        "freeBoost": "1 boost gratuit / mois",
+        "cvBank": "Banque de CV illimitée",
+        "multiCompany": "Multi-entreprise illimitée",
+        "premiumBadge": "Badge Premium prioritaire"
+      },
+      "limitations": {}
+    }
+  },
+  "actions": {
+    "backToFree": "Revenir au Gratuit",
+    "manageSubscription": "Gérer mon abonnement",
+    "upgradeTo": "Passer au plan {{plan}}",
+    "downgradeTo": "Revenir au plan {{plan}}",
+    "subscribeMonthly": "S'abonner mensuellement",
+    "subscribeAnnual": "S'abonner annuellement"
+  },
+  "comparison": {
+    "title": "Comparer les plans",
+    "subtitle": "Fonctionnalités par plan",
+    "featureColumn": "Fonctionnalité",
+    "freeColumn": "Gratuit",
+    "proColumn": "Pro",
+    "businessColumn": "Business",
+    "values": {
+      "days": "{{count}} jours",
+      "perMonth": "1 / mois",
+      "premium": "✓ (Premium)"
+    },
+    "rows": {
+      "activeOffers": "Offres actives",
+      "expiration": "Expiration",
+      "interviewTools": "Outils d'entretien",
+      "aiNotes": "Notes IA et entretien",
+      "cvBank": "Banque de CV",
+      "multiCompany": "Multi-entreprise",
+      "freeBoost": "Boost gratuit",
+      "verifiedProfile": "Profil vérifié"
+    }
+  },
+  "faq": {
+    "title": "Foire aux questions",
+    "subtitle": "Tout savoir sur nos offres",
+    "items": [
+      {
+        "question": "Puis-je changer de plan à tout moment ?",
+        "answer": "Oui, vous pouvez évoluer à tout moment. Le changement prend effet immédiatement."
+      },
+      {
+        "question": "Y a-t-il des frais cachés ?",
+        "answer": "Aucun frais caché. Vous ne payez que le prix affiché, sans surprise."
+      },
+      {
+        "question": "Comment annuler mon abonnement ?",
+        "answer": "Vous pouvez annuler depuis votre tableau de bord entreprise. L'abonnement reste actif jusqu'à la fin de la période payée."
+      }
+    ]
+  },
+  "cta": {
+    "title": "Une question ?",
+    "subtitle": "Notre équipe est là pour vous aider.",
+    "button": "Nous contacter"
+  },
+  "loginBanner": {
+    "message": "Connectez-vous pour profiter de tous les avantages.",
+    "button": "Se connecter"
+  },
+  "toast": {
+    "mustLogin": "Vous devez être connecté pour vous abonner.",
+    "noCompany": "Vous devez avoir une entreprise pour vous abonner.",
+    "checkoutError": "Une erreur est survenue lors du paiement.",
+    "mustLoginFree": "Connectez-vous pour utiliser le plan Gratuit.",
+    "alreadyFree": "Vous êtes déjà sur le plan Gratuit.",
+    "cancelToFree": "Résiliez votre abonnement pour revenir au Gratuit."
+  },
+  "downgradeBlocked": "Vous avez {{active}} offre(s) active(s). Le plan cible n'autorise que {{limit}} offre(s). Désactivez ou supprimez les offres en trop avant de changer de plan."
+}
   
 
 

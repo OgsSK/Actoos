@@ -147,6 +147,24 @@
     "viewResults": "Bekijk de {{count}} resultaten"
   },
  "pricing": {
+   "launchOffer": {
+      "badge": "Lanceringsaanbod",
+      "monthlyPrice": "€ 0",
+      "monthlyDescription": "3 maanden lang, daarna {{price}}/maand",
+      "annualPrice": "€ 49",
+      "annualDescription": "Het eerste jaar, daarna {{price}}/jaar",
+      "perMonth": "/maand",
+      "perYear": "/jaar"
+    },
+   "launchBanner": {
+        "title": "Vroege toegang",
+        "description": "Profiteer van exclusieve voorwaarden tijdens onze lanceringsfase.",
+        "codeMonthly": "Code: LAUNCH-MENSUEL",
+        "codeAnnual": "Code: LAUNCH-ANNUEL"
+      },
+      "launchBadgeMonthly": "🎉 Lancering: 3 maanden gratis met code <strong>LAUNCH-MENSUEL</strong>",
+      "launchBadgeAnnual": "🎉 Lancering: €49/jaar met code <strong>LAUNCH-ANNUEL</strong>",
+    
   "free": "Gratis",
       "badge": "Prijzen",
       "title": "Plannen op maat van uw ambities",
@@ -1129,6 +1147,21 @@
   },
 
   "categories": {
+    "horeca": "Horeca",
+      "immobilier": "Vastgoed",
+      "art-design": "Kunst en Design",
+      "audiovisuel-medias": "Audiovisueel en Media",
+      "energie-environnement": "Energie en Milieu",
+      "sport-loisirs": "Sport en Vrije tijd",
+      "services-personne": "Persoonlijke Dienstverlening",
+      "securite-defense": "Veiligheid en Defensie",
+      "telecom": "Telecommunicatie",
+      "automobile-mecanique": "Auto en Mechanica",
+      "mode-textile": "Mode en Textiel",
+      "pharma-biotech": "Farma en Biotechnologie",
+      "edition-journalisme": "Uitgeverij en Journalistiek",
+      "conseil-audit": "Advies en Audit",
+      "telemarketing-callcenter": "Telemarketing en Callcenter",
   "administration": "Administratie",
   "agriculture": "Landbouw & Milieu",
   "autre": "Overige",

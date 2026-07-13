@@ -147,6 +147,24 @@
     "viewResults": "Ver os {{count}} resultados"
   },
 "pricing": {
+   "launchOffer": {
+      "badge": "Oferta de lançamento",
+      "monthlyPrice": "0 €",
+      "monthlyDescription": "Durante 3 meses, depois {{price}}/mês",
+      "annualPrice": "49 €",
+      "annualDescription": "O primeiro ano, depois {{price}}/ano",
+      "perMonth": "/mês",
+      "perYear": "/ano"
+    },
+  "launchBanner": {
+        "title": "Acesso antecipado",
+        "description": "Desfrute de condições exclusivas durante a nossa fase de lançamento.",
+        "codeMonthly": "Código: LAUNCH-MENSUEL",
+        "codeAnnual": "Código: LAUNCH-ANNUEL"
+      },
+      "launchBadgeMonthly": "🎉 Lançamento: 3 meses grátis com o código <strong>LAUNCH-MENSUEL</strong>",
+      "launchBadgeAnnual": "🎉 Lançamento: 49 €/ano com o código <strong>LAUNCH-ANNUEL</strong>",
+    
   "free": "Gratuito",
       "badge": "Preços",
       "title": "Planos à medida das suas ambições",
@@ -1061,6 +1079,21 @@
   },
   
  "categories": {
+  "horeca": "Hotelaria e Restauração",
+      "immobilier": "Imobiliária",
+      "art-design": "Arte e Design",
+      "audiovisuel-medias": "Audiovisual e Mídia",
+      "energie-environnement": "Energia e Meio Ambiente",
+      "sport-loisirs": "Desporto e Lazer",
+      "services-personne": "Serviços Pessoais",
+      "securite-defense": "Segurança e Defesa",
+      "telecom": "Telecomunicações",
+      "automobile-mecanique": "Automóvel e Mecânica",
+      "mode-textile": "Moda e Têxtil",
+      "pharma-biotech": "Farmacêutica e Biotecnologia",
+      "edition-journalisme": "Edição e Jornalismo",
+      "conseil-audit": "Consultoria e Auditoria",
+      "telemarketing-callcenter": "Televendas e Call Center",
   "administration": "Administração",
   "agriculture": "Agricultura e Ambiente",
   "autre": "Outro",

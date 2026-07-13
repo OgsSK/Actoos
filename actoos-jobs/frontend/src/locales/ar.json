@@ -147,6 +147,24 @@
     "viewResults": "عرض النتائج {{count}}"
   },
   "pricing": {
+    "launchOffer": {
+      "badge": "عرض الإطلاق",
+      "monthlyPrice": "0 €",
+      "monthlyDescription": "لمدة 3 أشهر، ثم {{price}}/شهر",
+      "annualPrice": "49 €",
+      "annualDescription": "السنة الأولى، ثم {{price}}/سنة",
+      "perMonth": "/شهر",
+      "perYear": "/سنة"
+    },
+     "launchBanner": {
+        "title": "الوصول المبكر",
+        "description": "استفد من شروط حصرية خلال مرحلة الإطلاق.",
+        "codeMonthly": "الرمز: LAUNCH-MENSUEL",
+        "codeAnnual": "الرمز: LAUNCH-ANNUEL"
+      },
+      "launchBadgeMonthly": "🎉 الإطلاق: 3 أشهر مجاناً مع الرمز <strong>LAUNCH-MENSUEL</strong>",
+      "launchBadgeAnnual": "🎉 الإطلاق: 49 €/سنة مع الرمز <strong>LAUNCH-ANNUEL</strong>",
+    
     "free": "مجاني",
       "badge": "الأسعار",
       "title": "خطط مصممة لطموحاتك",
@@ -1062,6 +1080,21 @@
   },
 
  "categories": {
+  "horeca": "فنادق ومطاعم",
+      "immobilier": "عقارات",
+      "art-design": "فن وتصميم",
+      "audiovisuel-medias": "سمعي بصري وإعلام",
+      "energie-environnement": "طاقة وبيئة",
+      "sport-loisirs": "رياضة وترفيه",
+      "services-personne": "خدمات شخصية",
+      "securite-defense": "أمن ودفاع",
+      "telecom": "اتصالات",
+      "automobile-mecanique": "سيارات وميكانيكا",
+      "mode-textile": "موضة ومنسوجات",
+      "pharma-biotech": "أدوية وتكنولوجيا حيوية",
+      "edition-journalisme": "نشر وصحافة",
+      "conseil-audit": "استشارات وتدقيق",
+      "telemarketing-callcenter": "تسويق عبر الهاتف ومراكز اتصال",
   "administration": "الإدارة",
   "agriculture": "الزراعة والبيئة",
   "autre": "أخرى",

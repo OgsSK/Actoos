@@ -216,138 +216,7 @@
     "resultsFor": "Results for \"{{query}}\"",
     "viewResults": "View the {{count}} results"
   },
-  "pricing": {
-    "free": "Free",
-      "badge": "Pricing",
-      "title": "Plans tailored to your ambitions",
-      "subtitle": "Choose the plan that matches your goals.",
-      "mostPopular": "Most popular",
-      "currentPlan": "Current plan",
-      "perMonth": "/month",
-      "perMonthShort": "/mo",
-      "billedAnnually": "Billed annually",
-      "billedMonthly": "Billed monthly",
-      "loading": "Loading...",
-      "toggle": {
-        "monthly": "Monthly",
-        "annual": "Annual",
-        "savePercent": "Save 20%"
-      },
-      "plans": {
-        "free": {
-          "name": "Free",
-          "description": "To get started",
-          "features": {
-            "0": "{{count}} active job(s)",
-            "expiration": "{{days}} days before expiration",
-            "2": "Verified profile"
-          },
-          "limitations": {
-            "noInterviewTools": "No interview scheduling tools",
-            "noAiNotes": "No interview notes or AI",
-            "noCvBank": "No CV bank",
-            "noMultiCompany": "Single company"
-          }
-        },
-        "pro": {
-          "name": "Pro",
-          "description": "For active recruiters",
-          "features": {
-            "0": "{{count}} active job(s)",
-            "expiration": "{{days}} days before expiration",
-            "interviewTools": "Interview scheduling tools",
-            "aiNotes": "Interview notes & AI",
-            "verifiedProfile": "Pro badge on your profile"
-          },
-          "limitations": {
-            "noCvBank": "No CV bank",
-            "noMultiCompany": "Single company"
-          }
-        },
-        "business": {
-          "name": "Business",
-          "description": "For growing companies",
-          "features": {
-            "0": "Unlimited job offers",
-            "expiration": "{{days}} days before expiration",
-            "interviewTools": "Interview scheduling tools",
-            "aiNotes": "Advanced interview notes & AI",
-            "freeBoost": "1 free boost / month",
-            "cvBank": "Unlimited CV bank",
-            "multiCompany": "Unlimited multi-company",
-            "premiumBadge": "Priority Premium badge"
-          },
-          "limitations": {}
-        }
-      },
-      "actions": {
-        "backToFree": "Go back to Free",
-        "manageSubscription": "Manage subscription",
-        "upgradeTo": "Upgrade to {{plan}}",
-        "downgradeTo": "Downgrade to {{plan}}",
-        "subscribeMonthly": "Subscribe monthly",
-        "subscribeAnnual": "Subscribe annually"
-      },
-      "comparison": {
-        "title": "Compare plans",
-        "subtitle": "Features by plan",
-        "featureColumn": "Feature",
-        "freeColumn": "Free",
-        "proColumn": "Pro",
-        "businessColumn": "Business",
-        "values": {
-          "days": "{{count}} days",
-          "perMonth": "1 / month",
-          "premium": "✓ (Premium)"
-        },
-        "rows": {
-          "activeOffers": "Active offers",
-          "expiration": "Expiration",
-          "interviewTools": "Interview tools",
-          "aiNotes": "AI notes & interview",
-          "cvBank": "CV bank",
-          "multiCompany": "Multi-company",
-          "freeBoost": "Free boost",
-          "verifiedProfile": "Verified profile"
-        }
-      },
-      "faq": {
-        "title": "Frequently asked questions",
-        "subtitle": "Everything about our plans",
-        "items": [
-          {
-            "question": "Can I change my plan at any time?",
-            "answer": "Yes, you can upgrade or downgrade at any time. Changes take effect immediately."
-          },
-          {
-            "question": "Are there any hidden fees?",
-            "answer": "No hidden fees. You only pay the displayed price, no surprises."
-          },
-          {
-            "question": "How do I cancel my subscription?",
-            "answer": "You can cancel from your company dashboard. Your subscription will remain active until the end of the paid period."
-          }
-        ]
-      },
-      "cta": {
-        "title": "Have a question?",
-        "subtitle": "Our team is here to help.",
-        "button": "Contact us"
-      },
-      "loginBanner": {
-        "message": "Log in to enjoy all benefits.",
-        "button": "Log in"
-      },
-      "toast": {
-        "mustLogin": "You must be logged in to subscribe.",
-        "noCompany": "You must have a company to subscribe.",
-        "checkoutError": "An error occurred during payment.",
-        "mustLoginFree": "Log in to use the Free plan.",
-        "alreadyFree": "You are already on the Free plan.",
-        "cancelToFree": "Cancel your subscription to go back to Free."
-      },
-      "downgradeBlocked": "You have {{active}} active offer(s). The target plan only allows {{limit}} offer(s). Please deactivate or delete the excess ones before changing plans."
-    },
+  
   
   "auth": {
       "login": {
@@ -1133,6 +1002,21 @@
   },
 
   "categories": {
+    "horeca": "Hospitality",
+      "immobilier": "Real Estate",
+      "art-design": "Art and Design",
+      "audiovisuel-medias": "Audiovisual and Media",
+      "energie-environnement": "Energy and Environment",
+      "sport-loisirs": "Sports and Leisure",
+      "services-personne": "Personal Services",
+      "securite-defense": "Security and Defense",
+      "telecom": "Telecommunications",
+      "automobile-mecanique": "Automotive and Mechanics",
+      "mode-textile": "Fashion and Textile",
+      "pharma-biotech": "Pharmaceuticals and Biotech",
+      "edition-journalisme": "Publishing and Journalism",
+      "conseil-audit": "Consulting and Audit",
+      "telemarketing-callcenter": "Telemarketing and Call Center",
   "administration": "Administration",
   "agriculture": "Agriculture & Environment",
   "autre": "Other",
@@ -3140,6 +3024,155 @@
         "completed": "Completed",
         "terminated": "Terminated"
       }
+    },
+     "pricing": {
+      "launchOffer": {
+      "badge": "Launch offer",
+      "monthlyPrice": "€0",
+      "monthlyDescription": "For 3 months, then {{price}}/month",
+      "annualPrice": "€49",
+      "annualDescription": "The first year, then {{price}}/year",
+      "perMonth": "/month",
+      "perYear": "/year"
+    },
+      "free": "Free",
+      "launchBanner": {
+      "title": "Early Access",
+      "description": "Enjoy exclusive conditions during our launch phase.",
+      "codeMonthly": "Code: LAUNCH-MENSUEL",
+      "codeAnnual": "Code: LAUNCH-ANNUEL"
+    },
+    "launchBadgeMonthly": "🎉 Launch: 3 months free with code <strong>LAUNCH-MENSUEL</strong>",
+    "launchBadgeAnnual": "🎉 Launch: €49/year with code <strong>LAUNCH-ANNUEL</strong>",
+      "badge": "Pricing",
+      "title": "Plans tailored to your ambitions",
+      "subtitle": "Choose the plan that suits your goals.",
+      "mostPopular": "Most popular",
+      "currentPlan": "Current plan",
+      "perMonth": "/month",
+      "perMonthShort": "/mo",
+      "billedAnnually": "Billed annually",
+      "billedMonthly": "Billed monthly",
+      "loading": "Loading...",
+      "toggle": {
+        "monthly": "Monthly",
+        "annual": "Yearly",
+        "savePercent": "Save 20%"
+      },
+      "plans": {
+        "free": {
+          "name": "Free",
+          "description": "To get started",
+          "features": {
+            "0": "{{count}} active offer(s)",
+            "expiration": "{{days}} days before expiration",
+            "2": "Verified profile"
+          },
+          "limitations": {
+            "noInterviewTools": "No interview scheduling tools",
+            "noAiNotes": "No interview notes or AI",
+            "noCvBank": "No CV bank",
+            "noMultiCompany": "One company only"
+          }
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "For active recruiters",
+          "features": {
+            "0": "{{count}} active offer(s)",
+            "expiration": "{{days}} days before expiration",
+            "interviewTools": "Interview scheduling tools",
+            "aiNotes": "Interview notes and AI",
+            "verifiedProfile": "Pro badge on your profile"
+          },
+          "limitations": {
+            "noCvBank": "No CV bank",
+            "noMultiCompany": "One company only"
+          }
+        },
+        "business": {
+          "name": "Business",
+          "description": "For growing companies",
+          "features": {
+            "0": "Unlimited offers",
+            "expiration": "{{days}} days before expiration",
+            "interviewTools": "Interview scheduling tools",
+            "aiNotes": "Advanced interview notes and AI",
+            "freeBoost": "1 free boost / month",
+            "cvBank": "Unlimited CV bank",
+            "multiCompany": "Unlimited multi-company",
+            "premiumBadge": "Priority Premium badge"
+          },
+          "limitations": {}
+        }
+      },
+      "actions": {
+        "backToFree": "Back to Free",
+        "manageSubscription": "Manage my subscription",
+        "upgradeTo": "Upgrade to {{plan}}",
+        "downgradeTo": "Downgrade to {{plan}}",
+        "subscribeMonthly": "Subscribe monthly",
+        "subscribeAnnual": "Subscribe annually"
+      },
+      "comparison": {
+        "title": "Compare plans",
+        "subtitle": "Features by plan",
+        "featureColumn": "Feature",
+        "freeColumn": "Free",
+        "proColumn": "Pro",
+        "businessColumn": "Business",
+        "values": {
+          "days": "{{count}} days",
+          "perMonth": "1 / month",
+          "premium": "✓ (Premium)"
+        },
+        "rows": {
+          "activeOffers": "Active offers",
+          "expiration": "Expiration",
+          "interviewTools": "Interview tools",
+          "aiNotes": "AI & interview notes",
+          "cvBank": "CV bank",
+          "multiCompany": "Multi-company",
+          "freeBoost": "Free boost",
+          "verifiedProfile": "Verified profile"
+        }
+      },
+      "faq": {
+        "title": "Frequently Asked Questions",
+        "subtitle": "All about our offers",
+        "items": [
+          {
+            "question": "Can I change plans at any time?",
+            "answer": "Yes, you can upgrade or downgrade at any time. The change takes effect immediately."
+          },
+          {
+            "question": "Are there any hidden fees?",
+            "answer": "No hidden fees. You only pay the displayed price, with no surprises."
+          },
+          {
+            "question": "How do I cancel my subscription?",
+            "answer": "You can cancel from your company dashboard. The subscription remains active until the end of the paid period."
+          }
+        ]
+      },
+      "cta": {
+        "title": "Have a question?",
+        "subtitle": "Our team is here to help.",
+        "button": "Contact us"
+      },
+      "loginBanner": {
+        "message": "Log in to enjoy all the benefits.",
+        "button": "Log in"
+      },
+      "toast": {
+        "mustLogin": "You must be logged in to subscribe.",
+        "noCompany": "You need a company to subscribe.",
+        "checkoutError": "An error occurred during payment.",
+        "mustLoginFree": "Log in to use the Free plan.",
+        "alreadyFree": "You are already on the Free plan.",
+        "cancelToFree": "Cancel your subscription to switch back to Free."
+      },
+      "downgradeBlocked": "You have {{active}} active offer(s). The target plan only allows {{limit}} offer(s). Deactivate or delete extra offers before switching plans."
     }
 
 

@@ -147,6 +147,24 @@
     "viewResults": "Vedi i {{count}} risultati"
   },
  "pricing": {
+  "launchOffer": {
+      "badge": "Offerta di lancio",
+      "monthlyPrice": "0 €",
+      "monthlyDescription": "Per 3 mesi, poi {{price}}/mese",
+      "annualPrice": "49 €",
+      "annualDescription": "Il primo anno, poi {{price}}/anno",
+      "perMonth": "/mese",
+      "perYear": "/anno"
+    },
+   "launchBanner": {
+        "title": "Accesso anticipato",
+        "description": "Approfitta di condizioni esclusive durante la nostra fase di lancio.",
+        "codeMonthly": "Codice: LAUNCH-MENSUEL",
+        "codeAnnual": "Codice: LAUNCH-ANNUEL"
+      },
+      "launchBadgeMonthly": "🎉 Lancio: 3 mesi gratis con il codice <strong>LAUNCH-MENSUEL</strong>",
+      "launchBadgeAnnual": "🎉 Lancio: 49 €/anno con il codice <strong>LAUNCH-ANNUEL</strong>",
+    
    "free": "Gratuito",
       "badge": "Prezzi",
       "title": "Piani su misura per le tue ambizioni",
@@ -1062,6 +1080,21 @@
   },
   
   "categories": {
+    "horeca": "Ospitalità",
+      "immobilier": "Immobiliare",
+      "art-design": "Arte e Design",
+      "audiovisuel-medias": "Audiovisivo e Media",
+      "energie-environnement": "Energia e Ambiente",
+      "sport-loisirs": "Sport e Tempo Libero",
+      "services-personne": "Servizi alla Persona",
+      "securite-defense": "Sicurezza e Difesa",
+      "telecom": "Telecomunicazioni",
+      "automobile-mecanique": "Automobilistico e Meccanica",
+      "mode-textile": "Moda e Tessile",
+      "pharma-biotech": "Farmaceutico e Biotecnologie",
+      "edition-journalisme": "Editoria e Giornalismo",
+      "conseil-audit": "Consulenza e Revisione",
+      "telemarketing-callcenter": "Telemarketing e Call Center",
   "administration": "Amministrazione",
   "agriculture": "Agricoltura e Ambiente",
   "autre": "Altro",

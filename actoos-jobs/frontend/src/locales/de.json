@@ -147,6 +147,24 @@
     "viewResults": "Die {{count}} Ergebnisse anzeigen"
   },
 "pricing": {
+  "launchOffer": {
+      "badge": "Einführungsangebot",
+      "monthlyPrice": "0 €",
+      "monthlyDescription": "Für 3 Monate, dann {{price}}/Monat",
+      "annualPrice": "49 €",
+      "annualDescription": "Das erste Jahr, dann {{price}}/Jahr",
+      "perMonth": "/Monat",
+      "perYear": "/Jahr"
+    },
+     "launchBanner": {
+        "title": "Frühzugang",
+        "description": "Nutzen Sie exklusive Konditionen während unserer Startphase.",
+        "codeMonthly": "Code: LAUNCH-MENSUEL",
+        "codeAnnual": "Code: LAUNCH-ANNUEL"
+      },
+      "launchBadgeMonthly": "🎉 Start: 3 Monate gratis mit dem Code <strong>LAUNCH-MENSUEL</strong>",
+      "launchBadgeAnnual": "🎉 Start: 49 €/Jahr mit dem Code <strong>LAUNCH-ANNUEL</strong>",
+   
   "free": "Kostenlos",
       "badge": "Preise",
       "title": "Pläne für Ihre Ambitionen",
@@ -1096,6 +1114,21 @@
   },
 
   "categories": {
+    "horeca": "Gastgewerbe",
+      "immobilier": "Immobilien",
+      "art-design": "Kunst und Design",
+      "audiovisuel-medias": "Audiovisuell und Medien",
+      "energie-environnement": "Energie und Umwelt",
+      "sport-loisirs": "Sport und Freizeit",
+      "services-personne": "Personenbezogene Dienstleistungen",
+      "securite-defense": "Sicherheit und Verteidigung",
+      "telecom": "Telekommunikation",
+      "automobile-mecanique": "Automobil und Mechanik",
+      "mode-textile": "Mode und Textil",
+      "pharma-biotech": "Pharma und Biotechnologie",
+      "edition-journalisme": "Verlag und Journalismus",
+      "conseil-audit": "Beratung und Wirtschaftsprüfung",
+      "telemarketing-callcenter": "Telemarketing und Callcenter",
   "administration": "Verwaltung",
   "agriculture": "Landwirtschaft & Umwelt",
   "autre": "Sonstiges",

@@ -7,12 +7,12 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
-import { usePreferencesContext } from '../contexts/PreferencesContext'; // ← nouveau
+import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { PLAN_LIMITS } from '../lib/planLimits';
 import {
-  Loader2, Check, Zap, Crown, Building2, ArrowRight, AlertCircle,
+  Loader2, Zap, Crown, Building2, ArrowRight, AlertCircle,
   ChevronDown, ChevronUp, X, Shield, Briefcase, Clock, Sparkles,
-  FileText, Calendar, Search, Users
+  FileText, Search, Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,7 +34,7 @@ const PricingPage = () => {
   const { t } = useTranslation();
   const { user, activeCompanyId } = useAuth();
   const { format } = useCurrencyFormatter();
-  const { prefs } = usePreferencesContext(); // ← récupération des préférences
+  const { prefs } = usePreferencesContext();
   const [pricing, setPricing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(null);
@@ -131,7 +131,7 @@ const PricingPage = () => {
           user_email: user.email,
           user_id: user.id,
           company_id: companyId,
-          preferred_currency: prefs.currency || 'XOF',   // ← devise de l'utilisateur
+          preferred_currency: prefs.currency || 'XOF',
         }),
       });
       const result = await response.json();
@@ -305,6 +305,16 @@ const PricingPage = () => {
         </span>
       </div>
 
+      {/* Bandeau Accès anticipé */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+        <div className="bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-2xl p-5 text-center">
+          <p className="text-sm text-slate-700">
+            <strong className="text-slate-900">{t('pricing.launchBanner.title')}</strong> – {t('pricing.launchBanner.description')}
+          </p>
+        </div>
+      </div>
+
+      {/* Grille des plans */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan) => {
@@ -328,6 +338,8 @@ const PricingPage = () => {
               annualPrice = businessAnnual;
               annualMonthlyEquivalent = Math.round(businessAnnual / 12);
             }
+
+            const isBusiness = plan.planKey === 'business';
 
             return (
               <Card key={plan.id} className={`relative bg-white border-2 ${plan.borderColor} rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-xl ${plan.badge ? 'scale-105' : ''}`}>
@@ -354,6 +366,7 @@ const PricingPage = () => {
                   <CardDescription className="text-slate-500 mt-2">{t(plan.descKey)}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-8">
+                  {/* Affichage du prix */}
                   <div className="text-center mb-6">
                     {plan.id === 'free' ? (
                       <>
@@ -362,31 +375,66 @@ const PricingPage = () => {
                         </div>
                         <div className="text-sm text-slate-400 mt-1">{t('pricing.perMonth')}</div>
                       </>
-                    ) : annual ? (
-                      <>
-                        <div className="text-3xl font-extrabold text-slate-900">
-                          {format(annualMonthlyEquivalent)}
-                          <span className="text-lg font-normal text-slate-500 ml-1">{t('pricing.perMonthShort')}</span>
-                        </div>
-                        <div className="text-sm text-slate-500 mt-1">
-                          {t('pricing.billedAnnually')} ({format(annualPrice)})
-                        </div>
-                        <div className="mt-2">
-                          <Badge className="bg-green-50 text-green-700 border-0 rounded-full text-xs">
-                            {t('pricing.toggle.savePercent')}
-                          </Badge>
-                        </div>
-                      </>
+                    ) : isBusiness ? (
+                      annual ? (
+                        // Business Annuel – promo
+                        <>
+                          <div className="text-sm text-slate-400 line-through mb-1">
+                            {format(annualPrice)}{t('pricing.launchOffer.perYear')}
+                          </div>
+                          <div className="text-3xl font-extrabold text-blue-600">
+                            {t('pricing.launchOffer.annualPrice')}
+                            <span className="text-lg font-normal text-slate-500 ml-1">{t('pricing.launchOffer.perYear')}</span>
+                          </div>
+                          <div className="text-sm text-green-600 mt-1 font-medium">
+                            {t('pricing.launchOffer.annualDescription', { price: format(annualPrice) })}
+                          </div>
+                          <Badge className="bg-green-500 text-white mt-2">{t('pricing.launchOffer.badge')}</Badge>
+                        </>
+                      ) : (
+                        // Business Mensuel – promo
+                        <>
+                          <div className="text-sm text-slate-400 line-through mb-1">
+                            {format(monthlyPrice)}{t('pricing.launchOffer.perMonth')}
+                          </div>
+                          <div className="text-3xl font-extrabold text-blue-600">
+                            {t('pricing.launchOffer.monthlyPrice')}
+                            <span className="text-lg font-normal text-slate-500 ml-1">{t('pricing.launchOffer.perMonth')}</span>
+                          </div>
+                          <div className="text-sm text-green-600 mt-1 font-medium">
+                            {t('pricing.launchOffer.monthlyDescription', { price: format(monthlyPrice) })}
+                          </div>
+                          <Badge className="bg-green-500 text-white mt-2">{t('pricing.launchOffer.badge')}</Badge>
+                        </>
+                      )
                     ) : (
-                      <>
-                        <div className="text-3xl font-extrabold text-slate-900">
-                          {format(monthlyPrice)}
-                          <span className="text-lg font-normal text-slate-500 ml-1">{t('pricing.perMonthShort')}</span>
-                        </div>
-                        <div className="text-sm text-slate-500 mt-1">
-                          {t('pricing.billedMonthly')}
-                        </div>
-                      </>
+                      // Pro ou autre plan – normal
+                      annual ? (
+                        <>
+                          <div className="text-3xl font-extrabold text-slate-900">
+                            {format(annualMonthlyEquivalent)}
+                            <span className="text-lg font-normal text-slate-500 ml-1">{t('pricing.perMonthShort')}</span>
+                          </div>
+                          <div className="text-sm text-slate-500 mt-1">
+                            {t('pricing.billedAnnually')} ({format(annualPrice)})
+                          </div>
+                          <div className="mt-2">
+                            <Badge className="bg-green-50 text-green-700 border-0 rounded-full text-xs">
+                              {t('pricing.toggle.savePercent')}
+                            </Badge>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-3xl font-extrabold text-slate-900">
+                            {format(monthlyPrice)}
+                            <span className="text-lg font-normal text-slate-500 ml-1">{t('pricing.perMonthShort')}</span>
+                          </div>
+                          <div className="text-sm text-slate-500 mt-1">
+                            {t('pricing.billedMonthly')}
+                          </div>
+                        </>
+                      )
                     )}
                   </div>
 

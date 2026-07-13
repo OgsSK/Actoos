@@ -2,11 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation, Trans } from 'react-i18next';
 import { apiFetch } from '../lib/api';
-import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Loader2, CheckCircle2, XCircle, ArrowRight, Zap } from 'lucide-react';
+
+// Devises qui utilisent des sous‑unités dans Stripe (centimes)
+const SUBUNIT_CURRENCIES = [
+  'EUR', 'USD', 'GBP', 'MAD', 'BRL', 'ARS', 'NGN', 'ZAR',
+  'SAR', 'AED', 'EGP', 'DZD', 'TND', 'CHF'
+];
+
+// Symboles monétaires les plus courants
+const CURRENCY_SYMBOLS = {
+  EUR: '€', USD: '$', XOF: 'FCFA', XAF: 'FCFA', GBP: '£',
+  MAD: 'MAD', BRL: 'R$', ARS: 'AR$', NGN: '₦', ZAR: 'R',
+  SAR: '﷼', AED: 'د.إ', EGP: 'ج.م', DZD: 'د.ج', TND: 'د.ت',
+  CHF: 'CHF', GNF: 'FG', CDF: 'FC', MGA: 'Ar'
+};
 
 const PaymentSuccess = () => {
   const { t } = useTranslation();
@@ -14,8 +27,6 @@ const PaymentSuccess = () => {
   const sessionId = searchParams.get('session_id');
   const [status, setStatus] = useState('loading');
   const [details, setDetails] = useState(null);
-
-  const { refreshProfile } = useAuth();
 
   useEffect(() => {
     if (!sessionId) {
@@ -31,7 +42,6 @@ const PaymentSuccess = () => {
         if (res.success) {
           setDetails(res);
           setStatus('success');
-          await refreshProfile(); // ✅ met à jour le profil avec les nouvelles permissions
         } else {
           setStatus('error');
         }
@@ -39,7 +49,7 @@ const PaymentSuccess = () => {
         setStatus('error');
       }
     })();
-  }, [sessionId, refreshProfile]);
+  }, [sessionId]);
 
   if (status === 'loading') {
     return (
@@ -68,8 +78,19 @@ const PaymentSuccess = () => {
 
   const isBoost = details?.isBoost;
   const packageName = details?.planLabel || t('paymentSuccess.subscription.title');
-  const amount = details?.amount;
-  const currency = details?.currency;
+  const currencyCode = (details?.currency || 'XOF').toUpperCase();
+  const rawAmount = details?.amount || 0;          // montant en centimes pour EUR, unités pour XOF
+
+  // Conversion en unité réelle
+  const displayAmount = SUBUNIT_CURRENCIES.includes(currencyCode)
+    ? rawAmount / 100
+    : rawAmount;
+
+  // Symbole monétaire
+  const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
+
+  // Affichage formaté
+  const formattedAmount = `${displayAmount.toFixed(2)} ${symbol}`;
 
   return (
     <div className="min-h-screen pt-20 flex items-center justify-center">
@@ -85,17 +106,13 @@ const PaymentSuccess = () => {
                 <Trans
                   i18nKey="paymentSuccess.boost.message"
                   values={{ packageName }}
-                  components={{
-                    badge: <Badge className="bg-blue-100 text-blue-700" />
-                  }}
+                  components={{ badge: <Badge className="bg-blue-100 text-blue-700" /> }}
                 />
               </div>
-              {amount > 0 && (
+              {rawAmount > 0 && (
                 <p className="text-sm text-slate-500 mb-6">
                   {t('paymentSuccess.amountPaidLabel')}{' '}
-                  <strong>
-                    {amount.toLocaleString('fr-FR')} {currency}
-                  </strong>
+                  <strong>{formattedAmount}</strong>
                 </p>
               )}
               <div className="flex flex-col gap-3">
@@ -116,17 +133,13 @@ const PaymentSuccess = () => {
                 <Trans
                   i18nKey="paymentSuccess.subscription.message"
                   values={{ packageName }}
-                  components={{
-                    badge: <Badge className="bg-blue-100 text-blue-700" />
-                  }}
+                  components={{ badge: <Badge className="bg-blue-100 text-blue-700" /> }}
                 />
               </div>
-              {amount > 0 && (
+              {rawAmount > 0 && (
                 <p className="text-sm text-slate-500 mb-6">
                   {t('paymentSuccess.amountPaidLabel')}{' '}
-                  <strong>
-                    {amount.toLocaleString('fr-FR')} {currency}
-                  </strong>
+                  <strong>{formattedAmount}</strong>
                 </p>
               )}
               <Link to="/dashboard/entreprise">
