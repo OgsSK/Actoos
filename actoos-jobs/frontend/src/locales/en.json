@@ -1871,6 +1871,13 @@
   }
 },
 "createJob": {
+   "iaProgress": {
+      "analyzing": "Analyzing title...",
+      "generating": "Generating...",
+      "formatting": "Final formatting..."
+    },
+    "iaCancel": "Cancel",
+  "iaGenerate": "Generate with AI",
       "back": "Back",
       "titleNew": "New job offer",
       "titleEdit": "Edit job offer",
@@ -1944,6 +1951,11 @@
         "seePlans": "See plans"
       },
       "toasts": {
+        "iaGenerationCancelled": "AI generation cancelled",
+        "titleRequiredForIA": "Please enter a title before using AI.",
+        "iaBusinessOnly": "Full AI generation is reserved for the Business plan.",
+        "iaGenerationSuccess": "Job offer generated successfully!",
+        "iaGenerationError": "Error during AI generation.",
         "userNotIdentified": "User not identified",
         "noCompanySelected": "No company selected",
         "companyNotFound": "Company not found",
@@ -2707,6 +2719,7 @@
     }
   },
   "common": {
+    "filters": "Filters",
     "previous": "Previous",
     "next": "Next",
      "city": "City",

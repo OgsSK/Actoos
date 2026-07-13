@@ -163,7 +163,7 @@ class NewsletterRequest(BaseModel):
 class AIAgentRequest(BaseModel):
     agent_id: str
     text: str
-    context: Optional[str] = None
+    context: Optional[dict] = None    # ← changé de str à dict
     language: Optional[str] = "fr"
 
 class CancelSubscriptionRequest(BaseModel):
@@ -487,7 +487,7 @@ def email_admin_message(greeting, content):
     <p>Consultez vos messages sur <a href="https://jobs.actoos.com">Actoos Jobs</a>.</p>
     """
 
-# ----- Agents IA -----
+# ----- IA Agents -----
 AGENT_PROMPTS = {
     "job-description": "Tu es un expert en recrutement au Mali. Améliore le texte suivant pour une offre d'emploi. Rend-le attractif, clair, bien structuré, et inclusif. Retourne uniquement le texte amélioré, sans commentaire.",
     "job-title": "Génère 3 titres d'offre d'emploi accrocheurs (maximum 10 mots chacun) à partir de la description suivante. Retourne les titres sous forme de liste numérotée, sans commentaire.",
@@ -511,7 +511,18 @@ AGENT_PROMPTS = {
         "Format de réponse JSON : {\"title\":\"...\", \"excerpt\":\"...\", \"content\":\"...\", \"category\":\"...\"}"
     ),
     "translator": "Tu es un traducteur professionnel. Traduis le texte suivant en {language}. Retourne uniquement la traduction, sans commentaire.",
+    "job-full-generation": (
+        "Tu es un expert en recrutement. À partir du titre d'offre suivant, génère une offre d'emploi complète pour le pays {pays} avec la devise {devise}. "
+        "Utilise les catégories disponibles : {categories}. "
+        "Retourne uniquement un JSON valide (pas de texte autour) avec les clés suivantes : "
+        "title, description, requirements, responsibilities, benefits, category_slug (un slug parmi ceux fournis), "
+        "contract_type (cdi, cdd, freelance, stage, alternance), experience_level (junior, intermediaire, senior, expert), "
+        "salary_min (nombre entier, en {devise}), salary_max (nombre entier, en {devise}), "
+        "is_remote (true/false), skills_required (liste de 5 à 10 compétences), city_name (optionnel). "
+        "Adapte le salaire au marché local pour ce poste dans ce pays."
+    ),
 }
+
 AGENT_PROMPTS_EN = {
     "job-title": "Generate 3 catchy job offer titles (maximum 10 words each) based on the following description. Return the titles as a numbered list, with no comment.",
     "job-description": "You are a recruitment expert. Improve the following job offer text. Make it attractive, clear, well-structured and inclusive. Return only the improved text, with no comment.",
@@ -534,6 +545,16 @@ AGENT_PROMPTS_EN = {
         "Also provide an excerpt (2 sentences) and a relevant category. "
         "JSON response format: {\"title\":\"...\", \"excerpt\":\"...\", \"content\":\"...\", \"category\":\"...\"}."
     ),
+    "job-full-generation": (
+        "You are a recruitment expert. Based on the following job title, generate a complete job offer for the country {country} with the currency {currency}. "
+        "Use the available categories: {categories}. "
+        "Return only a valid JSON (no extra text) with the following keys: "
+        "title, description, requirements, responsibilities, benefits, category_slug (one of the provided slugs), "
+        "contract_type (cdi, cdd, freelance, stage, alternance), experience_level (junior, intermediaire, senior, expert), "
+        "salary_min (integer, in {currency}), salary_max (integer, in {currency}), "
+        "is_remote (true/false), skills_required (list of 5-10 skills), city_name (optional). "
+        "Adapt the salary to the local market for this position in this country."
+    ),
 }
 
 FALLBACK_MODELS = [
@@ -545,25 +566,81 @@ FALLBACK_MODELS = [
     "openai/gpt-3.5-turbo",
 ]
 
+LANG_NAMES = {
+    "en": "anglais", "it": "italien", "ar": "arabe", "de": "allemand",
+    "nl": "néerlandais", "pt": "portugais", "es": "espagnol"
+}
+
+def get_local_salary_stats(country: str, category_slug: str):
+    """Récupère les salaires moyens corrigés pour un pays et une catégorie."""
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        return None
+
+    headers = {
+        "apikey": supabase_key,
+        "Authorization": f"Bearer {supabase_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {"p_country": country, "p_category_slug": category_slug}
+    try:
+        resp = httpx.post(
+            f"{supabase_url}/rest/v1/rpc/get_salary_stats",
+            json=payload,
+            headers=headers
+        )
+        if resp.status_code == 200 and resp.json():
+            return resp.json()[0]
+    except Exception as e:
+        print(f"[Stats] Erreur récupération stats: {e}")
+    return None
+
 @app.post("/api/ai/agent")
 async def ai_agent(req: AIAgentRequest, request: Request = None):
     if not OPENROUTER_API_KEY:
         raise HTTPException(status_code=500, detail="OpenRouter API key not configured")
 
+    # ---------- Déterminer la langue cible ----------
     target_language = req.language or "fr"
     if request:
         accept_lang = request.headers.get("accept-language", "")
         if target_language == "fr" and accept_lang:
             browser_lang = accept_lang.split(",")[0].split("-")[0]
-            if browser_lang in ["en", "it", "ar", "de", "nl", "pt", "es"]:
+            if browser_lang in LANG_NAMES:
                 target_language = browser_lang
 
-    LANG_NAMES = {
-        "en": "anglais", "it": "italien", "ar": "arabe", "de": "allemand",
-        "nl": "néerlandais", "pt": "portugais", "es": "espagnol"
-    }
+    # ---------- Agent de génération complète d'offre ----------
+    if req.agent_id == "job-full-generation":
+        country = (req.context or {}).get("country", "non spécifié")
+        currency = (req.context or {}).get("currency", "XOF")
+        categories = (req.context or {}).get("categories", [])
+        categories_str = ", ".join(categories) if categories else "général"
 
-    if req.agent_id == "translator":
+        if target_language != "fr":
+            system_prompt = AGENT_PROMPTS_EN.get("job-full-generation", AGENT_PROMPTS["job-full-generation"])
+            system_prompt = system_prompt.replace("{country}", country).replace("{currency}", currency).replace("{categories}", categories_str)
+            lang_name = LANG_NAMES.get(target_language, "anglais")
+            user_text = f"Job title: {req.text}\nGenerate the complete job offer in {lang_name}."
+        else:
+            system_prompt = AGENT_PROMPTS["job-full-generation"]
+            system_prompt = system_prompt.replace("{pays}", country).replace("{devise}", currency).replace("{categories}", categories_str)
+            user_text = f"Titre de l'offre : {req.text}\nGénère l'offre complète en français."
+
+        # Enrichissement avec les statistiques locales
+                # Enrichissement avec les statistiques locales
+        if categories:
+            stats = get_local_salary_stats(country, categories[0])
+            if stats and stats.get("count_rows", 0) > 2:
+                salary_hint = (
+                    f" IMPORTANT : Pour ce poste dans ce pays, les salaires observés via les corrections d'utilisateurs sont "
+                    f"strictement compris entre {int(stats['avg_salary_min'])} et {int(stats['avg_salary_max'])} {currency}. "
+                    f"Tu dois absolument utiliser cette fourchette pour les champs salary_min et salary_max, sans la dépasser."
+                )
+                user_text += salary_hint
+
+    # ---------- Agent traducteur ----------
+    elif req.agent_id == "translator":
         system_prompt = AGENT_PROMPTS.get("translator")
         if not system_prompt:
             raise HTTPException(status_code=400, detail="Agent traducteur non configuré")
@@ -572,12 +649,16 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
         user_text = f"Texte à traduire :\n\n{req.text}"
         if req.context:
             user_text += f"\n\nContexte supplémentaire : {req.context}"
+
+    # ---------- Agent avec prompt anglais ----------
     elif target_language != "fr" and req.agent_id in AGENT_PROMPTS_EN:
         system_prompt = AGENT_PROMPTS_EN[req.agent_id]
         lang_name = LANG_NAMES.get(target_language, "anglais")
         user_text = f"Improve the following text and answer in {lang_name}:\n\n{req.text}"
         if req.context:
             user_text += f"\n\nAdditional context: {req.context}"
+
+    # ---------- Agent standard (français) ----------
     else:
         system_prompt = AGENT_PROMPTS.get(req.agent_id)
         if not system_prompt:

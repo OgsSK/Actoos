@@ -2126,6 +2126,13 @@
       }
     },
     "createJob": {
+       "iaProgress": {
+      "analyzing": "Titel wird analysiert...",
+      "generating": "Generierung läuft...",
+      "formatting": "Endformatierung..."
+    },
+     "iaCancel": "Abbrechen",
+       "iaGenerate": "Mit KI generieren",
       "back": "Zurück",
       "titleNew": "Neue Stellenanzeige",
       "titleEdit": "Stellenanzeige bearbeiten",
@@ -2199,6 +2206,11 @@
         "seePlans": "Pläne ansehen"
       },
       "toasts": {
+        "iaGenerationCancelled": "Generierung abgebrochen",
+         "titleRequiredForIA": "Bitte geben Sie einen Titel ein, bevor Sie die KI nutzen.",
+        "iaBusinessOnly": "Die vollständige KI-Generierung ist dem Business-Tarif vorbehalten.",
+        "iaGenerationSuccess": "Stellenanzeige erfolgreich generiert!",
+        "iaGenerationError": "Fehler bei der KI-Generierung.",
         "userNotIdentified": "Benutzer nicht identifiziert",
         "noCompanySelected": "Kein Unternehmen ausgewählt",
         "companyNotFound": "Unternehmen nicht gefunden",
@@ -2963,6 +2975,7 @@
       }
     },
     "common": {
+      "filters": "Filter",
       "previous": "Zurück",
     "next": "Weiter",
       "city": "Stadt",

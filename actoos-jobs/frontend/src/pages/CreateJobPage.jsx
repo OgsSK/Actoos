@@ -14,7 +14,7 @@ import { useCities } from '../hooks/useCities';
 import {
   Briefcase, MapPin, DollarSign, Users,
   Plus, X, Save, Loader2, ChevronLeft, Send,
-  GraduationCap, ArrowRight, Building2
+  GraduationCap, ArrowRight, Building2, Sparkles
 } from 'lucide-react';
 import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { apiFetch } from '../lib/api';
@@ -39,6 +39,10 @@ const CreateJobPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [iaLoading, setIaLoading] = useState(false);
+  const [iaProgressText, setIaProgressText] = useState('');
+  const [iaAbortController, setIaAbortController] = useState(null);
+  const [iaGeneratedData, setIaGeneratedData] = useState(null);
   const [company, setCompany] = useState(null);
   const [categories, setCategories] = useState([]);
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -156,6 +160,112 @@ const CreateJobPage = () => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
   };
 
+  // ---------- Génération IA avec annulation ----------
+  const handleGenerateWithIA = async () => {
+    if (!form.title.trim()) {
+      toast.error(t('createJob.toasts.titleRequiredForIA'));
+      return;
+    }
+
+    if (company?.subscription_plan !== 'business') {
+      toast.error(t('createJob.toasts.iaBusinessOnly'));
+      return;
+    }
+
+    const controller = new AbortController();
+    setIaAbortController(controller);
+
+    setIaLoading(true);
+    setIaProgressText(t('createJob.iaProgress.analyzing'));
+
+    const progressSteps = [
+      'createJob.iaProgress.analyzing',
+      'createJob.iaProgress.generating',
+      'createJob.iaProgress.formatting',
+    ];
+
+    let stepIndex = 0;
+    const progressInterval = setInterval(() => {
+      if (stepIndex < progressSteps.length) {
+        setIaProgressText(t(progressSteps[stepIndex]));
+        stepIndex++;
+      }
+    }, 1500);
+
+    try {
+      const res = await apiFetch('/api/ai/agent', {
+        method: 'POST',
+        signal: controller.signal,
+        body: JSON.stringify({
+          agent_id: 'job-full-generation',
+          text: form.title,
+          context: {
+            country: prefs.country || 'FR',
+            currency: prefs.currency || 'XOF',
+            categories: categories.map(cat => cat.slug),
+          },
+          language: i18n.language || 'fr',
+        }),
+      });
+
+      clearInterval(progressInterval);
+
+      const generated = JSON.parse(res.result);
+      setIaGeneratedData(generated);
+
+      setForm(prev => ({
+        ...prev,
+        title: generated.title || prev.title,
+        description: generated.description || prev.description,
+        requirements: generated.requirements || prev.requirements,
+        responsibilities: generated.responsibilities || prev.responsibilities,
+        benefits: generated.benefits || prev.benefits,
+        contract_type: generated.contract_type || prev.contract_type,
+        experience_level: generated.experience_level || prev.experience_level,
+        salary_min: generated.salary_min ? String(generated.salary_min) : prev.salary_min,
+        salary_max: generated.salary_max ? String(generated.salary_max) : prev.salary_max,
+        is_remote: generated.is_remote ?? prev.is_remote,
+        skills_required: generated.skills_required || prev.skills_required,
+        category_id: generated.category_slug
+          ? categories.find(cat => cat.slug === generated.category_slug)?.id || prev.category_id
+          : prev.category_id,
+      }));
+
+      toast.success(t('createJob.toasts.iaGenerationSuccess'));
+
+      // Surbrillance temporaire sur la description
+      const descriptionTextarea = document.getElementById('job-description-textarea');
+      if (descriptionTextarea) {
+        descriptionTextarea.classList.add('ring-2', 'ring-blue-300');
+        setTimeout(() => {
+          descriptionTextarea.classList.remove('ring-2', 'ring-blue-300');
+        }, 2000);
+      }
+    } catch (err) {
+      clearInterval(progressInterval);
+      if (err.name === 'AbortError') {
+        console.log('Génération IA annulée');
+      } else {
+        console.error('Erreur génération IA:', err);
+        toast.error(t('createJob.toasts.iaGenerationError'));
+      }
+    } finally {
+      setIaLoading(false);
+      setIaProgressText('');
+      setIaAbortController(null);
+    }
+  };
+
+  // ---------- Annulation manuelle ----------
+  const handleCancelIA = () => {
+    if (iaAbortController) {
+      iaAbortController.abort();
+      setIaAbortController(null);
+      toast.info(t('createJob.toasts.iaGenerationCancelled'));
+    }
+  };
+
+  // ---------- Sauvegarde / Publication ----------
   const handleSave = async (publish = false) => {
     if (!company?.is_active) {
       toast.error(t('createJob.toasts.companySuspended'));
@@ -262,6 +372,86 @@ const CreateJobPage = () => {
         if (error) throw error;
       }
 
+      // --- Enregistrement des corrections IA ---
+      if (iaGeneratedData && user) {
+        const mapping = {
+          title: 'title',
+          description: 'description',
+          requirements: 'requirements',
+          responsibilities: 'responsibilities',
+          benefits: 'benefits',
+          contract_type: 'contract_type',
+          experience_level: 'experience_level',
+          salary_min: 'salary_min',
+          salary_max: 'salary_max',
+          is_remote: 'is_remote',
+          skills_required: 'skills_required',
+        };
+
+        const correctedFields = {};
+
+        for (const [iaKey, formKey] of Object.entries(mapping)) {
+          const originalValue = iaGeneratedData[iaKey];
+          const finalValue = form[formKey];
+
+          const normOriginal = Array.isArray(originalValue) ? [...originalValue].sort().join(',') : String(originalValue ?? '');
+          const normFinal = Array.isArray(finalValue) ? [...finalValue].sort().join(',') : String(finalValue ?? '');
+
+          if (normOriginal !== normFinal) {
+            correctedFields[formKey] = {
+              original: originalValue,
+              corrected: finalValue,
+            };
+          }
+        }
+
+        const generatedSlug = iaGeneratedData.category_slug;
+        if (generatedSlug) {
+          const generatedCatId = categories.find(cat => cat.slug === generatedSlug)?.id;
+          if (generatedCatId && generatedCatId !== form.category_id) {
+            correctedFields.category_id = {
+              original: generatedCatId,
+              corrected: form.category_id,
+            };
+          }
+        }
+
+        console.log('🔍 Champs modifiés détectés :', correctedFields);
+
+        if (Object.keys(correctedFields).length > 0) {
+          try {
+            const { error } = await supabase.from('ai_corrections').insert({
+              agent_id: 'job-full-generation',
+              user_id: user.id,
+              original: iaGeneratedData,
+              corrected: correctedFields,
+              context: {
+                country: prefs.country || null,
+                currency: prefs.currency || 'XOF',
+                category_slug: categories.find(cat => cat.id === form.category_id)?.slug || null,
+                category_name: categories.find(cat => cat.id === form.category_id)?.name || null,
+                experience_level: form.experience_level || null,
+                contract_type: form.contract_type || null,
+                city_id: form.city_id || null,
+                is_remote: form.is_remote || false,
+              },
+            });
+
+            if (error) {
+              console.error('❌ Erreur insertion Supabase :', error);
+            } else {
+              console.log('✅ Correction IA enregistrée dans la base');
+            }
+          } catch (err) {
+            console.error('❌ Exception insertion :', err);
+          }
+        } else {
+          console.log('ℹ️ Aucune modification détectée, pas d’enregistrement');
+        }
+
+        setIaGeneratedData(null);
+      }
+
       if (publish) {
         if (finalStatus === 'pending') {
           toast.success(t('createJob.toasts.submittedForValidation'));
@@ -359,6 +549,7 @@ const CreateJobPage = () => {
           </div>
         )}
 
+        {/* En-tête avec boutons Save, IA, Submit */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
           <div className="flex items-center gap-2 sm:gap-4">
             <Button variant="ghost" onClick={() => navigate('/dashboard/entreprise')} className="-ml-2 shrink-0" type="button">
@@ -396,6 +587,44 @@ const CreateJobPage = () => {
               )}
               <span className="truncate">{t('createJob.save')}</span>
             </Button>
+
+            {/* Bouton IA + Annulation */}
+            {company?.subscription_plan === 'business' && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleGenerateWithIA}
+                  disabled={iaLoading}
+                  className="gap-2 relative"
+                  type="button"
+                >
+                  {iaLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>{iaProgressText || t('createJob.iaProgress.generating')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      {t('createJob.iaGenerate')}
+                    </>
+                  )}
+                </Button>
+                {iaLoading && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCancelIA}
+                    className="text-red-500"
+                    type="button"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    {t('createJob.iaCancel')}
+                  </Button>
+                )}
+              </div>
+            )}
+
             <Button
               onClick={() => handleSave(true)}
               disabled={isPublishDisabled()}
@@ -413,7 +642,9 @@ const CreateJobPage = () => {
           </div>
         </div>
 
+        {/* Formulaire */}
         <div className="space-y-4 sm:space-y-6">
+          {/* Informations de base */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -532,6 +763,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Description */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.description')}</h2>
@@ -539,6 +771,7 @@ const CreateJobPage = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.description')}</label>
                 <textarea
+                  id="job-description-textarea"
                   value={form.description}
                   onChange={(e) => {
                     setForm({ ...form, description: e.target.value });
@@ -546,7 +779,7 @@ const CreateJobPage = () => {
                   }}
                   rows={6}
                   className={cn(
-                    'w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 resize-none',
+                    'w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 resize-none transition-all',
                     errors.description
                       ? 'border border-red-500 focus:ring-red-500'
                       : 'border border-slate-200 focus:ring-blue-500'
@@ -619,6 +852,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Compétences */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.skills')}</h2>
@@ -662,6 +896,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Localisation */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -721,6 +956,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Salaire */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -767,6 +1003,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* Boutons du bas (Save brouillon + Publier) */}
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2 sm:pt-4">
             <Button
               variant="outline"
@@ -805,6 +1042,7 @@ const CreateJobPage = () => {
         </div>
       </div>
 
+      {/* Modal limite d'offres */}
       {showLimitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 sm:p-8 text-center">

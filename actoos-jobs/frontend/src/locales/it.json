@@ -2022,6 +2022,13 @@
       }
     },
     "createJob": {
+      "iaProgress": {
+      "analyzing": "Analisi del titolo...",
+      "generating": "Generazione in corso...",
+      "formatting": "Formattazione finale..."
+    },
+    "iaCancel": "Annulla",
+      "iaGenerate": "Genera con IA",
       "back": "Indietro",
       "titleNew": "Nuova offerta",
       "titleEdit": "Modifica offerta",
@@ -2095,6 +2102,11 @@
         "seePlans": "Vedi i piani"
       },
       "toasts": {
+        "iaGenerationCancelled": "Generazione annullata",
+        "titleRequiredForIA": "Inserisci un titolo prima di usare l'IA.",
+        "iaBusinessOnly": "La generazione IA completa è riservata al piano Business.",
+        "iaGenerationSuccess": "Offerta generata con successo!",
+        "iaGenerationError": "Errore durante la generazione IA.",
         "userNotIdentified": "Utente non identificato",
         "noCompanySelected": "Nessuna azienda selezionata",
         "companyNotFound": "Azienda non trovata",
@@ -2859,6 +2871,7 @@
       }
     },
     "common": {
+      "filters": "Filtri" ,
       "previous": "Precedente",
     "next": "Successivo",
       "city": "Città",

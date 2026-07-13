@@ -2021,6 +2021,13 @@
       }
     },
     "createJob": {
+      "iaProgress": {
+      "analyzing": "تحليل العنوان...",
+      "generating": "جارٍ الإنشاء...",
+      "formatting": "التنسيق النهائي..."
+    },
+    "iaCancel": "إلغاء",
+      "iaGenerate": "إنشاء باستخدام الذكاء الاصطناعي",
       "back": "رجوع",
       "titleNew": "عرض عمل جديد",
       "titleEdit": "تعديل عرض العمل",
@@ -2094,6 +2101,11 @@
         "seePlans": "عرض الخطط"
       },
       "toasts": {
+        "iaGenerationCancelled": "تم إلغاء الإنشاء",
+        "titleRequiredForIA": "يرجى إدخال عنوان قبل استخدام الذكاء الاصطناعي.",
+        "iaBusinessOnly": "الإنشاء الكامل بالذكاء الاصطناعي مخصص لخطة الأعمال.",
+        "iaGenerationSuccess": "تم إنشاء العرض بنجاح!",
+        "iaGenerationError": "خطأ أثناء الإنشاء بالذكاء الاصطناعي.",
         "userNotIdentified": "مستخدم غير معروف",
         "noCompanySelected": "لم يتم اختيار شركة",
         "companyNotFound": "الشركة غير موجودة",
@@ -2858,6 +2870,7 @@
       }
     },
     "common": {
+      "filters": "عوامل التصفية",
       "previous": "السابق",
     "next": "التالي",
       "city": "المدينة",

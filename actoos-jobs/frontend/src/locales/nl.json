@@ -2087,6 +2087,13 @@
       }
     },
     "createJob": {
+      "iaProgress": {
+      "analyzing": "Titel analyseren...",
+      "generating": "Genereren...",
+      "formatting": "Laatste opmaak..."
+    },
+     "iaCancel": "Annuleren",
+      "iaGenerate": "Genereer met AI",
       "back": "Terug",
       "titleNew": "Nieuwe vacature",
       "titleEdit": "Vacature bewerken",
@@ -2160,6 +2167,11 @@
         "seePlans": "Abonnementen bekijken"
       },
       "toasts": {
+         "iaGenerationCancelled": "Generatie geannuleerd",
+        "titleRequiredForIA": "Voer een titel in voordat u de AI gebruikt.",
+        "iaBusinessOnly": "Volledige AI-generatie is voorbehouden aan het Business-abonnement.",
+        "iaGenerationSuccess": "Vacature succesvol gegenereerd!",
+        "iaGenerationError": "Fout bij het genereren met AI.",
         "userNotIdentified": "Gebruiker niet geïdentificeerd",
         "noCompanySelected": "Geen bedrijf geselecteerd",
         "companyNotFound": "Bedrijf niet gevonden",
@@ -2924,6 +2936,7 @@
       }
     },
     "common": {
+      "filters": "Filters",
       "previous": "Vorige",
     "next": "Volgende",
       "city": "Stad",
