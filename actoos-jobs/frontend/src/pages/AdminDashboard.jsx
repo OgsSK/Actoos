@@ -1050,9 +1050,9 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleApproveJob = async (job) => {
+const handleApproveJob = async (job) => {
     if (!job.company?.is_verified || !job.company?.is_active) {
-      toast.error(t('adminDashboard.jobs.companySuspendedOrNotVerified', "L'entreprise est suspendue ou non vérifiée."));
+      toast.error(t('adminDashboard.jobs.companySuspendedOrNotVerified'));
       return;
     }
     const plan = job.company?.subscription_plan || 'free';
@@ -1102,6 +1102,16 @@ const AdminDashboard = () => {
         } catch (emailError) {
           console.error('Erreur envoi email validation offre:', emailError);
         }
+      }
+
+      // ✅ Notification des followers (offre devenue active)
+      try {
+        await apiFetch(`/api/jobs/${job.id}/notify-followers`, {
+          method: 'POST',
+          body: JSON.stringify({ user_id: user.id }),
+        });
+      } catch (err) {
+        console.warn('Notification followers échouée (non bloquant) :', err);
       }
     } catch (error) {
       toast.error(t('adminDashboard.jobs.approveError'));

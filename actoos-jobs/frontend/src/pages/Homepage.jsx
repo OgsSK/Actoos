@@ -9,7 +9,6 @@ import { fetchCategories } from '../lib/data';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import {
   Search, MapPin, Briefcase, Building2, ChevronRight,
@@ -19,7 +18,9 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import { toast } from 'sonner';
 
-// ---------- Barre de recherche (tags dynamiques + défilement mobile) ----------
+/* ===================================================================
+   Barre de recherche avec tags de catégories
+   =================================================================== */
 const SearchHero = ({ cities, categories = [] }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -30,9 +31,7 @@ const SearchHero = ({ cities, categories = [] }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
-    if (keyword.trim().length < 2) {
-      setSuggestions([]); setShowSuggestions(false); return;
-    }
+    if (keyword.trim().length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
     const timer = setTimeout(async () => {
       setLoadingSuggestions(true);
       const { data } = await supabase.from('jobs').select('title').eq('status', 'active')
@@ -55,7 +54,6 @@ const SearchHero = ({ cities, categories = [] }) => {
     setShowSuggestions(false);
   };
 
-  // ✅ Tags dynamiques : les 6 premières catégories (hors "Autre", déjà triées par popularité)
   const categoryTags = categories.filter(cat => cat.slug !== 'other' && cat.slug !== 'autre').slice(0, 6);
 
   return (
@@ -104,9 +102,8 @@ const SearchHero = ({ cities, categories = [] }) => {
           </Button>
         </form>
 
-        {/* Tags dynamiques – défilement horizontal sur mobile */}
+        {/* Tags catégories */}
         <div className="mt-6">
-          {/* Mobile : scroll horizontal */}
           <div className="flex lg:hidden overflow-x-auto gap-2 pb-2 scrollbar-hide -mx-4 px-4 snap-x">
             {categoryTags.map((cat) => (
               <button
@@ -118,7 +115,6 @@ const SearchHero = ({ cities, categories = [] }) => {
               </button>
             ))}
           </div>
-          {/* Desktop : grille flexible centrée */}
           <div className="hidden lg:flex flex-wrap justify-center gap-2">
             {categoryTags.map((cat) => (
               <button
@@ -136,7 +132,9 @@ const SearchHero = ({ cities, categories = [] }) => {
   );
 };
 
-// ---------- Catégories avec défilement horizontal (flèches conditionnelles) ----------
+/* ===================================================================
+   Bandeau catégories avec défilement horizontal
+   =================================================================== */
 const CategoriesStrip = ({ categories = [] }) => {
   const { t } = useTranslation();
   const scrollRef = useRef(null);
@@ -156,16 +154,11 @@ const CategoriesStrip = ({ categories = [] }) => {
     if (el) {
       el.addEventListener('scroll', checkScroll, { passive: true });
       window.addEventListener('resize', checkScroll);
-      return () => {
-        el.removeEventListener('scroll', checkScroll);
-        window.removeEventListener('resize', checkScroll);
-      };
+      return () => { el.removeEventListener('scroll', checkScroll); window.removeEventListener('resize', checkScroll); };
     }
   }, [categories]);
 
-  const scroll = (direction) => {
-    if (scrollRef.current) { scrollRef.current.scrollBy({ left: direction * 300, behavior: 'smooth' }); }
-  };
+  const scroll = (direction) => { if (scrollRef.current) scrollRef.current.scrollBy({ left: direction * 300, behavior: 'smooth' }); };
 
   if (categories.length === 0) return null;
 
@@ -200,7 +193,9 @@ const CategoriesStrip = ({ categories = [] }) => {
   );
 };
 
-// ---------- Offres récentes ----------
+/* ===================================================================
+   Offres récentes
+   =================================================================== */
 const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
   const { t } = useTranslation();
   const { user, isCompany, isCandidate, activeCompanyId } = useAuth();
@@ -281,7 +276,9 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
   );
 };
 
-// ---------- Carte d'offre modernisée ----------
+/* ===================================================================
+   Carte d'offre modernisée
+   =================================================================== */
 const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
@@ -327,25 +324,9 @@ const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
   );
 };
 
-// ---------- Section Villes ----------
-const CitiesSection = ({ cities }) => {
-  const { t } = useTranslation();
-  if (!cities || cities.length === 0) return null;
-  return (
-    <section className="py-12 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 className="text-2xl font-bold text-slate-900 mb-6">{t('home.popularCities', 'Villes populaires')}</h2>
-        <div className="flex flex-wrap justify-center gap-3">
-          {cities.slice(0, 10).map(city => (
-            <Link key={city.id} to={`/emplois?location=${encodeURIComponent(city.name)}`} className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-full text-sm text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-colors">{city.name}</Link>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// ---------- Comment ça marche ----------
+/* ===================================================================
+   Comment ça marche
+   =================================================================== */
 const HowItWorksSection = () => {
   const { t } = useTranslation();
   const steps = [
@@ -372,7 +353,9 @@ const HowItWorksSection = () => {
   );
 };
 
-// ---------- CTA Recruteur ----------
+/* ===================================================================
+   CTA Recruteur
+   =================================================================== */
 const CompanyCTASection = () => {
   const { t } = useTranslation();
   const { isCompany, activeCompanyId } = useAuth();
@@ -396,7 +379,9 @@ const CompanyCTASection = () => {
   );
 };
 
-// ---------- Pourquoi Actoos ----------
+/* ===================================================================
+   Pourquoi Actoos
+   =================================================================== */
 const WhyChooseSection = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -429,15 +414,19 @@ const WhyChooseSection = () => {
   );
 };
 
-// ---------- Page principale ----------
+/* ===================================================================
+   Page principale
+   =================================================================== */
 const Homepage = () => {
   const [countryId, setCountryId] = useState(null);
   const [countryLoading, setCountryLoading] = useState(true);
   const [activeCompanyIds, setActiveCompanyIds] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [popularCities, setPopularCities] = useState([]);
   const { prefs } = usePreferencesContext();
   const { cities: filteredCities } = useCities(prefs.country);
 
+  // Résolution du pays
   useEffect(() => {
     if (prefs.country) {
       supabase.from('countries').select('id').eq('code', prefs.country).single()
@@ -446,6 +435,7 @@ const Homepage = () => {
     } else { setCountryId(null); setCountryLoading(false); }
   }, [prefs.country]);
 
+  // Chargement des entreprises actives
   useEffect(() => {
     if (countryLoading) return;
     let q = supabase.from('companies').select('id').eq('is_verified', true).eq('is_active', true);
@@ -453,8 +443,7 @@ const Homepage = () => {
     q.then(({ data }) => setActiveCompanyIds(data ? data.map(c => c.id) : []));
   }, [countryId, countryLoading]);
 
-  // ✅ Chargement des catégories avec comptage d'offres actives pour les trier par popularité,
-  //    et "Autre" (slug 'other' ou 'autre') toujours à la fin.
+  // Catégories avec au moins une offre active
   useEffect(() => {
     const loadPopularCategories = async () => {
       try {
@@ -474,18 +463,15 @@ const Homepage = () => {
 
         const isOther = (cat) => cat.slug === 'other' || cat.slug === 'autre';
         const otherCategory = categoriesWithCount.find(isOther);
-        const otherCategories = categoriesWithCount.filter(cat => !isOther(cat));
+        let otherCategories = categoriesWithCount.filter(cat => !isOther(cat) && cat.jobsCount > 0);
 
         otherCategories.sort((a, b) => {
           if (b.jobsCount !== a.jobsCount) return b.jobsCount - a.jobsCount;
           return (a.name || '').localeCompare(b.name || '');
         });
 
-        const sortedCategories = otherCategory
-          ? [...otherCategories, otherCategory]
-          : otherCategories;
-
-        setCategories(sortedCategories);
+        const filteredOther = otherCategory && otherCategory.jobsCount > 0 ? [otherCategory] : [];
+        setCategories([...otherCategories, ...filteredOther]);
       } catch (error) {
         console.error('Erreur chargement catégories populaires:', error);
         const fallback = await fetchCategories();
@@ -495,12 +481,38 @@ const Homepage = () => {
     loadPopularCategories();
   }, []);
 
+  // Villes avec au moins une offre active
+  useEffect(() => {
+    const loadCitiesWithJobs = async () => {
+      if (!filteredCities || filteredCities.length === 0) {
+        setPopularCities([]);
+        return;
+      }
+      const { data: activeJobs } = await supabase
+        .from('jobs')
+        .select('city_id')
+        .eq('status', 'active')
+        .not('city_id', 'is', null);
+
+      if (activeJobs) {
+        const cityOfferCount = {};
+        activeJobs.forEach(job => { cityOfferCount[job.city_id] = (cityOfferCount[job.city_id] || 0) + 1; });
+        const cityIdsWithJobs = Object.keys(cityOfferCount);
+        const filtered = filteredCities.filter(city => cityIdsWithJobs.includes(city.id));
+        filtered.sort((a, b) => (cityOfferCount[b.id] || 0) - (cityOfferCount[a.id] || 0));
+        setPopularCities(filtered);
+      } else {
+        setPopularCities([]);
+      }
+    };
+    loadCitiesWithJobs();
+  }, [filteredCities]);
+
   return (
     <div className="min-h-screen">
-      <SearchHero cities={filteredCities} categories={categories} />
+      <SearchHero cities={popularCities} categories={categories} />
       <CategoriesStrip categories={categories} />
       <RecentJobsSection countryId={countryId} activeCompanyIds={activeCompanyIds} />
-      <CitiesSection cities={filteredCities} />
       <HowItWorksSection />
       <CompanyCTASection />
       <WhyChooseSection />

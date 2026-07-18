@@ -17,7 +17,8 @@ import {
   User, Briefcase, FileText, GraduationCap, Award,
   MapPin, Globe, Plus, X, Save, Loader2,
   Upload, Trash2, ChevronLeft, Check, Calendar, Building2, Link,
-  Camera, File, ExternalLink, Sparkles, Eye, Flag
+  Camera, File, ExternalLink, Sparkles, Eye, Flag,
+  Image
 } from 'lucide-react';
 import { cn, EXPERIENCE_LEVELS } from '../lib/utils';
 
@@ -143,13 +144,17 @@ const SkillBadge = ({ skill, onRemove }) => (
   </Badge>
 );
 
-// ---------- Experience Item ----------
+// ---------- Experience Item (avec image) ----------
 const ExperienceItem = ({ experience, onEdit, onRemove, t }) => (
   <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-slate-200 shrink-0">
-          <Building2 className="w-6 h-6 text-slate-400" />
+        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-slate-200 shrink-0 overflow-hidden">
+          {experience.image_url ? (
+            <img src={experience.image_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <Building2 className="w-6 h-6 text-slate-400" />
+          )}
         </div>
         <div className="min-w-0">
           <h3 className="font-medium text-slate-900">{experience.title}</h3>
@@ -180,19 +185,29 @@ const ExperienceItem = ({ experience, onEdit, onRemove, t }) => (
         </Button>
       </div>
     </div>
+    {/* ✅ Image placée AVANT la description (identique à la logique formation) */}
+    {experience.image_url && (
+      <div className="mt-3 pl-15">
+        <img src={experience.image_url} alt="" className="rounded-lg max-h-40 object-cover" />
+      </div>
+    )}
     {experience.description && (
       <p className="text-sm text-slate-600 mt-3 pl-15">{experience.description}</p>
     )}
   </div>
 );
 
-// ---------- Education Item ----------
+// ---------- Education Item (avec image) ----------
 const EducationItem = ({ education, onEdit, onRemove, t }) => (
   <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-slate-200 shrink-0">
-          <GraduationCap className="w-6 h-6 text-slate-400" />
+        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-slate-200 shrink-0 overflow-hidden">
+          {education.image_url ? (
+            <img src={education.image_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <GraduationCap className="w-6 h-6 text-slate-400" />
+          )}
         </div>
         <div className="min-w-0">
           <h3 className="font-medium text-slate-900">{education.degree}</h3>
@@ -218,6 +233,11 @@ const EducationItem = ({ education, onEdit, onRemove, t }) => (
         </Button>
       </div>
     </div>
+    {education.image_url && (
+      <div className="mt-3 pl-15">
+        <img src={education.image_url} alt="" className="rounded-lg max-h-40 object-cover" />
+      </div>
+    )}
   </div>
 );
 
@@ -231,13 +251,22 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
     end_date: '',
     current: false,
     description: '',
+    image_url: '',
   });
   const [errors, setErrors] = useState({});
+  const [expImage, setExpImage] = useState(null);
+  const [expImagePreview, setExpImagePreview] = useState(null);
+  const expImageInputRef = useRef(null);
 
   useEffect(() => {
     setErrors({});
     if (experience) {
       setForm(experience);
+      if (experience.image_url) {
+        setExpImagePreview(experience.image_url);
+      } else {
+        setExpImagePreview(null);
+      }
     } else {
       setForm({
         title: '',
@@ -247,13 +276,16 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
         end_date: '',
         current: false,
         description: '',
+        image_url: '',
       });
+      setExpImage(null);
+      setExpImagePreview(null);
     }
   }, [experience, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const newErrors = {};
     if (!form.title?.trim()) newErrors.title = true;
     if (!form.company?.trim()) newErrors.company = true;
@@ -266,12 +298,29 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
       return;
     }
 
-    onSave(form);
+    let imageUrl = form.image_url;
+    if (expImage) {
+      try {
+        const fileExt = expImage.name.split('.').pop();
+        const fileName = `experiences/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, expImage, { upsert: true });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+        imageUrl = urlData.publicUrl;
+      } catch (err) {
+        toast.error(t('candidateProfilePage.photo.uploadError'));
+        return;
+      }
+    }
+
+    onSave({ ...form, image_url: imageUrl });
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-w-lg w-full">
         <div className="p-6 border-b border-slate-100">
           <h3 className="text-lg font-semibold text-slate-900">
             {experience ? t('candidateProfilePage.experience.modalEditTitle') : t('candidateProfilePage.experience.modalAddTitle')}
@@ -360,6 +409,46 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
               />
             </div>
           </div>
+
+          {/* Image pour l'expérience */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.experience.image', 'Image (optionnel)')}</label>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" type="button" onClick={() => expImageInputRef.current?.click()}>
+                <Image className="w-4 h-4 mr-2" /> {t('candidateProfilePage.posts.addImage', 'Image')}
+              </Button>
+              <input
+                ref={expImageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setExpImage(file);
+                  if (file) {
+                    setExpImagePreview(URL.createObjectURL(file));
+                  } else {
+                    setExpImagePreview(form.image_url || null);
+                  }
+                }}
+                className="hidden"
+              />
+            </div>
+            {expImagePreview && (
+              <div className="mt-2 relative inline-block">
+                <img src={expImagePreview} alt="Aperçu" className="rounded-lg max-h-32 object-cover" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExpImage(null);
+                    setExpImagePreview(null);
+                  }}
+                  className="absolute top-1 right-1 bg-white/80 rounded-full p-1 hover:bg-white"
+                >
+                  <X className="w-4 h-4 text-red-500" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <div className="p-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
           <Button variant="outline" type="button" onClick={onClose} className="min-h-[44px] w-full sm:w-auto">{t('candidateProfilePage.experience.cancel')}</Button>
@@ -374,18 +463,31 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
 
 // ---------- Education Modal ----------
 const EducationModal = ({ isOpen, onClose, onSave, education = null, t }) => {
-  const [form, setForm] = useState({ degree: '', school: '', field: '', year: '' });
+  const [form, setForm] = useState({ degree: '', school: '', field: '', year: '', image_url: '' });
   const [errors, setErrors] = useState({});
+  const [eduImage, setEduImage] = useState(null);
+  const [eduImagePreview, setEduImagePreview] = useState(null);
+  const eduImageInputRef = useRef(null);
 
   useEffect(() => {
     setErrors({});
-    if (education) setForm(education);
-    else setForm({ degree: '', school: '', field: '', year: '' });
+    if (education) {
+      setForm(education);
+      if (education.image_url) {
+        setEduImagePreview(education.image_url);
+      } else {
+        setEduImagePreview(null);
+      }
+    } else {
+      setForm({ degree: '', school: '', field: '', year: '', image_url: '' });
+      setEduImage(null);
+      setEduImagePreview(null);
+    }
   }, [education, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const newErrors = {};
     if (!form.degree?.trim()) newErrors.degree = true;
     if (!form.school?.trim()) newErrors.school = true;
@@ -398,7 +500,24 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null, t }) => {
       return;
     }
 
-    onSave(form);
+    let imageUrl = form.image_url;
+    if (eduImage) {
+      try {
+        const fileExt = eduImage.name.split('.').pop();
+        const fileName = `education/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, eduImage, { upsert: true });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+        imageUrl = urlData.publicUrl;
+      } catch (err) {
+        toast.error(t('candidateProfilePage.photo.uploadError'));
+        return;
+      }
+    }
+
+    onSave({ ...form, image_url: imageUrl });
   };
 
   return (
@@ -453,6 +572,46 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null, t }) => {
               }}
               className={cn('min-h-[44px]', errors.year ? 'border-red-500 focus-visible:ring-red-500' : '')}
             />
+          </div>
+
+          {/* Image pour la formation */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.education.image', 'Image (optionnel)')}</label>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" type="button" onClick={() => eduImageInputRef.current?.click()}>
+                <Image className="w-4 h-4 mr-2" /> {t('candidateProfilePage.posts.addImage', 'Image')}
+              </Button>
+              <input
+                ref={eduImageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setEduImage(file);
+                  if (file) {
+                    setEduImagePreview(URL.createObjectURL(file));
+                  } else {
+                    setEduImagePreview(form.image_url || null);
+                  }
+                }}
+                className="hidden"
+              />
+            </div>
+            {eduImagePreview && (
+              <div className="mt-2 relative inline-block">
+                <img src={eduImagePreview} alt="Aperçu" className="rounded-lg max-h-32 object-cover" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEduImage(null);
+                    setEduImagePreview(null);
+                  }}
+                  className="absolute top-1 right-1 bg-white/80 rounded-full p-1 hover:bg-white"
+                >
+                  <X className="w-4 h-4 text-red-500" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
         <div className="p-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
@@ -513,6 +672,8 @@ const CandidateProfilePage = () => {
   const fileInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
+  const currencySymbol = prefs.currency || 'XOF';
+
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [cities, setCities] = useState([]);
@@ -523,7 +684,7 @@ const CandidateProfilePage = () => {
   const [personalInfo, setPersonalInfo] = useState({
     first_name: '',
     last_name: '',
-    phone: '',        // numéro local uniquement
+    phone: '',
     city_id: '',
     avatar_url: '',
   });
@@ -561,6 +722,84 @@ const CandidateProfilePage = () => {
   const [showEduModal, setShowEduModal] = useState(false);
   const [editingEdu, setEditingEdu] = useState(null);
 
+  // ---------- Posts / Actualités ----------
+  const [posts, setPosts] = useState([]);
+  const [newPostTitle, setNewPostTitle] = useState('');
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostImage, setNewPostImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [posting, setPosting] = useState(false);
+  const postImageInputRef = useRef(null);
+
+  // Prévisualisation des documents
+  const [previewDoc, setPreviewDoc] = useState(null);
+
+  // --------------------- fetchPosts (actualités) ---------------------
+  const fetchPosts = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('candidate_posts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setPosts(data || []);
+  };
+
+  useEffect(() => {
+    if (user) fetchPosts();
+  }, [user]);
+
+  const handleAddPost = async () => {
+    if (!newPostContent.trim()) return;
+    setPosting(true);
+    try {
+      let imageUrl = null;
+      if (newPostImage) {
+        const fileExt = newPostImage.name.split('.').pop();
+        const fileName = `${user.id}/posts/post-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, newPostImage, { upsert: true });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+        imageUrl = urlData.publicUrl;
+      }
+
+      const { error } = await supabase.from('candidate_posts').insert({
+        user_id: user.id,
+        title: newPostTitle.trim() || null,
+        content: newPostContent.trim(),
+        image_url: imageUrl,
+      });
+      if (error) throw error;
+
+      setNewPostTitle('');
+      setNewPostContent('');
+      setNewPostImage(null);
+      setImagePreview(null);
+      fetchPosts();
+      toast.success(t('candidateProfilePage.posts.added'));
+    } catch (err) {
+      console.error('Erreur publication:', err);
+      toast.error(err.message || t('candidateProfilePage.posts.error'));
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm(t('candidateProfilePage.posts.deleteConfirm'))) return;
+    const { error } = await supabase.from('candidate_posts').delete().eq('id', postId);
+    if (error) toast.error(t('candidateProfilePage.posts.error'));
+    else {
+      toast.success(t('candidateProfilePage.posts.deleted'));
+      fetchPosts();
+    }
+  };
+
+  // --------------------- useEffect initiaux ---------------------
   useEffect(() => {
     const fetchCities = async () => {
       const { data } = await supabase
@@ -589,7 +828,6 @@ const CandidateProfilePage = () => {
     }
   }, [user]);
 
-  // Extraction du téléphone une fois pays et profil chargés
   useEffect(() => {
     if (profile && countries.length > 0) {
       const { local, countryCode } = extractPhoneInfo(profile.phone || '', countries);
@@ -858,7 +1096,6 @@ const CandidateProfilePage = () => {
       return;
     }
 
-    // Reconstruction du numéro international complet
     const selectedCountryData = countries.find(c => c.code === selectedPhoneCountry);
     const phoneCode = selectedCountryData?.phone_code || '';
     const fullPhone = phoneCode && personalInfo.phone ? `+${phoneCode} ${personalInfo.phone}` : personalInfo.phone;
@@ -869,7 +1106,7 @@ const CandidateProfilePage = () => {
         ...personalInfo,
         email: user.email,
         city_id: personalInfo.city_id || null,
-        phone: fullPhone,  // numéro complet sauvegardé
+        phone: fullPhone,
       };
       await updateProfile(cleanedPersonalInfo);
 
@@ -903,7 +1140,6 @@ const CandidateProfilePage = () => {
     }
   };
 
-  // Déterminer la longueur maximale du numéro local
   const maxLocalLength = maxLocalLengthByCode[selectedPhoneCountry] || 15;
   const phonePlaceholder = placeholderByCountry[selectedPhoneCountry] || t('candidateProfilePage.personalInfo.phonePlaceholder') || 'Numéro local';
 
@@ -999,7 +1235,6 @@ const CandidateProfilePage = () => {
                     className={cn('min-h-[44px]', errors.last_name ? 'border-red-500 focus-visible:ring-red-500' : '')}
                   />
                 </div>
-                {/* Téléphone avec sélecteur de pays + maxLength */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.personalInfo.phone')}</label>
                   <div className="flex items-stretch">
@@ -1019,14 +1254,13 @@ const CandidateProfilePage = () => {
                       type="tel"
                       value={personalInfo.phone}
                       onChange={(e) => {
-                        // Limiter la longueur côté client
                         if (e.target.value.replace(/\D/g, '').length <= maxLocalLength) {
                           setPersonalInfo({ ...personalInfo, phone: e.target.value });
                         }
                       }}
                       placeholder={phonePlaceholder}
                       className="min-h-[44px] flex-1 rounded-l-none"
-                      maxLength={maxLocalLength + 3} // +3 pour les espaces éventuels
+                      maxLength={maxLocalLength + 3}
                     />
                   </div>
                 </div>
@@ -1150,11 +1384,9 @@ const CandidateProfilePage = () => {
                     </div>
                     <p className="font-medium text-slate-900">{t('candidateProfilePage.cv.uploaded')}</p>
                     <div className="flex flex-col sm:flex-row justify-center gap-3">
-                      <a href={cvUrl} target="_blank" rel="noopener noreferrer">
-                        <Button variant="outline" type="button" className="min-h-[44px] w-full sm:w-auto">
-                          <Eye className="w-4 h-4 mr-2" /> {t('candidateProfilePage.cv.view')}
-                        </Button>
-                      </a>
+                      <Button variant="outline" type="button" onClick={() => setPreviewDoc({ url: cvUrl, name: 'CV', type: cvUrl.endsWith('.pdf') ? 'pdf' : 'image' })} className="min-h-[44px] w-full sm:w-auto">
+                        <Eye className="w-4 h-4 mr-2" /> {t('candidateProfilePage.cv.view')}
+                      </Button>
                       <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadingCV} type="button" className="min-h-[44px] w-full sm:w-auto">
                         <Upload className="w-4 h-4 mr-2" />{t('candidateProfilePage.cv.change')}
                       </Button>
@@ -1239,11 +1471,28 @@ const CandidateProfilePage = () => {
                           </div>
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon" type="button" className="h-9 w-9">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </a>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const isImage = /\.(png|jpe?g|gif|webp|svg)$/i.test(doc.file_url);
+                              const isPDF = doc.file_url?.endsWith('.pdf');
+                              if (isImage || isPDF) {
+                                setPreviewDoc({
+                                  url: doc.file_url,
+                                  name: doc.name,
+                                  type: isPDF ? 'pdf' : 'image'
+                                });
+                              } else {
+                                window.open(doc.file_url, '_blank');
+                              }
+                            }}
+                            className="h-9 w-9"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => handleDeleteDocument(doc)} type="button" className="h-9 w-9">
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
@@ -1408,6 +1657,115 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
+          {/* Actualités (posts) */}
+          <Card>
+            <CardContent className="p-6">
+              <SectionHeader
+                icon={FileText}
+                title={t('candidateProfilePage.posts.sectionTitle', 'Actualités')}
+                description={t('candidateProfilePage.posts.sectionDesc', 'Partagez vos mises à jour professionnelles')}
+              />
+              <div className="space-y-4">
+                <div>
+                  <Input
+                    value={newPostTitle}
+                    onChange={(e) => setNewPostTitle(e.target.value)}
+                    placeholder={t('candidateProfilePage.posts.titlePlaceholder', 'Titre (optionnel)')}
+                    className="min-h-[44px] mb-2"
+                  />
+                  <textarea
+                    rows={3}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    placeholder={t('candidateProfilePage.posts.contentPlaceholder', 'Votre actualité…')}
+                  />
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => postImageInputRef.current?.click()}
+                      type="button"
+                      className="min-h-[44px]"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {t('candidateProfilePage.posts.addImage', 'Image')}
+                    </Button>
+                    <input
+                      ref={postImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setNewPostImage(file);
+                        if (file) {
+                          setImagePreview(URL.createObjectURL(file));
+                        } else {
+                          setImagePreview(null);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    {newPostImage && !imagePreview && (
+                      <span className="text-sm text-slate-500">{newPostImage.name}</span>
+                    )}
+                    {imagePreview && (
+                      <div className="mt-2 relative w-full max-w-sm">
+                        <img src={imagePreview} alt="Aperçu" className="rounded-lg max-h-48 object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewPostImage(null);
+                            setImagePreview(null);
+                          }}
+                          className="absolute top-1 right-1 bg-white/80 rounded-full p-1 hover:bg-white"
+                        >
+                          <X className="w-4 h-4 text-red-500" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleAddPost}
+                    disabled={posting || !newPostContent.trim()}
+                    className="mt-3 min-h-[44px]"
+                    type="button"
+                  >
+                    {posting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                    {t('candidateProfilePage.posts.publish', 'Publier')}
+                  </Button>
+                </div>
+
+                {posts.length > 0 && (
+                  <div className="space-y-3 mt-4">
+                    {posts.map(post => (
+                      <div key={post.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            {post.title && <h4 className="font-medium text-slate-900">{post.title}</h4>}
+                            <p className="text-sm text-slate-600 whitespace-pre-wrap mt-1">{post.content}</p>
+                            {post.image_url && (
+                              <img src={post.image_url} alt="" className="mt-3 rounded-lg max-h-60 object-cover" />
+                            )}
+                            <p className="text-xs text-slate-400 mt-2">{new Date(post.created_at).toLocaleDateString()}</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeletePost(post.id)}
+                            className="text-red-500 h-8 w-8 shrink-0"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Salaire souhaité */}
           <Card>
             <CardContent className="p-6">
@@ -1485,6 +1843,25 @@ const CandidateProfilePage = () => {
           </Card>
         </div>
       </div>
+
+      {/* Modale de prévisualisation de document */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setPreviewDoc(null)}>
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-4 flex justify-between items-center border-b">
+              <h3 className="font-semibold truncate">{previewDoc.name}</h3>
+              <Button variant="ghost" size="icon" onClick={() => setPreviewDoc(null)}><X className="w-5 h-5" /></Button>
+            </div>
+            <div className="p-4 flex justify-center">
+              {previewDoc.type === 'pdf' ? (
+                <iframe src={previewDoc.url} className="w-full h-[70vh]" title="Aperçu PDF" />
+              ) : (
+                <img src={previewDoc.url} alt={previewDoc.name} className="max-w-full max-h-[70vh] object-contain rounded-lg" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Barre de sauvegarde sticky en bas (mobile) */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 sm:hidden z-40">

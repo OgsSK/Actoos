@@ -229,6 +229,9 @@
         }
       },
       "actions": {
+        "switchToAnnual": "Schakel over naar jaarlijks (-20%)",
+        "switchToMonthly": "Terug naar maandelijks",
+        "switchToThisFrequency": "Kies deze formule",
         "backToFree": "Terug naar Gratis",
         "manageSubscription": "Abonnement beheren",
         "upgradeTo": "Upgraden naar {{plan}}",
@@ -781,6 +784,8 @@
   
   
   "candidateProfile": {
+    "projects": "Projecten",
+    "posts": "Nieuws",
     "notFound": "Kandidaat niet gevonden.",
     "back": "Terug",
     "reportButton": "Deze kandidaat rapporteren",
@@ -2342,6 +2347,25 @@
       }
     },
     "companyDetail": {
+       "tabs": {
+        "about": "Over ons",
+        "jobs": "Vacatures",
+        "posts": "Nieuws",
+        "contact": "Contact"
+      },
+      "posts": "Nieuws",
+      "noPosts": "Geen nieuws op dit moment.",
+      "readMore": "Lees meer",
+      "city": "Stad",
+      "country": "Land",
+      "phone": "Telefoon",
+      "address": "Adres",
+       "shareText": "Ontdek {name} op Actoos",
+      "follow": "Volgen",
+    "unfollow": "Niet meer volgen",
+    "followSuccess": "U volgt nu dit bedrijf.",
+    "unfollowSuccess": "U volgt dit bedrijf niet meer.",
+    "followers": "{{count}} volger(s)",
       "similarCompanies": "Vergelijkbare bedrijven",
     "jobsCount": "{{count}} vacature(s)",
       "back": "Terug naar bedrijven",
@@ -2494,6 +2518,7 @@
       "delete": "Verwijderen"
     },
     "jobDetail": {
+       "shareText": "Vacature: {title} bij {company}",
       "home.jobs.alreadyAppliedBadge": "Gesolliciteerd",
     "jobs.alreadyAppliedBadge": "Gesolliciteerd",
       "reapply": "Opnieuw solliciteren",
@@ -2652,6 +2677,8 @@
       }
     },
     "applicationDetail": {
+      "aiSummary": "AI-samenvatting",
+      "generateSummary": "Samenvatting genereren",
       "rejectionReasonPrompt": "Reden (optioneel):",
        "notifyOtherCandidates": "Andere kandidaten informeren",
       "notifyOtherCandidatesHelp": "Stuur een e-mail naar de andere kandidaten om hen te laten weten dat de vacature is vervuld.",
@@ -2738,6 +2765,7 @@
       "generateAnswers": "Antwoorden genereren",
       "generateTips": "Tips genereren",
       "toasts": {
+        "summaryGenerated": "Samenvatting gegenereerd",
         "documentRequestSent": "Documentaanvraag verzonden naar de kandidaat",
         "noteSaved": "Notitie opgeslagen.",
         "noteDeleted": "Notitie verwijderd.",
@@ -2752,6 +2780,38 @@
       "accountSuspended": "Uw account is geschorst."
     },
    "companyDashboard": {
+    "posts": {
+      "title": "Nieuws",
+      "empty": "Geen nieuws gepubliceerd.",
+      "create": "Nieuws aanmaken",
+      "form": {
+        "title": "Titel",
+        "content": "Inhoud",
+        "imageUrl": "Afbeeldings-URL (optioneel)",
+        "linkUrl": "Link (optioneel)",
+        "publish": "Publiceren",
+        "cancel": "Annuleren"
+      },
+      "published": "Nieuws succesvol gepubliceerd!",
+      "error": "Fout bij het publiceren van nieuws."
+    },
+     "followers": {
+      "title": "Mijn volgers",
+      "total": "volgers",
+      "viewAll": "Alle volgers bekijken"
+    },
+    "proBanner": {
+      "title": "Pro-abonnement",
+      "subtitle": "Geavanceerde tools voor uw aanwervingen",
+      "interviewTools": "Interviewtools",
+      "aiNotes": "AI-notities"
+    },
+     "businessBanner": {
+      "title": "Business-abonnement",
+      "subtitle": "Onbeperkte toegang tot alle premium functies",
+      "boost": "1 gratis boost / maand",
+      "cvBank": "Onbeperkte CV-bank"
+    },
     "stats": { "trend": "{{trend}} deze week", "publishedJobs": "Actieve vacatures", "totalApplications": "Totaal sollicitaties", "newApplications": "Nieuwe sollicitaties", "totalViews": "Totaal weergaven" },
     "status": { "draft": "Concept", "pending": "In afwachting", "active": "Actief", "paused": "Gepauzeerd", "closed": "Gesloten", "expired": "Verlopen", "rejected": "Afgewezen" },
     "jobCard": {
@@ -2817,6 +2877,16 @@
     "cvBank": { "title": "Cv-bank", "desc": "Krijg toegang tot onze talentenpool.", "browse": "Cv's doorbladeren" }
   },
     "candidateDashboard": {
+      "selected": {
+      "title": "Geselecteerde vacatures voor jou",
+      "subtitle": "Gebaseerd op je profiel en voorkeuren",
+      "viewAll": "Alle vacatures bekijken",
+      "empty": "Vul je profiel in om vacatures te zien die aan je criteria voldoen.",
+      "completeProfile": "Mijn profiel voltooien",
+      "excellent": "Uitstekend",
+      "good": "Goed",
+      "partial": "Potentieel"
+    },
        "contracts": {
         "title": "Mijn contracten"
       },
@@ -2865,6 +2935,10 @@
         }
       },
       "quickActions": {
+        "viewPublicProfile": "Mijn openbaar profiel bekijken",
+        "viewPublicProfileDesc": "Ontdek hoe recruiters uw profiel zien",
+         "followedCompanies": "Mijn gevolgden",
+        "followedCompaniesDesc": "Bedrijven die u volgt",
         "title": "Snelle acties",
         "updateCV": "Mijn CV bijwerken",
         "updateCVDesc": "Nieuw bestand toevoegen.",
@@ -2936,6 +3010,11 @@
       }
     },
     "common": {
+    "add": "Toevoegen",
+       "unspecified": "Niet gespecificeerd" ,
+      "loadingScores": "Scores berekenen...",
+       "clear": "Wissen",
+       "sortByRelevance": "Relevantie (AI)",
       "filters": "Filters",
       "previous": "Vorige",
     "next": "Volgende",
@@ -3020,6 +3099,7 @@
     },
 
  "candidateBank": {
+  "matchWithOffer": "Koppelen aan een vacature...",
       "title": "Cv-bank",
       "subtitle": "Blader door de profielen van beschikbare kandidaten",
       "searchPlaceholder": "Zoeken op naam, vaardigheid, titel…",
@@ -3034,92 +3114,129 @@
       "desc": "Krijg toegang tot onze pool beschikbare talenten.",
       "browse": "Cv's doorbladeren"
     },
-"candidateProfilePage": {
-      "title": "Kandidaatprofiel",
-      "subtitle": "Beheer je professionele profiel",
+ "candidateProfilePage": {
+  "projects": {
+      "sectionTitle": "Projecten",
+      "sectionDesc": "Toon uw projecten om te werven, investeren of samenwerken",
+      "titlePlaceholder": "Projecttitel",
+      "descriptionPlaceholder": "Beschrijf uw project…",
+      "objective": "Doel",
+      "objectives": {
+        "recruiting": "Werving",
+        "investment": "Investering",
+        "collaboration": "Samenwerking",
+        "other": "Anders"
+      },
+      "skillsNeeded": "Gezochte vaardigheden",
+      "skillPlaceholder": "Vaardigheid toevoegen",
+      "fundingGoal": "Financieringsdoel (optioneel)",
+      "fundingPlaceholder": "Bedrag in FCFA",
+      "publish": "Project toevoegen",
+      "added": "Project succesvol toegevoegd",
+      "error": "Fout bij toevoegen project",
+      "deleteConfirm": "Verwijdering van het project bevestigen?",
+      "deleted": "Project verwijderd"
+    },
+  "posts": {
+        "sectionTitle": "Nieuws",
+        "sectionDesc": "Deel je professionele updates",
+        "titlePlaceholder": "Titel (optioneel)",
+        "contentPlaceholder": "Jouw update…",
+        "addImage": "Afbeelding",
+        "publish": "Publiceren",
+        "added": "Update succesvol gepubliceerd!",
+        "error": "Fout bij publiceren.",
+        "deleteConfirm": "Deze update verwijderen?",
+        "deleted": "Update verwijderd."
+      },
+      "title": "Mijn kandidaatprofiel",
+      "subtitle": "Vul uw profiel aan om uw kansen om aangenomen te worden te vergroten",
       "save": "Opslaan",
       "saveChanges": "Wijzigingen opslaan",
+      "back": "Terug",
       "photo": {
         "title": "Profielfoto",
-        "hint": "JPG of PNG, max. 2 MB",
-        "change": "Wijzigen",
+        "hint": "Een professionele foto vergroot de kans om opgemerkt te worden.",
+        "change": "Foto wijzigen",
         "delete": "Verwijderen",
-        "updated": "Foto bijgewerkt",
-        "uploadError": "Uploadfout",
-        "deleteConfirm": "Foto verwijderen?",
-        "deleted": "Foto verwijderd",
+        "updated": "Foto succesvol bijgewerkt",
+        "uploadError": "Fout bij uploaden foto",
+        "deleteConfirm": "Weet u zeker dat u uw foto wilt verwijderen?",
+        "deleted": "Foto succesvol verwijderd",
         "deleteError": "Fout bij verwijderen foto"
       },
       "personalInfo": {
         "sectionTitle": "Persoonlijke informatie",
-        "sectionDesc": "Uw contactgegevens",
+        "sectionDesc": "Deze informatie is zichtbaar voor recruiters.",
         "firstName": "Voornaam",
         "lastName": "Achternaam",
         "phone": "Telefoon",
-        "phonePlaceholder": "+223 xx xx xx xx",
+        "phonePlaceholder": "Telefoonnummer",
         "city": "Stad",
         "selectCity": "Selecteer een stad"
       },
       "professionalProfile": {
         "sectionTitle": "Professioneel profiel",
-        "sectionDesc": "Beschrijf uw huidige of gewenste functie",
+        "sectionDesc": "Toon uw titel, biografie en ervaringsniveau.",
         "title": "Functietitel",
-        "bio": "Samenvatting / Bio",
+        "bio": "Biografie / Samenvatting",
         "experienceLevel": "Ervaringsniveau",
-        "selectLevel": "Selecteer niveau",
+        "selectLevel": "Selecteer een niveau",
         "yearsOfExperience": "Jaren ervaring",
-        "available": "Onmiddellijk beschikbaar",
-        "openToRemote": "Sta open voor thuiswerk"
+        "available": "Direct beschikbaar",
+        "openToRemote": "Open voor thuiswerk"
       },
       "cv": {
-        "sectionTitle": "Curriculum Vitae",
-        "sectionDesc": "Upload uw CV (PDF, DOC, DOCX, max. 5 MB)",
-        "uploaded": "CV succesvol geüpload",
-        "view": "Bekijken",
-        "change": "Wijzigen",
-        "delete": "Verwijderen",
-        "uploadTitle": "Uw CV uploaden",
-        "uploadHint": "Formaat PDF, DOC of DOCX (max. 5 MB)",
+        "sectionTitle": "Curriculum Vitae (CV)",
+        "sectionDesc": "Upload uw CV in PDF-, DOC- of DOCX-indeling (max. 5 MB).",
+        "uploadTitle": "Upload uw CV",
+        "uploadHint": "Toegestane formaten: PDF, DOC, DOCX – Maximale grootte: 5 MB",
         "chooseFile": "Bestand kiezen",
-        "analyzeButton": "Uw CV analyseren met AI",
-        "invalidFormat": "Niet-ondersteund bestandsformaat",
-        "fileTooLarge": "Het bestand is groter dan de maximale 5 MB",
+        "uploaded": "CV succesvol geüpload",
+        "view": "CV bekijken",
+        "change": "CV wijzigen",
+        "delete": "CV verwijderen",
         "uploadedToast": "CV succesvol geüpload",
         "uploadError": "Fout bij uploaden CV",
-        "deleteConfirm": "CV verwijderen?",
-        "deletedToast": "CV verwijderd",
-        "deleteError": "Fout bij verwijderen CV"
+        "deleteConfirm": "Weet u zeker dat u uw CV wilt verwijderen?",
+        "deletedToast": "CV succesvol verwijderd",
+        "deleteError": "Fout bij verwijderen CV",
+        "invalidFormat": "Niet-ondersteund bestandsformaat. Gebruik PDF, DOC of DOCX.",
+        "fileTooLarge": "Het bestand is te groot (max. 5 MB).",
+        "analyzeButton": "Mijn CV analyseren met AI"
       },
       "documents": {
         "sectionTitle": "Aanvullende documenten",
-        "sectionDesc": "Diploma's, certificaten, etc.",
+        "sectionDesc": "Diploma's, certificaten of andere documenten toevoegen.",
         "typeDiploma": "Diploma",
         "typeCertificate": "Certificaat",
-        "typeOther": "Overig",
+        "typeOther": "Anders",
         "addButton": "Document toevoegen",
-        "empty": "Geen documenten toegevoegd",
-        "addedToast": "Document toegevoegd",
-        "uploadError": "Uploadfout",
-        "deleteConfirm": "Dit document verwijderen?",
-        "deletedToast": "Document verwijderd",
-        "deleteError": "Fout bij verwijderen document"
+        "addedToast": "Document succesvol toegevoegd",
+        "uploadError": "Fout bij toevoegen document",
+        "deleteConfirm": "Weet u zeker dat u dit document wilt verwijderen?",
+        "deletedToast": "Document succesvol verwijderd",
+        "deleteError": "Fout bij verwijderen document",
+        "empty": "Geen document toegevoegd"
       },
       "skills": {
         "sectionTitle": "Vaardigheden",
-        "sectionDesc": "Lijst van uw belangrijkste vaardigheden",
-        "placeholder": "Vaardigheid toevoegen...",
+        "sectionDesc": "Voeg uw kernvaardigheden toe (maximaal 10 aanbevolen).",
+        "placeholder": "Nieuwe vaardigheid",
         "add": "Toevoegen",
-        "empty": "Geen vaardigheden opgegeven",
-        "addedToast": "{{count}} vaardigheid(en) toegevoegd",
-        "noneFound": "Geen nieuwe vaardigheden gevonden"
+        "empty": "Geen vaardigheden toegevoegd",
+        "addedToast": "{{count}} vaardigheid/vaardigheden succesvol toegevoegd",
+        "noneFound": "Geen vaardigheden gevonden om toe te voegen"
       },
       "experience": {
         "sectionTitle": "Werkervaring",
-        "sectionDesc": "Uw loopbaan",
+        "sectionDesc": "Zet uw meest relevante ervaringen op een rij.",
         "add": "Ervaring toevoegen",
-        "empty": "Geen ervaring opgegeven",
         "edit": "Bewerken",
+        "empty": "Geen ervaring toegevoegd",
         "present": "Heden",
+        "modalAddTitle": "Ervaring toevoegen",
+        "modalEditTitle": "Ervaring bewerken",
         "jobTitle": "Functietitel",
         "company": "Bedrijf",
         "location": "Locatie",
@@ -3127,59 +3244,63 @@
         "endDate": "Einddatum",
         "currentlyWorking": "Ik werk hier momenteel",
         "description": "Beschrijving",
-        "modalEditTitle": "Ervaring bewerken",
-        "modalAddTitle": "Ervaring toevoegen",
-        "fillRequired": "Vul de verplichte velden in",
+        "cancel": "Annuleren",
         "save": "Opslaan",
         "saveNew": "Toevoegen",
-        "cancel": "Annuleren"
+        "fillRequired": "Vul de verplichte velden in (functietitel, bedrijf, startdatum)"
       },
       "education": {
         "sectionTitle": "Opleiding",
-        "sectionDesc": "Uw academische achtergrond",
+        "sectionDesc": "Voeg uw diploma's en opleidingen toe.",
         "add": "Opleiding toevoegen",
-        "empty": "Geen opleiding opgegeven",
         "edit": "Bewerken",
-        "modalEditTitle": "Opleiding bewerken",
+        "empty": "Geen opleiding toegevoegd",
         "modalAddTitle": "Opleiding toevoegen",
-        "degree": "Diploma / Kwalificatie",
+        "modalEditTitle": "Opleiding bewerken",
+        "degree": "Diploma / Graad",
         "school": "Instelling",
         "field": "Studierichting",
         "year": "Jaar behaald",
-        "fillRequired": "Vul de verplichte velden in",
+        "cancel": "Annuleren",
         "save": "Opslaan",
         "saveNew": "Toevoegen",
-        "cancel": "Annuleren"
+        "fillRequired": "Vul de verplichte velden in (diploma, instelling, jaar)"
       },
       "links": {
         "sectionTitle": "Links",
-        "sectionDesc": "Portfolio, LinkedIn, website..."
+        "sectionDesc": "Portfolio, LinkedIn, persoonlijke website…"
       },
       "salary": {
-        "sectionTitle": "Salarisindicatie",
-        "sectionDesc": "Gewenst minimum- en maximumsalaris",
-        "minSalary": "Min. salaris",
-        "maxSalary": "Max. salaris"
-      },
-      "toasts": {
-        "fillRequired": "Vul de verplichte velden in",
-        "profileUpdated": "Profiel bijgewerkt",
-        "saveError": "Fout bij opslaan"
+        "sectionTitle": "Gewenst salaris",
+        "sectionDesc": "Geef een indicatieve schaal aan (in FCFA).",
+        "minSalary": "Minimumsalaris",
+        "maxSalary": "Maximumsalaris"
       },
       "cvAnalysis": {
         "title": "AI CV-analyse",
-        "description": "Plak de tekstuele inhoud van uw CV om suggesties te ontvangen.",
-        "placeholder": "Plak hier uw CV...",
-        "suggestions": "Verbeteringssuggesties:",
-        "close": "Sluiten",
+        "description": "Plak de tekstuele inhoud van uw CV om verbetersuggesties te krijgen.",
+        "placeholder": "Plak hier uw CV-tekst…",
+        "suggestions": "Verbetersuggesties:",
         "analyze": "Analyseren",
-        "analyzing": "Bezig met analyseren...",
-        "emptyText": "Voer tekst in om te analyseren",
-        "doneToast": "Analyse voltooid",
-        "errorToast": "Analysefout"
+        "analyzing": "Bezig met analyseren…",
+        "close": "Sluiten",
+        "emptyText": "Voer de te analyseren CV-tekst in.",
+        "doneToast": "Analyse succesvol voltooid",
+        "errorToast": "Fout bij analyseren van het CV"
+      },
+      "toasts": {
+        "fillRequired": "Vul alle verplichte velden in.",
+        "profileUpdated": "Profiel succesvol bijgewerkt",
+        "saveError": "Fout bij opslaan profiel"
       }
     },
     "profile": {
+      "links": {
+        "title": "Links en netwerken",
+        "addLink": "Link toevoegen",
+        "namePlaceholder": "Naam (bijv. GitHub)",
+        "urlPlaceholder": "https://..."
+      },
       "visibility": {
         "sectionTitle": "Zichtbaarheid",
         "sectionDesc": "Beheer uw aanwezigheid in de CV-bank",
@@ -3187,7 +3308,7 @@
         "cvBankDesc": "Recruiters kunnen u vinden en uw profiel bekijken, zelfs als u niet heeft gesolliciteerd.",
         "enabled": "Uw profiel is nu zichtbaar in de CV-bank",
         "disabled": "Uw profiel verschijnt niet langer in de CV-bank",
-        "error": "Fout bij bijwerken"
+        "error": "Fout bij bijwerken van de zichtbaarheid"
       }
     },
   "experienceLevels": {
@@ -3254,6 +3375,45 @@
         "completed": "Voltooid",
         "terminated": "Beëindigd"
       }
+    },
+    "followedCompanies": {
+      "title": "Mijn gevolgden",
+      "subtitle": "Bedrijven die u volgt",
+      "empty": "Geen bedrijven gevolgd",
+      "emptyHint": "Volg bedrijven om hier hun vacatures te zien.",
+      "browseCompanies": "Bedrijven bekijken",
+      "recentJobs": "Recente vacatures",
+      "noRecentJobs": "Geen recente vacatures voor dit bedrijf."
+    },
+    "companyFollowers": {
+      "title": "Mijn volgers",
+      "total": "{{total}} volger(s)",
+      "empty": "Nog geen volgers",
+      "emptyHint": "Wanneer kandidaten uw bedrijf volgen, verschijnen ze hier.",
+      "followedSince": "Volgt sinds {{date}}",
+      "viewProfile": "Profiel",
+      "contact": "Contact opnemen"
+    },
+    "contactModal": {
+      "title": "Contact opnemen met {{name}}",
+      "quickMessage": "Snel bericht",
+      "inviteToApply": "Uitnodigen om te solliciteren",
+      "subject": "Onderwerp",
+      "subjectPlaceholder": "Onderwerp van uw bericht",
+      "message": "Bericht",
+      "messagePlaceholder": "Uw bericht...",
+      "selectJob": "Gerelateerde vacature",
+      "selectJobPlaceholder": "Selecteer een vacature",
+      "inviteMessagePlaceholder": "Voeg een persoonlijk bericht toe...",
+      "send": "Versturen",
+      "sent": "Bericht succesvol verzonden!",
+      "subjectRequired": "Voer een onderwerp in."
+    },
+    "share": {
+      "share": "Delen",
+      "copiedShort": "Gekopieerd",
+      "copied": "Link naar klembord gekopieerd!",
+      "copyError": "Kan de link niet kopiëren."
     }
  
 

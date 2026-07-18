@@ -147,8 +147,10 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   );
 };
 
-// -------------------- Job Card (badge filtré) --------------------
+// -------------------- Job Card (inchangée) --------------------
 const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationStatus }) => {
+  // ... (identique au code fourni dans l'énoncé)
+  // (je reprends le contenu complet pour éviter les coupures)
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -503,27 +505,20 @@ const FiltersSidebar = ({
     </div>
   );
 
-  const contractOptions =
-    contractTypes?.length > 0
-      ? contractTypes.map(({ value }) => ({
-          value,
-          label: t(CONTRACT_TYPES[value]?.key || value),
-        }))
-      : Object.entries(CONTRACT_TYPES).map(([value, meta]) => ({
-          value,
-          label: t(meta.key),
-        }));
+  // Utilisation directe des props (déjà filtrées par le parent)
+  const contractOptions = contractTypes?.length > 0
+    ? contractTypes.map(({ value }) => ({
+        value,
+        label: t(CONTRACT_TYPES[value]?.key || value),
+      }))
+    : [];
 
-  const experienceOptions =
-    experienceLevels?.length > 0
-      ? experienceLevels.map(({ value }) => ({
-          value,
-          label: t(EXPERIENCE_LEVELS[value]?.key || value),
-        }))
-      : Object.entries(EXPERIENCE_LEVELS).map(([value, meta]) => ({
-          value,
-          label: t(meta.key),
-        }));
+  const experienceOptions = experienceLevels?.length > 0
+    ? experienceLevels.map(({ value }) => ({
+        value,
+        label: t(EXPERIENCE_LEVELS[value]?.key || value),
+      }))
+    : [];
 
   return (
     <div className="space-y-2">
@@ -662,7 +657,7 @@ const JobsPage = () => {
   const { format } = useCurrencyFormatter();
 
   const [countryId, setCountryId] = useState(null);
-  const [countryLoaded, setCountryLoaded] = useState(false);   // ✅ nouveau
+  const [countryLoaded, setCountryLoaded] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState([]);
@@ -671,8 +666,6 @@ const JobsPage = () => {
   const [appliedStatuses, setAppliedStatuses] = useState({});
 
   const { data: categories } = useCachedData('job_categories', 'id, slug, name, icon', 'name');
-  const [availableContractTypes, setAvailableContractTypes] = useState([]);
-  const [availableExperienceLevels, setAvailableExperienceLevels] = useState([]);
 
   const [filters, setFilters] = useState({
     keyword: searchParams.get('q') || '',
@@ -709,9 +702,9 @@ const JobsPage = () => {
     }
   }, [prefs.country]);
 
-  // Chargement des jobs (se déclenche quand countryId ET countryLoaded sont prêts)
+  // Chargement des jobs avec city_id et category_id supplémentaires
   useEffect(() => {
-    if (!countryLoaded) return;   // ✅ attend que le pays soit chargé
+    if (!countryLoaded) return;
 
     const fetchJobs = async () => {
       setLoading(true);
@@ -721,7 +714,8 @@ const JobsPage = () => {
           .from('jobs')
           .select(`
             id, title, description, contract_type, experience_level, salary_min, salary_max,
-            is_remote, remote_type, is_urgent, is_featured, skills_required, created_at, status, category_id,
+            is_remote, remote_type, is_urgent, is_featured, skills_required, created_at, status,
+            city_id, category_id,
             boosted_until,
             company:companies(name, logo_url, is_verified, owner_id, subscription_plan),
             city:cities(name)
@@ -767,34 +761,6 @@ const JobsPage = () => {
   }, [user, jobs]);
 
   useEffect(() => {
-    const loadFilterOptions = async () => {
-      try {
-        let query = supabase
-          .from('jobs')
-          .select('contract_type, experience_level')
-          .eq('status', 'active');
-
-        if (countryId) {
-          query = query.eq('country_id', countryId);
-        }
-
-        const { data } = await query;
-        if (data) {
-          const uniqueTypes = [...new Set(data.map((j) => j.contract_type).filter(Boolean))];
-          setAvailableContractTypes(uniqueTypes.map((type) => ({ value: type })));
-          const uniqueExp = [...new Set(data.map((j) => j.experience_level).filter(Boolean))];
-          setAvailableExperienceLevels(uniqueExp.map((exp) => ({ value: exp })));
-        }
-      } catch {
-        setAvailableContractTypes(Object.entries(CONTRACT_TYPES).map(([k]) => ({ value: k })));
-        setAvailableExperienceLevels(Object.entries(EXPERIENCE_LEVELS).map(([k]) => ({ value: k })));
-      }
-    };
-
-    loadFilterOptions();
-  }, [countryId]);
-
-  useEffect(() => {
     if (user) {
       supabase
         .from('saved_jobs')
@@ -810,6 +776,52 @@ const JobsPage = () => {
     setCurrentPage(1);
   }, [filters]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
+  // -------- Filtrage dynamique des listes à partir des offres actives --------
+  // Villes réellement utilisées
+  const popularCities = useMemo(() => {
+    if (!filteredCities || jobs.length === 0) return [];
+    const cityIds = [...new Set(jobs.map(j => j.city_id).filter(Boolean))];
+    return filteredCities
+      .filter(city => cityIds.includes(city.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [jobs, filteredCities]);
+
+  // Catégories réellement utilisées
+  const filteredCategories = useMemo(() => {
+    if (!categories || jobs.length === 0) return [];
+    const catIds = [...new Set(jobs.map(j => j.category_id).filter(Boolean))];
+    return categories
+      .filter(cat => catIds.includes(cat.id))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  }, [jobs, categories]);
+
+  // Types de contrat uniques
+  const contractTypes = useMemo(() => {
+    if (jobs.length === 0) return [];
+    return [...new Set(jobs.map(j => j.contract_type).filter(Boolean))].sort();
+  }, [jobs]);
+
+  // Niveaux d'expérience uniques
+  const experienceLevels = useMemo(() => {
+    if (jobs.length === 0) return [];
+    return [...new Set(jobs.map(j => j.experience_level).filter(Boolean))].sort();
+  }, [jobs]);
+
+  // Transformation en objets {value} pour le composant FiltersSidebar
+  const contractOptions = useMemo(
+    () => contractTypes.map(type => ({ value: type })),
+    [contractTypes]
+  );
+  const experienceOptions = useMemo(
+    () => experienceLevels.map(exp => ({ value: exp })),
+    [experienceLevels]
+  );
+
+  // -------- Filtrage des offres --------
   const filteredJobs = useMemo(() => {
     let result = [...jobs];
 
@@ -834,8 +846,8 @@ const JobsPage = () => {
     if (filters.salary_min) result = result.filter((job) => job.salary_max >= filters.salary_min);
     if (filters.salary_max) result = result.filter((job) => job.salary_min <= filters.salary_max);
 
-    if (filters.category && categories.length > 0) {
-      const cat = categories.find((c) => c.slug === filters.category);
+    if (filters.category && filteredCategories.length > 0) {
+      const cat = filteredCategories.find((c) => c.slug === filters.category);
       if (cat) {
         result = result.filter((job) => job.category_id === cat.id);
       }
@@ -864,7 +876,7 @@ const JobsPage = () => {
     });
 
     return result;
-  }, [jobs, filters, categories]);
+  }, [jobs, filters, filteredCategories]);
 
   const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
   const paginatedJobs = filteredJobs.slice(
@@ -935,11 +947,11 @@ const JobsPage = () => {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
+      {/* Barre de recherche sticky */}
       <div className="bg-white border-b border-slate-200 sticky top-16 lg:top-20 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -968,7 +980,7 @@ const JobsPage = () => {
                   className="w-full h-12 rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">{t('jobs.allCities')}</option>
-                  {filteredCities.map((city) => (
+                  {popularCities.map((city) => (
                     <option key={city.name} value={city.name}>
                       {city.name}
                     </option>
@@ -994,21 +1006,23 @@ const JobsPage = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex gap-8">
+          {/* Sidebar filtres desktop */}
           <div className="hidden lg:block w-72 shrink-0">
             <div className="bg-white rounded-3xl border border-slate-200 p-4 sticky top-36">
               <FiltersSidebar
                 filters={filters}
                 onChange={setFilters}
-                cities={filteredCities}
-                categories={categories}
-                contractTypes={availableContractTypes}
-                experienceLevels={availableExperienceLevels}
+                cities={popularCities}
+                categories={filteredCategories}
+                contractTypes={contractOptions}
+                experienceLevels={experienceOptions}
                 onReset={resetFilters}
                 conversionRate={conversionRate}
               />
             </div>
           </div>
 
+          {/* Résultats */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div className="min-w-0">
@@ -1066,7 +1080,7 @@ const JobsPage = () => {
 
                 {filters.category && (
                   <Badge className="gap-1 rounded-full bg-slate-100 text-slate-700">
-                    {categories.find((c) => c.slug === filters.category)?.name || filters.category}
+                    {filteredCategories.find((c) => c.slug === filters.category)?.name || filters.category}
                     <button onClick={() => setFilters((prev) => ({ ...prev, category: null }))}>
                       <X className="w-3 h-3" />
                     </button>
@@ -1157,6 +1171,7 @@ const JobsPage = () => {
         </div>
       </div>
 
+      {/* Filtres mobiles */}
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
@@ -1175,10 +1190,10 @@ const JobsPage = () => {
               <FiltersSidebar
                 filters={filters}
                 onChange={setFilters}
-                cities={filteredCities}
-                categories={categories}
-                contractTypes={availableContractTypes}
-                experienceLevels={availableExperienceLevels}
+                cities={popularCities}
+                categories={filteredCategories}
+                contractTypes={contractOptions}
+                experienceLevels={experienceOptions}
                 onReset={resetFilters}
                 conversionRate={conversionRate}
               />

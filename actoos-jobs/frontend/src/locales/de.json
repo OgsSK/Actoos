@@ -229,6 +229,9 @@
         }
       },
       "actions": {
+        "switchToAnnual": "Auf jährlich wechseln (-20%)",
+        "switchToMonthly": "Zurück zu monatlich",
+        "switchToThisFrequency": "Diese Option wählen",
         "backToFree": "Zurück zu Kostenlos",
         "manageSubscription": "Abo verwalten",
         "upgradeTo": "Upgraden auf {{plan}}",
@@ -748,6 +751,8 @@
   
 
   "candidateProfile": {
+    "projects": "Projekte",
+    "posts": "Neuigkeiten",
     "notFound": "Kandidat nicht gefunden.",
     "back": "Zurück",
     "reportButton": "Diesen Kandidaten melden",
@@ -2381,6 +2386,25 @@
       }
     },
     "companyDetail": {
+      "tabs": {
+        "about": "Über uns",
+        "jobs": "Stellen",
+        "posts": "Neuigkeiten",
+        "contact": "Kontakt"
+      },
+      "posts": "Neuigkeiten",
+      "noPosts": "Keine Neuigkeiten im Moment.",
+      "readMore": "Mehr erfahren",
+      "city": "Stadt",
+      "country": "Land",
+      "phone": "Telefon",
+      "address": "Adresse",
+      "shareText": "Entdecken Sie {name} auf Actoos",
+       "follow": "Folgen",
+    "unfollow": "Nicht mehr folgen",
+    "followSuccess": "Sie folgen diesem Unternehmen jetzt.",
+    "unfollowSuccess": "Sie folgen diesem Unternehmen nicht mehr.",
+    "followers": "{{count}} Follower",
       "similarCompanies": "Ähnliche Unternehmen",
     "jobsCount": "{{count}} Angebot(e)",
       "back": "Zurück zu den Unternehmen",
@@ -2533,6 +2557,7 @@
       "delete": "Löschen"
     },
     "jobDetail": {
+       "shareText": "Stellenangebot: {title} bei {company}",
       "home.jobs.alreadyAppliedBadge": "Beworben",
     "jobs.alreadyAppliedBadge": "Beworben",
       "reapply": "Erneut bewerben",
@@ -2691,6 +2716,8 @@
       }
     },
     "applicationDetail": {
+      "aiSummary": "KI-Zusammenfassung",
+      "generateSummary": "Zusammenfassung generieren",
       "rejectionReasonPrompt": "Grund (optional):",
       "notifyOtherCandidates": "Andere Kandidaten informieren",
       "notifyOtherCandidatesHelp": "Senden Sie eine E-Mail an die anderen Kandidaten, um sie zu informieren, dass die Stelle besetzt ist.",
@@ -2777,6 +2804,7 @@
       "generateAnswers": "Antworten generieren",
       "generateTips": "Tipps generieren",
       "toasts": {
+        "summaryGenerated": "Zusammenfassung erfolgreich generiert",
         "documentRequestSent": "Dokumentanforderung an den Kandidaten gesendet",
         "noteSaved": "Notiz gespeichert.",
         "noteDeleted": "Notiz gelöscht.",
@@ -2791,6 +2819,38 @@
       "accountSuspended": "Ihr Konto ist gesperrt."
     },
    "companyDashboard": {
+    "posts": {
+      "title": "Neuigkeiten",
+      "empty": "Keine Neuigkeiten veröffentlicht.",
+      "create": "Neuigkeit erstellen",
+      "form": {
+        "title": "Titel",
+        "content": "Inhalt",
+        "imageUrl": "Bild-URL (optional)",
+        "linkUrl": "Link (optional)",
+        "publish": "Veröffentlichen",
+        "cancel": "Abbrechen"
+      },
+      "published": "Neuigkeit erfolgreich veröffentlicht!",
+      "error": "Fehler beim Veröffentlichen der Neuigkeit."
+    },
+    "followers": {
+      "title": "Meine Abonnenten",
+      "total": "Abonnenten",
+      "viewAll": "Alle Abonnenten ansehen"
+    },
+    "proBanner": {
+      "title": "Pro-Tarif",
+      "subtitle": "Fortschrittliche Tools für Ihre Personalgewinnung",
+      "interviewTools": "Bewerbungsgespräch-Tools",
+      "aiNotes": "KI-Notizen"
+    },
+    "businessBanner": {
+      "title": "Business-Tarif",
+      "subtitle": "Unbegrenzter Zugriff auf alle Premium-Funktionen",
+      "boost": "1 kostenloser Boost / Monat",
+      "cvBank": "Unbegrenzte CV-Datenbank"
+    },
     "stats": { "trend": "{{trend}} diese Woche", "publishedJobs": "Aktive Stellen", "totalApplications": "Alle Bewerbungen", "newApplications": "Neue Bewerbungen", "totalViews": "Alle Aufrufe" },
     "status": { "draft": "Entwurf", "pending": "Ausstehend", "active": "Aktiv", "paused": "Pausiert", "closed": "Geschlossen", "expired": "Abgelaufen", "rejected": "Abgelehnt" },
     "jobCard": {
@@ -2856,6 +2916,16 @@
     "cvBank": { "title": "CV-Datenbank", "desc": "Greifen Sie auf unseren Talentpool zu.", "browse": "CVs durchsuchen" }
   },
     "candidateDashboard": {
+      "selected": {
+      "title": "Für Sie ausgewählte Stellen",
+      "subtitle": "Basierend auf Ihrem Profil und Ihren Präferenzen",
+      "viewAll": "Alle Stellen ansehen",
+      "empty": "Vervollständigen Sie Ihr Profil, um passende Stellen zu sehen.",
+      "completeProfile": "Mein Profil vervollständigen",
+      "excellent": "Ausgezeichnet",
+      "good": "Gut",
+      "partial": "Potenzial"
+    },
       "contracts": {
         "title": "Meine Verträge"
       },
@@ -2904,6 +2974,10 @@
         }
       },
       "quickActions": {
+        "viewPublicProfile": "Mein öffentliches Profil ansehen",
+        "viewPublicProfileDesc": "Entdecken Sie, wie Personalvermittler Ihr Profil sehen",
+        "followedCompanies": "Meine Gefolgten",
+        "followedCompaniesDesc": "Unternehmen, denen Sie folgen",
         "title": "Schnellaktionen",
         "updateCV": "Lebenslauf aktualisieren",
         "updateCVDesc": "Neue Datei hinzufügen.",
@@ -2975,6 +3049,11 @@
       }
     },
     "common": {
+       "add": "Hinzufügen",
+      "unspecified": "Nicht angegeben",
+       "loadingScores": "Berechnung der Bewertungen...",
+      "clear": "Löschen",
+      "sortByRelevance": "Relevanz (KI)",
       "filters": "Filter",
       "previous": "Zurück",
     "next": "Weiter",
@@ -3059,6 +3138,7 @@
     },
     
    "candidateBank": {
+    "matchWithOffer": "Mit Angebot verknüpfen...",
       "title": "CV-Datenbank",
       "subtitle": "Durchsuchen Sie verfügbare Kandidatenprofile",
       "searchPlaceholder": "Suche nach Name, Fähigkeit, Titel…",
@@ -3074,91 +3154,128 @@
       "browse": "CVs durchsuchen"
     },
    "candidateProfilePage": {
-      "title": "Kandidatenprofil",
-      "subtitle": "Verwalten Sie Ihr berufliches Profil",
+    "projects": {
+      "sectionTitle": "Projekte",
+      "sectionDesc": "Präsentieren Sie Ihre Projekte, um zu rekrutieren, zu investieren oder zusammenzuarbeiten",
+      "titlePlaceholder": "Projekttitel",
+      "descriptionPlaceholder": "Beschreiben Sie Ihr Projekt…",
+      "objective": "Ziel",
+      "objectives": {
+        "recruiting": "Rekrutierung",
+        "investment": "Investition",
+        "collaboration": "Zusammenarbeit",
+        "other": "Sonstiges"
+      },
+      "skillsNeeded": "Gesuchte Kompetenzen",
+      "skillPlaceholder": "Kompetenz hinzufügen",
+      "fundingGoal": "Finanzierungsziel (optional)",
+      "fundingPlaceholder": "Betrag in FCFA",
+      "publish": "Projekt hinzufügen",
+      "added": "Projekt erfolgreich hinzugefügt",
+      "error": "Fehler beim Hinzufügen des Projekts",
+      "deleteConfirm": "Löschung des Projekts bestätigen?",
+      "deleted": "Projekt gelöscht"
+    },
+    "posts": {
+        "sectionTitle": "Neuigkeiten",
+        "sectionDesc": "Teilen Sie Ihre beruflichen Updates",
+        "titlePlaceholder": "Titel (optional)",
+        "contentPlaceholder": "Ihre Neuigkeit…",
+        "addImage": "Bild",
+        "publish": "Veröffentlichen",
+        "added": "Neuigkeit erfolgreich veröffentlicht!",
+        "error": "Fehler beim Veröffentlichen.",
+        "deleteConfirm": "Diese Neuigkeit löschen?",
+        "deleted": "Neuigkeit gelöscht."
+      },
+      "title": "Mein Kandidatenprofil",
+      "subtitle": "Vervollständigen Sie Ihr Profil, um Ihre Einstellungschancen zu erhöhen",
       "save": "Speichern",
       "saveChanges": "Änderungen speichern",
+      "back": "Zurück",
       "photo": {
         "title": "Profilfoto",
-        "hint": "JPG oder PNG, max. 2 MB",
-        "change": "Ändern",
+        "hint": "Ein professionelles Foto erhöht Ihre Chancen, bemerkt zu werden.",
+        "change": "Foto ändern",
         "delete": "Löschen",
-        "updated": "Foto aktualisiert",
-        "uploadError": "Upload-Fehler",
-        "deleteConfirm": "Foto löschen?",
-        "deleted": "Foto gelöscht",
+        "updated": "Foto erfolgreich aktualisiert",
+        "uploadError": "Fehler beim Hochladen des Fotos",
+        "deleteConfirm": "Möchten Sie Ihr Foto wirklich löschen?",
+        "deleted": "Foto erfolgreich gelöscht",
         "deleteError": "Fehler beim Löschen des Fotos"
       },
       "personalInfo": {
         "sectionTitle": "Persönliche Informationen",
-        "sectionDesc": "Ihre Kontaktdaten",
+        "sectionDesc": "Diese Informationen sind für Personalvermittler sichtbar.",
         "firstName": "Vorname",
         "lastName": "Nachname",
         "phone": "Telefon",
-        "phonePlaceholder": "+223 xx xx xx xx",
+        "phonePlaceholder": "Telefonnummer",
         "city": "Stadt",
         "selectCity": "Stadt auswählen"
       },
       "professionalProfile": {
         "sectionTitle": "Berufliches Profil",
-        "sectionDesc": "Beschreiben Sie Ihre aktuelle oder gewünschte Position",
+        "sectionDesc": "Heben Sie Ihren Titel, Ihre Biografie und Ihr Erfahrungsniveau hervor.",
         "title": "Berufsbezeichnung",
-        "bio": "Zusammenfassung / Biografie",
+        "bio": "Biografie / Zusammenfassung",
         "experienceLevel": "Erfahrungsniveau",
-        "selectLevel": "Niveau wählen",
+        "selectLevel": "Niveau auswählen",
         "yearsOfExperience": "Jahre Berufserfahrung",
         "available": "Sofort verfügbar",
         "openToRemote": "Offen für Homeoffice"
       },
       "cv": {
-        "sectionTitle": "Lebenslauf",
-        "sectionDesc": "Laden Sie Ihren Lebenslauf hoch (PDF, DOC, DOCX, max. 5 MB)",
-        "uploaded": "Lebenslauf erfolgreich hochgeladen",
-        "view": "Ansehen",
-        "change": "Ändern",
-        "delete": "Löschen",
-        "uploadTitle": "Lebenslauf hochladen",
-        "uploadHint": "Format PDF, DOC oder DOCX (max. 5 MB)",
+        "sectionTitle": "Lebenslauf (CV)",
+        "sectionDesc": "Laden Sie Ihren Lebenslauf im Format PDF, DOC oder DOCX hoch (max. 5 MB).",
+        "uploadTitle": "Laden Sie Ihren Lebenslauf hoch",
+        "uploadHint": "Akzeptierte Formate: PDF, DOC, DOCX – Maximale Größe: 5 MB",
         "chooseFile": "Datei auswählen",
-        "analyzeButton": "Ihren Lebenslauf mit KI analysieren",
-        "invalidFormat": "Nicht unterstütztes Dateiformat",
-        "fileTooLarge": "Die Datei überschreitet die maximale Größe von 5 MB",
+        "uploaded": "Lebenslauf erfolgreich hochgeladen",
+        "view": "Lebenslauf ansehen",
+        "change": "Lebenslauf ändern",
+        "delete": "Lebenslauf löschen",
         "uploadedToast": "Lebenslauf erfolgreich hochgeladen",
         "uploadError": "Fehler beim Hochladen des Lebenslaufs",
-        "deleteConfirm": "Lebenslauf löschen?",
-        "deletedToast": "Lebenslauf gelöscht",
-        "deleteError": "Fehler beim Löschen des Lebenslaufs"
+        "deleteConfirm": "Möchten Sie Ihren Lebenslauf wirklich löschen?",
+        "deletedToast": "Lebenslauf erfolgreich gelöscht",
+        "deleteError": "Fehler beim Löschen des Lebenslaufs",
+        "invalidFormat": "Nicht unterstütztes Dateiformat. Verwenden Sie PDF, DOC oder DOCX.",
+        "fileTooLarge": "Die Datei ist zu groß (max. 5 MB).",
+        "analyzeButton": "Meinen Lebenslauf mit KI analysieren"
       },
       "documents": {
         "sectionTitle": "Zusätzliche Dokumente",
-        "sectionDesc": "Diplome, Zertifikate usw.",
+        "sectionDesc": "Fügen Sie Diplome, Zertifikate oder andere Dokumente hinzu.",
         "typeDiploma": "Diplom",
         "typeCertificate": "Zertifikat",
         "typeOther": "Sonstiges",
         "addButton": "Dokument hinzufügen",
-        "empty": "Keine Dokumente hinzugefügt",
-        "addedToast": "Dokument hinzugefügt",
-        "uploadError": "Upload-Fehler",
-        "deleteConfirm": "Dieses Dokument löschen?",
-        "deletedToast": "Dokument gelöscht",
-        "deleteError": "Fehler beim Löschen des Dokuments"
+        "addedToast": "Dokument erfolgreich hinzugefügt",
+        "uploadError": "Fehler beim Hinzufügen des Dokuments",
+        "deleteConfirm": "Möchten Sie dieses Dokument wirklich löschen?",
+        "deletedToast": "Dokument erfolgreich gelöscht",
+        "deleteError": "Fehler beim Löschen des Dokuments",
+        "empty": "Kein Dokument hinzugefügt"
       },
       "skills": {
-        "sectionTitle": "Fähigkeiten",
-        "sectionDesc": "Liste Ihrer wichtigsten Fähigkeiten",
-        "placeholder": "Fähigkeit hinzufügen...",
+        "sectionTitle": "Kompetenzen",
+        "sectionDesc": "Fügen Sie Ihre Schlüsselkompetenzen hinzu (max. 10 empfohlen).",
+        "placeholder": "Neue Kompetenz",
         "add": "Hinzufügen",
-        "empty": "Keine Fähigkeiten angegeben",
-        "addedToast": "{{count}} Fähigkeit(en) hinzugefügt",
-        "noneFound": "Keine neuen Fähigkeiten gefunden"
+        "empty": "Keine Kompetenzen hinzugefügt",
+        "addedToast": "{{count}} Kompetenz(en) erfolgreich hinzugefügt",
+        "noneFound": "Keine Kompetenzen zum Hinzufügen gefunden"
       },
       "experience": {
         "sectionTitle": "Berufserfahrung",
-        "sectionDesc": "Ihr Werdegang",
+        "sectionDesc": "Listen Sie Ihre relevantesten Erfahrungen auf.",
         "add": "Erfahrung hinzufügen",
-        "empty": "Keine Erfahrung angegeben",
         "edit": "Bearbeiten",
+        "empty": "Keine Erfahrung hinzugefügt",
         "present": "Heute",
+        "modalAddTitle": "Erfahrung hinzufügen",
+        "modalEditTitle": "Erfahrung bearbeiten",
         "jobTitle": "Stellenbezeichnung",
         "company": "Unternehmen",
         "location": "Ort",
@@ -3166,67 +3283,71 @@
         "endDate": "Enddatum",
         "currentlyWorking": "Ich arbeite derzeit hier",
         "description": "Beschreibung",
-        "modalEditTitle": "Erfahrung bearbeiten",
-        "modalAddTitle": "Erfahrung hinzufügen",
-        "fillRequired": "Bitte füllen Sie die Pflichtfelder aus",
+        "cancel": "Abbrechen",
         "save": "Speichern",
         "saveNew": "Hinzufügen",
-        "cancel": "Abbrechen"
+        "fillRequired": "Bitte füllen Sie die Pflichtfelder aus (Titel, Unternehmen, Startdatum)"
       },
       "education": {
         "sectionTitle": "Ausbildung",
-        "sectionDesc": "Ihr akademischer Hintergrund",
+        "sectionDesc": "Fügen Sie Ihre Diplome und Ausbildungen hinzu.",
         "add": "Ausbildung hinzufügen",
-        "empty": "Keine Ausbildung angegeben",
         "edit": "Bearbeiten",
-        "modalEditTitle": "Ausbildung bearbeiten",
+        "empty": "Keine Ausbildung hinzugefügt",
         "modalAddTitle": "Ausbildung hinzufügen",
-        "degree": "Abschluss / Qualifikation",
+        "modalEditTitle": "Ausbildung bearbeiten",
+        "degree": "Diplom / Titel",
         "school": "Einrichtung",
         "field": "Fachrichtung",
         "year": "Jahr des Abschlusses",
-        "fillRequired": "Bitte füllen Sie die Pflichtfelder aus",
+        "cancel": "Abbrechen",
         "save": "Speichern",
         "saveNew": "Hinzufügen",
-        "cancel": "Abbrechen"
+        "fillRequired": "Bitte füllen Sie die Pflichtfelder aus (Diplom, Einrichtung, Jahr)"
       },
       "links": {
         "sectionTitle": "Links",
-        "sectionDesc": "Portfolio, LinkedIn, Website..."
+        "sectionDesc": "Portfolio, LinkedIn, persönliche Website…"
       },
       "salary": {
-        "sectionTitle": "Gehaltsvorstellungen",
-        "sectionDesc": "Gewünschtes Mindest- und Maximalgehalt",
+        "sectionTitle": "Wunschgehalt",
+        "sectionDesc": "Geben Sie eine ungefähre Spanne an (in FCFA).",
         "minSalary": "Mindestgehalt",
         "maxSalary": "Maximalgehalt"
       },
-      "toasts": {
-        "fillRequired": "Bitte füllen Sie die Pflichtfelder aus",
-        "profileUpdated": "Profil aktualisiert",
-        "saveError": "Fehler beim Speichern"
-      },
       "cvAnalysis": {
         "title": "KI-Lebenslaufanalyse",
-        "description": "Fügen Sie den Text Ihres Lebenslaufs ein, um Vorschläge zu erhalten.",
-        "placeholder": "Lebenslauf hier einfügen...",
+        "description": "Fügen Sie den Text Ihres Lebenslaufs ein, um Verbesserungsvorschläge zu erhalten.",
+        "placeholder": "Fügen Sie hier den Text Ihres Lebenslaufs ein…",
         "suggestions": "Verbesserungsvorschläge:",
-        "close": "Schließen",
         "analyze": "Analysieren",
-        "analyzing": "Analyse läuft...",
-        "emptyText": "Bitte geben Sie einen Text zur Analyse ein",
-        "doneToast": "Analyse abgeschlossen",
-        "errorToast": "Analysefehler"
+        "analyzing": "Analyse läuft…",
+        "close": "Schließen",
+        "emptyText": "Bitte geben Sie den zu analysierenden Lebenslauftext ein.",
+        "doneToast": "Analyse erfolgreich abgeschlossen",
+        "errorToast": "Fehler bei der Analyse des Lebenslaufs"
+      },
+      "toasts": {
+        "fillRequired": "Bitte füllen Sie alle Pflichtfelder aus.",
+        "profileUpdated": "Profil erfolgreich aktualisiert",
+        "saveError": "Fehler beim Speichern des Profils"
       }
     },
     "profile": {
+      "links": {
+        "title": "Links und Netzwerke",
+        "addLink": "Link hinzufügen",
+        "namePlaceholder": "Name (z. B. GitHub)",
+        "urlPlaceholder": "https://..."
+      },
       "visibility": {
         "sectionTitle": "Sichtbarkeit",
         "sectionDesc": "Verwalten Sie Ihre Präsenz in der CV-Datenbank",
         "cvBankTitle": "In der CV-Datenbank erscheinen",
-        "cvBankDesc": "Recruiter können Sie finden und Ihr Profil einsehen, auch wenn Sie sich nicht beworben haben.",
+        "cvBankDesc": "Personalvermittler können Sie finden und Ihr Profil einsehen, auch wenn Sie sich nicht beworben haben.",
         "enabled": "Ihr Profil ist jetzt in der CV-Datenbank sichtbar",
         "disabled": "Ihr Profil erscheint nicht mehr in der CV-Datenbank",
-        "error": "Fehler bei der Aktualisierung"
+        "error": "Fehler beim Aktualisieren der Sichtbarkeit"
       }
     },
   "experienceLevels": {
@@ -3293,6 +3414,45 @@
         "completed": "Abgeschlossen",
         "terminated": "Beendet"
       }
+    },
+    "followedCompanies": {
+      "title": "Meine Gefolgten",
+      "subtitle": "Unternehmen, denen Sie folgen",
+      "empty": "Keinen Unternehmen gefolgt",
+      "emptyHint": "Folgen Sie Unternehmen, um deren Angebote hier zu sehen.",
+      "browseCompanies": "Unternehmen durchsuchen",
+      "recentJobs": "Aktuelle Angebote",
+      "noRecentJobs": "Keine aktuellen Angebote für dieses Unternehmen."
+    },
+    "companyFollowers": {
+      "title": "Meine Follower",
+      "total": "{{total}} Follower",
+      "empty": "Noch keine Follower",
+      "emptyHint": "Wenn Kandidaten Ihrem Unternehmen folgen, erscheinen sie hier.",
+      "followedSince": "Folgt seit {{date}}",
+      "viewProfile": "Profil",
+      "contact": "Kontakt"
+    },
+    "contactModal": {
+      "title": "{{name}} kontaktieren",
+      "quickMessage": "Schnellnachricht",
+      "inviteToApply": "Zur Bewerbung einladen",
+      "subject": "Betreff",
+      "subjectPlaceholder": "Betreff Ihrer Nachricht",
+      "message": "Nachricht",
+      "messagePlaceholder": "Ihre Nachricht...",
+      "selectJob": "Betreffende Stelle",
+      "selectJobPlaceholder": "Wählen Sie eine Stelle",
+      "inviteMessagePlaceholder": "Personalisierte Nachricht hinzufügen...",
+      "send": "Senden",
+      "sent": "Nachricht erfolgreich gesendet!",
+      "subjectRequired": "Bitte geben Sie einen Betreff ein."
+    },
+    "share": {
+      "share": "Teilen",
+      "copiedShort": "Kopiert",
+      "copied": "Link in die Zwischenablage kopiert!",
+      "copyError": "Link konnte nicht kopiert werden."
     }
 
 

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import LanguageSwitcher from './LanguageSwitcher';
 import HeaderPreferences from './HeaderPreferences';
 
@@ -33,13 +34,42 @@ import { cn } from '../lib/utils';
 
 const Header = ({ user, onLogout }) => {
   const { t } = useTranslation();
-  const { isAdmin, isCompany, isCandidate, profile } = useAuth();
+  const { isAdmin, isCompany, isCandidate, activeCompanyId } = useAuth();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeCompanyPlan, setActiveCompanyPlan] = useState(null);
+  const [activeCompanyCycle, setActiveCompanyCycle] = useState(null);
+  const [activeCompanyName, setActiveCompanyName] = useState(null); // ← nouveau
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Charger le plan, le cycle et le nom de l'entreprise active
+  useEffect(() => {
+    if (!isCompany || !activeCompanyId) {
+      setActiveCompanyPlan(null);
+      setActiveCompanyCycle(null);
+      setActiveCompanyName(null);
+      return;
+    }
+    supabase
+      .from('companies')
+      .select('subscription_plan, billing_cycle, name')
+      .eq('id', activeCompanyId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setActiveCompanyPlan(data.subscription_plan || 'free');
+          setActiveCompanyCycle(data.billing_cycle || null);
+          setActiveCompanyName(data.name || null);
+        } else {
+          setActiveCompanyPlan(null);
+          setActiveCompanyCycle(null);
+          setActiveCompanyName(null);
+        }
+      });
+  }, [isCompany, activeCompanyId]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -79,6 +109,33 @@ const Header = ({ user, onLogout }) => {
     navigate('/connexion');
   };
 
+  // Composant pour la section "Entreprise active" dans le dropdown
+  const ActiveCompanyInfo = () => {
+    if (!isCompany || !activeCompanyId) return null;
+    return (
+      <div className="px-3 py-2 border-b border-slate-100 mb-1">
+        <div className="flex items-center gap-2 mb-1">
+          <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
+          <span className="text-sm font-medium text-slate-900 truncate">
+            {activeCompanyName || t('header.user.company', 'Entreprise')}
+          </span>
+        </div>
+        {activeCompanyPlan && (
+          <div className="ml-6">
+            <Badge className="bg-blue-100 text-blue-700 border-0 text-xs font-medium">
+              {t(`pricing.plans.${activeCompanyPlan}.name`, { defaultValue: activeCompanyPlan })}
+              {activeCompanyCycle && (
+                <span className="ml-1 opacity-75">
+                  · {activeCompanyCycle === 'monthly' ? t('pricing.toggle.monthly') : t('pricing.toggle.annual')}
+                </span>
+              )}
+            </Badge>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <header
       className={cn(
@@ -89,17 +146,16 @@ const Header = ({ user, onLogout }) => {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2">
-          {/* ---- Logo (sans texte) + navigation desktop ---- */}
-         <div className="flex items-center gap-3 lg:gap-3 min-w-0 flex-shrink-0">
+          {/* ---- Logo + navigation desktop ---- */}
+          <div className="flex items-center gap-3 lg:gap-3 min-w-0 flex-shrink-0">
             <Link to="/" className="flex items-center shrink-0 gap-2" title={t('header.brand')}>
-  <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
-    <Briefcase className="w-5 h-5" />
-  </div>
-  {/* ✅ Affiché uniquement sur mobile */}
-  <span className="font-bold text-lg text-slate-900 sm:hidden">
-    {t('header.brand')}
-  </span>
-</Link>
+              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                <Briefcase className="w-5 h-5" />
+              </div>
+              <span className="font-bold text-lg text-slate-900 sm:hidden">
+                {t('header.brand')}
+              </span>
+            </Link>
 
             <nav className="hidden lg:flex items-center gap-1">
               {navLinks.map((link) => (
@@ -156,6 +212,9 @@ const Header = ({ user, onLogout }) => {
                       <p className="text-xs text-slate-500 truncate">{displayEmail}</p>
                     </div>
 
+                    {/* Entreprise active et plan */}
+                    <ActiveCompanyInfo />
+
                     <DropdownMenuItem onClick={() => navigate(profileLink)} className="cursor-pointer rounded-lg">
                       <User className="w-4 h-4 mr-2.5 text-slate-400" />
                       {t('header.user.profile')}
@@ -181,14 +240,6 @@ const Header = ({ user, onLogout }) => {
                           {t('header.user.admin')}
                         </DropdownMenuItem>
                       </>
-                    )}
-
-                    {isCompany && (
-                      <div className="mx-2 my-1 rounded-lg bg-blue-50 px-3 py-2">
-                        <Badge className="bg-blue-100 text-blue-700 border-0 text-xs font-medium">
-                          {t('header.user.plan', { plan: profile?.subscription_plan || 'free' })}
-                        </Badge>
-                      </div>
                     )}
 
                     <DropdownMenuSeparator />
@@ -221,7 +272,7 @@ const Header = ({ user, onLogout }) => {
             )}
           </div>
 
-          {/* ---- Actions mobile (indicateur de connexion + hamburger) ---- */}
+          {/* ---- Actions mobile ---- */}
           <div className="lg:hidden flex items-center gap-2">
             {user ? (
               <Link to="/dashboard" className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold shadow-sm">
@@ -270,6 +321,28 @@ const Header = ({ user, onLogout }) => {
                       {user.user_metadata?.first_name || t('header.user.defaultUser')}
                     </p>
                     <p className="text-xs text-slate-500">{displayEmail}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Entreprise active en mobile */}
+              {isCompany && activeCompanyId && (
+                <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
+                  <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-900 truncate">
+                      {activeCompanyName || t('header.user.company', 'Entreprise')}
+                    </p>
+                    {activeCompanyPlan && (
+                      <Badge className="mt-1 bg-blue-100 text-blue-700 border-0 text-xs font-medium">
+                        {t(`pricing.plans.${activeCompanyPlan}.name`, { defaultValue: activeCompanyPlan })}
+                        {activeCompanyCycle && (
+                          <span className="ml-1 opacity-75">
+                            · {activeCompanyCycle === 'monthly' ? t('pricing.toggle.monthly') : t('pricing.toggle.annual')}
+                          </span>
+                        )}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               )}
@@ -328,13 +401,6 @@ const Header = ({ user, onLogout }) => {
                           {t('header.user.admin')}
                         </Button>
                       </Link>
-                    )}
-                    {isCompany && (
-                      <div className="rounded-xl bg-blue-50 px-4 py-3">
-                        <Badge className="bg-blue-100/60 text-blue-700 border-0 text-xs">
-                          {t('header.user.plan', { plan: profile?.subscription_plan || 'free' })}
-                        </Badge>
-                      </div>
                     )}
                     <Button
                       variant="outline"

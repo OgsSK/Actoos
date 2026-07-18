@@ -1,5 +1,5 @@
 // CompanyDashboard.js
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -18,11 +18,13 @@ import {
   ChevronRight, TrendingUp, Clock, CheckCircle, XCircle, Loader2,
   Edit, Trash2, MoreVertical, Globe, Mail, Phone, MapPin, Calendar,
   AlertTriangle, X, Send, Undo2, CreditCard, Layers, Banknote, Sparkles,
-  Crown, Search, RefreshCw,
+  Crown, Search, RefreshCw, Zap, UserPlus, ArrowRight,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
-import UserMessages from '../components/UserMessages';
 import { getPlanLimit, getExpirationDays, planHasFeature } from '../lib/planLimits';
+
+// Chargement asynchrone pour éviter la dépendance circulaire avec UserMessages
+const UserMessages = lazy(() => import('../components/UserMessages'));
 
 // ---------- StatCard ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
@@ -110,7 +112,6 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
         {effectiveStatus === 'expired' && (
           <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"><RefreshCw className="w-4 h-4" />{t('companyJobs.menu.reactivate')}</button>
         )}
-        {/* Publier directement retiré pour "draft" et "rejected" – déjà validé pour "closed" */}
         {effectiveStatus === 'closed' && (
           <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"><Send className="w-4 h-4" />{t('companyDashboard.jobCard.menu.publish')}</button>
         )}
@@ -229,6 +230,10 @@ const CompanyDashboard = () => {
   const [pendingDocsCount, setPendingDocsCount] = useState(0);
   const hasLoaded = useRef(false);
 
+  // Abonnés
+  const [followersSummary, setFollowersSummary] = useState({ total: 0, followers: [] });
+  const [loadingFollowers, setLoadingFollowers] = useState(false);
+
   const fetchUserCompanies = useCallback(async () => {
     if (!user) return [];
     const { data: owned } = await supabase.from('companies').select('*').eq('owner_id', user.id);
@@ -252,8 +257,6 @@ const CompanyDashboard = () => {
       setCompany(comp);
 
       const now = new Date().toISOString();
-
-      // Compter les offres réellement actives (non expirées)
       const { count: activeJobsCount } = await supabase
         .from('jobs')
         .select('id', { count: 'exact', head: true })
@@ -261,15 +264,13 @@ const CompanyDashboard = () => {
         .eq('status', 'active')
         .or(`expires_at.is.null,expires_at.gte.${now}`);
 
-      // Récupérer les 10 dernières offres actives (non expirées)
-    // Récupérer les 10 dernières offres (tous statuts confondus)
-const { data: jobsData } = await supabase
-  .from('jobs')
-  .select('*, city:cities(name)')
-  .eq('company_id', comp.id)
-  .order('created_at', { ascending: false })
-  .limit(10);
-setJobs(jobsData || []);
+      const { data: jobsData } = await supabase
+        .from('jobs')
+        .select('*, city:cities(name)')
+        .eq('company_id', comp.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      setJobs(jobsData || []);
 
       let appsData = [];
       if (jobsData?.length) {
@@ -330,29 +331,75 @@ setJobs(jobsData || []);
     }
   }, [activeCompanyId, company?.subscription_plan, fetchUserCompanies]);
 
+  const plan = company?.subscription_plan || 'free';
+  const isBusinessPlan = plan === 'business' || plan === 'enterprise';
+  const showFollowersWidget = plan === 'pro' || isBusinessPlan;
+
+  // Chargement direct des abonnés via Supabase
+  const fetchFollowersSummary = useCallback(async () => {
+    if (!company || !showFollowersWidget) return;
+    setLoadingFollowers(true);
+    try {
+      const { data: followersData, error: followersError } = await supabase
+        .from('company_followers')
+        .select('user_id, created_at')
+        .eq('company_id', company.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (followersError) throw followersError;
+
+      const total = followersData.length;
+      const userIds = followersData.map(f => f.user_id);
+
+      let usersMap = {};
+      if (userIds.length > 0) {
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url')
+          .in('id', userIds);
+
+        if (!usersError && usersData) {
+          usersMap = Object.fromEntries(usersData.map(u => [u.id, u]));
+        }
+      }
+
+      const followers = followersData.map(f => ({
+        user_id: f.user_id,
+        ...(usersMap[f.user_id] || {}),
+        followed_at: f.created_at,
+      }));
+
+      setFollowersSummary({ total, followers });
+    } catch (err) {
+      console.error('Erreur chargement abonnés:', err);
+      setFollowersSummary({ total: 0, followers: [] });
+    } finally {
+      setLoadingFollowers(false);
+    }
+  }, [company, showFollowersWidget]);
+
+  useEffect(() => {
+    fetchFollowersSummary();
+  }, [fetchFollowersSummary]);
+
   const handleEditJob = (job) => navigate(`/dashboard/entreprise/offres/${job.id}/modifier`);
   const handleDeleteJob = async (job) => { if (!window.confirm(t('companyDashboard.toasts.deleteConfirm', { title: job.title }))) return; await supabase.from('jobs').delete().eq('id', job.id); setJobs(prev => prev.filter(j => j.id !== job.id)); toast.success(t('companyDashboard.toasts.jobDeleted')); };
   
   const handleToggleJobStatus = async (job, newStatus) => {
-    // ✅ Sécurité : empêcher la publication directe d'un brouillon ou d'une offre rejetée
     if (newStatus === 'active' && (job.status === 'draft' || job.status === 'rejected')) {
       toast.error(t('companyDashboard.toasts.submitForValidationRequired', 'Cette offre doit être soumise pour validation avant publication.'));
       return;
     }
-
     if (newStatus === 'active') {
       const { count: activeCount } = await supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'active');
-      const plan = company?.subscription_plan || 'free';
       const limit = getPlanLimit(plan, 'jobs');
       if (activeCount >= limit) { toast.error(t('companyDashboard.toasts.limitReached', { limit })); return; }
     }
     try {
-      const plan = company?.subscription_plan || 'free';
       const updates = { status: newStatus };
       if (newStatus === 'active') {
-        if (!job.published_at) {
-          updates.published_at = new Date().toISOString();
-        }
+        if (!job.published_at) updates.published_at = new Date().toISOString();
         updates.expires_at = new Date(Date.now() + getExpirationDays(plan) * 24 * 60 * 60 * 1000).toISOString();
       }
       await supabase.from('jobs').update(updates).eq('id', job.id);
@@ -363,7 +410,6 @@ setJobs(jobsData || []);
 
   const handleSubmitForReview = async (job) => {
     if (!company?.is_verified) { toast.error(t('companyDashboard.toasts.companyNotVerified')); return; }
-    const plan = company?.subscription_plan || 'free';
     const { count: activeCount } = await supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'active');
     const { count: pendingCount } = await supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'pending');
     const limit = getPlanLimit(plan, 'jobs');
@@ -375,19 +421,13 @@ setJobs(jobsData || []);
       try { await apiFetch('/api/notify-admin-new-job', { method: 'POST', body: JSON.stringify({ job_title: job.title, company_name: company.name, company_email: company.email || user.email }) }); } catch (err) { console.error('Erreur notification admin job:', err); }
     } catch (err) { toast.error(t('companyDashboard.toasts.submissionError')); }
   };
+
   const handleCancelSubmission = async (job) => { try { await supabase.from('jobs').update({ status: 'draft' }).eq('id', job.id); setJobs(prev => prev.map(j => (j.id === job.id ? { ...j, status: 'draft' } : j))); toast.success(t('companyDashboard.toasts.submissionCancelled')); } catch (err) { toast.error(t('companyDashboard.toasts.updateError')); } };
 
   const handleCancelSubscription = async (reason) => {
     setCancelling(true);
     try {
-      await apiFetch('/api/subscription/cancel', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_id: user.id,
-          company_id: company?.id,
-          reason
-        })
-      });
+      await apiFetch('/api/subscription/cancel', { method: 'POST', body: JSON.stringify({ user_id: user.id, company_id: company?.id, reason }) });
       toast.success(t('companyDashboard.toasts.subscriptionCancelled'));
       setShowCancelModal(false);
       await fetchCompanyData(company.id);
@@ -419,7 +459,6 @@ setJobs(jobsData || []);
 
   const handleOpenPortal = () => { window.location.href = '/tarifs'; };
 
-  const plan = company?.subscription_plan || 'free';
   const jobsLimit = getPlanLimit(plan, 'jobs');
   const planLabel = plan === 'free' ? t('pricing.free') : plan.charAt(0).toUpperCase() + plan.slice(1);
 
@@ -428,10 +467,7 @@ setJobs(jobsData || []);
   const canCreateCompany = hasBusinessCompany || ownedCompaniesCount === 0;
 
   const hasCVBank = planHasFeature(plan, 'canAccessCvBank');
-  const isBusinessPlan = plan === 'business' || plan === 'enterprise';
-
   const activeJobsCount = stats.activeJobs;
-  const isOwner = company?.owner_id === user?.id;
 
   if (loading) return <DashboardSkeleton />;
 
@@ -470,11 +506,60 @@ setJobs(jobsData || []);
             </div>
             <div className="min-w-0"><h1 className="text-2xl font-bold text-slate-900 truncate">{company?.name}</h1><p className="text-slate-600">{t('companyDashboard.header.title')}</p></div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
-            <Link to="/dashboard/entreprise/profil" className="w-full"><Button variant="outline" className="w-full min-h-[44px]"><Settings className="w-4 h-4 mr-2" />{t('companyDashboard.profileButton')}</Button></Link>
-            <Link to="/dashboard/entreprise/offres/nouvelle" className="w-full"><Button className="w-full min-h-[44px] bg-blue-600 text-white hover:bg-blue-700"><Plus className="w-4 h-4 mr-2" />{t('companyDashboard.newOfferButton')}</Button></Link>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto">
+            <Link to="/dashboard/entreprise/profil" className="w-full">
+              <Button variant="outline" className="w-full min-h-[44px]">
+                <Settings className="w-4 h-4 mr-2" />{t('companyDashboard.profileButton')}
+              </Button>
+            </Link>
+
+            {/* ----- ✅ LIEN CORRIGÉ AVEC ?from=company-dashboard ----- */}
+            <Link to={`/entreprises/${activeCompanyId}?from=company-dashboard`} className="w-full">
+              <Button variant="outline" className="w-full min-h-[44px]">
+                <Eye className="w-4 h-4 mr-2" />
+                {t('candidateDashboard.quickActions.viewPublicProfile', 'Voir ma vitrine')}
+              </Button>
+            </Link>
+
+            <Link to="/dashboard/entreprise/offres/nouvelle" className="w-full">
+              <Button className="w-full min-h-[44px] bg-blue-600 text-white hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />{t('companyDashboard.newOfferButton')}
+              </Button>
+            </Link>
           </div>
         </div>
+
+        {isBusinessPlan && (
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Crown className="w-8 h-8 text-yellow-300" />
+              <div>
+                <h2 className="font-bold text-lg">{t('companyDashboard.businessBanner.title', 'Plan Business')}</h2>
+                <p className="text-white/80 text-sm">{t('companyDashboard.businessBanner.subtitle', 'Accès illimité à toutes les fonctionnalités premium')}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Badge className="bg-white/20 text-white border-0"><Sparkles className="w-3 h-3 mr-1" />{t('companyDashboard.businessBanner.boost', '1 boost gratuit / mois')}</Badge>
+              <Badge className="bg-white/20 text-white border-0"><Search className="w-3 h-3 mr-1" />{t('companyDashboard.businessBanner.cvBank', 'CV Bank illimitée')}</Badge>
+            </div>
+          </div>
+        )}
+
+        {!isBusinessPlan && plan === 'pro' && (
+          <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Zap className="w-8 h-8 text-blue-200" />
+              <div>
+                <h2 className="font-bold text-lg">{t('companyDashboard.proBanner.title', 'Plan Pro')}</h2>
+                <p className="text-white/80 text-sm">{t('companyDashboard.proBanner.subtitle', 'Des outils avancés pour vos recrutements')}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Badge className="bg-white/20 text-white border-0"><FileText className="w-3 h-3 mr-1" />{t('companyDashboard.proBanner.interviewTools', 'Outils entretien')}</Badge>
+              <Badge className="bg-white/20 text-white border-0"><Sparkles className="w-3 h-3 mr-1" />{t('companyDashboard.proBanner.aiNotes', 'Notes IA')}</Badge>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <StatCard icon={Briefcase} label={t('companyDashboard.stats.publishedJobs')} value={stats.activeJobs} color="blue" />
@@ -496,19 +581,7 @@ setJobs(jobsData || []);
                 ) : (
                   <div className="space-y-3">
                     {jobs.map(job => (
-                      <CompanyJobCard
-                        key={job.id}
-                        job={job}
-                        onEdit={handleEditJob}
-                        onDelete={handleDeleteJob}
-                        onToggleStatus={handleToggleJobStatus}
-                        onSubmitForReview={handleSubmitForReview}
-                        onCancelSubmission={handleCancelSubmission}
-                        isCompanyVerified={company?.is_verified ?? false}
-                        isBusinessPlan={isBusinessPlan}
-                        onFreeBoost={handleFreeBoost}
-                        companyLogo={company?.logo_url}
-                      />
+                      <CompanyJobCard key={job.id} job={job} onEdit={handleEditJob} onDelete={handleDeleteJob} onToggleStatus={handleToggleJobStatus} onSubmitForReview={handleSubmitForReview} onCancelSubmission={handleCancelSubmission} isCompanyVerified={company?.is_verified ?? false} isBusinessPlan={isBusinessPlan} onFreeBoost={handleFreeBoost} companyLogo={company?.logo_url} />
                     ))}
                   </div>
                 )}
@@ -517,6 +590,7 @@ setJobs(jobsData || []);
           </div>
 
           <div className="space-y-6">
+            {/* Applications */}
             <Card className="border-slate-200 overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div><h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.applicationsSection.title')}</h2><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.newCount', { count: stats.newApplications })}</p></div>
@@ -525,6 +599,7 @@ setJobs(jobsData || []);
               <CardContent className="p-4">{applications.length === 0 ? (<div className="text-center py-6"><Users className="w-10 h-10 text-slate-300 mx-auto mb-2" /><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.noApplications')}</p></div>) : (<div className="space-y-2">{applications.slice(0, 5).map(app => (<ApplicationCard key={app.id} application={app} />))}</div>)}</CardContent>
             </Card>
 
+            {/* Profil */}
             <Card className="border-slate-200 overflow-hidden">
               <CardContent className="p-4 sm:p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">{t('companyDashboard.companyProfileCard.title')}</h3>
@@ -542,10 +617,87 @@ setJobs(jobsData || []);
               </CardContent>
             </Card>
 
+            {/* Note administrateur - déplacé avant les abonnés et la banque CV */}
+            <Card className="border-slate-200 overflow-hidden">
+              <CardHeader><CardTitle>{t('companyDashboard.adminMessages.title')}</CardTitle></CardHeader>
+              <CardContent>
+                <Suspense fallback={<div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>}>
+                  <UserMessages userId={user.id} />
+                </Suspense>
+              </CardContent>
+            </Card>
+
+            {/* Mes abonnés - avant la banque CV */}
+            {showFollowersWidget && (
+              <Card className="border-slate-200 overflow-hidden">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-600" />
+                    {t('companyDashboard.followers.title', 'Mes abonnés')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingFollowers ? (
+                    <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-slate-900 mb-2">{followersSummary.total}</p>
+                      <p className="text-sm text-slate-500 mb-4">{t('companyDashboard.followers.total', 'abonnés')}</p>
+                      {followersSummary.followers.length > 0 && (
+                        <div className="space-y-3 mb-4">
+                          {followersSummary.followers.map(follower => (
+                            <div key={follower.user_id} className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
+                                {follower.avatar_url ? (<img src={follower.avatar_url} alt="" className="w-full h-full object-cover" />) : (<UserPlus className="w-4 h-4 m-2 text-slate-400" />)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-700 truncate">{follower.first_name} {follower.last_name}</p>
+                                <p className="text-xs text-slate-400">{formatRelative(follower.followed_at)}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <Link to={`/dashboard/entreprise/abonnes?company_id=${company.id}`}><Button variant="outline" size="sm" className="w-full">{t('companyDashboard.followers.viewAll', 'Voir tous les abonnés')}<ArrowRight className="w-4 h-4 ml-1" /></Button></Link>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Banque de CV - après les abonnés */}
+            {hasCVBank && (
+              <Card className="border-purple-200 bg-purple-50 overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2"><Crown className="w-5 h-5 text-purple-600" /><h3 className="font-semibold text-purple-900">{t('companyDashboard.cvBank.title', 'Banque de CV')}</h3></div>
+                  <p className="text-sm text-purple-700 mb-4">{t('companyDashboard.cvBank.desc', 'Accédez à notre vivier de talents disponibles.')}</p>
+                  <Link to="/dashboard/entreprise/cv-bank"><Button variant="outline" className="w-full border-purple-300 text-purple-700 hover:bg-purple-100"><Search className="w-4 h-4 mr-2" />{t('companyDashboard.cvBank.browse', 'Parcourir les CV')}</Button></Link>
+                </CardContent>
+              </Card>
+            )}
+
+            {pendingDocsCount > 0 && (
+              <Card className="border-blue-200 bg-blue-50 overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2"><FileText className="w-5 h-5 text-blue-600" /><h3 className="font-semibold text-blue-900">{t('companyDashboard.pendingDocuments.title', 'Documents à valider')}</h3></div>
+                  <p className="text-sm text-blue-700">{t('companyDashboard.pendingDocuments.count', { count: pendingDocsCount }, `${pendingDocsCount} document(s) en attente de validation.`)}</p>
+                  <Link to="/dashboard/entreprise/candidatures"><Button variant="outline" size="sm" className="mt-2 w-full border-blue-300 text-blue-700 hover:bg-blue-100">{t('companyDashboard.pendingDocuments.viewApplications', 'Voir les candidatures')}</Button></Link>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Abonnement / Résiliation - tout en bas */}
             <Card className="border-blue-200 bg-blue-50 overflow-hidden">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
-                  <Badge className="bg-blue-100 text-blue-700 border-0 text-sm px-3 py-1">{t('companyDashboard.subscriptionCard.currentPlan', { plan: planLabel })}</Badge>
+                  <Badge className="bg-blue-100 text-blue-700 border-0 text-sm px-3 py-1">
+                    {t('companyDashboard.subscriptionCard.currentPlan', { plan: planLabel })}
+                  </Badge>
+                  {company?.billing_cycle && (
+                    <span className="text-sm text-slate-600 ml-2">
+                      · {company.billing_cycle === 'monthly' ? t('pricing.toggle.monthly') : t('pricing.toggle.annual')}
+                    </span>
+                  )}
                   <Link to="/tarifs" className="w-full sm:w-auto"><Button variant="ghost" size="sm" className="w-full sm:w-auto text-blue-600 hover:bg-blue-100 min-h-[44px]">{t('companyDashboard.subscriptionCard.changePlan')}</Button></Link>
                 </div>
                 <div className="mb-4">
@@ -567,48 +719,6 @@ setJobs(jobsData || []);
                 )}
                 {isBusinessPlan && <p className="text-sm text-purple-700 mt-2">{t('companyDashboard.subscriptionCard.freeBoostMessage')}</p>}
               </CardContent>
-            </Card>
-
-            {hasCVBank && (
-              <Card className="border-purple-200 bg-purple-50 overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Crown className="w-5 h-5 text-purple-600" />
-                    <h3 className="font-semibold text-purple-900">{t('companyDashboard.cvBank.title', 'Banque de CV')}</h3>
-                  </div>
-                  <p className="text-sm text-purple-700 mb-4">{t('companyDashboard.cvBank.desc', 'Accédez à notre vivier de talents disponibles.')}</p>
-                  <Link to="/dashboard/entreprise/cv-bank">
-                    <Button variant="outline" className="w-full border-purple-300 text-purple-700 hover:bg-purple-100"><Search className="w-4 h-4 mr-2" />{t('companyDashboard.cvBank.browse', 'Parcourir les CV')}</Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Documents à valider */}
-            {pendingDocsCount > 0 && (
-              <Card className="border-blue-200 bg-blue-50 overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-semibold text-blue-900">
-                      {t('companyDashboard.pendingDocuments.title', 'Documents à valider')}
-                    </h3>
-                  </div>
-                  <p className="text-sm text-blue-700">
-                    {t('companyDashboard.pendingDocuments.count', { count: pendingDocsCount }, `${pendingDocsCount} document(s) en attente de validation.`)}
-                  </p>
-                  <Link to="/dashboard/entreprise/candidatures">
-                    <Button variant="outline" size="sm" className="mt-2 w-full border-blue-300 text-blue-700 hover:bg-blue-100">
-                      {t('companyDashboard.pendingDocuments.viewApplications', 'Voir les candidatures')}
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card className="border-slate-200 overflow-hidden">
-              <CardHeader><CardTitle>{t('companyDashboard.adminMessages.title')}</CardTitle></CardHeader>
-              <CardContent><UserMessages userId={user.id} /></CardContent>
             </Card>
           </div>
         </div>

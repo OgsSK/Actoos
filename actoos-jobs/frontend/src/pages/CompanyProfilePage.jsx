@@ -13,7 +13,8 @@ import { toast } from 'sonner';
 
 import {
   Building2, Globe, Mail, Phone, MapPin, Calendar,
-  Loader2, ChevronLeft, Save, Image, Trash2
+  Loader2, ChevronLeft, Save, Image, Trash2,
+  FileText, Upload, X, Plus
 } from 'lucide-react';
 
 // ---------- Drapeau emoji ----------
@@ -26,56 +27,40 @@ const getFlagEmoji = (countryCode) => {
   return String.fromCodePoint(...codePoints);
 };
 
-// Placeholders dynamiques par pays (numéro local, sans indicatif)
 const placeholderByCountry = {
-  'US': '555 000 0000',
-  'CA': '555 000 0000',
-  'FR': '6 12 34 56 78',
-  'CI': '05 00 00 00',
-  'SN': '70 123 45 67',
-  'ML': '70 00 00 00',
-  'BF': '70 00 00 00',
-  'NE': '90 00 00 00',
-  'TG': '90 00 00 00',
-  'BJ': '90 00 00 00',
-  'CM': '6 12 34 56 78',
-  'GA': '01 23 45 67',
-  'CG': '01 23 45 67',
-  'CD': '81 000 00 00',
-  'NG': '801 234 5678',
-  'GH': '50 123 4567',
-  'ZA': '82 123 4567',
-  'KE': '712 345 678',
-  'UG': '712 345 678',
-  'TZ': '712 345 678',
-  'RW': '788 000 000',
-  'BI': '79 000 000',
-  'MA': '06 12 34 56 78',
-  'DZ': '0550 12 34 56',
-  'TN': '20 123 456',
-  'EG': '10 1234 5678',
-  'SA': '50 000 0000',
-  'AE': '50 000 0000',
-  'UK': '7700 900 000',
-  'GB': '7700 900 000',
-  'DE': '1512 3456789',
-  'IT': '312 345 6789',
-  'ES': '612 34 56 78',
-  'PT': '912 345 678',
-  'NL': '06 12345678',
-  'BE': '470 12 34 56',
-  'CH': '76 123 45 67',
-  'AT': '664 123456',
-  'IN': '98765 43210',
-  'CN': '138 0000 0000',
-  'JP': '090 1234 5678',
-  'KR': '010 1234 5678',
-  'AU': '412 345 678',
-  'NZ': '21 123 4567',
-  'BR': '11 91234 5678',
-  'AR': '11 1234 5678',
-  'MX': '55 1234 5678',
+  'US': '555 000 0000', 'CA': '555 000 0000', 'FR': '6 12 34 56 78',
+  'CI': '05 00 00 00', 'SN': '70 123 45 67', 'ML': '70 00 00 00',
+  'BF': '70 00 00 00', 'NE': '90 00 00 00', 'TG': '90 00 00 00',
+  'BJ': '90 00 00 00', 'CM': '6 12 34 56 78', 'GA': '01 23 45 67',
+  'CG': '01 23 45 67', 'CD': '81 000 00 00', 'NG': '801 234 5678',
+  'GH': '50 123 4567', 'ZA': '82 123 4567', 'KE': '712 345 678',
+  'UG': '712 345 678', 'TZ': '712 345 678', 'RW': '788 000 000',
+  'BI': '79 000 000', 'MA': '06 12 34 56 78', 'DZ': '0550 12 34 56',
+  'TN': '20 123 456', 'EG': '10 1234 5678', 'SA': '50 000 0000',
+  'AE': '50 000 0000', 'UK': '7700 900 000', 'GB': '7700 900 000',
+  'DE': '1512 3456789', 'IT': '312 345 6789', 'ES': '612 34 56 78',
+  'PT': '912 345 678', 'NL': '06 12345678', 'BE': '470 12 34 56',
+  'CH': '76 123 45 67', 'AT': '664 123456', 'IN': '98765 43210',
+  'CN': '138 0000 0000', 'JP': '090 1234 5678', 'KR': '010 1234 5678',
+  'AU': '412 345 678', 'NZ': '21 123 4567', 'BR': '11 91234 5678',
+  'AR': '11 1234 5678', 'MX': '55 1234 5678',
 };
+
+// ---------- Section Header ----------
+const SectionHeader = ({ icon: Icon, title, description, action }) => (
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+        <Icon className="w-5 h-5 text-blue-600" />
+      </div>
+      <div className="min-w-0">
+        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        {description && <p className="text-sm text-slate-500">{description}</p>}
+      </div>
+    </div>
+    {action && <div className="shrink-0">{action}</div>}
+  </div>
+);
 
 const CompanyProfilePage = () => {
   const { t } = useTranslation();
@@ -101,14 +86,22 @@ const CompanyProfilePage = () => {
     size: '',
     website: '',
     email: '',
-    phone: '',          // numéro local uniquement
+    phone: '',
     city_id: '',
     address: '',
     founded_year: '',
     logo_url: '',
   });
 
-  // ✅ Récupération des listes traduites
+  // ---------- Actualités ----------
+  const [posts, setPosts] = useState([]);
+  const [newPostTitle, setNewPostTitle] = useState('');
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostImage, setNewPostImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [posting, setPosting] = useState(false);
+  const postImageInputRef = useRef(null);
+
   const INDUSTRIES = t('createCompany.industries', { returnObjects: true }) || [];
   const COMPANY_SIZES = t('createCompany.sizes', { returnObjects: true }) || {};
 
@@ -122,6 +115,12 @@ const CompanyProfilePage = () => {
     fetchCompany();
   }, [user, activeCompanyId]);
 
+  useEffect(() => {
+    if (activeCompanyId) {
+      fetchPosts();
+    }
+  }, [activeCompanyId]);
+
   const fetchCountries = async () => {
     const { data } = await supabase
       .from('countries')
@@ -132,49 +131,108 @@ const CompanyProfilePage = () => {
 
   const fetchCompany = async () => {
     setLoading(true);
-    const { data: company, error } = await supabase
+    const { data: companyData, error } = await supabase
       .from('companies')
       .select('*')
       .eq('id', activeCompanyId)
       .single();
 
-    if (error || !company) {
+    if (error || !companyData) {
       setNoCompany(true);
       setLoading(false);
       return;
     }
 
     setNoCompany(false);
-    setCompany(company);
+    setCompany(companyData);
     setForm({
-      name: company.name || '',
-      description: company.description || '',
-      industry: company.industry || '',
-      size: company.size || '',
-      website: company.website || '',
-      email: company.email || '',
-      phone: company.phone || '', // on garde la valeur existante, même si elle contient déjà l'indicatif (sera géré par l'extraction si besoin)
-      city_id: company.city_id || '',
-      address: company.address || '',
-      founded_year: company.founded_year ? String(company.founded_year) : '',
-      logo_url: company.logo_url || '',
+      name: companyData.name || '',
+      description: companyData.description || '',
+      industry: companyData.industry || '',
+      size: companyData.size || '',
+      website: companyData.website || '',
+      email: companyData.email || '',
+      phone: companyData.phone || '',
+      city_id: companyData.city_id || '',
+      address: companyData.address || '',
+      founded_year: companyData.founded_year ? String(companyData.founded_year) : '',
+      logo_url: companyData.logo_url || '',
     });
 
-    if (company.country_id) {
+    if (companyData.country_id) {
       const { data: country } = await supabase
         .from('countries')
         .select('code')
-        .eq('id', company.country_id)
+        .eq('id', companyData.country_id)
         .single();
       if (country) setSelectedCountry(country.code);
     }
     setLoading(false);
   };
 
+  // ---------- Actualités ----------
+  const fetchPosts = async () => {
+    if (!activeCompanyId) return;
+    const { data } = await supabase
+      .from('company_posts')
+      .select('*')
+      .eq('company_id', activeCompanyId)
+      .order('created_at', { ascending: false });
+    setPosts(data || []);
+  };
+
+  const handleAddPost = async () => {
+    if (!newPostContent.trim()) return;
+    setPosting(true);
+    try {
+      let imageUrl = null;
+      if (newPostImage) {
+        const fileExt = newPostImage.name.split('.').pop();
+        const fileName = `${user.id}/company-posts/post-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, newPostImage, { upsert: true });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+        imageUrl = urlData.publicUrl;
+      }
+
+      const { error } = await supabase.from('company_posts').insert({
+        company_id: activeCompanyId,
+        title: newPostTitle.trim() || null,
+        content: newPostContent.trim(),
+        image_url: imageUrl,
+      });
+      if (error) throw error;
+
+      setNewPostTitle('');
+      setNewPostContent('');
+      setNewPostImage(null);
+      setImagePreview(null);
+      fetchPosts();
+      toast.success(t('candidateProfilePage.posts.added'));
+    } catch (err) {
+      console.error('Erreur publication:', err);
+      toast.error(err.message || t('candidateProfilePage.posts.error'));
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm(t('candidateProfilePage.posts.deleteConfirm'))) return;
+    const { error } = await supabase.from('company_posts').delete().eq('id', postId);
+    if (error) toast.error(error.message);
+    else {
+      toast.success(t('candidateProfilePage.posts.deleted'));
+      fetchPosts();
+    }
+  };
+
+  // ---------- Logo ----------
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       toast.error(t('companyProfile.toasts.imageRequired'));
       return;
@@ -183,7 +241,6 @@ const CompanyProfilePage = () => {
       toast.error(t('companyProfile.toasts.imageTooBig'));
       return;
     }
-
     setUploadingLogo(true);
     try {
       const fileExt = file.name.split('.').pop();
@@ -192,9 +249,7 @@ const CompanyProfilePage = () => {
         .from('company-logos')
         .upload(fileName, file, { upsert: true });
       if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage
-        .from('company-logos')
-        .getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from('company-logos').getPublicUrl(fileName);
       setForm(prev => ({ ...prev, logo_url: urlData.publicUrl }));
       toast.success(t('companyProfile.toasts.logoUploaded'));
     } catch (error) {
@@ -216,7 +271,6 @@ const CompanyProfilePage = () => {
       toast.error(t('companyProfile.toasts.nameRequired'));
       return;
     }
-
     setSaving(true);
     try {
       const { data: country } = await supabase
@@ -234,7 +288,7 @@ const CompanyProfilePage = () => {
           ? (form.website.startsWith('http') ? form.website : `https://${form.website}`)
           : null,
         email: form.email || null,
-        phone: form.phone || null, // numéro local uniquement
+        phone: form.phone || null,
         city_id: form.city_id || null,
         country_id: country?.id || null,
         address: form.address || null,
@@ -257,16 +311,12 @@ const CompanyProfilePage = () => {
 
   const handleDeleteCompany = async () => {
     if (!window.confirm(t('companyProfile.deleteConfirm'))) return;
-
     setDeleting(true);
     try {
       await apiFetch('/api/company/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id,
-          company_id: activeCompanyId,
-        }),
+        body: JSON.stringify({ user_id: user.id, company_id: activeCompanyId }),
       });
       toast.success(t('companyProfile.toasts.companyDeleted'));
       navigate('/dashboard/entreprise');
@@ -305,7 +355,6 @@ const CompanyProfilePage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20 pb-24 sm:pb-10" data-testid="company-profile-page">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-        {/* En-tête avec bouton retour et bouton Enregistrer (desktop) */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
@@ -330,7 +379,7 @@ const CompanyProfilePage = () => {
         <form onSubmit={handleSubmit}>
           <Card>
             <CardContent className="p-6 space-y-6">
-              {/* Logo avec suppression possible */}
+              {/* Logo */}
               <div className="text-center">
                 <div className="flex flex-col items-center gap-3">
                   <div
@@ -373,227 +422,149 @@ const CompanyProfilePage = () => {
                 <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
               </div>
 
-              {/* Nom */}
+              {/* Champs entreprise */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  {t('companyProfile.labels.name')}
-                </label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder={t('companyProfile.placeholders.name')}
-                  required
-                  className="min-h-[44px]"
-                />
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('companyProfile.labels.name')}</label>
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t('companyProfile.placeholders.name')} required className="min-h-[44px]" />
               </div>
-
-              {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  {t('companyProfile.labels.description')}
-                </label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder={t('companyProfile.placeholders.description')}
-                />
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('companyProfile.labels.description')}</label>
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder={t('companyProfile.placeholders.description')} />
               </div>
-
-              {/* Secteur et Taille */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    {t('companyProfile.labels.industry')}
-                  </label>
-                  <select
-                    value={form.industry}
-                    onChange={(e) => setForm({ ...form, industry: e.target.value })}
-                    className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('companyProfile.labels.industry')}</label>
+                  <select value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">{t('companyProfile.options.selectIndustry')}</option>
-                    {INDUSTRIES.map((ind, i) => (
-                      <option key={i} value={ind}>{ind}</option>
-                    ))}
+                    {INDUSTRIES.map((ind, i) => <option key={i} value={ind}>{ind}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    {t('companyProfile.labels.size')}
-                  </label>
-                  <select
-                    value={form.size}
-                    onChange={(e) => setForm({ ...form, size: e.target.value })}
-                    className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('companyProfile.labels.size')}</label>
+                  <select value={form.size} onChange={(e) => setForm({ ...form, size: e.target.value })} className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">{t('companyProfile.options.selectSize')}</option>
-                    {Object.entries(COMPANY_SIZES).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
+                    {Object.entries(COMPANY_SIZES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                   </select>
                 </div>
               </div>
-
-              {/* Site web / Email */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Globe className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.website')}
-                  </label>
-                  <Input
-                    value={form.website}
-                    onChange={(e) => setForm({ ...form, website: e.target.value })}
-                    placeholder={t('companyProfile.placeholders.website')}
-                    className="min-h-[44px]"
-                  />
+                  <label className="block text-sm font-medium text-slate-700 mb-1"><Globe className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.website')}</label>
+                  <Input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder={t('companyProfile.placeholders.website')} className="min-h-[44px]" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Mail className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.email')}
-                  </label>
-                  <Input
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder={t('companyProfile.placeholders.email')}
-                    className="min-h-[44px]"
-                  />
+                  <label className="block text-sm font-medium text-slate-700 mb-1"><Mail className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.email')}</label>
+                  <Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t('companyProfile.placeholders.email')} className="min-h-[44px]" />
                 </div>
               </div>
-
-              {/* Téléphone avec placeholder dynamique */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Phone className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.phone')}
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1"><Phone className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.phone')}</label>
                   <div className="flex items-stretch">
-                    <select
-                      value={selectedCountry || ''}
-                      onChange={(e) => setSelectedCountry(e.target.value)}
-                      className="h-10 min-h-[44px] px-2 border border-r-0 border-slate-200 rounded-l-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      style={{ minWidth: '90px' }}
-                    >
-                      {countries.map(c => (
-                        <option key={c.code} value={c.code}>
-                          {getFlagEmoji(c.code)} +{c.phone_code || '?'}
-                        </option>
-                      ))}
+                    <select value={selectedCountry || ''} onChange={(e) => setSelectedCountry(e.target.value)} className="h-10 min-h-[44px] px-2 border border-r-0 border-slate-200 rounded-l-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style={{ minWidth: '90px' }}>
+                      {countries.map(c => <option key={c.code} value={c.code}>{getFlagEmoji(c.code)} +{c.phone_code || '?'}</option>)}
                     </select>
-                    <Input
-                      type="tel"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      placeholder={phonePlaceholder}
-                      className="min-h-[44px] flex-1 rounded-l-none"
-                    />
+                    <Input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={phonePlaceholder} className="min-h-[44px] flex-1 rounded-l-none" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Calendar className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.foundedYear')}
-                  </label>
-                  <Input
-                    value={form.founded_year}
-                    onChange={(e) => setForm({ ...form, founded_year: e.target.value })}
-                    placeholder={t('companyProfile.placeholders.year')}
-                    type="number"
-                    min="1900"
-                    max={new Date().getFullYear()}
-                    className="min-h-[44px]"
-                  />
+                  <label className="block text-sm font-medium text-slate-700 mb-1"><Calendar className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.foundedYear')}</label>
+                  <Input value={form.founded_year} onChange={(e) => setForm({ ...form, founded_year: e.target.value })} placeholder={t('companyProfile.placeholders.year')} type="number" min="1900" max={new Date().getFullYear()} className="min-h-[44px]" />
                 </div>
               </div>
-
-              {/* Pays (principal) et Ville */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <MapPin className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.country')}
-                  </label>
-                  <select
-                    value={selectedCountry}
-                    onChange={(e) => setSelectedCountry(e.target.value)}
-                    className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    {countries.map(c => (
-                      <option key={c.code} value={c.code}>
-                        {t(`countries.${c.code}`, c.name)}
-                      </option>
-                    ))}
+                  <label className="block text-sm font-medium text-slate-700 mb-1"><MapPin className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.country')}</label>
+                  <select value={selectedCountry} onChange={(e) => setSelectedCountry(e.target.value)} className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    {countries.map(c => <option key={c.code} value={c.code}>{t(`countries.${c.code}`, c.name)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <MapPin className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.city')}
-                  </label>
-                  <select
-                    value={form.city_id}
-                    onChange={(e) => setForm({ ...form, city_id: e.target.value })}
-                    className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
+                  <label className="block text-sm font-medium text-slate-700 mb-1"><MapPin className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.city')}</label>
+                  <select value={form.city_id} onChange={(e) => setForm({ ...form, city_id: e.target.value })} className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">{t('companyProfile.options.selectCity')}</option>
-                    {filteredCities.map(city => (
-                      <option key={city.id} value={city.id}>{city.name}</option>
-                    ))}
+                    {filteredCities.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}
                   </select>
                 </div>
               </div>
-
-              {/* Adresse */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('companyProfile.labels.address')}</label>
-                <Input
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  placeholder={t('companyProfile.placeholders.address')}
-                  className="min-h-[44px]"
-                />
+                <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder={t('companyProfile.placeholders.address')} className="min-h-[44px]" />
               </div>
-
-              {/* Bouton enregistrer */}
-              <Button
-                type="submit"
-                className="w-full bg-blue-600 text-white hover:bg-blue-700 min-h-[44px]"
-                disabled={saving}
-              >
-                {saving ? (
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                ) : (
-                  <Save className="w-5 h-5 mr-2" />
-                )}
+              <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700 min-h-[44px]" disabled={saving}>
+                {saving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
                 {t('companyProfile.submit')}
               </Button>
             </CardContent>
           </Card>
         </form>
 
-        {/* Section suppression d'entreprise */}
+        {/* ==================== CARTE ACTUALITÉS ==================== */}
+        <Card className="mt-6">
+          <CardContent className="p-6">
+            <SectionHeader
+              icon={FileText}
+              title={t('candidateProfilePage.posts.sectionTitle', 'Actualités')}
+              description={t('candidateProfilePage.posts.sectionDesc', 'Partagez les actualités de votre entreprise')}
+            />
+            <div className="space-y-4">
+              <div>
+                <Input value={newPostTitle} onChange={(e) => setNewPostTitle(e.target.value)} placeholder={t('candidateProfilePage.posts.titlePlaceholder', 'Titre (optionnel)')} className="min-h-[44px] mb-2" />
+                <textarea rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" value={newPostContent} onChange={(e) => setNewPostContent(e.target.value)} placeholder={t('candidateProfilePage.posts.contentPlaceholder', 'Votre actualité…')} />
+                <div className="flex items-center gap-2 mt-2">
+                  <Button variant="outline" size="sm" onClick={() => postImageInputRef.current?.click()} type="button" className="min-h-[44px]">
+                    <Upload className="w-4 h-4 mr-2" />
+                    {t('candidateProfilePage.posts.addImage', 'Image')}
+                  </Button>
+                  <input ref={postImageInputRef} type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0] || null; setNewPostImage(file); if (file) { setImagePreview(URL.createObjectURL(file)); } else { setImagePreview(null); } }} className="hidden" />
+                  {newPostImage && <span className="text-sm text-slate-500">{newPostImage.name}</span>}
+                </div>
+                {imagePreview && (
+                  <div className="mt-2 relative inline-block">
+                    <img src={imagePreview} alt="Aperçu" className="rounded-lg max-h-40 object-cover" />
+                    <button type="button" onClick={() => { setNewPostImage(null); setImagePreview(null); }} className="absolute top-1 right-1 bg-white/80 rounded-full p-1 hover:bg-white"><X className="w-4 h-4 text-red-500" /></button>
+                  </div>
+                )}
+                <Button onClick={handleAddPost} disabled={posting || !newPostContent.trim()} className="mt-3 min-h-[44px]" type="button">
+                  {posting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                  {t('candidateProfilePage.posts.publish', 'Publier')}
+                </Button>
+              </div>
+              {posts.length > 0 && (
+                <div className="space-y-3 mt-4">
+                  {posts.map(post => (
+                    <div key={post.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          {post.title && <h4 className="font-medium text-slate-900">{post.title}</h4>}
+                          <p className="text-sm text-slate-600 whitespace-pre-wrap mt-1">{post.content}</p>
+                          {post.image_url && <img src={post.image_url} alt="" className="mt-3 rounded-lg max-h-60 object-cover" />}
+                          <p className="text-xs text-slate-400 mt-2">{new Date(post.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeletePost(post.id)} className="text-red-500 h-8 w-8 shrink-0"><Trash2 className="w-4 h-4" /></Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Suppression entreprise */}
         <div className="mt-8 border-t pt-6">
           <h3 className="text-red-600 font-semibold mb-2">{t('companyProfile.deleteSection.title')}</h3>
-          <p className="text-sm text-slate-600 mb-4">
-            {t('companyProfile.deleteSection.description')}
-          </p>
-          <Button
-            variant="outline"
-            className="border-red-300 text-red-600 hover:bg-red-50 min-h-[44px]"
-            onClick={handleDeleteCompany}
-            disabled={deleting}
-          >
+          <p className="text-sm text-slate-600 mb-4">{t('companyProfile.deleteSection.description')}</p>
+          <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50 min-h-[44px]" onClick={handleDeleteCompany} disabled={deleting}>
             {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
             {deleting ? t('companyProfile.deleteSection.deleting') : t('companyProfile.deleteSection.button')}
           </Button>
         </div>
       </div>
 
-      {/* Barre sticky en bas pour mobile */}
+      {/* Barre sticky mobile */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 sm:hidden z-40">
-        <Button
-          type="button"
-          onClick={handleSubmit}
-          disabled={saving}
-          className="w-full min-h-[48px] bg-blue-600 text-white hover:bg-blue-700 gap-2"
-        >
+        <Button type="button" onClick={handleSubmit} disabled={saving} className="w-full min-h-[48px] bg-blue-600 text-white hover:bg-blue-700 gap-2">
           {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
           {t('companyProfile.submit')}
         </Button>

@@ -1,7 +1,10 @@
+import traceback
+
 from fastapi import FastAPI, HTTPException, Request, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
+
 from pydantic import BaseModel
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Union
 import os
 import stripe
 from dotenv import load_dotenv
@@ -14,6 +17,11 @@ from datetime import datetime, timedelta, timezone
 import uuid
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
+
+
+
+
+
 
 
 LOGO_URL = "https://anfamlpwootbrzswnpyp.supabase.co/storage/v1/object/public/logos/actoos.png"
@@ -70,6 +78,9 @@ PLAN_LIMITS_CONFIG = {
     "business": {"jobs": float("inf"), "members": float("inf"), "expiration_days": 60},
     "enterprise": {"jobs": float("inf"), "members": float("inf"), "expiration_days": 90},
 }
+
+
+
 
 def get_plan_limit_static(plan, attribute):
     plan_data = PLAN_LIMITS_CONFIG.get(plan, PLAN_LIMITS_CONFIG["free"])
@@ -163,7 +174,7 @@ class NewsletterRequest(BaseModel):
 class AIAgentRequest(BaseModel):
     agent_id: str
     text: str
-    context: Optional[dict] = None    # ← changé de str à dict
+    context: Optional[Union[str, dict]] = None    # ← accepte str ou dict
     language: Optional[str] = "fr"
 
 class CancelSubscriptionRequest(BaseModel):
@@ -612,9 +623,11 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
 
     # ---------- Agent de génération complète d'offre ----------
     if req.agent_id == "job-full-generation":
-        country = (req.context or {}).get("country", "non spécifié")
-        currency = (req.context or {}).get("currency", "XOF")
-        categories = (req.context or {}).get("categories", [])
+        # Contexte toujours sous forme de dictionnaire (sinon vide)
+        ctx = req.context if isinstance(req.context, dict) else {}
+        country = ctx.get("country", "non spécifié")
+        currency = ctx.get("currency", "XOF")
+        categories = ctx.get("categories", [])
         categories_str = ", ".join(categories) if categories else "général"
 
         if target_language != "fr":
@@ -628,7 +641,6 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
             user_text = f"Titre de l'offre : {req.text}\nGénère l'offre complète en français."
 
         # Enrichissement avec les statistiques locales
-                # Enrichissement avec les statistiques locales
         if categories:
             stats = get_local_salary_stats(country, categories[0])
             if stats and stats.get("count_rows", 0) > 2:
@@ -693,6 +705,23 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
                 data = response.json()
                 if "choices" in data and len(data["choices"]) > 0:
                     improved_text = data["choices"][0]["message"]["content"].strip()
+
+                    # ----- Correction automatique des salaires pour job-full-generation -----
+                    if req.agent_id == "job-full-generation":
+                        try:
+                            generated_json = json.loads(improved_text)
+                            if categories:
+                                stats = get_local_salary_stats(country, categories[0])
+                                if stats and stats.get("count_rows", 0) > 2:
+                                    if "salary_min" in generated_json:
+                                        generated_json["salary_min"] = int(stats["avg_salary_min"])
+                                    if "salary_max" in generated_json:
+                                        generated_json["salary_max"] = int(stats["avg_salary_max"])
+                            improved_text = json.dumps(generated_json, ensure_ascii=False)
+                        except Exception:
+                            pass
+                    # ------------------------------------------------------------------------
+
                     return {
                         "success": True,
                         "result": improved_text,
@@ -913,12 +942,11 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
     package = SUBSCRIPTION_PLANS[package_id]
     mode = "subscription"
 
-    # ---------- Devise choisie par l'utilisateur ----------
+    # ---------- Devise ----------
     currency = (checkout_request.preferred_currency or "XOF").upper()
     if currency not in SUPPORTED_CURRENCIES:
         currency = "XOF"
 
-    # Taux de conversion FCFA → devise cible (identiques au frontend)
     RATES_TO_XOF = {
         "XOF": 1, "EUR": 655.957, "USD": 603.5, "MAD": 60.5,
         "GBP": 754.2, "BRL": 115.3, "ARS": 0.72, "NGN": 0.4, "ZAR": 32.5,
@@ -927,11 +955,8 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
     }
     rate = RATES_TO_XOF.get(currency, 1)
 
-    # ---------- Calcul du montant (prix normal) ----------
     amount_fcfa = package["amount"]
     converted_amount = round(amount_fcfa / rate)
-
-    # Gestion des sous-unités (centimes) pour les devises qui en ont
     if currency in ("EUR", "USD", "GBP", "MAD", "BRL", "ARS", "NGN", "ZAR",
                     "SAR", "AED", "EGP", "DZD", "TND", "CHF"):
         converted_amount = converted_amount * 100
@@ -964,6 +989,9 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
     if checkout_request.metadata:
         metadata.update(checkout_request.metadata)
 
+    # ✅ Détermination du cycle
+    metadata["billing_cycle"] = "annual" if "annual" in package_id else "monthly"
+
     # ---------- Vérification downgrade ----------
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
@@ -978,7 +1006,7 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
             raise HTTPException(status_code=404, detail="Entreprise non trouvée ou non autorisée")
         company = companies[0]
         current_plan = company.get("subscription_plan", "free")
-        launch_used = company.get("launch_coupon_used", False)   # <-- Récupération du flag
+        launch_used = company.get("launch_coupon_used", False)
 
         target_plan = "free"
         if "pro" in package_id:
@@ -1002,15 +1030,12 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
                     detail=f"DOWNGRADE_BLOCKED:{active_jobs}:{target_limit}"
                 )
 
-        # ---------- Application automatique des coupons de lancement (si pas déjà utilisé) ----------
         discounts = None
         if package_id == "business_monthly" and not launch_used:
-            discounts = [{"coupon": "N9rSzhf6"}]          # ← ID réel de LAUNCH-MENSUEL
+            discounts = [{"coupon": "ynlMXDgS"}]
         elif package_id == "business_annual" and not launch_used:
-            discounts = [{"coupon": "bJA4SCvq"}]          # ← ID réel de LAUNCH-ANNUEL
+            discounts = [{"coupon": "tZOA4q5A"}]
 
-        # Si le coupon doit être appliqué, on marque immédiatement le flag pour éviter les doubles usages
-        # (Idéalement, cette mise à jour se fait dans le webhook checkout.session.completed)
         if discounts is not None:
             try:
                 httpx.patch(
@@ -1020,8 +1045,6 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
                 )
             except Exception as e:
                 logger.error(f"Erreur mise à jour launch_coupon_used: {e}")
-                # Ne pas bloquer la création de la session, le pire est que le flag ne soit pas mis
-                pass
 
     # ---------- Langue Stripe ----------
     STRIPE_LOCALES = {
@@ -1034,6 +1057,10 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
     stripe_locale = user_language if user_language in STRIPE_LOCALES else 'auto'
 
     try:
+        # 🔍 LOGS AJOUTÉS
+        print(f"[CHECKOUT] package_id={package_id}, billing_cycle={'annual' if 'annual' in package_id else 'monthly'}")
+        print(f"[CHECKOUT] metadata envoyé à Stripe : {metadata}")
+
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[line_item],
@@ -1042,7 +1069,7 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
             cancel_url=cancel_url,
             metadata=metadata,
             locale=stripe_locale,
-            discounts=discounts,                # coupon automatique
+            discounts=discounts,
         )
         payment_transactions[session.id] = {
             "session_id": session.id,
@@ -1101,9 +1128,16 @@ async def stripe_webhook(request: Request):
         print(f"Webhook error: {e}")
         return {"received": False, "error": str(e)}
 
+    # 🔍 Log du type d'événement
+    print(f"[WEBHOOK] Événement reçu : {event.type}")
+
     try:
         if event.type == "checkout.session.completed":
             session = event.data.object
+            # 🔍 Logs des métadonnées reçues
+            print(f"[WEBHOOK] checkout.session.completed - metadata : {session.metadata}")
+            print(f"[WEBHOOK] billing_cycle dans metadata : {session.metadata.get('billing_cycle')}")
+
             if session.id in payment_transactions:
                 payment_transactions[session.id]["payment_status"] = "paid"
                 payment_transactions[session.id]["status"] = "completed"
@@ -1135,26 +1169,30 @@ async def stripe_webhook(request: Request):
                             elif "business" in package_id:
                                 plan_name = "business"
 
-                            # Mise à jour de l'abonnement
                             update_data = {
                                 "subscription_plan": plan_name,
                                 "stripe_subscription_id": session.subscription,
                                 "stripe_customer_id": session.customer,
-                                "subscription_expires_at": None
+                                "subscription_expires_at": None,
+                                "billing_cycle": session.metadata.get("billing_cycle")
                             }
 
-                            # 🔒 Vérifier si le coupon de lancement a été appliqué
+                            # Coupon de lancement
                             if session.get("total_details") and session["total_details"].get("discounts"):
                                 applied_coupons = [d["discount"]["coupon"]["id"] for d in session["total_details"]["discounts"]]
-                                launch_coupon_ids = ["N9rSzhf6", "bJA4SCvq"]  # ID de LAUNCH-MENSUEL et LAUNCH-ANNUEL
+                                launch_coupon_ids = ["N9rSzhf6", "bJA4SCvq"]
                                 if any(cid in applied_coupons for cid in launch_coupon_ids):
                                     update_data["launch_coupon_used"] = True
 
-                            await client.patch(
+                            print(f"[WEBHOOK] Données envoyées à Supabase : {update_data}")
+
+                            resp = await client.patch(
                                 f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
                                 json=update_data,
                                 headers=headers
                             )
+
+                            print(f"[WEBHOOK] Statut mise à jour entreprise : {resp.status_code}")
 
                     if job_id and package_id and package_id in BOOST_PACKAGES:
                         days = BOOST_PACKAGES[package_id]["days"]
@@ -1170,8 +1208,6 @@ async def stripe_webhook(request: Request):
             if session.id in payment_transactions:
                 payment_transactions[session.id]["status"] = "expired"
 
-            # ⚠️ Si la session expire, on peut remettre le flag à False pour l'entreprise
-            # (utile si on l'a marqué à True prématurément dans /checkout/session)
             supabase_url = os.getenv("SUPABASE_URL")
             supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
             if supabase_url and supabase_key and session.metadata:
@@ -3058,78 +3094,74 @@ async def delete_blog_post(slug: str):
     save_blog_posts(posts)
     return {"success": True}
 
-def compute_match_score(job: dict, candidate_profile: dict) -> int:
+def compute_match_score(job: dict, candidate_profile: dict, category_slug: str = None) -> int:
     score = 0.0
-    job_skills = set(skill.lower().strip() for skill in (job.get("skills_required") or []))
-    cand_skills = set(skill.lower().strip() for skill in (candidate_profile.get("skills") or []))
+
+    # 1. Bonus de catégorie (30 points)
+    cand_title = (candidate_profile.get("title") or "").lower()
+    cand_skills = [s.lower() for s in candidate_profile.get("skills") or []]
+    if category_slug:
+        if category_slug in cand_title or any(category_slug in skill for skill in cand_skills):
+            score += 30
+
+    # 2. Compétences (40 points)
+    job_skills = [skill.lower().strip() for skill in (job.get("skills_required") or [])]
     if job_skills:
-        common = job_skills & cand_skills
-        score += (len(common) / len(job_skills)) * 35
+        matched = 0
+        for js in job_skills:
+            js_words = set(js.split())
+            for cs in cand_skills:
+                cs_words = set(cs.split())
+                if js_words & cs_words:
+                    matched += 1
+                    break
+        score += (matched / len(job_skills)) * 40
+
+    # 3. Expérience (10 points)
     exp_levels = ["junior", "intermediaire", "senior", "expert"]
     job_lvl = job.get("experience_level")
     cand_lvl = candidate_profile.get("experience_level")
     if job_lvl and cand_lvl and job_lvl in exp_levels and cand_lvl in exp_levels:
-        diff = abs(exp_levels.index(job_lvl) - exp_levels.index(cand_lvl))
-        if diff == 0:
-            score += 15
-        elif diff == 1:
+        job_idx = exp_levels.index(job_lvl)
+        cand_idx = exp_levels.index(cand_lvl)
+        if cand_idx >= job_idx:
             score += 10
         else:
-            score += 5
+            diff = job_idx - cand_idx
+            if diff == 1:
+                score += 5
+            else:
+                score += 2
+
+    # 4. Salaire (10 points) si chevauchement, sinon 0
     j_min, j_max = job.get("salary_min"), job.get("salary_max")
     c_min, c_max = candidate_profile.get("desired_salary_min"), candidate_profile.get("desired_salary_max")
     if j_min and j_max and c_min and c_max:
         if c_min <= j_max and c_max >= j_min:
-            overlap = min(j_max, c_max) - max(j_min, c_min)
-            range_job = j_max - j_min
-            if range_job > 0:
-                score += (overlap / range_job) * 15
-            else:
-                score += 15
-        elif c_min <= j_max or c_max >= j_min:
-            score += 5
+            score += 10
+
+    # 5. Localisation / télétravail (10 points)
     job_city = job.get("city_id")
     cand_city = candidate_profile.get("city_id")
     is_remote = job.get("is_remote", False)
     cand_remote = candidate_profile.get("is_open_to_remote", False)
     if job_city and cand_city and str(job_city) == str(cand_city):
-        score += 15
-    elif is_remote and cand_remote:
         score += 10
+    elif is_remote and cand_remote:
+        score += 7
     else:
         job_country = job.get("country_id")
         cand_country = candidate_profile.get("country_id")
         if job_country and cand_country and str(job_country) == str(cand_country):
-            score += 5
-    job_contract = job.get("contract_type")
-    cand_contracts = candidate_profile.get("preferred_contract_types") or []
-    if isinstance(cand_contracts, list) and job_contract in cand_contracts:
-        score += 10
-    job_req = (job.get("requirements") or "").lower()
-    education = candidate_profile.get("education") or []
-    if isinstance(education, list) and education and job_req:
-        edu_text = " ".join([e.get("title", "") + " " + e.get("description", "") for e in education]).lower()
-        keywords = ["bac", "licence", "master", "doctorat", "ingénieur", "bts", "dut"]
-        matches = sum(1 for kw in keywords if kw in job_req and kw in edu_text)
-        if matches:
-            score += min(10, matches * 3)
+            score += 4
+
     return min(100, int(score))
 
-@app.get("/api/jobs/{job_id}/match-score")
-async def get_match_score(job_id: str, user_id: str = Depends(get_current_active_user)):
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    job_resp = httpx.get(f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=*", headers=headers)
-    jobs = job_resp.json()
-    if not jobs:
-        raise HTTPException(status_code=404, detail="Offre non trouvée")
-    job = jobs[0]
-    cand_resp = httpx.get(f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{user_id}&select=*", headers=headers)
-    cand = cand_resp.json()
-    cand = cand[0] if cand else {}
-    score = compute_match_score(job, cand)
-    return {"score": score}
+
+
+
+
+
 
 @app.delete("/api/user/delete-account")
 async def delete_own_account(request: Request):
@@ -3175,21 +3207,29 @@ async def checkout_complete(request: Request):
     session_id = data.get("session_id")
     if not session_id:
         raise HTTPException(status_code=400, detail="session_id requis")
+
     session = stripe.checkout.Session.retrieve(session_id)
     if session.payment_status != "paid":
         raise HTTPException(status_code=400, detail="Paiement non effectué")
+
     metadata = session.metadata or {}
     package_id = metadata.get("package_id")
     amount_total = session.amount_total
     currency = session.currency.upper()
+
+    # ----- NOUVELLE LIGNE -----
+    billing_cycle = metadata.get("billing_cycle")   # "monthly" ou "annual"
+
     plan_name = None
     if package_id in SUBSCRIPTION_PLANS:
         user_id = metadata.get("user_id")
         company_id = metadata.get("company_id")
         if not user_id or not company_id:
             raise HTTPException(status_code=400, detail="Métadonnées manquantes")
+
         supabase_url = os.getenv("SUPABASE_URL")
         supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
         company_resp = httpx.get(
             f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -3197,31 +3237,37 @@ async def checkout_complete(request: Request):
         companies = company_resp.json()
         if not companies:
             raise HTTPException(status_code=404, detail="Entreprise non trouvée ou non autorisée")
+
         plan_name = "free"
         if "pro" in package_id:
             plan_name = "pro"
         elif "business" in package_id:
             plan_name = "business"
+
         update_data = {
             "subscription_plan": plan_name,
             "stripe_subscription_id": session.subscription,
             "stripe_customer_id": session.customer,
-            "subscription_expires_at": None
+            "subscription_expires_at": None,
+            "billing_cycle": billing_cycle,   # ← NOUVELLE CLÉ
         }
         httpx.patch(
             f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
             json=update_data,
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
+
     package_name = metadata.get("package_name") or "Achat"
     is_boost = package_id in BOOST_PACKAGES if package_id else False
+
     return {
         "success": True,
         "plan": plan_name,
         "planLabel": package_name,
         "amount": amount_total,
         "currency": currency,
-        "isBoost": is_boost
+        "isBoost": is_boost,
+        "billingCycle": billing_cycle,   # ← ajouté dans la réponse, utile pour le frontend
     }
 
 @app.get("/sw.js")
@@ -3265,7 +3311,7 @@ async def admin_delete_report(report_id: str):
 @app.get("/api/candidates/bank")
 async def get_candidates_bank(
     user_id: str = Query(...),
-    subscription_plan: str = Query(None),   # rendu optionnel pour éviter les 422
+    subscription_plan: str = Query(None),
     search: str = Query(""),
     city_id: str = Query(""),
     experience_level: str = Query(""),
@@ -3275,6 +3321,7 @@ async def get_candidates_bank(
     sort_by: str = Query("updated_at"),
     page: int = Query(1),
     page_size: int = Query(12),
+    job_id: Optional[str] = Query(None),   # ← nouveau paramètre
 ):
     # Vérifier le plan seulement s'il est fourni
     if subscription_plan and subscription_plan != 'business':
@@ -3285,6 +3332,16 @@ async def get_candidates_bank(
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Récupérer l'offre si un job_id est fourni (pour le matching)
+    job = None
+    if job_id:
+        job_resp = httpx.get(
+            f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=*",
+            headers=headers
+        )
+        if job_resp.status_code == 200 and job_resp.json():
+            job = job_resp.json()[0]
 
     # Récupérer tous les profils visibles (appel asynchrone)
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -3340,8 +3397,29 @@ async def get_candidates_bank(
     if is_available_only:
         enriched = [c for c in enriched if c.get("is_available")]
 
-    # Tri
-    if sort_by == "name":
+    # --- Calcul du match_score si une offre est sélectionnée ---
+    if job:
+        for c in enriched:
+            try:
+                cand_profile = {
+                    "skills": c.get("skills") or [],
+                    "experience_level": c.get("experience_level"),
+                    "desired_salary_min": c.get("desired_salary_min"),
+                    "desired_salary_max": c.get("desired_salary_max"),
+                    "city_id": c.get("city_id"),
+                    "is_open_to_remote": c.get("is_open_to_remote", False),
+                    "preferred_contract_types": c.get("preferred_contract_types") or [],
+                    "education": c.get("education") or [],
+                }
+                score = compute_match_score(job, cand_profile)
+                c["match_score"] = score
+            except Exception:
+                c["match_score"] = 0
+
+    # --- Tri ---
+    if sort_by == "match_score" and job:
+        enriched.sort(key=lambda c: c.get("match_score", 0), reverse=True)
+    elif sort_by == "name":
         enriched.sort(key=lambda c: (c.get("user", {}).get("first_name") or "").lower())
     else:
         enriched.sort(key=lambda c: c.get("updated_at") or "", reverse=True)
@@ -3374,7 +3452,6 @@ class UploadDocumentRequest(BaseModel):
     document_type: str
     file_data: str   # base64
     filename: str
-
 
 
 @app.post("/api/hiring/request-documents")
@@ -3763,6 +3840,513 @@ async def notify_other_candidates(req: NotifyOtherCandidatesRequest):
             await send_translated_email(email, subject, html, candidate_lang)
 
     return {"success": True, "count": len(others)}
+
+
+@app.get("/api/candidate/dashboard")
+async def candidate_dashboard(user_id: str = Query(...), limit: int = Query(6)):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    try:
+        # Essayer de récupérer les offres sans jointure d'abord
+        jobs_resp = httpx.get(
+            f"{supabase_url}/rest/v1/jobs?status=eq.active&limit={limit}&order=created_at.desc",
+            headers=headers
+        )
+        print("Supabase response status:", jobs_resp.status_code)
+        print("Response text:", jobs_resp.text[:200])  # premiers caractères
+        if jobs_resp.status_code != 200:
+            raise Exception(f"Erreur Supabase : {jobs_resp.text}")
+        
+        jobs = jobs_resp.json()
+        # Enrichissement manuel (simple, sans jointure)
+        enriched = []
+        for job in jobs:
+            # Company
+            comp_resp = httpx.get(
+                f"{supabase_url}/rest/v1/companies?id=eq.{job['company_id']}&select=name,logo_url",
+                headers=headers
+            )
+            company = comp_resp.json()[0] if comp_resp.status_code == 200 and comp_resp.json() else {}
+            # City
+            city_resp = httpx.get(
+                f"{supabase_url}/rest/v1/cities?id=eq.{job.get('city_id')}&select=name",
+                headers=headers
+            )
+            city = city_resp.json()[0] if city_resp.status_code == 200 and city_resp.json() else {}
+            enriched.append({
+                "id": job["id"],
+                "title": job["title"],
+                "salary_min": job.get("salary_min"),
+                "salary_max": job.get("salary_max"),
+                "company": {"name": company.get("name"), "logo_url": company.get("logo_url")},
+                "city": {"name": city.get("name")}
+            })
+        return {"recommendedJobs": enriched}
+    except Exception as e:
+        print("❌ Erreur /api/candidate/dashboard :", e)
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ----- Abonnements aux entreprises (Company Follow) -----
+
+@app.post("/api/companies/{company_id}/follow")
+async def follow_company(company_id: str, request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id requis")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # 1. Vérifier que l'entreprise existe
+    company_check = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=id",
+        headers=headers
+    )
+    if company_check.status_code != 200 or not company_check.json():
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+
+    # 2. Insérer la relation (ignorer les doublons)
+    insert_resp = httpx.post(
+        f"{supabase_url}/rest/v1/company_followers",
+        json={"user_id": user_id, "company_id": company_id},
+        headers=headers
+    )
+    if insert_resp.status_code == 409:
+        pass  # déjà suivi, ce n'est pas une erreur
+    elif insert_resp.status_code not in (200, 201):
+        print("❌ Erreur insertion follow :", insert_resp.text)
+        raise HTTPException(status_code=500, detail=f"Erreur insertion suivi: {insert_resp.text}")
+
+    # 3. Recalculer le nombre exact de followers
+    count_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_followers?company_id=eq.{company_id}&select=id",
+        headers={**headers, "Prefer": "count=exact"}
+    )
+    total_followers = 0
+    if count_resp.status_code == 200:
+        # Le header content-range ressemble à "0-0/5"
+        content_range = count_resp.headers.get("content-range", "")
+        if "/" in content_range:
+            total_followers = int(content_range.split("/")[-1])
+
+    # 4. Mettre à jour la table companies avec le vrai total
+    httpx.patch(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
+        json={"followers_count": total_followers},
+        headers=headers
+    )
+
+    return {"success": True, "followers_count": total_followers}
+
+
+
+@app.delete("/api/companies/{company_id}/follow")
+async def unfollow_company(company_id: str, request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id requis")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # 1. Vérifier que l'entreprise existe
+    company_check = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=id",
+        headers=headers
+    )
+    if company_check.status_code != 200 or not company_check.json():
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+
+    # 2. Supprimer la relation (peu importe si elle n'existait pas)
+    httpx.delete(
+        f"{supabase_url}/rest/v1/company_followers?user_id=eq.{user_id}&company_id=eq.{company_id}",
+        headers=headers
+    )
+
+    # 3. Recalculer le nombre exact de followers
+    count_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_followers?company_id=eq.{company_id}&select=id",
+        headers={**headers, "Prefer": "count=exact"}
+    )
+    total_followers = 0
+    if count_resp.status_code == 200:
+        content_range = count_resp.headers.get("content-range", "")
+        if "/" in content_range:
+            total_followers = int(content_range.split("/")[-1])
+
+    # 4. Mettre à jour la table companies
+    httpx.patch(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
+        json={"followers_count": total_followers},
+        headers=headers
+    )
+
+    return {"success": True, "followers_count": total_followers}
+
+
+@app.get("/api/candidate/followed-companies-v2")
+def get_followed_companies_v2(user_id: str = Query(...)):
+    try:
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+        resp = httpx.get(
+            f"{supabase_url}/rest/v1/company_followers?user_id=eq.{user_id}&select=company_id",
+            headers=headers
+        )
+        if resp.status_code != 200:
+            print("followers error", resp.status_code, resp.text)
+            return {"companies": []}
+        follows = resp.json()
+        company_ids = [f["company_id"] for f in follows if f.get("company_id")]
+        if not company_ids:
+            return {"companies": []}
+
+        companies = []
+        for cid in company_ids:
+            comp_resp = httpx.get(
+                f"{supabase_url}/rest/v1/companies?id=eq.{cid}&select=id,name,logo_url,industry,subscription_plan,followers_count",
+                headers=headers
+            )
+            if comp_resp.status_code == 200 and comp_resp.json():
+                comp = comp_resp.json()[0]
+                jobs_resp = httpx.get(
+                    f"{supabase_url}/rest/v1/jobs?company_id=eq.{cid}&status=eq.active&select=id,title,contract_type,salary_min,salary_max,created_at&limit=3",
+                    headers=headers
+                )
+                comp["recent_jobs"] = jobs_resp.json() if jobs_resp.status_code == 200 else []
+                companies.append(comp)
+
+        return {"companies": companies}
+    except Exception as e:
+        print("ERROR followed-companies-v2:", e)
+        import traceback
+        traceback.print_exc()
+        return {"companies": []}
+
+
+
+@app.get("/api/companies/{company_id}/follow-status")
+async def get_follow_status(company_id: str, user_id: str = Query(...)):
+    """Vérifie si un utilisateur suit une entreprise."""
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_followers?user_id=eq.{user_id}&company_id=eq.{company_id}&select=id",
+        headers=headers
+    )
+    if resp.status_code != 200:
+        return {"is_following": False}
+
+    data = resp.json()
+    return {"is_following": len(data) > 0}
+
+@app.post("/api/jobs/{job_id}/notify-followers")
+async def notify_followers_new_job(job_id: str, request: Request):
+    """Envoie un email aux followers de l'entreprise lorsque l'offre passe en active."""
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+
+    data = await request.json()
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id requis")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # 1. Récupérer l'offre (titre, entreprise)
+    job_resp = httpx.get(
+        f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=title,company_id,company:companies(name,logo_url)",
+        headers=headers
+    )
+    jobs = job_resp.json()
+    if not jobs:
+        raise HTTPException(status_code=404, detail="Offre non trouvée")
+    job = jobs[0]
+    company_name = job.get("company", {}).get("name", "Une entreprise")
+    job_title = job["title"]
+    offer_link = f"https://jobs.actoos.com/emplois/{job_id}"
+
+    # 2. Récupérer les followers de l'entreprise
+    followers_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_followers?company_id=eq.{job['company_id']}&select=user_id",
+        headers=headers
+    )
+    followers = followers_resp.json()
+    if not followers:
+        return {"success": True, "message": "Aucun abonné à notifier"}
+
+    # 3. Récupérer les utilisateurs avec leur email et prénom
+    user_ids = [f["user_id"] for f in followers]
+    users_resp = httpx.get(
+        f"{supabase_url}/rest/v1/users?id=in.({','.join(user_ids)})&select=id,email,first_name",
+        headers=headers
+    )
+    users = users_resp.json()
+
+    # 4. Envoyer un email multilingue via send_translated_email
+    sent_count = 0
+    for u in users:
+        try:
+            email_addr = u.get("email")
+            if not email_addr:
+                continue
+            lang = get_user_language(email_addr)
+            first_name = u.get("first_name") or ""
+
+            # Sujet et corps en français (seront traduits automatiquement par send_translated_email)
+            subject_fr = f"Nouvelle offre de {company_name} : {job_title}"
+            html_fr = f"""
+            <h2>Bonjour {first_name},</h2>
+            <p><strong>{company_name}</strong> vient de publier une nouvelle offre : <strong>{job_title}</strong>.</p>
+            <p><a href="{offer_link}">Voir l'offre</a></p>
+            """
+
+            await send_translated_email(email_addr, subject_fr, html_fr, lang)
+            sent_count += 1
+        except Exception as e:
+            print(f"Erreur envoi email au follower {u.get('email')}: {e}")
+
+    return {"success": True, "message": f"{sent_count} notification(s) envoyée(s)"}
+@app.get("/api/companies/{company_id}/followers-summary")
+async def get_followers_summary(company_id: str, limit: int = Query(5)):
+    """Retourne le total et les derniers abonnés d'une entreprise."""
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Total
+    total_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_followers?company_id=eq.{company_id}&select=id",
+        headers={**headers, "Prefer": "count=exact"}
+    )
+    total = 0
+    if total_resp.status_code == 200:
+        content_range = total_resp.headers.get("content-range", "")
+        if "/" in content_range:
+            total = int(content_range.split("/")[-1])
+
+    # Derniers abonnés
+    followers_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_followers?company_id=eq.{company_id}&select=user_id,created_at&order=created_at.desc&limit={limit}",
+        headers=headers
+    )
+    followers = followers_resp.json() if followers_resp.status_code == 200 else []
+
+    result = []
+    if followers:
+        user_ids = [f["user_id"] for f in followers]
+        users_resp = httpx.get(
+            f"{supabase_url}/rest/v1/users?id=in.({','.join(user_ids)})&select=id,first_name,last_name,avatar_url",
+            headers=headers
+        )
+        users = {u["id"]: u for u in (users_resp.json() if users_resp.status_code == 200 else [])}
+        for f in followers:
+            u = users.get(f["user_id"])
+            if u:
+                result.append({
+                    "user_id": u["id"],
+                    "first_name": u.get("first_name", ""),
+                    "last_name": u.get("last_name", ""),
+                    "avatar_url": u.get("avatar_url"),
+                    "followed_at": f["created_at"],
+                })
+
+    return {"total": total, "followers": result}
+@app.get("/api/companies/{company_id}/followers")
+async def get_company_followers(
+    company_id: str,
+    user_id: str = Query(...),
+    subscription_plan: str = Query("free")
+):
+    """Liste les abonnés d'une entreprise (accès limité selon le plan)."""
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Vérifier que l'entreprise existe et récupérer son propriétaire
+    company_check = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=id,owner_id,followers_count",
+        headers=headers
+    )
+    companies = company_check.json()
+    if not companies:
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+
+    is_owner = companies[0].get("owner_id") == user_id
+
+    # Récupérer les followers
+    followers_resp = httpx.get(
+        f"{supabase_url}/rest/v1/company_followers?company_id=eq.{company_id}&select=user_id,created_at",
+        headers=headers
+    )
+    followers = followers_resp.json() if followers_resp.status_code == 200 else []
+
+    if not followers:
+        return {"followers": [], "total": 0}
+
+    user_ids = [f["user_id"] for f in followers]
+
+    # Récupérer les infos utilisateur
+    users_resp = httpx.get(
+        f"{supabase_url}/rest/v1/users?id=in.({','.join(user_ids)})&select=id,first_name,last_name,avatar_url,email",
+        headers=headers
+    )
+    users = {u["id"]: u for u in (users_resp.json() if users_resp.status_code == 200 else [])}
+
+    result = []
+    for f in followers:
+        u = users.get(f["user_id"])
+        if u:
+            item = {
+                "user_id": u["id"],
+                "first_name": u.get("first_name") or "",
+                "last_name": u.get("last_name") or "",
+                "avatar_url": u.get("avatar_url"),
+                "followed_at": f["created_at"],
+            }
+            # Plan Business ET propriétaire : on donne l'email + titre du profil
+            if subscription_plan in ("business", "enterprise") and is_owner:
+                item["email"] = u.get("email")
+                # Récupérer le titre du profil candidat
+                profile_resp = httpx.get(
+                    f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{u['id']}&select=title",
+                    headers=headers
+                )
+                profiles = profile_resp.json()
+                if profiles:
+                    item["title"] = profiles[0].get("title") or ""
+            result.append(item)
+
+    return {
+        "followers": result,
+        "total": companies[0].get("followers_count", 0)
+    }
+@app.post("/api/companies/contact-follower")
+async def contact_follower(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    follower_id = data.get("follower_id")
+    company_id = data.get("company_id")
+    message_type = data.get("message_type")  # "quick_message" ou "invite_to_apply"
+    subject = data.get("subject", "")
+    body = data.get("body", "")
+    job_id = data.get("job_id")
+    language = data.get("language", "fr")
+
+    if not user_id or not follower_id or not company_id or not message_type:
+        raise HTTPException(status_code=400, detail="Paramètres manquants")
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+
+    # Vérifier que l'utilisateur est bien propriétaire de l'entreprise et plan Business
+    comp_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=owner_id,subscription_plan,name",
+        headers=headers
+    )
+    if comp_resp.status_code != 200 or not comp_resp.json():
+        raise HTTPException(status_code=404, detail="Entreprise non trouvée")
+    company = comp_resp.json()[0]
+    if company["owner_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Action non autorisée")
+    if company.get("subscription_plan") not in ("business", "enterprise"):
+        raise HTTPException(status_code=402, detail="Fonctionnalité réservée au plan Business")
+
+    # Récupérer l'email du follower
+    user_resp = httpx.get(
+        f"{supabase_url}/rest/v1/users?id=eq.{follower_id}&select=email,first_name",
+        headers=headers
+    )
+    if user_resp.status_code != 200 or not user_resp.json():
+        raise HTTPException(status_code=404, detail="Follower non trouvé")
+    follower = user_resp.json()[0]
+    to_email = follower.get("email")
+    if not to_email:
+        raise HTTPException(status_code=400, detail="Email du follower introuvable")
+
+    # Construire le contenu de l'email selon le type
+    company_name = company["name"]
+
+    if message_type == "invite_to_apply" and job_id:
+        job_resp = httpx.get(
+            f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=title",
+            headers=headers
+        )
+        job_title = job_resp.json()[0]["title"] if job_resp.status_code == 200 and job_resp.json() else "cette offre"
+        email_subject = subject or f"Invitation à postuler chez {company_name} – {job_title}"
+        email_html = body or f"""
+        <p>Bonjour,</p>
+        <p>Nous avons repéré votre profil et pensons que vous pourriez être intéressé par l'offre <strong>{job_title}</strong> chez {company_name}.</p>
+        <p>N'hésitez pas à postuler directement sur notre plateforme.</p>
+        <p>Cordialement,<br>{company_name}</p>
+        """
+    else:  # quick_message
+        email_subject = subject or f"Message de {company_name}"
+        email_html = body or f"""
+        <p>Bonjour,</p>
+        <p>Vous avez reçu un message de la part de {company_name} :</p>
+        <hr>
+        <p>{body or "L'entreprise souhaite entrer en contact avec vous."}</p>
+        <hr>
+        <p>Cordialement,<br>{company_name}</p>
+        """
+
+    # Envoyer l'email via Resend (réutilisez votre fonction existante)
+    try:
+        # Votre fonction send_translated_email ou un appel direct à Resend
+        resend_resp = httpx.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {os.getenv('RESEND_API_KEY')}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "from": f"{company_name} <notifications@actoos.com>",
+                "to": [to_email],
+                "subject": email_subject,
+                "html": email_html,
+            }
+        )
+        if resend_resp.status_code != 200:
+            print(f"❌ Erreur Resend: {resend_resp.text}")
+            raise HTTPException(status_code=500, detail="Erreur envoi email")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {"success": True}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -64,12 +64,16 @@ export const AuthProvider = ({ children }) => {
         .maybeSingle();
 
       let subscriptionPlan = 'free';
+      // ✅ Modification : récupère aussi billing_cycle
       const { data: companyData } = await supabase
         .from('companies')
-        .select('subscription_plan')
+        .select('subscription_plan, billing_cycle')
         .eq('owner_id', authUser.id)
         .maybeSingle();
-      if (companyData) subscriptionPlan = companyData.subscription_plan || 'free';
+      if (companyData) {
+        subscriptionPlan = companyData.subscription_plan || 'free';
+        currentProfile.billing_cycle = companyData.billing_cycle || null;
+      }
 
       const { count: ownedCount } = await supabase
         .from('companies')

@@ -11,6 +11,7 @@ import Footer from './components/Footer';
 import GeoBanner from './components/GeoBanner';
 import CookieBanner from './components/CookieBanner';
 import CountryGate from './components/CountryGate';
+import CompanyFollowersPage from './pages/CompanyFollowersPage';
 import { Loader2 } from 'lucide-react';
 import AcceptInvitationPage from './pages/AcceptInvitationPage';
 import './index.css';
@@ -59,7 +60,9 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const CandidateBankPage = lazy(() => import('./pages/CandidateBankPage'));
-const CandidateDocumentsPage = lazy(() => import('./pages/CandidateDocumentsPage')); // ✅ Nouvelle page
+const CandidateDocumentsPage = lazy(() => import('./pages/CandidateDocumentsPage'));
+const RecommendedJobsPage = lazy(() => import('./pages/RecommendedJobsPage'));
+const FollowedCompaniesPage = lazy(() => import('./pages/FollowedCompaniesPage')); // ✅ Nouvelle page suivis
 
 // ---------- Scroll to top on route change ----------
 const ScrollToTop = () => {
@@ -191,7 +194,9 @@ const AppContent = () => {
               <Route path="/mes-candidatures/:id" element={<ProtectedRoute><ApplicationDetailCandidatePage /></ProtectedRoute>} />
               <Route path="/offres-sauvegardees" element={<ProtectedRoute><SavedJobsPage /></ProtectedRoute>} />
               <Route path="/alertes" element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
-              <Route path="/documents" element={<ProtectedRoute><CandidateDocumentsPage /></ProtectedRoute>} /> {/* ✅ Nouvelle route */}
+              <Route path="/documents" element={<ProtectedRoute><CandidateDocumentsPage /></ProtectedRoute>} />
+              <Route path="/dashboard/candidat/offres-recommandees" element={<ProtectedRoute><RecommendedJobsPage /></ProtectedRoute>} />
+              <Route path="/dashboard/candidat/suivis" element={<ProtectedRoute><FollowedCompaniesPage /></ProtectedRoute>} /> {/* ✅ Nouvelle route suivis */}
 
               {/* ---------- Protected routes - Entreprise ---------- */}
               <Route path="/dashboard/entreprise" element={<ProtectedRoute><CompanyDashboard /></ProtectedRoute>} />
@@ -203,6 +208,7 @@ const AppContent = () => {
               <Route path="/dashboard/entreprise/candidatures" element={<ProtectedRoute><CompanyApplicationsPage /></ProtectedRoute>} />
               <Route path="/dashboard/entreprise/candidatures/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
               <Route path="/dashboard/entreprise/cv-bank" element={<ProtectedRoute><CandidateBankPage /></ProtectedRoute>} />
+              <Route path="/dashboard/entreprise/abonnes" element={<ProtectedRoute><CompanyFollowersPage /></ProtectedRoute>} /> {/* ✅ Route protégée */}
 
               {/* ---------- Voir profil candidat (public) ---------- */}
               <Route path="/candidat/:id" element={<CandidatePublicProfilePage />} />

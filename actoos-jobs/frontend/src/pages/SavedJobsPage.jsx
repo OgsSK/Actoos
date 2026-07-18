@@ -67,8 +67,9 @@ const SavedJobsPage = () => {
               {t('savedJobs.title')}
             </h1>
           </div>
+          {/* ✅ Utilisation de la même clé que dans Mes candidatures */}
           <Button variant="outline" onClick={handleRefresh} className="gap-2 w-full sm:w-auto">
-            <RefreshCw className="w-4 h-4" /> {t('savedJobs.refresh', 'Actualiser')}
+            <RefreshCw className="w-4 h-4" /> {t('myApplications.refresh')}
           </Button>
         </div>
 

@@ -229,6 +229,9 @@
         }
       },
       "actions": {
+        "switchToAnnual": "التحويل إلى السنوي (-20%)",
+        "switchToMonthly": "العودة إلى الشهري",
+        "switchToThisFrequency": "اختيار هذه الصيغة",
         "backToFree": "العودة إلى المجاني",
         "manageSubscription": "إدارة الاشتراك",
         "upgradeTo": "الترقية إلى {{plan}}",
@@ -714,6 +717,8 @@
   
   
   "candidateProfile": {
+     "projects": "مشاريع",
+    "posts": "الأخبار",
     "notFound": "المرشح غير موجود.",
     "back": "رجوع",
     "reportButton": "الإبلاغ عن هذا المرشح",
@@ -2276,6 +2281,25 @@
       }
     },
     "companyDetail": {
+      "tabs": {
+        "about": "من نحن",
+        "jobs": "الوظائف",
+        "posts": "الأخبار",
+        "contact": "اتصال"
+      },
+      "posts": "الأخبار",
+      "noPosts": "لا توجد أخبار في الوقت الحالي.",
+      "readMore": "اقرأ المزيد",
+      "city": "المدينة",
+      "country": "البلد",
+      "phone": "الهاتف",
+      "address": "العنوان",
+      "shareText": "اكتشف {name} على أكتوس",
+       "follow": "متابعة",
+    "unfollow": "إلغاء المتابعة",
+    "followSuccess": "أنت الآن تتابع هذه الشركة.",
+    "unfollowSuccess": "لم تعد تتابع هذه الشركة.",
+    "followers": "{{count}} متابع/متابعون",
       "similarCompanies": "شركات مماثلة",
     "jobsCount": "{{count}} عرض",
       "back": "العودة إلى الشركات",
@@ -2428,6 +2452,7 @@
       "delete": "حذف"
     },
     "jobDetail": {
+       "shareText": "عرض وظيفة: {title} في {company}",
        "home.jobs.alreadyAppliedBadge": "تم التقديم",
     "jobs.alreadyAppliedBadge": "تم التقديم",
       "reapply": "إعادة التقديم",
@@ -2586,6 +2611,8 @@
       }
     },
     "applicationDetail": {
+      "aiSummary": "ملخص الذكاء الاصطناعي",
+      "generateSummary": "إنشاء ملخص",
       "rejectionReasonPrompt": "السبب (اختياري):",
       "notifyOtherCandidates": "إعلام المرشحين الآخرين",
       "notifyOtherCandidatesHelp": "أرسل بريدًا إلكترونيًا إلى المرشحين الآخرين لإبلاغهم بأن الوظيفة قد شُغلت.",
@@ -2672,6 +2699,7 @@
       "generateAnswers": "إنشاء إجابات",
       "generateTips": "إنشاء نصائح",
       "toasts": {
+        "summaryGenerated": "تم إنشاء الملخص بنجاح",
         "documentRequestSent": "تم إرسال طلب المستندات إلى المرشح",
         "noteSaved": "تم حفظ الملاحظة.",
         "noteDeleted": "تم حذف الملاحظة.",
@@ -2686,6 +2714,38 @@
       "accountSuspended": "حسابك معلق."
     },
 "companyDashboard": {
+  "posts": {
+      "title": "أخبار",
+      "empty": "لا توجد أخبار منشورة.",
+      "create": "إنشاء خبر",
+      "form": {
+        "title": "عنوان",
+        "content": "محتوى",
+        "imageUrl": "رابط الصورة (اختياري)",
+        "linkUrl": "رابط (اختياري)",
+        "publish": "نشر",
+        "cancel": "إلغاء"
+      },
+      "published": "تم نشر الخبر بنجاح!",
+      "error": "خطأ أثناء نشر الخبر."
+    },
+  "followers": {
+      "title": "متابعيني",
+      "total": "متابعون",
+      "viewAll": "عرض جميع المتابعين"
+    },
+  "proBanner": {
+      "title": "خطة برو",
+      "subtitle": "أدوات متقدمة لتوظيفاتك",
+      "interviewTools": "أدوات المقابلة",
+      "aiNotes": "ملاحظات الذكاء الاصطناعي"
+    },
+  "businessBanner": {
+      "title": "خطة الأعمال",
+      "subtitle": "وصول غير محدود إلى جميع الميزات المميزة",
+      "boost": "تعزيز مجاني واحد / شهر",
+      "cvBank": "بنك سير ذاتية غير محدود"
+    },
     "stats": { "trend": "{{trend}} هذا الأسبوع", "publishedJobs": "العروض النشطة", "totalApplications": "إجمالي الطلبات", "newApplications": "الطلبات الجديدة", "totalViews": "إجمالي المشاهدات" },
     "status": { "draft": "مسودة", "pending": "قيد الانتظار", "active": "نشطة", "paused": "قيد الإيقاف المؤقت", "closed": "مغلقة", "expired": "منتهية الصلاحية", "rejected": "مرفوضة" },
     "jobCard": {
@@ -2751,6 +2811,16 @@
     "cvBank": { "title": "بنك السير الذاتية", "desc": "الوصول إلى مجموعة المواهب المتاحة لدينا.", "browse": "تصفح السير الذاتية" }
   },
     "candidateDashboard": {
+       "selected": {
+      "title": "وظائف مختارة لك",
+      "subtitle": "بناءً على ملفك الشخصي وتفضيلاتك",
+      "viewAll": "عرض جميع الوظائف",
+      "empty": "أكمل ملفك الشخصي لرؤية وظائف تطابق معاييرك.",
+      "completeProfile": "أكمل ملفي الشخصي",
+      "excellent": "ممتاز",
+      "good": "جيد",
+      "partial": "محتمل"
+    },
        "contracts": {
         "title": "عقودي"
       },
@@ -2799,6 +2869,10 @@
         }
       },
       "quickActions": {
+        "viewPublicProfile": "عرض ملفي العام",
+        "viewPublicProfileDesc": "اكتشف كيف يرى مسؤولو التوظيف ملفك الشخصي",
+        "followedCompanies": "متابعاتي",
+        "followedCompaniesDesc": "الشركات التي تتابعها",
         "title": "إجراءات سريعة",
         "updateCV": "تحديث سيرتي الذاتية",
         "updateCVDesc": "إضافة ملف جديد.",
@@ -2870,6 +2944,11 @@
       }
     },
     "common": {
+      "add": "إضافة",
+      "unspecified": "غير محدد",
+      "loadingScores": "حساب الدرجات...",
+      "clear": "مسح",
+      "sortByRelevance": "الملاءمة (ذكاء اصطناعي)",
       "filters": "عوامل التصفية",
       "previous": "السابق",
     "next": "التالي",
@@ -2954,6 +3033,7 @@
     },
     
  "candidateBank": {
+   "matchWithOffer": "ربط بعرض...",
       "title": "بنك السير الذاتية",
       "subtitle": "تصفح ملفات المرشحين المتاحين",
       "searchPlaceholder": "البحث بالاسم، المهارة، المسمى الوظيفي…",
@@ -2969,91 +3049,128 @@
       "browse": "تصفح السير الذاتية"
     },
  "candidateProfilePage": {
-      "title": "الملف الشخصي للمرشح",
-      "subtitle": "إدارة ملفك المهني",
+    "projects": {
+      "sectionTitle": "مشاريع",
+      "sectionDesc": "اعرض مشاريعك للتوظيف أو الاستثمار أو التعاون",
+      "titlePlaceholder": "عنوان المشروع",
+      "descriptionPlaceholder": "صف مشروعك…",
+      "objective": "الهدف",
+      "objectives": {
+        "recruiting": "توظيف",
+        "investment": "استثمار",
+        "collaboration": "تعاون",
+        "other": "أخرى"
+      },
+      "skillsNeeded": "المهارات المطلوبة",
+      "skillPlaceholder": "أضف مهارة",
+      "fundingGoal": "هدف التمويل (اختياري)",
+      "fundingPlaceholder": "المبلغ بالفرنك CFA",
+      "publish": "أضف المشروع",
+      "added": "تمت إضافة المشروع بنجاح",
+      "error": "خطأ أثناء إضافة المشروع",
+      "deleteConfirm": "تأكيد حذف المشروع؟",
+      "deleted": "تم حذف المشروع"
+    },
+  "posts": {
+        "sectionTitle": "الأخبار",
+        "sectionDesc": "شارك تحديثاتك المهنية",
+        "titlePlaceholder": "العنوان (اختياري)",
+        "contentPlaceholder": "تحديثك…",
+        "addImage": "صورة",
+        "publish": "نشر",
+        "added": "تم نشر التحديث بنجاح!",
+        "error": "خطأ أثناء النشر.",
+        "deleteConfirm": "حذف هذا التحديث؟",
+        "deleted": "تم حذف التحديث."
+      },
+      "title": "ملفي الشخصي كمرشح",
+      "subtitle": "أكمل ملفك الشخصي لزيادة فرصك في التوظيف",
       "save": "حفظ",
       "saveChanges": "حفظ التغييرات",
+      "back": "رجوع",
       "photo": {
         "title": "الصورة الشخصية",
-        "hint": "JPG أو PNG، الحد الأقصى 2 ميغابايت",
-        "change": "تغيير",
+        "hint": "الصورة المهنية تزيد من فرص ظهورك.",
+        "change": "تغيير الصورة",
         "delete": "حذف",
-        "updated": "تم تحديث الصورة",
-        "uploadError": "خطأ في التحميل",
-        "deleteConfirm": "حذف الصورة؟",
-        "deleted": "تم حذف الصورة",
+        "updated": "تم تحديث الصورة بنجاح",
+        "uploadError": "خطأ في تحميل الصورة",
+        "deleteConfirm": "هل تريد بالتأكيد حذف صورتك؟",
+        "deleted": "تم حذف الصورة بنجاح",
         "deleteError": "خطأ في حذف الصورة"
       },
       "personalInfo": {
         "sectionTitle": "المعلومات الشخصية",
-        "sectionDesc": "بيانات الاتصال بك",
+        "sectionDesc": "ستكون هذه المعلومات مرئية لمسؤولي التوظيف.",
         "firstName": "الاسم الأول",
         "lastName": "اسم العائلة",
         "phone": "الهاتف",
-        "phonePlaceholder": "+223 xx xx xx xx",
+        "phonePlaceholder": "رقم الهاتف",
         "city": "المدينة",
         "selectCity": "اختيار مدينة"
       },
       "professionalProfile": {
         "sectionTitle": "الملف المهني",
-        "sectionDesc": "صف وظيفتك الحالية أو المطلوبة",
+        "sectionDesc": "أبرز لقبك وسيرتك الذاتية ومستوى خبرتك.",
         "title": "المسمى الوظيفي",
-        "bio": "نبذة / ملخص",
+        "bio": "السيرة الذاتية / ملخص",
         "experienceLevel": "مستوى الخبرة",
         "selectLevel": "اختيار مستوى",
         "yearsOfExperience": "سنوات الخبرة",
         "available": "متاح فوراً",
-        "openToRemote": "مفتوح للعمل عن بعد"
+        "openToRemote": "منفتح على العمل عن بعد"
       },
       "cv": {
-        "sectionTitle": "السيرة الذاتية",
-        "sectionDesc": "تحميل السيرة الذاتية (PDF، DOC، DOCX، 5 ميغابايت كحد أقصى)",
-        "uploaded": "تم تحميل السيرة الذاتية بنجاح",
-        "view": "عرض",
-        "change": "تغيير",
-        "delete": "حذف",
+        "sectionTitle": "السيرة الذاتية (CV)",
+        "sectionDesc": "قم بتحميل سيرتك الذاتية بصيغة PDF أو DOC أو DOCX (بحد أقصى 5 ميغابايت).",
         "uploadTitle": "تحميل سيرتك الذاتية",
-        "uploadHint": "صيغة PDF أو DOC أو DOCX (5 ميغابايت كحد أقصى)",
+        "uploadHint": "الصيغ المقبولة: PDF، DOC، DOCX – الحجم الأقصى: 5 ميغابايت",
         "chooseFile": "اختيار ملف",
-        "analyzeButton": "تحليل سيرتك الذاتية بالذكاء الاصطناعي",
-        "invalidFormat": "صيغة ملف غير مدعومة",
-        "fileTooLarge": "حجم الملف يتجاوز 5 ميغابايت",
+        "uploaded": "تم تحميل السيرة الذاتية بنجاح",
+        "view": "عرض السيرة الذاتية",
+        "change": "تغيير السيرة الذاتية",
+        "delete": "حذف السيرة الذاتية",
         "uploadedToast": "تم تحميل السيرة الذاتية بنجاح",
-        "uploadError": "خطأ أثناء تحميل السيرة الذاتية",
-        "deleteConfirm": "حذف السيرة الذاتية؟",
-        "deletedToast": "تم حذف السيرة الذاتية",
-        "deleteError": "خطأ أثناء حذف السيرة الذاتية"
+        "uploadError": "خطأ في تحميل السيرة الذاتية",
+        "deleteConfirm": "هل تريد بالتأكيد حذف سيرتك الذاتية؟",
+        "deletedToast": "تم حذف السيرة الذاتية بنجاح",
+        "deleteError": "خطأ في حذف السيرة الذاتية",
+        "invalidFormat": "تنسيق ملف غير مدعوم. استخدم PDF أو DOC أو DOCX.",
+        "fileTooLarge": "الملف كبير جداً (بحد أقصى 5 ميغابايت).",
+        "analyzeButton": "تحليل سيرتي الذاتية بالذكاء الاصطناعي"
       },
       "documents": {
-        "sectionTitle": "المستندات الإضافية",
-        "sectionDesc": "الشهادات، المؤهلات، إلخ.",
+        "sectionTitle": "مستندات إضافية",
+        "sectionDesc": "أضف الشهادات أو المؤهلات أو غيرها من المستندات.",
         "typeDiploma": "شهادة",
         "typeCertificate": "شهادة",
         "typeOther": "أخرى",
         "addButton": "إضافة مستند",
-        "empty": "لا توجد مستندات مضافة",
-        "addedToast": "تمت إضافة المستند",
-        "uploadError": "خطأ في التحميل",
-        "deleteConfirm": "حذف هذا المستند؟",
-        "deletedToast": "تم حذف المستند",
-        "deleteError": "خطأ أثناء حذف المستند"
+        "addedToast": "تمت إضافة المستند بنجاح",
+        "uploadError": "خطأ في إضافة المستند",
+        "deleteConfirm": "هل تريد بالتأكيد حذف هذا المستند؟",
+        "deletedToast": "تم حذف المستند بنجاح",
+        "deleteError": "خطأ في حذف المستند",
+        "empty": "لم تتم إضافة أي مستند"
       },
       "skills": {
         "sectionTitle": "المهارات",
-        "sectionDesc": "قائمة بمهاراتك الرئيسية",
-        "placeholder": "أضف مهارة...",
+        "sectionDesc": "أضف مهاراتك الأساسية (يوصى بحد أقصى 10).",
+        "placeholder": "مهارة جديدة",
         "add": "إضافة",
-        "empty": "لا توجد مهارات مضافة",
-        "addedToast": "تمت إضافة {{count}} مهارات",
-        "noneFound": "لم يتم العثور على مهارات جديدة"
+        "empty": "لم تتم إضافة أي مهارات",
+        "addedToast": "تمت إضافة {{count}} مهارة/مهارات بنجاح",
+        "noneFound": "لم يتم العثور على مهارات لإضافتها"
       },
       "experience": {
-        "sectionTitle": "الخبرة المهنية",
-        "sectionDesc": "مسيرتك المهنية",
+        "sectionTitle": "الخبرات المهنية",
+        "sectionDesc": "اسرد خبراتك الأكثر صلة.",
         "add": "إضافة خبرة",
-        "empty": "لا توجد خبرة مضافة",
         "edit": "تعديل",
+        "empty": "لم تتم إضافة أي خبرة",
         "present": "حالياً",
+        "modalAddTitle": "إضافة خبرة",
+        "modalEditTitle": "تعديل الخبرة",
         "jobTitle": "المسمى الوظيفي",
         "company": "الشركة",
         "location": "المكان",
@@ -3061,67 +3178,71 @@
         "endDate": "تاريخ النهاية",
         "currentlyWorking": "ما زلت أعمل هنا",
         "description": "الوصف",
-        "modalEditTitle": "تعديل الخبرة",
-        "modalAddTitle": "إضافة خبرة",
-        "fillRequired": "يرجى ملء الحقول المطلوبة",
+        "cancel": "إلغاء",
         "save": "حفظ",
         "saveNew": "إضافة",
-        "cancel": "إلغاء"
+        "fillRequired": "يرجى ملء الحقول المطلوبة (المسمى الوظيفي، الشركة، تاريخ البداية)"
       },
       "education": {
         "sectionTitle": "المؤهلات العلمية",
-        "sectionDesc": "خلفيتك الأكاديمية",
+        "sectionDesc": "أضف شهاداتك وتدريباتك.",
         "add": "إضافة مؤهل علمي",
-        "empty": "لا توجد مؤهلات مضافة",
         "edit": "تعديل",
-        "modalEditTitle": "تعديل المؤهل العلمي",
+        "empty": "لم تتم إضافة أي مؤهل علمي",
         "modalAddTitle": "إضافة مؤهل علمي",
+        "modalEditTitle": "تعديل المؤهل العلمي",
         "degree": "الشهادة / المؤهل",
         "school": "المؤسسة التعليمية",
         "field": "مجال الدراسة",
         "year": "سنة التخرج",
-        "fillRequired": "يرجى ملء الحقول المطلوبة",
+        "cancel": "إلغاء",
         "save": "حفظ",
         "saveNew": "إضافة",
-        "cancel": "إلغاء"
+        "fillRequired": "يرجى ملء الحقول المطلوبة (الشهادة، المؤسسة، السنة)"
       },
       "links": {
         "sectionTitle": "الروابط",
-        "sectionDesc": "الموقع الشخصي، LinkedIn، إلخ."
+        "sectionDesc": "الموقع الشخصي، LinkedIn، الشبكات…"
       },
       "salary": {
-        "sectionTitle": "متطلبات الراتب",
-        "sectionDesc": "الحد الأدنى والأقصى للراتب المطلوب",
+        "sectionTitle": "الراتب المطلوب",
+        "sectionDesc": "حدد نطاقاً تقريبياً (بالفرنك CFA).",
         "minSalary": "الحد الأدنى للراتب",
-        "maxSalary": "الحد الأقصى للراتب"
-      },
-      "toasts": {
-        "fillRequired": "يرجى ملء الحقول المطلوبة",
-        "profileUpdated": "تم تحديث الملف الشخصي",
-        "saveError": "خطأ أثناء الحفظ"
+        "maxSalary": "الحد الأعلى للراتب"
       },
       "cvAnalysis": {
         "title": "تحليل السيرة الذاتية بالذكاء الاصطناعي",
-        "description": "الصق محتوى سيرتك الذاتية النصي للحصول على اقتراحات.",
-        "placeholder": "الصق سيرتك الذاتية هنا...",
+        "description": "الصق المحتوى النصي لسيرتك الذاتية للحصول على اقتراحات تحسين.",
+        "placeholder": "الصق نص سيرتك الذاتية هنا…",
         "suggestions": "اقتراحات التحسين:",
-        "close": "إغلاق",
         "analyze": "تحليل",
-        "analyzing": "جاري التحليل...",
-        "emptyText": "يرجى إدخال نص لتحليله",
-        "doneToast": "اكتمل التحليل",
-        "errorToast": "خطأ في التحليل"
+        "analyzing": "جارٍ التحليل…",
+        "close": "إغلاق",
+        "emptyText": "يرجى إدخال نص السيرة الذاتية المراد تحليله.",
+        "doneToast": "اكتمل التحليل بنجاح",
+        "errorToast": "خطأ في تحليل السيرة الذاتية"
+      },
+      "toasts": {
+        "fillRequired": "يرجى ملء جميع الحقول المطلوبة.",
+        "profileUpdated": "تم تحديث الملف الشخصي بنجاح",
+        "saveError": "خطأ في حفظ الملف الشخصي"
       }
     },
     "profile": {
+      "links": {
+        "title": "الروابط والشبكات",
+        "addLink": "إضافة رابط",
+        "namePlaceholder": "الاسم (مثال: GitHub)",
+        "urlPlaceholder": "https://..."
+      },
       "visibility": {
         "sectionTitle": "الظهور",
         "sectionDesc": "إدارة وجودك في بنك السير الذاتية",
         "cvBankTitle": "الظهور في بنك السير الذاتية",
-        "cvBankDesc": "يمكن للموظفين العثور عليك والاطلاع على ملفك حتى لو لم تتقدم.",
+        "cvBankDesc": "سيتمكن مسؤولو التوظيف من العثور عليك وعرض ملفك الشخصي حتى لو لم تتقدم.",
         "enabled": "ملفك الشخصي الآن مرئي في بنك السير الذاتية",
         "disabled": "لم يعد ملفك الشخصي يظهر في بنك السير الذاتية",
-        "error": "خطأ أثناء التحديث"
+        "error": "خطأ في تحديث الظهور"
       }
     },
   "experienceLevels": {
@@ -3188,6 +3309,45 @@
         "completed": "مكتمل",
         "terminated": "منتهي"
       }
+    },
+    "followedCompanies": {
+      "title": "متابعاتي",
+      "subtitle": "الشركات التي تتابعها",
+      "empty": "لا توجد شركات متابعة",
+      "emptyHint": "تابع الشركات لرؤية عروضها هنا.",
+      "browseCompanies": "تصفح الشركات",
+      "recentJobs": "العروض الأخيرة",
+      "noRecentJobs": "لا توجد عروض حديثة لهذه الشركة."
+    },
+    "companyFollowers": {
+      "title": "متابعيني",
+      "total": "{{total}} متابع/متابعون",
+      "empty": "لا يوجد متابعون حتى الآن",
+      "emptyHint": "عندما يتابع المرشحون شركتك، سيظهرون هنا.",
+      "followedSince": "متابع منذ {{date}}",
+      "viewProfile": "الملف الشخصي",
+      "contact": "اتصال"
+    },
+    "contactModal": {
+      "title": "الاتصال بـ {{name}}",
+      "quickMessage": "رسالة سريعة",
+      "inviteToApply": "دعوة للتقديم",
+      "subject": "الموضوع",
+      "subjectPlaceholder": "موضوع رسالتك",
+      "message": "الرسالة",
+      "messagePlaceholder": "رسالتك...",
+      "selectJob": "العرض المعني",
+      "selectJobPlaceholder": "اختر عرضاً",
+      "inviteMessagePlaceholder": "أضف رسالة مخصصة...",
+      "send": "إرسال",
+      "sent": "تم إرسال الرسالة بنجاح!",
+      "subjectRequired": "يرجى إدخال الموضوع."
+    },
+    "share": {
+      "share": "مشاركة",
+      "copiedShort": "تم النسخ",
+      "copied": "تم نسخ الرابط إلى الحافظة!",
+      "copyError": "تعذر نسخ الرابط."
     }
 
 

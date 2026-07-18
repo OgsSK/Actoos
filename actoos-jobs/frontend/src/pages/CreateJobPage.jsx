@@ -358,6 +358,8 @@ const CreateJobPage = () => {
         status: finalStatus
       };
 
+      let newJobId = id; // ID existant en cas de mise à jour, sera remplacé si création
+
       if (id) {
         if (finalStatus === 'active' && form.status !== 'active') {
           jobData.expires_at = new Date(Date.now() + getExpirationDays(company) * 24 * 60 * 60 * 1000).toISOString();
@@ -368,8 +370,14 @@ const CreateJobPage = () => {
         if (finalStatus === 'active') {
           jobData.expires_at = new Date(Date.now() + getExpirationDays(company) * 24 * 60 * 60 * 1000).toISOString();
         }
-        const { error } = await supabase.from('jobs').insert(jobData);
+        // ✅ Récupération de l'ID après insertion
+        const { data: insertedJob, error } = await supabase
+          .from('jobs')
+          .insert(jobData)
+          .select('id')
+          .single();
         if (error) throw error;
+        newJobId = insertedJob.id;
       }
 
       // --- Enregistrement des corrections IA ---
@@ -478,6 +486,18 @@ const CreateJobPage = () => {
         }
       } else {
         toast.success(t('createJob.toasts.draftSaved'));
+      }
+
+      // ✅ Notification des followers (uniquement si l'offre devient active)
+      if (finalStatus === 'active' && newJobId) {
+        try {
+          await apiFetch(`/api/jobs/${newJobId}/notify-followers`, {
+            method: 'POST',
+            body: JSON.stringify({ user_id: user.id }),
+          });
+        } catch (err) {
+          console.warn('Notification followers échouée (non bloquant):', err);
+        }
       }
 
       navigate('/dashboard/entreprise');
