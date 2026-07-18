@@ -2715,6 +2715,9 @@
       "accountSuspended": "Il tuo account è sospeso."
     },
     "companyDashboard": {
+      "setAsPrimary": "Imposta come azienda principale",
+      "primaryCompanySet": "Azienda principale aggiornata",
+      "primaryCompanyError": "Errore durante l'aggiornamento dell'azienda principale",
       "posts": {
       "title": "Notizie",
       "empty": "Nessuna notizia pubblicata.",
@@ -3207,6 +3210,7 @@
         "sectionDesc": "Portfolio, LinkedIn, sito personale…"
       },
       "salary": {
+        "sectionDescBase": "Indica una fascia indicativa",
         "sectionTitle": "Stipendio desiderato",
         "sectionDesc": "Indica una fascia indicativa (in FCFA).",
         "minSalary": "Stipendio minimo",

@@ -2713,6 +2713,9 @@
       "accountSuspended": "A sua conta está suspensa."
     },
  "companyDashboard": {
+   "setAsPrimary": "Definir como empresa principal",
+      "primaryCompanySet": "Empresa principal atualizada",
+      "primaryCompanyError": "Erro ao atualizar a empresa principal",
   "posts": {
       "title": "Notícias",
       "empty": "Nenhuma notícia publicada.",
@@ -3204,6 +3207,7 @@
         "sectionDesc": "Portfólio, LinkedIn, site pessoal…"
       },
       "salary": {
+        "sectionDescBase": "Indique uma faixa indicativa",
         "sectionTitle": "Salário pretendido",
         "sectionDesc": "Indique uma faixa salarial (em FCFA).",
         "minSalary": "Salário mínimo",

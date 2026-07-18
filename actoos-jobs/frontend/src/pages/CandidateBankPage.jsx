@@ -14,12 +14,14 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CONTRACT_TYPES } from '../lib/utils';
+import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter'; // ✅ Ajouté
 
 const PAGE_SIZE = 12;
 
 const CandidateBankPage = () => {
   const { t } = useTranslation();
   const { user, activeCompanyId } = useAuth();
+  const { format } = useCurrencyFormatter(); // ✅ Hook pour la devise du recruteur
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -41,6 +43,7 @@ const CandidateBankPage = () => {
   const [availableExperienceLevels, setAvailableExperienceLevels] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Récupération du plan entreprise (inchangé)
   useEffect(() => {
     if (!activeCompanyId) {
       setCompanyPlan('free');
@@ -63,6 +66,7 @@ const CandidateBankPage = () => {
       });
   }, [activeCompanyId]);
 
+  // Chargement des options de filtres dynamiques (inchangé)
   useEffect(() => {
     if (companyPlan !== 'business') return;
 
@@ -401,16 +405,19 @@ const CandidateBankPage = () => {
                                   <div className="truncate font-medium">{lastEducation.title} – <span className="text-slate-500">{lastEducation.school || lastEducation.institution}</span></div>
                                 </div>
                               )}
-                              {c.desired_salary_min || c.desired_salary_max ? (
+                              {/* ✅ Salaire avec conversion devise du recruteur */}
+                              {(c.desired_salary_min || c.desired_salary_max) && (
                                 <div className="flex items-center gap-3 min-w-0">
                                   <DollarSign className="w-4 h-4 text-slate-400 shrink-0" />
                                   <div className="truncate font-semibold text-slate-800">
-                                    {c.desired_salary_min ? `${c.desired_salary_min.toLocaleString()} FCFA` : ''}
-                                    {c.desired_salary_min && c.desired_salary_max ? ' – ' : ''}
-                                    {c.desired_salary_max ? `${c.desired_salary_max.toLocaleString()} FCFA` : ''}
+                                    {c.desired_salary_min && c.desired_salary_max
+                                      ? `${format(c.desired_salary_min)} – ${format(c.desired_salary_max)}`
+                                      : c.desired_salary_min
+                                        ? format(c.desired_salary_min)
+                                        : format(c.desired_salary_max)}
                                   </div>
                                 </div>
-                              ) : null}
+                              )}
                             </div>
 
                             {/* Disponibilité + CV */}

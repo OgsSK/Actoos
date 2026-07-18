@@ -2819,6 +2819,9 @@
       "accountSuspended": "Ihr Konto ist gesperrt."
     },
    "companyDashboard": {
+    "setAsPrimary": "Als Hauptunternehmen festlegen",
+      "primaryCompanySet": "Hauptunternehmen aktualisiert",
+      "primaryCompanyError": "Fehler beim Aktualisieren des Hauptunternehmens",
     "posts": {
       "title": "Neuigkeiten",
       "empty": "Keine Neuigkeiten veröffentlicht.",
@@ -3310,6 +3313,7 @@
         "sectionDesc": "Portfolio, LinkedIn, persönliche Website…"
       },
       "salary": {
+        "sectionDescBase": "Geben Sie eine ungefähre Spanne an",
         "sectionTitle": "Wunschgehalt",
         "sectionDesc": "Geben Sie eine ungefähre Spanne an (in FCFA).",
         "minSalary": "Mindestgehalt",

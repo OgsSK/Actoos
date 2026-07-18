@@ -2560,6 +2560,9 @@
       "accountSuspended": "Your account is suspended."
     },
      "companyDashboard": {
+      "setAsPrimary": "Set as primary company",
+      "primaryCompanySet": "Primary company updated",
+      "primaryCompanyError": "Error updating primary company",
       "posts": {
     "title": "News",
     "empty": "No news published.",
@@ -3052,6 +3055,7 @@
         "sectionDesc": "Portfolio, LinkedIn, personal website…"
       },
       "salary": {
+         "sectionDescBase": "Indicate an indicative range",
         "sectionTitle": "Desired salary",
         "sectionDesc": "Indicate an indicative range (in FCFA).",
         "minSalary": "Minimum salary",

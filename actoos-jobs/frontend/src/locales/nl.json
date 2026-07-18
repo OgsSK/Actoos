@@ -2780,6 +2780,9 @@
       "accountSuspended": "Uw account is geschorst."
     },
    "companyDashboard": {
+    "setAsPrimary": "Instellen als hoofdonderneming",
+      "primaryCompanySet": "Hoofdonderneming bijgewerkt",
+      "primaryCompanyError": "Fout bij het bijwerken van de hoofdonderneming",
     "posts": {
       "title": "Nieuws",
       "empty": "Geen nieuws gepubliceerd.",
@@ -3271,6 +3274,7 @@
         "sectionDesc": "Portfolio, LinkedIn, persoonlijke website…"
       },
       "salary": {
+        "sectionDescBase": "Geef een indicatieve schaal aan",
         "sectionTitle": "Gewenst salaris",
         "sectionDesc": "Geef een indicatieve schaal aan (in FCFA).",
         "minSalary": "Minimumsalaris",

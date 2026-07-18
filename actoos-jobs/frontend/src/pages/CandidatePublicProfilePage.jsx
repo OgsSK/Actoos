@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -7,6 +7,7 @@ import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import ContactFollowerModal from '../components/ContactFollowerModal';
+import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 import {
   Loader2, ChevronLeft, User, Mail, Phone, MapPin, Briefcase, GraduationCap,
   Award, FileText, Flag, Globe, ExternalLink, AlertTriangle, Clock, Send,
@@ -28,6 +29,7 @@ const CandidatePublicProfilePage = () => {
   const from = searchParams.get('from');
   const { user: currentUser, profile: currentProfile } = useAuth();
   const navigate = useNavigate();
+  const { format } = useCurrencyFormatter(); // ✅ Conversion devise recruteur
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reporting, setReporting] = useState(false);
@@ -107,7 +109,7 @@ const CandidatePublicProfilePage = () => {
     else navigate(-1);
   };
 
-  // Onglets disponibles : on ne garde que ceux qui ont du contenu
+  // Onglets disponibles
   const availableTabs = useMemo(() => {
     if (!profile) return [];
     const tabs = [];
@@ -138,7 +140,6 @@ const CandidatePublicProfilePage = () => {
     return tabs;
   }, [profile, candidateDocuments, candidatePosts, t]);
 
-  // Si l'onglet actif n'est plus disponible, on bascule sur le premier
   useEffect(() => {
     if (!availableTabs.find(tab => tab.key === activeTab)) {
       setActiveTab(availableTabs[0]?.key || 'about');
@@ -296,18 +297,20 @@ const CandidatePublicProfilePage = () => {
                     <p className="text-slate-700 leading-relaxed text-base">{profile.bio}</p>
                   </div>
                 )}
+                {/* ✅ Salaire affiché dans la devise du recruteur */}
                 {(profile.desired_salary_min || profile.desired_salary_max) && (
                   <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-xl text-sm font-medium">
-                    💰 {t('candidateProfile.salaryExpectations', {
-                      min: profile.desired_salary_min?.toLocaleString() || '?',
-                      max: profile.desired_salary_max?.toLocaleString() || '?'
-                    })}
+                    💰 {profile.desired_salary_min && profile.desired_salary_max
+                      ? `${format(profile.desired_salary_min)} – ${format(profile.desired_salary_max)}`
+                      : profile.desired_salary_min
+                        ? format(profile.desired_salary_min)
+                        : format(profile.desired_salary_max)}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Compétences – ne s'affiche que si des compétences existent */}
+            {/* Compétences */}
             {activeTab === 'skills' && (
               <div className="flex flex-wrap gap-3">
                 {profile.skills.map(skill => (

@@ -2714,6 +2714,9 @@
       "accountSuspended": "حسابك معلق."
     },
 "companyDashboard": {
+   "setAsPrimary": "تعيين كشركة رئيسية",
+      "primaryCompanySet": "تم تحديث الشركة الرئيسية",
+      "primaryCompanyError": "خطأ أثناء تحديث الشركة الرئيسية",
   "posts": {
       "title": "أخبار",
       "empty": "لا توجد أخبار منشورة.",
@@ -3205,6 +3208,7 @@
         "sectionDesc": "الموقع الشخصي، LinkedIn، الشبكات…"
       },
       "salary": {
+        "sectionDescBase": "حدد نطاقاً تقريبياً",
         "sectionTitle": "الراتب المطلوب",
         "sectionDesc": "حدد نطاقاً تقريبياً (بالفرنك CFA).",
         "minSalary": "الحد الأدنى للراتب",

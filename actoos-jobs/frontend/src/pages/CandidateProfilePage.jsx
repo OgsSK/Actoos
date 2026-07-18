@@ -22,6 +22,14 @@ import {
 } from 'lucide-react';
 import { cn, EXPERIENCE_LEVELS } from '../lib/utils';
 
+// ---------- Taux de change vers le FCFA ----------
+const RATES = {
+  XOF: 1, EUR: 655.957, USD: 603.5, MAD: 60.5,
+  GBP: 754.2, BRL: 115.3, ARS: 0.72, NGN: 0.4, ZAR: 32.5,
+  SAR: 160.9, AED: 164.3, EGP: 19.5, DZD: 4.48, TND: 194.5,
+  CHF: 722.3, XAF: 1, GNF: 0.07, CDF: 0.22, MGA: 0.15
+};
+
 // ---------- Drapeau emoji ----------
 const getFlagEmoji = (countryCode) => {
   if (!countryCode) return '';
@@ -185,7 +193,6 @@ const ExperienceItem = ({ experience, onEdit, onRemove, t }) => (
         </Button>
       </div>
     </div>
-    {/* ✅ Image placée AVANT la description (identique à la logique formation) */}
     {experience.image_url && (
       <div className="mt-3 pl-15">
         <img src={experience.image_url} alt="" className="rounded-lg max-h-40 object-cover" />
@@ -672,7 +679,37 @@ const CandidateProfilePage = () => {
   const fileInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
-  const currencySymbol = prefs.currency || 'XOF';
+  // ---------- Mapping devise ----------
+  const currencyNames = {
+    XOF: 'FCFA',
+    EUR: 'Euro',
+    USD: 'Dollar américain',
+    MAD: 'Dirham marocain',
+    GBP: 'Livre sterling',
+    BRL: 'Real brésilien',
+    ARS: 'Peso argentin',
+    NGN: 'Naira',
+    ZAR: 'Rand',
+    SAR: 'Riyal saoudien',
+    AED: 'Dirham des Émirats',
+    EGP: 'Livre égyptienne',
+    DZD: 'Dinar algérien',
+    TND: 'Dinar tunisien',
+    CHF: 'Franc suisse',
+    XAF: 'FCFA',
+    GNF: 'Franc guinéen',
+    CDF: 'Franc congolais',
+    MGA: 'Ariary',
+  };
+  const currentCurrencyLabel = currencyNames[prefs.currency] || prefs.currency;
+
+  // ---------- Conversion en FCFA ----------
+  const toXOF = (amount) => {
+    const num = parseInt(amount);
+    if (isNaN(num)) return null;
+    const rate = RATES[prefs.currency] || 1;
+    return Math.round(num * rate);
+  };
 
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -851,6 +888,7 @@ const CandidateProfilePage = () => {
         years_of_experience: cp.years_of_experience || 0,
         is_available: cp.is_available ?? true,
         is_open_to_remote: cp.is_open_to_remote || false,
+        // On affiche les salaires tels quels (en FCFA côté base) – pas de conversion ici
         desired_salary_min: cp.desired_salary_min || '',
         desired_salary_max: cp.desired_salary_max || '',
         is_visible_in_cv_bank: cp.is_visible_in_cv_bank ?? false,
@@ -1118,8 +1156,9 @@ const CandidateProfilePage = () => {
         years_of_experience: candidateInfo.years_of_experience,
         is_available: candidateInfo.is_available,
         is_open_to_remote: candidateInfo.is_open_to_remote,
-        desired_salary_min: candidateInfo.desired_salary_min ? parseInt(candidateInfo.desired_salary_min) : null,
-        desired_salary_max: candidateInfo.desired_salary_max ? parseInt(candidateInfo.desired_salary_max) : null,
+        // ✅ Conversion en FCFA avant stockage
+        desired_salary_min: toXOF(candidateInfo.desired_salary_min),
+        desired_salary_max: toXOF(candidateInfo.desired_salary_max),
         skills,
         experience: experiences,
         education,
@@ -1766,27 +1805,37 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Salaire souhaité */}
+          {/* Salaire souhaité – dynamique */}
           <Card>
             <CardContent className="p-6">
-              <SectionHeader icon={Briefcase} title={t('candidateProfilePage.salary.sectionTitle')} description={t('candidateProfilePage.salary.sectionDesc')} />
+              <SectionHeader
+                icon={Briefcase}
+                title={t('candidateProfilePage.salary.sectionTitle')}
+                description={`${t('candidateProfilePage.salary.sectionDescBase')} (${currentCurrencyLabel})`}
+              />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.salary.minSalary')}</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {t('candidateProfilePage.salary.minSalary')}
+                  </label>
                   <Input
                     type="number"
                     value={candidateInfo.desired_salary_min}
                     onChange={(e) => setCandidateInfo({ ...candidateInfo, desired_salary_min: e.target.value })}
                     className="min-h-[44px]"
+                    placeholder={`ex: 400 000 ${currentCurrencyLabel}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.salary.maxSalary')}</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {t('candidateProfilePage.salary.maxSalary')}
+                  </label>
                   <Input
                     type="number"
                     value={candidateInfo.desired_salary_max}
                     onChange={(e) => setCandidateInfo({ ...candidateInfo, desired_salary_max: e.target.value })}
                     className="min-h-[44px]"
+                    placeholder={`ex: 800 000 ${currentCurrencyLabel}`}
                   />
                 </div>
               </div>
