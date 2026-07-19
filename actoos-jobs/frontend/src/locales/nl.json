@@ -2780,6 +2780,8 @@
       "accountSuspended": "Uw account is geschorst."
     },
    "companyDashboard": {
+     "removeAsPrimary": "Verwijderen als hoofdonderneming",
+    "primaryCompanyRemoved": "Hoofdonderneming verwijderd",
     "setAsPrimary": "Instellen als hoofdonderneming",
       "primaryCompanySet": "Hoofdonderneming bijgewerkt",
       "primaryCompanyError": "Fout bij het bijwerken van de hoofdonderneming",

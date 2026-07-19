@@ -13,9 +13,9 @@ import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 
-// ---------- Carte entreprise (corrigée) ----------
+// ---------- Carte entreprise ----------
 const CompanyCard = ({ company, user }) => {
-  const { t, i18n } = useTranslation(); // ✅ Ajout du hook pour la traduction
+  const { t, i18n } = useTranslation();
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(company.followers_count || 0);
   const [loadingFollow, setLoadingFollow] = useState(false);
@@ -60,19 +60,16 @@ const CompanyCard = ({ company, user }) => {
     }
   };
 
-  // ✅ Fonction pour traduire une industrie brute (stockée en français)
   const getTranslatedIndustry = (industryFr) => {
     if (!industryFr) return null;
-
     const frenchT = i18n.getFixedT('fr');
     const frenchIndustries = frenchT('createCompany.industries', { returnObjects: true }) || [];
     const currentIndustries = t('createCompany.industries', { returnObjects: true }) || [];
-
     const index = frenchIndustries.indexOf(industryFr);
     if (index !== -1 && index < currentIndustries.length) {
       return currentIndustries[index];
     }
-    return industryFr; // fallback si pas trouvée
+    return industryFr;
   };
 
   return (
@@ -108,7 +105,6 @@ const CompanyCard = ({ company, user }) => {
                 </Badge>
               )}
             </div>
-            {/* ✅ Affichage de l'industrie traduite */}
             {company.industry && (
               <p className="text-sm text-slate-500 mt-0.5">
                 {getTranslatedIndustry(company.industry)}
@@ -177,7 +173,7 @@ const CompanyCard = ({ company, user }) => {
   );
 };
 
-// ---------- Page principale (inchangée, hormis l'appel à CompanyCard) ----------
+// ---------- Page principale ----------
 const CompaniesPage = () => {
   const { t, i18n } = useTranslation();
   const { user, isCompany, profile, signOut } = useAuth();
@@ -196,6 +192,7 @@ const CompaniesPage = () => {
         .select('industry')
         .eq('is_active', true)
         .eq('is_verified', true)
+        .eq('is_test', false) // ✅ exclure les entreprises de test
         .not('industry', 'is', null);
       if (!error && data) {
         const raw = [...new Set(data.map(c => c.industry).filter(Boolean))].sort();
@@ -250,6 +247,7 @@ const CompaniesPage = () => {
         .select(`*, city:cities(name)`)
         .eq('is_active', true)
         .eq('is_verified', true)
+        .eq('is_test', false) // ✅ exclure les entreprises de test
         .order('subscription_plan', { ascending: false })
         .order('name');
 

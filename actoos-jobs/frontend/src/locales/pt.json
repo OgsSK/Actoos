@@ -2713,6 +2713,8 @@
       "accountSuspended": "A sua conta está suspensa."
     },
  "companyDashboard": {
+  "removeAsPrimary": "Remover como empresa principal",
+    "primaryCompanyRemoved": "Empresa principal removida",
    "setAsPrimary": "Definir como empresa principal",
       "primaryCompanySet": "Empresa principal atualizada",
       "primaryCompanyError": "Erro ao atualizar a empresa principal",

@@ -2715,6 +2715,8 @@
       "accountSuspended": "Il tuo account è sospeso."
     },
     "companyDashboard": {
+       "removeAsPrimary": "Rimuovi come azienda principale",
+    "primaryCompanyRemoved": "Azienda principale rimossa",
       "setAsPrimary": "Imposta come azienda principale",
       "primaryCompanySet": "Azienda principale aggiornata",
       "primaryCompanyError": "Errore durante l'aggiornamento dell'azienda principale",

@@ -2560,6 +2560,8 @@
       "accountSuspended": "Your account is suspended."
     },
      "companyDashboard": {
+      "removeAsPrimary": "Remove as primary company",
+    "primaryCompanyRemoved": "Primary company removed",
       "setAsPrimary": "Set as primary company",
       "primaryCompanySet": "Primary company updated",
       "primaryCompanyError": "Error updating primary company",

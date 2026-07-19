@@ -2714,6 +2714,8 @@
       "accountSuspended": "حسابك معلق."
     },
 "companyDashboard": {
+  "removeAsPrimary": "إزالة كشركة رئيسية",
+    "primaryCompanyRemoved": "تمت إزالة الشركة الرئيسية",
    "setAsPrimary": "تعيين كشركة رئيسية",
       "primaryCompanySet": "تم تحديث الشركة الرئيسية",
       "primaryCompanyError": "خطأ أثناء تحديث الشركة الرئيسية",

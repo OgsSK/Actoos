@@ -18,12 +18,11 @@ import {
   ChevronRight, TrendingUp, Clock, CheckCircle, XCircle, Loader2,
   Edit, Trash2, MoreVertical, Globe, Mail, Phone, MapPin, Calendar,
   AlertTriangle, X, Send, Undo2, CreditCard, Layers, Banknote, Sparkles,
-  Crown, Search, RefreshCw, Zap, UserPlus, ArrowRight,
+  Crown, Search, RefreshCw, Zap, UserPlus, ArrowRight, Star,
 } from 'lucide-react';
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import { getPlanLimit, getExpirationDays, planHasFeature } from '../lib/planLimits';
 
-// Chargement asynchrone pour éviter la dépendance circulaire avec UserMessages
 const UserMessages = lazy(() => import('../components/UserMessages'));
 
 // ---------- StatCard ----------
@@ -217,7 +216,7 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
 // ---------- Dashboard principal ----------
 const CompanyDashboard = () => {
   const { t } = useTranslation();
-  const { user, activeCompanyId, setActiveCompanyId, profile, refreshProfile } = useAuth();
+  const { user, activeCompanyId, setActiveCompanyId, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [company, setCompany] = useState(null);
@@ -229,6 +228,11 @@ const CompanyDashboard = () => {
   const [stats, setStats] = useState({ totalJobs: 0, activeJobs: 0, totalApplications: 0, newApplications: 0 });
   const [pendingDocsCount, setPendingDocsCount] = useState(0);
   const hasLoaded = useRef(false);
+
+  // ✅ État local pour la préférence entreprise principale (localStorage)
+  const [primaryCompanyId, setPrimaryCompanyId] = useState(
+    () => localStorage.getItem('actoosPrimaryCompanyId') || null
+  );
 
   // Abonnés
   const [followersSummary, setFollowersSummary] = useState({ total: 0, followers: [] });
@@ -246,6 +250,21 @@ const CompanyDashboard = () => {
   const handleSwitchCompany = (companyId) => {
     setActiveCompanyId(companyId);
     fetchCompanyData(companyId);
+  };
+
+  // ✅ Toggle : définir / retirer l'entreprise principale
+  const handleSetPrimaryCompany = () => {
+    if (!activeCompanyId) return;
+    const currentPrimary = localStorage.getItem('actoosPrimaryCompanyId');
+    if (currentPrimary === activeCompanyId) {
+      localStorage.removeItem('actoosPrimaryCompanyId');
+      setPrimaryCompanyId(null);
+      toast.success(t('companyDashboard.primaryCompanyRemoved'));
+    } else {
+      localStorage.setItem('actoosPrimaryCompanyId', activeCompanyId);
+      setPrimaryCompanyId(activeCompanyId);
+      toast.success(t('companyDashboard.primaryCompanySet'));
+    }
   };
 
   const fetchCompanyData = async (companyId) => {
@@ -311,6 +330,7 @@ const CompanyDashboard = () => {
     }
   };
 
+  // Effet de chargement initial – priorité à la préférence locale
   useEffect(() => {
     if (!user || hasLoaded.current) return;
     hasLoaded.current = true;
@@ -318,13 +338,20 @@ const CompanyDashboard = () => {
       const userCompanies = await fetchUserCompanies();
       setCompanies(userCompanies);
       if (userCompanies.length === 0) { setLoading(false); return; }
-      const targetId = activeCompanyId && userCompanies.find(c => c.id === activeCompanyId) ? activeCompanyId : userCompanies[0].id;
+
+      const targetId = primaryCompanyId && userCompanies.find(c => c.id === primaryCompanyId)
+        ? primaryCompanyId
+        : activeCompanyId && userCompanies.find(c => c.id === activeCompanyId)
+          ? activeCompanyId
+          : userCompanies[0].id;
+
       setActiveCompanyId(targetId);
       await fetchCompanyData(targetId);
     };
     load();
-  }, [user, fetchUserCompanies]);
+  }, [user]);
 
+  // Rafraîchir la liste des entreprises si le plan ou l'entreprise change
   useEffect(() => {
     if (user) {
       fetchUserCompanies().then(updated => setCompanies(updated));
@@ -335,7 +362,6 @@ const CompanyDashboard = () => {
   const isBusinessPlan = plan === 'business' || plan === 'enterprise';
   const showFollowersWidget = plan === 'pro' || isBusinessPlan;
 
-  // Chargement direct des abonnés via Supabase
   const fetchFollowersSummary = useCallback(async () => {
     if (!company || !showFollowersWidget) return;
     setLoadingFollowers(true);
@@ -492,6 +518,20 @@ const CompanyDashboard = () => {
           <select value={activeCompanyId || ''} onChange={(e) => handleSwitchCompany(e.target.value)} className="border border-slate-200 bg-white rounded-xl px-4 py-2 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
             {companies.map(c => (<option key={c.id} value={c.id}>{c.name} {c.owner_id === user.id ? t('companyDashboard.companySelector.owner') : t('companyDashboard.companySelector.member')}</option>))}
           </select>
+
+          {/* ⭐ Bouton étoile avec toggle visuel */}
+          {activeCompanyId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className={activeCompanyId === primaryCompanyId ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}
+              onClick={handleSetPrimaryCompany}
+              title={activeCompanyId === primaryCompanyId ? t('companyDashboard.removeAsPrimary') : t('companyDashboard.setAsPrimary')}
+            >
+              <Star className={`w-4 h-4 ${activeCompanyId === primaryCompanyId ? 'fill-amber-500' : ''}`} />
+            </Button>
+          )}
+
           {canCreateCompany ? (
             <Link to="/dashboard/entreprise/creer" className="ml-auto"><Button variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" /> {t('companyDashboard.companySelector.newCompany')}</Button></Link>
           ) : (
@@ -513,7 +553,6 @@ const CompanyDashboard = () => {
               </Button>
             </Link>
 
-            {/* ----- ✅ LIEN CORRIGÉ AVEC ?from=company-dashboard ----- */}
             <Link to={`/entreprises/${activeCompanyId}?from=company-dashboard`} className="w-full">
               <Button variant="outline" className="w-full min-h-[44px]">
                 <Eye className="w-4 h-4 mr-2" />
@@ -590,7 +629,6 @@ const CompanyDashboard = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Applications */}
             <Card className="border-slate-200 overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div><h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.applicationsSection.title')}</h2><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.newCount', { count: stats.newApplications })}</p></div>
@@ -599,7 +637,6 @@ const CompanyDashboard = () => {
               <CardContent className="p-4">{applications.length === 0 ? (<div className="text-center py-6"><Users className="w-10 h-10 text-slate-300 mx-auto mb-2" /><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.noApplications')}</p></div>) : (<div className="space-y-2">{applications.slice(0, 5).map(app => (<ApplicationCard key={app.id} application={app} />))}</div>)}</CardContent>
             </Card>
 
-            {/* Profil */}
             <Card className="border-slate-200 overflow-hidden">
               <CardContent className="p-4 sm:p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">{t('companyDashboard.companyProfileCard.title')}</h3>
@@ -617,7 +654,6 @@ const CompanyDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Note administrateur - déplacé avant les abonnés et la banque CV */}
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader><CardTitle>{t('companyDashboard.adminMessages.title')}</CardTitle></CardHeader>
               <CardContent>
@@ -627,7 +663,6 @@ const CompanyDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Mes abonnés - avant la banque CV */}
             {showFollowersWidget && (
               <Card className="border-slate-200 overflow-hidden">
                 <CardHeader className="pb-2">
@@ -665,7 +700,6 @@ const CompanyDashboard = () => {
               </Card>
             )}
 
-            {/* Banque de CV - après les abonnés */}
             {hasCVBank && (
               <Card className="border-purple-200 bg-purple-50 overflow-hidden">
                 <CardContent className="p-4">
@@ -686,7 +720,6 @@ const CompanyDashboard = () => {
               </Card>
             )}
 
-            {/* Abonnement / Résiliation - tout en bas */}
             <Card className="border-blue-200 bg-blue-50 overflow-hidden">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">

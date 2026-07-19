@@ -2819,6 +2819,8 @@
       "accountSuspended": "Ihr Konto ist gesperrt."
     },
    "companyDashboard": {
+    "removeAsPrimary": "Als Hauptunternehmen entfernen",
+    "primaryCompanyRemoved": "Hauptunternehmen entfernt",
     "setAsPrimary": "Als Hauptunternehmen festlegen",
       "primaryCompanySet": "Hauptunternehmen aktualisiert",
       "primaryCompanyError": "Fehler beim Aktualisieren des Hauptunternehmens",
