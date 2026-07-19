@@ -97,7 +97,7 @@ actoos-pro/
 | Service | Dashboard | Clé API |
 |---------|-----------|---------|
 | Stripe | https://dashboard.stripe.com | `sk_live_51TCSJKIcKb...` |
-| Resend | https://resend.com | `re_HSsCQxUj_Hvz...` |
+| Resend | https://resend.com | `re_UzozoySJ_Fqr...` |
 | Upstash Redis | https://console.upstash.com | Dans l'URL Redis |
 
 ---
