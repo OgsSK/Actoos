@@ -749,10 +749,17 @@ const CompanyDashboard = () => {
                 {plan !== 'free' && company?.stripe_subscription_id ? (
                   <>
                     <p className="text-sm text-blue-800 mb-4">{t('companyDashboard.subscriptionCard.activePlanMessage', { plan: planLabel })}</p>
-                    <div className="space-y-2">
-                      <Button variant="outline" className="w-full border-blue-300 text-blue-700 hover:bg-blue-100 min-h-[44px]" onClick={handleOpenPortal}><CreditCard className="w-4 h-4 mr-2" />{t('companyDashboard.subscriptionCard.manageSubscription')}</Button>
-                      <Button variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50 min-h-[44px]" onClick={() => setShowCancelModal(true)}><AlertTriangle className="w-4 h-4 mr-2" />{t('companyDashboard.subscriptionCard.cancelSubscription')}</Button>
-                    </div>
+                    <Button variant="outline" className="w-full border-blue-300 text-blue-700 hover:bg-blue-100 min-h-[44px] mb-4" onClick={handleOpenPortal}>
+                      <CreditCard className="w-4 h-4 mr-2" />{t('companyDashboard.subscriptionCard.manageSubscription')}
+                    </Button>
+                    {/* Lien discret de résiliation */}
+                    <button
+                      type="button"
+                      onClick={() => setShowCancelModal(true)}
+                      className="text-xs text-slate-400 hover:text-red-500 transition-colors underline underline-offset-2 ml-1"
+                    >
+                      {t('companyDashboard.subscriptionCard.cancelSubscription')}
+                    </button>
                   </>
                 ) : plan === 'free' && company?.cancellation_reason ? (
                   <div className="text-sm text-slate-700 mt-2"><p className="font-medium">{t('companyDashboard.subscriptionCard.lastCancelReason')}</p><p className="italic mt-1">{t('companyDashboard.subscriptionCard.cancelReasonQuote', { reason: company.cancellation_reason })}</p></div>

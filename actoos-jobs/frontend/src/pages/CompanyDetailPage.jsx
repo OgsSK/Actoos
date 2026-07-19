@@ -382,7 +382,12 @@ const CompanyDetailPage = () => {
                     text={t('companyDetail.shareText', { name: company.name })}
                   />
                   {!isOwner && user && !isAdmin && (
-                    <ReportButton itemType="company" itemId={company.id} reporterId={user.id} />
+                    <ReportButton
+                      itemType="company"
+                      itemId={company.id}
+                      reporterId={user.id}
+                      className="bg-white/20 text-white hover:bg-white/30 rounded-full px-3 py-1 text-sm"
+                    />
                   )}
                   {isOwner && (
                     <Badge variant="outline" className="text-white/60 border-white/20">

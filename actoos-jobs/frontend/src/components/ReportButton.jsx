@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 
-const ReportButton = ({ itemType, itemId, reporterId }) => {
+const ReportButton = ({ itemType, itemId, reporterId, className }) => {
   const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const [reason, setReason] = useState('');
@@ -46,51 +46,50 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
   }, [t, itemType]);
 
   const handleSubmit = async () => {
-  if (!reason) {
-    toast.error(t('report.reasonRequired'));
-    return;
-  }
-
-  if (!reporterId) {
-    toast.error(t('report.mustLogin'));
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const fullReason = details.trim()
-      ? `${reason} - ${details.trim()}`
-      : reason;
-
-    // ✅ Appel à l'API backend (plus de dépendance JWT)
-    const response = await fetch('/api/report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: reporterId,          // ← envoyé dans le corps
-        reported_item_type: itemType,
-        reported_item_id: itemId,
-        reason: fullReason,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || t('report.sendError'));
+    if (!reason) {
+      toast.error(t('report.reasonRequired'));
+      return;
     }
 
-    toast.success(t('report.sentSuccess'));
-    setShowModal(false);
-    setReason('');
-    setDetails('');
-  } catch (err) {
-    console.error('Erreur signalement:', err);
-    toast.error(err.message || t('report.sendError'));
-  } finally {
-    setLoading(false);
-  }
-};
+    if (!reporterId) {
+      toast.error(t('report.mustLogin'));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const fullReason = details.trim()
+        ? `${reason} - ${details.trim()}`
+        : reason;
+
+      const response = await fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: reporterId,
+          reported_item_type: itemType,
+          reported_item_id: itemId,
+          reason: fullReason,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.detail || t('report.sendError'));
+      }
+
+      toast.success(t('report.sentSuccess'));
+      setShowModal(false);
+      setReason('');
+      setDetails('');
+    } catch (err) {
+      console.error('Erreur signalement:', err);
+      toast.error(err.message || t('report.sendError'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!reporterId) return null;
 
@@ -98,7 +97,7 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="text-slate-400 hover:text-red-500 flex items-center gap-1 text-sm transition-colors"
+        className={`text-slate-400 hover:text-red-500 flex items-center gap-1 text-sm transition-colors ${className ?? ''}`}
         title={t('report.button')}
         type="button"
       >
@@ -107,7 +106,8 @@ const ReportButton = ({ itemType, itemId, reporterId }) => {
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        // ✅ Ajout de text-slate-900 pour réinitialiser la couleur du texte
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 text-slate-900">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <Flag className="w-5 h-5 text-red-500" />
