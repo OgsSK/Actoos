@@ -215,7 +215,7 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
 
 // ---------- Dashboard principal ----------
 const CompanyDashboard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation(); // ✅ ajout de i18n
   const { user, activeCompanyId, setActiveCompanyId, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
@@ -229,14 +229,25 @@ const CompanyDashboard = () => {
   const [pendingDocsCount, setPendingDocsCount] = useState(0);
   const hasLoaded = useRef(false);
 
-  // ✅ État local pour la préférence entreprise principale (localStorage)
   const [primaryCompanyId, setPrimaryCompanyId] = useState(
     () => localStorage.getItem('actoosPrimaryCompanyId') || null
   );
 
-  // Abonnés
   const [followersSummary, setFollowersSummary] = useState({ total: 0, followers: [] });
   const [loadingFollowers, setLoadingFollowers] = useState(false);
+
+  // ✅ Fonction de traduction de l'industrie
+  const getTranslatedIndustry = (industryFr) => {
+    if (!industryFr) return null;
+    const frenchT = i18n.getFixedT('fr');
+    const frenchIndustries = frenchT('createCompany.industries', { returnObjects: true }) || [];
+    const currentIndustries = t('createCompany.industries', { returnObjects: true }) || [];
+    const index = frenchIndustries.indexOf(industryFr);
+    if (index !== -1 && index < currentIndustries.length) {
+      return currentIndustries[index];
+    }
+    return industryFr;
+  };
 
   const fetchUserCompanies = useCallback(async () => {
     if (!user) return [];
@@ -252,7 +263,6 @@ const CompanyDashboard = () => {
     fetchCompanyData(companyId);
   };
 
-  // ✅ Toggle : définir / retirer l'entreprise principale
   const handleSetPrimaryCompany = () => {
     if (!activeCompanyId) return;
     const currentPrimary = localStorage.getItem('actoosPrimaryCompanyId');
@@ -330,7 +340,7 @@ const CompanyDashboard = () => {
     }
   };
 
-  // Effet de chargement initial – priorité à la préférence locale
+  // Effet de chargement initial
   useEffect(() => {
     if (!user || hasLoaded.current) return;
     hasLoaded.current = true;
@@ -351,7 +361,6 @@ const CompanyDashboard = () => {
     load();
   }, [user]);
 
-  // Rafraîchir la liste des entreprises si le plan ou l'entreprise change
   useEffect(() => {
     if (user) {
       fetchUserCompanies().then(updated => setCompanies(updated));
@@ -519,7 +528,6 @@ const CompanyDashboard = () => {
             {companies.map(c => (<option key={c.id} value={c.id}>{c.name} {c.owner_id === user.id ? t('companyDashboard.companySelector.owner') : t('companyDashboard.companySelector.member')}</option>))}
           </select>
 
-          {/* ⭐ Bouton étoile avec toggle visuel */}
           {activeCompanyId && (
             <Button
               variant="ghost"
@@ -642,7 +650,8 @@ const CompanyDashboard = () => {
                 <h3 className="font-semibold text-slate-900 mb-4">{t('companyDashboard.companyProfileCard.title')}</h3>
                 {!company?.is_verified && <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">{t('companyDashboard.companyProfileCard.pendingValidation')}</div>}
                 <div className="space-y-3 text-sm">
-                  {company?.industry && <p className="flex items-center gap-2 text-slate-600"><Building2 className="w-4 h-4 text-slate-400" />{company.industry}</p>}
+                  {/* ✅ Industrie traduite */}
+                  {company?.industry && <p className="flex items-center gap-2 text-slate-600"><Building2 className="w-4 h-4 text-slate-400" />{getTranslatedIndustry(company.industry)}</p>}
                   {company?.size && <p className="flex items-center gap-2 text-slate-600"><Users className="w-4 h-4 text-slate-400" />{t('companyDashboard.companyProfileCard.employees', { size: company.size })}</p>}
                   {company?.website && <a href={company.website.startsWith('http') ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:underline break-all"><Globe className="w-4 h-4 shrink-0" />{company.website}</a>}
                   {company?.email && <a href={`mailto:${company.email}`} className="flex items-center gap-2 text-blue-600 hover:underline break-all"><Mail className="w-4 h-4 shrink-0" />{company.email}</a>}

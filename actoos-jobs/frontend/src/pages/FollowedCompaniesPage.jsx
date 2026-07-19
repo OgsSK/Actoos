@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,17 +14,31 @@ import {
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import { toast } from 'sonner';
 
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
+
 const FollowedCompaniesPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { format } = useCurrencyFormatter();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+  const controllerRef = useRef(null);
 
   const fetchFollowed = async () => {
     if (!user) return;
+
+    // Annuler la précédente requête si elle existe
+    if (controllerRef.current) controllerRef.current.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
     setLoading(true);
+    setFetchError(null);
     try {
+      // 1. Récupérer les entreprises suivies par l'utilisateur
       const { data: follows, error: followErr } = await supabase
         .from('company_followers')
         .select('company_id')
@@ -33,12 +47,12 @@ const FollowedCompaniesPage = () => {
       if (followErr) throw followErr;
       if (!follows || follows.length === 0) {
         setCompanies([]);
-        setLoading(false);
         return;
       }
 
       const companyIds = follows.map(f => f.company_id);
 
+      // 2. Récupérer les informations des entreprises
       const { data: companiesData, error: compErr } = await supabase
         .from('companies')
         .select('id, name, logo_url, industry, subscription_plan, followers_count')
@@ -46,35 +60,54 @@ const FollowedCompaniesPage = () => {
 
       if (compErr) throw compErr;
 
-      const enriched = await Promise.all(
-        (companiesData || []).map(async (company) => {
-          const { data: jobs } = await supabase
-            .from('jobs')
-            .select('id, title, contract_type, salary_min, salary_max, created_at')
-            .eq('company_id', company.id)
-            .eq('status', 'active')
-            .order('created_at', { ascending: false })
-            .limit(3);
-          return { ...company, recent_jobs: jobs || [] };
-        })
-      );
+      // 3. Récupérer les 3 dernières offres actives de TOUTES ces entreprises en une seule requête
+      const now = new Date().toISOString();
+      const { data: allJobs, error: jobsErr } = await supabase
+        .from('jobs')
+        .select('id, company_id, title, contract_type, salary_min, salary_max, created_at')
+        .in('company_id', companyIds)
+        .eq('status', 'active')
+        .or(`expires_at.is.null,expires_at.gte.${now}`)
+        .order('created_at', { ascending: false });
+
+      if (jobsErr) throw jobsErr;
+
+      // Grouper les jobs par entreprise
+      const jobsByCompany = {};
+      (allJobs || []).forEach(job => {
+        if (!jobsByCompany[job.company_id]) jobsByCompany[job.company_id] = [];
+        if (jobsByCompany[job.company_id].length < 3) {
+          jobsByCompany[job.company_id].push(job);
+        }
+      });
+
+      // Assembler les entreprises avec leurs offres récentes
+      const enriched = (companiesData || []).map(company => ({
+        ...company,
+        recent_jobs: jobsByCompany[company.id] || [],
+      }));
 
       setCompanies(enriched);
     } catch (err) {
+      if (err.name === 'AbortError') return; // annulation silencieuse
       console.error('Erreur chargement des suivis :', err);
+      setFetchError(err.message);
     } finally {
-      setLoading(false);
+      if (controllerRef.current === controller) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchFollowed();
+    return () => {
+      if (controllerRef.current) controllerRef.current.abort();
+    };
   }, [user]);
 
   const handleUnfollow = async (companyId) => {
     if (!user) return;
     try {
-      const res = await fetch(`/api/companies/${companyId}/follow`, {
+      const res = await fetch(`${BASE_URL}/api/companies/${companyId}/follow`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id }),
@@ -82,7 +115,6 @@ const FollowedCompaniesPage = () => {
       const data = await res.json();
       if (data.success) {
         toast.success(t('companyDetail.unfollowSuccess', 'Vous ne suivez plus cette entreprise.'));
-        // Retirer l'entreprise de la liste locale
         setCompanies(prev => prev.filter(c => c.id !== companyId));
       } else {
         toast.error(t('common.error'));
@@ -100,7 +132,7 @@ const FollowedCompaniesPage = () => {
           className="inline-flex items-center text-sm text-slate-600 hover:text-slate-900 mb-6"
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
-          {t('common.back', 'Retour')}
+          {t('myApplications.back')}
         </Link>
 
         <div className="flex items-center gap-3 mb-8">
@@ -121,6 +153,13 @@ const FollowedCompaniesPage = () => {
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
           </div>
+        ) : fetchError ? (
+          <Card className="border-red-200">
+            <CardContent className="p-8 text-center">
+              <p className="text-red-600 mb-4">{t('common.error')} : {fetchError}</p>
+              <Button onClick={fetchFollowed}>{t('common.retry', 'Réessayer')}</Button>
+            </CardContent>
+          </Card>
         ) : companies.length === 0 ? (
           <Card className="border-slate-200">
             <CardContent className="p-8 text-center">
@@ -154,7 +193,6 @@ const FollowedCompaniesPage = () => {
                         <Link to={`/entreprises/${company.id}`} className="font-semibold text-slate-900 hover:text-blue-600 text-lg">
                           {company.name}
                         </Link>
-                        {/* Bouton de désabonnement */}
                         <button
                           onClick={() => handleUnfollow(company.id)}
                           className="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-xl hover:bg-red-50"
