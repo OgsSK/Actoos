@@ -62,7 +62,7 @@ DATABASE_URL=postgresql://postgres:j5GWgugTM1lA9iXK@db.zmngftlkdimwvkxmduvr.supa
 JWT_SECRET_KEY=actoos-pro-secret-key-2024-super-secure
 
 # Email (Resend)
-RESEND_API_KEY=re_FypcQ27E_5eSSm3yr6tQ6XE9wTM3LPFCN
+RESEND_API_KEY=re_G9hiuusy_GWv
 SENDER_EMAIL=noreply@actoos.com
 
 # Paiements (Stripe)
