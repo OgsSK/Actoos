@@ -229,73 +229,97 @@ const CompaniesPage = () => {
     fetchCompanies();
   }, [searchQuery, selectedIndustry, prefs.country]);
 
-  const fetchCompanies = async () => {
-    setLoading(true);
-    try {
-      let countryId = null;
-      if (prefs.country) {
-        const { data: country } = await supabase
-          .from('countries')
-          .select('id')
-          .eq('code', prefs.country)
-          .single();
-        countryId = country?.id || null;
-      }
-
-      let query = supabase
-        .from('companies')
-        .select(`*, city:cities(name)`)
-        .eq('is_active', true)
-        .eq('is_verified', true)
-        .eq('is_test', false) // ✅ exclure les entreprises de test
-        .order('subscription_plan', { ascending: false })
-        .order('name');
-
-      if (countryId) query = query.eq('country_id', countryId);
-      if (searchQuery) query = query.ilike('name', `%${searchQuery}%`);
-      if (selectedIndustry) {
-        const currentIndustries = t('createCompany.industries', { returnObjects: true }) || [];
-        const frenchIndustries = i18n.getFixedT('fr')('createCompany.industries', { returnObjects: true }) || [];
-        const idx = currentIndustries.indexOf(selectedIndustry);
-        if (idx !== -1 && idx < frenchIndustries.length) {
-          query = query.eq('industry', frenchIndustries[idx]);
-        } else {
-          query = query.eq('industry', selectedIndustry);
-        }
-      }
-
-      const { data, error } = await query.limit(20);
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        const companyIds = data.map(c => c.id);
-        const now = new Date().toISOString();
-        const { data: activeJobs } = await supabase
-          .from('jobs')
-          .select('company_id')
-          .in('company_id', companyIds)
-          .eq('status', 'active')
-          .or(`expires_at.is.null,expires_at.gte.${now}`);
-
-        const countMap = {};
-        (activeJobs || []).forEach(row => {
-          countMap[row.company_id] = (countMap[row.company_id] || 0) + 1;
-        });
-
-        const enriched = data.map(company => ({
-          ...company,
-          activeJobsCount: countMap[company.id] || 0,
-        }));
-        setCompanies(enriched);
-      } else {
-        setCompanies([]);
-      }
-    } catch (error) {
-      console.error('Error fetching companies:', error);
-    } finally {
-      setLoading(false);
+ const fetchCompanies = async () => {
+  setLoading(true);
+  try {
+    let countryId = null;
+    if (prefs.country) {
+      const { data: country } = await supabase
+        .from('countries')
+        .select('id')
+        .eq('code', prefs.country)
+        .single();
+      countryId = country?.id || null;
     }
-  };
+
+    let query = supabase
+      .from('companies')
+      .select(`*, city:cities(name)`)
+      .eq('is_active', true)
+      .eq('is_verified', true)
+      .eq('is_test', false)
+      .order('name'); // on triera nous-mêmes après
+
+    if (countryId) query = query.eq('country_id', countryId);
+    if (searchQuery) query = query.ilike('name', `%${searchQuery}%`);
+    if (selectedIndustry) {
+      const currentIndustries = t('createCompany.industries', { returnObjects: true }) || [];
+      const frenchIndustries = i18n.getFixedT('fr')('createCompany.industries', { returnObjects: true }) || [];
+      const idx = currentIndustries.indexOf(selectedIndustry);
+      if (idx !== -1 && idx < frenchIndustries.length) {
+        query = query.eq('industry', frenchIndustries[idx]);
+      } else {
+        query = query.eq('industry', selectedIndustry);
+      }
+    }
+
+    const { data, error } = await query.limit(50); // on augmente un peu la limite pour le tri
+    if (error) throw error;
+
+    if (data && data.length > 0) {
+      const companyIds = data.map(c => c.id);
+      const now = new Date().toISOString();
+      const { data: activeJobs } = await supabase
+        .from('jobs')
+        .select('company_id')
+        .in('company_id', companyIds)
+        .eq('status', 'active')
+        .or(`expires_at.is.null,expires_at.gte.${now}`);
+
+      const countMap = {};
+      (activeJobs || []).forEach(row => {
+        countMap[row.company_id] = (countMap[row.company_id] || 0) + 1;
+      });
+
+      // Enrichissement avec le nombre d'offres
+      let enriched = data.map(company => ({
+        ...company,
+        activeJobsCount: countMap[company.id] || 0,
+      }));
+
+      // Tri personnalisé
+      const planPriority = {
+        'business': 3,
+        'enterprise': 3,
+        'pro': 2,
+        'free': 1,
+      };
+
+      enriched.sort((a, b) => {
+        // Priorité plan (décroissant)
+        const planA = planPriority[a.subscription_plan] || 0;
+        const planB = planPriority[b.subscription_plan] || 0;
+        if (planA !== planB) return planB - planA;
+
+        // Priorité nombre d'offres (décroissant)
+        if (a.activeJobsCount !== b.activeJobsCount) {
+          return b.activeJobsCount - a.activeJobsCount;
+        }
+
+        // Ordre alphabétique
+        return a.name.localeCompare(b.name);
+      });
+
+      setCompanies(enriched);
+    } else {
+      setCompanies([]);
+    }
+  } catch (error) {
+    console.error('Error fetching companies:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const resetFilters = () => {
     setSearchQuery('');
