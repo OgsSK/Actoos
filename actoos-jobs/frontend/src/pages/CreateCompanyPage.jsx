@@ -9,6 +9,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { toast } from 'sonner';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
+import useAllowedCountries from '../hooks/useAllowedCountries';
 import {
   Building2, Globe, Mail, Phone, MapPin, Users, Calendar,
   Upload, Loader2, ChevronLeft, Save, Image
@@ -23,12 +24,12 @@ const CreateCompanyPage = () => {
   const logoInputRef = useRef(null);
 
   const { prefs } = usePreferencesContext();
+  const { allowed, isRestricted } = useAllowedCountries();
 
-  // ✅ État initial vide, sera rempli par le useEffect
-  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedCountryId, setSelectedCountryId] = useState('');
   const [countries, setCountries] = useState([]);
-
-  const { cities: filteredCities } = useCities(selectedCountry);
+  const selectedCountryCode = countries.find(c => c.id === selectedCountryId)?.code || '';
+  const { cities: filteredCities } = useCities(selectedCountryCode);
 
   const [loading, setLoading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -50,27 +51,41 @@ const CreateCompanyPage = () => {
   const COMPANY_SIZES = Object.keys(t('createCompany.sizes', { returnObjects: true }));
   const INDUSTRIES = t('createCompany.industries', { returnObjects: true }) || [];
 
-  // ✅ Charger les pays et définir le pays par défaut
+  // Chargement des pays avec sélection par défaut intelligente
   useEffect(() => {
-    supabase.from('countries').select('code, name').order('name').then(({ data }) => {
-      if (data && data.length > 0) {
-        setCountries(data);
-        // Si l'utilisateur a déjà un pays préféré ET qu'il fait partie de la liste, on le prend
-        if (prefs.country && data.some(c => c.code === prefs.country)) {
-          setSelectedCountry(prefs.country);
-        } else if (!prefs.country) {
-          // Aucune préférence : on prend le premier pays de la liste
-          setSelectedCountry(data[0].code);
-        }
-      }
-    });
-  }, [prefs.country]); // dépend de prefs.country pour se mettre à jour si la préférence change
+    supabase
+      .from('countries')
+      .select('id, code, name')
+      .order('name')
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setCountries(data);
 
-  // Upload de logo directement vers Supabase Storage
+          let defaultCountry = null;
+          if (prefs.country) {
+            const pref = data.find(c => c.code === prefs.country);
+            if (pref && (!isRestricted || allowed.includes(pref.code))) {
+              defaultCountry = pref;
+            }
+          }
+          if (!defaultCountry) {
+            if (isRestricted && allowed.length > 0) {
+              defaultCountry = data.find(c => allowed.includes(c.code));
+            } else {
+              defaultCountry = data[0];
+            }
+          }
+          if (defaultCountry) {
+            setSelectedCountryId(defaultCountry.id);
+          }
+        }
+      });
+  }, [prefs.country, isRestricted, allowed]);
+
+  // Upload de logo
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       toast.error(t('createCompany.toasts.imageRequired'));
       return;
@@ -79,22 +94,17 @@ const CreateCompanyPage = () => {
       toast.error(t('createCompany.toasts.imageTooBig'));
       return;
     }
-
     setUploadingLogo(true);
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/logo-${Date.now()}.${fileExt}`;
-
       const { error: uploadError } = await supabase.storage
         .from('company-logos')
         .upload(fileName, file, { upsert: true });
-
       if (uploadError) throw uploadError;
-
       const { data: urlData } = supabase.storage
         .from('company-logos')
         .getPublicUrl(fileName);
-
       setForm(prev => ({ ...prev, logo_url: urlData.publicUrl }));
       toast.success(t('createCompany.toasts.logoUploaded'));
     } catch (error) {
@@ -107,24 +117,15 @@ const CreateCompanyPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const newErrors = {};
     if (!form.name) newErrors.name = true;
     setErrors(newErrors);
-
     if (Object.keys(newErrors).length > 0) {
       toast.error(t('createCompany.toasts.fillRequired'));
       return;
     }
-
     setLoading(true);
     try {
-      const { data: country } = await supabase
-        .from('countries')
-        .select('id')
-        .eq('code', selectedCountry)
-        .single();
-
       const { data: company, error: companyError } = await supabase
         .from('companies')
         .insert({
@@ -140,7 +141,7 @@ const CreateCompanyPage = () => {
           email: form.email || user.email,
           phone: form.phone || null,
           city_id: form.city_id || null,
-          country_id: country?.id,
+          country_id: selectedCountryId,
           address: form.address || null,
           founded_year: form.founded_year ? parseInt(form.founded_year) : null,
           logo_url: form.logo_url || null,
@@ -149,33 +150,19 @@ const CreateCompanyPage = () => {
         })
         .select()
         .single();
-
       if (companyError) throw companyError;
 
-      await supabase
-        .from('company_members')
-        .insert({
-          company_id: company.id,
-          user_id: user.id,
-          role: 'admin',
-          is_admin: true
-        });
-
-      await supabase
-        .from('users')
-        .update({ role: 'company' })
-        .eq('id', user.id);
-
-      await supabase.auth.updateUser({
-        data: { role: 'company' }
+      await supabase.from('company_members').insert({
+        company_id: company.id,
+        user_id: user.id,
+        role: 'admin',
+        is_admin: true
       });
-
-      if (refreshProfile) {
-        await refreshProfile();
-      }
+      await supabase.from('users').update({ role: 'company' }).eq('id', user.id);
+      await supabase.auth.updateUser({ data: { role: 'company' } });
+      if (refreshProfile) await refreshProfile();
 
       toast.success(t('createCompany.toasts.companyCreated'));
-
       try {
         await apiFetch('/api/notify-admin-new-company', {
           method: 'POST',
@@ -189,7 +176,6 @@ const CreateCompanyPage = () => {
       } catch (e) {
         console.error('Erreur notification admin:', e);
       }
-
       navigate('/dashboard/entreprise', { replace: true });
     } catch (error) {
       console.error('Error creating company:', error);
@@ -241,13 +227,7 @@ const CreateCompanyPage = () => {
                 >
                   {uploadingLogo ? t('createCompany.uploading') : t('createCompany.logo')}
                 </Button>
-                <input
-                  ref={logoInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  className="hidden"
-                />
+                <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
               </div>
 
               {/* Name */}
@@ -375,15 +355,27 @@ const CreateCompanyPage = () => {
                     <MapPin className="w-4 h-4 inline mr-1" />{t('createCompany.labels.country', 'Pays')}
                   </label>
                   <select
-                    value={selectedCountry}
-                    onChange={(e) => setSelectedCountry(e.target.value)}
-                    className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    value={selectedCountryId}
+                    onChange={(e) => setSelectedCountryId(e.target.value)}
+                    className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    {countries.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {t(`countries.${c.code}`, c.name)}
-                      </option>
-                    ))}
+                    {/* ✅ Même clé que dans CountryCurrencySelector (SettingsPage) */}
+                    <option value="">{t('settings.selectCountry')}</option>
+                    {countries.map(c => {
+                      const disabled = isRestricted && !allowed.includes(c.code);
+                      const label = t(`countries.${c.code}`, c.name);
+                      return (
+                        <option
+                          key={c.id}
+                          value={c.id}
+                          disabled={disabled}
+                          style={disabled ? { color: '#6b7280', opacity: 0.6 } : {}}
+                        >
+                          {label}
+                          {disabled ? ` (${t('common.comingSoon', 'bientôt')})` : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div>
