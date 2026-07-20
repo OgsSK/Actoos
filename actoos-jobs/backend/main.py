@@ -614,12 +614,6 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
 
     # ---------- Déterminer la langue cible ----------
     target_language = req.language or "fr"
-    if request:
-        accept_lang = request.headers.get("accept-language", "")
-        if target_language == "fr" and accept_lang:
-            browser_lang = accept_lang.split(",")[0].split("-")[0]
-            if browser_lang in LANG_NAMES:
-                target_language = browser_lang
 
     # ---------- Agent de génération complète d'offre ----------
     if req.agent_id == "job-full-generation":
@@ -678,7 +672,7 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
         user_text = f"Texte à améliorer :\n\n{req.text}"
         if req.context:
             user_text += f"\n\nContexte supplémentaire : {req.context}"
-        # 👇 Nouvelle ligne pour forcer la réponse en français
+        # 👇 Forcer la réponse en français
         user_text += "\n\nRéponds en français uniquement."
 
     messages = [
