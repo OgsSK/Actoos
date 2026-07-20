@@ -234,32 +234,33 @@ const JobDetailPage = () => {
                 </div>
               </div>
 
-              {/* Boutons d'action */}
-              <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+              {/* ✅ Boutons d'action – version corrigée */}
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0">
                 {!isOwner && !isCompany && !isAdmin && (
                   <>
                     {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' ? (
-                      <Badge className="bg-green-100 text-green-700 px-4 py-2 text-sm w-full sm:w-auto justify-center">
-                        ✅ {t('jobDetail.alreadyApplied')}
+                      <Badge className="bg-green-100 text-green-700 whitespace-nowrap px-3 py-1 text-xs font-medium">
+                        <CheckCircle className="w-3.5 h-3.5 mr-1 inline" />
+                        {t('jobDetail.alreadyApplied')}
                       </Badge>
                     ) : (
-                      <Button onClick={handleApply} className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto" size="sm">
-                        <Send className="w-4 h-4 mr-2" />
+                      <Button onClick={handleApply} className="bg-blue-600 hover:bg-blue-700 text-white" size="sm">
+                        <Send className="w-4 h-4 mr-1" />
                         {applicationStatus ? t('jobDetail.reapply', 'Repostuler') : t('jobDetail.apply', 'Postuler')}
                       </Button>
                     )}
-                  <Button
-  variant={isSaved ? 'default' : 'outline'}
-  size="sm"
-  onClick={handleToggleSave}
-  className={`w-full sm:w-auto ${isSaved ? 'bg-red-50 text-red-600 border-red-200' : ''}`}
-  aria-label={isSaved ? t('jobDetail.saved', 'Sauvegardé') : t('jobDetail.save', 'Sauvegarder')}
->
-  <Heart className={`w-4 h-4 ${isSaved ? 'fill-current text-red-500' : ''}`} />
-</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleToggleSave}
+                      className={isSaved ? 'bg-red-50 text-red-600 border-red-200' : ''}
+                      aria-label={isSaved ? t('jobDetail.saved', 'Sauvegardé') : t('jobDetail.save', 'Sauvegarder')}
+                    >
+                      <Heart className={`w-4 h-4 ${isSaved ? 'fill-current text-red-500' : ''}`} />
+                    </Button>
                   </>
                 )}
-                {isOwner && <Badge variant="outline" className="text-sm">{t('jobDetail.yourOffer')}</Badge>}
+                {isOwner && <Badge variant="outline" className="text-sm whitespace-nowrap">{t('jobDetail.yourOffer')}</Badge>}
                 {!isOwner && user && !isAdmin && <ReportButton itemType="job" itemId={job.id} reporterId={user.id} />}
               </div>
             </div>
@@ -295,7 +296,7 @@ const JobDetailPage = () => {
                 </>
               )}
 
-              {/* ✅ Compétences requises */}
+              {/* Compétences requises */}
               {job.skills_required && job.skills_required.length > 0 && (
                 <>
                   <h3 className="text-lg font-semibold text-slate-900 mt-6">
@@ -311,7 +312,7 @@ const JobDetailPage = () => {
                 </>
               )}
 
-              {/* ✅ Nombre de postes (toujours affiché si présent) */}
+              {/* Nombre de postes */}
               {job.positions_count > 0 && (
                 <div className="flex items-center gap-2 mt-6 text-slate-700">
                   <Users className="w-5 h-5 text-blue-600" />
@@ -321,7 +322,7 @@ const JobDetailPage = () => {
                 </div>
               )}
 
-              {/* ✅ Niveau d'expérience */}
+              {/* Niveau d'expérience */}
               {job.experience_level && (
                 <div className="flex items-center gap-2 mt-6 text-slate-700">
                   <GraduationCap className="w-5 h-5 text-blue-600" />
@@ -331,7 +332,7 @@ const JobDetailPage = () => {
                 </div>
               )}
 
-              {/* ✅ Télétravail */}
+              {/* Télétravail */}
               {job.is_remote && (
                 <div className="flex items-center gap-2 mt-6 text-slate-700">
                   <MapPin className="w-5 h-5 text-blue-600" />
@@ -341,7 +342,7 @@ const JobDetailPage = () => {
                 </div>
               )}
 
-              {/* ✅ Offre urgente */}
+              {/* Offre urgente */}
               {job.is_urgent && (
                 <div className="flex items-center gap-2 mt-6 text-red-600">
                   <Clock className="w-5 h-5" />

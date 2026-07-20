@@ -678,6 +678,8 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
         user_text = f"Texte à améliorer :\n\n{req.text}"
         if req.context:
             user_text += f"\n\nContexte supplémentaire : {req.context}"
+        # 👇 Nouvelle ligne pour forcer la réponse en français
+        user_text += "\n\nRéponds en français uniquement."
 
     messages = [
         {"role": "system", "content": system_prompt},

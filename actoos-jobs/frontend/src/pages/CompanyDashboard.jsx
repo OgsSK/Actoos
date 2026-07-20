@@ -541,9 +541,25 @@ const CompanyDashboard = () => {
           )}
 
           {canCreateCompany ? (
-            <Link to="/dashboard/entreprise/creer" className="ml-auto"><Button variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" /> {t('companyDashboard.companySelector.newCompany')}</Button></Link>
+            <Link to="/dashboard/entreprise/creer" className="ml-auto">
+              <Button variant="outline" size="sm">
+                <Plus className="w-4 h-4 mr-1" /> {t('companyDashboard.companySelector.newCompany')}
+              </Button>
+            </Link>
           ) : (
-            <div className="ml-auto text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-full whitespace-nowrap">🔒 {t('companyDashboard.multiCompanyLocked', 'Multi-entreprise réservé au plan Business')}</div>
+            <div className="ml-auto text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-full overflow-hidden whitespace-nowrap max-w-[200px] sm:max-w-none"
+                 title={t('companyDashboard.multiCompanyLocked', 'Multi-entreprise réservé au plan Business')}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  paddingLeft: '100%',
+                  animation: 'marquee 10s linear infinite',
+                }}
+                className="sm:animate-none sm:pl-0"
+              >
+                🔒 {t('companyDashboard.multiCompanyLocked', 'Multi-entreprise réservé au plan Business')}
+              </span>
+            </div>
           )}
         </div>
 

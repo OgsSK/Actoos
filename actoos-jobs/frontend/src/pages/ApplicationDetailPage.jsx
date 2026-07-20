@@ -779,7 +779,23 @@ Profil candidat :
                 </CardContent>
               </Card>
             ) : (
-              <Card className="border-amber-200 bg-amber-50"><CardContent className="p-6 text-center"><Crown className="w-8 h-8 text-amber-500 mx-auto mb-2" /><p className="text-amber-800 font-medium">{t('applicationDetail.upgradeForNotes', 'Notes d’entretien et outils IA')}</p><p className="text-sm text-amber-700 mt-2">{t('applicationDetail.upgradeForNotesDesc', 'Passez au plan Pro ou Business pour générer des questions, réponses et conseils, et prendre des notes.')}</p><Link to="/tarifs"><Button className="mt-4 bg-amber-600 hover:bg-amber-700 text-white">{t('applicationDetail.viewPlans')}</Button></Link></CardContent></Card>
+               <Card className="border-amber-200 bg-amber-50">
+    <CardContent className="p-6 text-center">
+      <Crown className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+      <p className="text-amber-800 font-medium">
+        {t('applicationDetail.upgradeForNotes', 'Outils d’entretien & recrutement avancés')}
+      </p>
+      <p className="text-sm text-amber-700 mt-2">
+        {t('applicationDetail.upgradeForNotesDesc',
+          'Planifiez des entretiens vidéo, générez des questions / réponses / conseils IA et prenez des notes structurées.')}
+      </p>
+      <Link to="/tarifs">
+        <Button className="mt-4 bg-amber-600 hover:bg-amber-700 text-white">
+          {t('applicationDetail.viewPlans')}
+        </Button>
+      </Link>
+    </CardContent>
+  </Card>
             )}
           </div>
 
