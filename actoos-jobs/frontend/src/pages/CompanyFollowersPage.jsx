@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 import { toast } from 'sonner';
-import ContactFollowerModal from '../components/ContactFollowerModal'; // ✅ Import de la modale
+import ContactFollowerModal from '../components/ContactFollowerModal';
 
 const CompanyFollowersPage = () => {
   const { t } = useTranslation();
@@ -27,7 +27,6 @@ const CompanyFollowersPage = () => {
   const [companyPlan, setCompanyPlan] = useState('free');
   const [planLoading, setPlanLoading] = useState(true);
 
-  // ✅ États pour la modale de contact
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [selectedFollower, setSelectedFollower] = useState(null);
 
@@ -55,7 +54,7 @@ const CompanyFollowersPage = () => {
 
   const isBusinessPlan = companyPlan === 'business' || companyPlan === 'enterprise';
 
-  // Chargement des followers (attendre la fin du chargement du plan)
+  // Chargement des followers
   useEffect(() => {
     if (!companyId) return;
     if (planLoading) return;
@@ -96,7 +95,6 @@ const CompanyFollowersPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Bouton Retour avec uniquement la flèche */}
         <Link
           to="/dashboard/entreprise"
           className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6"
@@ -167,13 +165,13 @@ const CompanyFollowersPage = () => {
 
                   {isBusinessPlan && (
                     <div className="flex items-center gap-2">
-                      <Link to={`/candidat/${follower.user_id}?from=followers`}>
+                      {/* ✅ Lien modifié pour inclure company_id */}
+                      <Link to={`/candidat/${follower.user_id}?from=followers&company_id=${companyId}`}>
                         <Button variant="outline" size="sm">
                           <ExternalLink className="w-4 h-4 mr-1" />
                           {t('companyFollowers.viewProfile', 'Profil')}
                         </Button>
                       </Link>
-                      {/* ✅ Bouton pour ouvrir la modale de contact (remplace mailto:) */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -192,7 +190,6 @@ const CompanyFollowersPage = () => {
           </div>
         )}
 
-        {/* ✅ Modale de contact */}
         <ContactFollowerModal
           isOpen={contactModalOpen}
           onClose={() => setContactModalOpen(false)}

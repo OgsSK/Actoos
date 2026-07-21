@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { supabase } from '../lib/supabase';
+import { apiFetch } from '../lib/api'; // ✅ import de apiFetch
 import { toast } from 'sonner';
 import { Loader2, X, Send, Briefcase } from 'lucide-react';
 
 const ContactFollowerModal = ({ isOpen, onClose, follower, companyId, userId }) => {
-  const { t } = useTranslation();
-  const [tab, setTab] = useState('quick'); // 'quick' ou 'invite'
+  const { t, i18n } = useTranslation();
+  const [tab, setTab] = useState('quick');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [selectedJobId, setSelectedJobId] = useState('');
@@ -16,7 +17,6 @@ const ContactFollowerModal = ({ isOpen, onClose, follower, companyId, userId }) 
   const [loadingJobs, setLoadingJobs] = useState(false);
   const [sending, setSending] = useState(false);
 
-  // Charger les offres actives de l'entreprise
   useEffect(() => {
     if (!isOpen || tab !== 'invite') return;
     setLoadingJobs(true);
@@ -37,9 +37,9 @@ const ContactFollowerModal = ({ isOpen, onClose, follower, companyId, userId }) 
     }
     setSending(true);
     try {
-      const res = await fetch('/api/companies/contact-follower', {
+      // ✅ Utilisation de apiFetch et envoi de la langue
+      const data = await apiFetch('/api/companies/contact-follower', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: userId,
           follower_id: follower.user_id,
@@ -48,9 +48,10 @@ const ContactFollowerModal = ({ isOpen, onClose, follower, companyId, userId }) 
           subject,
           body,
           job_id: tab === 'invite' ? selectedJobId : null,
+          language: i18n.language, // langue de l'utilisateur
         }),
       });
-      const data = await res.json();
+
       if (data.success) {
         toast.success(t('contactModal.sent', 'Message envoyé avec succès !'));
         onClose();
@@ -58,7 +59,7 @@ const ContactFollowerModal = ({ isOpen, onClose, follower, companyId, userId }) 
         toast.error(data.detail || t('common.error'));
       }
     } catch (err) {
-      toast.error(t('common.error'));
+      toast.error(err.message || t('common.error'));
     } finally {
       setSending(false);
     }
@@ -78,7 +79,6 @@ const ContactFollowerModal = ({ isOpen, onClose, follower, companyId, userId }) 
           </button>
         </div>
 
-        {/* Onglets */}
         <div className="flex border-b border-slate-100">
           <button
             onClick={() => setTab('quick')}

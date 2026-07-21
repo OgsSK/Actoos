@@ -371,48 +371,39 @@ const CompanyDashboard = () => {
   const isBusinessPlan = plan === 'business' || plan === 'enterprise';
   const showFollowersWidget = plan === 'pro' || isBusinessPlan;
 
-  const fetchFollowersSummary = useCallback(async () => {
-    if (!company || !showFollowersWidget) return;
-    setLoadingFollowers(true);
-    try {
-      const { data: followersData, error: followersError } = await supabase
-        .from('company_followers')
-        .select('user_id, created_at')
-        .eq('company_id', company.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+const fetchFollowersSummary = useCallback(async () => {
+  if (!company || !showFollowersWidget) return;
+  setLoadingFollowers(true);
+  try {
+    const { data, error } = await supabase
+      .from('company_followers')
+      .select(`
+        user_id,
+        created_at,
+        user:users ( first_name, last_name, avatar_url )
+      `)
+      .eq('company_id', company.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
 
-      if (followersError) throw followersError;
+    if (error) throw error;
 
-      const total = followersData.length;
-      const userIds = followersData.map(f => f.user_id);
+    const followers = data.map(f => ({
+      user_id: f.user_id,
+      first_name: f.user?.first_name,
+      last_name: f.user?.last_name,
+      avatar_url: f.user?.avatar_url,
+      followed_at: f.created_at,
+    }));
 
-      let usersMap = {};
-      if (userIds.length > 0) {
-        const { data: usersData, error: usersError } = await supabase
-          .from('users')
-          .select('id, first_name, last_name, avatar_url')
-          .in('id', userIds);
-
-        if (!usersError && usersData) {
-          usersMap = Object.fromEntries(usersData.map(u => [u.id, u]));
-        }
-      }
-
-      const followers = followersData.map(f => ({
-        user_id: f.user_id,
-        ...(usersMap[f.user_id] || {}),
-        followed_at: f.created_at,
-      }));
-
-      setFollowersSummary({ total, followers });
-    } catch (err) {
-      console.error('Erreur chargement abonnés:', err);
-      setFollowersSummary({ total: 0, followers: [] });
-    } finally {
-      setLoadingFollowers(false);
-    }
-  }, [company, showFollowersWidget]);
+    setFollowersSummary({ total: data.length, followers });
+  } catch (err) {
+    console.error('Erreur chargement abonnés:', err);
+    setFollowersSummary({ total: 0, followers: [] });
+  } finally {
+    setLoadingFollowers(false);
+  }
+}, [company, showFollowersWidget]);
 
   useEffect(() => {
     fetchFollowersSummary();

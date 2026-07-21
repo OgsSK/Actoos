@@ -27,9 +27,10 @@ const CandidatePublicProfilePage = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const from = searchParams.get('from');
-  const { user: currentUser, profile: currentProfile } = useAuth();
+  const companyIdFromUrl = searchParams.get('company_id') || null;
+  const { user: currentUser, profile: currentProfile, activeCompanyId } = useAuth();
   const navigate = useNavigate();
-  const { format } = useCurrencyFormatter(); // ✅ Conversion devise recruteur
+  const { format } = useCurrencyFormatter();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reporting, setReporting] = useState(false);
@@ -40,9 +41,13 @@ const CandidatePublicProfilePage = () => {
   const [candidateDocuments, setCandidateDocuments] = useState([]);
   const [previewDoc, setPreviewDoc] = useState(null);
 
+  // Plan de l'entreprise pour déterminer l'éligibilité au contact
+  const [companyPlan, setCompanyPlan] = useState('free');
+  const [planLoading, setPlanLoading] = useState(false);
+  const companyIdForContact = companyIdFromUrl || activeCompanyId;
+
   useEffect(() => { if (id) fetchProfile(); }, [id]);
 
-  // Actualités
   useEffect(() => {
     if (id) {
       supabase
@@ -54,7 +59,6 @@ const CandidatePublicProfilePage = () => {
     }
   }, [id]);
 
-  // Documents
   useEffect(() => {
     if (id) {
       supabase
@@ -65,6 +69,30 @@ const CandidatePublicProfilePage = () => {
         .then(({ data }) => setCandidateDocuments(data || []));
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!currentUser || !companyIdForContact) {
+      setCompanyPlan('free');
+      return;
+    }
+    setPlanLoading(true);
+    supabase
+      .from('companies')
+      .select('subscription_plan')
+      .eq('id', companyIdForContact)
+      .single()
+      .then(({ data }) => {
+        setCompanyPlan(data?.subscription_plan || 'free');
+        setPlanLoading(false);
+      })
+      .catch(() => {
+        setCompanyPlan('free');
+        setPlanLoading(false);
+      });
+  }, [currentUser, companyIdForContact]);
+
+  const isBusinessPlan = companyPlan === 'business' || companyPlan === 'enterprise';
+  const showContactButton = currentUser && currentUser.id !== id && isBusinessPlan && companyIdForContact;
 
   const fetchProfile = async () => {
     try {
@@ -109,34 +137,24 @@ const CandidatePublicProfilePage = () => {
     else navigate(-1);
   };
 
-  // Onglets disponibles
   const availableTabs = useMemo(() => {
     if (!profile) return [];
     const tabs = [];
-
     tabs.push({ key: 'about', icon: User, label: t('companyDetail.about', 'À propos') });
-
     if (profile.skills?.length > 0)
       tabs.push({ key: 'skills', icon: Award, label: t('candidateProfilePage.skills.sectionTitle') });
-
     if (profile.experience?.length > 0)
       tabs.push({ key: 'experience', icon: Briefcase, label: t('candidateProfilePage.experience.sectionTitle') });
-
     if (profile.education?.length > 0)
       tabs.push({ key: 'education', icon: GraduationCap, label: t('candidateProfilePage.education.sectionTitle') });
-
     if (profile.cv_url)
       tabs.push({ key: 'cv', icon: FileText, label: t('candidateProfilePage.cv.sectionTitle') });
-
     if (profile.links?.length > 0)
       tabs.push({ key: 'links', icon: Globe, label: t('candidateProfilePage.links.sectionTitle') });
-
     if (candidateDocuments.length > 0)
       tabs.push({ key: 'documents', icon: File, label: t('candidateProfilePage.documents.sectionTitle') });
-
     if (candidatePosts.length > 0)
       tabs.push({ key: 'posts', icon: File, label: t('candidateProfile.posts', 'Actualités') });
-
     return tabs;
   }, [profile, candidateDocuments, candidatePosts, t]);
 
@@ -146,7 +164,7 @@ const CandidatePublicProfilePage = () => {
     }
   }, [availableTabs, activeTab]);
 
-  if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+  if (loading || planLoading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
   if (suspended) {
     return (
       <div className="min-h-screen bg-slate-50 pt-20">
@@ -167,8 +185,15 @@ const CandidatePublicProfilePage = () => {
   const rawPhone = profile.phone || '';
   const cleanPhone = rawPhone.replace(/\s/g, '');
   const telLink = cleanPhone ? `tel:${cleanPhone}` : null;
-
   const isPDF = profile.cv_url && profile.cv_url.endsWith('.pdf');
+
+  const enrichedFollower = {
+    user_id: id,
+    first_name: profile.first_name,
+    last_name: profile.last_name,
+    email: profile.email,
+    avatar_url: profile.avatar_url,
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -248,7 +273,8 @@ const CandidatePublicProfilePage = () => {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2 mt-4">
-                  {from === 'followers' && (
+                  {/* Bouton Contacter (visible pour les recruteurs Business/Enterprise) */}
+                  {showContactButton && (
                     <Button size="sm" className="bg-white text-blue-700 hover:bg-blue-50" onClick={() => setContactModalOpen(true)}>
                       <Send className="w-4 h-4 mr-2" />
                       {t('companyFollowers.contact', 'Contacter')}
@@ -286,7 +312,6 @@ const CandidatePublicProfilePage = () => {
 
           {/* Contenu des onglets */}
           <div className="p-5 sm:p-8">
-            {/* À propos */}
             {activeTab === 'about' && (
               <div className="space-y-6">
                 {profile.bio && (
@@ -297,7 +322,6 @@ const CandidatePublicProfilePage = () => {
                     <p className="text-slate-700 leading-relaxed text-base">{profile.bio}</p>
                   </div>
                 )}
-                {/* ✅ Salaire affiché dans la devise du recruteur */}
                 {(profile.desired_salary_min || profile.desired_salary_max) && (
                   <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-xl text-sm font-medium">
                     💰 {profile.desired_salary_min && profile.desired_salary_max
@@ -310,7 +334,6 @@ const CandidatePublicProfilePage = () => {
               </div>
             )}
 
-            {/* Compétences */}
             {activeTab === 'skills' && (
               <div className="flex flex-wrap gap-3">
                 {profile.skills.map(skill => (
@@ -321,7 +344,6 @@ const CandidatePublicProfilePage = () => {
               </div>
             )}
 
-            {/* Expériences */}
             {activeTab === 'experience' && (
               <div className="pl-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
                 {profile.experience.map((exp, idx) => (
@@ -345,7 +367,6 @@ const CandidatePublicProfilePage = () => {
               </div>
             )}
 
-            {/* Formation */}
             {activeTab === 'education' && (
               <div className="pl-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
                 {profile.education.map((edu, idx) => (
@@ -364,7 +385,6 @@ const CandidatePublicProfilePage = () => {
               </div>
             )}
 
-            {/* CV */}
             {activeTab === 'cv' && profile.cv_url && (
               <div>
                 {isPDF ? (
@@ -387,7 +407,6 @@ const CandidatePublicProfilePage = () => {
               </div>
             )}
 
-            {/* Liens */}
             {activeTab === 'links' && (
               <div className="flex flex-wrap gap-3">
                 {profile.links.map((link, index) => (
@@ -401,7 +420,6 @@ const CandidatePublicProfilePage = () => {
               </div>
             )}
 
-            {/* Documents */}
             {activeTab === 'documents' && (
               <div className="space-y-2">
                 {candidateDocuments.map(doc => (
@@ -441,7 +459,6 @@ const CandidatePublicProfilePage = () => {
               </div>
             )}
 
-            {/* Actualités */}
             {activeTab === 'posts' && (
               <div className="space-y-4">
                 {candidatePosts.map(post => (
@@ -479,12 +496,13 @@ const CandidatePublicProfilePage = () => {
         </div>
       )}
 
-      {from === 'followers' && currentUser && (
+      {/* Modale de contact */}
+      {showContactButton && (
         <ContactFollowerModal
           isOpen={contactModalOpen}
           onClose={() => setContactModalOpen(false)}
-          follower={{ user_id: id, first_name: profile.first_name, last_name: profile.last_name }}
-          companyId={null}
+          follower={enrichedFollower}
+          companyId={companyIdForContact}
           userId={currentUser.id}
         />
       )}

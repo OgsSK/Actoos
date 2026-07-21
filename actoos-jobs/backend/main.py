@@ -733,8 +733,8 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
     raise HTTPException(status_code=502, detail=f"Tous les modèles ont échoué. Dernière erreur : {last_error}")
 
 # ----- Fonction d'envoi d'email multilingue -----
-async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, language: str = "fr"):
-    print(f"[Email] Appel send_translated_email pour {to_email}, langue={language}")
+async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, language: str = "fr", from_name: str = "Actoos Jobs"):
+    print(f"[Email] Appel send_translated_email pour {to_email}, langue={language}, expéditeur={from_name}")
     try:
         if language != "fr":
             print(f"[Email] Traduction demandée vers {language}")
@@ -754,7 +754,7 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
             subject = subject_fr
             body_content = html_fr
 
-        # --- Pied de page multilingue ---
+        # Pied de page multilingue
         footer_texts = {
             "fr": {
                 "copyright": f"© {datetime.utcnow().year} Actoos. Tous droits réservés.",
@@ -806,39 +806,64 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
             },
         }
 
-        # Langue par défaut : français
         t = footer_texts.get(language, footer_texts["fr"])
+        year = datetime.utcnow().year
         copyright = t["copyright"]
         cgu = t["cgu"]
         privacy = t["privacy"]
         contact = t["contact"]
 
-        # --- Template moderne avec logo ---
-        logo_url = LOGO_URL  # constante définie plus haut
+        logo_url = LOGO_URL
+
         full_html = f"""
         <!DOCTYPE html>
-        <html lang="fr">
-        <head><meta charset="UTF-8"></head>
-        <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial,Helvetica,sans-serif;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8; padding:30px 0;">
+        <html lang="{language}">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title></title>
+            <style>
+                body, table, td, p, a, li, blockquote {{ -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }}
+                table, td {{ mso-table-lspace: 0pt; mso-table-rspace: 0pt; }}
+                img {{ -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }}
+                body {{ margin: 0; padding: 0; width: 100% !important; height: 100% !important; }}
+                a {{ color: #3b82f6; text-decoration: none; }}
+                a:hover {{ text-decoration: underline; }}
+                .btn {{
+                    display: inline-block;
+                    padding: 12px 24px;
+                    background-color: #1e3a8a;
+                    color: #ffffff !important;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    text-decoration: none;
+                    text-align: center;
+                }}
+                .btn:hover {{
+                    background-color: #3b82f6;
+                    text-decoration: none;
+                }}
+            </style>
+        </head>
+        <body style="background-color:#f4f6f8; margin:0; padding:0; font-family:'Helvetica Neue',Arial,sans-serif;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f4f6f8;">
                 <tr>
-                    <td align="center">
-                        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-                            <!-- Logo -->
+                    <td align="center" style="padding: 40px 20px;">
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 640px; background-color:#ffffff; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
                             <tr>
-                                <td style="padding:24px 30px 16px; text-align:left;">
-                                   <img src="{logo_url}" alt="Actoos" style="width:90px; height:auto; border:none; display:block;" />
+                                <td style="padding: 30px 40px 20px; text-align: left; border-bottom: 1px solid #e2e8f0;">
+                                    <img src="{logo_url}" alt="Actoos" style="width: 110px; height: auto; border: none; display: block;" />
                                 </td>
                             </tr>
-                            <!-- Contenu -->
                             <tr>
-                                <td style="padding:0 30px 24px;">
-                                    {body_content}
+                                <td style="padding: 30px 40px 40px;">
+                                    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a202c;">
+                                        {body_content}
+                                    </div>
                                 </td>
                             </tr>
-                            <!-- Pied de page multilingue -->
                             <tr>
-                                <td style="padding:16px 30px; background-color:#f9fafb; border-top:1px solid #e5e7eb; font-size:12px; color:#6b7280;">
+                                <td style="background-color:#f9fafb; padding: 20px 40px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; border-radius:0 0 12px 12px;">
                                     <p style="margin:0 0 8px;">{copyright}</p>
                                     <p style="margin:0;">
                                         <a href="https://jobs.actoos.com/cgu" style="color:#6b7280; text-decoration:underline;">{cgu}</a> ·
@@ -855,17 +880,19 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
         </html>
         """
 
+        # ✅ Ici on utilise le nom d'expéditeur personnalisé (ou la valeur par défaut)
         resend.Emails.send({
-            "from": "Actoos Jobs <noreply@actoos.com>",
+            "from": f"{from_name} <noreply@actoos.com>",
             "to": [to_email],
             "subject": subject,
             "html": full_html
         })
         print(f"[Email] Envoyé à {to_email} avec sujet final : {subject}")
+
     except Exception as e:
         print(f"[Email] Erreur traduction/envoi : {e} – envoi en français de secours")
         resend.Emails.send({
-            "from": "Actoos Jobs <noreply@actoos.com>",
+            "from": f"{from_name} <noreply@actoos.com>",
             "to": [to_email],
             "subject": subject_fr,
             "html": html_fr
@@ -4278,15 +4305,16 @@ async def contact_follower(request: Request):
     if not to_email:
         raise HTTPException(status_code=400, detail="Email du follower introuvable")
 
-    # Construire le contenu de l'email selon le type
     company_name = company["name"]
 
+    # Construire le sujet et le contenu (en français par défaut, send_translated_email s'occupe de la traduction)
     if message_type == "invite_to_apply" and job_id:
         job_resp = httpx.get(
             f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=title",
             headers=headers
         )
         job_title = job_resp.json()[0]["title"] if job_resp.status_code == 200 and job_resp.json() else "cette offre"
+
         email_subject = subject or f"Invitation à postuler chez {company_name} – {job_title}"
         email_html = body or f"""
         <p>Bonjour,</p>
@@ -4305,25 +4333,9 @@ async def contact_follower(request: Request):
         <p>Cordialement,<br>{company_name}</p>
         """
 
-    # Envoyer l'email via Resend (réutilisez votre fonction existante)
+    # ✅ Utiliser send_translated_email avec le nom de l'entreprise comme expéditeur
     try:
-        # Votre fonction send_translated_email ou un appel direct à Resend
-        resend_resp = httpx.post(
-            "https://api.resend.com/emails",
-            headers={
-                "Authorization": f"Bearer {os.getenv('RESEND_API_KEY')}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "from": f"{company_name} <notifications@actoos.com>",
-                "to": [to_email],
-                "subject": email_subject,
-                "html": email_html,
-            }
-        )
-        if resend_resp.status_code != 200:
-            print(f"❌ Erreur Resend: {resend_resp.text}")
-            raise HTTPException(status_code=500, detail="Erreur envoi email")
+        await send_translated_email(to_email, email_subject, email_html, language, from_name=company_name)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
