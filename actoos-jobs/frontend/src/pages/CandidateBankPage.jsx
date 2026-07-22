@@ -47,38 +47,34 @@ const currencyNames = {
   MGA: 'Ariary',
 };
 
-const BASE_URL = window.location.hostname === 'localhost'
-  ? 'http://localhost:8001'
-  : 'https://actoos-jobs-api.onrender.com';
-
 // ---- Squelette pour une carte candidat ----
 const CandidateCardSkeleton = () => (
-  <Card className="h-full flex flex-col overflow-hidden bg-white/90 backdrop-blur-sm border border-slate-200/70 rounded-3xl shadow-md shadow-slate-200/50 animate-pulse">
+  <Card className="h-full flex flex-col overflow-hidden bg-white/90 backdrop-blur-sm border border-slate-200/70 rounded-3xl shadow-md shadow-slate-200/50">
     <CardContent className="p-6 flex-1 flex flex-col min-w-0">
       <div className="flex items-start gap-4 mb-5 min-w-0">
-        <div className="w-14 h-14 rounded-2xl bg-slate-200 shrink-0" />
+        <div className="w-14 h-14 rounded-2xl bg-slate-100 shrink-0" />
         <div className="min-w-0 flex-1 space-y-2">
-          <div className="h-5 bg-slate-200 rounded w-3/4" />
-          <div className="h-4 bg-slate-200 rounded w-1/2" />
-          <div className="h-4 bg-slate-200 rounded w-1/3" />
+          <div className="h-5 bg-slate-100 rounded w-3/4" />
+          <div className="h-4 bg-slate-100 rounded w-1/2" />
+          <div className="h-4 bg-slate-100 rounded w-1/3" />
         </div>
       </div>
       <div className="flex gap-2 mb-5">
-        <div className="h-6 w-16 bg-slate-200 rounded-lg" />
-        <div className="h-6 w-16 bg-slate-200 rounded-lg" />
-        <div className="h-6 w-16 bg-slate-200 rounded-lg" />
+        <div className="h-6 w-16 bg-slate-100 rounded-lg" />
+        <div className="h-6 w-16 bg-slate-100 rounded-lg" />
+        <div className="h-6 w-16 bg-slate-100 rounded-lg" />
       </div>
       <div className="space-y-3 mt-auto">
-        <div className="h-4 bg-slate-200 rounded w-5/6" />
-        <div className="h-4 bg-slate-200 rounded w-3/4" />
-        <div className="h-4 bg-slate-200 rounded w-2/3" />
+        <div className="h-4 bg-slate-100 rounded w-5/6" />
+        <div className="h-4 bg-slate-100 rounded w-3/4" />
+        <div className="h-4 bg-slate-100 rounded w-2/3" />
       </div>
-      <div className="flex items-center justify-between mt-5 pt-5 border-t border-slate-100">
+      <div className="flex items-center justify-between mt-5 pt-5 border-t border-slate-50">
         <div className="flex gap-2">
-          <div className="h-6 w-20 bg-slate-200 rounded-lg" />
-          <div className="h-6 w-16 bg-slate-200 rounded-lg" />
+          <div className="h-6 w-20 bg-slate-100 rounded-lg" />
+          <div className="h-6 w-16 bg-slate-100 rounded-lg" />
         </div>
-        <div className="h-8 w-8 bg-slate-200 rounded-xl" />
+        <div className="h-8 w-8 bg-slate-100 rounded-xl" />
       </div>
     </CardContent>
   </Card>
@@ -100,7 +96,8 @@ const CandidateBankPage = () => {
   };
 
   const [candidates, setCandidates] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true); // ✅ Premier chargement uniquement
+  const [loading, setLoading] = useState(false); // Chargements suivants
   const [fetchError, setFetchError] = useState(null);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -120,6 +117,7 @@ const CandidateBankPage = () => {
   const [availableExperienceLevels, setAvailableExperienceLevels] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
 
+  const timeoutRef = useRef(null);
   const controllerRef = useRef(null);
 
   // Récupération du plan
@@ -208,47 +206,106 @@ const CandidateBankPage = () => {
     fetchFilterOptions();
   }, [companyPlan]);
 
-  const fetchCandidates = useCallback(async () => {
+  const fetchCandidates = useCallback(async (isFirstLoad = false) => {
     if (!user || companyPlan !== 'business') return;
 
     if (controllerRef.current) controllerRef.current.abort();
-
     const controller = new AbortController();
     controllerRef.current = controller;
 
-    setLoading(true);
+    if (isFirstLoad) {
+      setInitialLoading(true);
+    } else {
+      setLoading(true);
+    }
     setFetchError(null);
 
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      if (controllerRef.current === controller) {
+        setFetchError('timeout');
+        setInitialLoading(false);
+        setLoading(false);
+        controller.abort();
+      }
+    }, 8000);
+
     try {
-      const params = new URLSearchParams({
-        user_id: user.id,
-        subscription_plan: companyPlan,
-        search,
-        city_id: cityFilter,
-        experience_level: expLevelFilter,
-        is_available_only: isAvailableOnly,
-        sort_by: sortBy,
-        page,
-        page_size: PAGE_SIZE,
-      });
-      const xof = toXOF(salaryMinFilter);
-      if (xof !== null) params.append('salary_min', xof);
+      let query = supabase
+        .from('candidate_profiles')
+        .select(`*, user:users(id, first_name, last_name, phone, avatar_url, email, city_id, city:cities(name))`, { count: 'exact' })
+        .eq('is_visible_in_cv_bank', true)
+        .order(sortBy === 'name' ? 'user(first_name)' : 'updated_at', { ascending: false })
+        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
-      const response = await fetch(`${BASE_URL}/api/candidates/bank?${params}`, {
-        signal: controller.signal,
-      });
+      if (expLevelFilter) query = query.eq('experience_level', expLevelFilter);
+      if (isAvailableOnly) query = query.eq('is_available', true);
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.detail || `Erreur ${response.status}`);
+      if (cityFilter) {
+        const { data: userIdsByCity } = await supabase
+          .from('users').select('id').eq('city_id', cityFilter);
+        const ids = (userIdsByCity || []).map(u => u.id);
+        if (ids.length === 0) {
+          setCandidates([]);
+          setTotalCount(0);
+          setTotalPages(0);
+          return;
+        }
+        query = query.in('user_id', ids);
       }
 
-      const data = await response.json();
+      if (salaryMinFilter) {
+        const xof = toXOF(salaryMinFilter);
+        if (xof !== null) query = query.gte('desired_salary_min', xof);
+      }
+
+      if (search) {
+        const { data: matchingUsers } = await supabase
+          .from('users')
+          .select('id')
+          .or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%`);
+        const matchingIds = (matchingUsers || []).map(u => u.id);
+        if (matchingIds.length === 0) {
+          setCandidates([]);
+          setTotalCount(0);
+          setTotalPages(0);
+          return;
+        }
+        query = query.in('user_id', matchingIds);
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
       if (controller.signal.aborted) return;
 
-      setCandidates(data.candidates);
-      setTotalCount(data.total);
-      setTotalPages(data.totalPages);
+      const mapped = (data || []).map(c => ({
+        user_id: c.user_id,
+        title: c.title,
+        bio: c.bio,
+        experience_level: c.experience_level,
+        years_of_experience: c.years_of_experience,
+        is_available: c.is_available,
+        is_open_to_remote: c.is_open_to_remote,
+        desired_salary_min: c.desired_salary_min,
+        desired_salary_max: c.desired_salary_max,
+        skills: c.skills || [],
+        experience: c.experience || [],
+        education: c.education || [],
+        cv_url: c.cv_url,
+        user: c.user ? {
+          first_name: c.user.first_name,
+          last_name: c.user.last_name,
+          phone: c.user.phone,
+          avatar_url: c.user.avatar_url,
+          email: c.user.email,
+        } : null,
+        city: c.user?.city || null,
+      }));
+
+      setCandidates(mapped);
+      setTotalCount(count || 0);
+      setTotalPages(Math.ceil((count || 0) / PAGE_SIZE));
     } catch (err) {
       if (err.name === 'AbortError') return;
       console.error(err);
@@ -256,24 +313,33 @@ const CandidateBankPage = () => {
       setCandidates([]);
       setTotalCount(0);
     } finally {
-      if (controllerRef.current === controller) setLoading(false);
+      clearTimeout(timeoutRef.current);
+      if (controllerRef.current === controller) {
+        setInitialLoading(false);
+        setLoading(false);
+      }
     }
   }, [user, companyPlan, search, cityFilter, expLevelFilter, salaryMinFilter, isAvailableOnly, sortBy, page]);
 
-  useEffect(() => {
-    if (!planLoading && companyPlan === 'business') fetchCandidates();
-  }, [planLoading, companyPlan, fetchCandidates]);
-
+  // ✅ Premier chargement avec initialLoading
   useEffect(() => {
     if (!planLoading && companyPlan === 'business') {
-      const timer = setTimeout(fetchCandidates, 300);
+      fetchCandidates(true);
+    }
+  }, [planLoading, companyPlan]);
+
+  // ✅ Chargements suivants avec loading (sans squelette)
+  useEffect(() => {
+    if (!planLoading && companyPlan === 'business' && !initialLoading) {
+      const timer = setTimeout(() => fetchCandidates(false), 300);
       return () => clearTimeout(timer);
     }
-  }, [search, cityFilter, expLevelFilter, salaryMinFilter, isAvailableOnly, sortBy, page, fetchCandidates]);
+  }, [search, cityFilter, expLevelFilter, salaryMinFilter, isAvailableOnly, sortBy, page]);
 
   useEffect(() => {
     return () => {
       if (controllerRef.current) controllerRef.current.abort();
+      clearTimeout(timeoutRef.current);
     };
   }, []);
 
@@ -287,8 +353,6 @@ const CandidateBankPage = () => {
     setPage(1);
   };
 
-  // ---------- RENDU ----------
-  // Pendant le chargement du plan, on peut déjà afficher la structure avec des éléments neutres
   const isBusiness = companyPlan === 'business';
   const showUpgradeMessage = !planLoading && companyPlan !== 'business';
 
@@ -319,7 +383,6 @@ const CandidateBankPage = () => {
           </div>
         </div>
 
-        {/* Message de mise à niveau si pas business */}
         {showUpgradeMessage && (
           <div className="text-center py-20">
             <Crown className="w-16 h-16 text-amber-500 mx-auto mb-4" />
@@ -329,10 +392,8 @@ const CandidateBankPage = () => {
           </div>
         )}
 
-        {/* Si business, on affiche la recherche et les filtres même pendant le chargement */}
         {(isBusiness || planLoading) && !showUpgradeMessage && (
           <>
-            {/* Recherche */}
             <div className="relative mb-8">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
@@ -344,7 +405,6 @@ const CandidateBankPage = () => {
             </div>
 
             <div className="lg:flex lg:gap-8">
-              {/* Filtres */}
               <div className={`lg:w-72 lg:shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
                 <div className="bg-white backdrop-blur-sm bg-opacity-95 border border-slate-200/80 rounded-3xl p-6 shadow-xl shadow-slate-200/50 mb-6 lg:mb-0">
                   <div className="flex justify-between items-center mb-5 lg:hidden">
@@ -354,48 +414,24 @@ const CandidateBankPage = () => {
                   <div className="space-y-5">
                     <div>
                       <label className="block text-sm font-semibold text-slate-800 mb-2">{t('common.city')}</label>
-                      <select
-                        value={cityFilter}
-                        onChange={(e) => { setCityFilter(e.target.value); setPage(1); }}
-                        className="w-full h-11 border border-slate-200 rounded-xl px-3 text-slate-700 bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                      >
+                      <select value={cityFilter} onChange={(e) => { setCityFilter(e.target.value); setPage(1); }} className="w-full h-11 border border-slate-200 rounded-xl px-3 text-slate-700 bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                         <option value="">{t('common.all')}</option>
-                        {availableCities.map(city => (
-                          <option key={city.id} value={city.id}>{city.name}</option>
-                        ))}
+                        {availableCities.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-800 mb-2">{t('common.experienceLevel')}</label>
-                      <select
-                        value={expLevelFilter}
-                        onChange={(e) => { setExpLevelFilter(e.target.value); setPage(1); }}
-                        className="w-full h-11 border border-slate-200 rounded-xl px-3 text-slate-700 bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                      >
+                      <select value={expLevelFilter} onChange={(e) => { setExpLevelFilter(e.target.value); setPage(1); }} className="w-full h-11 border border-slate-200 rounded-xl px-3 text-slate-700 bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                         <option value="">{t('common.all')}</option>
-                        {availableExperienceLevels.map(level => (
-                          <option key={level} value={level}>{t(`experienceLevels.${level}`)}</option>
-                        ))}
+                        {availableExperienceLevels.map(level => <option key={level} value={level}>{t(`experienceLevels.${level}`)}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-800 mb-2">{t('common.minSalary')}</label>
-                      <Input
-                        type="number"
-                        value={salaryMinFilter}
-                        onChange={(e) => { setSalaryMinFilter(e.target.value); setPage(1); }}
-                        placeholder={currentCurrencyLabel}
-                        className="h-11 rounded-xl bg-slate-50/50 border-slate-200"
-                      />
+                      <Input type="number" value={salaryMinFilter} onChange={(e) => { setSalaryMinFilter(e.target.value); setPage(1); }} placeholder={currentCurrencyLabel} className="h-11 rounded-xl bg-slate-50/50 border-slate-200" />
                     </div>
                     <div className="flex items-center gap-3 pt-1">
-                      <input
-                        type="checkbox"
-                        id="available"
-                        checked={isAvailableOnly}
-                        onChange={(e) => { setIsAvailableOnly(e.target.checked); setPage(1); }}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                      />
+                      <input type="checkbox" id="available" checked={isAvailableOnly} onChange={(e) => { setIsAvailableOnly(e.target.checked); setPage(1); }} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4" />
                       <label htmlFor="available" className="text-sm text-slate-700 font-medium">{t('common.availableOnly')}</label>
                     </div>
                     <Button variant="ghost" onClick={clearFilters} size="sm" className="w-full justify-center text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
@@ -405,41 +441,28 @@ const CandidateBankPage = () => {
                 </div>
               </div>
 
-              {/* Résultats */}
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-6">
                   <p className="text-sm text-slate-500 font-medium">
-                    {loading ? '…' : `${totalCount} ${t('candidateBank.candidatesFound')}`}
+                    {initialLoading || loading ? '…' : `${totalCount} ${t('candidateBank.candidatesFound')}`}
                   </p>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-700 bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                  >
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="h-11 border border-slate-200 rounded-xl px-3 text-sm text-slate-700 bg-white focus:ring-2 focus:ring-blue-500 transition-all">
                     <option value="updated_at">{t('common.sortByRecent')}</option>
                     <option value="name">{t('common.sortByName')}</option>
                   </select>
                 </div>
 
-                {loading ? (
+                {/* ✅ Squelette UNIQUEMENT au premier chargement */}
+                {initialLoading ? (
                   <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {Array.from({ length: PAGE_SIZE }).map((_, i) => (
-                      <CandidateCardSkeleton key={i} />
-                    ))}
+                    {Array.from({ length: PAGE_SIZE }).map((_, i) => <CandidateCardSkeleton key={i} />)}
                   </div>
                 ) : fetchError ? (
                   <div className="text-center py-20">
                     <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
                     <p className="text-red-600 font-medium mb-2">{t('common.error')}</p>
                     <p className="text-slate-500 text-sm">{fetchError}</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-4"
-                      onClick={fetchCandidates}
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" /> {t('common.retry', 'Réessayer')}
-                    </Button>
+                    <Button variant="outline" size="sm" className="mt-4" onClick={() => fetchCandidates(true)}><RefreshCw className="w-4 h-4 mr-2" /> {t('common.retry', 'Réessayer')}</Button>
                   </div>
                 ) : candidates.length === 0 ? (
                   <div className="text-center py-20">
@@ -448,6 +471,12 @@ const CandidateBankPage = () => {
                   </div>
                 ) : (
                   <>
+                    {/* ✅ Mini-loader discret pour les changements de page/filtre */}
+                    {loading && (
+                      <div className="flex justify-center py-2 mb-2">
+                        <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                      </div>
+                    )}
                     <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
                       {candidates.map(c => {
                         const fullName = `${c.user?.first_name || ''} ${c.user?.last_name || ''}`.trim();
@@ -457,125 +486,32 @@ const CandidateBankPage = () => {
                         const telLink = phone ? `tel:${phone.replace(/\s/g, '')}` : null;
 
                         return (
-                          <Link
-                            key={c.user_id}
-                            to={`/candidat/${c.user_id}?from=cv-bank`}
-                            className="block group min-w-0"
-                          >
+                          <Link key={c.user_id} to={`/candidat/${c.user_id}?from=cv-bank`} className="block group min-w-0">
                             <Card className="hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col overflow-hidden bg-white/90 backdrop-blur-sm border border-slate-200/70 rounded-3xl shadow-md shadow-slate-200/50">
                               <CardContent className="p-6 flex-1 flex flex-col min-w-0">
                                 <div className="flex items-start gap-4 mb-5 min-w-0">
                                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                                    {c.user?.avatar_url ? (
-                                      <img src={c.user.avatar_url} alt={fullName} className="w-full h-full object-cover" />
-                                    ) : (
-                                      <Briefcase className="w-7 h-7 text-blue-600" />
-                                    )}
+                                    {c.user?.avatar_url ? <img src={c.user.avatar_url} alt={fullName} className="w-full h-full object-cover" /> : <Briefcase className="w-7 h-7 text-blue-600" />}
                                   </div>
                                   <div className="min-w-0 flex-1">
-                                    <h3 className="font-bold text-slate-900 text-lg truncate group-hover:text-blue-600 transition-colors">
-                                      {fullName}
-                                    </h3>
+                                    <h3 className="font-bold text-slate-900 text-lg truncate group-hover:text-blue-600 transition-colors">{fullName}</h3>
                                     {c.title && <p className="text-sm text-slate-500 truncate mt-1">{c.title}</p>}
-                                    {c.city && (
-                                      <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-2 min-w-0">
-                                        <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                                        <span className="truncate">{c.city.name}</span>
-                                      </div>
-                                    )}
-                                    {phone && (
-                                      <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-1 min-w-0">
-                                        <Phone className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                                        {telLink ? (
-                                          <a
-                                            href={telLink}
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="text-blue-600 hover:underline font-mono text-xs truncate"
-                                          >
-                                            {phone}
-                                          </a>
-                                        ) : (
-                                          <span className="text-slate-600 text-xs font-mono truncate">{phone}</span>
-                                        )}
-                                      </div>
-                                    )}
+                                    {c.city && <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-2 min-w-0"><MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" /><span className="truncate">{c.city.name}</span></div>}
+                                    {phone && <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-1 min-w-0"><Phone className="w-3.5 h-3.5 shrink-0 text-slate-400" />{telLink ? <a href={telLink} onClick={(e) => e.stopPropagation()} className="text-blue-600 hover:underline font-mono text-xs truncate">{phone}</a> : <span className="text-slate-600 text-xs font-mono truncate">{phone}</span>}</div>}
                                   </div>
                                 </div>
-
-                                {c.skills?.length > 0 && (
-                                  <div className="flex flex-wrap gap-2 mb-5">
-                                    {c.skills.slice(0, 5).map(skill => (
-                                      <Badge key={skill} variant="secondary" className="text-xs bg-slate-100 text-slate-700 border-slate-200/60 px-2.5 py-1 rounded-lg">
-                                        {skill}
-                                      </Badge>
-                                    ))}
-                                    {c.skills.length > 5 && (
-                                      <Badge variant="outline" className="text-xs border-slate-300 text-slate-500 rounded-lg">
-                                        +{c.skills.length - 5}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                )}
-
+                                {c.skills?.length > 0 && <div className="flex flex-wrap gap-2 mb-5">{c.skills.slice(0, 5).map(skill => <Badge key={skill} variant="secondary" className="text-xs bg-slate-100 text-slate-700 border-slate-200/60 px-2.5 py-1 rounded-lg">{skill}</Badge>)}{c.skills.length > 5 && <Badge variant="outline" className="text-xs border-slate-300 text-slate-500 rounded-lg">+{c.skills.length - 5}</Badge>}</div>}
                                 <div className="text-sm text-slate-600 space-y-3 mt-auto min-w-0">
-                                  {lastExperience && (
-                                    <div className="flex items-center gap-3 min-w-0">
-                                      <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                                      <div className="truncate font-medium">{lastExperience.title} – <span className="text-slate-500">{lastExperience.company}</span></div>
-                                    </div>
-                                  )}
-                                  {lastEducation && (
-                                    <div className="flex items-center gap-3 min-w-0">
-                                      <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
-                                      <div className="truncate font-medium">{lastEducation.title} – <span className="text-slate-500">{lastEducation.school || lastEducation.institution}</span></div>
-                                    </div>
-                                  )}
-                                  {(c.desired_salary_min || c.desired_salary_max) && (
-                                    <div className="flex items-center gap-3 min-w-0">
-                                      <DollarSign className="w-4 h-4 text-slate-400 shrink-0" />
-                                      <div className="truncate font-semibold text-slate-800">
-                                        {c.desired_salary_min && c.desired_salary_max
-                                          ? `${format(c.desired_salary_min)} – ${format(c.desired_salary_max)}`
-                                          : c.desired_salary_min
-                                            ? format(c.desired_salary_min)
-                                            : format(c.desired_salary_max)}
-                                      </div>
-                                    </div>
-                                  )}
+                                  {lastExperience && <div className="flex items-center gap-3 min-w-0"><Clock className="w-4 h-4 text-slate-400 shrink-0" /><div className="truncate font-medium">{lastExperience.title} – <span className="text-slate-500">{lastExperience.company}</span></div></div>}
+                                  {lastEducation && <div className="flex items-center gap-3 min-w-0"><BookOpen className="w-4 h-4 text-slate-400 shrink-0" /><div className="truncate font-medium">{lastEducation.title} – <span className="text-slate-500">{lastEducation.school || lastEducation.institution}</span></div></div>}
+                                  {(c.desired_salary_min || c.desired_salary_max) && <div className="flex items-center gap-3 min-w-0"><DollarSign className="w-4 h-4 text-slate-400 shrink-0" /><div className="truncate font-semibold text-slate-800">{c.desired_salary_min && c.desired_salary_max ? `${format(c.desired_salary_min)} – ${format(c.desired_salary_max)}` : c.desired_salary_min ? format(c.desired_salary_min) : format(c.desired_salary_max)}</div></div>}
                                 </div>
-
                                 <div className="flex items-center justify-between mt-5 pt-5 border-t border-slate-100">
                                   <div className="flex items-center gap-2">
-                                    {c.is_available ? (
-                                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-3 py-1 rounded-lg">
-                                        {t('common.available')}
-                                      </Badge>
-                                    ) : (
-                                      <Badge className="bg-slate-100 text-slate-500 border-slate-200 text-xs px-3 py-1 rounded-lg">
-                                        {t('common.unavailable')}
-                                      </Badge>
-                                    )}
-                                    {c.experience_level && (
-                                      <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-xs px-3 py-1 rounded-lg">
-                                        {t(`experienceLevels.${c.experience_level}`)}
-                                      </Badge>
-                                    )}
+                                    {c.is_available ? <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-3 py-1 rounded-lg">{t('common.available')}</Badge> : <Badge className="bg-slate-100 text-slate-500 border-slate-200 text-xs px-3 py-1 rounded-lg">{t('common.unavailable')}</Badge>}
+                                    {c.experience_level && <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-xs px-3 py-1 rounded-lg">{t(`experienceLevels.${c.experience_level}`)}</Badge>}
                                   </div>
-                                  {c.cv_url && (
-                                    <span
-                                      role="button"
-                                      tabIndex={0}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        window.open(c.cv_url, '_blank', 'noopener,noreferrer');
-                                      }}
-                                      onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); window.open(c.cv_url, '_blank', 'noopener,noreferrer'); } }}
-                                      className="text-blue-600 hover:text-blue-700 cursor-pointer shrink-0 bg-blue-50 hover:bg-blue-100 p-2 rounded-xl transition-colors"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </span>
-                                  )}
+                                  {c.cv_url && <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); e.preventDefault(); window.open(c.cv_url, '_blank', 'noopener,noreferrer'); }} onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); window.open(c.cv_url, '_blank', 'noopener,noreferrer'); } }} className="text-blue-600 hover:text-blue-700 cursor-pointer shrink-0 bg-blue-50 hover:bg-blue-100 p-2 rounded-xl transition-colors"><Download className="w-4 h-4" /></span>}
                                 </div>
                               </CardContent>
                             </Card>
@@ -583,30 +519,11 @@ const CandidateBankPage = () => {
                         );
                       })}
                     </div>
-
                     {totalPages > 1 && (
                       <div className="flex justify-center items-center gap-3 mt-10">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={page <= 1}
-                          onClick={() => setPage(p => p - 1)}
-                          className="h-11 w-11 rounded-xl border-slate-200 hover:bg-slate-100 transition-colors"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        <span className="text-sm font-medium text-slate-600 px-2">
-                          {page} / {totalPages}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={page >= totalPages}
-                          onClick={() => setPage(p => p + 1)}
-                          className="h-11 w-11 rounded-xl border-slate-200 hover:bg-slate-100 transition-colors"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
+                        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="h-11 w-11 rounded-xl border-slate-200 hover:bg-slate-100 transition-colors"><ChevronLeft className="w-4 h-4" /></Button>
+                        <span className="text-sm font-medium text-slate-600 px-2">{page} / {totalPages}</span>
+                        <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="h-11 w-11 rounded-xl border-slate-200 hover:bg-slate-100 transition-colors"><ChevronRight className="w-4 h-4" /></Button>
                       </div>
                     )}
                   </>

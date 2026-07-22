@@ -25,16 +25,29 @@ import { getPlanLimit, getExpirationDays, planHasFeature } from '../lib/planLimi
 
 const UserMessages = lazy(() => import('../components/UserMessages'));
 
+// ✅ Fonction de formatage des nombres (10K, 1.2M, etc.)
+const formatCount = (num) => {
+  if (!num || num < 10000) return num?.toString() || '0';
+  if (num >= 1000000) {
+    const val = (num / 1000000).toFixed(1).replace(/\.0$/, '');
+    return `${val}M`;
+  }
+  const val = (num / 1000).toFixed(1).replace(/\.0$/, '');
+  return `${val}K`;
+};
+
 // ---------- StatCard ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
   const { t } = useTranslation();
+  // ✅ Formater la valeur si c'est un nombre
+  const displayValue = typeof value === 'number' ? formatCount(value) : value;
   return (
     <Card className="border-slate-200 overflow-hidden">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm text-slate-500 truncate">{label}</p>
-            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{value}</p>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{displayValue}</p>
             {trend !== undefined && (
               <p className={cn('text-xs mt-1 flex items-center gap-1', trend > 0 ? 'text-green-600' : 'text-slate-500')}>
                 <TrendingUp className="w-3 h-3" />
@@ -120,6 +133,10 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
       </div>
     </>, document.body) : null;
 
+  // ✅ Formatage des compteurs
+  const formattedViews = formatCount(job.views_count || 0);
+  const formattedApplications = formatCount(job.applications_count || 0);
+
   return (
     <div className="flex flex-col gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">
       <div className="flex items-start justify-between gap-3">
@@ -142,8 +159,8 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
             {job.salary_min && job.salary_max && (
               <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{format(job.salary_min)} – {format(job.salary_max)}</span>
             )}
-            <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{t('companyDashboard.jobCard.views', { count: job.views_count || 0 })}</span>
-            <span className="flex items-center gap-1"><FileText className="w-3 h-3" />{t('companyDashboard.jobCard.applications', { count: job.applications_count || 0 })}</span>
+            <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{t('companyDashboard.jobCard.views', { count: formattedViews })}</span>
+            <span className="flex items-center gap-1"><FileText className="w-3 h-3" />{t('companyDashboard.jobCard.applications', { count: formattedApplications })}</span>
           </div>
         </div>
         <div className="shrink-0"><Button ref={buttonRef} type="button" variant="ghost" size="icon" onClick={openMenu} className="h-9 w-9"><MoreVertical className="w-4 h-4" /></Button></div>
@@ -493,6 +510,16 @@ const CompanyDashboard = () => {
   const hasCVBank = planHasFeature(plan, 'canAccessCvBank');
   const activeJobsCount = stats.activeJobs;
 
+  // ✅ Formatage des compteurs pour l'affichage
+  const formattedTotalJobs = formatCount(stats.totalJobs);
+  const formattedActiveJobs = formatCount(stats.activeJobs);
+  const formattedTotalApplications = formatCount(stats.totalApplications);
+  const formattedNewApplications = formatCount(stats.newApplications);
+  const formattedTotalViews = formatCount(jobs.reduce((s, j) => s + (j.views_count || 0), 0));
+  const formattedFollowersTotal = formatCount(followersSummary.total);
+  const formattedPendingDocs = formatCount(pendingDocsCount);
+  const formattedActiveJobsCount = formatCount(activeJobsCount);
+
   if (loading) return <DashboardSkeleton />;
 
   if (companies.length === 0) {
@@ -624,7 +651,7 @@ const CompanyDashboard = () => {
           <div className="xl:col-span-2">
             <Card className="border-slate-200 overflow-visible">
               <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div><h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.jobsSection.title')}</h2><p className="text-sm text-slate-500">{t('companyDashboard.jobsSection.totalOffers', { count: stats.totalJobs })}</p></div>
+                <div><h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.jobsSection.title')}</h2><p className="text-sm text-slate-500">{t('companyDashboard.jobsSection.totalOffers', { count: formattedTotalJobs })}</p></div>
                 <Link to="/dashboard/entreprise/offres" className="w-full sm:w-auto"><Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">{t('companyDashboard.jobsSection.viewAll')}<ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
               </div>
               <CardContent className="p-4 sm:p-6">
@@ -644,7 +671,7 @@ const CompanyDashboard = () => {
           <div className="space-y-6">
             <Card className="border-slate-200 overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div><h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.applicationsSection.title')}</h2><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.newCount', { count: stats.newApplications })}</p></div>
+                <div><h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.applicationsSection.title')}</h2><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.newCount', { count: formattedNewApplications })}</p></div>
                 <Link to="/dashboard/entreprise/candidatures" className="w-full sm:w-auto"><Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">{t('companyDashboard.applicationsSection.viewAll')}<ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
               </div>
               <CardContent className="p-4">{applications.length === 0 ? (<div className="text-center py-6"><Users className="w-10 h-10 text-slate-300 mx-auto mb-2" /><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.noApplications')}</p></div>) : (<div className="space-y-2">{applications.slice(0, 5).map(app => (<ApplicationCard key={app.id} application={app} />))}</div>)}</CardContent>
@@ -689,7 +716,7 @@ const CompanyDashboard = () => {
                     <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>
                   ) : (
                     <>
-                      <p className="text-2xl font-bold text-slate-900 mb-2">{followersSummary.total}</p>
+                      <p className="text-2xl font-bold text-slate-900 mb-2">{formattedFollowersTotal}</p>
                       <p className="text-sm text-slate-500 mb-4">{t('companyDashboard.followers.total', 'abonnés')}</p>
                       {followersSummary.followers.length > 0 && (
                         <div className="space-y-3 mb-4">
@@ -727,7 +754,7 @@ const CompanyDashboard = () => {
               <Card className="border-blue-200 bg-blue-50 overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2"><FileText className="w-5 h-5 text-blue-600" /><h3 className="font-semibold text-blue-900">{t('companyDashboard.pendingDocuments.title', 'Documents à valider')}</h3></div>
-                  <p className="text-sm text-blue-700">{t('companyDashboard.pendingDocuments.count', { count: pendingDocsCount }, `${pendingDocsCount} document(s) en attente de validation.`)}</p>
+                  <p className="text-sm text-blue-700">{t('companyDashboard.pendingDocuments.count', { count: formattedPendingDocs }, `${pendingDocsCount} document(s) en attente de validation.`)}</p>
                   <Link to="/dashboard/entreprise/candidatures"><Button variant="outline" size="sm" className="mt-2 w-full border-blue-300 text-blue-700 hover:bg-blue-100">{t('companyDashboard.pendingDocuments.viewApplications', 'Voir les candidatures')}</Button></Link>
                 </CardContent>
               </Card>
@@ -780,7 +807,7 @@ const CompanyDashboard = () => {
         <div className="flex justify-between items-end mb-2">
           <span className="text-xs text-slate-500">{t('companyDashboard.subscriptionCard.activeOffers')}</span>
           <span className="text-xs font-semibold text-slate-700 tabular-nums">
-            {activeJobsCount}
+            {formattedActiveJobsCount}
             <span className="text-slate-400 font-normal"> / {jobsLimit === Infinity ? '∞' : jobsLimit}</span>
           </span>
         </div>

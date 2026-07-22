@@ -13,6 +13,17 @@ import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 
+// ✅ Fonction de formatage des nombres (10K, 1.2M, etc.)
+const formatCount = (num) => {
+  if (!num || num < 10000) return num?.toString() || '0';
+  if (num >= 1000000) {
+    const val = (num / 1000000).toFixed(1).replace(/\.0$/, '');
+    return `${val}M`;
+  }
+  const val = (num / 1000).toFixed(1).replace(/\.0$/, '');
+  return `${val}K`;
+};
+
 // ---------- Carte entreprise ----------
 const CompanyCard = ({ company, user }) => {
   const { t, i18n } = useTranslation();
@@ -71,6 +82,11 @@ const CompanyCard = ({ company, user }) => {
     }
     return industryFr;
   };
+
+  // ✅ Formatage du nombre d'abonnés
+  const formattedFollowers = formatCount(followersCount);
+  // ✅ Formatage du nombre d'offres
+  const formattedJobs = formatCount(company.activeJobsCount || 0);
 
   return (
     <div className="group bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full">
@@ -135,15 +151,17 @@ const CompanyCard = ({ company, user }) => {
         </div>
 
         <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
+          {/* ✅ Nombre d'offres formaté */}
           <Badge className="bg-blue-50 text-blue-700 border-0 font-medium text-xs sm:text-sm">
             <Briefcase className="w-3.5 h-3.5 mr-1.5" />
-            {t('companiesPage.offers', { count: company.activeJobsCount || 0 })}
+            {t('companiesPage.offers', { count: formattedJobs })}
           </Badge>
 
           <div className="flex items-center gap-3">
+            {/* ✅ Nombre d'abonnés formaté */}
             <span className="text-xs sm:text-sm text-slate-400 flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" />
-              {t('companyDetail.followers', { count: followersCount })}
+              {t('companyDetail.followers', { count: formattedFollowers })}
             </span>
 
             {user && user.id !== company.owner_id && (
@@ -192,7 +210,7 @@ const CompaniesPage = () => {
         .select('industry')
         .eq('is_active', true)
         .eq('is_verified', true)
-        .eq('is_test', false) // ✅ exclure les entreprises de test
+        .eq('is_test', false)
         .not('industry', 'is', null);
       if (!error && data) {
         const raw = [...new Set(data.map(c => c.industry).filter(Boolean))].sort();
@@ -229,97 +247,88 @@ const CompaniesPage = () => {
     fetchCompanies();
   }, [searchQuery, selectedIndustry, prefs.country]);
 
- const fetchCompanies = async () => {
-  setLoading(true);
-  try {
-    let countryId = null;
-    if (prefs.country) {
-      const { data: country } = await supabase
-        .from('countries')
-        .select('id')
-        .eq('code', prefs.country)
-        .single();
-      countryId = country?.id || null;
-    }
-
-    let query = supabase
-      .from('companies')
-      .select(`*, city:cities(name)`)
-      .eq('is_active', true)
-      .eq('is_verified', true)
-      .eq('is_test', false)
-      .order('name'); // on triera nous-mêmes après
-
-    if (countryId) query = query.eq('country_id', countryId);
-    if (searchQuery) query = query.ilike('name', `%${searchQuery}%`);
-    if (selectedIndustry) {
-      const currentIndustries = t('createCompany.industries', { returnObjects: true }) || [];
-      const frenchIndustries = i18n.getFixedT('fr')('createCompany.industries', { returnObjects: true }) || [];
-      const idx = currentIndustries.indexOf(selectedIndustry);
-      if (idx !== -1 && idx < frenchIndustries.length) {
-        query = query.eq('industry', frenchIndustries[idx]);
-      } else {
-        query = query.eq('industry', selectedIndustry);
+  const fetchCompanies = async () => {
+    setLoading(true);
+    try {
+      let countryId = null;
+      if (prefs.country) {
+        const { data: country } = await supabase
+          .from('countries')
+          .select('id')
+          .eq('code', prefs.country)
+          .single();
+        countryId = country?.id || null;
       }
-    }
 
-    const { data, error } = await query.limit(50); // on augmente un peu la limite pour le tri
-    if (error) throw error;
+      let query = supabase
+        .from('companies')
+        .select(`*, city:cities(name)`)
+        .eq('is_active', true)
+        .eq('is_verified', true)
+        .eq('is_test', false)
+        .order('name');
 
-    if (data && data.length > 0) {
-      const companyIds = data.map(c => c.id);
-      const now = new Date().toISOString();
-      const { data: activeJobs } = await supabase
-        .from('jobs')
-        .select('company_id')
-        .in('company_id', companyIds)
-        .eq('status', 'active')
-        .or(`expires_at.is.null,expires_at.gte.${now}`);
-
-      const countMap = {};
-      (activeJobs || []).forEach(row => {
-        countMap[row.company_id] = (countMap[row.company_id] || 0) + 1;
-      });
-
-      // Enrichissement avec le nombre d'offres
-      let enriched = data.map(company => ({
-        ...company,
-        activeJobsCount: countMap[company.id] || 0,
-      }));
-
-      // Tri personnalisé
-      const planPriority = {
-        'business': 3,
-        'enterprise': 3,
-        'pro': 2,
-        'free': 1,
-      };
-
-      enriched.sort((a, b) => {
-        // Priorité plan (décroissant)
-        const planA = planPriority[a.subscription_plan] || 0;
-        const planB = planPriority[b.subscription_plan] || 0;
-        if (planA !== planB) return planB - planA;
-
-        // Priorité nombre d'offres (décroissant)
-        if (a.activeJobsCount !== b.activeJobsCount) {
-          return b.activeJobsCount - a.activeJobsCount;
+      if (countryId) query = query.eq('country_id', countryId);
+      if (searchQuery) query = query.ilike('name', `%${searchQuery}%`);
+      if (selectedIndustry) {
+        const currentIndustries = t('createCompany.industries', { returnObjects: true }) || [];
+        const frenchIndustries = i18n.getFixedT('fr')('createCompany.industries', { returnObjects: true }) || [];
+        const idx = currentIndustries.indexOf(selectedIndustry);
+        if (idx !== -1 && idx < frenchIndustries.length) {
+          query = query.eq('industry', frenchIndustries[idx]);
+        } else {
+          query = query.eq('industry', selectedIndustry);
         }
+      }
 
-        // Ordre alphabétique
-        return a.name.localeCompare(b.name);
-      });
+      const { data, error } = await query.limit(50);
+      if (error) throw error;
 
-      setCompanies(enriched);
-    } else {
-      setCompanies([]);
+      if (data && data.length > 0) {
+        const companyIds = data.map(c => c.id);
+        const now = new Date().toISOString();
+        const { data: activeJobs } = await supabase
+          .from('jobs')
+          .select('company_id')
+          .in('company_id', companyIds)
+          .eq('status', 'active')
+          .or(`expires_at.is.null,expires_at.gte.${now}`);
+
+        const countMap = {};
+        (activeJobs || []).forEach(row => {
+          countMap[row.company_id] = (countMap[row.company_id] || 0) + 1;
+        });
+
+        let enriched = data.map(company => ({
+          ...company,
+          activeJobsCount: countMap[company.id] || 0,
+        }));
+
+        const planPriority = {
+          'business': 3,
+          'enterprise': 3,
+          'pro': 2,
+          'free': 1,
+        };
+
+        enriched.sort((a, b) => {
+          const planA = planPriority[a.subscription_plan] || 0;
+          const planB = planPriority[b.subscription_plan] || 0;
+          if (planA !== planB) return planB - planA;
+          if (a.activeJobsCount !== b.activeJobsCount) return b.activeJobsCount - a.activeJobsCount;
+          return a.name.localeCompare(b.name);
+        });
+
+        setCompanies(enriched);
+      } else {
+        setCompanies([]);
+      }
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error fetching companies:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const resetFilters = () => {
     setSearchQuery('');

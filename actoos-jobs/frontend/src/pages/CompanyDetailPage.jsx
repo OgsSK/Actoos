@@ -18,6 +18,17 @@ import {
 import { toast } from 'sonner';
 import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
 
+// ✅ Fonction de formatage des nombres (10K, 1.2M, etc.)
+const formatCount = (num) => {
+  if (!num || num < 10000) return num?.toString() || '0';
+  if (num >= 1000000) {
+    const val = (num / 1000000).toFixed(1).replace(/\.0$/, '');
+    return `${val}M`;
+  }
+  const val = (num / 1000).toFixed(1).replace(/\.0$/, '');
+  return `${val}K`;
+};
+
 const CompanyDetailPage = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
@@ -302,6 +313,10 @@ const CompanyDetailPage = () => {
       ? `tel:${company.phone}`
       : null;
 
+  // ✅ Formatage des compteurs
+  const formattedFollowers = formatCount(followersCount);
+  const formattedJobsCount = formatCount(jobs.length);
+
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
@@ -373,8 +388,9 @@ const CompanyDetailPage = () => {
                       {isFollowing ? t('companyDetail.unfollow') : t('companyDetail.follow')}
                     </Button>
                   )}
+                  {/* ✅ Nombre d'abonnés formaté */}
                   <span className="text-sm text-white/60">
-                    {t('companyDetail.followers', { count: followersCount })}
+                    {t('companyDetail.followers', { count: formattedFollowers })}
                   </span>
                   <ShareButton
                     url={window.location.origin + `/entreprises/${company.id}`}
@@ -475,7 +491,7 @@ const CompanyDetailPage = () => {
             {activeTab === 'jobs' && (
               <div>
                 <h2 className="text-xl font-bold text-slate-900 mb-6">
-                  {t('companyDetail.jobs')} ({jobs.length})
+                  {t('companyDetail.jobs')} ({formattedJobsCount})
                 </h2>
                 {jobsLoading ? (
                   <div className="flex justify-center py-12">
@@ -630,8 +646,9 @@ const CompanyDetailPage = () => {
                           {getTranslatedIndustry(comp.industry)}
                         </p>
                       )}
+                      {/* ✅ Nombre de jobs formaté */}
                       <p className="text-xs text-slate-400 mt-1">
-                        {t('companyDetail.jobsCount', { count: comp.jobs_count || 0 })}
+                        {t('companyDetail.jobsCount', { count: formatCount(comp.jobs_count || 0) })}
                       </p>
                     </div>
                   </div>
