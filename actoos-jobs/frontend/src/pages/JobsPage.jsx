@@ -147,10 +147,8 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   );
 };
 
-// -------------------- Job Card (inchangée) --------------------
+// -------------------- Job Card --------------------
 const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationStatus }) => {
-  // ... (identique au code fourni dans l'énoncé)
-  // (je reprends le contenu complet pour éviter les coupures)
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -505,7 +503,6 @@ const FiltersSidebar = ({
     </div>
   );
 
-  // Utilisation directe des props (déjà filtrées par le parent)
   const contractOptions = contractTypes?.length > 0
     ? contractTypes.map(({ value }) => ({
         value,
@@ -702,7 +699,7 @@ const JobsPage = () => {
     }
   }, [prefs.country]);
 
-  // Chargement des jobs avec city_id et category_id supplémentaires
+  // Chargement des jobs
   useEffect(() => {
     if (!countryLoaded) return;
 
@@ -743,6 +740,7 @@ const JobsPage = () => {
     fetchJobs();
   }, [countryId, countryLoaded]);
 
+  // Statuts de candidature
   useEffect(() => {
     if (!user || jobs.length === 0) {
       setAppliedStatuses({});
@@ -760,6 +758,7 @@ const JobsPage = () => {
       });
   }, [user, jobs]);
 
+  // Offres sauvegardées
   useEffect(() => {
     if (user) {
       supabase
@@ -772,16 +771,17 @@ const JobsPage = () => {
     }
   }, [user]);
 
+  // Reset page au changement de filtres
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
 
+  // Scroll to top au changement de page
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
 
-  // -------- Filtrage dynamique des listes à partir des offres actives --------
-  // Villes réellement utilisées
+  // -------- Filtrage dynamique des listes --------
   const popularCities = useMemo(() => {
     if (!filteredCities || jobs.length === 0) return [];
     const cityIds = [...new Set(jobs.map(j => j.city_id).filter(Boolean))];
@@ -790,7 +790,6 @@ const JobsPage = () => {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [jobs, filteredCities]);
 
-  // Catégories réellement utilisées
   const filteredCategories = useMemo(() => {
     if (!categories || jobs.length === 0) return [];
     const catIds = [...new Set(jobs.map(j => j.category_id).filter(Boolean))];
@@ -799,19 +798,16 @@ const JobsPage = () => {
       .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [jobs, categories]);
 
-  // Types de contrat uniques
   const contractTypes = useMemo(() => {
     if (jobs.length === 0) return [];
     return [...new Set(jobs.map(j => j.contract_type).filter(Boolean))].sort();
   }, [jobs]);
 
-  // Niveaux d'expérience uniques
   const experienceLevels = useMemo(() => {
     if (jobs.length === 0) return [];
     return [...new Set(jobs.map(j => j.experience_level).filter(Boolean))].sort();
   }, [jobs]);
 
-  // Transformation en objets {value} pour le composant FiltersSidebar
   const contractOptions = useMemo(
     () => contractTypes.map(type => ({ value: type })),
     [contractTypes]

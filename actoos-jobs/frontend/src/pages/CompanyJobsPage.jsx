@@ -47,6 +47,29 @@ const statusColors = {
   pending: 'bg-yellow-100 text-yellow-700',
 };
 
+// ✅ Skeleton pour une carte job
+const JobCardSkeleton = () => (
+  <div className="bg-white border border-slate-200 rounded-2xl p-4 animate-pulse">
+    <div className="flex items-start gap-3">
+      <div className="w-12 h-12 rounded-xl bg-slate-100 shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="h-5 bg-slate-100 rounded w-3/4" />
+        <div className="flex gap-2">
+          <div className="h-4 bg-slate-100 rounded w-20" />
+          <div className="h-4 bg-slate-100 rounded w-16" />
+          <div className="h-4 bg-slate-100 rounded w-12" />
+        </div>
+        <div className="h-3 bg-slate-100 rounded w-24" />
+      </div>
+      <div className="w-9 h-9 bg-slate-100 rounded-lg shrink-0" />
+    </div>
+    <div className="flex gap-2 mt-4">
+      <div className="h-10 bg-slate-100 rounded-lg w-24" />
+      <div className="h-10 bg-slate-100 rounded-lg w-24" />
+    </div>
+  </div>
+);
+
 const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusinessPlan, companyLogo }) => {
   const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
@@ -55,7 +78,6 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
 
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
 
-  // ✅ Détection d'expiration pour les jobs actifs
   const now = new Date();
   const isExpired = job.status === 'active' && job.expires_at && new Date(job.expires_at) < now;
   const effectiveStatus = isExpired ? 'expired' : job.status;
@@ -146,7 +168,6 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
               </button>
             )}
 
-            {/* ✅ "Publier" retiré pour "draft" – seul "closed" peut être republié directement */}
             {effectiveStatus === 'closed' && (
               <button
                 onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }}
@@ -173,7 +194,6 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-4 hover:border-blue-200 transition-colors overflow-visible">
       <div className="flex items-start gap-3">
-        {/* Logo de l'entreprise */}
         <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
           {companyLogo ? (
             <img src={companyLogo} alt="Logo" className="w-full h-full object-cover" />
@@ -289,38 +309,34 @@ const CompanyJobsPage = () => {
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState(null);
 
+  // ✅ Chargement combiné entreprise + jobs
   useEffect(() => {
-    if (user && activeCompanyId) {
-      fetchJobs();
-      supabase
-        .from('companies')
-        .select('subscription_plan, logo_url')
-        .eq('id', activeCompanyId)
-        .single()
-        .then(({ data }) => setCompany(data));
-    } else if (!activeCompanyId) {
-      setJobs([]);
-      setLoading(false);
-    }
-  }, [user, activeCompanyId]);
-
-  const fetchJobs = async () => {
-    if (!activeCompanyId) {
+    if (!user || !activeCompanyId) {
       setJobs([]);
       setLoading(false);
       return;
     }
 
-    setLoading(true);
-    const { data } = await supabase
-      .from('jobs')
-      .select('*, city:cities(name)')
-      .eq('company_id', activeCompanyId)
-      .order('created_at', { ascending: false });
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Charger l'entreprise et les jobs en parallèle
+        const [companyResult, jobsResult] = await Promise.all([
+          supabase.from('companies').select('subscription_plan, logo_url').eq('id', activeCompanyId).single(),
+          supabase.from('jobs').select('*, city:cities(name)').eq('company_id', activeCompanyId).order('created_at', { ascending: false }),
+        ]);
 
-    setJobs(data || []);
-    setLoading(false);
-  };
+        if (companyResult.data) setCompany(companyResult.data);
+        if (jobsResult.data) setJobs(jobsResult.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user, activeCompanyId]);
 
   const handleEditJob = (job) => {
     navigate(`/dashboard/entreprise/offres/${job.id}/modifier`);
@@ -340,7 +356,6 @@ const CompanyJobsPage = () => {
   };
 
   const handleToggleJobStatus = async (job, newStatus) => {
-    // ✅ Sécurité : empêcher la publication directe d'un brouillon ou d'une offre rejetée
     if (newStatus === 'active' && (job.status === 'draft' || job.status === 'rejected')) {
       toast.error(t('companyJobs.toasts.submitForReviewFirst', "Cette offre doit d'abord être soumise pour validation."));
       return;
@@ -353,7 +368,6 @@ const CompanyJobsPage = () => {
         if (!job.published_at) {
           updates.published_at = new Date().toISOString();
         }
-        // Toujours recalculer l'expiration pour une réactivation
         updates.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       }
 
@@ -420,7 +434,14 @@ const CompanyJobsPage = () => {
       if (updateCompanyError) throw updateCompanyError;
 
       toast.success(t('companyJobs.toasts.boostActivated'));
-      fetchJobs();
+      
+      // Rafraîchir les jobs
+      const { data: refreshedJobs } = await supabase
+        .from('jobs')
+        .select('*, city:cities(name)')
+        .eq('company_id', activeCompanyId)
+        .order('created_at', { ascending: false });
+      setJobs(refreshedJobs || []);
     } catch (err) {
       console.error('Erreur boost gratuit:', err);
       toast.error(err.message || t('companyJobs.toasts.boostError'));
@@ -429,14 +450,6 @@ const CompanyJobsPage = () => {
 
   const isBusinessPlan = company?.subscription_plan === 'business';
   const companyLogo = company?.logo_url;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen pt-20 flex justify-center items-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20">
@@ -463,7 +476,14 @@ const CompanyJobsPage = () => {
           </Link>
         </div>
 
-        {jobs.length === 0 ? (
+        {/* ✅ Squelettes pendant le chargement */}
+        {loading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <JobCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : jobs.length === 0 ? (
           <Card className="rounded-2xl border border-slate-200">
             <CardContent className="p-8 text-center">
               <Briefcase className="w-14 h-14 mx-auto mb-4 text-slate-300" />

@@ -25,6 +25,29 @@ import {
 } from 'lucide-react';
 import { cn, CONTRACT_TYPES } from '../lib/utils';
 
+// ✅ Skeleton pour une carte d'alerte
+const AlertCardSkeleton = () => (
+  <Card className="border border-slate-200 animate-pulse">
+    <CardContent className="p-4 sm:p-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex gap-2">
+            <div className="h-6 bg-slate-100 rounded w-32" />
+            <div className="h-6 bg-slate-100 rounded w-16" />
+          </div>
+          <div className="h-4 bg-slate-100 rounded w-3/4" />
+          <div className="h-4 bg-slate-100 rounded w-1/2" />
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <div className="h-9 bg-slate-100 rounded w-20" />
+          <div className="h-9 bg-slate-100 rounded w-20" />
+          <div className="h-9 bg-slate-100 rounded w-20" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 const JobAlertsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -57,8 +80,8 @@ const JobAlertsPage = () => {
 
   useEffect(() => {
     if (!user) return;
-    fetchAlerts();
-    fetchReferenceData();
+    // Chargement parallèle des alertes et catégories
+    Promise.all([fetchAlerts(), fetchReferenceData()]);
   }, [user]);
 
   const fetchAlerts = async () => {
@@ -187,14 +210,6 @@ const JobAlertsPage = () => {
       }
     });
   };
-
-  if (loading) {
-    return (
-      <div className="pt-20 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -352,7 +367,15 @@ const JobAlertsPage = () => {
 
         <div>
           <h2 className="text-xl font-semibold text-slate-900 mb-4">{t('jobAlerts.myAlerts', { count: alerts.length })}</h2>
-          {alerts.length === 0 ? (
+          
+          {/* ✅ Squelettes pendant le chargement */}
+          {loading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <AlertCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : alerts.length === 0 ? (
             <Card className="border-dashed border-2 border-slate-300 bg-transparent">
               <CardContent className="p-8 text-center">
                 <Bell className="w-12 h-12 text-slate-300 mx-auto mb-4" />

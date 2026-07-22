@@ -10,6 +10,22 @@ import { Loader2, ChevronLeft, Users, Trash2 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 import { toast } from 'sonner';
 
+// ✅ Skeleton pour une ligne de candidature
+const ApplicationSkeleton = () => (
+  <Card className="animate-pulse">
+    <CardContent className="p-4 flex items-center gap-4">
+      <div className="w-10 h-10 rounded-full bg-slate-200 shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="h-4 bg-slate-200 rounded w-1/3" />
+        <div className="h-3 bg-slate-200 rounded w-2/3" />
+      </div>
+      <div className="h-6 w-20 bg-slate-200 rounded-lg shrink-0" />
+      <div className="h-3 w-16 bg-slate-200 rounded hidden sm:block shrink-0" />
+      <div className="h-8 w-20 bg-slate-200 rounded-lg shrink-0" />
+    </CardContent>
+  </Card>
+);
+
 const CompanyApplicationsPage = () => {
   const { t } = useTranslation();
   const { user, activeCompanyId } = useAuth();
@@ -34,27 +50,33 @@ const CompanyApplicationsPage = () => {
 
     setLoading(true);
 
-    const { data: jobs } = await supabase
-      .from('jobs')
-      .select('id')
-      .eq('company_id', activeCompanyId);
+    try {
+      // ✅ Une seule requête avec jointure pour récupérer tout
+      const { data: jobs } = await supabase
+        .from('jobs')
+        .select('id')
+        .eq('company_id', activeCompanyId);
 
-    if (!jobs?.length) {
-      setApplications([]);
+      if (!jobs?.length) {
+        setApplications([]);
+        setLoading(false);
+        return;
+      }
+
+      const jobIds = jobs.map(j => j.id);
+
+      const { data } = await supabase
+        .from('applications')
+        .select('*, candidate:users(first_name, last_name, email, avatar_url), job:jobs(title)')
+        .in('job_id', jobIds)
+        .order('created_at', { ascending: false });
+
+      setApplications(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const jobIds = jobs.map(j => j.id);
-
-    const { data } = await supabase
-      .from('applications')
-      .select('*, candidate:users(first_name, last_name, email, avatar_url), job:jobs(title)')
-      .in('job_id', jobIds)
-      .order('created_at', { ascending: false });
-
-    setApplications(data || []);
-    setLoading(false);
   };
 
   const handleWithdrawApplication = async (appId) => {
@@ -73,14 +95,7 @@ const CompanyApplicationsPage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="pt-20 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
+  // ✅ Filtrer les candidatures retirées
   const visibleApplications = applications.filter(app => app.status !== 'withdrawn');
 
   return (
@@ -96,7 +111,14 @@ const CompanyApplicationsPage = () => {
           <h1 className="text-2xl font-bold text-slate-900">{t('companyApplications.title')}</h1>
         </div>
 
-        {visibleApplications.length === 0 ? (
+        {/* ✅ Squelettes pendant le chargement */}
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <ApplicationSkeleton key={i} />
+            ))}
+          </div>
+        ) : visibleApplications.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center text-slate-500">
               <Users className="w-12 h-12 mx-auto mb-4" />

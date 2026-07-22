@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -11,6 +10,10 @@ import { toast } from 'sonner';
 import {
   Loader2, Upload, CheckCircle, Clock, FileText, Trash2, RefreshCw, XCircle, ChevronLeft
 } from 'lucide-react';
+
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
 
 const CandidateDocumentsPage = () => {
   const { t } = useTranslation();
@@ -33,7 +36,6 @@ const CandidateDocumentsPage = () => {
 
   useEffect(() => {
     if (user?.id) {
-      // Réinitialiser hiddenDocs si l'utilisateur change (sécurité)
       const stored = localStorage.getItem(`hidden_docs_${user.id}`);
       setHiddenDocs(stored ? JSON.parse(stored) : []);
     }
@@ -91,16 +93,19 @@ const CandidateDocumentsPage = () => {
     }
   };
 
-  const handleUpload = async (doc, file) => {
-    if (!file) return;
+  // ✅ Upload avec fetch() natif
+  const uploadDocument = async (doc, file, isReplace = false) => {
+    const stateUpdater = isReplace ? setReplacing : setUploading;
+    stateUpdater(prev => ({ ...prev, [doc.id]: true }));
 
-    setUploading(prev => ({ ...prev, [doc.id]: true }));
     try {
       const reader = new FileReader();
       reader.onload = async () => {
         const base64 = reader.result.split(',')[1];
-        await apiFetch('/api/hiring/upload-document', {
+        
+        const res = await fetch(`${BASE_URL}/api/hiring/upload-document`, {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             application_id: doc.application_id,
             document_type: doc.document_type,
@@ -108,48 +113,29 @@ const CandidateDocumentsPage = () => {
             filename: file.name,
           }),
         });
-        toast.success(t('candidateDocuments.uploadSuccess', 'Document envoyé avec succès'));
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || 'Erreur upload');
+        }
+
+        toast.success(isReplace 
+          ? t('candidateDocuments.replaceSuccess', 'Document remplacé avec succès')
+          : t('candidateDocuments.uploadSuccess', 'Document envoyé avec succès')
+        );
         await fetchDocuments();
       };
       reader.readAsDataURL(file);
     } catch (err) {
-      const message = err?.message || err?.error || JSON.stringify(err);
-      console.error('Erreur upload:', message);
-      toast.error(message);
+      console.error('Erreur upload:', err);
+      toast.error(err.message || t('common.error'));
     } finally {
-      setUploading(prev => ({ ...prev, [doc.id]: false }));
+      stateUpdater(prev => ({ ...prev, [doc.id]: false }));
     }
   };
 
-  const handleReplace = async (doc, file) => {
-    if (!file) return;
-
-    setReplacing(prev => ({ ...prev, [doc.id]: true }));
-    try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result.split(',')[1];
-        await apiFetch('/api/hiring/upload-document', {
-          method: 'POST',
-          body: JSON.stringify({
-            application_id: doc.application_id,
-            document_type: doc.document_type,
-            file_data: base64,
-            filename: file.name,
-          }),
-        });
-        toast.success(t('candidateDocuments.replaceSuccess', 'Document remplacé avec succès'));
-        await fetchDocuments();
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      const message = err?.message || err?.error || JSON.stringify(err);
-      console.error('Erreur remplacement:', message);
-      toast.error(message);
-    } finally {
-      setReplacing(prev => ({ ...prev, [doc.id]: false }));
-    }
-  };
+  const handleUpload = (doc, file) => uploadDocument(doc, file, false);
+  const handleReplace = (doc, file) => uploadDocument(doc, file, true);
 
   const handleDelete = async (doc) => {
     if (!window.confirm(t('candidateDocuments.confirmDelete', 'Supprimer ce document ?'))) return;
@@ -165,13 +151,11 @@ const CandidateDocumentsPage = () => {
       toast.success(t('candidateDocuments.deleteSuccess', 'Document supprimé'));
       await fetchDocuments();
     } catch (err) {
-      const message = err?.message || err?.error || JSON.stringify(err);
-      console.error('Erreur suppression:', message);
-      toast.error(message);
+      console.error('Erreur suppression:', err);
+      toast.error(err.message || t('common.error'));
     }
   };
 
-  // ✅ Retirer un document validé de la liste avec persistance
   const handleHide = (docId) => {
     const updated = [...hiddenDocs, docId];
     setHiddenDocs(updated);
@@ -188,13 +172,11 @@ const CandidateDocumentsPage = () => {
     );
   }
 
-  // Filtrer les documents masqués
   const visibleDocuments = documents.filter(d => !hiddenDocs.includes(d.id));
 
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        {/* Bouton retour */}
         <Link to="/dashboard/candidat" className="inline-flex items-center text-sm text-slate-600 hover:text-slate-900 mb-4 min-h-[44px]">
           <ChevronLeft className="w-4 h-4 mr-1" />
           {t('applicationDetail.back')}

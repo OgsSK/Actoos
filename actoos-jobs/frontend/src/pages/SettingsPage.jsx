@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation, Trans } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -13,6 +12,10 @@ import {
   Trash2, AlertTriangle, UserCog
 } from 'lucide-react';
 import CountryCurrencySelector from '../components/CountryCurrencySelector';
+
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
 
 // Composant de texte défilant (pour les longs textes)
 const ScrollText = ({ children, className = '' }) => {
@@ -126,12 +129,13 @@ const SettingsPage = () => {
     }
   };
 
+  // ✅ Suppression de compte avec fetch() natif
   const handleDeleteAccount = async () => {
     if (!window.confirm(t('settings.dangerZone.confirm'))) return;
 
     setDeleting(true);
     try {
-      const response = await fetch('/api/user/delete-account', {
+      const response = await fetch(`${BASE_URL}/api/user/delete-account`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id }),
@@ -170,19 +174,19 @@ const SettingsPage = () => {
         setShowRoleModal(false);
         setRequestReason('');
 
-        try {
-          await apiFetch('/api/notify-admin-role-request', {
+        // ✅ Notification admin non bloquante
+        setTimeout(() => {
+          fetch(`${BASE_URL}/api/notify-admin-role-request`, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               user_email: user.email,
               user_name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || user.email,
               current_role: profile?.role || 'candidate',
               requested_role: requestedRole,
             }),
-          });
-        } catch (notifErr) {
-          console.error('Erreur notification admin:', notifErr);
-        }
+          }).catch(err => console.error('Erreur notification admin:', err));
+        }, 100);
       }
     } catch (err) {
       console.error('Erreur:', err);
@@ -223,7 +227,6 @@ const SettingsPage = () => {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                {/* Avatar ou icône par défaut */}
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0 overflow-hidden">
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
@@ -426,7 +429,7 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      {/* Modale de demande de changement de rôle (optimisée mobile) */}
+      {/* Modale de demande de changement de rôle */}
       {showRoleModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto">

@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation, Trans } from 'react-i18next';
-import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Loader2, CheckCircle2, XCircle, ArrowRight, Zap } from 'lucide-react';
+
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
 
 // Devises qui utilisent des sous‑unités dans Stripe (centimes)
 const SUBUNIT_CURRENCIES = [
@@ -33,14 +36,17 @@ const PaymentSuccess = () => {
       setStatus('error');
       return;
     }
-    (async () => {
+
+    const completeCheckout = async () => {
       try {
-        const res = await apiFetch('/api/checkout/complete', {
+        const res = await fetch(`${BASE_URL}/api/checkout/complete`, {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ session_id: sessionId }),
         });
-        if (res.success) {
-          setDetails(res);
+        const data = await res.json();
+        if (data.success) {
+          setDetails(data);
           setStatus('success');
         } else {
           setStatus('error');
@@ -48,7 +54,9 @@ const PaymentSuccess = () => {
       } catch (err) {
         setStatus('error');
       }
-    })();
+    };
+
+    completeCheckout();
   }, [sessionId]);
 
   if (status === 'loading') {
@@ -79,7 +87,7 @@ const PaymentSuccess = () => {
   const isBoost = details?.isBoost;
   const packageName = details?.planLabel || t('paymentSuccess.subscription.title');
   const currencyCode = (details?.currency || 'XOF').toUpperCase();
-  const rawAmount = details?.amount || 0;          // montant en centimes pour EUR, unités pour XOF
+  const rawAmount = details?.amount || 0;
 
   // Conversion en unité réelle
   const displayAmount = SUBUNIT_CURRENCIES.includes(currencyCode)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -9,13 +9,17 @@ import {
   MessageSquare, User, AtSign, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiFetch } from '../lib/api';
+
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
 
 const ContactPage = () => {
   const { t, i18n } = useTranslation();
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const abortControllerRef = useRef(null);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -27,20 +31,47 @@ const ContactPage = () => {
       toast.error(t('contact.toasts.fillAllFields'));
       return;
     }
+
+    // Annuler une requête précédente si elle existe
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
+
+    // Timeout de 10 secondes
+    const timeout = setTimeout(() => {
+      controller.abort();
+      toast.error(t('contact.toasts.timeout', 'La requête a pris trop de temps.'));
+      setLoading(false);
+    }, 10000);
+
     try {
-      await apiFetch('/api/contact', {
+      const response = await fetch(`${BASE_URL}/api/contact`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
           language: i18n.language,
         }),
+        signal: controller.signal,
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || t('contact.toasts.error'));
+      }
+
       setSent(true);
       toast.success(t('contact.toasts.sent'));
     } catch (err) {
+      if (err.name === 'AbortError') return; // Annulation silencieuse
       toast.error(err.message || t('contact.toasts.error'));
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   };
@@ -196,7 +227,6 @@ const ContactPage = () => {
                     </div>
                   </div>
 
-                  {/* Adresse simplifiée – supprime ce bloc si tu préfères ne pas l'afficher */}
                   <div className="flex items-start gap-3 text-slate-600">
                     <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center mt-0.5">
                       <MapPin className="w-5 h-5 text-orange-600" />

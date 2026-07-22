@@ -17,8 +17,11 @@ import {
   GraduationCap, ArrowRight, Building2, Sparkles
 } from 'lucide-react';
 import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
-import { apiFetch } from '../lib/api';
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
+
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
 
 const RATES = {
   XOF: 1, EUR: 655.957, USD: 603.5, MAD: 60.5,
@@ -193,9 +196,10 @@ const CreateJobPage = () => {
     }, 1500);
 
     try {
-      const res = await apiFetch('/api/ai/agent', {
+      const res = await fetch(`${BASE_URL}/api/ai/agent`, {
         method: 'POST',
         signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           agent_id: 'job-full-generation',
           text: form.title,
@@ -208,9 +212,15 @@ const CreateJobPage = () => {
         }),
       });
 
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Erreur IA');
+      }
+
+      const data = await res.json();
       clearInterval(progressInterval);
 
-      const generated = JSON.parse(res.result);
+      const generated = JSON.parse(data.result);
       setIaGeneratedData(generated);
 
       setForm(prev => ({
@@ -233,7 +243,6 @@ const CreateJobPage = () => {
 
       toast.success(t('createJob.toasts.iaGenerationSuccess'));
 
-      // Surbrillance temporaire sur la description
       const descriptionTextarea = document.getElementById('job-description-textarea');
       if (descriptionTextarea) {
         descriptionTextarea.classList.add('ring-2', 'ring-blue-300');
@@ -256,7 +265,6 @@ const CreateJobPage = () => {
     }
   };
 
-  // ---------- Annulation manuelle ----------
   const handleCancelIA = () => {
     if (iaAbortController) {
       iaAbortController.abort();
@@ -358,7 +366,7 @@ const CreateJobPage = () => {
         status: finalStatus
       };
 
-      let newJobId = id; // ID existant en cas de mise à jour, sera remplacé si création
+      let newJobId = id;
 
       if (id) {
         if (finalStatus === 'active' && form.status !== 'active') {
@@ -370,7 +378,6 @@ const CreateJobPage = () => {
         if (finalStatus === 'active') {
           jobData.expires_at = new Date(Date.now() + getExpirationDays(company) * 24 * 60 * 60 * 1000).toISOString();
         }
-        // ✅ Récupération de l'ID après insertion
         const { data: insertedJob, error } = await supabase
           .from('jobs')
           .insert(jobData)
@@ -383,17 +390,10 @@ const CreateJobPage = () => {
       // --- Enregistrement des corrections IA ---
       if (iaGeneratedData && user) {
         const mapping = {
-          title: 'title',
-          description: 'description',
-          requirements: 'requirements',
-          responsibilities: 'responsibilities',
-          benefits: 'benefits',
-          contract_type: 'contract_type',
-          experience_level: 'experience_level',
-          salary_min: 'salary_min',
-          salary_max: 'salary_max',
-          is_remote: 'is_remote',
-          skills_required: 'skills_required',
+          title: 'title', description: 'description', requirements: 'requirements',
+          responsibilities: 'responsibilities', benefits: 'benefits', contract_type: 'contract_type',
+          experience_level: 'experience_level', salary_min: 'salary_min', salary_max: 'salary_max',
+          is_remote: 'is_remote', skills_required: 'skills_required',
         };
 
         const correctedFields = {};
@@ -401,15 +401,10 @@ const CreateJobPage = () => {
         for (const [iaKey, formKey] of Object.entries(mapping)) {
           const originalValue = iaGeneratedData[iaKey];
           const finalValue = form[formKey];
-
           const normOriginal = Array.isArray(originalValue) ? [...originalValue].sort().join(',') : String(originalValue ?? '');
           const normFinal = Array.isArray(finalValue) ? [...finalValue].sort().join(',') : String(finalValue ?? '');
-
           if (normOriginal !== normFinal) {
-            correctedFields[formKey] = {
-              original: originalValue,
-              corrected: finalValue,
-            };
+            correctedFields[formKey] = { original: originalValue, corrected: finalValue };
           }
         }
 
@@ -417,44 +412,29 @@ const CreateJobPage = () => {
         if (generatedSlug) {
           const generatedCatId = categories.find(cat => cat.slug === generatedSlug)?.id;
           if (generatedCatId && generatedCatId !== form.category_id) {
-            correctedFields.category_id = {
-              original: generatedCatId,
-              corrected: form.category_id,
-            };
+            correctedFields.category_id = { original: generatedCatId, corrected: form.category_id };
           }
         }
 
-        console.log('🔍 Champs modifiés détectés :', correctedFields);
-
         if (Object.keys(correctedFields).length > 0) {
-          try {
-            const { error } = await supabase.from('ai_corrections').insert({
-              agent_id: 'job-full-generation',
-              user_id: user.id,
-              original: iaGeneratedData,
-              corrected: correctedFields,
-              context: {
-                country: prefs.country || null,
-                currency: prefs.currency || 'XOF',
-                category_slug: categories.find(cat => cat.id === form.category_id)?.slug || null,
-                category_name: categories.find(cat => cat.id === form.category_id)?.name || null,
-                experience_level: form.experience_level || null,
-                contract_type: form.contract_type || null,
-                city_id: form.city_id || null,
-                is_remote: form.is_remote || false,
-              },
-            });
-
-            if (error) {
-              console.error('❌ Erreur insertion Supabase :', error);
-            } else {
-              console.log('✅ Correction IA enregistrée dans la base');
-            }
-          } catch (err) {
-            console.error('❌ Exception insertion :', err);
-          }
-        } else {
-          console.log('ℹ️ Aucune modification détectée, pas d’enregistrement');
+          await supabase.from('ai_corrections').insert({
+            agent_id: 'job-full-generation',
+            user_id: user.id,
+            original: iaGeneratedData,
+            corrected: correctedFields,
+            context: {
+              country: prefs.country || null,
+              currency: prefs.currency || 'XOF',
+              category_slug: categories.find(cat => cat.id === form.category_id)?.slug || null,
+              category_name: categories.find(cat => cat.id === form.category_id)?.name || null,
+              experience_level: form.experience_level || null,
+              contract_type: form.contract_type || null,
+              city_id: form.city_id || null,
+              is_remote: form.is_remote || false,
+            },
+          }).then(({ error }) => {
+            if (error) console.error('Erreur insertion corrections IA:', error);
+          });
         }
 
         setIaGeneratedData(null);
@@ -463,24 +443,6 @@ const CreateJobPage = () => {
       if (publish) {
         if (finalStatus === 'pending') {
           toast.success(t('createJob.toasts.submittedForValidation'));
-          try {
-            await apiFetch('/api/send-job-alerts', { method: 'POST' });
-          } catch (err) {
-            console.error('Erreur envoi alertes emploi:', err);
-          }
-          try {
-            await apiFetch('/api/notify-admin-new-job', {
-              method: 'POST',
-              body: JSON.stringify({
-                job_title: form.title,
-                company_name: company.name,
-                company_email: company.email || user.email,
-                language: i18n.language,
-              })
-            });
-          } catch (err) {
-            console.error('Erreur notification admin job:', err);
-          }
         } else if (finalStatus === 'active') {
           toast.success(t('createJob.toasts.offerUpdated'));
         }
@@ -488,17 +450,28 @@ const CreateJobPage = () => {
         toast.success(t('createJob.toasts.draftSaved'));
       }
 
-      // ✅ Notification des followers (uniquement si l'offre devient active)
-      if (finalStatus === 'active' && newJobId) {
-        try {
-          await apiFetch(`/api/jobs/${newJobId}/notify-followers`, {
-            method: 'POST',
-            body: JSON.stringify({ user_id: user.id }),
-          });
-        } catch (err) {
-          console.warn('Notification followers échouée (non bloquant):', err);
+      // Notifications non bloquantes en arrière-plan
+      setTimeout(async () => {
+        if (publish && finalStatus === 'pending') {
+          try { await fetch(`${BASE_URL}/api/send-job-alerts`, { method: 'POST' }); } catch (err) { console.warn('Alertes emploi échouées:', err); }
+          try {
+            await fetch(`${BASE_URL}/api/notify-admin-new-job`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ job_title: form.title, company_name: company.name, company_email: company.email || user.email, language: i18n.language })
+            });
+          } catch (err) { console.warn('Notification admin échouée:', err); }
         }
-      }
+        if (finalStatus === 'active' && newJobId) {
+          try {
+            await fetch(`${BASE_URL}/api/jobs/${newJobId}/notify-followers`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: user.id })
+            });
+          } catch (err) { console.warn('Notification followers échouée:', err); }
+        }
+      }, 100);
 
       navigate('/dashboard/entreprise');
     } catch (error) {
@@ -510,25 +483,14 @@ const CreateJobPage = () => {
   };
 
   const inputErrorClass = (key) => cn(errors[key] && 'border-red-500 focus-visible:ring-red-500');
-
-  const selectErrorClass = (key, base = '') =>
-    cn(
-      base,
-      errors[key]
-        ? 'border-red-500 focus:ring-red-500'
-        : 'border-slate-200 focus:ring-blue-500'
-    );
+  const selectErrorClass = (key) => cn(errors[key] ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-blue-500');
 
   const showUnverifiedBanner = !loading && company && !company.is_verified;
   const showSuspendedBanner = !loading && company && !company.is_active;
 
   const getPublishButtonText = () => {
-    if (id && (form.status === 'active' || form.status === 'paused')) {
-      return t('createJob.updateOffer');
-    }
-    if (showUnverifiedBanner) {
-      return t('createJob.validationRequired');
-    }
+    if (id && (form.status === 'active' || form.status === 'paused')) return t('createJob.updateOffer');
+    if (showUnverifiedBanner) return t('createJob.validationRequired');
     return t('createJob.submitForValidation');
   };
 
@@ -593,70 +555,30 @@ const CreateJobPage = () => {
             </div>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              onClick={() => handleSave(false)}
-              disabled={saving || showSuspendedBanner}
-              type="button"
-              className="flex-1 sm:flex-none overflow-hidden px-3 sm:px-4"
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" />
-              ) : (
-                <Save className="w-4 h-4 mr-2 shrink-0" />
-              )}
+            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving || showSuspendedBanner} type="button" className="flex-1 sm:flex-none overflow-hidden px-3 sm:px-4">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" /> : <Save className="w-4 h-4 mr-2 shrink-0" />}
               <span className="truncate">{t('createJob.save')}</span>
             </Button>
 
-            {/* Bouton IA + Annulation */}
             {company?.subscription_plan === 'business' && (
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleGenerateWithIA}
-                  disabled={iaLoading}
-                  className="gap-2 relative"
-                  type="button"
-                >
+                <Button variant="outline" onClick={handleGenerateWithIA} disabled={iaLoading} className="gap-2 relative" type="button">
                   {iaLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>{iaProgressText || t('createJob.iaProgress.generating')}</span>
-                    </>
+                    <><Loader2 className="w-4 h-4 animate-spin" /><span>{iaProgressText || t('createJob.iaProgress.generating')}</span></>
                   ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      {t('createJob.iaGenerate')}
-                    </>
+                    <><Sparkles className="w-4 h-4" />{t('createJob.iaGenerate')}</>
                   )}
                 </Button>
                 {iaLoading && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCancelIA}
-                    className="text-red-500"
-                    type="button"
-                  >
-                    <X className="w-4 h-4 mr-1" />
-                    {t('createJob.iaCancel')}
+                  <Button variant="ghost" size="sm" onClick={handleCancelIA} className="text-red-500" type="button">
+                    <X className="w-4 h-4 mr-1" />{t('createJob.iaCancel')}
                   </Button>
                 )}
               </div>
             )}
 
-            <Button
-              onClick={() => handleSave(true)}
-              disabled={isPublishDisabled()}
-              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed flex-1 sm:flex-none overflow-hidden px-3 sm:px-4"
-              data-testid="publish-job-btn"
-              type="button"
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" />
-              ) : (
-                <Send className="w-4 h-4 mr-2 shrink-0" />
-              )}
+            <Button onClick={() => handleSave(true)} disabled={isPublishDisabled()} className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed flex-1 sm:flex-none overflow-hidden px-3 sm:px-4" data-testid="publish-job-btn" type="button">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" /> : <Send className="w-4 h-4 mr-2 shrink-0" />}
               <span className="truncate">{getPublishButtonText()}</span>
             </Button>
           </div>
@@ -673,110 +595,47 @@ const CreateJobPage = () => {
               </h2>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  {t('createJob.labels.title')}
-                </label>
-                <Input
-                  value={form.title}
-                  onChange={(e) => {
-                    setForm({ ...form, title: e.target.value });
-                    if (errors.title) setErrors(prev => ({ ...prev, title: false }));
-                  }}
-                  placeholder={t('createJob.placeholders.title')}
-                  required
-                  className={inputErrorClass('title')}
-                  data-testid="job-title-input"
-                />
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.title')}</label>
+                <Input value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); if (errors.title) setErrors(prev => ({ ...prev, title: false })); }} placeholder={t('createJob.placeholders.title')} required className={inputErrorClass('title')} data-testid="job-title-input" />
                 <div className="mt-2">
-                  <AIAssistant
-                    agentId="job-title"
-                    initialText={form.title}
-                    onApply={(newTitle) => setForm({ ...form, title: newTitle.substring(0, 200) })}
-                  />
+                  <AIAssistant agentId="job-title" initialText={form.title} onApply={(newTitle) => setForm({ ...form, title: newTitle.substring(0, 200) })} />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.category')}</label>
-                  <select
-                    value={form.category_id}
-                    onChange={(e) => {
-                      setForm({ ...form, category_id: e.target.value });
-                      if (errors.category_id) setErrors(prev => ({ ...prev, category_id: false }));
-                    }}
-                    className={selectErrorClass('category_id', 'w-full h-10 px-3 py-2 border rounded-md bg-white')}
-                    data-testid="job-category-select"
-                  >
+                  <select value={form.category_id} onChange={(e) => { setForm({ ...form, category_id: e.target.value }); if (errors.category_id) setErrors(prev => ({ ...prev, category_id: false })); }} className={cn(selectErrorClass('category_id'), 'w-full h-10 px-3 py-2 border rounded-md bg-white')} data-testid="job-category-select">
                     <option value="">{t('createJob.options.selectCategory')}</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>
-                        {t(`categories.${cat.slug}`, cat.name)}
-                      </option>
-                    ))}
+                    {categories.map(cat => <option key={cat.id} value={cat.id}>{t(`categories.${cat.slug}`, cat.name)}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.contractType')}</label>
-                  <select
-                    value={form.contract_type}
-                    onChange={(e) => {
-                      setForm({ ...form, contract_type: e.target.value });
-                      if (errors.contract_type) setErrors(prev => ({ ...prev, contract_type: false }));
-                    }}
-                    className={selectErrorClass('contract_type', 'w-full h-10 px-3 py-2 border rounded-md bg-white')}
-                    required
-                    data-testid="job-contract-select"
-                  >
+                  <select value={form.contract_type} onChange={(e) => { setForm({ ...form, contract_type: e.target.value }); if (errors.contract_type) setErrors(prev => ({ ...prev, contract_type: false })); }} className={cn(selectErrorClass('contract_type'), 'w-full h-10 px-3 py-2 border rounded-md bg-white')} required data-testid="job-contract-select">
                     <option value="">{t('createJob.options.selectContract')}</option>
-                    {Object.entries(CONTRACT_TYPES).map(([key, val]) => (
-                      <option key={key} value={key}>{t(val.key)}</option>
-                    ))}
+                    {Object.entries(CONTRACT_TYPES).map(([key, val]) => <option key={key} value={key}>{t(val.key)}</option>)}
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <GraduationCap className="w-4 h-4 inline mr-1" />
-                    {t('createJob.labels.experienceLevel')}
-                  </label>
-                  <select
-                    value={form.experience_level}
-                    onChange={(e) => setForm({ ...form, experience_level: e.target.value })}
-                    className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    data-testid="job-experience-select"
-                  >
+                  <label className="block text-sm font-medium text-slate-700 mb-1"><GraduationCap className="w-4 h-4 inline mr-1" />{t('createJob.labels.experienceLevel')}</label>
+                  <select value={form.experience_level} onChange={(e) => setForm({ ...form, experience_level: e.target.value })} className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" data-testid="job-experience-select">
                     <option value="">{t('createJob.options.unspecified')}</option>
-                    {Object.entries(EXPERIENCE_LEVELS).map(([key, val]) => (
-                      <option key={key} value={key}>{t(val.key)}</option>
-                    ))}
+                    {Object.entries(EXPERIENCE_LEVELS).map(([key, val]) => <option key={key} value={key}>{t(val.key)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    <Users className="w-4 h-4 inline mr-1" />
-                    {t('createJob.labels.positionsCount')}
-                  </label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={form.positions_count}
-                    onChange={(e) => setForm({ ...form, positions_count: e.target.value })}
-                    data-testid="job-positions-input"
-                  />
+                  <label className="block text-sm font-medium text-slate-700 mb-1"><Users className="w-4 h-4 inline mr-1" />{t('createJob.labels.positionsCount')}</label>
+                  <Input type="number" min="1" value={form.positions_count} onChange={(e) => setForm({ ...form, positions_count: e.target.value })} data-testid="job-positions-input" />
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.is_urgent}
-                    onChange={(e) => setForm({ ...form, is_urgent: e.target.checked })}
-                    className="rounded border-slate-300 text-red-600 focus:ring-red-500"
-                  />
+                  <input type="checkbox" checked={form.is_urgent} onChange={(e) => setForm({ ...form, is_urgent: e.target.checked })} className="rounded border-slate-300 text-red-600 focus:ring-red-500" />
                   <span className="text-sm text-slate-600">{t('createJob.labels.urgent')}</span>
                 </label>
               </div>
@@ -790,84 +649,25 @@ const CreateJobPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.description')}</label>
-                <textarea
-                  id="job-description-textarea"
-                  value={form.description}
-                  onChange={(e) => {
-                    setForm({ ...form, description: e.target.value });
-                    if (errors.description) setErrors(prev => ({ ...prev, description: false }));
-                  }}
-                  rows={6}
-                  className={cn(
-                    'w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 resize-none transition-all',
-                    errors.description
-                      ? 'border border-red-500 focus:ring-red-500'
-                      : 'border border-slate-200 focus:ring-blue-500'
-                  )}
-                  placeholder={t('createJob.placeholders.description')}
-                  required
-                  data-testid="job-description-textarea"
-                />
-                <div className="mt-2">
-                  <AIAssistant
-                    agentId="job-description"
-                    initialText={form.description}
-                    context={form.title}
-                    onApply={(newDesc) => setForm({ ...form, description: newDesc })}
-                  />
-                </div>
+                <textarea id="job-description-textarea" value={form.description} onChange={(e) => { setForm({ ...form, description: e.target.value }); if (errors.description) setErrors(prev => ({ ...prev, description: false })); }} rows={6} className={cn('w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 resize-none transition-all', errors.description ? 'border border-red-500 focus:ring-red-500' : 'border border-slate-200 focus:ring-blue-500')} placeholder={t('createJob.placeholders.description')} required data-testid="job-description-textarea" />
+                <div className="mt-2"><AIAssistant agentId="job-description" initialText={form.description} context={form.title} onApply={(newDesc) => setForm({ ...form, description: newDesc })} /></div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.missions')}</label>
-                <textarea
-                  value={form.responsibilities}
-                  onChange={(e) => setForm({ ...form, responsibilities: e.target.value })}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder={t('createJob.placeholders.missions')}
-                  data-testid="job-responsibilities-textarea"
-                />
-                <div className="mt-2">
-                  <AIAssistant
-                    agentId="job-missions"
-                    initialText={form.responsibilities}
-                    context={form.title}
-                    onApply={(newMissions) => setForm({ ...form, responsibilities: newMissions })}
-                  />
-                </div>
+                <textarea value={form.responsibilities} onChange={(e) => setForm({ ...form, responsibilities: e.target.value })} rows={4} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder={t('createJob.placeholders.missions')} data-testid="job-responsibilities-textarea" />
+                <div className="mt-2"><AIAssistant agentId="job-missions" initialText={form.responsibilities} context={form.title} onApply={(newMissions) => setForm({ ...form, responsibilities: newMissions })} /></div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.requirements')}</label>
-                <textarea
-                  value={form.requirements}
-                  onChange={(e) => setForm({ ...form, requirements: e.target.value })}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder={t('createJob.placeholders.requirements')}
-                  data-testid="job-requirements-textarea"
-                />
-                <div className="mt-2">
-                  <AIAssistant
-                    agentId="job-requirements"
-                    initialText={form.requirements}
-                    context={form.title}
-                    onApply={(newReqs) => setForm({ ...form, requirements: newReqs })}
-                  />
-                </div>
+                <textarea value={form.requirements} onChange={(e) => setForm({ ...form, requirements: e.target.value })} rows={4} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder={t('createJob.placeholders.requirements')} data-testid="job-requirements-textarea" />
+                <div className="mt-2"><AIAssistant agentId="job-requirements" initialText={form.requirements} context={form.title} onApply={(newReqs) => setForm({ ...form, requirements: newReqs })} /></div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.benefits')}</label>
-                <textarea
-                  value={form.benefits}
-                  onChange={(e) => setForm({ ...form, benefits: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder={t('createJob.placeholders.benefits')}
-                  data-testid="job-benefits-textarea"
-                />
+                <textarea value={form.benefits} onChange={(e) => setForm({ ...form, benefits: e.target.value })} rows={3} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder={t('createJob.placeholders.benefits')} data-testid="job-benefits-textarea" />
               </div>
             </CardContent>
           </Card>
@@ -876,39 +676,16 @@ const CreateJobPage = () => {
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900">{t('createJob.sections.skills')}</h2>
-
               <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(e.target.value)}
-                  placeholder={t('createJob.placeholders.skill')}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
-                  data-testid="job-skill-input"
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  onClick={handleAddSkill}
-                  disabled={!newSkill.trim()}
-                  className="w-full sm:w-auto overflow-hidden px-3"
-                >
-                  <Plus className="w-4 h-4 mr-1 shrink-0" />
-                  <span className="truncate">{t('createJob.skills.add')}</span>
-                </Button>
+                <Input value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder={t('createJob.placeholders.skill')} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())} data-testid="job-skill-input" className="flex-1" />
+                <Button type="button" onClick={handleAddSkill} disabled={!newSkill.trim()} className="w-full sm:w-auto overflow-hidden px-3"><Plus className="w-4 h-4 mr-1 shrink-0" /><span className="truncate">{t('createJob.skills.add')}</span></Button>
               </div>
-
               {form.skills_required.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {form.skills_required.map((skill) => (
                     <Badge key={skill} className="bg-blue-50 text-blue-700 border border-blue-200 gap-1 pr-1">
                       {skill}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSkill(skill)}
-                        className="ml-1 hover:bg-blue-200 rounded-full p-0.5 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+                      <button type="button" onClick={() => handleRemoveSkill(skill)} className="ml-1 hover:bg-blue-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
                     </Badge>
                   ))}
                 </div>
@@ -919,53 +696,27 @@ const CreateJobPage = () => {
           {/* Localisation */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
-              <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-blue-600" />
-                {t('createJob.sections.location')}
-              </h2>
-
+              <h2 className="font-semibold text-slate-900 flex items-center gap-2"><MapPin className="w-5 h-5 text-blue-600" />{t('createJob.sections.location')}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.city')}</label>
-                  <select
-                    value={form.city_id}
-                    onChange={(e) => setForm({ ...form, city_id: e.target.value })}
-                    className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    data-testid="job-city-select"
-                  >
+                  <select value={form.city_id} onChange={(e) => setForm({ ...form, city_id: e.target.value })} className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" data-testid="job-city-select">
                     <option value="">{t('createJob.options.selectCity')}</option>
-                    {filteredCities.map(city => (
-                      <option key={city.id} value={city.id}>{city.name}</option>
-                    ))}
+                    {filteredCities.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.address')}</label>
-                  <Input
-                    value={form.address}
-                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    placeholder={t('createJob.placeholders.address')}
-                  />
+                  <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder={t('createJob.placeholders.address')} />
                 </div>
               </div>
-
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.is_remote}
-                    onChange={(e) => setForm({ ...form, is_remote: e.target.checked })}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  />
+                  <input type="checkbox" checked={form.is_remote} onChange={(e) => setForm({ ...form, is_remote: e.target.checked })} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                   <span className="text-sm text-slate-600">{t('createJob.labels.remote')}</span>
                 </label>
-
                 {form.is_remote && (
-                  <select
-                    value={form.remote_type}
-                    onChange={(e) => setForm({ ...form, remote_type: e.target.value })}
-                    className="h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm w-full sm:w-auto"
-                  >
+                  <select value={form.remote_type} onChange={(e) => setForm({ ...form, remote_type: e.target.value })} className="h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm w-full sm:w-auto">
                     <option value="">{t('createJob.labels.remoteType')}</option>
                     <option value="full">{t('createJob.options.remoteFull')}</option>
                     <option value="partial">{t('createJob.options.remoteHybrid')}</option>
@@ -979,86 +730,36 @@ const CreateJobPage = () => {
           {/* Salaire */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
-              <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-blue-600" />
-                {t('createJob.sections.salary')}
-              </h2>
-
+              <h2 className="font-semibold text-slate-900 flex items-center gap-2"><DollarSign className="w-5 h-5 text-blue-600" />{t('createJob.sections.salary')}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    {t('createJob.labels.salaryMin')}
-                  </label>
-                  <Input
-                    type="number"
-                    value={form.salary_min}
-                    onChange={(e) => setForm({ ...form, salary_min: e.target.value })}
-                    placeholder={t('createJob.placeholders.salaryMin')}
-                    data-testid="job-salary-min-input"
-                  />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.salaryMin')}</label>
+                  <Input type="number" value={form.salary_min} onChange={(e) => setForm({ ...form, salary_min: e.target.value })} placeholder={t('createJob.placeholders.salaryMin')} data-testid="job-salary-min-input" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    {t('createJob.labels.salaryMax')}
-                  </label>
-                  <Input
-                    type="number"
-                    value={form.salary_max}
-                    onChange={(e) => setForm({ ...form, salary_max: e.target.value })}
-                    placeholder={t('createJob.placeholders.salaryMax')}
-                    data-testid="job-salary-max-input"
-                  />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.salaryMax')}</label>
+                  <Input type="number" value={form.salary_max} onChange={(e) => setForm({ ...form, salary_max: e.target.value })} placeholder={t('createJob.placeholders.salaryMax')} data-testid="job-salary-max-input" />
                 </div>
               </div>
-
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.is_salary_visible}
-                  onChange={(e) => setForm({ ...form, is_salary_visible: e.target.checked })}
-                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
+                <input type="checkbox" checked={form.is_salary_visible} onChange={(e) => setForm({ ...form, is_salary_visible: e.target.checked })} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                 <span className="text-sm text-slate-600">{t('createJob.labels.showSalary')}</span>
               </label>
             </CardContent>
           </Card>
 
-          {/* Boutons du bas (Save brouillon + Publier) */}
+          {/* Boutons du bas */}
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2 sm:pt-4">
-            <Button
-              variant="outline"
-              onClick={() => handleSave(false)}
-              disabled={saving || showSuspendedBanner}
-              type="button"
-              className="w-full sm:w-auto overflow-hidden px-3 sm:px-4"
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" />
-              ) : (
-                <Save className="w-4 h-4 mr-2 shrink-0" />
-              )}
+            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving || showSuspendedBanner} type="button" className="w-full sm:w-auto overflow-hidden px-3 sm:px-4">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" /> : <Save className="w-4 h-4 mr-2 shrink-0" />}
               <span className="truncate">{t('createJob.saveDraft')}</span>
             </Button>
-            <Button
-              onClick={() => handleSave(true)}
-              disabled={isPublishDisabled()}
-              className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto overflow-hidden px-3 sm:px-4"
-              data-testid="publish-job-btn-bottom"
-              type="button"
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" />
-              ) : (
-                <Send className="w-4 h-4 mr-2 shrink-0" />
-              )}
+            <Button onClick={() => handleSave(true)} disabled={isPublishDisabled()} className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto overflow-hidden px-3 sm:px-4" data-testid="publish-job-btn-bottom" type="button">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" /> : <Send className="w-4 h-4 mr-2 shrink-0" />}
               <span className="truncate">{getPublishButtonText()}</span>
             </Button>
           </div>
-          {showUnverifiedBanner && (
-            <p className="text-center text-xs text-amber-600 mt-1">
-              {t('createJob.companyUnverified')}
-            </p>
-          )}
+          {showUnverifiedBanner && <p className="text-center text-xs text-amber-600 mt-1">{t('createJob.companyUnverified')}</p>}
         </div>
       </div>
 
@@ -1066,40 +767,13 @@ const CreateJobPage = () => {
       {showLimitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 sm:p-8 text-center">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-              <Briefcase className="w-8 h-8 text-blue-600" />
-            </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-4">
-              {t('createJob.limitModal.title')}
-            </h2>
-            <p className="text-slate-600 mb-6 text-sm sm:text-base">
-              {t('createJob.limitModal.message', {
-                plan: limitInfo.currentPlan === 'free' ? t('pricing.free') : limitInfo.currentPlan,
-                max: limitInfo.maxActiveJobs,
-                current: limitInfo.activeJobs
-              })}
-            </p>
-            <p className="text-sm text-slate-500 mb-6 sm:mb-8">
-              {t('createJob.limitModal.upgradeSuggestion')}
-            </p>
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6"><Briefcase className="w-8 h-8 text-blue-600" /></div>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">{t('createJob.limitModal.title')}</h2>
+            <p className="text-slate-600 mb-6 text-sm sm:text-base">{t('createJob.limitModal.message', { plan: limitInfo.currentPlan === 'free' ? t('pricing.free') : limitInfo.currentPlan, max: limitInfo.maxActiveJobs, current: limitInfo.activeJobs })}</p>
+            <p className="text-sm text-slate-500 mb-6 sm:mb-8">{t('createJob.limitModal.upgradeSuggestion')}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button
-                variant="outline"
-                className="rounded-2xl overflow-hidden px-3 sm:px-4"
-                onClick={() => setShowLimitModal(false)}
-                type="button"
-              >
-                <span className="truncate">{t('createJob.limitModal.later')}</span>
-              </Button>
-              <Link to="/tarifs" onClick={() => setShowLimitModal(false)}>
-                <Button
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl w-full sm:w-auto overflow-hidden px-3 sm:px-4"
-                  type="button"
-                >
-                  <span className="truncate">{t('createJob.limitModal.seePlans')}</span>
-                  <ArrowRight className="w-4 h-4 ml-2 shrink-0" />
-                </Button>
-              </Link>
+              <Button variant="outline" className="rounded-2xl overflow-hidden px-3 sm:px-4" onClick={() => setShowLimitModal(false)} type="button"><span className="truncate">{t('createJob.limitModal.later')}</span></Button>
+              <Link to="/tarifs" onClick={() => setShowLimitModal(false)}><Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl w-full sm:w-auto overflow-hidden px-3 sm:px-4" type="button"><span className="truncate">{t('createJob.limitModal.seePlans')}</span><ArrowRight className="w-4 h-4 ml-2 shrink-0" /></Button></Link>
             </div>
           </div>
         </div>

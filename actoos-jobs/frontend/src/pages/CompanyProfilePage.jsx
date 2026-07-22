@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import { supabase } from '../lib/supabase';
-import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -45,6 +44,34 @@ const placeholderByCountry = {
   'AU': '412 345 678', 'NZ': '21 123 4567', 'BR': '11 91234 5678',
   'AR': '11 1234 5678', 'MX': '55 1234 5678',
 };
+
+// ---------- Skeleton pour le formulaire ----------
+const CompanyProfileSkeleton = () => (
+  <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-8 animate-pulse">
+    <div className="flex items-center gap-4 mb-6">
+      <div className="w-10 h-10 bg-slate-200 rounded-lg shrink-0" />
+      <div className="space-y-2">
+        <div className="h-6 bg-slate-200 rounded w-48" />
+        <div className="h-4 bg-slate-200 rounded w-32" />
+      </div>
+    </div>
+    <Card>
+      <CardContent className="p-6 space-y-6">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-24 h-24 bg-slate-200 rounded-xl" />
+          <div className="h-10 bg-slate-200 rounded-lg w-24" />
+        </div>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <div className="h-4 bg-slate-200 rounded w-1/4" />
+            <div className="h-10 bg-slate-200 rounded-lg w-full" />
+          </div>
+        ))}
+        <div className="h-11 bg-slate-200 rounded-lg w-full" />
+      </CardContent>
+    </Card>
+  </div>
+);
 
 // ---------- Section Header ----------
 const SectionHeader = ({ icon: Icon, title, description, action }) => (
@@ -105,69 +132,99 @@ const CompanyProfilePage = () => {
   const INDUSTRIES = t('createCompany.industries', { returnObjects: true }) || [];
   const COMPANY_SIZES = t('createCompany.sizes', { returnObjects: true }) || {};
 
+  // ✅ Chargement initial combiné
   useEffect(() => {
     if (!user || !activeCompanyId) {
       setLoading(false);
       setNoCompany(true);
       return;
     }
-    fetchCountries();
-    fetchCompany();
+
+    const loadAll = async () => {
+      setLoading(true);
+      try {
+        // Charger pays et entreprise en parallèle
+        const [countryResult, companyResult, postsResult] = await Promise.all([
+          supabase.from('countries').select('code, name, phone_code').order('name'),
+          supabase.from('companies').select('*').eq('id', activeCompanyId).single(),
+          supabase.from('company_posts').select('*').eq('company_id', activeCompanyId).order('created_at', { ascending: false }),
+        ]);
+
+        if (countryResult.data) setCountries(countryResult.data);
+
+        const companyData = companyResult.data;
+        if (companyResult.error || !companyData) {
+          setNoCompany(true);
+          return;
+        }
+
+        setNoCompany(false);
+        setCompany(companyData);
+        setForm({
+          name: companyData.name || '',
+          description: companyData.description || '',
+          industry: companyData.industry || '',
+          size: companyData.size || '',
+          website: companyData.website || '',
+          email: companyData.email || '',
+          phone: companyData.phone || '',
+          city_id: companyData.city_id || '',
+          address: companyData.address || '',
+          founded_year: companyData.founded_year ? String(companyData.founded_year) : '',
+          logo_url: companyData.logo_url || '',
+        });
+
+        if (companyData.country_id) {
+          const country = countries.find(c => c.id === companyData.country_id) || 
+            countryResult.data?.find(c => c.id === companyData.country_id);
+          if (country) setSelectedCountry(country.code);
+        }
+
+        if (postsResult.data) setPosts(postsResult.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAll();
   }, [user, activeCompanyId]);
 
-  useEffect(() => {
-    if (activeCompanyId) {
-      fetchPosts();
-    }
-  }, [activeCompanyId]);
-
-  const fetchCountries = async () => {
-    const { data } = await supabase
-      .from('countries')
-      .select('code, name, phone_code')
-      .order('name');
-    setCountries(data || []);
-  };
-
-  const fetchCompany = async () => {
-    setLoading(true);
-    const { data: companyData, error } = await supabase
-      .from('companies')
-      .select('*')
-      .eq('id', activeCompanyId)
-      .single();
-
-    if (error || !companyData) {
-      setNoCompany(true);
-      setLoading(false);
+  // ---------- Logo ----------
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('companyProfile.toasts.imageRequired'));
       return;
     }
-
-    setNoCompany(false);
-    setCompany(companyData);
-    setForm({
-      name: companyData.name || '',
-      description: companyData.description || '',
-      industry: companyData.industry || '',
-      size: companyData.size || '',
-      website: companyData.website || '',
-      email: companyData.email || '',
-      phone: companyData.phone || '',
-      city_id: companyData.city_id || '',
-      address: companyData.address || '',
-      founded_year: companyData.founded_year ? String(companyData.founded_year) : '',
-      logo_url: companyData.logo_url || '',
-    });
-
-    if (companyData.country_id) {
-      const { data: country } = await supabase
-        .from('countries')
-        .select('code')
-        .eq('id', companyData.country_id)
-        .single();
-      if (country) setSelectedCountry(country.code);
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(t('companyProfile.toasts.imageTooBig'));
+      return;
     }
-    setLoading(false);
+    setUploadingLogo(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/logo-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(fileName, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from('company-logos').getPublicUrl(fileName);
+      setForm(prev => ({ ...prev, logo_url: urlData.publicUrl }));
+      toast.success(t('companyProfile.toasts.logoUploaded'));
+    } catch (error) {
+      toast.error(t('companyProfile.toasts.uploadError'));
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleDeleteLogo = () => {
+    if (!window.confirm(t('companyProfile.deleteLogoConfirm'))) return;
+    setForm(prev => ({ ...prev, logo_url: '' }));
+    toast.success(t('companyProfile.toasts.logoDeleted'));
   };
 
   // ---------- Actualités ----------
@@ -229,42 +286,6 @@ const CompanyProfilePage = () => {
     }
   };
 
-  // ---------- Logo ----------
-  const handleLogoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      toast.error(t('companyProfile.toasts.imageRequired'));
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error(t('companyProfile.toasts.imageTooBig'));
-      return;
-    }
-    setUploadingLogo(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/logo-${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from('company-logos')
-        .upload(fileName, file, { upsert: true });
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('company-logos').getPublicUrl(fileName);
-      setForm(prev => ({ ...prev, logo_url: urlData.publicUrl }));
-      toast.success(t('companyProfile.toasts.logoUploaded'));
-    } catch (error) {
-      toast.error(t('companyProfile.toasts.uploadError'));
-    } finally {
-      setUploadingLogo(false);
-    }
-  };
-
-  const handleDeleteLogo = () => {
-    if (!window.confirm(t('companyProfile.deleteLogoConfirm'))) return;
-    setForm(prev => ({ ...prev, logo_url: '' }));
-    toast.success(t('companyProfile.toasts.logoDeleted'));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
@@ -313,11 +334,15 @@ const CompanyProfilePage = () => {
     if (!window.confirm(t('companyProfile.deleteConfirm'))) return;
     setDeleting(true);
     try {
-      await apiFetch('/api/company/delete', {
+      const res = await fetch(`${window.location.hostname === 'localhost' ? 'http://localhost:8001' : 'https://actoos-jobs-api.onrender.com'}/api/company/delete`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id, company_id: activeCompanyId }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Erreur lors de la suppression');
+      }
       toast.success(t('companyProfile.toasts.companyDeleted'));
       navigate('/dashboard/entreprise');
     } catch (err) {
@@ -327,13 +352,7 @@ const CompanyProfilePage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen pt-20 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
+  if (loading) return <CompanyProfileSkeleton />;
 
   if (noCompany) {
     return (
@@ -499,7 +518,7 @@ const CompanyProfilePage = () => {
           </Card>
         </form>
 
-        {/* ==================== CARTE ACTUALITÉS ==================== */}
+        {/* Carte Actualités */}
         <Card className="mt-6">
           <CardContent className="p-6">
             <SectionHeader

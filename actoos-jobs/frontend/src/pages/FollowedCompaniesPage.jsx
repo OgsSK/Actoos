@@ -18,6 +18,30 @@ const BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:8001'
   : 'https://actoos-jobs-api.onrender.com';
 
+// ✅ Skeleton pour une carte entreprise suivie
+const FollowedCompanySkeleton = () => (
+  <Card className="border-slate-200 overflow-hidden animate-pulse">
+    <CardContent className="p-6">
+      <div className="flex items-start gap-4 mb-4">
+        <div className="w-14 h-14 rounded-2xl bg-slate-100 shrink-0" />
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="h-6 bg-slate-100 rounded w-2/3" />
+          <div className="h-4 bg-slate-100 rounded w-1/3" />
+          <div className="h-3 bg-slate-100 rounded w-1/4" />
+        </div>
+      </div>
+      <div className="border-t border-slate-50 pt-4 space-y-2">
+        <div className="h-4 bg-slate-100 rounded w-1/4" />
+        <div className="space-y-2">
+          {[1, 2].map(i => (
+            <div key={i} className="h-16 bg-slate-100 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 const FollowedCompaniesPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -149,9 +173,12 @@ const FollowedCompaniesPage = () => {
           </div>
         </div>
 
+        {/* ✅ Squelettes pendant le chargement */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <div className="space-y-6">
+            {[1, 2, 3].map(i => (
+              <FollowedCompanySkeleton key={i} />
+            ))}
           </div>
         ) : fetchError ? (
           <Card className="border-red-200">

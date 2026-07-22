@@ -10,7 +10,10 @@ import {
   CheckCircle, ChevronLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiFetch } from '../lib/api';
+
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
 
 /* ---------- Bloc éditable avec gestion du curseur ---------- */
 const EditableBlock = ({ title, icon: Icon, content, onChange, onSave, saving, onDelete, lastSaved, placeholder, t }) => {
@@ -137,6 +140,7 @@ const InterviewPrep = () => {
   const [saving, setSaving] = useState(false);
   const [lastSavedMap, setLastSavedMap] = useState({});
   const [generating, setGenerating] = useState({ questions: false, answers: false, tips: false });
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     if (jobId) {
@@ -213,11 +217,21 @@ const InterviewPrep = () => {
     setActiveTab(tab);
   };
 
+  // ✅ Génération IA avec fetch() natif et AbortController
   const handleGenerate = async (type) => {
     if (!jobDescription.trim()) {
       toast.error(t('interviewPrep.toast.needJobDescription'));
       return;
     }
+
+    // Annuler la requête précédente
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setGenerating(prev => ({ ...prev, [type]: true }));
     try {
       let context = `
@@ -231,8 +245,10 @@ ${candidateProfile || 'Non spécifié'}
         context = `QUESTIONS À POSER :\n${contents.questions}\n\nCONTEXTE :\n${context}`;
       }
 
-      const res = await apiFetch('/api/ai/agent', {
+      const res = await fetch(`${BASE_URL}/api/ai/agent`, {
         method: 'POST',
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           agent_id: `interview-${type}`,
           text: context,
@@ -240,7 +256,13 @@ ${candidateProfile || 'Non spécifié'}
         }),
       });
 
-      const newContent = res.result;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Erreur lors de la génération');
+      }
+
+      const data = await res.json();
+      const newContent = data.result;
       const updatedContents = { ...contents, [type]: newContent };
       setContents(updatedContents);
       await saveToCache({
@@ -251,11 +273,23 @@ ${candidateProfile || 'Non spécifié'}
       });
       toast.success(t('interviewPrep.toast.generated'));
     } catch (err) {
+      if (err.name === 'AbortError') return; // annulation silencieuse
       toast.error(err.message || t('interviewPrep.toast.error'));
     } finally {
-      setGenerating(prev => ({ ...prev, [type]: false }));
+      if (abortControllerRef.current === controller) {
+        setGenerating(prev => ({ ...prev, [type]: false }));
+      }
     }
   };
+
+  // Nettoyage au démontage
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">

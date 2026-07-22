@@ -11,6 +11,23 @@ import {
   Star, ThumbsUp, TrendingUp,
 } from 'lucide-react';
 
+// ✅ Skeleton pour une offre recommandée
+const RecommendedJobSkeleton = () => (
+  <div className="block p-5 bg-white rounded-xl border border-slate-200 animate-pulse">
+    <div className="flex items-start justify-between gap-4 mb-2">
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="h-5 bg-slate-100 rounded w-3/4" />
+        <div className="h-4 bg-slate-100 rounded w-1/2" />
+      </div>
+      <div className="h-6 w-20 bg-slate-100 rounded-full" />
+    </div>
+    <div className="flex items-center gap-2">
+      <div className="h-4 bg-slate-100 rounded w-24" />
+      <div className="h-4 bg-slate-100 rounded w-32" />
+    </div>
+  </div>
+);
+
 const RecommendedJobsPage = () => {
   const { t } = useTranslation();
   const { user, profile } = useAuth();
@@ -19,10 +36,15 @@ const RecommendedJobsPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !profile) return;
+    if (!user || !profile) {
+      setLoading(false);
+      return;
+    }
+    
     const fetchJobs = async () => {
       setLoading(true);
       try {
+        // ✅ Récupérer toutes les offres actives d'un coup
         const { data, error } = await supabase
           .from('jobs')
           .select('id, title, salary_min, salary_max, skills_required, is_remote, city_id, company:companies(name, logo_url), city:cities(name)')
@@ -31,13 +53,19 @@ const RecommendedJobsPage = () => {
           .limit(200);
 
         if (error) throw error;
+        if (!data || data.length === 0) {
+          setJobs([]);
+          return;
+        }
 
+        // ✅ Récupérer les préférences du candidat
         const candSkills = profile.candidate_profile?.skills || [];
         const candCity = profile.city_id;
         const candRemote = profile.candidate_profile?.is_open_to_remote || false;
         const candSalaryMin = profile.candidate_profile?.desired_salary_min;
         const candSalaryMax = profile.candidate_profile?.desired_salary_max;
 
+        // ✅ Filtrer et scorer côté client (rapide)
         const filtered = data
           .filter(job => {
             const jobSkills = job.skills_required || [];
@@ -67,6 +95,7 @@ const RecommendedJobsPage = () => {
         setLoading(false);
       }
     };
+    
     fetchJobs();
   }, [user, profile]);
 
@@ -106,9 +135,13 @@ const RecommendedJobsPage = () => {
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">
           {t('candidateDashboard.selected.title', 'Offres sélectionnées pour vous')}
         </h1>
+        
+        {/* ✅ Squelettes pendant le chargement */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map(i => (
+              <RecommendedJobSkeleton key={i} />
+            ))}
           </div>
         ) : jobs.length === 0 ? (
           <div className="text-center py-12 text-slate-500">

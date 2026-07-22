@@ -16,7 +16,40 @@ import {
   Users, GraduationCap
 } from 'lucide-react';
 import { CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
-import { apiFetch } from '../lib/api';
+
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
+
+// ✅ Skeleton pour l'en-tête de l'offre
+const JobHeaderSkeleton = () => (
+  <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 animate-pulse">
+    <div className="p-6 sm:p-8 border-b border-slate-100">
+      <div className="flex flex-col sm:flex-row items-start gap-5">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-100 shrink-0" />
+        <div className="flex-1 min-w-0 space-y-3">
+          <div className="h-7 bg-slate-100 rounded w-3/4" />
+          <div className="h-5 bg-slate-100 rounded w-1/2" />
+          <div className="flex gap-2">
+            <div className="h-6 bg-slate-100 rounded w-20" />
+            <div className="h-6 bg-slate-100 rounded w-16" />
+            <div className="h-6 bg-slate-100 rounded w-24" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div className="h-9 bg-slate-100 rounded w-24" />
+          <div className="h-9 bg-slate-100 rounded w-9" />
+        </div>
+      </div>
+    </div>
+    <div className="p-6 sm:p-8 space-y-4">
+      <div className="h-4 bg-slate-100 rounded w-1/4" />
+      <div className="h-4 bg-slate-100 rounded w-full" />
+      <div className="h-4 bg-slate-100 rounded w-5/6" />
+      <div className="h-4 bg-slate-100 rounded w-2/3" />
+    </div>
+  </div>
+);
 
 /* ---------- Carte offre similaire ---------- */
 const SimpleJobCard = ({ job, t, format, applicationStatus }) => {
@@ -98,6 +131,7 @@ const JobDetailPage = () => {
   }, [user, job]);
 
   const fetchJob = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('jobs')
@@ -163,12 +197,22 @@ const JobDetailPage = () => {
       }
       setApplicationStatus('pending');
       toast.success(t('jobDetail.applicationSent'));
-      const recruiterEmail = job.posted_by_user?.email || job.company?.owner?.email;
-      const recruiterName = job.posted_by_user?.first_name ? `${job.posted_by_user.first_name} ${job.posted_by_user.last_name || ''}` : 'Recruteur';
-      const candidateName = user.user_metadata?.first_name ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}` : 'Un candidat';
-      if (recruiterEmail) {
-        await apiFetch('/api/notify-new-application', { method: 'POST', body: JSON.stringify({ recruiter_email: recruiterEmail, recruiter_name: recruiterName, candidate_name: candidateName, job_title: job.title, company_name: job.company?.name || '' }) }).catch(console.error);
-      }
+      
+      // ✅ Notification non bloquante en arrière-plan
+      setTimeout(async () => {
+        const recruiterEmail = job.posted_by_user?.email || job.company?.owner?.email;
+        const recruiterName = job.posted_by_user?.first_name ? `${job.posted_by_user.first_name} ${job.posted_by_user.last_name || ''}` : 'Recruteur';
+        const candidateName = user.user_metadata?.first_name ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}` : 'Un candidat';
+        if (recruiterEmail) {
+          try {
+            await fetch(`${BASE_URL}/api/notify-new-application`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ recruiter_email: recruiterEmail, recruiter_name: recruiterName, candidate_name: candidateName, job_title: job.title, company_name: job.company?.name || '' })
+            });
+          } catch (err) { console.warn('Notification échouée:', err); }
+        }
+      }, 100);
     } catch (err) { console.error(err); toast.error(t('jobDetail.applicationError')); }
   };
 
@@ -186,7 +230,7 @@ const JobDetailPage = () => {
     } catch (err) { console.error(err); toast.error(t('jobDetail.errorSaving')); }
   };
 
-  if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+  if (loading) return <JobHeaderSkeleton />;
   if (!job) return <div className="pt-20 text-center">{t('jobDetail.notFoundMessage')}</div>;
 
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
@@ -234,7 +278,7 @@ const JobDetailPage = () => {
                 </div>
               </div>
 
-              {/* ✅ Boutons d'action – version corrigée */}
+              {/* Boutons d'action */}
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0">
                 {!isOwner && !isCompany && !isAdmin && (
                   <>

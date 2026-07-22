@@ -9,6 +9,26 @@ import { Loader2, ChevronLeft, Bell, Check, Trash2 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 import { toast } from 'sonner';
 
+// ✅ Skeleton pour une notification
+const NotificationSkeleton = ({ isUnread = false }) => (
+  <Card className={isUnread ? 'border-blue-200 bg-blue-50/50 animate-pulse' : 'animate-pulse'}>
+    <CardContent className="p-4 flex items-start gap-4">
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="flex items-center gap-2">
+          {isUnread && <div className="w-2 h-2 bg-blue-200 rounded-full" />}
+          <div className="h-5 bg-slate-200 rounded w-3/4" />
+        </div>
+        <div className="h-4 bg-slate-200 rounded w-full" />
+        <div className="h-3 bg-slate-200 rounded w-24" />
+      </div>
+      <div className="flex gap-1 shrink-0">
+        <div className="h-8 w-8 bg-slate-200 rounded-lg" />
+        <div className="h-8 w-8 bg-slate-200 rounded-lg" />
+      </div>
+    </CardContent>
+  </Card>
+);
+
 const NotificationsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -20,14 +40,20 @@ const NotificationsPage = () => {
   }, [user]);
 
   const fetchNotifications = async () => {
+    if (!user) return;
     setLoading(true);
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    setNotifications(data || []);
-    setLoading(false);
+    try {
+      const { data } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      setNotifications(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const markAsRead = async (id) => {
@@ -45,8 +71,6 @@ const NotificationsPage = () => {
     await supabase.from('notifications').delete().eq('id', id);
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
-
-  if (loading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
@@ -72,7 +96,15 @@ const NotificationsPage = () => {
           )}
         </div>
 
-        {notifications.length === 0 ? (
+        {/* ✅ Squelettes pendant le chargement */}
+        {loading ? (
+          <div className="space-y-3">
+            <NotificationSkeleton isUnread />
+            <NotificationSkeleton />
+            <NotificationSkeleton isUnread />
+            <NotificationSkeleton />
+          </div>
+        ) : notifications.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center text-slate-500">
               <Bell className="w-12 h-12 mx-auto mb-4 text-slate-300" />

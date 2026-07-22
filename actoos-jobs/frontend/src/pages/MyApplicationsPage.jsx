@@ -12,6 +12,24 @@ import {
 import { formatRelative } from '../lib/utils';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 
+// ✅ Skeleton pour une ligne de candidature
+const ApplicationSkeleton = () => (
+  <Card className="animate-pulse">
+    <CardContent className="p-4 flex items-start gap-3">
+      <div className="w-10 h-10 rounded-lg bg-slate-200 shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="h-5 bg-slate-200 rounded w-3/4" />
+        <div className="h-4 bg-slate-200 rounded w-1/2" />
+        <div className="flex gap-2">
+          <div className="h-5 bg-slate-200 rounded w-16" />
+          <div className="h-4 bg-slate-200 rounded w-24" />
+          <div className="h-4 bg-slate-200 rounded w-16" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 const MyApplicationsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -29,6 +47,7 @@ const MyApplicationsPage = () => {
   };
 
   const fetchApplications = () => {
+    if (!user) return;
     setLoading(true);
     supabase
       .from('applications')
@@ -37,6 +56,9 @@ const MyApplicationsPage = () => {
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         setApplications(data || []);
+        setLoading(false);
+      })
+      .catch(() => {
         setLoading(false);
       });
   };
@@ -49,16 +71,10 @@ const MyApplicationsPage = () => {
     fetchApplications();
   };
 
-  if (loading) return (
-    <div className="pt-20 flex justify-center">
-      <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* En-tête mobile-first */}
+        {/* En-tête */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <Link to="/dashboard">
@@ -76,7 +92,14 @@ const MyApplicationsPage = () => {
           </Button>
         </div>
 
-        {applications.length === 0 ? (
+        {/* ✅ Squelettes pendant le chargement */}
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map(i => (
+              <ApplicationSkeleton key={i} />
+            ))}
+          </div>
+        ) : applications.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center text-slate-500">
               <FileText className="w-12 h-12 mx-auto mb-4" />

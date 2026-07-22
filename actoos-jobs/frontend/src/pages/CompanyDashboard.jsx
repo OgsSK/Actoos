@@ -5,7 +5,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { apiFetch } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -25,6 +24,10 @@ import { getPlanLimit, getExpirationDays, planHasFeature } from '../lib/planLimi
 
 const UserMessages = lazy(() => import('../components/UserMessages'));
 
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
+
 // ✅ Fonction de formatage des nombres (10K, 1.2M, etc.)
 const formatCount = (num) => {
   if (!num || num < 10000) return num?.toString() || '0';
@@ -39,7 +42,6 @@ const formatCount = (num) => {
 // ---------- StatCard ----------
 const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
   const { t } = useTranslation();
-  // ✅ Formater la valeur si c'est un nombre
   const displayValue = typeof value === 'number' ? formatCount(value) : value;
   return (
     <Card className="border-slate-200 overflow-hidden">
@@ -72,7 +74,6 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const { format } = useCurrencyFormatter();
-  const { prefs } = usePreferencesContext();
 
   const now = new Date();
   const isExpired = job.status === 'active' && job.expires_at && new Date(job.expires_at) < now;
@@ -133,7 +134,6 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
       </div>
     </>, document.body) : null;
 
-  // ✅ Formatage des compteurs
   const formattedViews = formatCount(job.views_count || 0);
   const formattedApplications = formatCount(job.applications_count || 0);
 
@@ -297,56 +297,37 @@ const CompanyDashboard = () => {
     setLoading(true);
     try {
       if (!companyId) return;
-      const { data: comp } = await supabase.from('companies').select('*').eq('id', companyId).single();
+      
+      const now = new Date().toISOString();
+      
+      // Chargement parallèle des données
+      const [compResult, jobsResult] = await Promise.all([
+        supabase.from('companies').select('*').eq('id', companyId).single(),
+        supabase.from('jobs').select('*, city:cities(name)').eq('company_id', companyId).order('created_at', { ascending: false }).limit(10),
+      ]);
+
+      const comp = compResult.data;
       if (!comp) return;
       setCompany(comp);
 
-      const now = new Date().toISOString();
-      const { count: activeJobsCount } = await supabase
-        .from('jobs')
-        .select('id', { count: 'exact', head: true })
-        .eq('company_id', comp.id)
-        .eq('status', 'active')
-        .or(`expires_at.is.null,expires_at.gte.${now}`);
+      const jobsData = jobsResult.data || [];
+      setJobs(jobsData);
 
-      const { data: jobsData } = await supabase
-        .from('jobs')
-        .select('*, city:cities(name)')
-        .eq('company_id', comp.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      setJobs(jobsData || []);
+      // Stats en parallèle
+      const [activeCountResult, appsResult, docsResult] = await Promise.all([
+        supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', comp.id).eq('status', 'active').or(`expires_at.is.null,expires_at.gte.${now}`),
+        jobsData.length ? supabase.from('applications').select(`*, candidate:users(first_name, last_name, email, avatar_url), job:jobs(title)`).in('job_id', jobsData.map(j => j.id)).order('created_at', { ascending: false }).limit(10) : Promise.resolve({ data: [] }),
+        supabase.from('hiring_documents').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'uploaded'),
+      ]);
 
-      let appsData = [];
-      if (jobsData?.length) {
-        const { data } = await supabase
-          .from('applications')
-          .select(`*, candidate:users(first_name, last_name, email, avatar_url), job:jobs(title)`)
-          .in('job_id', jobsData.map(j => j.id))
-          .order('created_at', { ascending: false })
-          .limit(10);
-        appsData = data || [];
-      }
-      setApplications(appsData);
-
-      const { count: docsCount, error: docsError } = await supabase
-        .from('hiring_documents')
-        .select('id', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .eq('status', 'uploaded');
-
-      if (docsError) {
-        console.error('Erreur comptage documents:', docsError);
-        setPendingDocsCount(0);
-      } else {
-        setPendingDocsCount(docsCount || 0);
-      }
+      setApplications(appsResult.data || []);
+      setPendingDocsCount(docsResult.count || 0);
 
       setStats({
-        totalJobs: jobsData?.length || 0,
-        activeJobs: activeJobsCount || 0,
-        totalApplications: appsData.length,
-        newApplications: appsData.filter(app => app.status === 'pending').length,
+        totalJobs: jobsData.length,
+        activeJobs: activeCountResult.count || 0,
+        totalApplications: appsResult.data?.length || 0,
+        newApplications: (appsResult.data || []).filter(app => app.status === 'pending').length,
       });
     } catch (err) {
       console.error(err);
@@ -386,17 +367,14 @@ const CompanyDashboard = () => {
   const isBusinessPlan = plan === 'business' || plan === 'enterprise';
   const showFollowersWidget = plan === 'pro' || isBusinessPlan;
 
+  // ✅ Chargement des followers via Supabase direct
   const fetchFollowersSummary = useCallback(async () => {
     if (!company || !showFollowersWidget) return;
     setLoadingFollowers(true);
     try {
       const { data, error } = await supabase
         .from('company_followers')
-        .select(`
-          user_id,
-          created_at,
-          user:users ( first_name, last_name, avatar_url )
-        `)
+        .select(`user_id, created_at, user:users(first_name, last_name, avatar_url)`)
         .eq('company_id', company.id)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -429,7 +407,7 @@ const CompanyDashboard = () => {
   
   const handleToggleJobStatus = async (job, newStatus) => {
     if (newStatus === 'active' && (job.status === 'draft' || job.status === 'rejected')) {
-      toast.error(t('companyDashboard.toasts.submitForValidationRequired', 'Cette offre doit être soumise pour validation avant publication.'));
+      toast.error(t('companyDashboard.toasts.submitForValidationRequired'));
       return;
     }
     if (newStatus === 'active') {
@@ -459,7 +437,14 @@ const CompanyDashboard = () => {
       await supabase.from('jobs').update({ status: 'pending' }).eq('id', job.id);
       setJobs(prev => prev.map(j => (j.id === job.id ? { ...j, status: 'pending' } : j)));
       toast.success(t('companyDashboard.toasts.submittedForValidation'));
-      try { await apiFetch('/api/notify-admin-new-job', { method: 'POST', body: JSON.stringify({ job_title: job.title, company_name: company.name, company_email: company.email || user.email }) }); } catch (err) { console.error('Erreur notification admin job:', err); }
+      // Notification admin non bloquante
+      setTimeout(() => {
+        fetch(`${BASE_URL}/api/notify-admin-new-job`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ job_title: job.title, company_name: company.name, company_email: company.email || user.email }),
+        }).catch(console.error);
+      }, 100);
     } catch (err) { toast.error(t('companyDashboard.toasts.submissionError')); }
   };
 
@@ -468,7 +453,15 @@ const CompanyDashboard = () => {
   const handleCancelSubscription = async (reason) => {
     setCancelling(true);
     try {
-      await apiFetch('/api/subscription/cancel', { method: 'POST', body: JSON.stringify({ user_id: user.id, company_id: company?.id, reason }) });
+      const res = await fetch(`${BASE_URL}/api/subscription/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, company_id: company?.id, reason }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Erreur');
+      }
       toast.success(t('companyDashboard.toasts.subscriptionCancelled'));
       setShowCancelModal(false);
       await fetchCompanyData(company.id);
@@ -489,7 +482,12 @@ const CompanyDashboard = () => {
 
   const handleFreeBoost = async (jobId) => {
     try {
-      await apiFetch('/api/boost/free', { method: 'POST', body: JSON.stringify({ job_id: jobId, user_id: user.id }) });
+      const res = await fetch(`${BASE_URL}/api/boost/free`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId, user_id: user.id }),
+      });
+      if (!res.ok) throw new Error('Erreur boost');
       toast.success(t('companyDashboard.toasts.boostActivated'));
       fetchCompanyData(activeCompanyId);
     } catch (err) {
@@ -510,7 +508,6 @@ const CompanyDashboard = () => {
   const hasCVBank = planHasFeature(plan, 'canAccessCvBank');
   const activeJobsCount = stats.activeJobs;
 
-  // ✅ Formatage des compteurs pour l'affichage
   const formattedTotalJobs = formatCount(stats.totalJobs);
   const formattedActiveJobs = formatCount(stats.activeJobs);
   const formattedTotalApplications = formatCount(stats.totalApplications);
@@ -538,6 +535,7 @@ const CompanyDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20" data-testid="company-dashboard">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Sélecteur d'entreprise */}
         <div className="flex items-center gap-3 mb-6">
           <Layers className="w-5 h-5 text-slate-600" />
           <select value={activeCompanyId || ''} onChange={(e) => handleSwitchCompany(e.target.value)} className="border border-slate-200 bg-white rounded-xl px-4 py-2 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-500">
@@ -545,40 +543,23 @@ const CompanyDashboard = () => {
           </select>
 
           {activeCompanyId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className={activeCompanyId === primaryCompanyId ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}
-              onClick={handleSetPrimaryCompany}
-              title={activeCompanyId === primaryCompanyId ? t('companyDashboard.removeAsPrimary') : t('companyDashboard.setAsPrimary')}
-            >
+            <Button variant="ghost" size="sm" className={activeCompanyId === primaryCompanyId ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'} onClick={handleSetPrimaryCompany} title={activeCompanyId === primaryCompanyId ? t('companyDashboard.removeAsPrimary') : t('companyDashboard.setAsPrimary')}>
               <Star className={`w-4 h-4 ${activeCompanyId === primaryCompanyId ? 'fill-amber-500' : ''}`} />
             </Button>
           )}
 
           {canCreateCompany ? (
             <Link to="/dashboard/entreprise/creer" className="ml-auto">
-              <Button variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-1" /> {t('companyDashboard.companySelector.newCompany')}
-              </Button>
+              <Button variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" /> {t('companyDashboard.companySelector.newCompany')}</Button>
             </Link>
           ) : (
-            <div className="ml-auto text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-full overflow-hidden whitespace-nowrap max-w-[200px] sm:max-w-none"
-                 title={t('companyDashboard.multiCompanyLocked', 'Multi-entreprise réservé au plan Business')}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  paddingLeft: '100%',
-                  animation: 'marquee 10s linear infinite',
-                }}
-                className="sm:animate-none sm:pl-0"
-              >
-                🔒 {t('companyDashboard.multiCompanyLocked', 'Multi-entreprise réservé au plan Business')}
-              </span>
+            <div className="ml-auto text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-full whitespace-nowrap" title={t('companyDashboard.multiCompanyLocked')}>
+              🔒 {t('companyDashboard.multiCompanyLocked', 'Multi-entreprise réservé au plan Business')}
             </div>
           )}
         </div>
 
+        {/* En-tête entreprise */}
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
             <div className="w-16 h-16 shrink-0 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-slate-200">
@@ -587,59 +568,28 @@ const CompanyDashboard = () => {
             <div className="min-w-0"><h1 className="text-2xl font-bold text-slate-900 truncate">{company?.name}</h1><p className="text-slate-600">{t('companyDashboard.header.title')}</p></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto">
-            <Link to="/dashboard/entreprise/profil" className="w-full">
-              <Button variant="outline" className="w-full min-h-[44px]">
-                <Settings className="w-4 h-4 mr-2" />{t('companyDashboard.profileButton')}
-              </Button>
-            </Link>
-
-            <Link to={`/entreprises/${activeCompanyId}?from=company-dashboard`} className="w-full">
-              <Button variant="outline" className="w-full min-h-[44px]">
-                <Eye className="w-4 h-4 mr-2" />
-                {t('candidateDashboard.quickActions.viewPublicProfile', 'Voir ma vitrine')}
-              </Button>
-            </Link>
-
-            <Link to="/dashboard/entreprise/offres/nouvelle" className="w-full">
-              <Button className="w-full min-h-[44px] bg-blue-600 text-white hover:bg-blue-700">
-                <Plus className="w-4 h-4 mr-2" />{t('companyDashboard.newOfferButton')}
-              </Button>
-            </Link>
+            <Link to="/dashboard/entreprise/profil" className="w-full"><Button variant="outline" className="w-full min-h-[44px]"><Settings className="w-4 h-4 mr-2" />{t('companyDashboard.profileButton')}</Button></Link>
+            <Link to={`/entreprises/${activeCompanyId}?from=company-dashboard`} className="w-full"><Button variant="outline" className="w-full min-h-[44px]"><Eye className="w-4 h-4 mr-2" />{t('candidateDashboard.quickActions.viewPublicProfile', 'Voir ma vitrine')}</Button></Link>
+            <Link to="/dashboard/entreprise/offres/nouvelle" className="w-full"><Button className="w-full min-h-[44px] bg-blue-600 text-white hover:bg-blue-700"><Plus className="w-4 h-4 mr-2" />{t('companyDashboard.newOfferButton')}</Button></Link>
           </div>
         </div>
 
+        {/* Bannières de plan */}
         {isBusinessPlan && (
           <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Crown className="w-8 h-8 text-yellow-300" />
-              <div>
-                <h2 className="font-bold text-lg">{t('companyDashboard.businessBanner.title', 'Plan Business')}</h2>
-                <p className="text-white/80 text-sm">{t('companyDashboard.businessBanner.subtitle', 'Accès illimité à toutes les fonctionnalités premium')}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Badge className="bg-white/20 text-white border-0"><Sparkles className="w-3 h-3 mr-1" />{t('companyDashboard.businessBanner.boost', '1 boost gratuit / mois')}</Badge>
-              <Badge className="bg-white/20 text-white border-0"><Search className="w-3 h-3 mr-1" />{t('companyDashboard.businessBanner.cvBank', 'CV Bank illimitée')}</Badge>
-            </div>
+            <div className="flex items-center gap-3"><Crown className="w-8 h-8 text-yellow-300" /><div><h2 className="font-bold text-lg">{t('companyDashboard.businessBanner.title', 'Plan Business')}</h2><p className="text-white/80 text-sm">{t('companyDashboard.businessBanner.subtitle')}</p></div></div>
+            <div className="flex gap-2"><Badge className="bg-white/20 text-white border-0"><Sparkles className="w-3 h-3 mr-1" />{t('companyDashboard.businessBanner.boost')}</Badge><Badge className="bg-white/20 text-white border-0"><Search className="w-3 h-3 mr-1" />{t('companyDashboard.businessBanner.cvBank')}</Badge></div>
           </div>
         )}
 
         {!isBusinessPlan && plan === 'pro' && (
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Zap className="w-8 h-8 text-blue-200" />
-              <div>
-                <h2 className="font-bold text-lg">{t('companyDashboard.proBanner.title', 'Plan Pro')}</h2>
-                <p className="text-white/80 text-sm">{t('companyDashboard.proBanner.subtitle', 'Des outils avancés pour vos recrutements')}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Badge className="bg-white/20 text-white border-0"><FileText className="w-3 h-3 mr-1" />{t('companyDashboard.proBanner.interviewTools', 'Outils entretien')}</Badge>
-              <Badge className="bg-white/20 text-white border-0"><Sparkles className="w-3 h-3 mr-1" />{t('companyDashboard.proBanner.aiNotes', 'Notes IA')}</Badge>
-            </div>
+            <div className="flex items-center gap-3"><Zap className="w-8 h-8 text-blue-200" /><div><h2 className="font-bold text-lg">{t('companyDashboard.proBanner.title', 'Plan Pro')}</h2><p className="text-white/80 text-sm">{t('companyDashboard.proBanner.subtitle')}</p></div></div>
+            <div className="flex gap-2"><Badge className="bg-white/20 text-white border-0"><FileText className="w-3 h-3 mr-1" />{t('companyDashboard.proBanner.interviewTools')}</Badge><Badge className="bg-white/20 text-white border-0"><Sparkles className="w-3 h-3 mr-1" />{t('companyDashboard.proBanner.aiNotes')}</Badge></div>
           </div>
         )}
 
+        {/* Statistiques */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <StatCard icon={Briefcase} label={t('companyDashboard.stats.publishedJobs')} value={stats.activeJobs} color="blue" />
           <StatCard icon={FileText} label={t('companyDashboard.stats.totalApplications')} value={stats.totalApplications} color="green" />
@@ -647,7 +597,9 @@ const CompanyDashboard = () => {
           <StatCard icon={Eye} label={t('companyDashboard.stats.totalViews')} value={jobs.reduce((s, j) => s + (j.views_count || 0), 0)} color="orange" />
         </div>
 
+        {/* Contenu principal */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Colonne gauche : offres */}
           <div className="xl:col-span-2">
             <Card className="border-slate-200 overflow-visible">
               <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -668,7 +620,9 @@ const CompanyDashboard = () => {
             </Card>
           </div>
 
+          {/* Colonne droite */}
           <div className="space-y-6">
+            {/* Candidatures */}
             <Card className="border-slate-200 overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div><h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.applicationsSection.title')}</h2><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.newCount', { count: formattedNewApplications })}</p></div>
@@ -677,6 +631,7 @@ const CompanyDashboard = () => {
               <CardContent className="p-4">{applications.length === 0 ? (<div className="text-center py-6"><Users className="w-10 h-10 text-slate-300 mx-auto mb-2" /><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.noApplications')}</p></div>) : (<div className="space-y-2">{applications.slice(0, 5).map(app => (<ApplicationCard key={app.id} application={app} />))}</div>)}</CardContent>
             </Card>
 
+            {/* Profil entreprise */}
             <Card className="border-slate-200 overflow-hidden">
               <CardContent className="p-4 sm:p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">{t('companyDashboard.companyProfileCard.title')}</h3>
@@ -694,6 +649,7 @@ const CompanyDashboard = () => {
               </CardContent>
             </Card>
 
+            {/* Messages admin */}
             <Card className="border-slate-200 overflow-hidden">
               <CardHeader><CardTitle>{t('companyDashboard.adminMessages.title')}</CardTitle></CardHeader>
               <CardContent>
@@ -703,14 +659,10 @@ const CompanyDashboard = () => {
               </CardContent>
             </Card>
 
+            {/* Abonnés */}
             {showFollowersWidget && (
               <Card className="border-slate-200 overflow-hidden">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Users className="w-5 h-5 text-blue-600" />
-                    {t('companyDashboard.followers.title', 'Mes abonnés')}
-                  </CardTitle>
-                </CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Users className="w-5 h-5 text-blue-600" />{t('companyDashboard.followers.title', 'Mes abonnés')}</CardTitle></CardHeader>
                 <CardContent>
                   {loadingFollowers ? (
                     <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>
@@ -725,10 +677,7 @@ const CompanyDashboard = () => {
                               <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
                                 {follower.avatar_url ? (<img src={follower.avatar_url} alt="" className="w-full h-full object-cover" />) : (<UserPlus className="w-4 h-4 m-2 text-slate-400" />)}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-700 truncate">{follower.first_name} {follower.last_name}</p>
-                                <p className="text-xs text-slate-400">{formatRelative(follower.followed_at)}</p>
-                              </div>
+                              <div className="flex-1 min-w-0"><p className="text-sm font-medium text-slate-700 truncate">{follower.first_name} {follower.last_name}</p><p className="text-xs text-slate-400">{formatRelative(follower.followed_at)}</p></div>
                             </div>
                           ))}
                         </div>
@@ -740,141 +689,79 @@ const CompanyDashboard = () => {
               </Card>
             )}
 
+            {/* Banque de CV */}
             {hasCVBank && (
               <Card className="border-purple-200 bg-purple-50 overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2"><Crown className="w-5 h-5 text-purple-600" /><h3 className="font-semibold text-purple-900">{t('companyDashboard.cvBank.title', 'Banque de CV')}</h3></div>
-                  <p className="text-sm text-purple-700 mb-4">{t('companyDashboard.cvBank.desc', 'Accédez à notre vivier de talents disponibles.')}</p>
+                  <p className="text-sm text-purple-700 mb-4">{t('companyDashboard.cvBank.desc')}</p>
                   <Link to="/dashboard/entreprise/cv-bank"><Button variant="outline" className="w-full border-purple-300 text-purple-700 hover:bg-purple-100"><Search className="w-4 h-4 mr-2" />{t('companyDashboard.cvBank.browse', 'Parcourir les CV')}</Button></Link>
                 </CardContent>
               </Card>
             )}
 
+            {/* Documents en attente */}
             {pendingDocsCount > 0 && (
               <Card className="border-blue-200 bg-blue-50 overflow-hidden">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2"><FileText className="w-5 h-5 text-blue-600" /><h3 className="font-semibold text-blue-900">{t('companyDashboard.pendingDocuments.title', 'Documents à valider')}</h3></div>
-                  <p className="text-sm text-blue-700">{t('companyDashboard.pendingDocuments.count', { count: formattedPendingDocs }, `${pendingDocsCount} document(s) en attente de validation.`)}</p>
-                  <Link to="/dashboard/entreprise/candidatures"><Button variant="outline" size="sm" className="mt-2 w-full border-blue-300 text-blue-700 hover:bg-blue-100">{t('companyDashboard.pendingDocuments.viewApplications', 'Voir les candidatures')}</Button></Link>
+                  <div className="flex items-center gap-2 mb-2"><FileText className="w-5 h-5 text-blue-600" /><h3 className="font-semibold text-blue-900">{t('companyDashboard.pendingDocuments.title')}</h3></div>
+                  <p className="text-sm text-blue-700">{t('companyDashboard.pendingDocuments.count', { count: formattedPendingDocs })}</p>
+                  <Link to="/dashboard/entreprise/candidatures"><Button variant="outline" size="sm" className="mt-2 w-full border-blue-300 text-blue-700 hover:bg-blue-100">{t('companyDashboard.pendingDocuments.viewApplications')}</Button></Link>
                 </CardContent>
               </Card>
             )}
 
-            {/* Carte abonnement – design premium épuré */}
-<Card className="border-slate-200 bg-white overflow-hidden">
-  <CardContent className="p-0">
-    {/* Barre supérieure colorée selon le plan */}
-    <div className={`h-1 ${
-      plan === 'business' || plan === 'enterprise' ? 'bg-gradient-to-r from-purple-500 to-purple-400' :
-      plan === 'pro' ? 'bg-gradient-to-r from-blue-500 to-blue-400' :
-      'bg-gradient-to-r from-slate-300 to-slate-200'
-    }`} />
-
-    <div className="p-5 sm:p-6">
-      {/* Rangée 1 : Plan actuel */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-            plan === 'business' || plan === 'enterprise' ? 'bg-purple-50' :
-            plan === 'pro' ? 'bg-blue-50' : 'bg-slate-50'
-          }`}>
-            {plan === 'business' || plan === 'enterprise' ? (
-              <Crown className="w-4.5 h-4.5 text-purple-600" />
-            ) : plan === 'pro' ? (
-              <Zap className="w-4.5 h-4.5 text-blue-600" />
-            ) : (
-              <Briefcase className="w-4.5 h-4.5 text-slate-500" />
-            )}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-900 leading-tight">
-              {t('companyDashboard.subscriptionCard.currentPlan', { plan: planLabel })}
-            </p>
-            <p className="text-xs text-slate-400">
-              {company?.billing_cycle
-                ? (company.billing_cycle === 'monthly' ? t('pricing.toggle.monthly') : t('pricing.toggle.annual'))
-                : ''}
-            </p>
-          </div>
-        </div>
-        <Link to="/tarifs" className="text-xs text-slate-400 hover:text-slate-600 transition-colors font-medium">
-          {t('companyDashboard.subscriptionCard.changePlan')} →
-        </Link>
-      </div>
-
-      {/* Rangée 2 : Jauge minimaliste */}
-      <div className="bg-slate-50 rounded-xl p-3.5 mb-4">
-        <div className="flex justify-between items-end mb-2">
-          <span className="text-xs text-slate-500">{t('companyDashboard.subscriptionCard.activeOffers')}</span>
-          <span className="text-xs font-semibold text-slate-700 tabular-nums">
-            {formattedActiveJobsCount}
-            <span className="text-slate-400 font-normal"> / {jobsLimit === Infinity ? '∞' : jobsLimit}</span>
-          </span>
-        </div>
-        <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${
-              plan === 'business' || plan === 'enterprise' ? 'bg-purple-500' :
-              plan === 'pro' ? 'bg-blue-500' : 'bg-slate-400'
-            }`}
-            style={{ width: `${jobsLimit === Infinity ? 100 : Math.min(100, (activeJobsCount / jobsLimit) * 100)}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Rangée 3 : Actions */}
-      <div className="space-y-1.5">
-        {plan !== 'free' && company?.stripe_subscription_id ? (
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleOpenPortal}
-              className="w-full justify-between text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-50 h-9 px-3 font-normal rounded-lg group"
-            >
-              <span className="flex items-center gap-2">
-                <CreditCard className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600" />
-                {t('companyDashboard.subscriptionCard.manageSubscription')}
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-400" />
-            </Button>
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setShowCancelModal(true)}
-                className="text-[11px] text-slate-300 hover:text-red-400 transition-colors py-1"
-              >
-                {t('companyDashboard.subscriptionCard.cancelSubscription')}
-              </button>
-            </div>
-          </>
-        ) : plan === 'free' && company?.cancellation_reason ? (
-          <div className="bg-slate-50 rounded-lg p-3">
-            <p className="text-[11px] text-slate-400 italic leading-relaxed">
-              {t('companyDashboard.subscriptionCard.cancelReasonQuote', { reason: company.cancellation_reason })}
-            </p>
-          </div>
-        ) : (
-          <div className="bg-slate-50 rounded-lg p-3">
-            <p className="text-xs text-slate-500 leading-relaxed">
-              {t('companyDashboard.subscriptionCard.freePlanMessage')}
-            </p>
-          </div>
-        )}
-
-        {/* Boost gratuit */}
-        {isBusinessPlan && (
-          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
-            <Sparkles className="w-3 h-3 text-purple-400" />
-            <p className="text-[11px] text-slate-500">
-              {t('companyDashboard.subscriptionCard.freeBoostMessage')}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  </CardContent>
-</Card>
+            {/* Carte abonnement */}
+            <Card className="border-slate-200 bg-white overflow-hidden">
+              <CardContent className="p-0">
+                <div className={`h-1 ${plan === 'business' || plan === 'enterprise' ? 'bg-gradient-to-r from-purple-500 to-purple-400' : plan === 'pro' ? 'bg-gradient-to-r from-blue-500 to-blue-400' : 'bg-gradient-to-r from-slate-300 to-slate-200'}`} />
+                <div className="p-5 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${plan === 'business' || plan === 'enterprise' ? 'bg-purple-50' : plan === 'pro' ? 'bg-blue-50' : 'bg-slate-50'}`}>
+                        {plan === 'business' || plan === 'enterprise' ? <Crown className="w-4.5 h-4.5 text-purple-600" /> : plan === 'pro' ? <Zap className="w-4.5 h-4.5 text-blue-600" /> : <Briefcase className="w-4.5 h-4.5 text-slate-500" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900 leading-tight">{t('companyDashboard.subscriptionCard.currentPlan', { plan: planLabel })}</p>
+                        <p className="text-xs text-slate-400">{company?.billing_cycle ? (company.billing_cycle === 'monthly' ? t('pricing.toggle.monthly') : t('pricing.toggle.annual')) : ''}</p>
+                      </div>
+                    </div>
+                    <Link to="/tarifs" className="text-xs text-slate-400 hover:text-slate-600 transition-colors font-medium">{t('companyDashboard.subscriptionCard.changePlan')} →</Link>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3.5 mb-4">
+                    <div className="flex justify-between items-end mb-2">
+                      <span className="text-xs text-slate-500">{t('companyDashboard.subscriptionCard.activeOffers')}</span>
+                      <span className="text-xs font-semibold text-slate-700 tabular-nums">{formattedActiveJobsCount}<span className="text-slate-400 font-normal"> / {jobsLimit === Infinity ? '∞' : jobsLimit}</span></span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-500 ${plan === 'business' || plan === 'enterprise' ? 'bg-purple-500' : plan === 'pro' ? 'bg-blue-500' : 'bg-slate-400'}`} style={{ width: `${jobsLimit === Infinity ? 100 : Math.min(100, (activeJobsCount / jobsLimit) * 100)}%` }} />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    {plan !== 'free' && company?.stripe_subscription_id ? (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={handleOpenPortal} className="w-full justify-between text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-50 h-9 px-3 font-normal rounded-lg group">
+                          <span className="flex items-center gap-2"><CreditCard className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600" />{t('companyDashboard.subscriptionCard.manageSubscription')}</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-400" />
+                        </Button>
+                        <div className="text-center">
+                          <button type="button" onClick={() => setShowCancelModal(true)} className="text-[11px] text-slate-300 hover:text-red-400 transition-colors py-1">
+                            {t('companyDashboard.subscriptionCard.cancelSubscription')}
+                          </button>
+                        </div>
+                      </>
+                    ) : plan === 'free' && company?.cancellation_reason ? (
+                      <div className="bg-slate-50 rounded-lg p-3"><p className="text-[11px] text-slate-400 italic leading-relaxed">{t('companyDashboard.subscriptionCard.cancelReasonQuote', { reason: company.cancellation_reason })}</p></div>
+                    ) : (
+                      <div className="bg-slate-50 rounded-lg p-3"><p className="text-xs text-slate-500 leading-relaxed">{t('companyDashboard.subscriptionCard.freePlanMessage')}</p></div>
+                    )}
+                    {isBusinessPlan && (
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100"><Sparkles className="w-3 h-3 text-purple-400" /><p className="text-[11px] text-slate-500">{t('companyDashboard.subscriptionCard.freeBoostMessage')}</p></div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

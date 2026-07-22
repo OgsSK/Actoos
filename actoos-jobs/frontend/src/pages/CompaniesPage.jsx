@@ -24,6 +24,33 @@ const formatCount = (num) => {
   return `${val}K`;
 };
 
+// ✅ Skeleton pour une carte entreprise
+const CompanyCardSkeleton = () => (
+  <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden h-full">
+    <div className="p-5 sm:p-6">
+      <div className="flex items-start gap-4 mb-3">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-slate-100 shrink-0" />
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="h-5 bg-slate-100 rounded w-3/4" />
+          <div className="h-4 bg-slate-100 rounded w-1/2" />
+        </div>
+      </div>
+      <div className="space-y-2 mb-4">
+        <div className="h-4 bg-slate-100 rounded w-full" />
+        <div className="h-4 bg-slate-100 rounded w-2/3" />
+      </div>
+      <div className="flex gap-2 mb-4">
+        <div className="h-8 w-24 bg-slate-100 rounded-lg" />
+        <div className="h-8 w-20 bg-slate-100 rounded-lg" />
+      </div>
+      <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
+        <div className="h-6 w-16 bg-slate-100 rounded-lg" />
+        <div className="h-6 w-12 bg-slate-100 rounded-lg" />
+      </div>
+    </div>
+  </div>
+);
+
 // ---------- Carte entreprise ----------
 const CompanyCard = ({ company, user }) => {
   const { t, i18n } = useTranslation();
@@ -31,15 +58,21 @@ const CompanyCard = ({ company, user }) => {
   const [followersCount, setFollowersCount] = useState(company.followers_count || 0);
   const [loadingFollow, setLoadingFollow] = useState(false);
 
+  // ✅ Remplacer apiFetch par Supabase direct
   useEffect(() => {
     if (!user) return;
-    fetch(`/api/companies/${company.id}/follow-status?user_id=${user.id}`)
-      .then(res => res.json())
-      .then(data => setIsFollowing(data.is_following ?? false))
+    supabase
+      .from('company_followers')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('company_id', company.id)
+      .maybeSingle()
+      .then(({ data }) => setIsFollowing(!!data))
       .catch(() => setIsFollowing(false));
     setFollowersCount(company.followers_count || 0);
   }, [user, company.id, company.followers_count]);
 
+  // ✅ Gestion du follow/unfollow via Supabase
   const handleToggleFollow = async (e) => {
     e.preventDefault();
     if (!user) {
@@ -47,22 +80,23 @@ const CompanyCard = ({ company, user }) => {
       return;
     }
     setLoadingFollow(true);
-    const method = isFollowing ? 'DELETE' : 'POST';
     try {
-      const res = await fetch(`/api/companies/${company.id}/follow`, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setIsFollowing(!isFollowing);
-        setFollowersCount(data.followers_count);
-        toast.success(
-          isFollowing
-            ? t('companyDetail.unfollowSuccess')
-            : t('companyDetail.followSuccess')
-        );
+      if (isFollowing) {
+        await supabase
+          .from('company_followers')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('company_id', company.id);
+        setIsFollowing(false);
+        setFollowersCount(prev => Math.max(0, prev - 1));
+        toast.success(t('companyDetail.unfollowSuccess'));
+      } else {
+        await supabase
+          .from('company_followers')
+          .insert({ user_id: user.id, company_id: company.id });
+        setIsFollowing(true);
+        setFollowersCount(prev => prev + 1);
+        toast.success(t('companyDetail.followSuccess'));
       }
     } catch (err) {
       toast.error(t('common.error'));
@@ -83,9 +117,7 @@ const CompanyCard = ({ company, user }) => {
     return industryFr;
   };
 
-  // ✅ Formatage du nombre d'abonnés
   const formattedFollowers = formatCount(followersCount);
-  // ✅ Formatage du nombre d'offres
   const formattedJobs = formatCount(company.activeJobsCount || 0);
 
   return (
@@ -151,14 +183,12 @@ const CompanyCard = ({ company, user }) => {
         </div>
 
         <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
-          {/* ✅ Nombre d'offres formaté */}
           <Badge className="bg-blue-50 text-blue-700 border-0 font-medium text-xs sm:text-sm">
             <Briefcase className="w-3.5 h-3.5 mr-1.5" />
             {t('companiesPage.offers', { count: formattedJobs })}
           </Badge>
 
           <div className="flex items-center gap-3">
-            {/* ✅ Nombre d'abonnés formaté */}
             <span className="text-xs sm:text-sm text-slate-400 flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" />
               {t('companyDetail.followers', { count: formattedFollowers })}
@@ -243,8 +273,12 @@ const CompaniesPage = () => {
     }
   }, [profile, signOut, navigate]);
 
+  // ✅ Debounce sur les filtres
   useEffect(() => {
-    fetchCompanies();
+    const timer = setTimeout(() => {
+      fetchCompanies();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [searchQuery, selectedIndustry, prefs.country]);
 
   const fetchCompanies = async () => {
@@ -384,9 +418,12 @@ const CompaniesPage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* ✅ Squelettes au lieu du spinner */}
         {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <CompanyCardSkeleton key={i} />
+            ))}
           </div>
         ) : companies.length === 0 ? (
           <div className="text-center py-20">

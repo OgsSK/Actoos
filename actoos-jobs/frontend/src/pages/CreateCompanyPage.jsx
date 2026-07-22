@@ -15,7 +15,10 @@ import {
   Upload, Loader2, ChevronLeft, Save, Image
 } from 'lucide-react';
 import { slugify } from '../lib/utils';
-import { apiFetch } from '../lib/api';
+
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
 
 const CreateCompanyPage = () => {
   const { t, i18n } = useTranslation();
@@ -126,6 +129,7 @@ const CreateCompanyPage = () => {
     }
     setLoading(true);
     try {
+      // Création de l'entreprise
       const { data: company, error: companyError } = await supabase
         .from('companies')
         .insert({
@@ -152,30 +156,35 @@ const CreateCompanyPage = () => {
         .single();
       if (companyError) throw companyError;
 
+      // Ajout du membre
       await supabase.from('company_members').insert({
         company_id: company.id,
         user_id: user.id,
         role: 'admin',
         is_admin: true
       });
+
+      // Mise à jour du rôle utilisateur
       await supabase.from('users').update({ role: 'company' }).eq('id', user.id);
       await supabase.auth.updateUser({ data: { role: 'company' } });
       if (refreshProfile) await refreshProfile();
 
       toast.success(t('createCompany.toasts.companyCreated'));
-      try {
-        await apiFetch('/api/notify-admin-new-company', {
+
+      // Notification admin non bloquante
+      setTimeout(() => {
+        fetch(`${BASE_URL}/api/notify-admin-new-company`, {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             company_name: form.name,
             owner_email: user.email,
             owner_name: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`,
             language: i18n.language,
           })
-        });
-      } catch (e) {
-        console.error('Erreur notification admin:', e);
-      }
+        }).catch(err => console.error('Erreur notification admin:', err));
+      }, 100);
+
       navigate('/dashboard/entreprise', { replace: true });
     } catch (error) {
       console.error('Error creating company:', error);
@@ -359,7 +368,6 @@ const CreateCompanyPage = () => {
                     onChange={(e) => setSelectedCountryId(e.target.value)}
                     className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    {/* ✅ Même clé que dans CountryCurrencySelector (SettingsPage) */}
                     <option value="">{t('settings.selectCountry')}</option>
                     {countries.map(c => {
                       const disabled = isRestricted && !allowed.includes(c.code);

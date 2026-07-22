@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { apiFetch } from '../lib/api';
+
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
 
 const UnsubscribePage = () => {
   const { i18n } = useTranslation();
@@ -14,14 +17,18 @@ const UnsubscribePage = () => {
       setStatus('error');
       return;
     }
-    (async () => {
+
+    const unsubscribe = async () => {
       try {
-        const res = await apiFetch(`/api/newsletter/unsubscribe?email=${encodeURIComponent(email)}`);
-        setStatus(res.success ? 'success' : 'error');
+        const res = await fetch(`${BASE_URL}/api/newsletter/unsubscribe?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        setStatus(data.success ? 'success' : 'error');
       } catch (err) {
         setStatus('error');
       }
-    })();
+    };
+
+    unsubscribe();
   }, [email]);
 
   // Langue active (ex: 'en', 'fr', 'es', 'pt', 'ar', 'it', 'de', 'nl')

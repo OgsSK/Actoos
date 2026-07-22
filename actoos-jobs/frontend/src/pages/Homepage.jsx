@@ -18,6 +18,27 @@ import {
 import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
 import { toast } from 'sonner';
 
+// ✅ Skeleton pour une carte d'offre
+const JobCardSkeleton = () => (
+  <div className="bg-white border border-slate-200 rounded-2xl p-5 animate-pulse">
+    <div className="flex items-start gap-4">
+      <div className="w-14 h-14 rounded-2xl bg-slate-100 shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="h-5 bg-slate-100 rounded w-3/4" />
+        <div className="h-4 bg-slate-100 rounded w-1/2" />
+      </div>
+    </div>
+    <div className="flex gap-2 mt-4">
+      <div className="h-7 w-20 bg-slate-100 rounded-full" />
+      <div className="h-7 w-16 bg-slate-100 rounded-full" />
+    </div>
+    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-50">
+      <div className="h-5 bg-slate-100 rounded w-24" />
+      <div className="h-4 bg-slate-100 rounded w-16" />
+    </div>
+  </div>
+);
+
 /* ===================================================================
    Barre de recherche avec tags de catégories
    =================================================================== */
@@ -224,6 +245,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
   useEffect(() => {
     if (!activeCompanyIds || activeCompanyIds.length === 0) { setJobs([]); setLoading(false); return; }
     const fetchJobs = async () => {
+      setLoading(true);
       try {
         const now = new Date().toISOString();
         let query = supabase.from('jobs').select(`id, title, contract_type, salary_min, salary_max, created_at, is_urgent, is_remote, remote_type, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
@@ -252,7 +274,15 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
           <div><h2 className="text-2xl sm:text-3xl font-bold text-slate-900">{t('home.jobs.title')}</h2><p className="text-slate-600 mt-1">{t('home.jobs.subtitle')}</p></div>
           <Link to="/emplois" className="hidden sm:inline-flex items-center text-blue-600 hover:text-blue-700 font-medium">{t('home.jobs.viewAll')} <ArrowRight className="w-4 h-4 ml-1" /></Link>
         </div>
-        {loading ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div> : jobs.length === 0 ? (
+        
+        {/* ✅ Squelettes pendant le chargement */}
+        {loading ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <JobCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : jobs.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-3xl border border-slate-200">
             <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">{t('home.jobs.noJobsTitle')}</h3>

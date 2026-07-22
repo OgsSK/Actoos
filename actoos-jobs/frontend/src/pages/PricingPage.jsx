@@ -16,6 +16,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : 'https://actoos-jobs-api.onrender.com';
+
 const FALLBACK_PRICING = {
   subscriptions: {
     pro_monthly: { amount: 49000, name: "Plan Pro - Mensuel", type: "subscription", interval: "month" },
@@ -43,6 +47,7 @@ const PricingPage = () => {
   const [company, setCompany] = useState(null);
   const [companyLoading, setCompanyLoading] = useState(true);
 
+  // Chargement des prix avec cache et fallback
   useEffect(() => {
     const loadPricing = async () => {
       const cached = localStorage.getItem(PRICING_CACHE_KEY);
@@ -56,11 +61,16 @@ const PricingPage = () => {
           }
         } catch (e) {}
       }
+
       let fallbackTimer;
       try {
+        const controller = new AbortController();
         const data = await Promise.race([
-          fetch('/api/pricing').then(res => res.json()),
-          new Promise((_, reject) => fallbackTimer = setTimeout(() => reject(new Error('timeout')), 3000))
+          fetch(`${BASE_URL}/api/pricing`, { signal: controller.signal }).then(res => res.json()),
+          new Promise((_, reject) => fallbackTimer = setTimeout(() => {
+            controller.abort();
+            reject(new Error('timeout'));
+          }, 5000))
         ]);
         clearTimeout(fallbackTimer);
         setPricing(data);
@@ -76,6 +86,7 @@ const PricingPage = () => {
     loadPricing();
   }, []);
 
+  // Chargement de l'entreprise
   useEffect(() => {
     if (!user) {
       setCompany(null);
@@ -110,6 +121,7 @@ const PricingPage = () => {
     fetchCompany();
   }, [user, activeCompanyId]);
 
+  // Rafraîchissement quand l'onglet redevient visible
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && user) {
@@ -165,7 +177,7 @@ const PricingPage = () => {
     }
     setCheckoutLoading(packageId);
     try {
-      const response = await fetch('/api/checkout/session', {
+      const response = await fetch(`${BASE_URL}/api/checkout/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -417,7 +429,6 @@ const PricingPage = () => {
 
             const isBusiness = plan.planKey === 'business';
 
-            // Bouton de changement de cycle (style identique aux boutons principaux)
             let switchCycleButton = null;
             if (isCurrentPlan && plan.planKey !== 'free' && currentBillingCycle) {
               const targetCycle = currentBillingCycle === 'monthly' ? 'annual' : 'monthly';
@@ -572,7 +583,6 @@ const PricingPage = () => {
                         <Button className="w-full h-14 text-lg font-semibold rounded-2xl bg-slate-100 text-slate-500 cursor-not-allowed" disabled>
                           {t('pricing.currentPlan')}
                         </Button>
-                        {/* Bouton de changement de cycle harmonisé */}
                         {switchCycleButton}
                         <Button
                           variant="outline"
