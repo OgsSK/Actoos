@@ -14,6 +14,24 @@ import { formatRelative } from '../lib/utils';
 import { toast } from 'sonner';
 import ContactFollowerModal from '../components/ContactFollowerModal';
 
+// ---- Squelette pour un follower ----
+const FollowerSkeleton = () => (
+  <Card className="border-slate-200 animate-pulse">
+    <CardContent className="p-4 flex items-center gap-4">
+      <div className="w-10 h-10 rounded-full bg-slate-200 shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-4 bg-slate-200 rounded w-2/3" />
+        <div className="h-3 bg-slate-200 rounded w-1/2" />
+        <div className="h-3 bg-slate-200 rounded w-1/3" />
+      </div>
+      <div className="flex gap-2">
+        <div className="h-8 w-20 bg-slate-200 rounded" />
+        <div className="h-8 w-20 bg-slate-200 rounded" />
+      </div>
+    </CardContent>
+  </Card>
+);
+
 const CompanyFollowersPage = () => {
   const { t } = useTranslation();
   const { user, activeCompanyId } = useAuth();
@@ -23,14 +41,14 @@ const CompanyFollowersPage = () => {
   const [company, setCompany] = useState(null);
   const [followers, setFollowers] = useState([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);         // chargement de la liste
   const [companyPlan, setCompanyPlan] = useState('free');
   const [planLoading, setPlanLoading] = useState(true);
 
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [selectedFollower, setSelectedFollower] = useState(null);
 
-  // Récupérer le plan de l'entreprise
+  // Récupérer le plan en arrière‑plan – n’empêche pas l’affichage
   useEffect(() => {
     if (!companyId) {
       setPlanLoading(false);
@@ -44,20 +62,25 @@ const CompanyFollowersPage = () => {
       .single()
       .then(({ data }) => {
         setCompanyPlan(data?.subscription_plan || 'free');
-        setPlanLoading(false);
       })
       .catch(() => {
         setCompanyPlan('free');
-        setPlanLoading(false);
-      });
+      })
+      .finally(() => setPlanLoading(false));
   }, [companyId]);
 
   const isBusinessPlan = companyPlan === 'business' || companyPlan === 'enterprise';
 
-  // Chargement des followers
+  // Chargement des followers – s’exécute immédiatement, sans attendre le plan
   useEffect(() => {
-    if (!companyId) return;
-    if (planLoading) return;
+    if (!companyId || planLoading) return;   // on attend quand même que le plan soit connu pour passer le bon paramètre, mais le plan est déjà mis à jour rapidement
+    // On peut lancer la requête même avec un plan par défaut pour gagner du temps,
+    // et la relancer si le plan change, mais pour simplifier on attend planLoading false
+  }, [companyId, user, companyPlan, planLoading]);
+
+  // On fusionne les deux effets : on peut lancer la requête followers dès que le plan est chargé.
+  useEffect(() => {
+    if (!companyId || planLoading) return;
 
     const fetchData = async () => {
       setLoading(true);
@@ -84,24 +107,16 @@ const CompanyFollowersPage = () => {
     fetchData();
   }, [companyId, user, companyPlan, planLoading]);
 
-  if (planLoading || loading) {
-    return (
-      <div className="min-h-screen pt-20 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
+  // ---------- RENDU ----------
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <Link
-          to="/dashboard/entreprise"
-          className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6"
-          title={t('common.back', 'Retour')}
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Link>
+  to="/dashboard/entreprise"
+  className="inline-flex items-center text-slate-600 hover:text-slate-900 mb-6"
+>
+  <ChevronLeft className="w-5 h-5" />
+</Link>
 
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -113,7 +128,11 @@ const CompanyFollowersPage = () => {
                 {company.name} — {t('companyFollowers.total', { total: company.followers_count || total })}
               </p>
             )}
+            {!company && planLoading && (
+              <p className="text-slate-400 text-sm mt-1">{t('common.loading', 'Chargement…')}</p>
+            )}
           </div>
+          {/* Bouton CV Bank visible uniquement quand le plan est confirmé */}
           {isBusinessPlan && (
             <Link to="/dashboard/entreprise/cv-bank">
               <Button variant="outline" size="sm">
@@ -122,9 +141,21 @@ const CompanyFollowersPage = () => {
               </Button>
             </Link>
           )}
+          {/* Pendant le chargement du plan, on peut afficher un placeholder ou rien */}
+          {planLoading && !isBusinessPlan && (
+            <div className="h-8 w-20 bg-slate-200 rounded animate-pulse" />
+          )}
         </div>
 
-        {followers.length === 0 ? (
+        {/* Contenu de la liste */}
+        {loading ? (
+          // Squelettes pendant le chargement
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <FollowerSkeleton key={i} />
+            ))}
+          </div>
+        ) : followers.length === 0 ? (
           <Card className="border-slate-200">
             <CardContent className="p-8 text-center">
               <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
@@ -163,9 +194,9 @@ const CompanyFollowersPage = () => {
                     </p>
                   </div>
 
-                  {isBusinessPlan && (
+                  {/* Actions – n’apparaissent que si le plan est business et chargé */}
+                  {isBusinessPlan && !planLoading && (
                     <div className="flex items-center gap-2">
-                      {/* ✅ Lien modifié pour inclure company_id */}
                       <Link to={`/candidat/${follower.user_id}?from=followers&company_id=${companyId}`}>
                         <Button variant="outline" size="sm">
                           <ExternalLink className="w-4 h-4 mr-1" />
@@ -182,6 +213,13 @@ const CompanyFollowersPage = () => {
                       >
                         {t('companyFollowers.contact', 'Contacter')}
                       </Button>
+                    </div>
+                  )}
+                  {/* Pendant le chargement du plan, on peut masquer les actions ou afficher un placeholder */}
+                  {planLoading && (
+                    <div className="flex gap-2">
+                      <div className="h-8 w-20 bg-slate-200 rounded animate-pulse" />
+                      <div className="h-8 w-20 bg-slate-200 rounded animate-pulse" />
                     </div>
                   )}
                 </CardContent>

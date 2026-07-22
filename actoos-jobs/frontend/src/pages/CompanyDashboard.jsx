@@ -215,7 +215,7 @@ const CancelSubscriptionModal = ({ isOpen, onClose, onConfirm, cancelling }) => 
 
 // ---------- Dashboard principal ----------
 const CompanyDashboard = () => {
-  const { t, i18n } = useTranslation(); // ✅ ajout de i18n
+  const { t, i18n } = useTranslation();
   const { user, activeCompanyId, setActiveCompanyId, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
@@ -236,7 +236,6 @@ const CompanyDashboard = () => {
   const [followersSummary, setFollowersSummary] = useState({ total: 0, followers: [] });
   const [loadingFollowers, setLoadingFollowers] = useState(false);
 
-  // ✅ Fonction de traduction de l'industrie
   const getTranslatedIndustry = (industryFr) => {
     if (!industryFr) return null;
     const frenchT = i18n.getFixedT('fr');
@@ -340,7 +339,6 @@ const CompanyDashboard = () => {
     }
   };
 
-  // Effet de chargement initial
   useEffect(() => {
     if (!user || hasLoaded.current) return;
     hasLoaded.current = true;
@@ -371,39 +369,39 @@ const CompanyDashboard = () => {
   const isBusinessPlan = plan === 'business' || plan === 'enterprise';
   const showFollowersWidget = plan === 'pro' || isBusinessPlan;
 
-const fetchFollowersSummary = useCallback(async () => {
-  if (!company || !showFollowersWidget) return;
-  setLoadingFollowers(true);
-  try {
-    const { data, error } = await supabase
-      .from('company_followers')
-      .select(`
-        user_id,
-        created_at,
-        user:users ( first_name, last_name, avatar_url )
-      `)
-      .eq('company_id', company.id)
-      .order('created_at', { ascending: false })
-      .limit(5);
+  const fetchFollowersSummary = useCallback(async () => {
+    if (!company || !showFollowersWidget) return;
+    setLoadingFollowers(true);
+    try {
+      const { data, error } = await supabase
+        .from('company_followers')
+        .select(`
+          user_id,
+          created_at,
+          user:users ( first_name, last_name, avatar_url )
+        `)
+        .eq('company_id', company.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-    if (error) throw error;
+      if (error) throw error;
 
-    const followers = data.map(f => ({
-      user_id: f.user_id,
-      first_name: f.user?.first_name,
-      last_name: f.user?.last_name,
-      avatar_url: f.user?.avatar_url,
-      followed_at: f.created_at,
-    }));
+      const followers = data.map(f => ({
+        user_id: f.user_id,
+        first_name: f.user?.first_name,
+        last_name: f.user?.last_name,
+        avatar_url: f.user?.avatar_url,
+        followed_at: f.created_at,
+      }));
 
-    setFollowersSummary({ total: data.length, followers });
-  } catch (err) {
-    console.error('Erreur chargement abonnés:', err);
-    setFollowersSummary({ total: 0, followers: [] });
-  } finally {
-    setLoadingFollowers(false);
-  }
-}, [company, showFollowersWidget]);
+      setFollowersSummary({ total: data.length, followers });
+    } catch (err) {
+      console.error('Erreur chargement abonnés:', err);
+      setFollowersSummary({ total: 0, followers: [] });
+    } finally {
+      setLoadingFollowers(false);
+    }
+  }, [company, showFollowersWidget]);
 
   useEffect(() => {
     fetchFollowersSummary();
@@ -657,7 +655,6 @@ const fetchFollowersSummary = useCallback(async () => {
                 <h3 className="font-semibold text-slate-900 mb-4">{t('companyDashboard.companyProfileCard.title')}</h3>
                 {!company?.is_verified && <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">{t('companyDashboard.companyProfileCard.pendingValidation')}</div>}
                 <div className="space-y-3 text-sm">
-                  {/* ✅ Industrie traduite */}
                   {company?.industry && <p className="flex items-center gap-2 text-slate-600"><Building2 className="w-4 h-4 text-slate-400" />{getTranslatedIndustry(company.industry)}</p>}
                   {company?.size && <p className="flex items-center gap-2 text-slate-600"><Users className="w-4 h-4 text-slate-400" />{t('companyDashboard.companyProfileCard.employees', { size: company.size })}</p>}
                   {company?.website && <a href={company.website.startsWith('http') ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:underline break-all"><Globe className="w-4 h-4 shrink-0" />{company.website}</a>}
@@ -736,46 +733,121 @@ const fetchFollowersSummary = useCallback(async () => {
               </Card>
             )}
 
-            <Card className="border-blue-200 bg-blue-50 overflow-hidden">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
-                  <Badge className="bg-blue-100 text-blue-700 border-0 text-sm px-3 py-1">
-                    {t('companyDashboard.subscriptionCard.currentPlan', { plan: planLabel })}
-                  </Badge>
-                  {company?.billing_cycle && (
-                    <span className="text-sm text-slate-600 ml-2">
-                      · {company.billing_cycle === 'monthly' ? t('pricing.toggle.monthly') : t('pricing.toggle.annual')}
-                    </span>
-                  )}
-                  <Link to="/tarifs" className="w-full sm:w-auto"><Button variant="ghost" size="sm" className="w-full sm:w-auto text-blue-600 hover:bg-blue-100 min-h-[44px]">{t('companyDashboard.subscriptionCard.changePlan')}</Button></Link>
-                </div>
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm text-slate-600 mb-1"><span>{t('companyDashboard.subscriptionCard.activeOffers')}</span><span>{activeJobsCount} / {jobsLimit === Infinity ? '∞' : jobsLimit}</span></div>
-                  <div className="w-full bg-blue-100 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${jobsLimit === Infinity ? 100 : Math.min(100, (activeJobsCount / jobsLimit) * 100)}%` }} /></div>
-                </div>
-                {plan !== 'free' && company?.stripe_subscription_id ? (
-                  <>
-                    <p className="text-sm text-blue-800 mb-4">{t('companyDashboard.subscriptionCard.activePlanMessage', { plan: planLabel })}</p>
-                    <Button variant="outline" className="w-full border-blue-300 text-blue-700 hover:bg-blue-100 min-h-[44px] mb-4" onClick={handleOpenPortal}>
-                      <CreditCard className="w-4 h-4 mr-2" />{t('companyDashboard.subscriptionCard.manageSubscription')}
-                    </Button>
-                    {/* Lien discret de résiliation */}
-                    <button
-                      type="button"
-                      onClick={() => setShowCancelModal(true)}
-                      className="text-xs text-slate-400 hover:text-red-500 transition-colors underline underline-offset-2 ml-1"
-                    >
-                      {t('companyDashboard.subscriptionCard.cancelSubscription')}
-                    </button>
-                  </>
-                ) : plan === 'free' && company?.cancellation_reason ? (
-                  <div className="text-sm text-slate-700 mt-2"><p className="font-medium">{t('companyDashboard.subscriptionCard.lastCancelReason')}</p><p className="italic mt-1">{t('companyDashboard.subscriptionCard.cancelReasonQuote', { reason: company.cancellation_reason })}</p></div>
-                ) : (
-                  <p className="text-sm text-blue-800">{t('companyDashboard.subscriptionCard.freePlanMessage')}</p>
-                )}
-                {isBusinessPlan && <p className="text-sm text-purple-700 mt-2">{t('companyDashboard.subscriptionCard.freeBoostMessage')}</p>}
-              </CardContent>
-            </Card>
+            {/* Carte abonnement – design premium épuré */}
+<Card className="border-slate-200 bg-white overflow-hidden">
+  <CardContent className="p-0">
+    {/* Barre supérieure colorée selon le plan */}
+    <div className={`h-1 ${
+      plan === 'business' || plan === 'enterprise' ? 'bg-gradient-to-r from-purple-500 to-purple-400' :
+      plan === 'pro' ? 'bg-gradient-to-r from-blue-500 to-blue-400' :
+      'bg-gradient-to-r from-slate-300 to-slate-200'
+    }`} />
+
+    <div className="p-5 sm:p-6">
+      {/* Rangée 1 : Plan actuel */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+            plan === 'business' || plan === 'enterprise' ? 'bg-purple-50' :
+            plan === 'pro' ? 'bg-blue-50' : 'bg-slate-50'
+          }`}>
+            {plan === 'business' || plan === 'enterprise' ? (
+              <Crown className="w-4.5 h-4.5 text-purple-600" />
+            ) : plan === 'pro' ? (
+              <Zap className="w-4.5 h-4.5 text-blue-600" />
+            ) : (
+              <Briefcase className="w-4.5 h-4.5 text-slate-500" />
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-900 leading-tight">
+              {t('companyDashboard.subscriptionCard.currentPlan', { plan: planLabel })}
+            </p>
+            <p className="text-xs text-slate-400">
+              {company?.billing_cycle
+                ? (company.billing_cycle === 'monthly' ? t('pricing.toggle.monthly') : t('pricing.toggle.annual'))
+                : ''}
+            </p>
+          </div>
+        </div>
+        <Link to="/tarifs" className="text-xs text-slate-400 hover:text-slate-600 transition-colors font-medium">
+          {t('companyDashboard.subscriptionCard.changePlan')} →
+        </Link>
+      </div>
+
+      {/* Rangée 2 : Jauge minimaliste */}
+      <div className="bg-slate-50 rounded-xl p-3.5 mb-4">
+        <div className="flex justify-between items-end mb-2">
+          <span className="text-xs text-slate-500">{t('companyDashboard.subscriptionCard.activeOffers')}</span>
+          <span className="text-xs font-semibold text-slate-700 tabular-nums">
+            {activeJobsCount}
+            <span className="text-slate-400 font-normal"> / {jobsLimit === Infinity ? '∞' : jobsLimit}</span>
+          </span>
+        </div>
+        <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              plan === 'business' || plan === 'enterprise' ? 'bg-purple-500' :
+              plan === 'pro' ? 'bg-blue-500' : 'bg-slate-400'
+            }`}
+            style={{ width: `${jobsLimit === Infinity ? 100 : Math.min(100, (activeJobsCount / jobsLimit) * 100)}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Rangée 3 : Actions */}
+      <div className="space-y-1.5">
+        {plan !== 'free' && company?.stripe_subscription_id ? (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenPortal}
+              className="w-full justify-between text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-50 h-9 px-3 font-normal rounded-lg group"
+            >
+              <span className="flex items-center gap-2">
+                <CreditCard className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600" />
+                {t('companyDashboard.subscriptionCard.manageSubscription')}
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-400" />
+            </Button>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(true)}
+                className="text-[11px] text-slate-300 hover:text-red-400 transition-colors py-1"
+              >
+                {t('companyDashboard.subscriptionCard.cancelSubscription')}
+              </button>
+            </div>
+          </>
+        ) : plan === 'free' && company?.cancellation_reason ? (
+          <div className="bg-slate-50 rounded-lg p-3">
+            <p className="text-[11px] text-slate-400 italic leading-relaxed">
+              {t('companyDashboard.subscriptionCard.cancelReasonQuote', { reason: company.cancellation_reason })}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-slate-50 rounded-lg p-3">
+            <p className="text-xs text-slate-500 leading-relaxed">
+              {t('companyDashboard.subscriptionCard.freePlanMessage')}
+            </p>
+          </div>
+        )}
+
+        {/* Boost gratuit */}
+        {isBusinessPlan && (
+          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
+            <Sparkles className="w-3 h-3 text-purple-400" />
+            <p className="text-[11px] text-slate-500">
+              {t('companyDashboard.subscriptionCard.freeBoostMessage')}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  </CardContent>
+</Card>
           </div>
         </div>
       </div>

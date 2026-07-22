@@ -22,6 +22,37 @@ const normalizeUrl = (url) => {
   return trimmed;
 };
 
+// ---- Squelette pour la bannière ----
+const ProfileHeaderSkeleton = () => (
+  <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 p-6 sm:p-10 text-white animate-pulse">
+    <div className="flex flex-col sm:flex-row items-start gap-5 sm:gap-6">
+      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/20 shrink-0" />
+      <div className="flex-1 space-y-3">
+        <div className="h-8 bg-white/20 rounded w-2/3" />
+        <div className="h-5 bg-white/20 rounded w-1/2" />
+        <div className="flex gap-2 mt-3">
+          <div className="h-6 w-20 bg-white/20 rounded-full" />
+          <div className="h-6 w-24 bg-white/20 rounded-full" />
+        </div>
+        <div className="flex gap-2 mt-4">
+          <div className="h-5 w-32 bg-white/20 rounded" />
+          <div className="h-5 w-24 bg-white/20 rounded" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// ---- Squelette pour le contenu d'un onglet ----
+const TabContentSkeleton = () => (
+  <div className="space-y-4 animate-pulse">
+    <div className="h-4 bg-slate-200 rounded w-3/4" />
+    <div className="h-4 bg-slate-200 rounded w-full" />
+    <div className="h-4 bg-slate-200 rounded w-5/6" />
+    <div className="h-4 bg-slate-200 rounded w-2/3" />
+  </div>
+);
+
 const CandidatePublicProfilePage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -164,8 +195,9 @@ const CandidatePublicProfilePage = () => {
     }
   }, [availableTabs, activeTab]);
 
-  if (loading || planLoading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
-  if (suspended) {
+  // ---------- RENDU ----------
+  // Cas particulier : compte suspendu
+  if (!loading && suspended) {
     return (
       <div className="min-h-screen bg-slate-50 pt-20">
         <div className="max-w-4xl mx-auto px-4 py-8 text-center">
@@ -180,20 +212,26 @@ const CandidatePublicProfilePage = () => {
       </div>
     );
   }
-  if (!profile) return <div className="pt-20 text-center">{t('candidateProfile.notFound')}</div>;
 
-  const rawPhone = profile.phone || '';
+  // Compte introuvable (uniquement après échec du chargement)
+  if (!loading && !profile && !suspended) {
+    return <div className="pt-20 text-center">{t('candidateProfile.notFound')}</div>;
+  }
+
+  // Pendant le chargement, profile est null, on affiche quand même la structure avec squelettes
+  const isLoading = loading || planLoading;
+  const rawPhone = profile?.phone || '';
   const cleanPhone = rawPhone.replace(/\s/g, '');
   const telLink = cleanPhone ? `tel:${cleanPhone}` : null;
-  const isPDF = profile.cv_url && profile.cv_url.endsWith('.pdf');
+  const isPDF = profile?.cv_url && profile.cv_url.endsWith('.pdf');
 
-  const enrichedFollower = {
+  const enrichedFollower = profile ? {
     user_id: id,
     first_name: profile.first_name,
     last_name: profile.last_name,
     email: profile.email,
     avatar_url: profile.avatar_url,
-  };
+  } : null;
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -207,88 +245,92 @@ const CandidatePublicProfilePage = () => {
 
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
           {/* Bannière */}
-          <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 p-6 sm:p-10 text-white">
-            <div className="flex flex-col sm:flex-row items-start gap-5 sm:gap-6">
-              <div className="relative shrink-0">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full ring-4 ring-white/30 overflow-hidden bg-white">
-                  {profile.avatar_url ? (
-                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <User className="w-14 h-14 m-auto text-blue-200 mt-5" />
-                  )}
-                </div>
-                {profile.is_available && (
-                  <div className="absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-1.5 ring-2 ring-white">
-                    <Star className="w-4 h-4 fill-current" />
+          {isLoading ? (
+            <ProfileHeaderSkeleton />
+          ) : (
+            <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 p-6 sm:p-10 text-white">
+              <div className="flex flex-col sm:flex-row items-start gap-5 sm:gap-6">
+                <div className="relative shrink-0">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full ring-4 ring-white/30 overflow-hidden bg-white">
+                    {profile.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-14 h-14 m-auto text-blue-200 mt-5" />
+                    )}
                   </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight break-words">
-                  {profile.first_name} {profile.last_name}
-                </h1>
-                {profile.title && (
-                  <p className="text-white/80 text-base sm:text-lg mt-1">{profile.title}</p>
-                )}
-                <div className="flex flex-wrap gap-2 mt-3 sm:mt-4">
                   {profile.is_available && (
-                    <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                      <Star className="w-3 h-3 mr-1 fill-current" /> {t('common.available')}
-                    </Badge>
-                  )}
-                  {profile.is_open_to_remote && (
-                    <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                      {t('candidateProfilePage.professionalProfile.openToRemote')}
-                    </Badge>
-                  )}
-                  {profile.experience_level && (
-                    <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                      {t(`experienceLevels.${profile.experience_level}`, profile.experience_level)}
-                    </Badge>
-                  )}
-                  {profile.years_of_experience > 0 && (
-                    <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {profile.years_of_experience} {t('candidateProfilePage.professionalProfile.years', 'ans')}
-                    </Badge>
+                    <div className="absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-1.5 ring-2 ring-white">
+                      <Star className="w-4 h-4 fill-current" />
+                    </div>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <ContactRow icon={<Mail className="w-4 h-4" />} bg="bg-white/20" textColor="text-white/80">
-                    <a href={`mailto:${profile.email}`} className="hover:underline font-medium">{profile.email}</a>
-                  </ContactRow>
-                  {profile.phone && (
-                    <ContactRow icon={<Phone className="w-4 h-4" />} bg="bg-white/20" textColor="text-white/80">
-                      {telLink ? (
-                        <a href={telLink} className="hover:underline font-mono font-medium">{profile.phone}</a>
-                      ) : (
-                        <span className="font-mono">{profile.phone}</span>
-                      )}
-                    </ContactRow>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight break-words">
+                    {profile.first_name} {profile.last_name}
+                  </h1>
+                  {profile.title && (
+                    <p className="text-white/80 text-base sm:text-lg mt-1">{profile.title}</p>
                   )}
-                  {profile.city && (
-                    <ContactRow icon={<MapPin className="w-4 h-4" />} bg="bg-white/20" textColor="text-white/80">
-                      <span>{profile.city}</span>
+                  <div className="flex flex-wrap gap-2 mt-3 sm:mt-4">
+                    {profile.is_available && (
+                      <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
+                        <Star className="w-3 h-3 mr-1 fill-current" /> {t('common.available')}
+                      </Badge>
+                    )}
+                    {profile.is_open_to_remote && (
+                      <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
+                        {t('candidateProfilePage.professionalProfile.openToRemote')}
+                      </Badge>
+                    )}
+                    {profile.experience_level && (
+                      <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
+                        {t(`experienceLevels.${profile.experience_level}`, profile.experience_level)}
+                      </Badge>
+                    )}
+                    {profile.years_of_experience > 0 && (
+                      <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {profile.years_of_experience} {t('candidateProfilePage.professionalProfile.years', 'ans')}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <ContactRow icon={<Mail className="w-4 h-4" />} bg="bg-white/20" textColor="text-white/80">
+                      <a href={`mailto:${profile.email}`} className="hover:underline font-medium">{profile.email}</a>
                     </ContactRow>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {/* Bouton Contacter (visible pour les recruteurs Business/Enterprise) */}
-                  {showContactButton && (
-                    <Button size="sm" className="bg-white text-blue-700 hover:bg-blue-50" onClick={() => setContactModalOpen(true)}>
-                      <Send className="w-4 h-4 mr-2" />
-                      {t('companyFollowers.contact', 'Contacter')}
+                    {profile.phone && (
+                      <ContactRow icon={<Phone className="w-4 h-4" />} bg="bg-white/20" textColor="text-white/80">
+                        {telLink ? (
+                          <a href={telLink} className="hover:underline font-mono font-medium">{profile.phone}</a>
+                        ) : (
+                          <span className="font-mono">{profile.phone}</span>
+                        )}
+                      </ContactRow>
+                    )}
+                    {profile.city && (
+                      <ContactRow icon={<MapPin className="w-4 h-4" />} bg="bg-white/20" textColor="text-white/80">
+                        <span>{profile.city}</span>
+                      </ContactRow>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {/* Bouton Contacter (visible pour les recruteurs Business/Enterprise) */}
+                    {showContactButton && (
+                      <Button size="sm" className="bg-white text-blue-700 hover:bg-blue-50" onClick={() => setContactModalOpen(true)}>
+                        <Send className="w-4 h-4 mr-2" />
+                        {t('companyFollowers.contact', 'Contacter')}
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" onClick={handleReport} disabled={reporting || isCurrentUserRestricted} className="border-white/30 text-white hover:bg-white/10">
+                      <Flag className="w-4 h-4 mr-2" /> {t('candidateProfile.reportButton')}
                     </Button>
-                  )}
-                  <Button variant="outline" size="sm" onClick={handleReport} disabled={reporting || isCurrentUserRestricted} className="border-white/30 text-white hover:bg-white/10">
-                    <Flag className="w-4 h-4 mr-2" /> {t('candidateProfile.reportButton')}
-                  </Button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Barre d'onglets */}
+          {/* Barre d'onglets – on affiche quand même pendant le chargement si on a déjà des tabs (basé sur le profil) */}
           {availableTabs.length > 1 && (
             <div className="border-b border-slate-200 overflow-x-auto">
               <div className="flex space-x-0 px-4 sm:px-8">
@@ -306,172 +348,184 @@ const CandidatePublicProfilePage = () => {
                     <span className="hidden sm:inline">{tab.label}</span>
                   </button>
                 ))}
+                {/* Pendant le chargement on peut mettre des onglets factices */}
+                {isLoading && (
+                  <div className="flex items-center gap-2 px-4 py-3">
+                    <div className="w-16 h-4 bg-slate-200 rounded animate-pulse" />
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {/* Contenu des onglets */}
           <div className="p-5 sm:p-8">
-            {activeTab === 'about' && (
-              <div className="space-y-6">
-                {profile.bio && (
-                  <div className="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-100">
-                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
-                      {t('companyDetail.about', 'À propos')}
-                    </h3>
-                    <p className="text-slate-700 leading-relaxed text-base">{profile.bio}</p>
-                  </div>
-                )}
-                {(profile.desired_salary_min || profile.desired_salary_max) && (
-                  <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-xl text-sm font-medium">
-                    💰 {profile.desired_salary_min && profile.desired_salary_max
-                      ? `${format(profile.desired_salary_min)} – ${format(profile.desired_salary_max)}`
-                      : profile.desired_salary_min
-                        ? format(profile.desired_salary_min)
-                        : format(profile.desired_salary_max)}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeTab === 'skills' && (
-              <div className="flex flex-wrap gap-3">
-                {profile.skills.map(skill => (
-                  <Badge key={skill} variant="secondary" className="px-4 py-2 text-sm bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            {activeTab === 'experience' && (
-              <div className="pl-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-                {profile.experience.map((exp, idx) => (
-                  <div key={idx} className="relative pb-8 last:pb-0">
-                    <div className="absolute -left-[29px] top-1.5 w-4 h-4 rounded-full bg-blue-600 ring-4 ring-blue-50" />
-                    <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
-                      <p className="font-semibold text-slate-800 text-base sm:text-lg">{exp.title}</p>
-                      <p className="text-slate-600 text-sm">{exp.company}</p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        {exp.start_date} – {exp.end_date || t('candidateProfile.present')}
-                      </p>
-                      {exp.image_url && (
-                        <img src={exp.image_url} alt="" className="mt-3 rounded-lg max-h-48 object-cover" />
-                      )}
-                      {exp.description && (
-                        <p className="text-sm text-slate-500 mt-2 leading-relaxed">{exp.description}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {activeTab === 'education' && (
-              <div className="pl-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-                {profile.education.map((edu, idx) => (
-                  <div key={idx} className="relative pb-8 last:pb-0">
-                    <div className="absolute -left-[29px] top-1.5 w-4 h-4 rounded-full bg-purple-600 ring-4 ring-purple-50" />
-                    <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
-                      <p className="font-semibold text-slate-800 text-base sm:text-lg">{edu.degree}</p>
-                      <p className="text-slate-600 text-sm">{edu.school}</p>
-                      <p className="text-xs text-slate-400 mt-1">{edu.year}</p>
-                      {edu.image_url && (
-                        <img src={edu.image_url} alt="" className="mt-3 rounded-lg max-h-48 object-cover" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {activeTab === 'cv' && profile.cv_url && (
-              <div>
-                {isPDF ? (
-                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                    <iframe src={profile.cv_url} className="w-full h-[70vh] min-h-[500px]" title="CV" />
-                  </div>
-                ) : (
-                  <div className="text-center py-12 bg-slate-50 rounded-xl">
-                    <File className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-600 mb-4">{t('candidateProfile.previewNotAvailable', 'Aperçu non disponible pour ce format.')}</p>
-                  </div>
-                )}
-                <div className="flex justify-center mt-4">
-                  <a href={profile.cv_url} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold transition-colors shadow-lg shadow-blue-200">
-                    <Download className="w-5 h-5" />
-                    {t('candidateProfile.downloadCV')}
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'links' && (
-              <div className="flex flex-wrap gap-3">
-                {profile.links.map((link, index) => (
-                  <a key={index} href={normalizeUrl(link.url)} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-300 px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md">
-                    <Globe className="w-4 h-4" />
-                    {link.label}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                ))}
-              </div>
-            )}
-
-            {activeTab === 'documents' && (
-              <div className="space-y-2">
-                {candidateDocuments.map(doc => (
-                  <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <File className="w-5 h-5 text-slate-400 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{doc.name}</p>
-                        <p className="text-xs text-slate-500 capitalize">{doc.file_type}</p>
+            {isLoading ? (
+              <TabContentSkeleton />
+            ) : (
+              <>
+                {activeTab === 'about' && (
+                  <div className="space-y-6">
+                    {profile.bio && (
+                      <div className="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-100">
+                        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                          {t('companyDetail.about', 'À propos')}
+                        </h3>
+                        <p className="text-slate-700 leading-relaxed text-base">{profile.bio}</p>
                       </div>
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          const isImage = /\.(png|jpe?g|gif|webp|svg)$/i.test(doc.file_url);
-                          const isPDF = doc.file_url?.endsWith('.pdf');
-                          if (isImage || isPDF) {
-                            setPreviewDoc({ url: doc.file_url, name: doc.name, type: isPDF ? 'pdf' : 'image' });
-                          } else {
-                            window.open(doc.file_url, '_blank');
-                          }
-                        }}
-                        className="h-9 w-9"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                        <Button variant="ghost" size="icon" className="h-9 w-9">
-                          <Download className="w-4 h-4" />
-                        </Button>
+                    )}
+                    {(profile.desired_salary_min || profile.desired_salary_max) && (
+                      <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-xl text-sm font-medium">
+                        💰 {profile.desired_salary_min && profile.desired_salary_max
+                          ? `${format(profile.desired_salary_min)} – ${format(profile.desired_salary_max)}`
+                          : profile.desired_salary_min
+                            ? format(profile.desired_salary_min)
+                            : format(profile.desired_salary_max)}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'skills' && (
+                  <div className="flex flex-wrap gap-3">
+                    {profile.skills.map(skill => (
+                      <Badge key={skill} variant="secondary" className="px-4 py-2 text-sm bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {activeTab === 'experience' && (
+                  <div className="pl-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                    {profile.experience.map((exp, idx) => (
+                      <div key={idx} className="relative pb-8 last:pb-0">
+                        <div className="absolute -left-[29px] top-1.5 w-4 h-4 rounded-full bg-blue-600 ring-4 ring-blue-50" />
+                        <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
+                          <p className="font-semibold text-slate-800 text-base sm:text-lg">{exp.title}</p>
+                          <p className="text-slate-600 text-sm">{exp.company}</p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {exp.start_date} – {exp.end_date || t('candidateProfile.present')}
+                          </p>
+                          {exp.image_url && (
+                            <img src={exp.image_url} alt="" className="mt-3 rounded-lg max-h-48 object-cover" />
+                          )}
+                          {exp.description && (
+                            <p className="text-sm text-slate-500 mt-2 leading-relaxed">{exp.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeTab === 'education' && (
+                  <div className="pl-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                    {profile.education.map((edu, idx) => (
+                      <div key={idx} className="relative pb-8 last:pb-0">
+                        <div className="absolute -left-[29px] top-1.5 w-4 h-4 rounded-full bg-purple-600 ring-4 ring-purple-50" />
+                        <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
+                          <p className="font-semibold text-slate-800 text-base sm:text-lg">{edu.degree}</p>
+                          <p className="text-slate-600 text-sm">{edu.school}</p>
+                          <p className="text-xs text-slate-400 mt-1">{edu.year}</p>
+                          {edu.image_url && (
+                            <img src={edu.image_url} alt="" className="mt-3 rounded-lg max-h-48 object-cover" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeTab === 'cv' && profile.cv_url && (
+                  <div>
+                    {isPDF ? (
+                      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                        <iframe src={profile.cv_url} className="w-full h-[70vh] min-h-[500px]" title="CV" />
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 bg-slate-50 rounded-xl">
+                        <File className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                        <p className="text-slate-600 mb-4">{t('candidateProfile.previewNotAvailable', 'Aperçu non disponible pour ce format.')}</p>
+                      </div>
+                    )}
+                    <div className="flex justify-center mt-4">
+                      <a href={profile.cv_url} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold transition-colors shadow-lg shadow-blue-200">
+                        <Download className="w-5 h-5" />
+                        {t('candidateProfile.downloadCV')}
                       </a>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                )}
 
-            {activeTab === 'posts' && (
-              <div className="space-y-4">
-                {candidatePosts.map(post => (
-                  <div key={post.id} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                    {post.title && <h3 className="font-semibold text-slate-900 text-lg">{post.title}</h3>}
-                    <p className="text-slate-600 text-sm mt-2 whitespace-pre-wrap">{post.content}</p>
-                    {post.image_url && (
-                      <img src={post.image_url} alt="" className="mt-3 rounded-lg max-h-80 object-cover" />
-                    )}
-                    <p className="text-xs text-slate-400 mt-3">{new Date(post.created_at).toLocaleDateString()}</p>
+                {activeTab === 'links' && (
+                  <div className="flex flex-wrap gap-3">
+                    {profile.links.map((link, index) => (
+                      <a key={index} href={normalizeUrl(link.url)} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-300 px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md">
+                        <Globe className="w-4 h-4" />
+                        {link.label}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+
+                {activeTab === 'documents' && (
+                  <div className="space-y-2">
+                    {candidateDocuments.map(doc => (
+                      <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <File className="w-5 h-5 text-slate-400 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{doc.name}</p>
+                            <p className="text-xs text-slate-500 capitalize">{doc.file_type}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const isImage = /\.(png|jpe?g|gif|webp|svg)$/i.test(doc.file_url);
+                              const isPDF = doc.file_url?.endsWith('.pdf');
+                              if (isImage || isPDF) {
+                                setPreviewDoc({ url: doc.file_url, name: doc.name, type: isPDF ? 'pdf' : 'image' });
+                              } else {
+                                window.open(doc.file_url, '_blank');
+                              }
+                            }}
+                            className="h-9 w-9"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="icon" className="h-9 w-9">
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeTab === 'posts' && (
+                  <div className="space-y-4">
+                    {candidatePosts.map(post => (
+                      <div key={post.id} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                        {post.title && <h3 className="font-semibold text-slate-900 text-lg">{post.title}</h3>}
+                        <p className="text-slate-600 text-sm mt-2 whitespace-pre-wrap">{post.content}</p>
+                        {post.image_url && (
+                          <img src={post.image_url} alt="" className="mt-3 rounded-lg max-h-80 object-cover" />
+                        )}
+                        <p className="text-xs text-slate-400 mt-3">{new Date(post.created_at).toLocaleDateString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -497,7 +551,7 @@ const CandidatePublicProfilePage = () => {
       )}
 
       {/* Modale de contact */}
-      {showContactButton && (
+      {showContactButton && enrichedFollower && (
         <ContactFollowerModal
           isOpen={contactModalOpen}
           onClose={() => setContactModalOpen(false)}
