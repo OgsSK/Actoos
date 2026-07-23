@@ -703,15 +703,25 @@ const CandidateProfilePage = () => {
   };
   const currentCurrencyLabel = currencyNames[prefs.currency] || prefs.currency;
 
-  // ---------- Conversion en FCFA (avec plafond) ----------
-  const MAX_SALARY_XOF = 2_000_000_000; // 2 milliards, en dessous du max integer
+  // ---------- Plafond de salaire en FCFA ----------
+  const MAX_SALARY_XOF = 2_000_000_000; // 2 milliards
 
+  // ✅ Conversion devise locale → FCFA (pour la sauvegarde)
   const toXOF = (amount) => {
     const num = parseInt(amount);
     if (isNaN(num)) return null;
+    // Si l'utilisateur est déjà en FCFA, on ne fait rien
+    if (prefs.currency === 'XOF') return num;
     const rate = RATES[prefs.currency] || 1;
     const xof = Math.round(num * rate);
     return xof > MAX_SALARY_XOF ? MAX_SALARY_XOF : xof;
+  };
+
+  // ✅ Conversion FCFA → devise locale (pour l'affichage)
+  const fromXOF = (amount) => {
+    if (amount == null || amount === '') return '';
+    const rate = RATES[prefs.currency] || 1;
+    return Math.round(parseInt(amount) / rate).toString();
   };
 
   const [saving, setSaving] = useState(false);
@@ -891,9 +901,9 @@ const CandidateProfilePage = () => {
         years_of_experience: cp.years_of_experience || 0,
         is_available: cp.is_available ?? true,
         is_open_to_remote: cp.is_open_to_remote || false,
-        // On affiche les salaires tels quels (en FCFA côté base) – pas de conversion ici
-        desired_salary_min: cp.desired_salary_min || '',
-        desired_salary_max: cp.desired_salary_max || '',
+        // ✅ Conversion FCFA → devise locale pour affichage
+        desired_salary_min: cp.desired_salary_min ? fromXOF(cp.desired_salary_min) : '',
+        desired_salary_max: cp.desired_salary_max ? fromXOF(cp.desired_salary_max) : '',
         is_visible_in_cv_bank: cp.is_visible_in_cv_bank ?? false,
       });
 
@@ -902,7 +912,7 @@ const CandidateProfilePage = () => {
       setEducation(cp.education || []);
       setCvUrl(cp.cv_url || '');
     }
-  }, [profile, countries, prefs.country]);
+  }, [profile, countries, prefs.country, prefs.currency]);
 
   const fetchLinks = async () => {
     if (!user) return;
@@ -1159,7 +1169,7 @@ const CandidateProfilePage = () => {
         years_of_experience: candidateInfo.years_of_experience,
         is_available: candidateInfo.is_available,
         is_open_to_remote: candidateInfo.is_open_to_remote,
-        // ✅ Conversion en FCFA avant stockage (plafonnée)
+        // ✅ Conversion devise locale → FCFA avant stockage
         desired_salary_min: toXOF(candidateInfo.desired_salary_min),
         desired_salary_max: toXOF(candidateInfo.desired_salary_max),
         skills,
