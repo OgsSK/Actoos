@@ -12,6 +12,7 @@ import { Badge } from '../components/ui/badge';
 import AIAssistant from '../components/AIAssistant';
 import EditableLinks from '../components/EditableLinks';
 import { toast } from 'sonner';
+import useAllowedCountries from '../hooks/useAllowedCountries';
 
 import {
   User, Briefcase, FileText, GraduationCap, Award,
@@ -679,6 +680,9 @@ const CandidateProfilePage = () => {
   const fileInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
+  // ✅ Récupération des pays autorisés
+  const { allowed, isRestricted } = useAllowedCountries();
+
   // ---------- Mapping devise ----------
   const currencyNames = {
     XOF: 'FCFA',
@@ -852,16 +856,37 @@ const CandidateProfilePage = () => {
   // --------------------- useEffect initiaux ---------------------
   useEffect(() => {
     const fetchCities = async () => {
-      const { data } = await supabase
+      let query = supabase
         .from('cities')
         .select('*')
         .eq('is_active', true)
         .order('name');
+
+      // ✅ Filtrer les villes par pays autorisés si restriction active
+      if (isRestricted && allowed.length > 0) {
+        // Récupérer d'abord les IDs des pays autorisés
+        const { data: allowedCountries } = await supabase
+          .from('countries')
+          .select('id')
+          .in('code', allowed);
+        
+        const allowedCountryIds = (allowedCountries || []).map(c => c.id);
+        
+        if (allowedCountryIds.length > 0) {
+          query = query.in('country_id', allowedCountryIds);
+        } else {
+          // Si aucun pays trouvé, ne retourner aucune ville
+          setCities([]);
+          return;
+        }
+      }
+
+      const { data } = await query;
       setCities(data || []);
     };
     fetchCities();
     fetchCountries();
-  }, []);
+  }, [isRestricted, allowed]);
 
   const fetchCountries = async () => {
     const { data } = await supabase
