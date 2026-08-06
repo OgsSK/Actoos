@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { apiFetch } from '../lib/api';
 
 const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
-  const { t, i18n } = useTranslation();   // ← ajout de t
+  const { t, i18n } = useTranslation();
   const [text, setText] = useState(initialText);
   const [improved, setImproved] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,10 +24,9 @@ const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
     setLoading(true);
 
     const targetLang = i18n.language;
-    console.log('[AIAssistant] Langue cible :', targetLang);
 
     try {
-      // 1. Amélioration en français (toujours)
+      // 1. Amélioration en français
       const res1 = await apiFetch('/api/ai/agent', {
         method: 'POST',
         body: JSON.stringify({
@@ -40,17 +39,22 @@ const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
 
       let improvedText = res1.result;
 
-      // 2. Traduction si la langue de l'utilisateur n'est pas le français
+      // 2. Traduction si nécessaire
       if (targetLang !== 'fr') {
-        const res2 = await apiFetch('/api/ai/agent', {
-          method: 'POST',
-          body: JSON.stringify({
-            agent_id: 'translator',
-            text: improvedText,
-            language: targetLang,
-          }),
-        });
-        improvedText = res2.result || improvedText;
+        try {
+          const res2 = await apiFetch('/api/ai/agent', {
+            method: 'POST',
+            body: JSON.stringify({
+              agent_id: 'translator',
+              text: improvedText,
+              language: targetLang,
+            }),
+          });
+          improvedText = res2.result || improvedText;
+        } catch (translateErr) {
+          console.warn('Échec de la traduction, utilisation du texte français');
+          // On garde le texte français, c'est mieux que rien
+        }
       }
 
       setImproved(improvedText);
@@ -58,6 +62,7 @@ const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
       toast.success(t('aiAssistant.improvedSuccess', 'Texte amélioré avec succès !'));
     } catch (err) {
       toast.error(err.message || t('aiAssistant.improveError', "Erreur lors de l'amélioration IA."));
+      setShowResult(false);
     } finally {
       setLoading(false);
     }
@@ -86,7 +91,7 @@ const AIAssistant = ({ agentId, initialText, context = '', onApply }) => {
           ) : (
             <Sparkles className="w-4 h-4 mr-2" />
           )}
-          {t('aiAssistant.improve', 'Améliorer avec l\'IA')}
+          {t('aiAssistant.improve', "Améliorer avec l'IA")}
         </Button>
       )}
 
