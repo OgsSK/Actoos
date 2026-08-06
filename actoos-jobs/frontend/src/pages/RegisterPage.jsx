@@ -44,31 +44,18 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // ✅ État pour attendre que les traductions soient chargées
-  const [translationsReady, setTranslationsReady] = useState(i18n.isInitialized);
-
-  // 🔥 Synchronisation avec l'URL (type=entreprise) ET la langue
+  // 🔥 Synchronisation avec l'URL (type=entreprise)
   useEffect(() => {
     const type = searchParams.get('type');
     if (type === 'entreprise') {
       setStep(2);
       setRole('company');
     } else {
+      // Revenir à l'écran de choix si le paramètre n'est plus présent
       setStep(1);
       setRole('candidate');
     }
-  }, [searchParams, i18n.language]);
-
-  // ✅ Attendre que les traductions soient prêtes
-  useEffect(() => {
-    if (i18n.isInitialized) {
-      setTranslationsReady(true);
-    } else {
-      const onInit = () => setTranslationsReady(true);
-      i18n.on('initialized', onInit);
-      return () => i18n.off('initialized', onInit);
-    }
-  }, [i18n]);
+  }, [searchParams]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -121,7 +108,7 @@ const RegisterPage = () => {
         role: role,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        language: i18n.language?.split('-')[0] || 'fr',
+        language: i18n.language?.split('-')[0] || 'fr',  // ← ajouté
       });
 
       toast.success(t('register.toasts.accountCreated'));
@@ -148,15 +135,6 @@ const RegisterPage = () => {
       setGoogleLoading(false);
     }
   };
-
-  // ✅ Afficher un loader tant que les traductions ne sont pas prêtes
-  if (!translationsReady) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4 pt-20">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
 
   if (step === 1) {
     return (
