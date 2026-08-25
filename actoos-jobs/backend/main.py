@@ -1,8 +1,6 @@
 import traceback
-
 from fastapi import FastAPI, HTTPException, Request, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
-
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Union
 import os
@@ -18,12 +16,6 @@ import uuid
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
 
-
-
-
-
-
-
 LOGO_URL = "https://anfamlpwootbrzswnpyp.supabase.co/storage/v1/object/public/logos/actoos.png"
 
 env_path = Path(__file__).parent / '.env'
@@ -35,9 +27,7 @@ print(f"   SUPABASE_URL présente : {'oui' if os.getenv('SUPABASE_URL') else 'no
 print(f"   SUPABASE_SERVICE_ROLE_KEY présente : {'oui' if os.getenv('SUPABASE_SERVICE_ROLE_KEY') else 'non'}")
 
 app = FastAPI(title="Actoos Jobs API")
-
 BUILD_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
-
 ALLOWED_ORIGINS = ["http://localhost:3000", "https://jobs.actoos.com"]
 app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
@@ -48,8 +38,6 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
-
-
 SUPPORTED_CURRENCIES = {
     "XOF": "FCFA", "EUR": "EUR", "USD": "USD", "MAD": "MAD",
     "GBP": "GBP", "BRL": "BRL", "ARS": "ARS", "NGN": "NGN",
@@ -57,7 +45,6 @@ SUPPORTED_CURRENCIES = {
     "DZD": "DZD", "TND": "TND", "CHF": "CHF", "XAF": "XAF",
     "GNF": "GNF", "CDF": "CDF", "MGA": "MGA"
 }
-
 SUBSCRIPTION_PLANS = {
     "pro_monthly": {"amount": 49000, "name": "Plan Pro - Mensuel", "type": "subscription", "interval": "month"},
     "pro_annual": {"amount": 470400, "name": "Plan Pro - Annuel (-20%)", "type": "subscription", "interval": "year"},
@@ -71,7 +58,6 @@ BOOST_PACKAGES = {
     "featured": {"amount": 49990, "name": "À la une (30 jours)", "days": 30},
 }
 payment_transactions = {}
-
 PLAN_LIMITS_CONFIG = {
     "free": {"jobs": 3, "members": 1, "expiration_days": 15},
     "pro": {"jobs": 25, "members": 5, "expiration_days": 30},
@@ -79,8 +65,137 @@ PLAN_LIMITS_CONFIG = {
     "enterprise": {"jobs": float("inf"), "members": float("inf"), "expiration_days": 90},
 }
 
+# ==================== UTILITAIRES EMAIL PRO ====================
+def email_button(text: str, url: str, primary: bool = True) -> str:
+    """Génère un bouton d'appel à l'action."""
+    bg = "#1e3a8a" if primary else "#ffffff"
+    color = "#ffffff" if primary else "#1e3a8a"
+    border = "1px solid #1e3a8a" if not primary else "none"
+    return f'<a href="{url}" style="display:inline-block;padding:12px 28px;background-color:{bg};color:{color};border:{border};border-radius:6px;font-weight:bold;text-decoration:none;text-align:center;font-size:16px;margin:8px 0;">{text}</a>'
 
+def email_info_box(content: str, type: str = "info") -> str:
+    """Génère un encart coloré (info, warning, success, danger)."""
+    styles = {
+        "info": {"border": "#3b82f6", "bg": "#eff6ff"},
+        "warning": {"border": "#f59e0b", "bg": "#fffbeb"},
+        "success": {"border": "#10b981", "bg": "#ecfdf5"},
+        "danger": {"border": "#ef4444", "bg": "#fef2f2"},
+    }
+    style = styles.get(type, styles["info"])
+    return f'<div style="background-color:{style["bg"]};border-left:4px solid {style["border"]};padding:16px 20px;margin:16px 0;border-radius:4px;">{content}</div>'
 
+# ==================== TEMPLATES EMAIL PROFESSIONNELS ====================
+def email_new_application(recruiter_name, candidate_name, job_title):
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {recruiter_name},</h2>
+    {email_info_box(f"<strong>{candidate_name}</strong> vient de postuler à votre offre <strong>{job_title}</strong>.", "info")}
+    <p style="text-align:center; margin:24px 0;">{email_button("Voir les candidatures", "https://jobs.actoos.com/dashboard/entreprise/candidatures")}</p>
+    """
+
+def email_status_change(candidate_name, job_title, new_status, company_name, reason=None):
+    labels = {
+        'viewed': 'a été consultée', 'shortlisted': 'a été présélectionnée',
+        'interview': 'vous êtes invité à un entretien', 'accepted': 'a été acceptée',
+        'rejected': "n'a malheureusement pas été retenue"
+    }
+    company_info = f" chez {company_name}" if company_name else ""
+    reason_text = f"<br><strong>Raison :</strong> {reason}" if reason else ""
+    status_text = labels.get(new_status, 'a été mise à jour')
+    box_type = "success" if new_status == "accepted" else ("danger" if new_status == "rejected" else "info")
+    box_content = f"Votre candidature pour le poste <strong>{job_title}</strong>{company_info} {status_text}.{reason_text}"
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {candidate_name},</h2>
+    {email_info_box(box_content, box_type)}
+    <p style="text-align:center; margin:24px 0;">{email_button("Voir mes candidatures", "https://jobs.actoos.com/mes-candidatures")}</p>
+    """
+
+def email_interview_invitation(candidate_name, job_title, meeting_link, company_name=None):
+    company_info = f" chez {company_name}" if company_name else ""
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {candidate_name},</h2>
+    {email_info_box(f"Vous êtes invité à un entretien pour le poste <strong>{job_title}</strong>{company_info}.", "success")}
+    <div style="text-align:center; margin:24px 0;">{email_button("Rejoindre la visioconférence", meeting_link)}</div>
+    <p style="color:#6b7280; font-size:14px;">Si le bouton ne fonctionne pas, copiez ce lien : {meeting_link}</p>
+    """
+
+def email_company_verified(owner_first_name, company_name):
+    return f"""
+    <h2 style="color:#1a202c;">Félicitations {owner_first_name} ! 🎉</h2>
+    {email_info_box(f"Votre entreprise <strong>{company_name}</strong> a été validée par notre équipe. Vous pouvez maintenant publier des offres.", "success")}
+    <p style="text-align:center; margin:24px 0;">{email_button("Accéder à mon espace recruteur", "https://jobs.actoos.com/dashboard/entreprise")}</p>
+    """
+
+def email_account_suspended(first_name, duration_days=None, reason=None):
+    duration_text = f" pour {duration_days} jour(s)" if duration_days else " définitivement"
+    reason_text = f"<br><strong>Raison :</strong> {reason}" if reason else ""
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {first_name},</h2>
+    {email_info_box(f"Votre compte sur Actoos Jobs a été suspendu{duration_text}.{reason_text}", "danger")}
+    <p>Contactez-nous si vous avez des questions.</p>
+    """
+
+def email_account_reactivated(first_name):
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {first_name},</h2>
+    {email_info_box("Votre compte sur Actoos Jobs a été réactivé avec succès.", "success")}
+    <p>Vous pouvez à nouveau utiliser toutes nos fonctionnalités.</p>
+    """
+
+def email_account_banned(first_name, reason=None):
+    reason_text = reason or 'Non spécifiée'
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {first_name},</h2>
+    {email_info_box(f"Votre compte a été banni définitivement.<br><strong>Raison :</strong> {reason_text}", "danger")}
+    """
+
+def email_account_deleted(first_name):
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {first_name},</h2>
+    {email_info_box("Votre compte a été supprimé par l'administrateur.", "warning")}
+    """
+
+def email_company_deleted(company_name, first_name):
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {first_name},</h2>
+    {email_info_box(f"Votre entreprise <strong>{company_name}</strong> a été supprimée par l'administrateur.", "danger")}
+    <p>Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre support.</p>
+    """
+
+def email_company_suspended(company_name, duration_days=None, reason=None):
+    duration_text = f" pour {duration_days} jour(s)" if duration_days else " définitivement"
+    reason_text = f"<br><strong>Raison :</strong> {reason}" if reason else ""
+    return f"""
+    <h2 style="color:#1a202c;">Information importante</h2>
+    {email_info_box(f"Votre entreprise <strong>{company_name}</strong> a été suspendue{duration_text}.{reason_text}", "danger")}
+    """
+
+def email_company_rejected(owner_first_name, company_name, reason=None):
+    reason_text = reason or 'Non spécifiée'
+    return f"""
+    <h2 style="color:#1a202c;">Désolé {owner_first_name},</h2>
+    {email_info_box(f"Votre entreprise <strong>{company_name}</strong> n'a pas été validée.<br><strong>Raison :</strong> {reason_text}", "danger")}
+    """
+
+def email_job_suspended(job_title, reason=None):
+    reason_text = f"<br><strong>Raison :</strong> {reason}" if reason else ""
+    return f"""
+    <h2 style="color:#1a202c;">Votre offre "{job_title}" a été suspendue</h2>
+    {email_info_box(f"{reason_text}", "warning")}
+    """
+
+def email_job_deleted(job_title, reason=None):
+    reason_text = f"<br><strong>Raison :</strong> {reason}" if reason else ""
+    return f"""
+    <h2 style="color:#1a202c;">Votre offre "{job_title}" a été supprimée</h2>
+    {email_info_box(f"{reason_text}", "danger")}
+    """
+
+def email_admin_message(greeting, content):
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {greeting},</h2>
+    <div style="background-color:#f9fafb; padding:16px; border-radius:6px; margin:12px 0;"><p style="margin:0;">{content}</p></div>
+    <p>{email_button("Voir mes messages", "https://jobs.actoos.com")}</p>
+    """
 
 def get_plan_limit_static(plan, attribute):
     plan_data = PLAN_LIMITS_CONFIG.get(plan, PLAN_LIMITS_CONFIG["free"])
@@ -99,28 +214,10 @@ async def get_current_active_user(request: Request) -> str:
     if user_resp.status_code != 200:
         raise HTTPException(status_code=401, detail="Token invalide ou expiré")
     user_id = user_resp.json()["id"]
-
-    user_data = httpx.get(
-        f"{SUPABASE_URL}/rest/v1/users?id=eq.{user_id}&select=is_active,is_banned",
-        headers={
-            "apikey": SUPABASE_SERVICE_ROLE_KEY,
-            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"
-        }
-    ).json()
-    if not user_data:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
-
-    user = user_data[0]
-    # ✅ Suspensions et bannissements utilisateur désactivés pour la v1
-    # if not user.get("is_active", True):
-    #     raise HTTPException(status_code=403, detail="Votre compte est désactivé. Contactez le support.")
-    # if user.get("is_banned", False):
-    #     raise HTTPException(status_code=403, detail="Votre compte a été banni.")
+    # Suspensions/bannissements désactivés pour la v1
     return user_id
 
-# ----- Fonction utilitaire de vérification du rôle dans une entreprise -----
 def get_user_role_in_company(user_id: str, company_id: str) -> str:
-    """Retourne le rôle de l'utilisateur dans l'entreprise : 'owner', 'admin', 'recruiter', 'viewer', ou None."""
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -139,7 +236,6 @@ def get_user_role_in_company(user_id: str, company_id: str) -> str:
         return members[0]["role"]
     return None
 
-# ----- Fonction utilitaire : fonctionnalités par plan (backend) -----
 def planHasFeature(plan: str, feature: str) -> bool:
     features = {
         "free": ["basicJobs"],
@@ -158,7 +254,7 @@ class CheckoutRequest(BaseModel):
     job_id: Optional[str] = None
     user_email: Optional[str] = None
     metadata: Optional[Dict[str, str]] = None
-    preferred_currency: Optional[str] = "XOF"  # ← nouveau champ
+    preferred_currency: Optional[str] = "XOF"
 
 class ContactRequest(BaseModel):
     name: str
@@ -174,7 +270,7 @@ class NewsletterRequest(BaseModel):
 class AIAgentRequest(BaseModel):
     agent_id: str
     text: str
-    context: Optional[Union[str, dict]] = None    # ← accepte str ou dict
+    context: Optional[Union[str, dict]] = None
     language: Optional[str] = "fr"
 
 class CancelSubscriptionRequest(BaseModel):
@@ -333,7 +429,6 @@ class SendRoleChangeEmailRequest(BaseModel):
     requested_role: str
     admin_message: Optional[str] = None
 
-# ----- Modèles pour la gestion d'équipe (modifiés) -----
 class TeamInviteRequest(BaseModel):
     company_id: str
     user_id: str
@@ -382,6 +477,53 @@ class NotifyJobReactivatedRequest(BaseModel):
     job_title: str
     language: Optional[str] = "fr"
 
+class NotifyAcceptedCandidateRequest(BaseModel):
+    candidate_email: str
+    candidate_name: str
+    job_title: str
+    company_name: Optional[str] = ""
+    message: Optional[str] = None
+    language: Optional[str] = "fr"
+
+class RequestDocumentsRequest(BaseModel):
+    application_id: str
+    candidate_email: str
+    candidate_name: str
+    job_title: str
+    company_name: Optional[str] = ""
+    document_types: list[str] = ['contract', 'id_card', 'diploma']
+    message: Optional[str] = None
+    language: Optional[str] = "fr"
+
+class UploadDocumentRequest(BaseModel):
+    application_id: str
+    document_type: str
+    file_data: str
+    filename: str
+
+class NotifyDocumentValidationRequest(BaseModel):
+    candidate_email: str
+    candidate_name: str
+    document_type: str
+    language: Optional[str] = "fr"
+
+class NotifyDocumentRejectedRequest(BaseModel):
+    candidate_email: str
+    candidate_name: str
+    document_type: str
+    reason: Optional[str] = None
+    language: Optional[str] = "fr"
+
+class FinalizeHiringRequest(BaseModel):
+    application_id: str
+    message: Optional[str] = None
+    language: Optional[str] = "fr"
+
+class NotifyOtherCandidatesRequest(BaseModel):
+    application_id: str
+    message: Optional[str] = None
+    language: Optional[str] = "fr"
+
 def clean_subject(text: str, max_length: int = 50) -> str:
     cleaned = text.replace('\n', ' ').replace('\r', ' ')
     if len(cleaned) > max_length:
@@ -416,87 +558,6 @@ def get_user_language(email=None, request: Request = None):
         if browser_lang in {"en", "it", "ar", "de", "nl", "pt", "es"}:
             return browser_lang
     return 'fr'
-
-# ----- Fonctions d'email (templates en français) -----
-def email_new_application(recruiter_name, candidate_name, job_title):
-    return f"""
-    <h2>Bonjour {recruiter_name},</h2>
-    <p><strong>{candidate_name}</strong> vient de postuler à votre offre <strong>{job_title}</strong>.</p>
-    <p>Consultez la candidature sur <a href="https://jobs.actoos.com/dashboard/entreprise/candidatures">Actoos Jobs</a>.</p>
-    """
-
-def email_status_change(candidate_name, job_title, new_status, company_name, reason=None):
-    labels = {
-        'viewed': 'a été consultée',
-        'shortlisted': 'a été présélectionnée',
-        'interview': 'vous êtes invité à un entretien',
-        'accepted': 'a été acceptée',
-        'rejected': "n'a malheureusement pas été retenue"
-    }
-    company_info = f" chez {company_name}" if company_name else ""
-    reason_text = f" Raison : {reason}" if reason else ""
-    status_text = labels.get(new_status, 'a été mise à jour')
-    message = f"Votre candidature pour le poste <strong>{job_title}</strong>{company_info} {status_text}.{reason_text}"
-    return f"<h2>Bonjour {candidate_name},</h2><p>{message}</p><p>Consultez vos candidatures sur <a href='https://jobs.actoos.com/mes-candidatures'>Actoos Jobs</a>.</p>"
-
-def email_interview_invitation(candidate_name, job_title, meeting_link, company_name=None):
-    company_info = f" chez {company_name}" if company_name else ""
-    return f"""
-    <h2>Bonjour {candidate_name},</h2>
-    <p>Vous êtes invité à un entretien pour le poste <strong>{job_title}</strong>{company_info}.</p>
-    <p>Voici le lien de visioconférence :</p>
-    <p><a href="{meeting_link}">{meeting_link}</a></p>
-    <p>À bientôt,<br/>L'équipe Actoos Jobs</p>
-    """
-
-def email_company_verified(owner_first_name, company_name):
-    return f"""
-    <h2>Félicitations {owner_first_name} !</h2>
-    <p>Votre entreprise <strong>{company_name}</strong> a été validée par notre équipe. Vous pouvez maintenant publier des offres et recevoir des candidatures.</p>
-    <p><a href="https://jobs.actoos.com/dashboard/entreprise">Accéder à mon espace recruteur</a></p>
-    """
-
-def email_account_suspended(first_name, duration_days=None, reason=None):
-    duration_text = f" pour {duration_days} jour(s)" if duration_days else " définitivement"
-    reason_text = f"\nRaison : {reason}" if reason else ""
-    return f"<h2>Bonjour {first_name},</h2><p>Votre compte sur Actoos Jobs a été suspendu{duration_text}.{reason_text}</p><p>Contactez-nous si vous avez des questions.</p>"
-
-def email_account_reactivated(first_name):
-    return f"<h2>Bonjour {first_name},</h2><p>Votre compte sur Actoos Jobs a été réactivé.</p>"
-
-def email_account_banned(first_name, reason=None):
-    reason_text = reason or 'Non spécifiée'
-    return f"<h2>Bonjour {first_name},</h2><p>Votre compte a été banni définitivement.<strong>Raison :</strong> {reason_text}</p>"
-
-def email_account_deleted(first_name):
-    return f"<h2>Bonjour {first_name},</h2><p>Votre compte a été supprimé par l'administrateur.</p>"
-
-def email_company_deleted(company_name, first_name):
-    return f"<h2>Bonjour {first_name},</h2><p>Votre entreprise <strong>{company_name}</strong> a été supprimée par l'administrateur.</p><p>Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre support.</p>"
-
-def email_company_suspended(company_name, duration_days=None, reason=None):
-    duration_text = f" pour {duration_days} jour(s)" if duration_days else " définitivement"
-    reason_text = f" Raison : {reason}" if reason else ""
-    return f"<h2>Information importante</h2><p>Votre entreprise <strong>{company_name}</strong> a été suspendue{duration_text}.{reason_text}</p>"
-
-def email_company_rejected(owner_first_name, company_name, reason=None):
-    reason_text = reason or 'Non spécifiée'
-    return f"<h2>Désolé {owner_first_name},</h2><p>Votre entreprise <strong>{company_name}</strong> n'a pas été validée.</p><p><strong>Raison :</strong> {reason_text}</p>"
-
-def email_job_suspended(job_title, reason=None):
-    reason_text = reason or 'Non spécifiée'
-    return f"<h2>Votre offre \"{job_title}\" a été suspendue</h2><p><strong>Raison :</strong> {reason_text}</p>"
-
-def email_job_deleted(job_title, reason=None):
-    reason_text = reason or 'Non spécifiée'
-    return f"<h2>Votre offre \"{job_title}\" a été supprimée par l'administrateur</h2><p><strong>Raison :</strong> {reason_text}</p>"
-
-def email_admin_message(greeting, content):
-    return f"""
-    <h2>Bonjour {greeting},</h2>
-    <p>{content}</p>
-    <p>Consultez vos messages sur <a href="https://jobs.actoos.com">Actoos Jobs</a>.</p>
-    """
 
 # ----- IA Agents -----
 AGENT_PROMPTS = {
@@ -533,7 +594,6 @@ AGENT_PROMPTS = {
         "Adapte le salaire au marché local pour ce poste dans ce pays."
     ),
 }
-
 AGENT_PROMPTS_EN = {
     "job-title": "Generate 3 catchy job offer titles (maximum 10 words each) based on the following description. Return the titles as a numbered list, with no comment.",
     "job-description": "You are a recruitment expert. Improve the following job offer text. Make it attractive, clear, well-structured and inclusive. Return only the improved text, with no comment.",
@@ -567,7 +627,6 @@ AGENT_PROMPTS_EN = {
         "Adapt the salary to the local market for this position in this country."
     ),
 }
-
 FALLBACK_MODELS = [
     "mistralai/mistral-7b-instruct:free",
     "google/gemini-2.0-flash-lite-preview-02-05:free",
@@ -576,19 +635,16 @@ FALLBACK_MODELS = [
     "microsoft/phi-3-mini-128k-instruct:free",
     "openai/gpt-3.5-turbo",
 ]
-
 LANG_NAMES = {
     "en": "anglais", "it": "italien", "ar": "arabe", "de": "allemand",
     "nl": "néerlandais", "pt": "portugais", "es": "espagnol"
 }
 
 def get_local_salary_stats(country: str, category_slug: str):
-    """Récupère les salaires moyens corrigés pour un pays et une catégorie."""
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         return None
-
     headers = {
         "apikey": supabase_key,
         "Authorization": f"Bearer {supabase_key}",
@@ -607,23 +663,18 @@ def get_local_salary_stats(country: str, category_slug: str):
         print(f"[Stats] Erreur récupération stats: {e}")
     return None
 
+# ==================== IA ENDPOINT ====================
 @app.post("/api/ai/agent")
 async def ai_agent(req: AIAgentRequest, request: Request = None):
     if not OPENROUTER_API_KEY:
         raise HTTPException(status_code=500, detail="OpenRouter API key not configured")
-
-    # ---------- Déterminer la langue cible ----------
     target_language = req.language or "fr"
-
-    # ---------- Agent de génération complète d'offre ----------
     if req.agent_id == "job-full-generation":
-        # Contexte toujours sous forme de dictionnaire (sinon vide)
         ctx = req.context if isinstance(req.context, dict) else {}
         country = ctx.get("country", "non spécifié")
         currency = ctx.get("currency", "XOF")
         categories = ctx.get("categories", [])
         categories_str = ", ".join(categories) if categories else "général"
-
         if target_language != "fr":
             system_prompt = AGENT_PROMPTS_EN.get("job-full-generation", AGENT_PROMPTS["job-full-generation"])
             system_prompt = system_prompt.replace("{country}", country).replace("{currency}", currency).replace("{categories}", categories_str)
@@ -633,8 +684,6 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
             system_prompt = AGENT_PROMPTS["job-full-generation"]
             system_prompt = system_prompt.replace("{pays}", country).replace("{devise}", currency).replace("{categories}", categories_str)
             user_text = f"Titre de l'offre : {req.text}\nGénère l'offre complète en français."
-
-        # Enrichissement avec les statistiques locales
         if categories:
             stats = get_local_salary_stats(country, categories[0])
             if stats and stats.get("count_rows", 0) > 2:
@@ -644,8 +693,6 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
                     f"Tu dois absolument utiliser cette fourchette pour les champs salary_min et salary_max, sans la dépasser."
                 )
                 user_text += salary_hint
-
-    # ---------- Agent traducteur ----------
     elif req.agent_id == "translator":
         system_prompt = AGENT_PROMPTS.get("translator")
         if not system_prompt:
@@ -655,16 +702,12 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
         user_text = f"Texte à traduire :\n\n{req.text}"
         if req.context:
             user_text += f"\n\nContexte supplémentaire : {req.context}"
-
-    # ---------- Agent avec prompt anglais ----------
     elif target_language != "fr" and req.agent_id in AGENT_PROMPTS_EN:
         system_prompt = AGENT_PROMPTS_EN[req.agent_id]
         lang_name = LANG_NAMES.get(target_language, "anglais")
         user_text = f"Improve the following text and answer in {lang_name}:\n\n{req.text}"
         if req.context:
             user_text += f"\n\nAdditional context: {req.context}"
-
-    # ---------- Agent standard (français) ----------
     else:
         system_prompt = AGENT_PROMPTS.get(req.agent_id)
         if not system_prompt:
@@ -672,14 +715,11 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
         user_text = f"Texte à améliorer :\n\n{req.text}"
         if req.context:
             user_text += f"\n\nContexte supplémentaire : {req.context}"
-        # 👇 Forcer la réponse en français
         user_text += "\n\nRéponds en français uniquement."
-
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_text}
     ]
-
     last_error = None
     for model in FALLBACK_MODELS:
         try:
@@ -701,8 +741,6 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
                 data = response.json()
                 if "choices" in data and len(data["choices"]) > 0:
                     improved_text = data["choices"][0]["message"]["content"].strip()
-
-                    # ----- Correction automatique des salaires pour job-full-generation -----
                     if req.agent_id == "job-full-generation":
                         try:
                             generated_json = json.loads(improved_text)
@@ -716,8 +754,6 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
                             improved_text = json.dumps(generated_json, ensure_ascii=False)
                         except Exception:
                             pass
-                    # ------------------------------------------------------------------------
-
                     return {
                         "success": True,
                         "result": improved_text,
@@ -729,10 +765,9 @@ async def ai_agent(req: AIAgentRequest, request: Request = None):
         except Exception as e:
             print(f"[IA] Erreur avec {model}: {str(e)}")
             continue
-
     raise HTTPException(status_code=502, detail=f"Tous les modèles ont échoué. Dernière erreur : {last_error}")
 
-# ----- Fonction d'envoi d'email multilingue -----
+# ==================== FONCTION D'ENVOI D'EMAIL MULTILINGUE ====================
 async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, language: str = "fr", from_name: str = "Actoos Jobs"):
     print(f"[Email] Appel send_translated_email pour {to_email}, langue={language}, expéditeur={from_name}")
     try:
@@ -742,77 +777,56 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
             subject_resp = await ai_agent(subject_req, None)
             translated_subject = subject_resp.get("result", subject_fr)
             print(f"[Email] Sujet traduit : {translated_subject}")
-
             html_req = AIAgentRequest(agent_id="translator", text=html_fr, language=language)
             html_resp = await ai_agent(html_req, None)
             translated_html = html_resp.get("result", html_fr)
             print(f"[Email] Corps traduit (début) : {translated_html[:100]}...")
-
             subject = translated_subject
             body_content = translated_html
         else:
             subject = subject_fr
             body_content = html_fr
 
-        # Pied de page multilingue
         footer_texts = {
             "fr": {
                 "copyright": f"© {datetime.utcnow().year} Actoos. Tous droits réservés.",
-                "cgu": "CGU",
-                "privacy": "Confidentialité",
-                "contact": "Contact",
+                "cgu": "CGU", "privacy": "Confidentialité", "contact": "Contact",
             },
             "en": {
                 "copyright": f"© {datetime.utcnow().year} Actoos. All rights reserved.",
-                "cgu": "Terms",
-                "privacy": "Privacy",
-                "contact": "Contact",
+                "cgu": "Terms", "privacy": "Privacy", "contact": "Contact",
             },
             "ar": {
                 "copyright": f"© {datetime.utcnow().year} Actoos. جميع الحقوق محفوظة.",
-                "cgu": "الشروط",
-                "privacy": "الخصوصية",
-                "contact": "اتصل",
+                "cgu": "الشروط", "privacy": "الخصوصية", "contact": "اتصل",
             },
             "de": {
                 "copyright": f"© {datetime.utcnow().year} Actoos. Alle Rechte vorbehalten.",
-                "cgu": "AGB",
-                "privacy": "Datenschutz",
-                "contact": "Kontakt",
+                "cgu": "AGB", "privacy": "Datenschutz", "contact": "Kontakt",
             },
             "es": {
                 "copyright": f"© {datetime.utcnow().year} Actoos. Todos los derechos reservados.",
-                "cgu": "Términos",
-                "privacy": "Privacidad",
-                "contact": "Contacto",
+                "cgu": "Términos", "privacy": "Privacidad", "contact": "Contacto",
             },
             "it": {
                 "copyright": f"© {datetime.utcnow().year} Actoos. Tutti i diritti riservati.",
-                "cgu": "Termini",
-                "privacy": "Privacy",
-                "contact": "Contatto",
+                "cgu": "Termini", "privacy": "Privacy", "contact": "Contatto",
             },
             "nl": {
                 "copyright": f"© {datetime.utcnow().year} Actoos. Alle rechten voorbehouden.",
-                "cgu": "Voorwaarden",
-                "privacy": "Privacy",
-                "contact": "Contact",
+                "cgu": "Voorwaarden", "privacy": "Privacy", "contact": "Contact",
             },
             "pt": {
                 "copyright": f"© {datetime.utcnow().year} Actoos. Todos os direitos reservados.",
-                "cgu": "Termos",
-                "privacy": "Privacidade",
-                "contact": "Contato",
+                "cgu": "Termos", "privacy": "Privacidade", "contact": "Contato",
             },
         }
-
         t = footer_texts.get(language, footer_texts["fr"])
         year = datetime.utcnow().year
         copyright = t["copyright"]
         cgu = t["cgu"]
         privacy = t["privacy"]
         contact = t["contact"]
-
         logo_url = LOGO_URL
 
         full_html = f"""
@@ -822,12 +836,15 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title></title>
+            <div style="display:none;font-size:1px;color:#f4f6f8;max-height:0;line-height:0;mso-hide:all;">
+                Une mise à jour importante de votre compte Actoos vous attend.
+            </div>
             <style>
                 body, table, td, p, a, li, blockquote {{ -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }}
                 table, td {{ mso-table-lspace: 0pt; mso-table-rspace: 0pt; }}
                 img {{ -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }}
                 body {{ margin: 0; padding: 0; width: 100% !important; height: 100% !important; }}
-                a {{ color: #3b82f6; text-decoration: none; }}
+                a {{ color: #1e3a8a; text-decoration: none; }}
                 a:hover {{ text-decoration: underline; }}
                 .btn {{
                     display: inline-block;
@@ -842,6 +859,10 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
                 .btn:hover {{
                     background-color: #3b82f6;
                     text-decoration: none;
+                }}
+                @media only screen and (max-width: 600px) {{
+                    table[role="presentation"] {{ width: 100% !important; }}
+                    td[style*="padding: 30px 40px"] {{ padding: 20px !important; }}
                 }}
             </style>
         </head>
@@ -879,8 +900,6 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
         </body>
         </html>
         """
-
-        # ✅ Ici on utilise le nom d'expéditeur personnalisé (ou la valeur par défaut)
         resend.Emails.send({
             "from": f"{from_name} <noreply@actoos.com>",
             "to": [to_email],
@@ -888,7 +907,6 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
             "html": full_html
         })
         print(f"[Email] Envoyé à {to_email} avec sujet final : {subject}")
-
     except Exception as e:
         print(f"[Email] Erreur traduction/envoi : {e} – envoi en français de secours")
         resend.Emails.send({
@@ -898,7 +916,7 @@ async def send_translated_email(to_email: str, subject_fr: str, html_fr: str, la
             "html": html_fr
         })
 
-# ----- Nouveaux endpoints de notification -----
+# ==================== NOTIFICATIONS ====================
 @app.post("/api/notify-job-approved")
 async def notify_job_approved(req: NotifyJobApprovedRequest):
     if not resend.api_key:
@@ -907,9 +925,9 @@ async def notify_job_approved(req: NotifyJobApprovedRequest):
         lang = req.language or "fr"
         subject = f"Votre offre \"{req.job_title}\" a été validée"
         html = f"""
-        <h2>Félicitations {req.first_name} !</h2>
-        <p>Votre offre <strong>{req.job_title}</strong> a été validée et est maintenant publiée.</p>
-        <p><a href="https://jobs.actoos.com/dashboard/entreprise">Accéder à votre espace recruteur</a></p>
+        <h2 style="color:#1a202c;">Félicitations {req.first_name} !</h2>
+        {email_info_box(f"Votre offre <strong>{req.job_title}</strong> a été validée et est maintenant publiée.", "success")}
+        <p style="text-align:center; margin:24px 0;">{email_button("Accéder à mon espace recruteur", "https://jobs.actoos.com/dashboard/entreprise")}</p>
         """
         await send_translated_email(req.email, subject, html, lang)
         return {"success": True, "message": "Email envoyé au recruteur."}
@@ -924,16 +942,100 @@ async def notify_job_reactivated(req: NotifyJobReactivatedRequest):
         lang = req.language or "fr"
         subject = f"Votre offre \"{req.job_title}\" a été réactivée"
         html = f"""
-        <h2>Bonjour {req.first_name},</h2>
-        <p>Votre offre <strong>{req.job_title}</strong> a été réactivée et est à nouveau visible.</p>
-        <p><a href="https://jobs.actoos.com/dashboard/entreprise">Accéder à votre espace recruteur</a></p>
+        <h2 style="color:#1a202c;">Bonjour {req.first_name},</h2>
+        {email_info_box(f"Votre offre <strong>{req.job_title}</strong> a été réactivée et est à nouveau visible.", "success")}
+        <p style="text-align:center; margin:24px 0;">{email_button("Accéder à mon espace recruteur", "https://jobs.actoos.com/dashboard/entreprise")}</p>
         """
         await send_translated_email(req.email, subject, html, lang)
         return {"success": True, "message": "Email envoyé au recruteur."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ----- Endpoints -----
+@app.post("/api/send-interview-link")
+async def send_interview_link(req: SendInterviewLinkRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        lang = req.language or "fr"
+        html = email_interview_invitation(req.candidate_name, req.job_title, req.meeting_link, req.company_name)
+        subject = f"Entretien pour le poste : {clean_subject(req.job_title)}"
+        await send_translated_email(req.email, subject, html, lang)
+        return {"success": True, "message": "Email envoyé avec succès."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/notify-new-application")
+async def notify_new_application(req: NotifyNewApplicationRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        lang = req.language or "fr"
+        html = email_new_application(req.recruiter_name, req.candidate_name, req.job_title)
+        subject = f"Nouvelle candidature pour {clean_subject(req.job_title)}"
+        await send_translated_email(req.recruiter_email, subject, html, lang)
+        return {"success": True, "message": "Email envoyé au recruteur."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/notify-status-change")
+async def notify_status_change(req: NotifyStatusChangeRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        lang = req.language or "fr"
+        html = email_status_change(req.candidate_name, req.job_title, req.new_status, req.company_name, req.reason)
+        subject = f"Votre candidature - {clean_subject(req.job_title)}"
+        await send_translated_email(req.candidate_email, subject, html, lang)
+        return {"success": True, "message": "Email envoyé au candidat."}
+    except Exception as e:
+        print(f"[ERREUR] notify_status_change: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/notify-accepted-candidate")
+async def notify_accepted_candidate(req: NotifyAcceptedCandidateRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        import re
+        raw_title = (req.job_title or "").strip()
+        parts = re.split(r'\d+\.\s*', raw_title)
+        clean_title = ""
+        for part in parts:
+            part = part.strip().rstrip('.')
+            if part:
+                clean_title = part
+                break
+        if not clean_title:
+            clean_title = raw_title.split('\n')[0].strip().rstrip('.')
+        if len(clean_title) > 120:
+            clean_title = clean_title[:117] + '...'
+        raw_company = req.company_name or ""
+        company_name = raw_company.strip()
+        if not company_name or company_name.lower() in ("null", "undefined") or company_name.isspace():
+            company_text = ""
+        else:
+            company_text = f" chez <strong>{company_name}</strong>"
+        lang = req.language or "fr"
+        subject = f"Félicitations {req.candidate_name} ! Votre candidature a été acceptée"
+        subject = subject.replace('\n', ' ').replace('\r', ' ').strip()
+        html = f"""
+        <h2 style="color:#1a202c;">Félicitations {req.candidate_name} ! 🎉</h2>
+        {email_info_box(f"Votre candidature pour le poste <strong>{clean_title}</strong>{company_text} a été acceptée.", "success")}
+        {f"<p><strong>Message du recruteur :</strong> {req.message}</p>" if req.message else ""}
+        <p>Nous vous contacterons très prochainement pour les prochaines étapes.</p>
+        <p style="margin-top:24px;">À très bientôt,<br/>L'équipe Actoos Jobs</p>
+        """
+        await send_translated_email(req.candidate_email, subject, html, lang)
+        return {"success": True, "message": "Email envoyé au candidat."}
+    except Exception as e:
+        print(f"[ERREUR] notify-accepted-candidate : {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== EMAIL SUPPRESSION / SUSPENSION (appels des templates) ====================
+# Ces fonctions sont appelées dans les endpoints admin. Les templates ont déjà été mis à jour.
+# Aucune modification nécessaire dans ces endpoints car ils utilisent les fonctions email_* déjà corrigées.
+
+# ==================== ENDPOINTS DE BASE ====================
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "service": "actoos-jobs-api", "currency": "XOF"}
@@ -946,30 +1048,22 @@ async def get_pricing():
 async def get_currencies():
     return {"currencies": SUPPORTED_CURRENCIES, "default": "XOF"}
 
+# ==================== STRIPE ====================
 @app.post("/api/checkout/session")
 async def create_checkout_session(checkout_request: CheckoutRequest, request: Request):
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
-
     user_id = checkout_request.user_id
     company_id = checkout_request.company_id
-    if not user_id:
-        raise HTTPException(status_code=400, detail="user_id requis")
-    if not company_id:
-        raise HTTPException(status_code=400, detail="company_id requis")
-
+    if not user_id or not company_id:
+        raise HTTPException(status_code=400, detail="user_id et company_id requis")
     package_id = checkout_request.package_id
     if package_id not in SUBSCRIPTION_PLANS:
         raise HTTPException(status_code=400, detail="Invalid package")
-
     package = SUBSCRIPTION_PLANS[package_id]
-    mode = "subscription"
-
-    # ---------- Devise ----------
     currency = (checkout_request.preferred_currency or "XOF").upper()
     if currency not in SUPPORTED_CURRENCIES:
         currency = "XOF"
-
     RATES_TO_XOF = {
         "XOF": 1, "EUR": 655.957, "USD": 603.5, "MAD": 60.5,
         "GBP": 754.2, "BRL": 115.3, "ARS": 0.72, "NGN": 0.4, "ZAR": 32.5,
@@ -977,13 +1071,11 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
         "CHF": 722.3, "XAF": 1, "GNF": 0.07, "CDF": 0.22, "MGA": 0.15
     }
     rate = RATES_TO_XOF.get(currency, 1)
-
     amount_fcfa = package["amount"]
     converted_amount = round(amount_fcfa / rate)
     if currency in ("EUR", "USD", "GBP", "MAD", "BRL", "ARS", "NGN", "ZAR",
                     "SAR", "AED", "EGP", "DZD", "TND", "CHF"):
         converted_amount = converted_amount * 100
-
     line_item = {
         'price_data': {
             'currency': currency.lower(),
@@ -993,17 +1085,16 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
         },
         'quantity': 1,
     }
-
     origin = checkout_request.origin_url
     success_url = f"{origin}/paiement/succes?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin}/paiement/annule"
-
     metadata = {
         "package_id": package_id,
         "package_name": package["name"],
         "source": "actoos_jobs",
         "user_id": user_id,
         "company_id": company_id,
+        "billing_cycle": "annual" if "annual" in package_id else "monthly"
     }
     if checkout_request.job_id:
         metadata["job_id"] = checkout_request.job_id
@@ -1011,13 +1102,9 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
         metadata["user_email"] = checkout_request.user_email
     if checkout_request.metadata:
         metadata.update(checkout_request.metadata)
-
-    # ✅ Détermination du cycle
-    metadata["billing_cycle"] = "annual" if "annual" in package_id else "monthly"
-
-    # ---------- Vérification downgrade ----------
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    discounts = None
     if supabase_url and supabase_key:
         headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         company_resp = httpx.get(
@@ -1030,13 +1117,11 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
         company = companies[0]
         current_plan = company.get("subscription_plan", "free")
         launch_used = company.get("launch_coupon_used", False)
-
         target_plan = "free"
         if "pro" in package_id:
             target_plan = "pro"
         elif "business" in package_id:
             target_plan = "business"
-
         plan_rank = {"free": 0, "pro": 1, "business": 2, "enterprise": 3}
         if plan_rank.get(target_plan, 0) < plan_rank.get(current_plan, 0):
             jobs_resp = httpx.get(
@@ -1052,13 +1137,10 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
                     status_code=400,
                     detail=f"DOWNGRADE_BLOCKED:{active_jobs}:{target_limit}"
                 )
-
-        discounts = None
         if package_id == "business_monthly" and not launch_used:
             discounts = [{"coupon": "ynlMXDgS"}]
         elif package_id == "business_annual" and not launch_used:
             discounts = [{"coupon": "tZOA4q5A"}]
-
         if discounts is not None:
             try:
                 httpx.patch(
@@ -1067,9 +1149,7 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
                     json={"launch_coupon_used": True}
                 )
             except Exception as e:
-                logger.error(f"Erreur mise à jour launch_coupon_used: {e}")
-
-    # ---------- Langue Stripe ----------
+                print(f"Erreur mise à jour launch_coupon_used: {e}")
     STRIPE_LOCALES = {
         'auto', 'bg', 'cs', 'da', 'de', 'el', 'en', 'en-GB', 'es', 'es-419',
         'et', 'fi', 'fil', 'fr', 'fr-CA', 'hr', 'hu', 'id', 'it', 'ja',
@@ -1078,16 +1158,11 @@ async def create_checkout_session(checkout_request: CheckoutRequest, request: Re
     }
     user_language = get_user_language(email=checkout_request.user_email or "", request=request)
     stripe_locale = user_language if user_language in STRIPE_LOCALES else 'auto'
-
     try:
-        # 🔍 LOGS AJOUTÉS
-        print(f"[CHECKOUT] package_id={package_id}, billing_cycle={'annual' if 'annual' in package_id else 'monthly'}")
-        print(f"[CHECKOUT] metadata envoyé à Stripe : {metadata}")
-
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[line_item],
-            mode=mode,
+            mode="subscription",
             success_url=success_url,
             cancel_url=cancel_url,
             metadata=metadata,
@@ -1128,16 +1203,12 @@ async def get_checkout_status(session_id: str):
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# ======================= CORRECTION DU WEBHOOK ==========================
-# L'ancien bloc dupliqué a été supprimé. On garde uniquement la version asynchrone.
 @app.post("/api/webhook/stripe")
 async def stripe_webhook(request: Request):
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
-
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
-
     try:
         if webhook_secret and sig_header:
             event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
@@ -1150,21 +1221,12 @@ async def stripe_webhook(request: Request):
     except Exception as e:
         print(f"Webhook error: {e}")
         return {"received": False, "error": str(e)}
-
-    # 🔍 Log du type d'événement
-    print(f"[WEBHOOK] Événement reçu : {event.type}")
-
     try:
         if event.type == "checkout.session.completed":
             session = event.data.object
-            # 🔍 Logs des métadonnées reçues
-            print(f"[WEBHOOK] checkout.session.completed - metadata : {session.metadata}")
-            print(f"[WEBHOOK] billing_cycle dans metadata : {session.metadata.get('billing_cycle')}")
-
             if session.id in payment_transactions:
                 payment_transactions[session.id]["payment_status"] = "paid"
                 payment_transactions[session.id]["status"] = "completed"
-
             supabase_url = os.getenv("SUPABASE_URL")
             supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
             if supabase_url and supabase_key and session.metadata:
@@ -1173,7 +1235,6 @@ async def stripe_webhook(request: Request):
                     user_id = session.metadata.get("user_id")
                     package_id = session.metadata.get("package_id")
                     job_id = session.metadata.get("job_id")
-
                     if user_id and package_id and package_id in SUBSCRIPTION_PLANS:
                         company_id = session.metadata.get("company_id")
                         if not company_id:
@@ -1184,14 +1245,12 @@ async def stripe_webhook(request: Request):
                             companies = resp.json()
                             if companies:
                                 company_id = companies[0]["id"]
-
                         if company_id:
                             plan_name = "free"
                             if "pro" in package_id:
                                 plan_name = "pro"
                             elif "business" in package_id:
                                 plan_name = "business"
-
                             update_data = {
                                 "subscription_plan": plan_name,
                                 "stripe_subscription_id": session.subscription,
@@ -1199,24 +1258,16 @@ async def stripe_webhook(request: Request):
                                 "subscription_expires_at": None,
                                 "billing_cycle": session.metadata.get("billing_cycle")
                             }
-
-                            # Coupon de lancement
                             if session.get("total_details") and session["total_details"].get("discounts"):
                                 applied_coupons = [d["discount"]["coupon"]["id"] for d in session["total_details"]["discounts"]]
                                 launch_coupon_ids = ["N9rSzhf6", "bJA4SCvq"]
                                 if any(cid in applied_coupons for cid in launch_coupon_ids):
                                     update_data["launch_coupon_used"] = True
-
-                            print(f"[WEBHOOK] Données envoyées à Supabase : {update_data}")
-
-                            resp = await client.patch(
+                            await client.patch(
                                 f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
                                 json=update_data,
                                 headers=headers
                             )
-
-                            print(f"[WEBHOOK] Statut mise à jour entreprise : {resp.status_code}")
-
                     if job_id and package_id and package_id in BOOST_PACKAGES:
                         days = BOOST_PACKAGES[package_id]["days"]
                         boosted_until = datetime.utcnow() + timedelta(days=days)
@@ -1225,12 +1276,10 @@ async def stripe_webhook(request: Request):
                             json={"boosted_until": boosted_until.isoformat()},
                             headers=headers
                         )
-
         elif event.type == "checkout.session.expired":
             session = event.data.object
             if session.id in payment_transactions:
                 payment_transactions[session.id]["status"] = "expired"
-
             supabase_url = os.getenv("SUPABASE_URL")
             supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
             if supabase_url and supabase_key and session.metadata:
@@ -1243,16 +1292,11 @@ async def stripe_webhook(request: Request):
                             json={"launch_coupon_used": False},
                             headers=headers
                         )
-
     except Exception as e:
         print(f"Webhook processing error: {e}")
         return {"received": True, "error": str(e)}
-
     return {"received": True}
 
-# ==================== FIN DE LA CORRECTION DU WEBHOOK =====================
-
-# Annulation – utilisation de company_id
 @app.post("/api/subscription/cancel")
 async def cancel_subscription(req: CancelSubscriptionRequest):
     if not stripe.api_key:
@@ -1294,7 +1338,6 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
             except stripe.error.InvalidRequestError as e:
                 print(f"Stripe subscription already deleted or invalid: {e}")
         httpx.patch(
-            
             f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}",
             json={
                 "stripe_subscription_id": None,
@@ -1309,7 +1352,6 @@ async def cancel_subscription(req: CancelSubscriptionRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# Portail client Stripe – utilisation de company_id
 @app.post("/api/stripe/portal")
 async def stripe_portal(request: Request):
     data = await request.json()
@@ -1317,7 +1359,6 @@ async def stripe_portal(request: Request):
     company_id = data.get("company_id")
     if not user_id or not company_id:
         raise HTTPException(status_code=400, detail="user_id et company_id requis")
-
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
@@ -1341,7 +1382,65 @@ async def stripe_portal(request: Request):
     except stripe.error.InvalidRequestError:
         return {"url": "https://jobs.actoos.com/tarifs"}
 
-# ----- Contact & Newsletter -----
+@app.post("/api/checkout/complete")
+async def checkout_complete(request: Request):
+    data = await request.json()
+    session_id = data.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id requis")
+    session = stripe.checkout.Session.retrieve(session_id)
+    if session.payment_status != "paid":
+        raise HTTPException(status_code=400, detail="Paiement non effectué")
+    metadata = session.metadata or {}
+    package_id = metadata.get("package_id")
+    amount_total = session.amount_total
+    currency = session.currency.upper()
+    billing_cycle = metadata.get("billing_cycle")
+    plan_name = None
+    if package_id in SUBSCRIPTION_PLANS:
+        user_id = metadata.get("user_id")
+        company_id = metadata.get("company_id")
+        if not user_id or not company_id:
+            raise HTTPException(status_code=400, detail="Métadonnées manquantes")
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        company_resp = httpx.get(
+            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+        companies = company_resp.json()
+        if not companies:
+            raise HTTPException(status_code=404, detail="Entreprise non trouvée ou non autorisée")
+        plan_name = "free"
+        if "pro" in package_id:
+            plan_name = "pro"
+        elif "business" in package_id:
+            plan_name = "business"
+        update_data = {
+            "subscription_plan": plan_name,
+            "stripe_subscription_id": session.subscription,
+            "stripe_customer_id": session.customer,
+            "subscription_expires_at": None,
+            "billing_cycle": billing_cycle,
+        }
+        httpx.patch(
+            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
+            json=update_data,
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+        )
+    package_name = metadata.get("package_name") or "Achat"
+    is_boost = package_id in BOOST_PACKAGES if package_id else False
+    return {
+        "success": True,
+        "plan": plan_name,
+        "planLabel": package_name,
+        "amount": amount_total,
+        "currency": currency,
+        "isBoost": is_boost,
+        "billingCycle": billing_cycle,
+    }
+
+# ==================== CONTACT & NEWSLETTER ====================
 @app.post("/api/contact")
 async def contact_form(contact: ContactRequest):
     if not resend.api_key:
@@ -1356,7 +1455,12 @@ async def contact_form(contact: ContactRequest):
             "html": f"<h2>Nouveau message de {contact.name}</h2><p><strong>Email :</strong> {contact.email}</p><p><strong>Sujet :</strong> {contact.subject}</p><p><strong>Message :</strong></p><p>{contact.message}</p>"
         })
         subject = f"Merci de nous avoir contacté - {clean_subject(contact.subject)}"
-        html = f"<h2>Merci {contact.name} !</h2><p>Nous avons bien reçu votre message concernant \"<strong>{contact.subject}</strong>\".</p><p>Notre équipe vous répondra dans les plus brefs délais.</p><p>Cordialement,<br/>L'équipe Actoos Jobs</p>"
+        html = f"""
+        <h2 style="color:#1a202c;">Merci {contact.name} !</h2>
+        {email_info_box(f"Nous avons bien reçu votre message concernant <strong>{contact.subject}</strong>.", "info")}
+        <p>Notre équipe vous répondra dans les plus brefs délais.</p>
+        <p style="margin-top:24px;">Cordialement,<br/>L'équipe Actoos Jobs</p>
+        """
         await send_translated_email(contact.email, subject, html, lang)
         return {"success": True, "message": "Votre message a bien été envoyé."}
     except Exception as e:
@@ -1382,7 +1486,11 @@ async def newsletter_subscribe(req: NewsletterRequest):
     try:
         lang = req.language or "fr"
         subject = "Bienvenue à la newsletter Actoos Jobs"
-        html = "<h1>Merci de vous être inscrit !</h1><p>Vous recevrez nos derniers conseils et offres d'emploi.</p>"
+        html = f"""
+        <h2 style="color:#1a202c;">Merci de vous être inscrit !</h2>
+        {email_info_box("Vous recevrez nos derniers conseils et offres d'emploi directement dans votre boîte mail.", "success")}
+        <p>À très vite,<br/>L'équipe Actoos Jobs</p>
+        """
         await send_translated_email(req.email, subject, html, lang)
     except Exception as e:
         print(f"Erreur envoi email bienvenue: {e}")
@@ -1410,7 +1518,6 @@ async def newsletter_unsubscribe(email: str = Query(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.post("/api/admin/send-newsletter")
 async def admin_send_newsletter(req: AdminNewsletterRequest):
     if not resend.api_key:
@@ -1432,7 +1539,7 @@ async def admin_send_newsletter(req: AdminNewsletterRequest):
         for sub in subscribers:
             email = sub["email"]
             unsubscribe_link = f"https://jobs.actoos.com/desabonnement?email={email}"
-            footer = f'<br><br><small style="color:#888;">Vous recevez cet email car vous êtes inscrit à la newsletter Actoos Jobs. <a href="{unsubscribe_link}">Se désabonner</a></small>'
+            footer = f'<br><br><hr style="border:0; border-top:1px solid #e2e8f0; margin:24px 0;"><p style="color:#888; font-size:12px;">Vous recevez cet email car vous êtes inscrit à la newsletter. {email_button("Se désabonner", unsubscribe_link, False)}</p>'
             html_personalized = req.content + footer
             try:
                 await send_translated_email(email, req.subject, html_personalized, lang)
@@ -1448,201 +1555,7 @@ async def admin_send_newsletter(req: AdminNewsletterRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/send-interview-link")
-async def send_interview_link(req: SendInterviewLinkRequest):
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Email service not configured")
-    try:
-        lang = req.language or "fr"
-        html = email_interview_invitation(req.candidate_name, req.job_title, req.meeting_link, req.company_name)
-        subject = f"Entretien pour le poste : {clean_subject(req.job_title)}"
-        await send_translated_email(req.email, subject, html, lang)
-        return {"success": True, "message": "Email envoyé avec succès."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/notify-new-application")
-async def notify_new_application(req: NotifyNewApplicationRequest):
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Email service not configured")
-    try:
-        lang = req.language or "fr"
-        html = email_new_application(req.recruiter_name, req.candidate_name, req.job_title)
-        subject = f"Nouvelle candidature pour {clean_subject(req.job_title)}"
-        await send_translated_email(req.recruiter_email, subject, html, lang)
-        return {"success": True, "message": "Email envoyé au recruteur."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/notify-status-change")
-async def notify_status_change(req: NotifyStatusChangeRequest):
-    print("[DEBUG] /api/notify-status-change appelé")
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Email service not configured")
-    try:
-        lang = req.language or "fr"
-        html = email_status_change(req.candidate_name, req.job_title, req.new_status, req.company_name, req.reason)
-        subject = f"Votre candidature - {clean_subject(req.job_title)}"
-        await send_translated_email(req.candidate_email, subject, html, lang)
-        return {"success": True, "message": "Email envoyé au candidat."}
-    except Exception as e:
-        print(f"[ERREUR] notify_status_change: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-class NotifyAcceptedCandidateRequest(BaseModel):
-    candidate_email: str
-    candidate_name: str
-    job_title: str
-    company_name: Optional[str] = ""
-    message: Optional[str] = None
-    language: Optional[str] = "fr"
-
-@app.post("/api/notify-accepted-candidate")
-async def notify_accepted_candidate(req: NotifyAcceptedCandidateRequest):
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Email service not configured")
-    try:
-        lang = req.language or "fr"
-
-        # Nettoyage du titre
-        import re
-        raw_title = (req.job_title or "").strip()
-        # Supprimer les préfixes numérotés
-        parts = re.split(r'\d+\.\s*', raw_title)
-        clean_title = ""
-        for part in parts:
-            part = part.strip().rstrip('.')
-            if part:
-                clean_title = part
-                break
-        if not clean_title:
-            clean_title = raw_title.split('\n')[0].strip().rstrip('.')
-        if len(clean_title) > 120:
-            clean_title = clean_title[:117] + '...'
-
-        # Nettoyage avancé du nom d'entreprise
-        raw_company = req.company_name or ""
-        company_name = raw_company.strip()
-        # Si c'est une chaîne vide, "null", "undefined", ou seulement des espaces → on ignore
-        if not company_name or company_name.lower() in ("null", "undefined") or company_name.isspace():
-            company_text = ""
-        else:
-            company_text = f" chez <strong>{company_name}</strong>"
-
-        # Log pour surveillance
-        print(f"[DEBUG] company_name reçu : '{req.company_name}' -> nettoyé : '{company_name}', company_text : '{company_text}'")
-
-        subject = f"Félicitations {req.candidate_name} ! Votre candidature a été acceptée"
-        subject = subject.replace('\n', ' ').replace('\r', ' ').strip()
-
-        html = f"""
-        <h2>Félicitations {req.candidate_name} !</h2>
-        <p>Votre candidature pour le poste <strong>{clean_title}</strong>{company_text} a été acceptée.</p>
-        {f"<p><strong>Message du recruteur :</strong> {req.message}</p>" if req.message else ""}
-        <p>Nous vous contacterons très prochainement pour les prochaines étapes.</p>
-        <p>À très bientôt,<br/>L'équipe Actoos Jobs</p>
-        """
-        await send_translated_email(req.candidate_email, subject, html, lang)
-        return {"success": True, "message": "Email envoyé au candidat."}
-    except Exception as e:
-        print(f"[ERREUR] notify-accepted-candidate : {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-
-
-@app.post("/api/send-job-alerts")
-async def send_job_alerts():
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Email service not configured")
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    alerts_resp = httpx.get(
-        f"{supabase_url}/rest/v1/job_alerts?select=*,user:users(email,preferences)&is_active=eq.true",
-        headers=headers
-    )
-    alerts = alerts_resp.json()
-    if not isinstance(alerts, list) or len(alerts) == 0:
-        return {"success": True, "message": "Aucune alerte active"}
-    count_sent = 0
-    for alert in alerts:
-        user_email = alert.get("user", {}).get("email")
-        user_id = alert.get("user_id")
-        if not user_email or not user_id:
-            continue
-        last_sent = alert.get("last_sent_at")
-        # ✅ now est maintenant offset-aware (UTC)
-        now = datetime.now(timezone.utc)
-        freq = alert.get("frequency", "daily")
-        if last_sent:
-            last_sent_dt = datetime.fromisoformat(last_sent.replace("Z", "+00:00"))
-            if freq == "instant" and now - last_sent_dt < timedelta(hours=1):
-                continue
-            elif freq == "daily" and now - last_sent_dt < timedelta(days=1):
-                continue
-            elif freq == "weekly" and now - last_sent_dt < timedelta(weeks=1):
-                continue
-        keywords = alert.get("keywords", "")
-        category_id = alert.get("category_id")
-        city_id = alert.get("city_id")
-        contract_types = alert.get("contract_types")
-        salary_min = alert.get("salary_min")
-        user_prefs = alert.get("user", {}).get("preferences") or {}
-        country_code = user_prefs.get("country")
-        country_id = None
-        if country_code:
-            country_resp = httpx.get(
-                f"{supabase_url}/rest/v1/countries?select=id&code=eq.{country_code}",
-                headers=headers
-            )
-            countries = country_resp.json()
-            if countries:
-                country_id = countries[0]["id"]
-        rpc_payload = {
-            "p_keywords": keywords if keywords else None,
-            "p_user_id": user_id,
-            "p_category_id": category_id,
-            "p_city_id": city_id,
-            "p_contract_types": contract_types,
-            "p_salary_min": salary_min,
-            "p_country_id": str(country_id) if country_id else None
-        }
-        try:
-            rpc_resp = httpx.post(
-                f"{supabase_url}/rest/v1/rpc/search_jobs_for_alert",
-                json=rpc_payload,
-                headers=headers
-            )
-            jobs = rpc_resp.json()
-        except Exception as e:
-            print(f"Erreur RPC alerte {alert.get('id')}: {e}")
-            continue
-        if not isinstance(jobs, list) or len(jobs) == 0:
-            continue
-        job_links = "<br>".join([
-            f"<a href='https://jobs.actoos.com/emplois/{j['id']}'>{j['title']}</a>" for j in jobs
-        ])
-        lang = get_user_language(email=user_email)
-        subject = f"Alerte emploi : {keywords or 'Nouvelles offres'}"
-        body_header = "<h2>Nouvelles offres correspondant à votre alerte</h2>"
-        body_intro = "<p>Voici les offres trouvées pour vos critères :</p>"
-        body_footer = "<p>Bonne recherche !</p>"
-        html = f"{body_header}{body_intro}{job_links}{body_footer}"
-        try:
-            await send_translated_email(user_email, subject, html, lang)
-            httpx.patch(
-                f"{supabase_url}/rest/v1/job_alerts?id=eq.{alert['id']}",
-                json={"last_sent_at": now.isoformat()},
-                headers=headers
-            )
-            count_sent += 1
-        except Exception as e:
-            print(f"Erreur envoi alerte {alert.get('id')}: {e}")
-    return {"success": True, "message": f"Emails envoyés pour {count_sent}/{len(alerts)} alerte(s)."}
-
+# ==================== CANDIDATE PUBLIC PROFILE ====================
 @app.get("/api/candidate/{candidate_id}")
 async def get_candidate_public_profile(candidate_id: str):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -1650,7 +1563,6 @@ async def get_candidate_public_profile(candidate_id: str):
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     try:
-        # ✅ Ajout du champ phone dans la sélection
         user_resp = httpx.get(
             f"{supabase_url}/rest/v1/users?id=eq.{candidate_id}&select=id,email,first_name,last_name,phone,avatar_url,is_active,is_banned",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
@@ -1659,14 +1571,12 @@ async def get_candidate_public_profile(candidate_id: str):
         if not users:
             raise HTTPException(status_code=404, detail="Candidat introuvable")
         user = users[0]
-
         profile_resp = httpx.get(
             f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{candidate_id}&select=*",
             headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
         )
         profiles = profile_resp.json()
         profile = profiles[0] if profiles else {}
-
         city = None
         if profile.get("city_id"):
             city_resp = httpx.get(
@@ -1676,13 +1586,12 @@ async def get_candidate_public_profile(candidate_id: str):
             cities_list = city_resp.json()
             if cities_list:
                 city = cities_list[0]["name"]
-
         result = {
             "id": user["id"],
             "email": user.get("email"),
             "first_name": user.get("first_name") or "",
             "last_name": user.get("last_name") or "",
-            "phone": user.get("phone"),          # ✅ Ajouté
+            "phone": user.get("phone"),
             "avatar_url": user.get("avatar_url"),
             "is_active": user.get("is_active"),
             "is_banned": user.get("is_banned"),
@@ -1711,19 +1620,15 @@ async def get_candidate_public_profile(candidate_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ===================== GESTION D'ÉQUIPE (endpoints modifiés avec get_user_role_in_company) =====================
-
+# ==================== TEAM MANAGEMENT ====================
 @app.get("/api/team/members")
 async def get_team_members_v2(company_id: str, user_id: str = Query(...)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # Vérification du rôle
     role = get_user_role_in_company(user_id, company_id)
     if role not in ("owner", "admin"):
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
-
     members_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&select=id,user:users(id,email,first_name,last_name,avatar_url),role,status,invitation_token",
         headers=headers
@@ -1759,21 +1664,15 @@ async def invite_team_member_v2(req: TeamInviteRequest):
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     inviter_id = req.user_id
-
-    # Vérifier que l'inviteur est admin ou propriétaire
     inviter_role = get_user_role_in_company(inviter_id, req.company_id)
     if inviter_role not in ("owner", "admin"):
         raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent inviter des membres")
-
-    # Récupérer le nom de l'entreprise pour l'email
     comp_info = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&select=name",
         headers=headers
     )
     comp_json = comp_info.json()
     company_name = comp_json[0]["name"] if comp_json else ""
-
-    # Limite de membres
     plan_resp = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{req.company_id}&select=subscription_plan",
         headers=headers
@@ -1789,7 +1688,6 @@ async def invite_team_member_v2(req: TeamInviteRequest):
         current_count = int(count_resp.headers["content-range"].split("/")[1])
     if current_count >= max_members:
         raise HTTPException(status_code=400, detail=f"Limite de {max_members} membres atteinte. Passez au plan supérieur.")
-
     user_to_invite = httpx.get(
         f"{supabase_url}/rest/v1/users?email=eq.{req.email}&select=id,email,first_name,last_name",
         headers=headers
@@ -1830,16 +1728,12 @@ async def invite_team_member_v2(req: TeamInviteRequest):
         lang = req.language or "fr"
         subject = f"Invitation à rejoindre {company_name} sur Actoos Jobs"
         html = f"""
-        <h2>Bonjour !</h2>
-        <p>Vous avez été invité(e) à rejoindre <strong>{company_name}</strong> sur Actoos Jobs en tant que {req.role}.</p>
-        <p>Cliquez sur le lien ci-dessous pour créer votre compte et accepter l'invitation :</p>
-        <p><a href="{invitation_link}">{invitation_link}</a></p>
-        <p>Cette invitation expire dans 7 jours.</p>
+        <h2 style="color:#1a202c;">Bonjour !</h2>
+        {email_info_box(f"Vous avez été invité(e) à rejoindre <strong>{company_name}</strong> sur Actoos Jobs en tant que {req.role}.", "info")}
+        <p style="text-align:center; margin:24px 0;">{email_button("Accepter l'invitation", invitation_link)}</p>
+        <p style="color:#6b7280; font-size:14px;">Cette invitation expire dans 7 jours.</p>
         """
-        try:
-            await send_translated_email(req.email, subject, html, lang)
-        except Exception as e:
-            print(f"Erreur envoi email invitation: {e}")
+        await send_translated_email(req.email, subject, html, lang)
         return {"success": True, "message": "Invitation envoyée par email."}
 
 @app.post("/api/team/accept-invitation")
@@ -1870,8 +1764,6 @@ async def update_member_role_v2(member_id: str, req: TeamUpdateRoleRequest):
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     current_user_id = req.user_id
-
-    # Récupérer le membre pour trouver le company_id
     member_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}&select=company_id,user_id",
         headers=headers
@@ -1880,24 +1772,18 @@ async def update_member_role_v2(member_id: str, req: TeamUpdateRoleRequest):
     if not members:
         raise HTTPException(status_code=404, detail="Membre non trouvé")
     target_company_id = members[0]["company_id"]
-
-    # Vérifier que l'utilisateur actuel est admin ou propriétaire de cette entreprise
     role = get_user_role_in_company(current_user_id, target_company_id)
     if role not in ("owner", "admin"):
         raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent changer les rôles")
-
-    # Empêcher de changer le rôle du propriétaire
     is_owner_target = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{target_company_id}&owner_id=eq.{members[0]['user_id']}&select=id",
         headers=headers
     )
     if len(is_owner_target.json()) > 0:
         raise HTTPException(status_code=403, detail="Impossible de modifier le rôle du propriétaire")
-
     valid_roles = ["admin", "recruiter", "viewer"]
     if req.role not in valid_roles:
         raise HTTPException(status_code=400, detail="Rôle invalide")
-
     httpx.patch(
         f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}",
         json={"role": req.role},
@@ -1912,13 +1798,9 @@ async def remove_team_member_v2(member_id: str, req: TeamRemoveRequest):
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     current_user_id = req.user_id
     company_id = req.company_id
-
-    # Vérifier les droits de l'utilisateur actuel
     role = get_user_role_in_company(current_user_id, company_id)
     if role not in ("owner", "admin"):
         raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent retirer des membres")
-
-    # Récupérer le membre pour vérifier qu'il appartient bien à l'entreprise
     member_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}&select=company_id,user_id",
         headers=headers
@@ -1928,15 +1810,12 @@ async def remove_team_member_v2(member_id: str, req: TeamRemoveRequest):
         raise HTTPException(status_code=404, detail="Membre non trouvé")
     if members[0]["company_id"] != company_id:
         raise HTTPException(status_code=400, detail="Le membre n'appartient pas à cette entreprise")
-
-    # Empêcher de retirer le propriétaire (au cas où il serait aussi dans company_members)
     is_owner_target = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{members[0]['user_id']}&select=id",
         headers=headers
     )
     if len(is_owner_target.json()) > 0:
         raise HTTPException(status_code=403, detail="Impossible de retirer le propriétaire de l'entreprise")
-
     httpx.delete(
         f"{supabase_url}/rest/v1/company_members?id=eq.{member_id}",
         headers=headers
@@ -1950,29 +1829,25 @@ async def leave_company_v2(req: TeamLeaveRequest):
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     user_id = req.user_id
     company_id = req.company_id
-
     member_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&user_id=eq.{user_id}&select=id",
         headers=headers
     )
     if len(member_resp.json()) == 0:
         raise HTTPException(status_code=404, detail="Vous n'êtes pas membre de cette entreprise")
-
     owner_check = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id",
         headers=headers
     )
     if len(owner_check.json()) > 0:
         raise HTTPException(status_code=400, detail="Le propriétaire ne peut pas quitter l'entreprise. Veuillez transférer la propriété d'abord.")
-
     httpx.delete(
         f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}&user_id=eq.{user_id}",
         headers=headers
     )
     return {"success": True}
 
-# =================== FIN DE LA SECTION ÉQUIPE ===================
-
+# ==================== APPLICATIONS ====================
 @app.delete("/api/applications/{application_id}")
 async def delete_application(application_id: str, user_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -2008,19 +1883,12 @@ async def delete_application(application_id: str, user_id: str = Depends(get_cur
 
 @app.get("/api/users/search")
 async def search_users(q: str = Query(...), user_id: str = Depends(get_current_active_user)):
-    """Recherche des utilisateurs par email, prénom ou nom.
-    Retourne au maximum 10 résultats avec les champs nécessaires à l'invitation.
-    """
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    # On cherche sur l'email, le prénom et le nom (insensible à la casse)
-    query = (
-        f"email.ilike.*{q}*,first_name.ilike.*{q}*,last_name.ilike.*{q}*"
-    )
-    # On limite à 10 résultats, on trie par email
+    query = f"email.ilike.*{q}*,first_name.ilike.*{q}*,last_name.ilike.*{q}*"
     resp = httpx.get(
         f"{supabase_url}/rest/v1/users?select=id,email,first_name,last_name,role&or=({query})&order=email.asc&limit=10",
         headers=headers
@@ -2030,7 +1898,7 @@ async def search_users(q: str = Query(...), user_id: str = Depends(get_current_a
     users = resp.json()
     return users
 
-
+# ==================== ADMIN ENDPOINTS (avec emails pro) ====================
 @app.post("/api/admin/verify-company")
 async def admin_verify_company(req: AdminVerifyCompanyRequest):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -2071,10 +1939,9 @@ async def notify_admin_new_company(req: NewCompanyNotificationRequest):
         lang = req.language or "fr"
         subject = f"Nouvelle entreprise à valider : {req.company_name}"
         html = f"""
-        <h2>Nouvelle entreprise en attente de validation</h2>
-        <p><strong>Entreprise :</strong> {req.company_name}</p>
-        <p><strong>Propriétaire :</strong> {req.owner_name} ({req.owner_email})</p>
-        <p><a href='https://jobs.actoos.com/admin'>Accéder au dashboard admin</a></p>
+        <h2 style="color:#1a202c;">Nouvelle entreprise en attente de validation</h2>
+        {email_info_box(f"<strong>Entreprise :</strong> {req.company_name}<br><strong>Propriétaire :</strong> {req.owner_name} ({req.owner_email})", "info")}
+        <p>{email_button("Accéder au dashboard admin", "https://jobs.actoos.com/admin")}</p>
         """
         await send_translated_email("contact@actoos.com", subject, html, lang)
         return {"success": True, "message": "Notification envoyée à l'administrateur"}
@@ -2088,7 +1955,11 @@ async def notify_admin_new_job(req: NotifyAdminNewJobRequest):
     try:
         lang = req.language or "fr"
         subject = f"Nouvelle offre à valider : {req.job_title}"
-        html = f"<h2>Nouvelle offre en attente de validation</h2><p><strong>Offre :</strong> {req.job_title}</p><p><strong>Entreprise :</strong> {req.company_name} ({req.company_email})</p><p><a href='https://jobs.actoos.com/admin'>Accéder au dashboard admin</a></p>"
+        html = f"""
+        <h2 style="color:#1a202c;">Nouvelle offre en attente de validation</h2>
+        {email_info_box(f"<strong>Offre :</strong> {req.job_title}<br><strong>Entreprise :</strong> {req.company_name} ({req.company_email})", "info")}
+        <p>{email_button("Accéder au dashboard admin", "https://jobs.actoos.com/admin")}</p>
+        """
         await send_translated_email("contact@actoos.com", subject, html, lang)
         return {"success": True, "message": "Notification envoyée à l'administrateur"}
     except Exception as e:
@@ -2129,15 +2000,11 @@ async def delete_own_company(request: Request):
     user_id = data.get("user_id")
     company_id = data.get("company_id")
     language = data.get("language", "fr")
-
     if not user_id or not company_id:
         raise HTTPException(status_code=400, detail="user_id et company_id sont requis")
-
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # Vérifier la propriété de l’entreprise (avec la clé de service)
     company_resp = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=id,name,owner_id,owner:users(email,first_name,last_name)",
         headers=headers
@@ -2148,13 +2015,9 @@ async def delete_own_company(request: Request):
     company = companies[0]
     if company["owner_id"] != user_id:
         raise HTTPException(status_code=403, detail="Vous n'êtes pas le propriétaire de cette entreprise")
-
-    # Supprimer les offres, les membres, puis l’entreprise
     httpx.delete(f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}", headers=headers)
     httpx.delete(f"{supabase_url}/rest/v1/company_members?company_id=eq.{company_id}", headers=headers)
     httpx.delete(f"{supabase_url}/rest/v1/companies?id=eq.{company_id}", headers=headers)
-
-    # Envoyer un email de confirmation (si possible)
     owner = company.get("owner")
     if isinstance(owner, list) and len(owner) > 0:
         owner = owner[0]
@@ -2164,12 +2027,11 @@ async def delete_own_company(request: Request):
         if not first_name or first_name.strip() == "":
             first_name = "Utilisateur"
         subject = "Votre entreprise a été supprimée"
-        html = f"<h2>Bonjour {first_name},</h2><p>Votre entreprise <strong>{company['name']}</strong> a bien été supprimée.</p>"
-        try:
-            await send_translated_email(owner_email, subject, html, language)
-        except Exception as e:
-            print(f"Email error: {e}")
-
+        html = f"""
+        <h2 style="color:#1a202c;">Bonjour {first_name},</h2>
+        {email_info_box(f"Votre entreprise <strong>{company['name']}</strong> a bien été supprimée conformément à votre demande.", "info")}
+        """
+        await send_translated_email(owner_email, subject, html, language)
     return {"success": True, "message": "Entreprise supprimée"}
 
 @app.delete("/api/admin/delete-user/{user_id}")
@@ -2235,54 +2097,6 @@ async def admin_reject_company(req: AdminActionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------- FONCTION UTILITAIRE ----------
-def set_user_entities_status(user_id: str, active: bool):
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    companies_resp = httpx.get(
-        f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
-        headers=headers
-    )
-    companies = companies_resp.json()
-    for company in companies:
-        company_id = company["id"]
-        httpx.patch(
-            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
-            json={"is_active": active, "suspended_until": None},
-            headers=headers
-        )
-        if not active:
-            jobs_resp = httpx.get(
-                f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}&status=eq.active&select=id",
-                headers=headers
-            )
-            for job in jobs_resp.json():
-                httpx.patch(
-                    f"{supabase_url}/rest/v1/jobs?id=eq.{job['id']}",
-                    json={"status": "suspended"},
-                    headers=headers
-                )
-        else:
-            jobs_resp = httpx.get(
-                f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}&status=eq.suspended&select=id",
-                headers=headers
-            )
-            for job in jobs_resp.json():
-                httpx.patch(
-                    f"{supabase_url}/rest/v1/jobs?id=eq.{job['id']}",
-                    json={"status": "active"},
-                    headers=headers
-                )
-    try:
-        httpx.post(
-            f"{supabase_url}/auth/v1/admin/users/{user_id}/sessions/logout",
-            headers=headers
-        )
-    except Exception as e:
-        print(f"Erreur déconnexion sessions: {e}")
-
-# ---------- ENDPOINTS ADMIN ----------
 @app.post("/api/admin/suspend-company")
 async def admin_suspend_company(req: AdminSuspendCompanyRequest):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -2372,9 +2186,9 @@ async def reactivate_company(request: Request):
         first_name = owner.get("first_name") or "Recruteur"
         subject = f"Votre entreprise \"{company['name']}\" a été réactivée"
         html = f"""
-        <h2>Bonjour {first_name},</h2>
-        <p>Votre entreprise <strong>{company['name']}</strong> a été réactivée et est à nouveau active.</p>
-        <p><a href="https://jobs.actoos.com/dashboard/entreprise">Accéder à votre espace recruteur</a></p>
+        <h2 style="color:#1a202c;">Bonjour {first_name},</h2>
+        {email_info_box(f"Votre entreprise <strong>{company['name']}</strong> a été réactivée et est à nouveau active.", "success")}
+        <p>{email_button("Accéder à votre espace recruteur", "https://jobs.actoos.com/dashboard/entreprise")}</p>
         """
         await send_translated_email(owner_email, subject, html, language)
     return {"success": True, "message": "Entreprise réactivée et offres réactivées"}
@@ -2507,11 +2321,8 @@ async def admin_send_messages(req: AdminSendMessagesRequest):
             continue
         first_name = user.get('first_name') or "Utilisateur"
         html = email_admin_message(first_name, req.content)
-        try:
-            await send_translated_email(email, req.subject, html, lang)
-            success_count += 1
-        except Exception as e:
-            errors.append(f"Échec envoi à {email}: {str(e)}")
+        await send_translated_email(email, req.subject, html, lang)
+        success_count += 1
     return {"success": True, "sent": success_count, "errors": errors}
 
 @app.get("/api/admin/messages")
@@ -2694,27 +2505,24 @@ async def admin_handle_role_request(req: AdminHandleRoleRequest):
         if resend.api_key and user_email:
             lang = req.language or "fr"
             subject = "Votre demande de changement de rôle a été approuvée" if new_status == "approved" else "Votre demande de changement de rôle a été refusée"
-            body = f"<h2>Bonjour {user_first},</h2><p>Votre demande pour devenir <strong>{role_req['requested_role']}</strong> a été {'approuvée' if new_status == 'approved' else 'refusée'}.</p>"
-            if new_status != "approved":
-                body += f"<p>Raison : {req.admin_message or 'Non spécifiée'}</p>"
-            try:
-                await send_translated_email(user_email, subject, body, lang)
-            except Exception as e:
-                print(f"Email error: {e}")
+            body = f"""
+            <h2 style="color:#1a202c;">Bonjour {user_first},</h2>
+            {email_info_box(f"Votre demande pour devenir <strong>{role_req['requested_role']}</strong> a été {'approuvée ✅' if new_status == 'approved' else 'refusée ❌'}.", "success" if new_status == 'approved' else "danger")}
+            {f'<p><strong>Message de l\'admin :</strong> {req.admin_message}</p>' if req.admin_message else ''}
+            """
+            await send_translated_email(user_email, subject, body, lang)
         return {"success": True, "message": f"Demande {new_status}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------- ENDPOINT REPORT CORRIGÉ (sans dépendance JWT) ----------
+# ==================== REPORTS ====================
 @app.post("/api/report")
 async def create_report(req: ReportRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
-
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    # Vérification que l'utilisateur existe et n'est pas suspendu/banni
     user_check = httpx.get(
         f"{supabase_url}/rest/v1/users?id=eq.{req.user_id}&select=id,is_active,is_banned",
         headers=headers
@@ -2725,7 +2533,6 @@ async def create_report(req: ReportRequest):
     user = users[0]
     if not user.get("is_active", True) or user.get("is_banned", False):
         raise HTTPException(status_code=403, detail="Compte désactivé ou banni")
-
     try:
         response = httpx.post(
             f"{supabase_url}/rest/v1/reports",
@@ -2794,6 +2601,52 @@ async def admin_suspend_user(req: AdminSuspendUserRequest):
         return {"success": True, "message": "Utilisateur suspendu"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+def set_user_entities_status(user_id: str, active: bool):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    companies_resp = httpx.get(
+        f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id",
+        headers=headers
+    )
+    companies = companies_resp.json()
+    for company in companies:
+        company_id = company["id"]
+        httpx.patch(
+            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
+            json={"is_active": active, "suspended_until": None},
+            headers=headers
+        )
+        if not active:
+            jobs_resp = httpx.get(
+                f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}&status=eq.active&select=id",
+                headers=headers
+            )
+            for job in jobs_resp.json():
+                httpx.patch(
+                    f"{supabase_url}/rest/v1/jobs?id=eq.{job['id']}",
+                    json={"status": "suspended"},
+                    headers=headers
+                )
+        else:
+            jobs_resp = httpx.get(
+                f"{supabase_url}/rest/v1/jobs?company_id=eq.{company_id}&status=eq.suspended&select=id",
+                headers=headers
+            )
+            for job in jobs_resp.json():
+                httpx.patch(
+                    f"{supabase_url}/rest/v1/jobs?id=eq.{job['id']}",
+                    json={"status": "active"},
+                    headers=headers
+                )
+    try:
+        httpx.post(
+            f"{supabase_url}/auth/v1/admin/users/{user_id}/sessions/logout",
+            headers=headers
+        )
+    except Exception as e:
+        print(f"Erreur déconnexion sessions: {e}")
 
 @app.post("/api/admin/toggle-user-status")
 async def toggle_user_status(req: AdminToggleUserStatusRequest):
@@ -2895,8 +2748,6 @@ async def unban_user(request: Request):
         await send_translated_email(user["email"], subject, html, lang)
     return {"success": True, "message": "Utilisateur débanni et réactivé"}
 
-
-
 @app.post("/api/company/check-suspension/{company_id}")
 async def check_company_suspension(company_id: str, request: Request):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -2930,7 +2781,10 @@ async def check_company_suspension(company_id: str, request: Request):
                     lang = get_user_language(email=owner_email, request=request)
                     subject = "Votre entreprise a été réactivée"
                     first_name = owner.get('first_name') or 'Recruteur'
-                    html = f"<h2>Bonjour {first_name},</h2><p>Votre entreprise <strong>{company['name']}</strong> a été réactivée.</p>"
+                    html = f"""
+                    <h2 style="color:#1a202c;">Bonjour {first_name},</h2>
+                    {email_info_box(f"Votre entreprise <strong>{company['name']}</strong> a été réactivée automatiquement.", "success")}
+                    """
                     await send_translated_email(owner_email, subject, html, lang)
                 return {"active": True, "message": "Suspension levée automatiquement"}
         except Exception as e:
@@ -2997,6 +2851,7 @@ async def activate_free_boost(request: Request, user_id: str = Depends(get_curre
     )
     return {"success": True, "message": "Boost gratuit activé pour 7 jours"}
 
+# ==================== BLOG ====================
 @app.get("/api/blog/posts")
 async def get_blog_posts(audience: Optional[str] = None):
     posts = load_blog_posts()
@@ -3117,376 +2972,108 @@ async def delete_blog_post(slug: str):
     save_blog_posts(posts)
     return {"success": True}
 
-def compute_match_score(job: dict, candidate_profile: dict, category_slug: str = None) -> int:
-    score = 0.0
-
-    # 1. Bonus de catégorie (30 points)
-    cand_title = (candidate_profile.get("title") or "").lower()
-    cand_skills = [s.lower() for s in candidate_profile.get("skills") or []]
-    if category_slug:
-        if category_slug in cand_title or any(category_slug in skill for skill in cand_skills):
-            score += 30
-
-    # 2. Compétences (40 points)
-    job_skills = [skill.lower().strip() for skill in (job.get("skills_required") or [])]
-    if job_skills:
-        matched = 0
-        for js in job_skills:
-            js_words = set(js.split())
-            for cs in cand_skills:
-                cs_words = set(cs.split())
-                if js_words & cs_words:
-                    matched += 1
-                    break
-        score += (matched / len(job_skills)) * 40
-
-    # 3. Expérience (10 points)
-    exp_levels = ["junior", "intermediaire", "senior", "expert"]
-    job_lvl = job.get("experience_level")
-    cand_lvl = candidate_profile.get("experience_level")
-    if job_lvl and cand_lvl and job_lvl in exp_levels and cand_lvl in exp_levels:
-        job_idx = exp_levels.index(job_lvl)
-        cand_idx = exp_levels.index(cand_lvl)
-        if cand_idx >= job_idx:
-            score += 10
-        else:
-            diff = job_idx - cand_idx
-            if diff == 1:
-                score += 5
-            else:
-                score += 2
-
-    # 4. Salaire (10 points) si chevauchement, sinon 0
-    j_min, j_max = job.get("salary_min"), job.get("salary_max")
-    c_min, c_max = candidate_profile.get("desired_salary_min"), candidate_profile.get("desired_salary_max")
-    if j_min and j_max and c_min and c_max:
-        if c_min <= j_max and c_max >= j_min:
-            score += 10
-
-    # 5. Localisation / télétravail (10 points)
-    job_city = job.get("city_id")
-    cand_city = candidate_profile.get("city_id")
-    is_remote = job.get("is_remote", False)
-    cand_remote = candidate_profile.get("is_open_to_remote", False)
-    if job_city and cand_city and str(job_city) == str(cand_city):
-        score += 10
-    elif is_remote and cand_remote:
-        score += 7
-    else:
-        job_country = job.get("country_id")
-        cand_country = candidate_profile.get("country_id")
-        if job_country and cand_country and str(job_country) == str(cand_country):
-            score += 4
-
-    return min(100, int(score))
-
-
-
-
-
-
-
-@app.delete("/api/user/delete-account")
-async def delete_own_account(request: Request):
-    data = await request.json()
-    user_id = data.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="user_id requis")
-
+# ==================== JOB ALERTS ====================
+@app.post("/api/send-job-alerts")
+async def send_job_alerts():
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    try:
-        user_resp = httpx.get(
-            f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=id",
-            headers=headers
-        )
-        if not user_resp.json():
-            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-
-        httpx.delete(f"{supabase_url}/rest/v1/applications?candidate_id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/rest/v1/saved_jobs?user_id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/rest/v1/job_alerts?user_id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/rest/v1/notifications?user_id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/rest/v1/candidate_documents?user_id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{user_id}", headers=headers)
-
-        companies_resp = httpx.get(f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id", headers=headers)
-        companies = companies_resp.json()
-        for company in companies:
-            httpx.delete(f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}", headers=headers)
-
-        httpx.delete(f"{supabase_url}/rest/v1/users?id=eq.{user_id}", headers=headers)
-        httpx.delete(f"{supabase_url}/auth/v1/admin/users/{user_id}", headers=headers)
-
-        return {"success": True, "message": "Compte supprimé définitivement"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/checkout/complete")
-async def checkout_complete(request: Request):
-    data = await request.json()
-    session_id = data.get("session_id")
-    if not session_id:
-        raise HTTPException(status_code=400, detail="session_id requis")
-
-    session = stripe.checkout.Session.retrieve(session_id)
-    if session.payment_status != "paid":
-        raise HTTPException(status_code=400, detail="Paiement non effectué")
-
-    metadata = session.metadata or {}
-    package_id = metadata.get("package_id")
-    amount_total = session.amount_total
-    currency = session.currency.upper()
-
-    # ----- NOUVELLE LIGNE -----
-    billing_cycle = metadata.get("billing_cycle")   # "monthly" ou "annual"
-
-    plan_name = None
-    if package_id in SUBSCRIPTION_PLANS:
-        user_id = metadata.get("user_id")
-        company_id = metadata.get("company_id")
-        if not user_id or not company_id:
-            raise HTTPException(status_code=400, detail="Métadonnées manquantes")
-
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-
-        company_resp = httpx.get(
-            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&owner_id=eq.{user_id}&select=id",
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-        )
-        companies = company_resp.json()
-        if not companies:
-            raise HTTPException(status_code=404, detail="Entreprise non trouvée ou non autorisée")
-
-        plan_name = "free"
-        if "pro" in package_id:
-            plan_name = "pro"
-        elif "business" in package_id:
-            plan_name = "business"
-
-        update_data = {
-            "subscription_plan": plan_name,
-            "stripe_subscription_id": session.subscription,
-            "stripe_customer_id": session.customer,
-            "subscription_expires_at": None,
-            "billing_cycle": billing_cycle,   # ← NOUVELLE CLÉ
+    alerts_resp = httpx.get(
+        f"{supabase_url}/rest/v1/job_alerts?select=*,user:users(email,preferences)&is_active=eq.true",
+        headers=headers
+    )
+    alerts = alerts_resp.json()
+    if not isinstance(alerts, list) or len(alerts) == 0:
+        return {"success": True, "message": "Aucune alerte active"}
+    count_sent = 0
+    for alert in alerts:
+        user_email = alert.get("user", {}).get("email")
+        user_id = alert.get("user_id")
+        if not user_email or not user_id:
+            continue
+        last_sent = alert.get("last_sent_at")
+        now = datetime.now(timezone.utc)
+        freq = alert.get("frequency", "daily")
+        if last_sent:
+            last_sent_dt = datetime.fromisoformat(last_sent.replace("Z", "+00:00"))
+            if freq == "instant" and now - last_sent_dt < timedelta(hours=1):
+                continue
+            elif freq == "daily" and now - last_sent_dt < timedelta(days=1):
+                continue
+            elif freq == "weekly" and now - last_sent_dt < timedelta(weeks=1):
+                continue
+        keywords = alert.get("keywords", "")
+        category_id = alert.get("category_id")
+        city_id = alert.get("city_id")
+        contract_types = alert.get("contract_types")
+        salary_min = alert.get("salary_min")
+        user_prefs = alert.get("user", {}).get("preferences") or {}
+        country_code = user_prefs.get("country")
+        country_id = None
+        if country_code:
+            country_resp = httpx.get(
+                f"{supabase_url}/rest/v1/countries?select=id&code=eq.{country_code}",
+                headers=headers
+            )
+            countries = country_resp.json()
+            if countries:
+                country_id = countries[0]["id"]
+        rpc_payload = {
+            "p_keywords": keywords if keywords else None,
+            "p_user_id": user_id,
+            "p_category_id": category_id,
+            "p_city_id": city_id,
+            "p_contract_types": contract_types,
+            "p_salary_min": salary_min,
+            "p_country_id": str(country_id) if country_id else None
         }
-        httpx.patch(
-            f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
-            json=update_data,
-            headers={"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-        )
+        try:
+            rpc_resp = httpx.post(
+                f"{supabase_url}/rest/v1/rpc/search_jobs_for_alert",
+                json=rpc_payload,
+                headers=headers
+            )
+            jobs = rpc_resp.json()
+        except Exception as e:
+            print(f"Erreur RPC alerte {alert.get('id')}: {e}")
+            continue
+        if not isinstance(jobs, list) or len(jobs) == 0:
+            continue
+        job_links = "<br>".join([
+            f"<a href='https://jobs.actoos.com/emplois/{j['id']}'>{j['title']}</a>" for j in jobs
+        ])
+        lang = get_user_language(email=user_email)
+        subject = f"Alerte emploi : {keywords or 'Nouvelles offres'}"
+        html = f"""
+        <h2 style="color:#1a202c;">Nouvelles offres correspondant à votre alerte</h2>
+        {email_info_box(f"Voici les offres trouvées pour vos critères :", "info")}
+        <div style="background-color:#f9fafb; padding:12px; border-radius:6px; margin:12px 0;">{job_links}</div>
+        <p>Bonne recherche !</p>
+        """
+        try:
+            await send_translated_email(user_email, subject, html, lang)
+            httpx.patch(
+                f"{supabase_url}/rest/v1/job_alerts?id=eq.{alert['id']}",
+                json={"last_sent_at": now.isoformat()},
+                headers=headers
+            )
+            count_sent += 1
+        except Exception as e:
+            print(f"Erreur envoi alerte {alert.get('id')}: {e}")
+    return {"success": True, "message": f"Emails envoyés pour {count_sent}/{len(alerts)} alerte(s)."}
 
-    package_name = metadata.get("package_name") or "Achat"
-    is_boost = package_id in BOOST_PACKAGES if package_id else False
-
-    return {
-        "success": True,
-        "plan": plan_name,
-        "planLabel": package_name,
-        "amount": amount_total,
-        "currency": currency,
-        "isBoost": is_boost,
-        "billingCycle": billing_cycle,   # ← ajouté dans la réponse, utile pour le frontend
-    }
-
-@app.get("/sw.js")
-async def sw_js():
-    return Response(content="", media_type="application/javascript")
-
-@app.get("/favicon.ico")
-async def favicon_ico():
-    favicon_path = os.path.join(BUILD_DIR, "favicon.png")
-    if os.path.isfile(favicon_path):
-        return FileResponse(favicon_path, media_type="image/png")
-    return Response(content="", media_type="image/x-icon")
-
-@app.get("/assets/fonts/{font_name}")
-async def fonts(font_name: str):
-    return Response(content="", media_type="font/woff2")
-
-# ---------- ENDPOINT SUPPRESSION RAPPORT (corrigé, sans doublon) ----------
-@app.delete("/api/admin/reports/{report_id}")
-async def admin_delete_report(report_id: str):
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-    check = httpx.get(
-        f"{supabase_url}/rest/v1/reports?id=eq.{report_id}&select=id",
-        headers=headers
-    )
-    if not check.json():
-        raise HTTPException(status_code=404, detail="Signalement non trouvé")
-    resp = httpx.delete(
-        f"{supabase_url}/rest/v1/reports?id=eq.{report_id}",
-        headers=headers
-    )
-    if resp.status_code not in (200, 204):
-        raise HTTPException(status_code=500, detail="Erreur lors de la suppression du signalement")
-    return {"success": True, "message": "Signalement supprimé avec succès"}
-
-# ==================== ENDPOINT BANQUE DE CV CORRIGÉ ====================
-@app.get("/api/candidates/bank")
-async def get_candidates_bank(
-    user_id: str = Query(...),
-    subscription_plan: str = Query(None),
-    search: str = Query(""),
-    city_id: str = Query(""),
-    experience_level: str = Query(""),
-    contract_type: str = Query(""),
-    salary_min: int = Query(None),
-    is_available_only: bool = Query(False),
-    sort_by: str = Query("updated_at"),
-    page: int = Query(1),
-    page_size: int = Query(12),
-    job_id: Optional[str] = Query(None),   # ← nouveau paramètre
-):
-    # Vérifier le plan seulement s'il est fourni
-    if subscription_plan and subscription_plan != 'business':
-        raise HTTPException(status_code=403, detail="Fonctionnalité réservée au plan Business")
-
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail="Supabase not configured")
-    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # Récupérer l'offre si un job_id est fourni (pour le matching)
-    job = None
-    if job_id:
-        job_resp = httpx.get(
-            f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=*",
-            headers=headers
-        )
-        if job_resp.status_code == 200 and job_resp.json():
-            job = job_resp.json()[0]
-
-    # Récupérer tous les profils visibles (appel asynchrone)
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(
-            f"{supabase_url}/rest/v1/candidate_profiles?select=*&is_visible_in_cv_bank=eq.true",
-            headers=headers
-        )
-        if resp.status_code != 200:
-            raise HTTPException(status_code=500, detail="Erreur Supabase")
-        candidates = resp.json()
-
-        enriched = []
-        for c in candidates:
-            # Utilisateur
-            user_info = {}
-            if c.get("user_id"):
-                user_resp = await client.get(
-                    f"{supabase_url}/rest/v1/users?id=eq.{c['user_id']}&select=first_name,last_name,avatar_url",
-                    headers=headers
-                )
-                if user_resp.status_code == 200 and user_resp.json():
-                    user_info = user_resp.json()[0]
-
-            # Ville
-            city_info = {}
-            if c.get("city_id"):
-                city_resp = await client.get(
-                    f"{supabase_url}/rest/v1/cities?id=eq.{c['city_id']}&select=name",
-                    headers=headers
-                )
-                if city_resp.status_code == 200 and city_resp.json():
-                    city_info = city_resp.json()[0]
-
-            enriched.append({**c, "user": user_info, "city": city_info})
-
-    # Appliquer les filtres
-    if search:
-        s = search.lower()
-        enriched = [c for c in enriched if
-                    s in (c.get("title") or "").lower() or
-                    s in " ".join(c.get("skills") or []).lower() or
-                    s in (c.get("user", {}).get("first_name") or "").lower() or
-                    s in (c.get("user", {}).get("last_name") or "").lower()]
-
-    if city_id:
-        enriched = [c for c in enriched if c.get("city_id") == city_id]
-    if experience_level:
-        enriched = [c for c in enriched if c.get("experience_level") == experience_level]
-    if contract_type:
-        enriched = [c for c in enriched if contract_type in (c.get("preferred_contract_types") or [])]
-    if salary_min is not None:
-        enriched = [c for c in enriched if (c.get("desired_salary_min") or 0) >= salary_min]
-    if is_available_only:
-        enriched = [c for c in enriched if c.get("is_available")]
-
-    # --- Calcul du match_score si une offre est sélectionnée ---
-    if job:
-        for c in enriched:
-            try:
-                cand_profile = {
-                    "skills": c.get("skills") or [],
-                    "experience_level": c.get("experience_level"),
-                    "desired_salary_min": c.get("desired_salary_min"),
-                    "desired_salary_max": c.get("desired_salary_max"),
-                    "city_id": c.get("city_id"),
-                    "is_open_to_remote": c.get("is_open_to_remote", False),
-                    "preferred_contract_types": c.get("preferred_contract_types") or [],
-                    "education": c.get("education") or [],
-                }
-                score = compute_match_score(job, cand_profile)
-                c["match_score"] = score
-            except Exception:
-                c["match_score"] = 0
-
-    # --- Tri ---
-    if sort_by == "match_score" and job:
-        enriched.sort(key=lambda c: c.get("match_score", 0), reverse=True)
-    elif sort_by == "name":
-        enriched.sort(key=lambda c: (c.get("user", {}).get("first_name") or "").lower())
-    else:
-        enriched.sort(key=lambda c: c.get("updated_at") or "", reverse=True)
-
-    # Pagination
-    total = len(enriched)
-    start = (page - 1) * page_size
-    end = start + page_size
-    page_candidates = enriched[start:end]
-
-    return {
-        "candidates": page_candidates,
-        "total": total,
-        "page": page,
-        "pageSize": page_size,
-        "totalPages": -(-total // page_size)
-    }
-class RequestDocumentsRequest(BaseModel):
-    application_id: str
-    candidate_email: str
-    candidate_name: str
-    job_title: str
-    company_name: Optional[str] = ""
-    document_types: list[str] = ['contract', 'id_card', 'diploma']
-    message: Optional[str] = None
-    language: Optional[str] = "fr"
-
-class UploadDocumentRequest(BaseModel):
-    application_id: str
-    document_type: str
-    file_data: str   # base64
-    filename: str
-
-
+# ==================== HIRING DOCUMENTS ====================
 @app.post("/api/hiring/request-documents")
 async def request_documents(req: RequestDocumentsRequest):
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
-
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # 1. Récupérer candidate_id et company_id (via jobs)
     app_resp = httpx.get(
         f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}&select=candidate_id,job:jobs(company_id)",
         headers=headers,
@@ -3496,18 +3083,14 @@ async def request_documents(req: RequestDocumentsRequest):
     apps = app_resp.json()
     if not isinstance(apps, list) or len(apps) == 0:
         raise HTTPException(status_code=404, detail="Candidature introuvable")
-
     app = apps[0]
     candidate_id = app.get("candidate_id")
     if not candidate_id:
         raise HTTPException(status_code=400, detail="Candidat introuvable dans la candidature")
-
     job_data = app.get("job") or {}
     company_id = job_data.get("company_id") if isinstance(job_data, dict) else None
     if not company_id:
         raise HTTPException(status_code=400, detail="Impossible de récupérer l'entreprise liée à l'offre")
-
-    # 2. Créer les entrées dans hiring_documents
     for doc_type in req.document_types:
         insert_resp = httpx.post(
             f"{supabase_url}/rest/v1/hiring_documents",
@@ -3522,40 +3105,26 @@ async def request_documents(req: RequestDocumentsRequest):
         )
         if insert_resp.status_code not in (200, 201):
             print(f"Erreur insertion document {doc_type}: {insert_resp.text}")
-
-    # 3. Envoyer l'email au candidat (sujet nettoyé)
-    doc_labels = {
-        "contract": "Contrat signé",
-        "id_card": "Pièce d'identité",
-        "diploma": "Diplôme",
-        "other": "Autre document",
-    }
+    doc_labels = {"contract": "Contrat signé", "id_card": "Pièce d'identité", "diploma": "Diplôme", "other": "Autre"}
+    doc_list = ''.join(f'<li style="margin-bottom:4px;">✅ {doc_labels.get(d, d)}</li>' for d in req.document_types)
     lang = req.language or "fr"
-    # Sujet sans retour à la ligne
-    subject = clean_subject(f"Documents à fournir pour votre candidature - {req.job_title}")
+    subject = f"Documents à fournir pour votre candidature - {req.job_title}"
     html = f"""
-    <h2>Bonjour {req.candidate_name},</h2>
-    <p>Félicitations pour l'acceptation de votre candidature au poste <strong>{req.job_title}</strong> chez <strong>{req.company_name}</strong>.</p>
+    <h2 style="color:#1a202c;">Bonjour {req.candidate_name},</h2>
+    {email_info_box(f"Félicitations pour l'acceptation de votre candidature au poste <strong>{req.job_title}</strong> chez <strong>{req.company_name}</strong>.", "success")}
     <p>Afin de finaliser votre dossier, merci de fournir le(s) document(s) suivant(s) :</p>
-    <ul>{''.join(f'<li>{doc_labels.get(d, d)}</li>' for d in req.document_types)}</ul>
-    {f"<p><strong>Message du recruteur :</strong> {req.message}</p>" if req.message else ""}
-    <p>Connectez-vous sur <a href='https://jobs.actoos.com/dashboard/candidat'>votre espace candidat</a> pour téléverser ces documents.</p>
-    <p>À bientôt,<br/>L'équipe Actoos Jobs</p>
+    <ul style="padding-left:20px;">{doc_list}</ul>
+    {f'<p><strong>Message du recruteur :</strong> {req.message}</p>' if req.message else ''}
+    <p>{email_button("Téléverser mes documents", "https://jobs.actoos.com/dashboard/candidat")}</p>
     """
     await send_translated_email(req.candidate_email, subject, html, lang)
-
     return {"success": True, "message": "Demande envoyée et email notifié."}
-
-
-
 
 @app.post("/api/hiring/upload-document")
 async def upload_document(req: UploadDocumentRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # 1. Trouver une demande modifiable (statut différent de 'validated')
     get_resp = httpx.get(
         f"{supabase_url}/rest/v1/hiring_documents?application_id=eq.{req.application_id}&document_type=eq.{req.document_type}&status=not.eq.validated",
         headers=headers
@@ -3565,15 +3134,11 @@ async def upload_document(req: UploadDocumentRequest):
     docs = get_resp.json()
     if not isinstance(docs, list) or len(docs) == 0:
         raise HTTPException(status_code=404, detail="Aucune demande de document modifiable trouvée")
-
-    doc = docs[0]  # on cible le premier document correspondant
-
-    # 2. Upload du fichier (écrase si existant grâce à x-upsert)
+    doc = docs[0]
     try:
         file_bytes = base64.b64decode(req.file_data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Données base64 invalides: {str(e)}")
-
     file_path = f"{req.application_id}/{req.document_type}/{req.filename}"
     upload_resp = httpx.post(
         f"{supabase_url}/storage/v1/object/hiring-documents/{file_path}",
@@ -3582,10 +3147,7 @@ async def upload_document(req: UploadDocumentRequest):
     )
     if upload_resp.status_code not in (200, 201):
         raise HTTPException(status_code=500, detail=f"Erreur upload fichier: {upload_resp.text}")
-
     file_url = f"{supabase_url}/storage/v1/object/public/hiring-documents/{file_path}"
-
-    # 3. Mettre à jour le document (id exact)
     update_resp = httpx.patch(
         f"{supabase_url}/rest/v1/hiring_documents?id=eq.{doc['id']}",
         json={"file_url": file_url, "status": "uploaded", "updated_at": "now()"},
@@ -3593,8 +3155,7 @@ async def upload_document(req: UploadDocumentRequest):
     )
     if update_resp.status_code not in (200, 204):
         raise HTTPException(status_code=500, detail=f"Erreur mise à jour document: {update_resp.text}")
-
-    # 4. Notifier le recruteur (ne bloque pas l'upload en cas d'échec)
+    # Notifier le recruteur
     try:
         app_resp = httpx.get(
             f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}&select=candidate:users(first_name,last_name),job:jobs(company:companies(owner_id,name))",
@@ -3621,45 +3182,29 @@ async def upload_document(req: UploadDocumentRequest):
                             if owner_email:
                                 lang_recruiter = get_user_language(email=owner_email) or "en"
                                 candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
-                                company_name = company.get("name") or "votre entreprise"
-                                doc_label = req.document_type
-                                subject = f"📎 {candidate_name} a téléversé un document – {doc_label}"
+                                subject = f"📎 {candidate_name} a téléversé un document – {req.document_type}"
                                 html = f"""
-                                <h2>Bonjour {owner_first_name},</h2>
-                                <p>Le candidat <strong>{candidate_name}</strong> vient de téléverser le document <strong>{doc_label}</strong>.</p>
-                                <p>Rendez-vous sur <a href='https://jobs.actoos.com/dashboard/entreprise/candidatures/{req.application_id}'>la page de la candidature</a> pour le consulter.</p>
+                                <h2 style="color:#1a202c;">Bonjour {owner_first_name},</h2>
+                                {email_info_box(f"Le candidat <strong>{candidate_name}</strong> vient de téléverser le document <strong>{req.document_type}</strong>.", "info")}
+                                <p>{email_button("Consulter la candidature", f"https://jobs.actoos.com/dashboard/entreprise/candidatures/{req.application_id}")}</p>
                                 """
                                 await send_translated_email(owner_email, subject, html, lang_recruiter)
     except Exception as e:
         print(f"Erreur notification recruteur: {e}")
-
     return {"success": True, "file_url": file_url}
-
-from fastapi import Depends
-# Dépendance get_current_active_user déjà existante
 
 @app.get("/api/candidate/documents")
 async def get_candidate_documents(user_id: str = Depends(get_current_active_user)):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
     docs_resp = httpx.get(
-        f"{supabase_url}/rest/v1/hiring_documents"
-        f"?candidate_id=eq.{user_id}"
-        f"&select=id,document_type,status,file_url,application_id,created_at"
-        f"&order=created_at.desc",
+        f"{supabase_url}/rest/v1/hiring_documents?candidate_id=eq.{user_id}&select=id,document_type,status,file_url,application_id,created_at&order=created_at.desc",
         headers=headers,
     )
     if docs_resp.status_code != 200:
         raise HTTPException(status_code=500, detail="Erreur récupération documents")
     return docs_resp.json()
-# ----- Notification de validation/rejet d'un document -----
-class NotifyDocumentValidationRequest(BaseModel):
-    candidate_email: str
-    candidate_name: str
-    document_type: str
-    language: Optional[str] = "fr"
 
 @app.post("/api/notify-document-validated")
 async def notify_document_validated(req: NotifyDocumentValidationRequest):
@@ -3667,17 +3212,12 @@ async def notify_document_validated(req: NotifyDocumentValidationRequest):
         raise HTTPException(status_code=500, detail="Email service not configured")
     try:
         lang = req.language or "fr"
-        doc_labels = {
-            "contract": "Contrat signé",
-            "id_card": "Pièce d'identité",
-            "diploma": "Diplôme",
-            "other": "Autre document",
-        }
+        doc_labels = {"contract": "Contrat signé", "id_card": "Pièce d'identité", "diploma": "Diplôme", "other": "Autre"}
         doc_label = doc_labels.get(req.document_type, req.document_type)
         subject = f"Votre document \"{doc_label}\" a été validé"
         html = f"""
-        <h2>Bonjour {req.candidate_name},</h2>
-        <p>Votre document <strong>{doc_label}</strong> a été validé par l'entreprise.</p>
+        <h2 style="color:#1a202c;">Bonjour {req.candidate_name},</h2>
+        {email_info_box(f"Votre document <strong>{doc_label}</strong> a été validé par l'entreprise.", "success")}
         <p>Consultez votre espace candidat pour suivre l'avancement de votre dossier.</p>
         <p>Cordialement,<br/>L'équipe Actoos Jobs</p>
         """
@@ -3685,13 +3225,6 @@ async def notify_document_validated(req: NotifyDocumentValidationRequest):
         return {"success": True, "message": "Email envoyé au candidat."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-class NotifyDocumentRejectedRequest(BaseModel):
-    candidate_email: str
-    candidate_name: str
-    document_type: str
-    reason: Optional[str] = None
-    language: Optional[str] = "fr"
 
 @app.post("/api/notify-document-rejected")
 async def notify_document_rejected(req: NotifyDocumentRejectedRequest):
@@ -3701,61 +3234,21 @@ async def notify_document_rejected(req: NotifyDocumentRejectedRequest):
         lang = req.language or "fr"
         subject = f"Votre document \"{req.document_type}\" a été refusé"
         html = f"""
-        <h2>Bonjour {req.candidate_name},</h2>
-        <p>Le document <strong>{req.document_type}</strong> que vous avez envoyé a été refusé.</p>
-        {f"<p><strong>Raison :</strong> {req.reason}</p>" if req.reason else ""}
+        <h2 style="color:#1a202c;">Bonjour {req.candidate_name},</h2>
+        {email_info_box(f"Le document <strong>{req.document_type}</strong> que vous avez envoyé a été refusé.{f'<br><strong>Raison :</strong> {req.reason}' if req.reason else ''}", "warning")}
         <p>Vous pouvez le remplacer depuis votre espace candidat.</p>
         """
         await send_translated_email(req.candidate_email, subject, html, lang)
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-@app.post("/api/user/language")
-async def update_user_language(request: Request):
-    data = await request.json()
-    user_id = data.get("user_id")
-    language = data.get("language")
 
-    if not user_id or not language:
-        raise HTTPException(status_code=400, detail="user_id et language requis")
-
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # Récupérer les préférences actuelles
-    user_resp = httpx.get(
-        f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=preferences",
-        headers=headers
-    )
-    if user_resp.status_code != 200 or not user_resp.json():
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
-
-    current_prefs = user_resp.json()[0].get("preferences") or {}
-    current_prefs["language"] = language
-
-    # Mettre à jour
-    update_resp = httpx.patch(
-        f"{supabase_url}/rest/v1/users?id=eq.{user_id}",
-        json={"preferences": current_prefs},
-        headers=headers
-    )
-    if update_resp.status_code not in (200, 204):
-        raise HTTPException(status_code=500, detail="Erreur mise à jour")
-
-    return {"success": True, "language": language}
-class FinalizeHiringRequest(BaseModel):
-    application_id: str
-    message: Optional[str] = None
-    language: Optional[str] = "fr"
-
+# ==================== FINALIZE HIRING ====================
 @app.post("/api/hiring/finalize")
 async def finalize_hiring(req: FinalizeHiringRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # 1. Récupérer la candidature
     app_resp = httpx.get(
         f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}&select=id,status,candidate:users(email,first_name,last_name),job:jobs(title,company:companies(name))",
         headers=headers
@@ -3763,12 +3256,8 @@ async def finalize_hiring(req: FinalizeHiringRequest):
     if app_resp.status_code != 200 or not app_resp.json():
         raise HTTPException(status_code=404, detail="Candidature introuvable")
     app = app_resp.json()[0]
-
-    # 2. Vérifier le statut
     if app["status"] != "accepted":
         raise HTTPException(status_code=400, detail="La candidature doit être acceptée avant d'être finalisée")
-
-    # 3. Mettre à jour le statut
     update_resp = httpx.patch(
         f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}",
         json={"status": "completed"},
@@ -3776,8 +3265,6 @@ async def finalize_hiring(req: FinalizeHiringRequest):
     )
     if update_resp.status_code not in (200, 204):
         raise HTTPException(status_code=500, detail="Erreur lors de la finalisation")
-
-    # 4. Envoyer l'email au candidat
     candidate = app.get("candidate", {})
     candidate_email = candidate.get("email")
     if candidate_email:
@@ -3785,31 +3272,22 @@ async def finalize_hiring(req: FinalizeHiringRequest):
         job_title = app.get("job", {}).get("title", "")
         company_name = app.get("job", {}).get("company", {}).get("name", "votre entreprise")
         lang = req.language or "fr"
-
         subject = f"Félicitations {candidate_name}, votre recrutement est confirmé !"
-
-        # Corps de l'email combinant félicitations + message personnalisé
         html = f"""
-        <h2>Félicitations {candidate_name} !</h2>
-        <p>Nous avons le plaisir de vous confirmer que votre candidature pour le poste de <strong>{job_title}</strong> chez <strong>{company_name}</strong> a été retenue.</p>
+        <h2 style="color:#1a202c;">Félicitations {candidate_name} ! 🎉</h2>
+        {email_info_box(f"Nous avons le plaisir de vous confirmer que votre candidature pour le poste de <strong>{job_title}</strong> chez <strong>{company_name}</strong> a été retenue.", "success")}
         {f"<p><strong>Message du recruteur :</strong><br/>{req.message}</p>" if req.message else ""}
         <p>L'équipe {company_name} vous contactera pour les modalités de votre arrivée.</p>
-        <p>À très bientôt,<br/>L'équipe Actoos Jobs</p>
+        <p style="margin-top:24px;">À très bientôt,<br/>L'équipe Actoos Jobs</p>
         """
         await send_translated_email(candidate_email, subject, html, lang)
-
     return {"success": True, "message": "Recrutement finalisé"}
-class NotifyOtherCandidatesRequest(BaseModel):
-    application_id: str
-    message: Optional[str] = None   # message personnalisé optionnel
-    language: Optional[str] = "fr"
+
 @app.post("/api/notify-other-candidates")
 async def notify_other_candidates(req: NotifyOtherCandidatesRequest):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # 1. Récupérer l'offre liée à cette candidature
     app_resp = httpx.get(
         f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}&select=job_id,job:jobs(title,company:companies(name))",
         headers=headers
@@ -3820,8 +3298,6 @@ async def notify_other_candidates(req: NotifyOtherCandidatesRequest):
     job_id = app["job_id"]
     job_title = app.get("job", {}).get("title", "")
     company_name = app.get("job", {}).get("company", {}).get("name", "")
-
-    # 2. Récupérer tous les autres candidats (ni acceptés, ni rejetés, ni completed)
     others_resp = httpx.get(
         f"{supabase_url}/rest/v1/applications?job_id=eq.{job_id}&select=id,candidate:users(email,first_name,last_name)&status=not.in.(accepted,rejected,completed)",
         headers=headers
@@ -3829,8 +3305,6 @@ async def notify_other_candidates(req: NotifyOtherCandidatesRequest):
     if others_resp.status_code != 200:
         raise HTTPException(status_code=500, detail="Erreur récupération autres candidats")
     others = others_resp.json()
-
-    # 3. Mettre à jour le statut de toutes ces candidatures vers "rejected"
     if others:
         ids_to_reject = [c["id"] for c in others]
         ids_filter = ",".join(ids_to_reject)
@@ -3841,30 +3315,27 @@ async def notify_other_candidates(req: NotifyOtherCandidatesRequest):
         )
         if patch_resp.status_code not in (200, 204):
             print(f"[WARN] Échec mise à jour statuts: {patch_resp.text}")
-
-    # 4. Envoyer un email à chacun dans sa propre langue
     subject = f"Votre candidature pour le poste de {job_title}"
     base_message = f"Nous vous remercions d'avoir postulé au poste de {job_title} chez {company_name}. Après examen de toutes les candidatures, nous avons décidé de poursuivre avec un autre candidat."
     if req.message:
         base_message += f"\n\nMessage du recruteur : {req.message}"
-
     for other in others:
         candidate = other.get("candidate", {})
         email = candidate.get("email")
         if email:
             name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
             html = f"""
-            <h2>Bonjour {name},</h2>
-            <p>{base_message}</p>
+            <h2 style="color:#1a202c;">Bonjour {name},</h2>
+            {email_info_box(f"Après examen de toutes les candidatures pour le poste <strong>{job_title}</strong> chez <strong>{company_name}</strong>, nous avons décidé de poursuivre avec un autre candidat.", "info")}
+            {f'<p><strong>Message du recruteur :</strong> {req.message}</p>' if req.message else ''}
             <p>Nous vous souhaitons beaucoup de succès dans vos recherches.</p>
-            <p>L'équipe Actoos Jobs</p>
+            <p style="margin-top:24px;">L'équipe Actoos Jobs</p>
             """
             candidate_lang = get_user_language(email=email) or "fr"
             await send_translated_email(email, subject, html, candidate_lang)
-
     return {"success": True, "count": len(others)}
 
-
+# ==================== CANDIDATE DASHBOARD ====================
 @app.get("/api/candidate/dashboard")
 async def candidate_dashboard(user_id: str = Query(...), limit: int = Query(6)):
     supabase_url = os.getenv("SUPABASE_URL")
@@ -3872,29 +3343,21 @@ async def candidate_dashboard(user_id: str = Query(...), limit: int = Query(6)):
     if not supabase_url or not supabase_key:
         raise HTTPException(status_code=500, detail="Supabase not configured")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
     try:
-        # Essayer de récupérer les offres sans jointure d'abord
         jobs_resp = httpx.get(
             f"{supabase_url}/rest/v1/jobs?status=eq.active&limit={limit}&order=created_at.desc",
             headers=headers
         )
-        print("Supabase response status:", jobs_resp.status_code)
-        print("Response text:", jobs_resp.text[:200])  # premiers caractères
         if jobs_resp.status_code != 200:
             raise Exception(f"Erreur Supabase : {jobs_resp.text}")
-        
         jobs = jobs_resp.json()
-        # Enrichissement manuel (simple, sans jointure)
         enriched = []
         for job in jobs:
-            # Company
             comp_resp = httpx.get(
                 f"{supabase_url}/rest/v1/companies?id=eq.{job['company_id']}&select=name,logo_url",
                 headers=headers
             )
             company = comp_resp.json()[0] if comp_resp.status_code == 200 and comp_resp.json() else {}
-            # City
             city_resp = httpx.get(
                 f"{supabase_url}/rest/v1/cities?id=eq.{job.get('city_id')}&select=name",
                 headers=headers
@@ -3915,62 +3378,47 @@ async def candidate_dashboard(user_id: str = Query(...), limit: int = Query(6)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ----- Abonnements aux entreprises (Company Follow) -----
-
+# ==================== COMPANY FOLLOW ====================
 @app.post("/api/companies/{company_id}/follow")
 async def follow_company(company_id: str, request: Request):
     data = await request.json()
     user_id = data.get("user_id")
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id requis")
-
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # 1. Vérifier que l'entreprise existe
     company_check = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=id",
         headers=headers
     )
     if company_check.status_code != 200 or not company_check.json():
         raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-
-    # 2. Insérer la relation (ignorer les doublons)
     insert_resp = httpx.post(
         f"{supabase_url}/rest/v1/company_followers",
         json={"user_id": user_id, "company_id": company_id},
         headers=headers
     )
     if insert_resp.status_code == 409:
-        pass  # déjà suivi, ce n'est pas une erreur
+        pass
     elif insert_resp.status_code not in (200, 201):
         print("❌ Erreur insertion follow :", insert_resp.text)
         raise HTTPException(status_code=500, detail=f"Erreur insertion suivi: {insert_resp.text}")
-
-    # 3. Recalculer le nombre exact de followers
     count_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_followers?company_id=eq.{company_id}&select=id",
         headers={**headers, "Prefer": "count=exact"}
     )
     total_followers = 0
     if count_resp.status_code == 200:
-        # Le header content-range ressemble à "0-0/5"
         content_range = count_resp.headers.get("content-range", "")
         if "/" in content_range:
             total_followers = int(content_range.split("/")[-1])
-
-    # 4. Mettre à jour la table companies avec le vrai total
     httpx.patch(
         f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
         json={"followers_count": total_followers},
         headers=headers
     )
-
     return {"success": True, "followers_count": total_followers}
-
-
 
 @app.delete("/api/companies/{company_id}/follow")
 async def unfollow_company(company_id: str, request: Request):
@@ -3978,26 +3426,19 @@ async def unfollow_company(company_id: str, request: Request):
     user_id = data.get("user_id")
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id requis")
-
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # 1. Vérifier que l'entreprise existe
     company_check = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=id",
         headers=headers
     )
     if company_check.status_code != 200 or not company_check.json():
         raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-
-    # 2. Supprimer la relation (peu importe si elle n'existait pas)
     httpx.delete(
         f"{supabase_url}/rest/v1/company_followers?user_id=eq.{user_id}&company_id=eq.{company_id}",
         headers=headers
     )
-
-    # 3. Recalculer le nombre exact de followers
     count_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_followers?company_id=eq.{company_id}&select=id",
         headers={**headers, "Prefer": "count=exact"}
@@ -4007,16 +3448,12 @@ async def unfollow_company(company_id: str, request: Request):
         content_range = count_resp.headers.get("content-range", "")
         if "/" in content_range:
             total_followers = int(content_range.split("/")[-1])
-
-    # 4. Mettre à jour la table companies
     httpx.patch(
         f"{supabase_url}/rest/v1/companies?id=eq.{company_id}",
         json={"followers_count": total_followers},
         headers=headers
     )
-
     return {"success": True, "followers_count": total_followers}
-
 
 @app.get("/api/candidate/followed-companies-v2")
 def get_followed_companies_v2(user_id: str = Query(...)):
@@ -4024,7 +3461,6 @@ def get_followed_companies_v2(user_id: str = Query(...)):
         supabase_url = os.getenv("SUPABASE_URL")
         supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
         resp = httpx.get(
             f"{supabase_url}/rest/v1/company_followers?user_id=eq.{user_id}&select=company_id",
             headers=headers
@@ -4036,7 +3472,6 @@ def get_followed_companies_v2(user_id: str = Query(...)):
         company_ids = [f["company_id"] for f in follows if f.get("company_id")]
         if not company_ids:
             return {"companies": []}
-
         companies = []
         for cid in company_ids:
             comp_resp = httpx.get(
@@ -4051,7 +3486,6 @@ def get_followed_companies_v2(user_id: str = Query(...)):
                 )
                 comp["recent_jobs"] = jobs_resp.json() if jobs_resp.status_code == 200 else []
                 companies.append(comp)
-
         return {"companies": companies}
     except Exception as e:
         print("ERROR followed-companies-v2:", e)
@@ -4059,41 +3493,31 @@ def get_followed_companies_v2(user_id: str = Query(...)):
         traceback.print_exc()
         return {"companies": []}
 
-
-
 @app.get("/api/companies/{company_id}/follow-status")
 async def get_follow_status(company_id: str, user_id: str = Query(...)):
-    """Vérifie si un utilisateur suit une entreprise."""
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
     resp = httpx.get(
         f"{supabase_url}/rest/v1/company_followers?user_id=eq.{user_id}&company_id=eq.{company_id}&select=id",
         headers=headers
     )
     if resp.status_code != 200:
         return {"is_following": False}
-
     data = resp.json()
     return {"is_following": len(data) > 0}
 
 @app.post("/api/jobs/{job_id}/notify-followers")
 async def notify_followers_new_job(job_id: str, request: Request):
-    """Envoie un email aux followers de l'entreprise lorsque l'offre passe en active."""
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="Email service not configured")
-
     data = await request.json()
     user_id = data.get("user_id")
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id requis")
-
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # 1. Récupérer l'offre (titre, entreprise)
     job_resp = httpx.get(
         f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=title,company_id,company:companies(name,logo_url)",
         headers=headers
@@ -4105,8 +3529,6 @@ async def notify_followers_new_job(job_id: str, request: Request):
     company_name = job.get("company", {}).get("name", "Une entreprise")
     job_title = job["title"]
     offer_link = f"https://jobs.actoos.com/emplois/{job_id}"
-
-    # 2. Récupérer les followers de l'entreprise
     followers_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_followers?company_id=eq.{job['company_id']}&select=user_id",
         headers=headers
@@ -4114,16 +3536,12 @@ async def notify_followers_new_job(job_id: str, request: Request):
     followers = followers_resp.json()
     if not followers:
         return {"success": True, "message": "Aucun abonné à notifier"}
-
-    # 3. Récupérer les utilisateurs avec leur email et prénom
     user_ids = [f["user_id"] for f in followers]
     users_resp = httpx.get(
         f"{supabase_url}/rest/v1/users?id=in.({','.join(user_ids)})&select=id,email,first_name",
         headers=headers
     )
     users = users_resp.json()
-
-    # 4. Envoyer un email multilingue via send_translated_email
     sent_count = 0
     for u in users:
         try:
@@ -4132,29 +3550,27 @@ async def notify_followers_new_job(job_id: str, request: Request):
                 continue
             lang = get_user_language(email_addr)
             first_name = u.get("first_name") or ""
-
-            # Sujet et corps en français (seront traduits automatiquement par send_translated_email)
             subject_fr = f"Nouvelle offre de {company_name} : {job_title}"
             html_fr = f"""
-            <h2>Bonjour {first_name},</h2>
-            <p><strong>{company_name}</strong> vient de publier une nouvelle offre : <strong>{job_title}</strong>.</p>
-            <p><a href="{offer_link}">Voir l'offre</a></p>
+            <h2 style="color:#1a202c;">Bonjour {first_name},</h2>
+            <div style="background-color:#f0f4ff; border-left:4px solid #1e3a8a; padding:16px 20px; margin:16px 0; border-radius:4px;">
+                <p style="margin:0; font-size:18px; font-weight:bold; color:#1e3a8a;">🚀 {company_name}</p>
+                <p style="margin:4px 0 0 0; font-size:16px;">vient de publier une nouvelle offre : <strong>{job_title}</strong></p>
+            </div>
+            <p style="text-align:center; margin:24px 0;">{email_button("Voir l'offre", offer_link)}</p>
+            <p style="color:#718096; font-size:14px;">Pour ne plus recevoir ces alertes, gérez vos abonnements dans votre profil.</p>
             """
-
             await send_translated_email(email_addr, subject_fr, html_fr, lang)
             sent_count += 1
         except Exception as e:
             print(f"Erreur envoi email au follower {u.get('email')}: {e}")
-
     return {"success": True, "message": f"{sent_count} notification(s) envoyée(s)"}
+
 @app.get("/api/companies/{company_id}/followers-summary")
 async def get_followers_summary(company_id: str, limit: int = Query(5)):
-    """Retourne le total et les derniers abonnés d'une entreprise."""
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # Total
     total_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_followers?company_id=eq.{company_id}&select=id",
         headers={**headers, "Prefer": "count=exact"}
@@ -4164,14 +3580,11 @@ async def get_followers_summary(company_id: str, limit: int = Query(5)):
         content_range = total_resp.headers.get("content-range", "")
         if "/" in content_range:
             total = int(content_range.split("/")[-1])
-
-    # Derniers abonnés
     followers_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_followers?company_id=eq.{company_id}&select=user_id,created_at&order=created_at.desc&limit={limit}",
         headers=headers
     )
     followers = followers_resp.json() if followers_resp.status_code == 200 else []
-
     result = []
     if followers:
         user_ids = [f["user_id"] for f in followers]
@@ -4190,20 +3603,13 @@ async def get_followers_summary(company_id: str, limit: int = Query(5)):
                     "avatar_url": u.get("avatar_url"),
                     "followed_at": f["created_at"],
                 })
-
     return {"total": total, "followers": result}
+
 @app.get("/api/companies/{company_id}/followers")
-async def get_company_followers(
-    company_id: str,
-    user_id: str = Query(...),
-    subscription_plan: str = Query("free")
-):
-    """Liste les abonnés d'une entreprise (accès limité selon le plan)."""
+async def get_company_followers(company_id: str, user_id: str = Query(...), subscription_plan: str = Query("free")):
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # Vérifier que l'entreprise existe et récupérer son propriétaire
     company_check = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=id,owner_id,followers_count",
         headers=headers
@@ -4211,28 +3617,20 @@ async def get_company_followers(
     companies = company_check.json()
     if not companies:
         raise HTTPException(status_code=404, detail="Entreprise non trouvée")
-
     is_owner = companies[0].get("owner_id") == user_id
-
-    # Récupérer les followers
     followers_resp = httpx.get(
         f"{supabase_url}/rest/v1/company_followers?company_id=eq.{company_id}&select=user_id,created_at",
         headers=headers
     )
     followers = followers_resp.json() if followers_resp.status_code == 200 else []
-
     if not followers:
         return {"followers": [], "total": 0}
-
     user_ids = [f["user_id"] for f in followers]
-
-    # Récupérer les infos utilisateur
     users_resp = httpx.get(
         f"{supabase_url}/rest/v1/users?id=in.({','.join(user_ids)})&select=id,first_name,last_name,avatar_url,email",
         headers=headers
     )
     users = {u["id"]: u for u in (users_resp.json() if users_resp.status_code == 200 else [])}
-
     result = []
     for f in followers:
         u = users.get(f["user_id"])
@@ -4244,10 +3642,8 @@ async def get_company_followers(
                 "avatar_url": u.get("avatar_url"),
                 "followed_at": f["created_at"],
             }
-            # Plan Business ET propriétaire : on donne l'email + titre du profil
             if subscription_plan in ("business", "enterprise") and is_owner:
                 item["email"] = u.get("email")
-                # Récupérer le titre du profil candidat
                 profile_resp = httpx.get(
                     f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{u['id']}&select=title",
                     headers=headers
@@ -4256,31 +3652,24 @@ async def get_company_followers(
                 if profiles:
                     item["title"] = profiles[0].get("title") or ""
             result.append(item)
+    return {"followers": result, "total": companies[0].get("followers_count", 0)}
 
-    return {
-        "followers": result,
-        "total": companies[0].get("followers_count", 0)
-    }
 @app.post("/api/companies/contact-follower")
 async def contact_follower(request: Request):
     data = await request.json()
     user_id = data.get("user_id")
     follower_id = data.get("follower_id")
     company_id = data.get("company_id")
-    message_type = data.get("message_type")  # "quick_message" ou "invite_to_apply"
+    message_type = data.get("message_type")
     subject = data.get("subject", "")
     body = data.get("body", "")
     job_id = data.get("job_id")
     language = data.get("language", "fr")
-
     if not user_id or not follower_id or not company_id or not message_type:
         raise HTTPException(status_code=400, detail="Paramètres manquants")
-
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
-
-    # Vérifier que l'utilisateur est bien propriétaire de l'entreprise et plan Business
     comp_resp = httpx.get(
         f"{supabase_url}/rest/v1/companies?id=eq.{company_id}&select=owner_id,subscription_plan,name",
         headers=headers
@@ -4292,8 +3681,6 @@ async def contact_follower(request: Request):
         raise HTTPException(status_code=403, detail="Action non autorisée")
     if company.get("subscription_plan") not in ("business", "enterprise"):
         raise HTTPException(status_code=402, detail="Fonctionnalité réservée au plan Business")
-
-    # Récupérer l'email du follower
     user_resp = httpx.get(
         f"{supabase_url}/rest/v1/users?id=eq.{follower_id}&select=email,first_name",
         headers=headers
@@ -4304,72 +3691,291 @@ async def contact_follower(request: Request):
     to_email = follower.get("email")
     if not to_email:
         raise HTTPException(status_code=400, detail="Email du follower introuvable")
-
     company_name = company["name"]
-
-    # Construire le sujet et le contenu (en français par défaut, send_translated_email s'occupe de la traduction)
     if message_type == "invite_to_apply" and job_id:
         job_resp = httpx.get(
             f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=title",
             headers=headers
         )
         job_title = job_resp.json()[0]["title"] if job_resp.status_code == 200 and job_resp.json() else "cette offre"
-
         email_subject = subject or f"Invitation à postuler chez {company_name} – {job_title}"
         email_html = body or f"""
-        <p>Bonjour,</p>
-        <p>Nous avons repéré votre profil et pensons que vous pourriez être intéressé par l'offre <strong>{job_title}</strong> chez {company_name}.</p>
-        <p>N'hésitez pas à postuler directement sur notre plateforme.</p>
+        <h2 style="color:#1a202c;">Bonjour,</h2>
+        {email_info_box(f"Nous avons repéré votre profil et pensons que vous pourriez être intéressé par l'offre <strong>{job_title}</strong> chez {company_name}.", "info")}
+        <p>{email_button("Postuler maintenant", f"https://jobs.actoos.com/emplois/{job_id}")}</p>
         <p>Cordialement,<br>{company_name}</p>
         """
-    else:  # quick_message
+    else:
         email_subject = subject or f"Message de {company_name}"
         email_html = body or f"""
-        <p>Bonjour,</p>
-        <p>Vous avez reçu un message de la part de {company_name} :</p>
-        <hr>
-        <p>{body or "L'entreprise souhaite entrer en contact avec vous."}</p>
-        <hr>
+        <h2 style="color:#1a202c;">Bonjour,</h2>
+        {email_info_box(f"Vous avez reçu un message de la part de {company_name} :<br><br>{body or 'L\'entreprise souhaite entrer en contact avec vous.'}", "info")}
         <p>Cordialement,<br>{company_name}</p>
         """
+    await send_translated_email(to_email, email_subject, email_html, language, from_name=company_name)
+    return {"success": True}
 
-    # ✅ Utiliser send_translated_email avec le nom de l'entreprise comme expéditeur
+# ==================== USER LANGUAGE ====================
+@app.post("/api/user/language")
+async def update_user_language(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    language = data.get("language")
+    if not user_id or not language:
+        raise HTTPException(status_code=400, detail="user_id et language requis")
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    user_resp = httpx.get(
+        f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=preferences",
+        headers=headers
+    )
+    if user_resp.status_code != 200 or not user_resp.json():
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+    current_prefs = user_resp.json()[0].get("preferences") or {}
+    current_prefs["language"] = language
+    update_resp = httpx.patch(
+        f"{supabase_url}/rest/v1/users?id=eq.{user_id}",
+        json={"preferences": current_prefs},
+        headers=headers
+    )
+    if update_resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Erreur mise à jour")
+    return {"success": True, "language": language}
+
+# ==================== CV BANK ====================
+def compute_match_score(job: dict, candidate_profile: dict, category_slug: str = None) -> int:
+    score = 0.0
+    cand_title = (candidate_profile.get("title") or "").lower()
+    cand_skills = [s.lower() for s in candidate_profile.get("skills") or []]
+    if category_slug:
+        if category_slug in cand_title or any(category_slug in skill for skill in cand_skills):
+            score += 30
+    job_skills = [skill.lower().strip() for skill in (job.get("skills_required") or [])]
+    if job_skills:
+        matched = 0
+        for js in job_skills:
+            js_words = set(js.split())
+            for cs in cand_skills:
+                cs_words = set(cs.split())
+                if js_words & cs_words:
+                    matched += 1
+                    break
+        score += (matched / len(job_skills)) * 40
+    exp_levels = ["junior", "intermediaire", "senior", "expert"]
+    job_lvl = job.get("experience_level")
+    cand_lvl = candidate_profile.get("experience_level")
+    if job_lvl and cand_lvl and job_lvl in exp_levels and cand_lvl in exp_levels:
+        job_idx = exp_levels.index(job_lvl)
+        cand_idx = exp_levels.index(cand_lvl)
+        if cand_idx >= job_idx:
+            score += 10
+        else:
+            diff = job_idx - cand_idx
+            if diff == 1:
+                score += 5
+            else:
+                score += 2
+    j_min, j_max = job.get("salary_min"), job.get("salary_max")
+    c_min, c_max = candidate_profile.get("desired_salary_min"), candidate_profile.get("desired_salary_max")
+    if j_min and j_max and c_min and c_max:
+        if c_min <= j_max and c_max >= j_min:
+            score += 10
+    job_city = job.get("city_id")
+    cand_city = candidate_profile.get("city_id")
+    is_remote = job.get("is_remote", False)
+    cand_remote = candidate_profile.get("is_open_to_remote", False)
+    if job_city and cand_city and str(job_city) == str(cand_city):
+        score += 10
+    elif is_remote and cand_remote:
+        score += 7
+    else:
+        job_country = job.get("country_id")
+        cand_country = candidate_profile.get("country_id")
+        if job_country and cand_country and str(job_country) == str(cand_country):
+            score += 4
+    return min(100, int(score))
+
+@app.get("/api/candidates/bank")
+async def get_candidates_bank(
+    user_id: str = Query(...),
+    subscription_plan: str = Query(None),
+    search: str = Query(""),
+    city_id: str = Query(""),
+    experience_level: str = Query(""),
+    contract_type: str = Query(""),
+    salary_min: int = Query(None),
+    is_available_only: bool = Query(False),
+    sort_by: str = Query("updated_at"),
+    page: int = Query(1),
+    page_size: int = Query(12),
+    job_id: Optional[str] = Query(None),
+):
+    if subscription_plan and subscription_plan != 'business':
+        raise HTTPException(status_code=403, detail="Fonctionnalité réservée au plan Business")
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    job = None
+    if job_id:
+        job_resp = httpx.get(
+            f"{supabase_url}/rest/v1/jobs?id=eq.{job_id}&select=*",
+            headers=headers
+        )
+        if job_resp.status_code == 200 and job_resp.json():
+            job = job_resp.json()[0]
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get(
+            f"{supabase_url}/rest/v1/candidate_profiles?select=*&is_visible_in_cv_bank=eq.true",
+            headers=headers
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=500, detail="Erreur Supabase")
+        candidates = resp.json()
+        enriched = []
+        for c in candidates:
+            user_info = {}
+            if c.get("user_id"):
+                user_resp = await client.get(
+                    f"{supabase_url}/rest/v1/users?id=eq.{c['user_id']}&select=first_name,last_name,avatar_url",
+                    headers=headers
+                )
+                if user_resp.status_code == 200 and user_resp.json():
+                    user_info = user_resp.json()[0]
+            city_info = {}
+            if c.get("city_id"):
+                city_resp = await client.get(
+                    f"{supabase_url}/rest/v1/cities?id=eq.{c['city_id']}&select=name",
+                    headers=headers
+                )
+                if city_resp.status_code == 200 and city_resp.json():
+                    city_info = city_resp.json()[0]
+            enriched.append({**c, "user": user_info, "city": city_info})
+    if search:
+        s = search.lower()
+        enriched = [c for c in enriched if
+                    s in (c.get("title") or "").lower() or
+                    s in " ".join(c.get("skills") or []).lower() or
+                    s in (c.get("user", {}).get("first_name") or "").lower() or
+                    s in (c.get("user", {}).get("last_name") or "").lower()]
+    if city_id:
+        enriched = [c for c in enriched if c.get("city_id") == city_id]
+    if experience_level:
+        enriched = [c for c in enriched if c.get("experience_level") == experience_level]
+    if contract_type:
+        enriched = [c for c in enriched if contract_type in (c.get("preferred_contract_types") or [])]
+    if salary_min is not None:
+        enriched = [c for c in enriched if (c.get("desired_salary_min") or 0) >= salary_min]
+    if is_available_only:
+        enriched = [c for c in enriched if c.get("is_available")]
+    if job:
+        for c in enriched:
+            try:
+                cand_profile = {
+                    "skills": c.get("skills") or [],
+                    "experience_level": c.get("experience_level"),
+                    "desired_salary_min": c.get("desired_salary_min"),
+                    "desired_salary_max": c.get("desired_salary_max"),
+                    "city_id": c.get("city_id"),
+                    "is_open_to_remote": c.get("is_open_to_remote", False),
+                    "preferred_contract_types": c.get("preferred_contract_types") or [],
+                    "education": c.get("education") or [],
+                }
+                score = compute_match_score(job, cand_profile)
+                c["match_score"] = score
+            except Exception:
+                c["match_score"] = 0
+    if sort_by == "match_score" and job:
+        enriched.sort(key=lambda c: c.get("match_score", 0), reverse=True)
+    elif sort_by == "name":
+        enriched.sort(key=lambda c: (c.get("user", {}).get("first_name") or "").lower())
+    else:
+        enriched.sort(key=lambda c: c.get("updated_at") or "", reverse=True)
+    total = len(enriched)
+    start = (page - 1) * page_size
+    end = start + page_size
+    page_candidates = enriched[start:end]
+    return {
+        "candidates": page_candidates,
+        "total": total,
+        "page": page,
+        "pageSize": page_size,
+        "totalPages": -(-total // page_size)
+    }
+
+# ==================== DELETE USER ACCOUNT ====================
+@app.delete("/api/user/delete-account")
+async def delete_own_account(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id requis")
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     try:
-        await send_translated_email(to_email, email_subject, email_html, language, from_name=company_name)
+        user_resp = httpx.get(
+            f"{supabase_url}/rest/v1/users?id=eq.{user_id}&select=id",
+            headers=headers
+        )
+        if not user_resp.json():
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        httpx.delete(f"{supabase_url}/rest/v1/applications?candidate_id=eq.{user_id}", headers=headers)
+        httpx.delete(f"{supabase_url}/rest/v1/saved_jobs?user_id=eq.{user_id}", headers=headers)
+        httpx.delete(f"{supabase_url}/rest/v1/job_alerts?user_id=eq.{user_id}", headers=headers)
+        httpx.delete(f"{supabase_url}/rest/v1/notifications?user_id=eq.{user_id}", headers=headers)
+        httpx.delete(f"{supabase_url}/rest/v1/candidate_documents?user_id=eq.{user_id}", headers=headers)
+        httpx.delete(f"{supabase_url}/rest/v1/candidate_profiles?user_id=eq.{user_id}", headers=headers)
+        companies_resp = httpx.get(f"{supabase_url}/rest/v1/companies?owner_id=eq.{user_id}&select=id", headers=headers)
+        companies = companies_resp.json()
+        for company in companies:
+            httpx.delete(f"{supabase_url}/rest/v1/companies?id=eq.{company['id']}", headers=headers)
+        httpx.delete(f"{supabase_url}/rest/v1/users?id=eq.{user_id}", headers=headers)
+        httpx.delete(f"{supabase_url}/auth/v1/admin/users/{user_id}", headers=headers)
+        return {"success": True, "message": "Compte supprimé définitivement"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    return {"success": True}
+# ==================== STATIC FILES ====================
+@app.get("/sw.js")
+async def sw_js():
+    return Response(content="", media_type="application/javascript")
 
+@app.get("/favicon.ico")
+async def favicon_ico():
+    favicon_path = os.path.join(BUILD_DIR, "favicon.png")
+    if os.path.isfile(favicon_path):
+        return FileResponse(favicon_path, media_type="image/png")
+    return Response(content="", media_type="image/x-icon")
 
+@app.get("/assets/fonts/{font_name}")
+async def fonts(font_name: str):
+    return Response(content="", media_type="font/woff2")
 
+@app.delete("/api/admin/reports/{report_id}")
+async def admin_delete_report(report_id: str):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    check = httpx.get(
+        f"{supabase_url}/rest/v1/reports?id=eq.{report_id}&select=id",
+        headers=headers
+    )
+    if not check.json():
+        raise HTTPException(status_code=404, detail="Signalement non trouvé")
+    resp = httpx.delete(
+        f"{supabase_url}/rest/v1/reports?id=eq.{report_id}",
+        headers=headers
+    )
+    if resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Erreur lors de la suppression du signalement")
+    return {"success": True, "message": "Signalement supprimé avec succès"}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# ==================== MOUNT STATIC ====================
 if os.path.isdir(BUILD_DIR):
     app.mount("/static", StaticFiles(directory=os.path.join(BUILD_DIR, "static")), name="static")
     app.mount("/", StaticFiles(directory=BUILD_DIR, html=True), name="root")
