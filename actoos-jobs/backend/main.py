@@ -118,6 +118,48 @@ def email_interview_invitation(candidate_name, job_title, meeting_link, company_
     <p style="color:#6b7280; font-size:14px;">Si le bouton ne fonctionne pas, copiez ce lien : {meeting_link}</p>
     """
 
+# ---- NOUVEAUX TEMPLATES POUR DÉTAILS ET ANNULATION ----
+def email_interview_details(candidate_name, job_title, meeting_link, interview_date, interview_time, company_name=None):
+    company_info = f" chez {company_name}" if company_name else ""
+    date_display = interview_date
+    time_display = interview_time
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {candidate_name},</h2>
+    {email_info_box(f"Votre entretien pour le poste <strong>{job_title}</strong>{company_info} est planifié.", "success")}
+    <div style="background-color:#f9fafb; padding:16px; border-radius:6px; margin:16px 0;">
+        <p style="margin:4px 0;"><strong>📅 Date :</strong> {date_display}</p>
+        <p style="margin:4px 0;"><strong>🕒 Heure :</strong> {time_display}</p>
+    </div>
+    <p>Vous pourrez rejoindre la visioconférence via le lien ci-dessous :</p>
+    <div style="text-align:center; margin:24px 0;">{email_button("Rejoindre la visioconférence", meeting_link)}</div>
+    <p style="color:#6b7280; font-size:14px;">Si le bouton ne fonctionne pas, copiez ce lien : {meeting_link}</p>
+    <p>À bientôt !</p>
+    """
+
+def email_interview_cancelled(candidate_name, job_title, company_name, interview_date=None, interview_time=None, reason=None):
+    company_info = f" chez {company_name}" if company_name else ""
+    date_info = f"<p><strong>📅 Date :</strong> {interview_date}</p>" if interview_date else ""
+    time_info = f"<p><strong>🕒 Heure :</strong> {interview_time}</p>" if interview_time else ""
+    reason_info = f"<p><strong>Raison :</strong> {reason}</p>" if reason else ""
+    details = ""
+    if date_info or time_info or reason_info:
+        details = f"""
+        <div style="background-color:#f9fafb; padding:16px; border-radius:6px; margin:16px 0;">
+            <p style="margin:0 0 8px;"><strong>Détails de l'entretien annulé :</strong></p>
+            {date_info}
+            {time_info}
+            {reason_info}
+        </div>
+        """
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {candidate_name},</h2>
+    {email_info_box(f"L'entretien prévu pour le poste <strong>{job_title}</strong>{company_info} a été annulé.", "warning")}
+    {details}
+    <p>Si vous avez des questions, n'hésitez pas à contacter l'entreprise.</p>
+    <p>Cordialement,<br/>L'équipe Actoos Jobs</p>
+    """
+# ----------------------------------------------------------
+
 def email_company_verified(owner_first_name, company_name):
     return f"""
     <h2 style="color:#1a202c;">Félicitations {owner_first_name} ! 🎉</h2>
@@ -285,6 +327,29 @@ class SendInterviewLinkRequest(BaseModel):
     meeting_link: str
     company_name: Optional[str] = ""
     language: Optional[str] = "fr"
+
+# ---- NOUVEAUX MODÈLES ----
+class SendInterviewDetailsRequest(BaseModel):
+    email: str
+    candidate_name: str
+    job_title: str
+    meeting_link: str
+    interview_date: str  # format YYYY-MM-DD
+    interview_time: str  # format HH:MM
+    company_name: Optional[str] = ""
+    language: Optional[str] = "fr"
+
+class CancelInterviewRequest(BaseModel):
+    application_id: str
+    candidate_email: str
+    candidate_name: str
+    job_title: str
+    company_name: Optional[str] = ""
+    language: Optional[str] = "fr"
+    reason: Optional[str] = None
+    interview_date: Optional[str] = None  # format YYYY-MM-DD
+    interview_time: Optional[str] = None  # format HH:MM
+# ----------------------------
 
 class UploadRequest(BaseModel):
     bucket: str
@@ -963,6 +1028,67 @@ async def send_interview_link(req: SendInterviewLinkRequest):
         return {"success": True, "message": "Email envoyé avec succès."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ---- NOUVEAUX ENDPOINTS ----
+@app.post("/api/send-interview-details")
+async def send_interview_details(req: SendInterviewDetailsRequest):
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+    try:
+        lang = req.language or "fr"
+        html = email_interview_details(
+            req.candidate_name,
+            req.job_title,
+            req.meeting_link,
+            req.interview_date,
+            req.interview_time,
+            req.company_name
+        )
+        subject = f"Entretien planifié - {clean_subject(req.job_title)}"
+        await send_translated_email(req.email, subject, html, lang)
+        return {"success": True, "message": "Email envoyé avec succès."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/cancel-interview")
+async def cancel_interview(req: CancelInterviewRequest):
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
+    # Vérifier que l'application existe
+    app_resp = httpx.get(
+        f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}&select=id",
+        headers=headers
+    )
+    if app_resp.status_code != 200 or not app_resp.json():
+        raise HTTPException(status_code=404, detail="Candidature introuvable")
+    # Mettre à jour les champs en base
+    update_resp = httpx.patch(
+        f"{supabase_url}/rest/v1/applications?id=eq.{req.application_id}",
+        json={
+            "meeting_link": None,
+            "interview_date": None,
+            "interview_time": None,
+        },
+        headers=headers
+    )
+    if update_resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Erreur lors de l'annulation en base")
+    # Envoyer l'email d'annulation
+    if resend.api_key and req.candidate_email:
+        lang = req.language or "fr"
+        html = email_interview_cancelled(
+            req.candidate_name,
+            req.job_title,
+            req.company_name,
+            req.interview_date,
+            req.interview_time,
+            req.reason
+        )
+        subject = f"Entretien annulé - {clean_subject(req.job_title)}"
+        await send_translated_email(req.candidate_email, subject, html, lang)
+    return {"success": True, "message": "Entretien annulé et email envoyé."}
+# ------------------------------------------------
 
 @app.post("/api/notify-new-application")
 async def notify_new_application(req: NotifyNewApplicationRequest):
@@ -3974,9 +4100,6 @@ async def admin_delete_report(report_id: str):
     if resp.status_code not in (200, 204):
         raise HTTPException(status_code=500, detail="Erreur lors de la suppression du signalement")
     return {"success": True, "message": "Signalement supprimé avec succès"}
-
-
-
 
 # ==================== MOUNT STATIC ====================
 if os.path.isdir(BUILD_DIR):

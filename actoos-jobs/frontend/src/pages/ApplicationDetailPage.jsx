@@ -10,7 +10,7 @@ import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import {
   Loader2, ChevronLeft, Mail, Phone, MapPin, Calendar, Briefcase, User, FileText,
-  ExternalLink, Video, Sparkles, RefreshCw, Trash2, Save, MessageSquare, Lightbulb,
+  ExternalLink, Video, Sparkles, Trash2, Save, MessageSquare, Lightbulb,
   CheckCircle, Crown, XCircle, Clock, Plus, Send
 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
@@ -19,6 +19,13 @@ import { planHasFeature } from '../lib/planLimits';
 /* ---------- Fonction d'extraction de message d'erreur ---------- */
 const getErrorMessage = (error, fallback = 'Une erreur est survenue') => {
   if (!error) return fallback;
+  if (
+    error.name === 'AbortError' ||
+    error.name === 'DOMException' ||
+    (error.message && error.message.toLowerCase().includes('aborted'))
+  ) {
+    return null;
+  }
   if (typeof error === 'string') return error;
   if (error.json && typeof error.json === 'function') {
     return error.statusText || String(error);
@@ -144,8 +151,6 @@ const ApplicationDetailPage = () => {
   const [candidateProfile, setCandidateProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [customRoomName, setCustomRoomName] = useState('');
-  const [sendingEmail, setSendingEmail] = useState(false);
   const [requestingDocs, setRequestingDocs] = useState(false);
 
   const [notes, setNotes] = useState({ personal: '', questions: '', answers: '', tips: '' });
@@ -183,6 +188,14 @@ const ApplicationDetailPage = () => {
   const [notifyingOthers, setNotifyingOthers] = useState(false);
   const [showOtherCandidatesModal, setShowOtherCandidatesModal] = useState(false);
   const [otherCandidatesMessage, setOtherCandidatesMessage] = useState('');
+
+  // États pour la planification d'entretien
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [interviewDate, setInterviewDate] = useState('');
+  const [interviewTime, setInterviewTime] = useState('');
+  const [scheduling, setScheduling] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [finishing, setFinishing] = useState(false); // Nouvel état
 
   useEffect(() => {
     if (!activeCompanyId) {
@@ -288,7 +301,10 @@ const ApplicationDetailPage = () => {
       if (error) throw error;
       setLastSavedMap(prev => ({ ...prev, [type]: new Date().toLocaleTimeString() }));
       return true;
-    } catch (err) { console.error('saveNote', err); return false; }
+    } catch (err) {
+      console.error('saveNote', err);
+      return false;
+    }
   }, [id]);
 
   const handleSaveNote = async (type) => {
@@ -338,7 +354,8 @@ const ApplicationDetailPage = () => {
       await saveNote(type, newContent);
       toast.success(t('applicationDetail.toasts.questionsGenerated'));
     } catch (err) {
-      toast.error(getErrorMessage(err, t('common.error')));
+      const msg = getErrorMessage(err);
+      if (msg) toast.error(msg);
     } finally {
       setGen(false);
     }
@@ -372,8 +389,6 @@ Profil candidat :
     }
     try {
       const updates = { status: newStatus };
-      if (newStatus === 'interview' && !application.meeting_link)
-        updates.meeting_link = `https://meet.jit.si/actoos-interview-${application.id}`;
       const { error } = await supabase.from('applications').update(updates).eq('id', id);
       if (error) throw error;
       setApplication(prev => ({ ...prev, ...updates }));
@@ -415,9 +430,159 @@ Profil candidat :
 
       toast.success(t('applicationDetail.toasts.statusUpdated'));
     } catch (err) {
-      toast.error(getErrorMessage(err, t('common.error')));
+      const msg = getErrorMessage(err);
+      if (msg) toast.error(msg);
     } finally {
       setUpdating(false);
+    }
+  };
+
+  // Planifier un entretien avec date/heure
+  const handleScheduleInterview = async () => {
+    if (!interviewDate || !interviewTime) {
+      toast.error(t('applicationDetail.selectDateAndTime'));
+      return;
+    }
+
+    // Vérifier si la date/heure est dans le passé
+    const selectedDateTime = new Date(`${interviewDate}T${interviewTime}:00`);
+    if (selectedDateTime < new Date()) {
+      toast.error(t('applicationDetail.pastDateTime'));
+      return;
+    }
+
+    setScheduling(true);
+    try {
+      // Générer le lien Jitsi s'il n'existe pas déjà
+      let meetingLink = application.meeting_link;
+      if (!meetingLink) {
+        meetingLink = `https://meet.jit.si/actoos-interview-${application.id}`;
+      }
+      // Mettre à jour la base de données
+      const { error } = await supabase
+        .from('applications')
+        .update({
+          meeting_link: meetingLink,
+          interview_date: interviewDate,
+          interview_time: interviewTime,
+          status: 'interview',
+        })
+        .eq('id', id);
+      if (error) throw error;
+
+      // Mettre à jour l'état local immédiatement
+      setApplication(prev => ({
+        ...prev,
+        meeting_link: meetingLink,
+        interview_date: interviewDate,
+        interview_time: interviewTime,
+        status: 'interview',
+      }));
+
+      // Fermer le modal et réinitialiser les champs
+      setShowScheduleModal(false);
+      setInterviewDate('');
+      setInterviewTime('');
+
+      // Envoyer l'email avec les détails (en arrière-plan)
+      apiFetch('/api/send-interview-details', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: application.candidate.email,
+          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
+          job_title: application.job.title,
+          meeting_link: meetingLink,
+          interview_date: interviewDate,
+          interview_time: interviewTime,
+          company_name: application.job.company?.name || '',
+          language: i18n.language,
+        }),
+      }).then(() => {
+        toast.success(t('applicationDetail.toasts.interviewScheduled'));
+      }).catch((err) => {
+        const msg = getErrorMessage(err);
+        if (msg) toast.error(msg);
+      });
+
+    } catch (err) {
+      const msg = getErrorMessage(err);
+      if (msg) toast.error(msg);
+    } finally {
+      setScheduling(false);
+    }
+  };
+
+  // Annuler l'entretien
+  const handleCancelInterview = async () => {
+    if (!window.confirm(t('applicationDetail.cancelInterviewConfirm'))) return;
+    
+    // Demander une raison optionnelle via prompt
+    const reason = window.prompt(t('applicationDetail.cancelReasonPrompt'), '');
+    if (reason === null) return; // Annulé par l'utilisateur
+    
+    setCancelling(true);
+    // Sauvegarde de l'état actuel pour restauration en cas d'échec
+    const previousApplication = { ...application };
+    // Mise à jour optimiste immédiate
+    setApplication(prev => ({
+      ...prev,
+      meeting_link: null,
+      interview_date: null,
+      interview_time: null,
+    }));
+    
+    try {
+      await apiFetch('/api/cancel-interview', {
+        method: 'POST',
+        body: JSON.stringify({
+          application_id: application.id,
+          candidate_email: application.candidate.email,
+          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
+          job_title: application.job.title,
+          company_name: application.job.company?.name || '',
+          language: i18n.language,
+          reason: reason || '',
+          interview_date: previousApplication.interview_date,
+          interview_time: previousApplication.interview_time,
+        }),
+      });
+      toast.success(t('applicationDetail.toasts.interviewCancelled'));
+    } catch (err) {
+      // En cas d'échec, restaurer l'état précédent
+      setApplication(previousApplication);
+      const msg = getErrorMessage(err);
+      if (msg) toast.error(msg);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  // Terminer l'entretien (sans email)
+  const handleFinishInterview = async () => {
+    if (!window.confirm(t('applicationDetail.finishInterviewConfirm'))) return;
+    setFinishing(true);
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .update({
+          meeting_link: null,
+          interview_date: null,
+          interview_time: null,
+        })
+        .eq('id', id);
+      if (error) throw error;
+      setApplication(prev => ({
+        ...prev,
+        meeting_link: null,
+        interview_date: null,
+        interview_time: null,
+      }));
+      toast.success(t('applicationDetail.toasts.interviewFinished'));
+    } catch (err) {
+      const msg = getErrorMessage(err);
+      if (msg) toast.error(msg);
+    } finally {
+      setFinishing(false);
     }
   };
 
@@ -453,7 +618,8 @@ Profil candidat :
       setRequestDocsMessage('');
       await reloadDocuments();
     } catch (err) {
-      toast.error(getErrorMessage(err, t('common.error')));
+      const msg = getErrorMessage(err);
+      if (msg) toast.error(msg);
     } finally {
       setRequestingDocs(false);
     }
@@ -516,7 +682,8 @@ Profil candidat :
       toast.success(t('applicationDetail.requestModified'));
       await reloadDocuments();
     } catch (err) {
-      toast.error(getErrorMessage(err, t('common.error')));
+      const msg = getErrorMessage(err);
+      if (msg) toast.error(msg);
     }
   };
 
@@ -539,7 +706,8 @@ Profil candidat :
         }),
       }).catch(console.error);
     } catch (err) {
-      toast.error(getErrorMessage(err, t('common.error')));
+      const msg = getErrorMessage(err);
+      if (msg) toast.error(msg);
     }
   };
 
@@ -587,7 +755,8 @@ Profil candidat :
       toast.success(t('applicationDetail.finalizeSuccess', 'Recrutement finalisé !'));
       setFinalizeMessage('');
     } catch (err) {
-      toast.error(getErrorMessage(err, t('common.error')));
+      const msg = getErrorMessage(err);
+      if (msg) toast.error(msg);
     } finally {
       setFinalizingHiring(false);
     }
@@ -609,67 +778,11 @@ Profil candidat :
       );
       setOtherCandidatesMessage('');
     } catch (err) {
-      toast.error(err.detail || err.message || t('common.error'));
+      const msg = getErrorMessage(err);
+      if (msg) toast.error(msg);
     } finally {
       setNotifyingOthers(false);
       setShowOtherCandidatesModal(false);
-    }
-  };
-
-  const handleCreateMeeting = async () => {
-    const room = customRoomName.trim() || `actoos-interview-${application.id}`;
-    const meetingLink = `https://meet.jit.si/${room}`;
-    setUpdating(true);
-    try {
-      const { error } = await supabase.from('applications').update({ meeting_link: meetingLink }).eq('id', id);
-      if (error) throw error;
-      setApplication(prev => ({ ...prev, meeting_link: meetingLink }));
-      setCustomRoomName('');
-      toast.success(t('applicationDetail.toasts.linkUpdated'));
-    } catch (err) {
-      toast.error(getErrorMessage(err, t('common.error')));
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleDeleteMeeting = async () => {
-    setUpdating(true);
-    try {
-      const { error } = await supabase.from('applications').update({ meeting_link: null }).eq('id', id);
-      if (error) throw error;
-      setApplication(prev => ({ ...prev, meeting_link: null }));
-      toast.success(t('applicationDetail.toasts.linkDeleted'));
-    } catch (err) {
-      toast.error(getErrorMessage(err, t('common.error')));
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleSendEmail = async (type) => {
-    let link = '';
-    if (type === 'jitsi') link = application?.meeting_link;
-    else if (type === 'calendly') link = 'https://calendly.com/actoos/entretien';
-    if (!link) return;
-    setSendingEmail(true);
-    try {
-      await apiFetch('/api/send-interview-link', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: application.candidate.email,
-          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
-          job_title: application.job.title,
-          meeting_link: link,
-          company_name: application.job.company?.name || '',
-          language: i18n.language,
-        })
-      });
-      toast.success(t('applicationDetail.toasts.emailSent'));
-    } catch (err) {
-      toast.error(getErrorMessage(err, t('common.error')));
-    } finally {
-      setSendingEmail(false);
     }
   };
 
@@ -703,6 +816,10 @@ Profil candidat :
   const rawPhone = candidate?.phone || '';
   const cleanPhone = rawPhone.replace(/\s/g, '');
   const telLink = cleanPhone ? `tel:${cleanPhone}` : null;
+
+  // Pour la validation de date/heure
+  const todayStr = new Date().toISOString().split('T')[0];
+  const currentTime = new Date().toTimeString().slice(0, 5);
 
   return (
     <div className="min-h-0 bg-slate-50 pt-20">
@@ -780,22 +897,22 @@ Profil candidat :
               </Card>
             ) : (
                <Card className="border-amber-200 bg-amber-50">
-    <CardContent className="p-6 text-center">
-      <Crown className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-      <p className="text-amber-800 font-medium">
-        {t('applicationDetail.upgradeForNotes', 'Outils d’entretien & recrutement avancés')}
-      </p>
-      <p className="text-sm text-amber-700 mt-2">
-        {t('applicationDetail.upgradeForNotesDesc',
-          'Planifiez des entretiens vidéo, générez des questions / réponses / conseils IA et prenez des notes structurées.')}
-      </p>
-      <Link to="/tarifs">
-        <Button className="mt-4 bg-amber-600 hover:bg-amber-700 text-white">
-          {t('applicationDetail.viewPlans')}
-        </Button>
-      </Link>
-    </CardContent>
-  </Card>
+                <CardContent className="p-6 text-center">
+                  <Crown className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+                  <p className="text-amber-800 font-medium">
+                    {t('applicationDetail.upgradeForNotes', 'Outils d’entretien & recrutement avancés')}
+                  </p>
+                  <p className="text-sm text-amber-700 mt-2">
+                    {t('applicationDetail.upgradeForNotesDesc',
+                      'Planifiez des entretiens vidéo, générez des questions / réponses / conseils IA et prenez des notes structurées.')}
+                  </p>
+                  <Link to="/tarifs">
+                    <Button className="mt-4 bg-amber-600 hover:bg-amber-700 text-white">
+                      {t('applicationDetail.viewPlans')}
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
             )}
           </div>
 
@@ -989,15 +1106,132 @@ Profil candidat :
               </Card>
             )}
 
-            {/* Section Planifier un entretien (Jitsi uniquement, sans Calendly) */}
+            {/* Section Planifier un entretien */}
             {isProOrBusiness && application.status !== 'completed' ? (
-              <Card><CardContent className="p-6"><h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" />{t('applicationDetail.scheduleInterview')}</h3><div className="space-y-6"><div><div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span><h4 className="text-sm font-medium text-slate-800">{t('applicationDetail.step2CreateLink')}</h4></div><div className="ml-8 space-y-3">{application.meeting_link ? (<><div className="bg-blue-50 rounded-xl p-3 text-sm break-all"><a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">{application.meeting_link}</a></div><div className="flex flex-wrap gap-2"><a href={application.meeting_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-green-700"><Video className="w-4 h-4" />{t('applicationDetail.joinMeeting')}</a><Button variant="outline" size="sm" onClick={() => handleSendEmail('jitsi')} disabled={sendingEmail}><Mail className="w-4 h-4 mr-1" />{t('applicationDetail.sendEmail')}</Button></div><input type="text" placeholder={t('applicationDetail.newRoomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" /><div className="flex flex-wrap gap-2"><button type="button" disabled={updating} onClick={handleCreateMeeting} className="flex-1 min-w-0 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 overflow-hidden"><RefreshCw className="w-4 h-4 shrink-0" /><span className="btn-marquee flex-1 min-w-0"><span>{t('applicationDetail.updateLink')}</span></span></button><Button variant="outline" size="sm" className="text-red-600" onClick={handleDeleteMeeting} disabled={updating}><Trash2 className="w-4 h-4" />{t('applicationDetail.deleteLink')}</Button></div></>) : (<><input type="text" placeholder={t('applicationDetail.roomPlaceholder')} value={customRoomName} onChange={(e) => setCustomRoomName(e.target.value)} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2" /><Button variant="outline" className="w-full" onClick={handleCreateMeeting} disabled={updating}>{updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Video className="w-4 h-4 mr-2" />}{t('applicationDetail.generateJitsiLink')}</Button></>)}</div></div></div></CardContent></Card>
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                    {t('applicationDetail.scheduleInterview')}
+                  </h3>
+
+                  {application.meeting_link && application.interview_date ? (
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 rounded-xl p-4">
+                        <p className="text-sm font-medium text-blue-900">
+                          {t('applicationDetail.interviewScheduled')}
+                        </p>
+                        <p className="text-sm text-blue-700 mt-1">
+                          📅 {application.interview_date} à {application.interview_time}
+                        </p>
+                        {application.meeting_link && (
+                          <a
+                            href={application.meeting_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-2 text-blue-600 hover:underline"
+                          >
+                            <Video className="w-4 h-4" />
+                            {t('applicationDetail.joinMeeting')}
+                          </a>
+                        )}
+                      </div>
+                      {/* CORRECTION : empilement sur mobile, côte à côte sur desktop, texte réduit et tronqué */}
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                          variant="outline"
+                          className="w-full sm:flex-1 text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm px-2 sm:px-4"
+                          onClick={handleCancelInterview}
+                          disabled={cancelling || finishing}
+                        >
+                          {cancelling ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <XCircle className="w-4 h-4 mr-1" />}
+                          <span className="truncate">{t('applicationDetail.cancelInterview')}</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full sm:flex-1 text-slate-600 border-slate-300 hover:bg-slate-50 text-xs sm:text-sm px-2 sm:px-4"
+                          onClick={handleFinishInterview}
+                          disabled={finishing || cancelling}
+                        >
+                          {finishing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+                          <span className="truncate">{t('applicationDetail.finishInterview')}</span>
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => setShowScheduleModal(true)}
+                      className="w-full"
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {t('applicationDetail.planInterviewButton')}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
             ) : isProOrBusiness ? (
-              <Card className="border-green-200 bg-green-50/50"><CardContent className="p-6 text-center"><CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" /><p className="font-semibold text-green-900">{t('applicationDetail.recruitmentCompleted', 'Recrutement finalisé')}</p></CardContent></Card>
+              <Card className="border-green-200 bg-green-50/50">
+                <CardContent className="p-6 text-center">
+                  <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <p className="font-semibold text-green-900">
+                    {t('applicationDetail.recruitmentCompleted')}
+                  </p>
+                </CardContent>
+              </Card>
             ) : null}
           </div>
         </div>
       </div>
+
+      {/* Modal pour planifier l'entretien */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">
+              {t('applicationDetail.planInterviewTitle')}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  {t('applicationDetail.interviewDate')}
+                </label>
+                <input
+                  type="date"
+                  value={interviewDate}
+                  onChange={(e) => setInterviewDate(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+                  min={todayStr}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  {t('applicationDetail.interviewTime')}
+                </label>
+                <input
+                  type="time"
+                  value={interviewTime}
+                  onChange={(e) => setInterviewTime(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+                  min={interviewDate === todayStr ? currentTime : undefined}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end mt-6">
+              <Button variant="ghost" onClick={() => setShowScheduleModal(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                onClick={handleScheduleInterview}
+                disabled={scheduling || !interviewDate || !interviewTime}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {scheduling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {t('common.confirm')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAcceptModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
