@@ -3975,6 +3975,9 @@ async def admin_delete_report(report_id: str):
         raise HTTPException(status_code=500, detail="Erreur lors de la suppression du signalement")
     return {"success": True, "message": "Signalement supprimé avec succès"}
 
+
+
+
 # ==================== MOUNT STATIC ====================
 if os.path.isdir(BUILD_DIR):
     app.mount("/static", StaticFiles(directory=os.path.join(BUILD_DIR, "static")), name="static")

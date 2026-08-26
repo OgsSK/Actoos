@@ -44,7 +44,7 @@ const StatCard = ({ icon: Icon, label, value, trend, color = 'blue' }) => {
   const { t } = useTranslation();
   const displayValue = typeof value === 'number' ? formatCount(value) : value;
   return (
-    <Card className="border-slate-200 overflow-hidden">
+    <Card className="border-slate-200 overflow-hidden shadow-sm">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -138,7 +138,7 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   const formattedApplications = formatCount(job.applications_count || 0);
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">
+    <div className="flex flex-col gap-4 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 overflow-hidden border border-slate-200">
           {companyLogo ? (
@@ -181,7 +181,7 @@ const ApplicationCard = ({ application }) => {
   const statusColor = statusColors[application.status] || 'bg-slate-100 text-slate-700';
   
   return (
-    <Link to={`/dashboard/entreprise/candidatures/${application.id}`} className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">
+    <Link to={`/dashboard/entreprise/candidatures/${application.id}`} className="flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors shadow-sm">
       <div className="flex items-start gap-3 w-full min-w-0">
         <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-200 shrink-0 overflow-hidden">
           {application.candidate?.avatar_url ? (
@@ -562,7 +562,7 @@ const CompanyDashboard = () => {
         {/* En-tête entreprise */}
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
-            <div className="w-16 h-16 shrink-0 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-slate-200">
+            <div className="w-16 h-16 shrink-0 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-slate-200 shadow-sm">
               {company?.logo_url ? (<img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />) : (<Building2 className="w-8 h-8 text-slate-400" />)}
             </div>
             <div className="min-w-0"><h1 className="text-2xl font-bold text-slate-900 truncate">{company?.name}</h1><p className="text-slate-600">{t('companyDashboard.header.title')}</p></div>
@@ -574,18 +574,32 @@ const CompanyDashboard = () => {
           </div>
         </div>
 
-        {/* Bannières de plan */}
+        {/* Bannières de plan – discrètes */}
         {isBusinessPlan && (
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3"><Crown className="w-8 h-8 text-yellow-300" /><div><h2 className="font-bold text-lg">{t('companyDashboard.businessBanner.title', 'Plan Business')}</h2><p className="text-white/80 text-sm">{t('companyDashboard.businessBanner.subtitle')}</p></div></div>
-            <div className="flex gap-2"><Badge className="bg-white/20 text-white border-0"><Sparkles className="w-3 h-3 mr-1" />{t('companyDashboard.businessBanner.boost')}</Badge><Badge className="bg-white/20 text-white border-0"><Search className="w-3 h-3 mr-1" />{t('companyDashboard.businessBanner.cvBank')}</Badge></div>
+          <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 mb-6 flex items-center gap-3 shadow-sm">
+            <Crown className="w-5 h-5 text-purple-600 shrink-0" />
+            <p className="text-sm text-purple-900 font-medium">
+              {t('companyDashboard.businessBanner.title', 'Plan Business')}
+              <span className="text-purple-700 font-normal ml-1">{t('companyDashboard.businessBanner.subtitle')}</span>
+            </p>
+            <div className="ml-auto flex gap-2">
+              <Badge className="bg-purple-100 text-purple-700 border-0 text-xs"><Sparkles className="w-3 h-3 mr-1" />{t('companyDashboard.businessBanner.boost')}</Badge>
+              <Badge className="bg-purple-100 text-purple-700 border-0 text-xs"><Search className="w-3 h-3 mr-1" />{t('companyDashboard.businessBanner.cvBank')}</Badge>
+            </div>
           </div>
         )}
 
         {!isBusinessPlan && plan === 'pro' && (
-          <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3"><Zap className="w-8 h-8 text-blue-200" /><div><h2 className="font-bold text-lg">{t('companyDashboard.proBanner.title', 'Plan Pro')}</h2><p className="text-white/80 text-sm">{t('companyDashboard.proBanner.subtitle')}</p></div></div>
-            <div className="flex gap-2"><Badge className="bg-white/20 text-white border-0"><FileText className="w-3 h-3 mr-1" />{t('companyDashboard.proBanner.interviewTools')}</Badge><Badge className="bg-white/20 text-white border-0"><Sparkles className="w-3 h-3 mr-1" />{t('companyDashboard.proBanner.aiNotes')}</Badge></div>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-6 flex items-center gap-3 shadow-sm">
+            <Zap className="w-5 h-5 text-blue-600 shrink-0" />
+            <p className="text-sm text-blue-900 font-medium">
+              {t('companyDashboard.proBanner.title', 'Plan Pro')}
+              <span className="text-blue-700 font-normal ml-1">{t('companyDashboard.proBanner.subtitle')}</span>
+            </p>
+            <div className="ml-auto flex gap-2">
+              <Badge className="bg-blue-100 text-blue-700 border-0 text-xs"><FileText className="w-3 h-3 mr-1" />{t('companyDashboard.proBanner.interviewTools')}</Badge>
+              <Badge className="bg-blue-100 text-blue-700 border-0 text-xs"><Sparkles className="w-3 h-3 mr-1" />{t('companyDashboard.proBanner.aiNotes')}</Badge>
+            </div>
           </div>
         )}
 
@@ -601,7 +615,7 @@ const CompanyDashboard = () => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Colonne gauche : offres */}
           <div className="xl:col-span-2">
-            <Card className="border-slate-200 overflow-visible">
+            <Card className="border-slate-200 overflow-visible shadow-sm">
               <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div><h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.jobsSection.title')}</h2><p className="text-sm text-slate-500">{t('companyDashboard.jobsSection.totalOffers', { count: formattedTotalJobs })}</p></div>
                 <Link to="/dashboard/entreprise/offres" className="w-full sm:w-auto"><Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">{t('companyDashboard.jobsSection.viewAll')}<ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
@@ -623,7 +637,7 @@ const CompanyDashboard = () => {
           {/* Colonne droite */}
           <div className="space-y-6">
             {/* Candidatures */}
-            <Card className="border-slate-200 overflow-hidden">
+            <Card className="border-slate-200 overflow-hidden shadow-sm">
               <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div><h2 className="text-lg font-semibold text-slate-900">{t('companyDashboard.applicationsSection.title')}</h2><p className="text-sm text-slate-500">{t('companyDashboard.applicationsSection.newCount', { count: formattedNewApplications })}</p></div>
                 <Link to="/dashboard/entreprise/candidatures" className="w-full sm:w-auto"><Button variant="ghost" size="sm" className="w-full sm:w-auto min-h-[44px]">{t('companyDashboard.applicationsSection.viewAll')}<ChevronRight className="w-4 h-4 ml-1" /></Button></Link>
@@ -632,7 +646,7 @@ const CompanyDashboard = () => {
             </Card>
 
             {/* Profil entreprise */}
-            <Card className="border-slate-200 overflow-hidden">
+            <Card className="border-slate-200 overflow-hidden shadow-sm">
               <CardContent className="p-4 sm:p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">{t('companyDashboard.companyProfileCard.title')}</h3>
                 {!company?.is_verified && <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">{t('companyDashboard.companyProfileCard.pendingValidation')}</div>}
@@ -650,7 +664,7 @@ const CompanyDashboard = () => {
             </Card>
 
             {/* Messages admin */}
-            <Card className="border-slate-200 overflow-hidden">
+            <Card className="border-slate-200 overflow-hidden shadow-sm">
               <CardHeader><CardTitle>{t('companyDashboard.adminMessages.title')}</CardTitle></CardHeader>
               <CardContent>
                 <Suspense fallback={<div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-blue-600" /></div>}>
@@ -661,7 +675,7 @@ const CompanyDashboard = () => {
 
             {/* Abonnés */}
             {showFollowersWidget && (
-              <Card className="border-slate-200 overflow-hidden">
+              <Card className="border-slate-200 overflow-hidden shadow-sm">
                 <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Users className="w-5 h-5 text-blue-600" />{t('companyDashboard.followers.title', 'Mes abonnés')}</CardTitle></CardHeader>
                 <CardContent>
                   {loadingFollowers ? (
@@ -691,7 +705,7 @@ const CompanyDashboard = () => {
 
             {/* Banque de CV */}
             {hasCVBank && (
-              <Card className="border-purple-200 bg-purple-50 overflow-hidden">
+              <Card className="border-purple-200 bg-purple-50 overflow-hidden shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2"><Crown className="w-5 h-5 text-purple-600" /><h3 className="font-semibold text-purple-900">{t('companyDashboard.cvBank.title', 'Banque de CV')}</h3></div>
                   <p className="text-sm text-purple-700 mb-4">{t('companyDashboard.cvBank.desc')}</p>
@@ -702,7 +716,7 @@ const CompanyDashboard = () => {
 
             {/* Documents en attente */}
             {pendingDocsCount > 0 && (
-              <Card className="border-blue-200 bg-blue-50 overflow-hidden">
+              <Card className="border-blue-200 bg-blue-50 overflow-hidden shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2"><FileText className="w-5 h-5 text-blue-600" /><h3 className="font-semibold text-blue-900">{t('companyDashboard.pendingDocuments.title')}</h3></div>
                   <p className="text-sm text-blue-700">{t('companyDashboard.pendingDocuments.count', { count: formattedPendingDocs })}</p>
@@ -712,7 +726,7 @@ const CompanyDashboard = () => {
             )}
 
             {/* Carte abonnement */}
-            <Card className="border-slate-200 bg-white overflow-hidden">
+            <Card className="border-slate-200 bg-white overflow-hidden shadow-sm">
               <CardContent className="p-0">
                 <div className={`h-1 ${plan === 'business' || plan === 'enterprise' ? 'bg-gradient-to-r from-purple-500 to-purple-400' : plan === 'pro' ? 'bg-gradient-to-r from-blue-500 to-blue-400' : 'bg-gradient-to-r from-slate-300 to-slate-200'}`} />
                 <div className="p-5 sm:p-6">
