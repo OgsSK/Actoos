@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Label } from '../components/ui/label';
 import { Separator } from '../components/ui/separator';
 import {
-  Briefcase, Mail, Lock, Eye, EyeOff, Loader2
+  Mail, Lock, Eye, EyeOff, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
@@ -81,15 +81,6 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4 pt-20">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center">
-              <Briefcase className="w-7 h-7 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-slate-900">Actoos Jobs</span>
-          </Link>
-        </div>
-
         <Card className="shadow-xl border-0">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl">{t('auth.login.title')}</CardTitle>

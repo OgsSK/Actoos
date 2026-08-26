@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Label } from '../components/ui/label';
 import { Separator } from '../components/ui/separator';
 import {
-  Briefcase, Mail, Lock, Eye, EyeOff, Loader2, User, Building2
+  Mail, Lock, Eye, EyeOff, Loader2, User, Building2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
@@ -44,18 +44,31 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // 🔥 Synchronisation avec l'URL (type=entreprise)
+  // ✅ État pour attendre que les traductions soient chargées
+  const [translationsReady, setTranslationsReady] = useState(i18n.isInitialized);
+
+  // 🔥 Synchronisation avec l'URL (type=entreprise) ET la langue
   useEffect(() => {
     const type = searchParams.get('type');
     if (type === 'entreprise') {
       setStep(2);
       setRole('company');
     } else {
-      // Revenir à l'écran de choix si le paramètre n'est plus présent
       setStep(1);
       setRole('candidate');
     }
-  }, [searchParams]);
+  }, [searchParams, i18n.language]);
+
+  // ✅ Attendre que les traductions soient prêtes
+  useEffect(() => {
+    if (i18n.isInitialized) {
+      setTranslationsReady(true);
+    } else {
+      const onInit = () => setTranslationsReady(true);
+      i18n.on('initialized', onInit);
+      return () => i18n.off('initialized', onInit);
+    }
+  }, [i18n]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -108,7 +121,7 @@ const RegisterPage = () => {
         role: role,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        language: i18n.language?.split('-')[0] || 'fr',  // ← ajouté
+        language: i18n.language?.split('-')[0] || 'fr',
       });
 
       toast.success(t('register.toasts.accountCreated'));
@@ -136,19 +149,19 @@ const RegisterPage = () => {
     }
   };
 
+  // ✅ Afficher un loader tant que les traductions ne sont pas prêtes
+  if (!translationsReady) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4 pt-20">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
   if (step === 1) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4 pt-20">
         <div className="w-full max-w-lg">
-          <div className="text-center mb-8">
-            <Link to="/" className="inline-flex items-center gap-2">
-              <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center">
-                <Briefcase className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-slate-900">Actoos Jobs</span>
-            </Link>
-          </div>
-
           <Card className="shadow-xl border-0">
             <CardHeader className="text-center pb-2">
               <CardTitle className="text-2xl">{t('register.title')}</CardTitle>
@@ -214,15 +227,6 @@ const RegisterPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4 pt-20">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center">
-              <Briefcase className="w-7 h-7 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-slate-900">Actoos Jobs</span>
-          </Link>
-        </div>
-
         <Card className="shadow-xl border-0">
           <CardHeader className="text-center pb-2">
             <div className="flex items-center justify-center gap-2 mb-2">
