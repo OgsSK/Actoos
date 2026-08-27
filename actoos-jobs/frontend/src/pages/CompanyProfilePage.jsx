@@ -507,7 +507,7 @@ const CompanyProfilePage = () => {
                 </div>
               </div>
 
-              {/* 🗺️ Champ Adresse avec bouton Carte */}
+              {/* 🗺️ Champ Adresse avec bouton Carte (icône uniquement) */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('companyProfile.labels.address')}</label>
                 <div className="flex gap-2">
@@ -522,10 +522,9 @@ const CompanyProfilePage = () => {
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.address)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center px-4 py-2 border border-slate-300 rounded-md text-sm text-blue-600 hover:bg-blue-50 min-h-[44px] shrink-0"
+                      className="inline-flex items-center justify-center w-10 h-10 border border-slate-300 rounded-md text-blue-600 hover:bg-blue-50 min-h-[44px] shrink-0"
                     >
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {t('common.map', 'Carte')}
+                      <MapPin className="w-5 h-5" />
                     </a>
                   )}
                 </div>
