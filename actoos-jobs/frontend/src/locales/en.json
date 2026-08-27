@@ -1872,7 +1872,18 @@
     "noteDeleted": "Note deleted."
   }
 },
+"salaryPeriod": {
+      "monthly": "Per month",
+      "daily": "Per day",
+      "hourly": "Per hour",
+      "fixed": "Flat rate / Fixed",
+      "monthlyShort": "month",
+      "dailyShort": "day",
+      "hourlyShort": "hour",
+      "fixedShort": "(flat rate)"
+    },
 "createJob": {
+  
    "iaProgress": {
       "analyzing": "Analyzing title...",
       "generating": "Generating...",
@@ -1902,6 +1913,7 @@
         "dates": "Dates"
       },
       "labels": {
+        "salaryPeriod": "Salary period",
         "title": "Job title",
         "category": "Category",
         "contractType": "Contract type",

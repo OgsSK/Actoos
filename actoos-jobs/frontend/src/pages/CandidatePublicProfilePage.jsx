@@ -8,6 +8,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import ContactFollowerModal from '../components/ContactFollowerModal';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
+import { formatSalaryPeriod } from '../lib/utils';
 import {
   Loader2, ChevronLeft, User, Mail, Phone, MapPin, Briefcase, GraduationCap,
   Award, FileText, Flag, Globe, ExternalLink, AlertTriangle, Clock, Send,
@@ -136,6 +137,7 @@ const CandidatePublicProfilePage = () => {
           is_open_to_remote: candidateData.is_open_to_remote,
           desired_salary_min: candidateData.desired_salary_min,
           desired_salary_max: candidateData.desired_salary_max,
+          desired_salary_period: candidateData.desired_salary_period || 'monthly', // ✅ NOUVEAU
           skills: candidateData.skills || [],
           experience: candidateData.experience || [],
           education: candidateData.education || [],
@@ -310,7 +312,16 @@ const CandidatePublicProfilePage = () => {
                 {activeTab === 'about' && (
                   <div className="space-y-6">
                     {profile.bio && <div className="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-100"><h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">{t('companyDetail.about', 'À propos')}</h3><p className="text-slate-700 leading-relaxed text-base">{profile.bio}</p></div>}
-                    {(profile.desired_salary_min || profile.desired_salary_max) && <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-xl text-sm font-medium">💰 {profile.desired_salary_min && profile.desired_salary_max ? `${format(profile.desired_salary_min)} – ${format(profile.desired_salary_max)}` : profile.desired_salary_min ? format(profile.desired_salary_min) : format(profile.desired_salary_max)}</div>}
+                    {(profile.desired_salary_min || profile.desired_salary_max) && (
+                      <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-xl text-sm font-medium">
+                        💰 {profile.desired_salary_min && profile.desired_salary_max
+                          ? `${format(profile.desired_salary_min)} – ${format(profile.desired_salary_max)}`
+                          : profile.desired_salary_min
+                            ? format(profile.desired_salary_min)
+                            : format(profile.desired_salary_max)}
+                        {formatSalaryPeriod(profile.desired_salary_period, t)}
+                      </div>
+                    )}
                   </div>
                 )}
                 {activeTab === 'skills' && <div className="flex flex-wrap gap-3">{profile.skills.map(skill => <Badge key={skill} variant="secondary" className="px-4 py-2 text-sm bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">{skill}</Badge>)}</div>}

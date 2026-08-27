@@ -10,6 +10,7 @@ import {
   Loader2, MapPin, Banknote, ChevronLeft,
   Star, ThumbsUp, TrendingUp,
 } from 'lucide-react';
+import { formatSalaryPeriod } from '../lib/utils';
 
 // ✅ Skeleton pour une offre recommandée
 const RecommendedJobSkeleton = () => (
@@ -44,10 +45,10 @@ const RecommendedJobsPage = () => {
     const fetchJobs = async () => {
       setLoading(true);
       try {
-        // ✅ Récupérer toutes les offres actives d'un coup
+        // ✅ Récupérer toutes les offres actives d'un coup avec salary_period
         const { data, error } = await supabase
           .from('jobs')
-          .select('id, title, salary_min, salary_max, skills_required, is_remote, city_id, company:companies(name, logo_url), city:cities(name)')
+          .select('id, title, salary_min, salary_max, salary_period, skills_required, is_remote, city_id, company:companies(name, logo_url), city:cities(name)')
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(200);
@@ -171,6 +172,7 @@ const RecommendedJobsPage = () => {
                     <span className="flex items-center gap-1">
                       <Banknote className="w-3 h-3" />
                       {format(job.salary_min)} – {format(job.salary_max)}
+                      {formatSalaryPeriod(job.salary_period, t)}
                     </span>
                   )}
                 </div>

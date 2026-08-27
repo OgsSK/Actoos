@@ -2026,7 +2026,18 @@
         "errorGeneric": "Si è verificato un errore."
       }
     },
+    "salaryPeriod": {
+      "monthly": "Al mese",
+      "daily": "Al giorno",
+      "hourly": "All'ora",
+      "fixed": "Forfait / Fisso",
+      "monthlyShort": "mese",
+      "dailyShort": "giorno",
+      "hourlyShort": "ora",
+      "fixedShort": "(forfait)"
+    },
     "createJob": {
+       
       "iaProgress": {
       "analyzing": "Analisi del titolo...",
       "generating": "Generazione in corso...",
@@ -2056,6 +2067,7 @@
         "dates": "Date"
       },
       "labels": {
+        "salaryPeriod": "Periodicità dello stipendio",
         "title": "Titolo dell'offerta",
         "category": "Categoria",
         "contractType": "Tipo di contratto",

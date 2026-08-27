@@ -31,7 +31,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
+import { cn, formatRelative, CONTRACT_TYPES, EXPERIENCE_LEVELS, formatSalaryPeriod } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 
 // ----------------------------------------------------------------------
@@ -385,6 +385,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
                     <span className="flex items-center gap-1">
                       <Banknote className="w-4 h-4" />
                       {format(job.salary_min)} – {format(job.salary_max)}
+                      {formatSalaryPeriod(job.salary_period, t)}
                     </span>
                   )}
                 </div>
@@ -711,6 +712,7 @@ const JobsPage = () => {
           .from('jobs')
           .select(`
             id, title, description, contract_type, experience_level, salary_min, salary_max,
+            salary_period,
             is_remote, remote_type, is_urgent, is_featured, skills_required, created_at, status,
             city_id, category_id,
             boosted_until,

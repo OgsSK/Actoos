@@ -26,8 +26,10 @@ import {
   Zap,
   Building2,
   RefreshCw,
+  Banknote,
 } from 'lucide-react';
-import { formatRelative, CONTRACT_TYPES } from '../lib/utils';
+import { formatRelative, CONTRACT_TYPES, formatSalaryPeriod } from '../lib/utils';
+import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 
 const statusIcons = {
   draft: FileText,
@@ -72,6 +74,7 @@ const JobCardSkeleton = () => (
 
 const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusinessPlan, companyLogo }) => {
   const { t } = useTranslation();
+  const { format } = useCurrencyFormatter();
   const [showMenu, setShowMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const menuButtonRef = useRef(null);
@@ -235,6 +238,15 @@ const JobCard = ({ job, onEdit, onDelete, onToggleStatus, onFreeBoost, isBusines
               {contractInfo.label}
             </Badge>
 
+            {/* ✅ Affichage du salaire avec période */}
+            {job.salary_min && job.salary_max && (
+              <span className="flex items-center gap-1">
+                <Banknote className="w-3 h-3" />
+                {format(job.salary_min)} – {format(job.salary_max)}
+                {formatSalaryPeriod(job.salary_period, t)}
+              </span>
+            )}
+
             <span className="flex items-center gap-1">
               <Eye className="w-3 h-3" />
               {t('companyJobs.views', { count: job.views_count || 0 })}
@@ -309,7 +321,7 @@ const CompanyJobsPage = () => {
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState(null);
 
-  // ✅ Chargement combiné entreprise + jobs
+  // ✅ Chargement combiné entreprise + jobs avec salary_period
   useEffect(() => {
     if (!user || !activeCompanyId) {
       setJobs([]);

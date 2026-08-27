@@ -741,6 +741,7 @@ const CandidateProfilePage = () => {
     avatar_url: '',
   });
 
+  // ✅ Ajout de desired_salary_period dans l'état
   const [candidateInfo, setCandidateInfo] = useState({
     title: '',
     bio: '',
@@ -750,6 +751,7 @@ const CandidateProfilePage = () => {
     is_open_to_remote: false,
     desired_salary_min: '',
     desired_salary_max: '',
+    desired_salary_period: 'monthly',
     is_visible_in_cv_bank: false,
   });
 
@@ -898,9 +900,9 @@ const CandidateProfilePage = () => {
         years_of_experience: cp.years_of_experience || 0,
         is_available: cp.is_available ?? true,
         is_open_to_remote: cp.is_open_to_remote || false,
-        // ✅ Conversion FCFA → devise locale pour affichage
         desired_salary_min: cp.desired_salary_min ? fromXOF(cp.desired_salary_min) : '',
         desired_salary_max: cp.desired_salary_max ? fromXOF(cp.desired_salary_max) : '',
+        desired_salary_period: cp.desired_salary_period || 'monthly',
         is_visible_in_cv_bank: cp.is_visible_in_cv_bank ?? false,
       });
 
@@ -1175,6 +1177,7 @@ const CandidateProfilePage = () => {
         // ✅ Conversion devise locale → FCFA avant stockage
         desired_salary_min: toXOF(candidateInfo.desired_salary_min),
         desired_salary_max: toXOF(candidateInfo.desired_salary_max),
+        desired_salary_period: candidateInfo.desired_salary_period || 'monthly',
         skills,
         experience: experiences,
         education,
@@ -1823,7 +1826,7 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Salaire souhaité – dynamique */}
+          {/* Salaire souhaité – dynamique avec sélecteur de périodicité */}
           <Card>
             <CardContent className="p-6">
               <SectionHeader
@@ -1831,6 +1834,24 @@ const CandidateProfilePage = () => {
                 title={t('candidateProfilePage.salary.sectionTitle')}
                 description={`${t('candidateProfilePage.salary.sectionDescBase')} (${currentCurrencyLabel})`}
               />
+
+              {/* ✅ Sélecteur de périodicité */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  {t('candidateProfilePage.salary.salaryPeriod')}
+                </label>
+                <select
+                  value={candidateInfo.desired_salary_period || 'monthly'}
+                  onChange={(e) => setCandidateInfo({ ...candidateInfo, desired_salary_period: e.target.value })}
+                  className="w-full sm:w-auto h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="monthly">{t('salaryPeriod.monthly')}</option>
+                  <option value="daily">{t('salaryPeriod.daily')}</option>
+                  <option value="hourly">{t('salaryPeriod.hourly')}</option>
+                  <option value="fixed">{t('salaryPeriod.fixed')}</option>
+                </select>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">

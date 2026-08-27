@@ -9,7 +9,7 @@ import { Badge } from '../components/ui/badge';
 import {
   Loader2, ChevronLeft, FileText, RefreshCw, Banknote, Building2
 } from 'lucide-react';
-import { formatRelative } from '../lib/utils';
+import { formatRelative, formatSalaryPeriod } from '../lib/utils';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 
 // ✅ Skeleton pour une ligne de candidature
@@ -51,7 +51,7 @@ const MyApplicationsPage = () => {
     setLoading(true);
     supabase
       .from('applications')
-      .select('*, job:jobs(title, salary_min, salary_max, company:companies(name, logo_url))')
+      .select('*, job:jobs(title, salary_min, salary_max, salary_period, company:companies(name, logo_url))')
       .eq('candidate_id', user.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
@@ -142,6 +142,7 @@ const MyApplicationsPage = () => {
                             <span className="text-xs text-slate-500 flex items-center gap-1">
                               <Banknote className="w-3 h-3" />
                               {format(salaryMin)} – {format(salaryMax)}
+                              {formatSalaryPeriod(app.job?.salary_period, t)}
                             </span>
                           )}
                           <span className="text-xs text-slate-400">{formatRelative(app.created_at)}</span>

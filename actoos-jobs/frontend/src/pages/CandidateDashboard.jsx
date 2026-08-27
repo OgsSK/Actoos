@@ -15,7 +15,7 @@ import {
   TrendingUp, Target, BookOpen, Upload, Mail, Building2,
   Sparkles, Banknote, Star, ThumbsUp,
 } from 'lucide-react';
-import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
+import { cn, formatRelative, CONTRACT_TYPES, formatSalaryPeriod } from '../lib/utils';
 import { toast } from 'sonner';
 
 // ---------- Stats Card ----------
@@ -73,6 +73,7 @@ const ApplicationCard = ({ application }) => {
 // ---------- Saved Job Card ----------
 const SavedJobCard = ({ job, onRemove }) => {
   const { t } = useTranslation();
+  const { format } = useCurrencyFormatter();
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   const logoUrl = job.company?.logo_url;
   return (
@@ -87,6 +88,9 @@ const SavedJobCard = ({ job, onRemove }) => {
             <span className="line-clamp-1">{job.company?.name || t('candidateDashboard.applications.defaultCompany')}</span>
             <span>•</span>
             <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.city?.name || t('candidateDashboard.savedJobs.unspecifiedLocation')}</span>
+            {job.salary_min && job.salary_max && (
+              <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{format(job.salary_min)} – {format(job.salary_max)}{formatSalaryPeriod(job.salary_period, t)}</span>
+            )}
           </div>
         </div>
         <Badge className={cn(contractInfo.color, 'border-0 shrink-0 text-xs')}>{contractInfo.label}</Badge>
@@ -168,7 +172,7 @@ const CandidateDashboard = () => {
       try {
         const { data: jobs, error } = await supabase
           .from('jobs')
-          .select('id, title, salary_min, salary_max, skills_required, is_remote, city_id, company:companies(name, logo_url), city:cities(name)')
+          .select('id, title, salary_min, salary_max, salary_period, skills_required, is_remote, city_id, company:companies(name, logo_url), city:cities(name)')
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(50);
@@ -225,7 +229,7 @@ const CandidateDashboard = () => {
       const { data: appsData } = await supabase.from('applications').select('*, job:jobs(id, title, contract_type, company:companies(name, logo_url), city:cities(name))').eq('candidate_id', user.id).order('created_at', { ascending: false }).limit(5);
       setApplications(appsData || []);
 
-      const { data: savedData } = await supabase.from('saved_jobs').select('*, job:jobs(id, title, contract_type, company:companies(name, logo_url), city:cities(name))').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5);
+      const { data: savedData } = await supabase.from('saved_jobs').select('*, job:jobs(id, title, contract_type, salary_min, salary_max, salary_period, company:companies(name, logo_url), city:cities(name))').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5);
       setSavedJobs(savedData?.map(s => s.job).filter(Boolean) || []);
 
       const { count } = await supabase.from('job_alerts').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_active', true);
@@ -361,7 +365,7 @@ const CandidateDashboard = () => {
                         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.city?.name || t('common.unspecified')}</span>
                           {job.salary_min && job.salary_max && (
-                            <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{format(job.salary_min)} – {format(job.salary_max)}</span>
+                            <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{format(job.salary_min)} – {format(job.salary_max)}{formatSalaryPeriod(job.salary_period, t)}</span>
                           )}
                         </div>
                       </Link>

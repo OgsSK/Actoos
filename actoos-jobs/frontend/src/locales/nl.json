@@ -2091,7 +2091,18 @@
         "errorGeneric": "Er is een fout opgetreden."
       }
     },
+      "salaryPeriod": {
+      "monthly": "Per maand",
+      "daily": "Per dag",
+      "hourly": "Per uur",
+      "fixed": "Vast bedrag / Vast",
+      "monthlyShort": "maand",
+      "dailyShort": "dag",
+      "hourlyShort": "uur",
+      "fixedShort": "(vast)"
+    },
     "createJob": {
+      
       "iaProgress": {
       "analyzing": "Titel analyseren...",
       "generating": "Genereren...",
@@ -2121,6 +2132,7 @@
         "dates": "Data"
       },
       "labels": {
+        "salaryPeriod": "Salarisperiode",
         "title": "Vacaturetitel",
         "category": "Categorie",
         "contractType": "Contracttype",

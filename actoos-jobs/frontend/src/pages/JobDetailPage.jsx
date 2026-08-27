@@ -15,7 +15,7 @@ import {
   Briefcase, CheckCircle, Clock, ExternalLink, Send, Share2,
   Users, GraduationCap
 } from 'lucide-react';
-import { CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
+import { CONTRACT_TYPES, EXPERIENCE_LEVELS, formatSalaryPeriod } from '../lib/utils';
 
 const BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:8001'
@@ -81,7 +81,10 @@ const SimpleJobCard = ({ job, t, format, applicationStatus }) => {
                 )}
                 <Badge className={`${contractInfo.color} text-xs shrink-0`}>{t(contractInfo.key)}</Badge>
                 {job.salary_min && job.salary_max && (
-                  <span className="font-medium text-slate-700 whitespace-nowrap">{format(job.salary_min)} – {format(job.salary_max)}</span>
+                  <span className="font-medium text-slate-700 whitespace-nowrap">
+                    {format(job.salary_min)} – {format(job.salary_max)}
+                    {formatSalaryPeriod(job.salary_period, t)}
+                  </span>
                 )}
               </div>
             </div>
@@ -160,7 +163,7 @@ const JobDetailPage = () => {
     const fetchSimilar = async () => {
       try {
         const skills = job.skills_required || [], categoryId = job.category_id, contractType = job.contract_type;
-        let query = supabase.from('jobs').select('id, title, contract_type, salary_min, salary_max, company:companies(name, logo_url), city:cities(name)').eq('status', 'active').neq('id', job.id).order('boosted_until', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(6);
+        let query = supabase.from('jobs').select('id, title, contract_type, salary_min, salary_max, salary_period, company:companies(name, logo_url), city:cities(name)').eq('status', 'active').neq('id', job.id).order('boosted_until', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(6);
         const conditions = [];
         if (categoryId) conditions.push(`category_id.eq.${categoryId}`);
         if (skills.length > 0) conditions.push(`skills_required.ov.{${skills.join(',')}}`);
@@ -271,7 +274,9 @@ const JobDetailPage = () => {
                   <Badge className={`${contractInfo.color} border-0`}>{t(contractInfo.key)}</Badge>
                   {job.salary_min && job.salary_max && (
                     <Badge variant="outline" className="border-slate-200 text-slate-700">
-                      <Banknote className="w-3.5 h-3.5 mr-1" />{format(job.salary_min)} – {format(job.salary_max)}
+                      <Banknote className="w-3.5 h-3.5 mr-1" />
+                      {format(job.salary_min)} – {format(job.salary_max)}
+                      {formatSalaryPeriod(job.salary_period, t)}
                     </Badge>
                   )}
                   {isBoosted && <Badge className="bg-purple-100 text-purple-700 border-purple-200">🚀 {t('jobDetail.boosted')}</Badge>}

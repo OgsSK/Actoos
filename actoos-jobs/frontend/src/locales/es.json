@@ -2023,7 +2023,18 @@
         "errorGeneric": "Ocurrió un error."
       }
     },
+     "salaryPeriod": {
+      "monthly": "Por mes",
+      "daily": "Por día",
+      "hourly": "Por hora",
+      "fixed": "Tarifa plana / Fijo",
+      "monthlyShort": "mes",
+      "dailyShort": "día",
+      "hourlyShort": "hora",
+      "fixedShort": "(fijo)"
+    },
     "createJob": {
+     
       "iaProgress": {
       "analyzing": "Analizando título...",
       "generating": "Generando...",
@@ -2053,6 +2064,7 @@
         "dates": "Fechas"
       },
       "labels": {
+        "salaryPeriod": "Periodicidad del salario",
         "title": "Título de la oferta",
         "category": "Categoría",
         "contractType": "Tipo de contrato",

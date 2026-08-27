@@ -13,6 +13,7 @@ import {
   Crown, Download, DollarSign, BookOpen, X, Phone, AlertTriangle, RefreshCw
 } from 'lucide-react';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
+import { formatSalaryPeriod } from '../lib/utils';
 
 const PAGE_SIZE = 12;
 
@@ -96,8 +97,8 @@ const CandidateBankPage = () => {
   };
 
   const [candidates, setCandidates] = useState([]);
-  const [initialLoading, setInitialLoading] = useState(true); // ✅ Premier chargement uniquement
-  const [loading, setLoading] = useState(false); // Chargements suivants
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -289,6 +290,7 @@ const CandidateBankPage = () => {
         is_open_to_remote: c.is_open_to_remote,
         desired_salary_min: c.desired_salary_min,
         desired_salary_max: c.desired_salary_max,
+        desired_salary_period: c.desired_salary_period || 'monthly', // ✅ NOUVEAU
         skills: c.skills || [],
         experience: c.experience || [],
         education: c.education || [],
@@ -504,7 +506,19 @@ const CandidateBankPage = () => {
                                 <div className="text-sm text-slate-600 space-y-3 mt-auto min-w-0">
                                   {lastExperience && <div className="flex items-center gap-3 min-w-0"><Clock className="w-4 h-4 text-slate-400 shrink-0" /><div className="truncate font-medium">{lastExperience.title} – <span className="text-slate-500">{lastExperience.company}</span></div></div>}
                                   {lastEducation && <div className="flex items-center gap-3 min-w-0"><BookOpen className="w-4 h-4 text-slate-400 shrink-0" /><div className="truncate font-medium">{lastEducation.title} – <span className="text-slate-500">{lastEducation.school || lastEducation.institution}</span></div></div>}
-                                  {(c.desired_salary_min || c.desired_salary_max) && <div className="flex items-center gap-3 min-w-0"><DollarSign className="w-4 h-4 text-slate-400 shrink-0" /><div className="truncate font-semibold text-slate-800">{c.desired_salary_min && c.desired_salary_max ? `${format(c.desired_salary_min)} – ${format(c.desired_salary_max)}` : c.desired_salary_min ? format(c.desired_salary_min) : format(c.desired_salary_max)}</div></div>}
+                                  {(c.desired_salary_min || c.desired_salary_max) && (
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <DollarSign className="w-4 h-4 text-slate-400 shrink-0" />
+                                      <div className="truncate font-semibold text-slate-800">
+                                        {c.desired_salary_min && c.desired_salary_max
+                                          ? `${format(c.desired_salary_min)} – ${format(c.desired_salary_max)}`
+                                          : c.desired_salary_min
+                                            ? format(c.desired_salary_min)
+                                            : format(c.desired_salary_max)}
+                                        {formatSalaryPeriod(c.desired_salary_period, t)}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="flex items-center justify-between mt-5 pt-5 border-t border-slate-100">
                                   <div className="flex items-center gap-2">

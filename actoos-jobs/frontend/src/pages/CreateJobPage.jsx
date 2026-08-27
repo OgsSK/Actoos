@@ -62,6 +62,7 @@ const CreateJobPage = () => {
     experience_level: '',
     salary_min: '',
     salary_max: '',
+    salary_period: 'monthly', // ✅ NOUVEAU
     is_salary_visible: true,
     city_id: '',
     address: '',
@@ -135,6 +136,7 @@ const CreateJobPage = () => {
         experience_level: data.experience_level || '',
         salary_min: displaySalaryMin,
         salary_max: displaySalaryMax,
+        salary_period: data.salary_period || 'monthly', // ✅ NOUVEAU
         is_salary_visible: data.is_salary_visible ?? true,
         city_id: data.city_id || '',
         address: data.address || '',
@@ -163,7 +165,7 @@ const CreateJobPage = () => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
   };
 
-  // ---------- Génération IA avec annulation ----------
+  // ---------- Génération IA avec détection automatique du salary_period ----------
   const handleGenerateWithIA = async () => {
     if (!form.title.trim()) {
       toast.error(t('createJob.toasts.titleRequiredForIA'));
@@ -223,6 +225,20 @@ const CreateJobPage = () => {
       const generated = JSON.parse(data.result);
       setIaGeneratedData(generated);
 
+      // ✅ Détection automatique du salary_period par l'IA
+      // L'IA peut renvoyer un champ "salary_period" (monthly, daily, hourly, fixed)
+      // Si absent, on déduit à partir du contexte (titre, contrat, etc.)
+      let detectedPeriod = generated.salary_period || 'monthly';
+      // Si le titre contient des indices, on surcharge
+      const titleLower = form.title.toLowerCase();
+      if (titleLower.includes('freelance') || titleLower.includes('consultant') || titleLower.includes('mission')) {
+        detectedPeriod = 'daily';
+      } else if (titleLower.includes('temps partiel') || titleLower.includes('hour') || titleLower.includes('horaire')) {
+        detectedPeriod = 'hourly';
+      } else if (titleLower.includes('forfait') || titleLower.includes('projet') || titleLower.includes('prestation')) {
+        detectedPeriod = 'fixed';
+      }
+
       setForm(prev => ({
         ...prev,
         title: generated.title || prev.title,
@@ -234,6 +250,7 @@ const CreateJobPage = () => {
         experience_level: generated.experience_level || prev.experience_level,
         salary_min: generated.salary_min ? String(generated.salary_min) : prev.salary_min,
         salary_max: generated.salary_max ? String(generated.salary_max) : prev.salary_max,
+        salary_period: detectedPeriod, // ✅ NOUVEAU
         is_remote: generated.is_remote ?? prev.is_remote,
         skills_required: generated.skills_required || prev.skills_required,
         category_id: generated.category_slug
@@ -354,6 +371,7 @@ const CreateJobPage = () => {
         salary_min: toXOF(form.salary_min),
         salary_max: toXOF(form.salary_max),
         salary_currency: 'XOF',
+        salary_period: form.salary_period, // ✅ NOUVEAU
         is_salary_visible: form.is_salary_visible,
         city_id: form.city_id || null,
         country_id: countryId,
@@ -499,6 +517,14 @@ const CreateJobPage = () => {
     if (showUnverifiedBanner) return true;
     return saving;
   };
+
+  // ✅ Options de périodicité
+  const salaryPeriodOptions = [
+    { value: 'monthly', label: t('salaryPeriod.monthly') },
+    { value: 'daily', label: t('salaryPeriod.daily') },
+    { value: 'hourly', label: t('salaryPeriod.hourly') },
+    { value: 'fixed', label: t('salaryPeriod.fixed') },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20" data-testid="create-job-page">
@@ -727,10 +753,26 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Salaire */}
+          {/* Salaire avec périodicité */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2"><DollarSign className="w-5 h-5 text-blue-600" />{t('createJob.sections.salary')}</h2>
+
+              {/* ✅ Sélecteur de périodicité */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.salaryPeriod')}</label>
+                <select
+                  value={form.salary_period}
+                  onChange={(e) => setForm({ ...form, salary_period: e.target.value })}
+                  className="w-full sm:w-auto h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  data-testid="job-salary-period-select"
+                >
+                  {salaryPeriodOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.salaryMin')}</label>

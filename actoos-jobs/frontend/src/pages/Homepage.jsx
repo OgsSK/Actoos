@@ -15,7 +15,7 @@ import {
   ArrowRight, Sparkles, Heart, Loader2, Clock, Plus,
   Shield, TrendingUp,
 } from 'lucide-react';
-import { cn, formatRelative, CONTRACT_TYPES } from '../lib/utils';
+import { cn, formatRelative, CONTRACT_TYPES, formatSalaryPeriod } from '../lib/utils';
 import { toast } from 'sonner';
 
 // ✅ Skeleton pour une carte d'offre
@@ -248,7 +248,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
       setLoading(true);
       try {
         const now = new Date().toISOString();
-        let query = supabase.from('jobs').select(`id, title, contract_type, salary_min, salary_max, created_at, is_urgent, is_remote, remote_type, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
+        let query = supabase.from('jobs').select(`id, title, contract_type, salary_min, salary_max, salary_period, created_at, is_urgent, is_remote, remote_type, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
           .eq('status', 'active').or(`expires_at.is.null,expires_at.gte.${now}`).in('company_id', activeCompanyIds)
           .order('boosted_until', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(6);
         if (countryId) query = query.eq('country_id', countryId);
@@ -336,7 +336,14 @@ const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
         </div>
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
           <div className="text-sm">
-            {job.salary_min && job.salary_max ? <span className="font-semibold text-slate-800">{format(job.salary_min)} – {format(job.salary_max)}</span> : <span className="text-slate-500 text-sm">{t('home.jobs.unspecified')}</span>}
+            {job.salary_min && job.salary_max ? (
+              <span className="font-semibold text-slate-800">
+                {format(job.salary_min)} – {format(job.salary_max)}
+                {formatSalaryPeriod(job.salary_period, t)}
+              </span>
+            ) : (
+              <span className="text-slate-500 text-sm">{t('home.jobs.unspecified')}</span>
+            )}
           </div>
           <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelative(job.created_at)}</span>
         </div>

@@ -2130,7 +2130,18 @@
         "errorGeneric": "Ein Fehler ist aufgetreten."
       }
     },
+    "salaryPeriod": {
+      "monthly": "Pro Monat",
+      "daily": "Pro Tag",
+      "hourly": "Pro Stunde",
+      "fixed": "Pauschale / Fix",
+      "monthlyShort": "Monat",
+      "dailyShort": "Tag",
+      "hourlyShort": "Stunde",
+      "fixedShort": "(Pauschale)"
+    },
     "createJob": {
+      
        "iaProgress": {
       "analyzing": "Titel wird analysiert...",
       "generating": "Generierung läuft...",
@@ -2160,6 +2171,7 @@
         "dates": "Daten"
       },
       "labels": {
+        "salaryPeriod": "Gehaltsperiode",
         "title": "Stellentitel",
         "category": "Kategorie",
         "contractType": "Vertragsart",

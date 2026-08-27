@@ -99,37 +99,66 @@ const CompanyJobCard = ({ job, onEdit, onDelete, onToggleStatus, onSubmitForRevi
   const openMenu = () => { if (!showMenu) updateMenuPosition(); setShowMenu(prev => !prev); };
   useEffect(() => { if (!showMenu) return; const close = () => setShowMenu(false); const reposition = () => updateMenuPosition(); window.addEventListener('resize', reposition); window.addEventListener('scroll', close, true); return () => { window.removeEventListener('resize', reposition); window.removeEventListener('scroll', close, true); }; }, [showMenu]);
 
+  // ✅ Menu avec "Modifier" toujours présent (comme dans CompanyJobsPage)
   const menu = showMenu ? createPortal(
     <>
       <div className="fixed inset-0 z-[9998]" onClick={() => setShowMenu(false)} />
       <div className="fixed z-[9999] w-[240px] max-w-[calc(100vw-24px)] bg-white rounded-xl shadow-2xl border border-slate-200 py-1" style={{ top: menuPos.top, left: menuPos.left }}>
+        {/* ✅ Modifier toujours présent (clé companyJobs.menu.edit) */}
+        <button onClick={() => { onEdit(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50">
+          <Edit className="w-4 h-4" />{t('companyJobs.menu.edit')}
+        </button>
+
+        <Link to="/dashboard/entreprise/candidatures" onClick={() => setShowMenu(false)} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50">
+          <Users className="w-4 h-4" />{t('companyDashboard.jobCard.menu.viewApplications')}
+        </Link>
+
         {(effectiveStatus === 'draft' || effectiveStatus === 'rejected') && (
-          <button onClick={() => { onEdit(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"><Edit className="w-4 h-4" />{t('companyDashboard.jobCard.menu.edit')}</button>
+          <button onClick={() => { if (!isCompanyVerified) { toast.error(t('companyDashboard.toasts.companyNotVerifiedMenu')); setShowMenu(false); return; } onSubmitForReview(job); setShowMenu(false); }} disabled={!isCompanyVerified} className={cn('w-full flex items-center gap-2 px-4 py-3 text-sm', isCompanyVerified ? 'text-blue-600 hover:bg-slate-50' : 'text-slate-400 cursor-not-allowed')}>
+            <Send className="w-4 h-4" />{isCompanyVerified ? t('companyDashboard.jobCard.menu.submitForValidation') : t('companyDashboard.jobCard.menu.validationRequired')}
+          </button>
         )}
-        <Link to="/dashboard/entreprise/candidatures" onClick={() => setShowMenu(false)} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"><Users className="w-4 h-4" />{t('companyDashboard.jobCard.menu.viewApplications')}</Link>
-        {(effectiveStatus === 'draft' || effectiveStatus === 'rejected') && (
-          <button onClick={() => { if (!isCompanyVerified) { toast.error(t('companyDashboard.toasts.companyNotVerifiedMenu')); setShowMenu(false); return; } onSubmitForReview(job); setShowMenu(false); }} disabled={!isCompanyVerified} className={cn('w-full flex items-center gap-2 px-4 py-3 text-sm', isCompanyVerified ? 'text-blue-600 hover:bg-slate-50' : 'text-slate-400 cursor-not-allowed')}><Send className="w-4 h-4" />{isCompanyVerified ? t('companyDashboard.jobCard.menu.submitForValidation') : t('companyDashboard.jobCard.menu.validationRequired')}</button>
-        )}
+
         {effectiveStatus === 'pending' && (
-          <button onClick={() => { onCancelSubmission(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-amber-600 hover:bg-slate-50"><Undo2 className="w-4 h-4" />{t('companyDashboard.jobCard.menu.cancelSubmission')}</button>
+          <button onClick={() => { onCancelSubmission(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-amber-600 hover:bg-slate-50">
+            <Undo2 className="w-4 h-4" />{t('companyDashboard.jobCard.menu.cancelSubmission')}
+          </button>
         )}
+
         {effectiveStatus === 'active' && isBusinessPlan && (
-          <button onClick={() => { onFreeBoost(job.id); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-purple-600 hover:bg-purple-50"><Sparkles className="w-4 h-4" />{t('companyDashboard.jobCard.menu.freeBoost')}</button>
+          <button onClick={() => { onFreeBoost(job.id); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-purple-600 hover:bg-purple-50">
+            <Sparkles className="w-4 h-4" />{t('companyDashboard.jobCard.menu.freeBoost')}
+          </button>
         )}
+
         {effectiveStatus === 'active' && (
-          <button onClick={() => { onToggleStatus(job, 'paused'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-yellow-600 hover:bg-slate-50"><Clock className="w-4 h-4" />{t('companyDashboard.jobCard.menu.pause')}</button>
+          <button onClick={() => { onToggleStatus(job, 'paused'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-yellow-600 hover:bg-slate-50">
+            <Clock className="w-4 h-4" />{t('companyDashboard.jobCard.menu.pause')}
+          </button>
         )}
+
         {effectiveStatus === 'paused' && (
-          <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"><CheckCircle className="w-4 h-4" />{t('companyDashboard.jobCard.menu.republish')}</button>
+          <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50">
+            <CheckCircle className="w-4 h-4" />{t('companyDashboard.jobCard.menu.republish')}
+          </button>
         )}
+
         {effectiveStatus === 'expired' && (
-          <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"><RefreshCw className="w-4 h-4" />{t('companyJobs.menu.reactivate')}</button>
+          <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50">
+            <RefreshCw className="w-4 h-4" />{t('companyJobs.menu.reactivate')}
+          </button>
         )}
+
         {effectiveStatus === 'closed' && (
-          <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50"><Send className="w-4 h-4" />{t('companyDashboard.jobCard.menu.publish')}</button>
+          <button onClick={() => { onToggleStatus(job, 'active'); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-600 hover:bg-slate-50">
+            <Send className="w-4 h-4" />{t('companyDashboard.jobCard.menu.publish')}
+          </button>
         )}
+
         {effectiveStatus !== 'pending' && (
-          <button onClick={() => { onDelete(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" />{t('companyDashboard.jobCard.menu.delete')}</button>
+          <button onClick={() => { onDelete(job); setShowMenu(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50">
+            <Trash2 className="w-4 h-4" />{t('companyDashboard.jobCard.menu.delete')}
+          </button>
         )}
       </div>
     </>, document.body) : null;

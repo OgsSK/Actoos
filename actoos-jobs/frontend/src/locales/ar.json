@@ -2025,7 +2025,18 @@
         "errorGeneric": "حدث خطأ."
       }
     },
+    "salaryPeriod": {
+      "monthly": "شهرياً",
+      "daily": "يومياً",
+      "hourly": "بالساعة",
+      "fixed": "مبلغ ثابت / ثابت",
+      "monthlyShort": "شهر",
+      "dailyShort": "يوم",
+      "hourlyShort": "ساعة",
+      "fixedShort": "(ثابت)"
+    },
     "createJob": {
+      
       "iaProgress": {
       "analyzing": "تحليل العنوان...",
       "generating": "جارٍ الإنشاء...",
@@ -2055,6 +2066,7 @@
         "dates": "التواريخ"
       },
       "labels": {
+        "salaryPeriod": "دورية الراتب",
         "title": "عنوان الوظيفة",
         "category": "الفئة",
         "contractType": "نوع العقد",

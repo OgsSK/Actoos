@@ -10,7 +10,7 @@ import {
   Loader2, ChevronLeft, Heart, MapPin, Banknote,
   RefreshCw, Building2
 } from 'lucide-react';
-import { CONTRACT_TYPES } from '../lib/utils';
+import { CONTRACT_TYPES, formatSalaryPeriod } from '../lib/utils';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
 
 // ✅ Skeleton pour une offre sauvegardée
@@ -51,7 +51,7 @@ const SavedJobsPage = () => {
     setLoading(true);
     supabase
       .from('saved_jobs')
-      .select('job:jobs(id, title, contract_type, salary_min, salary_max, company:companies(name, logo_url), city:cities(name))')
+      .select('job:jobs(id, title, contract_type, salary_min, salary_max, salary_period, company:companies(name, logo_url), city:cities(name))')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
@@ -151,6 +151,7 @@ const SavedJobsPage = () => {
                                 <span className="flex items-center gap-1">
                                   <Banknote className="w-3 h-3" />
                                   {format(job.salary_min)} – {format(job.salary_max)}
+                                  {formatSalaryPeriod(job.salary_period, t)}
                                 </span>
                               )}
                             </div>

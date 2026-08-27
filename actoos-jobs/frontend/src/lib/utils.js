@@ -58,6 +58,17 @@ export function formatSalary(min, max, currency = 'XOF') {
   return 'Non précisé';
 }
 
+// Ajouter la période de salaire (jour, heure, forfait) après le montant
+export const formatSalaryPeriod = (period, t) => {
+  if (!period || period === 'monthly') return '';
+  const map = {
+    daily: ` / ${t('salaryPeriod.dailyShort', 'jour')}`,
+    hourly: ` / ${t('salaryPeriod.hourlyShort', 'heure')}`,
+    fixed: ` ${t('salaryPeriod.fixedShort', '(forfait)')}`,
+  };
+  return map[period] || '';
+};
+
 // Truncate text
 export function truncate(text, length = 100) {
   if (!text) return '';

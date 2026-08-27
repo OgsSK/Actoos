@@ -1762,12 +1762,23 @@
     "noteDeleted": "Note supprimée."
   }
 },
+ "salaryPeriod": {
+    "monthly": "Par mois",
+    "daily": "Par jour",
+    "hourly": "Par heure",
+    "fixed": "Forfait / Fixe",
+    "monthlyShort": "mois",
+    "dailyShort": "jour",
+    "hourlyShort": "heure",
+    "fixedShort": "(forfait)"
+  },
 "createJob": {
+ 
   "iaProgress": {
       "analyzing": "Analyse du titre...",
       "generating": "Génération de l'offre...",
-      "formatting": "Mise en forme finale...",
-      "generating": "Génération en cours..."
+      "formatting": "Mise en forme finale..."
+      
     },
     "iaCancel": "Annuler",
   "iaGenerate": "Générer avec l'IA",
@@ -1793,6 +1804,7 @@
       "dates": "Dates"
     },
     "labels": {
+      "salaryPeriod": "Périodicité du salaire",
       "title": "Titre de l'offre",
       "category": "Catégorie",
       "contractType": "Type de contrat",
