@@ -37,7 +37,6 @@ export const AuthProvider = ({ children }) => {
       candidate_profile: null,
       subscription_plan: 'free',
       hasCompanies: false,
-      // ✅ Valeurs par défaut pour éviter les déconnexions intempestives
       is_active: true,
       is_banned: false,
     };
@@ -64,7 +63,6 @@ export const AuthProvider = ({ children }) => {
         .maybeSingle();
 
       let subscriptionPlan = 'free';
-      // ✅ Modification : récupère aussi billing_cycle
       const { data: companyData } = await supabase
         .from('companies')
         .select('subscription_plan, billing_cycle')
@@ -137,11 +135,13 @@ export const AuthProvider = ({ children }) => {
     };
   }, [handleSession]);
 
-  const signUp = async ({ email, password, role = 'candidate', firstName, lastName, language }) => {
+  // ✅ Modification : signUp accepte maintenant `companyName` et crée l'entreprise si rôle = company
+  const signUp = async ({ email, password, role = 'candidate', firstName, lastName, language, companyName }) => {
     const cleanLanguage = language ? language.split('-')[0] : 'fr';
 
     const { data, error } = await supabase.auth.signUp({
-      email, password,
+      email,
+      password,
       options: {
         data: {
           role,
@@ -152,11 +152,29 @@ export const AuthProvider = ({ children }) => {
       },
     });
     if (error) throw error;
+
     if (data.user) {
+      // 1. Créer l'utilisateur dans la table users
       await supabase.from('users').insert({
-        id: data.user.id, email, role,
-        first_name: firstName, last_name: lastName,
+        id: data.user.id,
+        email,
+        role,
+        first_name: firstName,
+        last_name: lastName,
       });
+
+      // 2. Si c'est une entreprise, créer également l'entrée dans companies
+      if (role === 'company' && companyName) {
+        const { error: companyError } = await supabase.from('companies').insert({
+          owner_id: data.user.id,
+          name: companyName,
+          is_verified: false, // en attente de validation admin
+        });
+        if (companyError) {
+          console.error('Erreur création entreprise :', companyError);
+          // On ne bloque pas l'inscription, l'entreprise pourra être créée plus tard
+        }
+      }
     }
     return data;
   };
