@@ -2337,46 +2337,50 @@
 
     "settings": {
       "title": "Configurações",
-      "subtitle": "Gerencie sua conta e preferências.",
+      "subtitle": "Gerir a sua conta e preferências.",
       "back": "Voltar",
       "myProfile": "Meu perfil",
       "countryAndCurrency": "País e moeda",
       "country": "País",
-      "selectCountry": "Todos os países",
+      "selectCountry": "Selecionar país",
       "currency": "Moeda",
-      "selectCurrency": "Todas as moedas",
+      "personalInfo": {
+        "title": "Nome e apelido",
+        "description": "Atualize o seu nome e apelido.",
+        "submit": "Guardar"
+      },
       "accountInfo": {
         "title": "Informações da conta",
         "description": "Sessão iniciada como {{email}}"
       },
       "changeEmail": {
         "title": "Alterar email",
-        "description": "Atualize seu endereço de email.",
+        "description": "Atualize o seu endereço de email.",
         "newEmailLabel": "Novo email",
         "newEmailPlaceholder": "novo@email.com",
-        "currentPasswordLabel": "Senha atual",
-        "currentPasswordPlaceholder": "Sua senha",
+        "currentPasswordLabel": "Palavra-passe atual",
+        "currentPasswordPlaceholder": "A sua palavra-passe",
         "submit": "Atualizar email"
       },
       "changePassword": {
-        "title": "Alterar senha",
+        "title": "Alterar palavra-passe",
         "description": "Use pelo menos 8 caracteres.",
-        "newPasswordLabel": "Nova senha",
-        "newPasswordPlaceholder": "Nova senha",
-        "confirmPasswordLabel": "Confirmar senha",
-        "confirmPasswordPlaceholder": "Confirmar senha",
-        "submit": "Salvar senha"
+        "newPasswordLabel": "Nova palavra-passe",
+        "newPasswordPlaceholder": "Nova palavra-passe",
+        "confirmPasswordLabel": "Confirmar palavra-passe",
+        "confirmPasswordPlaceholder": "Confirmar palavra-passe",
+        "submit": "Guardar palavra-passe"
       },
       "logout": {
-        "title": "Sair",
-        "description": "Você poderá entrar novamente a qualquer momento.",
-        "button": "Sair"
+        "title": "Terminar sessão",
+        "description": "Poderá voltar a iniciar sessão a qualquer momento.",
+        "button": "Terminar sessão"
       },
       "dangerZone": {
         "title": "Zona de perigo",
-        "description": "Excluir permanentemente sua conta. Esta ação é irreversível.",
-        "confirm": "Confirma a exclusão da sua conta?",
-        "button": "Excluir minha conta"
+        "description": "Eliminar permanentemente a sua conta. Esta ação é irreversível.",
+        "confirm": "Confirma a eliminação da sua conta?",
+        "button": "Eliminar a minha conta"
       },
       "roleChange": {
         "title": "Mudar de função",
@@ -2389,26 +2393,28 @@
           "roleCompany": "Recrutador",
           "roleCandidate": "Candidato",
           "reasonLabel": "Motivo (opcional)",
-          "reasonPlaceholder": "Explique por que deseja mudar de função…",
+          "reasonPlaceholder": "Explique porque deseja mudar de função...",
           "cancel": "Cancelar",
           "submit": "Enviar pedido"
         }
       },
       "toasts": {
-        "passwordMismatch": "As senhas não coincidem.",
-        "passwordLength": "A senha deve ter no mínimo 8 caracteres.",
-        "passwordUpdated": "Senha atualizada com sucesso.",
-        "passwordError": "Erro ao atualizar a senha.",
+        "passwordMismatch": "As palavras-passe não coincidem.",
+        "passwordLength": "A palavra-passe deve ter no mínimo 8 caracteres.",
+        "passwordUpdated": "Palavra-passe atualizada com sucesso.",
+        "passwordError": "Erro ao atualizar a palavra-passe.",
         "fillAllFields": "Preencha todos os campos.",
-        "wrongPassword": "Senha incorreta.",
-        "emailConfirmationSent": "Um email de confirmação foi enviado. Verifique sua caixa de entrada.",
+        "wrongPassword": "Palavra-passe incorreta.",
+        "emailConfirmationSent": "Foi enviado um email de confirmação. Verifique a sua caixa de entrada.",
         "emailError": "Erro ao alterar o email.",
-        "logoutError": "Erro ao sair.",
-        "accountDeleted": "Sua conta foi excluída permanentemente.",
-        "deleteError": "Erro ao excluir a conta.",
-        "accountSuspended": "Sua conta está suspensa. Ação impossível.",
-        "roleRequestSent": "Seu pedido foi enviado.",
-        "roleRequestError": "Erro ao enviar o pedido."
+        "logoutError": "Erro ao terminar sessão.",
+        "accountDeleted": "A sua conta foi eliminada permanentemente.",
+        "deleteError": "Erro ao eliminar a conta.",
+        "accountSuspended": "A sua conta está suspensa. Ação impossível.",
+        "roleRequestSent": "O seu pedido foi enviado.",
+        "roleRequestError": "Erro ao enviar o pedido.",
+        "profileUpdated": "As suas informações foram atualizadas.",
+        "saveError": "Erro ao guardar."
       }
     },
     "jobs": {
@@ -3106,6 +3112,9 @@
         "deleteError": "Erro ao excluir a foto"
       },
       "personalInfo": {
+        "title": "Nome e apelido",
+        "description": "Atualize o seu nome e apelido.",
+        "submit": "Guardar",
         "sectionTitle": "Informações pessoais",
         "sectionDesc": "Essas informações ficarão visíveis para os recrutadores.",
         "firstName": "Nome",

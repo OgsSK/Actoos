@@ -3107,6 +3107,9 @@
         "deleteError": "خطأ في حذف الصورة"
       },
       "personalInfo": {
+        "title": "الاسم الأول واسم العائلة",
+        "description": "قم بتحديث اسمك الأول واسم عائلتك.",
+        "submit": "حفظ",
         "sectionTitle": "المعلومات الشخصية",
         "sectionDesc": "ستكون هذه المعلومات مرئية لمسؤولي التوظيف.",
         "firstName": "الاسم الأول",
@@ -3356,6 +3359,88 @@
       "copiedShort": "تم النسخ",
       "copied": "تم نسخ الرابط إلى الحافظة!",
       "copyError": "تعذر نسخ الرابط."
+    },
+     "settings": {
+      "title": "الإعدادات",
+      "subtitle": "إدارة حسابك وتفضيلاتك.",
+      "back": "رجوع",
+      "myProfile": "ملفي الشخصي",
+      "countryAndCurrency": "البلد والعملة",
+      "country": "البلد",
+      "selectCountry": "اختر بلداً",
+      "currency": "العملة",
+      "personalInfo": {
+        "title": "الاسم الأول واسم العائلة",
+        "description": "قم بتحديث اسمك الأول واسم عائلتك.",
+        "submit": "حفظ"
+      },
+      "accountInfo": {
+        "title": "معلومات الحساب",
+        "description": "تم تسجيل الدخول باسم {{email}}"
+      },
+      "changeEmail": {
+        "title": "تغيير البريد الإلكتروني",
+        "description": "قم بتحديث عنوان بريدك الإلكتروني.",
+        "newEmailLabel": "البريد الإلكتروني الجديد",
+        "newEmailPlaceholder": "new@email.com",
+        "currentPasswordLabel": "كلمة المرور الحالية",
+        "currentPasswordPlaceholder": "كلمة مرورك",
+        "submit": "تحديث البريد الإلكتروني"
+      },
+      "changePassword": {
+        "title": "تغيير كلمة المرور",
+        "description": "استخدم 8 أحرف على الأقل.",
+        "newPasswordLabel": "كلمة المرور الجديدة",
+        "newPasswordPlaceholder": "كلمة المرور الجديدة",
+        "confirmPasswordLabel": "تأكيد كلمة المرور",
+        "confirmPasswordPlaceholder": "تأكيد كلمة المرور",
+        "submit": "حفظ كلمة المرور"
+      },
+      "logout": {
+        "title": "تسجيل الخروج",
+        "description": "يمكنك إعادة تسجيل الدخول في أي وقت.",
+        "button": "تسجيل الخروج"
+      },
+      "dangerZone": {
+        "title": "منطقة الخطر",
+        "description": "حذف حسابك نهائياً. هذا الإجراء غير قابل للتراجع.",
+        "confirm": "هل تريد بالتأكيد حذف حسابك؟",
+        "button": "حذف حسابي"
+      },
+      "roleChange": {
+        "title": "تغيير الدور",
+        "descriptionCandidate": "أنت <strong>مرشح</strong>. اطلب أن تصبح مسؤول توظيف.",
+        "descriptionCompany": "أنت <strong>مسؤول توظيف</strong>. اطلب أن تصبح مرشحاً.",
+        "requestButton": "طلب تغيير الدور",
+        "modal": {
+          "title": "طلب تغيير الدور",
+          "roleLabel": "الدور الجديد المطلوب",
+          "roleCompany": "مسؤول توظيف",
+          "roleCandidate": "مرشح",
+          "reasonLabel": "السبب (اختياري)",
+          "reasonPlaceholder": "اشرح سبب رغبتك في تغيير الدور...",
+          "cancel": "إلغاء",
+          "submit": "إرسال الطلب"
+        }
+      },
+      "toasts": {
+        "passwordMismatch": "كلمتا المرور غير متطابقتين.",
+        "passwordLength": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.",
+        "passwordUpdated": "تم تحديث كلمة المرور بنجاح.",
+        "passwordError": "خطأ في تحديث كلمة المرور.",
+        "fillAllFields": "يرجى ملء جميع الحقول.",
+        "wrongPassword": "كلمة مرور غير صحيحة.",
+        "emailConfirmationSent": "تم إرسال بريد تأكيد. تحقق من صندوق الوارد الخاص بك.",
+        "emailError": "خطأ في تغيير البريد الإلكتروني.",
+        "logoutError": "خطأ أثناء تسجيل الخروج.",
+        "accountDeleted": "تم حذف حسابك نهائياً.",
+        "deleteError": "خطأ في حذف الحساب.",
+        "accountSuspended": "حسابك معلق. الإجراء غير ممكن.",
+        "roleRequestSent": "تم إرسال طلبك.",
+        "roleRequestError": "خطأ في إرسال الطلب.",
+        "profileUpdated": "تم تحديث معلوماتك.",
+        "saveError": "خطأ أثناء الحفظ."
+      }
     }
 
 

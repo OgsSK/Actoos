@@ -2404,25 +2404,29 @@
 
     "settings": {
       "title": "Instellingen",
-      "subtitle": "Beheer je account en voorkeuren.",
+      "subtitle": "Beheer uw account en voorkeuren.",
       "back": "Terug",
       "myProfile": "Mijn profiel",
       "countryAndCurrency": "Land en munteenheid",
       "country": "Land",
-      "selectCountry": "Alle landen",
+      "selectCountry": "Selecteer een land",
       "currency": "Munteenheid",
-      "selectCurrency": "Alle valuta",
+      "personalInfo": {
+        "title": "Voor- en achternaam",
+        "description": "Werk uw voor- en achternaam bij.",
+        "submit": "Opslaan"
+      },
       "accountInfo": {
         "title": "Accountinformatie",
         "description": "Ingelogd als {{email}}"
       },
       "changeEmail": {
         "title": "E-mail wijzigen",
-        "description": "Werk je e-mailadres bij.",
+        "description": "Werk uw e-mailadres bij.",
         "newEmailLabel": "Nieuwe e-mail",
         "newEmailPlaceholder": "nieuw@email.com",
         "currentPasswordLabel": "Huidig wachtwoord",
-        "currentPasswordPlaceholder": "Je wachtwoord",
+        "currentPasswordPlaceholder": "Uw wachtwoord",
         "submit": "E-mail bijwerken"
       },
       "changePassword": {
@@ -2436,19 +2440,19 @@
       },
       "logout": {
         "title": "Uitloggen",
-        "description": "Je kunt op elk moment opnieuw inloggen.",
+        "description": "U kunt op elk moment opnieuw inloggen.",
         "button": "Uitloggen"
       },
       "dangerZone": {
         "title": "Gevarenzone",
-        "description": "Verwijder je account definitief. Deze actie is onomkeerbaar.",
-        "confirm": "Weet je zeker dat je je account wilt verwijderen?",
+        "description": "Verwijder permanent uw account. Deze actie is onomkeerbaar.",
+        "confirm": "Weet u zeker dat u uw account wilt verwijderen?",
         "button": "Mijn account verwijderen"
       },
       "roleChange": {
         "title": "Rol wijzigen",
-        "descriptionCandidate": "Je bent <strong>kandidaat</strong>. Vraag aan om recruiter te worden.",
-        "descriptionCompany": "Je bent <strong>recruiter</strong>. Vraag aan om kandidaat te worden.",
+        "descriptionCandidate": "U bent <strong>kandidaat</strong>. Vraag aan om recruiter te worden.",
+        "descriptionCompany": "U bent <strong>recruiter</strong>. Vraag aan om kandidaat te worden.",
         "requestButton": "Rolwijziging aanvragen",
         "modal": {
           "title": "Verzoek tot rolwijziging",
@@ -2456,26 +2460,28 @@
           "roleCompany": "Recruiter",
           "roleCandidate": "Kandidaat",
           "reasonLabel": "Reden (optioneel)",
-          "reasonPlaceholder": "Leg uit waarom je van rol wilt wisselen…",
+          "reasonPlaceholder": "Leg uit waarom u van rol wilt wisselen...",
           "cancel": "Annuleren",
           "submit": "Verzoek indienen"
         }
       },
       "toasts": {
         "passwordMismatch": "Wachtwoorden komen niet overeen.",
-        "passwordLength": "Het wachtwoord moet minstens 8 tekens bevatten.",
+        "passwordLength": "Het wachtwoord moet minimaal 8 tekens bevatten.",
         "passwordUpdated": "Wachtwoord succesvol bijgewerkt.",
         "passwordError": "Fout bij het bijwerken van het wachtwoord.",
         "fillAllFields": "Vul alle velden in.",
         "wrongPassword": "Onjuist wachtwoord.",
-        "emailConfirmationSent": "Er is een bevestigingsmail gestuurd. Controleer je inbox.",
+        "emailConfirmationSent": "Er is een bevestigingsmail verstuurd. Controleer uw inbox.",
         "emailError": "Fout bij het wijzigen van de e-mail.",
         "logoutError": "Fout bij het uitloggen.",
-        "accountDeleted": "Je account is definitief verwijderd.",
+        "accountDeleted": "Uw account is permanent verwijderd.",
         "deleteError": "Fout bij het verwijderen van het account.",
-        "accountSuspended": "Je account is geschorst. Actie niet mogelijk.",
-        "roleRequestSent": "Je verzoek is verzonden.",
-        "roleRequestError": "Fout bij het verzenden van het verzoek."
+        "accountSuspended": "Uw account is geschorst. Actie niet mogelijk.",
+        "roleRequestSent": "Uw verzoek is verzonden.",
+        "roleRequestError": "Fout bij het verzenden van het verzoek.",
+        "profileUpdated": "Uw gegevens zijn bijgewerkt.",
+        "saveError": "Fout bij het opslaan."
       }
     },
      "jobs": {
@@ -3173,6 +3179,9 @@
         "deleteError": "Fout bij verwijderen foto"
       },
       "personalInfo": {
+        "title": "Voor- en achternaam",
+        "description": "Werk uw voor- en achternaam bij.",
+        "submit": "Opslaan",
         "sectionTitle": "Persoonlijke informatie",
         "sectionDesc": "Deze informatie is zichtbaar voor recruiters.",
         "firstName": "Voornaam",

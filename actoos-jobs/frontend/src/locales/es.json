@@ -2334,28 +2334,32 @@
     "expert": "Experto (10+ años)"
   },
 
-   "settings": {
+    "settings": {
       "title": "Configuración",
       "subtitle": "Gestiona tu cuenta y preferencias.",
       "back": "Volver",
       "myProfile": "Mi perfil",
       "countryAndCurrency": "País y moneda",
       "country": "País",
-      "selectCountry": "Todos los países",
+      "selectCountry": "Selecciona un país",
       "currency": "Moneda",
-      "selectCurrency": "Todas las monedas",
+      "personalInfo": {
+        "title": "Nombre y apellido",
+        "description": "Actualiza tu nombre y apellido.",
+        "submit": "Guardar"
+      },
       "accountInfo": {
         "title": "Información de la cuenta",
         "description": "Conectado como {{email}}"
       },
       "changeEmail": {
-        "title": "Cambiar email",
-        "description": "Actualiza tu dirección de email.",
-        "newEmailLabel": "Nuevo email",
+        "title": "Cambiar correo electrónico",
+        "description": "Actualiza tu dirección de correo electrónico.",
+        "newEmailLabel": "Nuevo correo electrónico",
         "newEmailPlaceholder": "nuevo@email.com",
         "currentPasswordLabel": "Contraseña actual",
         "currentPasswordPlaceholder": "Tu contraseña",
-        "submit": "Actualizar email"
+        "submit": "Actualizar correo electrónico"
       },
       "changePassword": {
         "title": "Cambiar contraseña",
@@ -2373,7 +2377,7 @@
       },
       "dangerZone": {
         "title": "Zona peligrosa",
-        "description": "Elimina definitivamente tu cuenta. Esta acción es irreversible.",
+        "description": "Elimina permanentemente tu cuenta. Esta acción es irreversible.",
         "confirm": "¿Confirmas la eliminación de tu cuenta?",
         "button": "Eliminar mi cuenta"
       },
@@ -2388,7 +2392,7 @@
           "roleCompany": "Reclutador",
           "roleCandidate": "Candidato",
           "reasonLabel": "Motivo (opcional)",
-          "reasonPlaceholder": "Explica por qué quieres cambiar de rol…",
+          "reasonPlaceholder": "Explica por qué quieres cambiar de rol...",
           "cancel": "Cancelar",
           "submit": "Enviar solicitud"
         }
@@ -2398,16 +2402,18 @@
         "passwordLength": "La contraseña debe tener al menos 8 caracteres.",
         "passwordUpdated": "Contraseña actualizada correctamente.",
         "passwordError": "Error al actualizar la contraseña.",
-        "fillAllFields": "Completa todos los campos.",
+        "fillAllFields": "Por favor, rellena todos los campos.",
         "wrongPassword": "Contraseña incorrecta.",
-        "emailConfirmationSent": "Se ha enviado un correo de confirmación. Revisa tu bandeja.",
-        "emailError": "Error al cambiar el email.",
+        "emailConfirmationSent": "Se ha enviado un correo de confirmación. Revisa tu bandeja de entrada.",
+        "emailError": "Error al cambiar el correo electrónico.",
         "logoutError": "Error al cerrar sesión.",
-        "accountDeleted": "Tu cuenta ha sido eliminada definitivamente.",
+        "accountDeleted": "Tu cuenta ha sido eliminada permanentemente.",
         "deleteError": "Error al eliminar la cuenta.",
         "accountSuspended": "Tu cuenta está suspendida. Acción imposible.",
         "roleRequestSent": "Tu solicitud ha sido enviada.",
-        "roleRequestError": "Error al enviar la solicitud."
+        "roleRequestError": "Error al enviar la solicitud.",
+        "profileUpdated": "Tu información ha sido actualizada.",
+        "saveError": "Error al guardar."
       }
     },
     "jobs": {
@@ -3106,6 +3112,9 @@
         "deleteError": "Error al eliminar la foto"
       },
       "personalInfo": {
+        "title": "Nombre y apellido",
+        "description": "Actualice su nombre y apellido.",
+        "submit": "Guardar",
         "sectionTitle": "Información personal",
         "sectionDesc": "Esta información será visible para los reclutadores.",
         "firstName": "Nombre",

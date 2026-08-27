@@ -2337,16 +2337,20 @@
     "expert": "Esperto (10+ anni)"
   },
 
-    "settings": {
+     "settings": {
       "title": "Impostazioni",
       "subtitle": "Gestisci il tuo account e le tue preferenze.",
       "back": "Indietro",
       "myProfile": "Il mio profilo",
       "countryAndCurrency": "Paese e valuta",
       "country": "Paese",
-      "selectCountry": "Tutti i paesi",
+      "selectCountry": "Seleziona un paese",
       "currency": "Valuta",
-      "selectCurrency": "Tutte le valute",
+      "personalInfo": {
+        "title": "Nome e cognome",
+        "description": "Aggiorna il tuo nome e cognome.",
+        "submit": "Salva"
+      },
       "accountInfo": {
         "title": "Informazioni account",
         "description": "Connesso come {{email}}"
@@ -2376,7 +2380,7 @@
       },
       "dangerZone": {
         "title": "Zona pericolosa",
-        "description": "Elimina definitivamente il tuo account. Questa azione è irreversibile.",
+        "description": "Elimina permanentemente il tuo account. Questa azione è irreversibile.",
         "confirm": "Confermi l'eliminazione del tuo account?",
         "button": "Elimina il mio account"
       },
@@ -2391,26 +2395,28 @@
           "roleCompany": "Reclutatore",
           "roleCandidate": "Candidato",
           "reasonLabel": "Motivo (opzionale)",
-          "reasonPlaceholder": "Spiega perché desideri cambiare ruolo…",
+          "reasonPlaceholder": "Spiega perché desideri cambiare ruolo...",
           "cancel": "Annulla",
           "submit": "Invia richiesta"
         }
       },
       "toasts": {
-        "passwordMismatch": "Le password non corrispondono.",
+        "passwordMismatch": "Le password non coincidono.",
         "passwordLength": "La password deve contenere almeno 8 caratteri.",
         "passwordUpdated": "Password aggiornata con successo.",
         "passwordError": "Errore nell'aggiornamento della password.",
         "fillAllFields": "Compila tutti i campi.",
         "wrongPassword": "Password errata.",
-        "emailConfirmationSent": "Un'email di conferma è stata inviata. Controlla la tua casella.",
+        "emailConfirmationSent": "È stata inviata un'email di conferma. Controlla la tua casella di posta.",
         "emailError": "Errore nel cambio dell'email.",
         "logoutError": "Errore durante la disconnessione.",
-        "accountDeleted": "Il tuo account è stato eliminato definitivamente.",
+        "accountDeleted": "Il tuo account è stato eliminato permanentemente.",
         "deleteError": "Errore nell'eliminazione dell'account.",
         "accountSuspended": "Il tuo account è sospeso. Azione impossibile.",
         "roleRequestSent": "La tua richiesta è stata inviata.",
-        "roleRequestError": "Errore nell'invio della richiesta."
+        "roleRequestError": "Errore nell'invio della richiesta.",
+        "profileUpdated": "Le tue informazioni sono state aggiornate.",
+        "saveError": "Errore durante il salvataggio."
       }
     },
      "jobs": {
@@ -3109,6 +3115,9 @@
         "deleteError": "Errore durante l'eliminazione della foto"
       },
       "personalInfo": {
+        "title": "Nome e cognome",
+        "description": "Aggiorna il tuo nome e cognome.",
+        "submit": "Salva",
         "sectionTitle": "Informazioni personali",
         "sectionDesc": "Queste informazioni saranno visibili ai reclutatori.",
         "firstName": "Nome",

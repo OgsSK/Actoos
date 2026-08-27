@@ -90,63 +90,63 @@
     }
   },
  "settings": {
-    "title": "Paramètres",
-    "subtitle": "Gérez votre compte et vos préférences.",
     "back": "Retour",
     "myProfile": "Mon profil",
-    "countryAndCurrency": "Pays et devise",
-    "country": "Pays",
-    "selectCountry": "Tous les pays",
-    "currency": "Devise",
-    "selectCurrency": "Toutes les devises",
+    "title": "Paramètres",
+    "subtitle": "Gérez votre compte et vos préférences",
     "accountInfo": {
       "title": "Informations du compte",
       "description": "Connecté en tant que {{email}}"
     },
+    "personalInfo": {
+      "title": "Nom et prénom",
+      "description": "Mettez à jour votre nom et prénom.",
+      "submit": "Enregistrer"
+    },
     "changeEmail": {
       "title": "Changer l'email",
-      "description": "Mettez à jour votre adresse email.",
+      "description": "Mettez à jour votre adresse email",
       "newEmailLabel": "Nouvel email",
-      "newEmailPlaceholder": "nouveau@email.com",
+      "newEmailPlaceholder": "exemple@domaine.com",
       "currentPasswordLabel": "Mot de passe actuel",
       "currentPasswordPlaceholder": "Votre mot de passe",
       "submit": "Mettre à jour l'email"
     },
     "changePassword": {
       "title": "Changer le mot de passe",
-      "description": "Utilisez au moins 8 caractères.",
+      "description": "Choisissez un mot de passe sécurisé",
       "newPasswordLabel": "Nouveau mot de passe",
-      "newPasswordPlaceholder": "Nouveau mot de passe",
+      "newPasswordPlaceholder": "8 caractères minimum",
       "confirmPasswordLabel": "Confirmer le mot de passe",
-      "confirmPasswordPlaceholder": "Confirmer le mot de passe",
-      "submit": "Enregistrer le mot de passe"
+      "confirmPasswordPlaceholder": "Répétez le mot de passe",
+      "submit": "Mettre à jour le mot de passe"
     },
     "logout": {
-      "title": "Se déconnecter",
-      "description": "Vous pourrez vous reconnecter à tout moment.",
+      "title": "Déconnexion",
+      "description": "Vous pourrez vous reconnecter à tout moment",
       "button": "Se déconnecter"
     },
-    "dangerZone": {
-      "title": "Zone dangereuse",
-      "description": "Supprimez définitivement votre compte. Cette action est irréversible.",
-      "confirm": "Confirmez-vous la suppression de votre compte ?",
-      "button": "Supprimer mon compte"
-    },
     "roleChange": {
-      "title": "Changer de rôle",
-      "descriptionCandidate": "Vous êtes <strong>candidat</strong>. Demandez à devenir recruteur.",
-      "descriptionCompany": "Vous êtes <strong>recruteur</strong>. Demandez à devenir candidat.",
-      "requestButton": "Demander un changement de rôle",
+      "title": "Changer de type de compte",
+      "descriptionCandidate": "Vous êtes actuellement <strong>candidat</strong>. Vous pouvez demander à devenir <strong>recruteur</strong>.",
+      "descriptionCompany": "Vous êtes actuellement <strong>recruteur</strong>. Vous pouvez demander à redevenir <strong>candidat</strong>.",
+      "requestButton": "Demander un changement",
       "modal": {
         "title": "Demande de changement de rôle",
         "roleLabel": "Nouveau rôle souhaité",
         "roleCompany": "Recruteur",
         "roleCandidate": "Candidat",
-        "reasonLabel": "Raison (optionnelle)",
-        "reasonPlaceholder": "Expliquez pourquoi vous souhaitez changer de rôle...",
+        "reasonLabel": "Pourquoi souhaitez-vous changer ?",
+        "reasonPlaceholder": "Expliquez votre motivation en quelques mots…",
         "cancel": "Annuler",
         "submit": "Envoyer la demande"
       }
+    },
+    "dangerZone": {
+      "title": "Zone dangereuse",
+      "description": "La suppression de votre compte est définitive et irréversible.",
+      "button": "Supprimer mon compte",
+      "confirm": "Êtes-vous sûr de vouloir supprimer définitivement votre compte ?"
     },
     "toasts": {
       "passwordMismatch": "Les mots de passe ne correspondent pas.",
@@ -154,15 +154,16 @@
       "passwordUpdated": "Mot de passe mis à jour avec succès.",
       "passwordError": "Erreur lors de la mise à jour du mot de passe.",
       "fillAllFields": "Veuillez remplir tous les champs.",
-      "wrongPassword": "Mot de passe incorrect.",
-      "emailConfirmationSent": "Un email de confirmation a été envoyé. Vérifiez votre boîte.",
-      "emailError": "Erreur lors du changement d'email.",
+      "wrongPassword": "Mot de passe actuel incorrect.",
+      "emailConfirmationSent": "Un email de confirmation a été envoyé à votre nouvelle adresse.",
+      "emailError": "Erreur lors de la mise à jour de l'email.",
       "logoutError": "Erreur lors de la déconnexion.",
-      "accountDeleted": "Votre compte a été supprimé définitivement.",
+      "accountDeleted": "Votre compte a été supprimé.",
       "deleteError": "Erreur lors de la suppression du compte.",
-      "accountSuspended": "Votre compte est suspendu. Action impossible.",
-      "roleRequestSent": "Votre demande a été envoyée.",
-      "roleRequestError": "Erreur lors de l'envoi de la demande."
+      "roleRequestSent": "Votre demande de changement de rôle a été envoyée.",
+      "roleRequestError": "Erreur lors de l'envoi de la demande.",
+      "profileUpdated": "Vos informations ont été mises à jour.",
+      "saveError": "Erreur lors de l'enregistrement."
     }
   },
   "jobs": {
@@ -2075,81 +2076,88 @@
   },
 
   
-   "settings": {
-    "title": "Paramètres",
-    "subtitle": "Gérez votre compte et vos préférences.",
-    "back": "Retour",
-    "myProfile": "Mon profil",
-    "countryAndCurrency": "Pays et devise",
-    "country": "Pays",
-    "selectCountry": "Sélectionnez un pays",
-    "currency": "Devise",
-    "accountInfo": {
-      "title": "Informations du compte",
-      "description": "Connecté en tant que {{email}}"
-    },
-    "changeEmail": {
-      "title": "Changer l'email",
-      "description": "Mettez à jour votre adresse email.",
-      "newEmailLabel": "Nouvel email",
-      "newEmailPlaceholder": "nouveau@email.com",
-      "currentPasswordLabel": "Mot de passe actuel",
-      "currentPasswordPlaceholder": "Votre mot de passe",
-      "submit": "Mettre à jour l'email"
-    },
-    "changePassword": {
-      "title": "Changer le mot de passe",
-      "description": "Utilisez au moins 8 caractères.",
-      "newPasswordLabel": "Nouveau mot de passe",
-      "newPasswordPlaceholder": "Nouveau mot de passe",
-      "confirmPasswordLabel": "Confirmer le mot de passe",
-      "confirmPasswordPlaceholder": "Confirmer le mot de passe",
-      "submit": "Enregistrer le mot de passe"
-    },
-    "logout": {
-      "title": "Se déconnecter",
-      "description": "Vous pourrez vous reconnecter à tout moment.",
-      "button": "Se déconnecter"
-    },
-    "dangerZone": {
-      "title": "Zone dangereuse",
-      "description": "Supprimez définitivement votre compte. Cette action est irréversible.",
-      "confirm": "Confirmez-vous la suppression de votre compte ?",
-      "button": "Supprimer mon compte"
-    },
-    "roleChange": {
-      "title": "Changer de rôle",
-      "descriptionCandidate": "Vous êtes <strong>candidat</strong>. Demandez à devenir recruteur.",
-      "descriptionCompany": "Vous êtes <strong>recruteur</strong>. Demandez à devenir candidat.",
-      "requestButton": "Demander un changement de rôle",
-      "modal": {
-        "title": "Demande de changement de rôle",
-        "roleLabel": "Nouveau rôle souhaité",
-        "roleCompany": "Recruteur",
-        "roleCandidate": "Candidat",
-        "reasonLabel": "Raison (optionnelle)",
-        "reasonPlaceholder": "Expliquez pourquoi vous souhaitez changer de rôle...",
-        "cancel": "Annuler",
-        "submit": "Envoyer la demande"
-      }
-    },
-    "toasts": {
-      "passwordMismatch": "Les mots de passe ne correspondent pas.",
-      "passwordLength": "Le mot de passe doit contenir au moins 8 caractères.",
-      "passwordUpdated": "Mot de passe mis à jour avec succès.",
-      "passwordError": "Erreur lors de la mise à jour du mot de passe.",
-      "fillAllFields": "Veuillez remplir tous les champs.",
-      "wrongPassword": "Mot de passe incorrect.",
-      "emailConfirmationSent": "Un email de confirmation a été envoyé. Vérifiez votre boîte.",
-      "emailError": "Erreur lors du changement d'email.",
-      "logoutError": "Erreur lors de la déconnexion.",
-      "accountDeleted": "Votre compte a été supprimé définitivement.",
-      "deleteError": "Erreur lors de la suppression du compte.",
-      "accountSuspended": "Votre compte est suspendu. Action impossible.",
-      "roleRequestSent": "Votre demande a été envoyée.",
-      "roleRequestError": "Erreur lors de l'envoi de la demande."
+  "settings": {
+  "title": "Paramètres",
+  "subtitle": "Gérez votre compte et vos préférences.",
+  "back": "Retour",
+  "myProfile": "Mon profil",
+  "countryAndCurrency": "Pays et devise",
+  "country": "Pays",
+  "selectCountry": "Sélectionnez un pays",
+  "currency": "Devise",
+  "personalInfo": {
+    "title": "Nom et prénom",
+    "description": "Mettez à jour votre nom et prénom.",
+    "submit": "Enregistrer"
+  },
+  "accountInfo": {
+    "title": "Informations du compte",
+    "description": "Connecté en tant que {{email}}"
+  },
+  "changeEmail": {
+    "title": "Changer l'email",
+    "description": "Mettez à jour votre adresse email.",
+    "newEmailLabel": "Nouvel email",
+    "newEmailPlaceholder": "nouveau@email.com",
+    "currentPasswordLabel": "Mot de passe actuel",
+    "currentPasswordPlaceholder": "Votre mot de passe",
+    "submit": "Mettre à jour l'email"
+  },
+  "changePassword": {
+    "title": "Changer le mot de passe",
+    "description": "Utilisez au moins 8 caractères.",
+    "newPasswordLabel": "Nouveau mot de passe",
+    "newPasswordPlaceholder": "Nouveau mot de passe",
+    "confirmPasswordLabel": "Confirmer le mot de passe",
+    "confirmPasswordPlaceholder": "Confirmer le mot de passe",
+    "submit": "Enregistrer le mot de passe"
+  },
+  "logout": {
+    "title": "Se déconnecter",
+    "description": "Vous pourrez vous reconnecter à tout moment.",
+    "button": "Se déconnecter"
+  },
+  "dangerZone": {
+    "title": "Zone dangereuse",
+    "description": "Supprimez définitivement votre compte. Cette action est irréversible.",
+    "confirm": "Confirmez-vous la suppression de votre compte ?",
+    "button": "Supprimer mon compte"
+  },
+  "roleChange": {
+    "title": "Changer de rôle",
+    "descriptionCandidate": "Vous êtes <strong>candidat</strong>. Demandez à devenir recruteur.",
+    "descriptionCompany": "Vous êtes <strong>recruteur</strong>. Demandez à devenir candidat.",
+    "requestButton": "Demander un changement de rôle",
+    "modal": {
+      "title": "Demande de changement de rôle",
+      "roleLabel": "Nouveau rôle souhaité",
+      "roleCompany": "Recruteur",
+      "roleCandidate": "Candidat",
+      "reasonLabel": "Raison (optionnelle)",
+      "reasonPlaceholder": "Expliquez pourquoi vous souhaitez changer de rôle...",
+      "cancel": "Annuler",
+      "submit": "Envoyer la demande"
     }
   },
+  "toasts": {
+    "passwordMismatch": "Les mots de passe ne correspondent pas.",
+    "passwordLength": "Le mot de passe doit contenir au moins 8 caractères.",
+    "passwordUpdated": "Mot de passe mis à jour avec succès.",
+    "passwordError": "Erreur lors de la mise à jour du mot de passe.",
+    "fillAllFields": "Veuillez remplir tous les champs.",
+    "wrongPassword": "Mot de passe incorrect.",
+    "emailConfirmationSent": "Un email de confirmation a été envoyé. Vérifiez votre boîte.",
+    "emailError": "Erreur lors du changement d'email.",
+    "logoutError": "Erreur lors de la déconnexion.",
+    "accountDeleted": "Votre compte a été supprimé définitivement.",
+    "deleteError": "Erreur lors de la suppression du compte.",
+    "accountSuspended": "Votre compte est suspendu. Action impossible.",
+    "roleRequestSent": "Votre demande a été envoyée.",
+    "roleRequestError": "Erreur lors de l'envoi de la demande.",
+    "profileUpdated": "Vos informations ont été mises à jour.",
+    "saveError": "Erreur lors de l'enregistrement."
+  }
+},
   "jobs": {
     "alreadyAppliedBadge": "Postulé",
     "searchPlaceholder": "Titre, compétence ou entreprise…",
@@ -2917,6 +2925,9 @@
       "deleteError": "Erreur lors de la suppression de la photo"
     },
     "personalInfo": {
+      "title": "Nom et prénom",
+    "description": "Mettez à jour votre nom et prénom.",
+    "submit": "Enregistrer",
       "sectionTitle": "Informations personnelles",
       "sectionDesc": "Ces informations seront visibles par les recruteurs.",
       "firstName": "Prénom",
@@ -3041,6 +3052,7 @@
       "errorToast": "Erreur lors de l'analyse du CV"
     },
     "toasts": {
+      
       "fillRequired": "Veuillez remplir tous les champs obligatoires.",
       "profileUpdated": "Profil mis à jour avec succès",
       "saveError": "Erreur lors de la sauvegarde du profil"

@@ -48,7 +48,7 @@ const ScrollText = ({ children, className = '' }) => {
 
 const SettingsPage = () => {
   const { t } = useTranslation();
-  const { user, signOut, updatePassword, isCompany, isAdmin, profile } = useAuth();
+  const { user, signOut, updatePassword, updateProfile, isCompany, isAdmin, profile } = useAuth();
   const navigate = useNavigate();
 
   const [passwords, setPasswords] = useState({ newPassword: '', confirmPassword: '' });
@@ -59,12 +59,25 @@ const SettingsPage = () => {
   const [emailLoading, setEmailLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // ✅ Nouveaux états pour nom/prénom
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [requestedRole, setRequestedRole] = useState(
     profile?.role === 'candidate' ? 'company' : 'candidate'
   );
   const [requestReason, setRequestReason] = useState('');
   const [requestLoading, setRequestLoading] = useState(false);
+
+  // ✅ Charger le prénom/nom depuis le profil
+  useEffect(() => {
+    if (profile) {
+      setFirstName(profile.first_name || '');
+      setLastName(profile.last_name || '');
+    }
+  }, [profile]);
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -85,6 +98,27 @@ const SettingsPage = () => {
       toast.error(err.message || t('settings.toasts.passwordError'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ Sauvegarde du nom/prénom
+  const handleUpdateName = async (e) => {
+    e.preventDefault();
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error(t('register.toasts.fillAllFields'));
+      return;
+    }
+    setProfileLoading(true);
+    try {
+      await updateProfile({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+      });
+      toast.success(t('settings.toasts.profileUpdated'));
+    } catch (err) {
+      toast.error(err.message || t('settings.toasts.saveError'));
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -129,7 +163,6 @@ const SettingsPage = () => {
     }
   };
 
-  // ✅ Suppression de compte avec fetch() natif
   const handleDeleteAccount = async () => {
     if (!window.confirm(t('settings.dangerZone.confirm'))) return;
 
@@ -174,7 +207,6 @@ const SettingsPage = () => {
         setShowRoleModal(false);
         setRequestReason('');
 
-        // ✅ Notification admin non bloquante
         setTimeout(() => {
           fetch(`${BASE_URL}/api/notify-admin-role-request`, {
             method: 'POST',
@@ -201,7 +233,7 @@ const SettingsPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-16 sm:pt-20 pb-8">
       <div className="max-w-2xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
-        {/* En-tête avec navigation compacte */}
+        {/* En-tête */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-6 sm:mb-8">
           <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')} className="gap-1 px-2">
             <ChevronLeft className="w-4 h-4" />
@@ -223,7 +255,7 @@ const SettingsPage = () => {
         </div>
 
         <div className="space-y-4 sm:space-y-6">
-          {/* Informations du compte (avec avatar) */}
+          {/* Informations du compte */}
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
@@ -241,6 +273,51 @@ const SettingsPage = () => {
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* ✅ Nouvelle section : nom et prénom */}
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center shrink-0">
+                  <User className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-slate-900 text-sm sm:text-base">{t('settings.personalInfo.title')}</h2>
+                  <p className="text-xs sm:text-sm text-slate-500">{t('settings.personalInfo.description')}</p>
+                </div>
+              </div>
+              <form onSubmit={handleUpdateName} className="space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      {t('register.firstNameLabel')}
+                    </label>
+                    <Input
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder={t('register.firstNamePlaceholder')}
+                      className="min-h-[44px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      {t('register.lastNameLabel')}
+                    </label>
+                    <Input
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder={t('register.lastNamePlaceholder')}
+                      className="min-h-[44px]"
+                    />
+                  </div>
+                </div>
+                <Button type="submit" disabled={profileLoading} className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white min-h-[44px]">
+                  {profileLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                  {t('settings.personalInfo.submit')}
+                </Button>
+              </form>
             </CardContent>
           </Card>
 

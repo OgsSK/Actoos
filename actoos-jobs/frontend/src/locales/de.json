@@ -2448,9 +2448,13 @@
       "myProfile": "Mein Profil",
       "countryAndCurrency": "Land und Währung",
       "country": "Land",
-      "selectCountry": "Alle Länder",
+      "selectCountry": "Land auswählen",
       "currency": "Währung",
-      "selectCurrency": "Alle Währungen",
+      "personalInfo": {
+        "title": "Vor- und Nachname",
+        "description": "Aktualisieren Sie Ihren Vor- und Nachnamen.",
+        "submit": "Speichern"
+      },
       "accountInfo": {
         "title": "Kontoinformationen",
         "description": "Angemeldet als {{email}}"
@@ -2479,23 +2483,23 @@
         "button": "Abmelden"
       },
       "dangerZone": {
-        "title": "Gefahrenbereich",
-        "description": "Ihr Konto endgültig löschen. Diese Aktion kann nicht rückgängig gemacht werden.",
-        "confirm": "Sind Sie sicher, dass Sie Ihr Konto löschen möchten?",
+        "title": "Gefahrenzone",
+        "description": "Konto dauerhaft löschen. Diese Aktion ist unwiderruflich.",
+        "confirm": "Möchten Sie Ihr Konto wirklich löschen?",
         "button": "Mein Konto löschen"
       },
       "roleChange": {
         "title": "Rolle wechseln",
         "descriptionCandidate": "Sie sind <strong>Kandidat</strong>. Beantragen Sie, Personalvermittler zu werden.",
         "descriptionCompany": "Sie sind <strong>Personalvermittler</strong>. Beantragen Sie, Kandidat zu werden.",
-        "requestButton": "Rollenänderung beantragen",
+        "requestButton": "Rollenwechsel beantragen",
         "modal": {
-          "title": "Rollenänderungsanfrage",
+          "title": "Rollenwechsel-Anfrage",
           "roleLabel": "Gewünschte neue Rolle",
           "roleCompany": "Personalvermittler",
           "roleCandidate": "Kandidat",
           "reasonLabel": "Grund (optional)",
-          "reasonPlaceholder": "Erklären Sie, warum Sie die Rolle wechseln möchten…",
+          "reasonPlaceholder": "Erklären Sie, warum Sie die Rolle wechseln möchten...",
           "cancel": "Abbrechen",
           "submit": "Anfrage senden"
         }
@@ -2507,14 +2511,16 @@
         "passwordError": "Fehler beim Aktualisieren des Passworts.",
         "fillAllFields": "Bitte füllen Sie alle Felder aus.",
         "wrongPassword": "Falsches Passwort.",
-        "emailConfirmationSent": "Eine Bestätigungsmail wurde gesendet. Prüfen Sie Ihren Posteingang.",
+        "emailConfirmationSent": "Eine Bestätigungs-E-Mail wurde gesendet. Überprüfen Sie Ihren Posteingang.",
         "emailError": "Fehler beim Ändern der E-Mail.",
         "logoutError": "Fehler beim Abmelden.",
-        "accountDeleted": "Ihr Konto wurde endgültig gelöscht.",
+        "accountDeleted": "Ihr Konto wurde dauerhaft gelöscht.",
         "deleteError": "Fehler beim Löschen des Kontos.",
         "accountSuspended": "Ihr Konto ist gesperrt. Aktion nicht möglich.",
         "roleRequestSent": "Ihre Anfrage wurde gesendet.",
-        "roleRequestError": "Fehler beim Senden der Anfrage."
+        "roleRequestError": "Fehler beim Senden der Anfrage.",
+        "profileUpdated": "Ihre Informationen wurden aktualisiert.",
+        "saveError": "Fehler beim Speichern."
       }
     },
     "jobs": {
@@ -3212,6 +3218,9 @@
         "deleteError": "Fehler beim Löschen des Fotos"
       },
       "personalInfo": {
+         "title": "Vor- und Nachname",
+        "description": "Aktualisieren Sie Ihren Vor- und Nachnamen.",
+        "submit": "Speichern",
         "sectionTitle": "Persönliche Informationen",
         "sectionDesc": "Diese Informationen sind für Personalvermittler sichtbar.",
         "firstName": "Vorname",

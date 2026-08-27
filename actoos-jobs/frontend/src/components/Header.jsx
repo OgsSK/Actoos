@@ -34,16 +34,20 @@ import { cn } from '../lib/utils';
 
 const Header = ({ user, onLogout }) => {
   const { t } = useTranslation();
-  const { isAdmin, isCompany, isCandidate, activeCompanyId } = useAuth();
+  const { isAdmin, isCompany, isCandidate, activeCompanyId, profile } = useAuth();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeCompanyPlan, setActiveCompanyPlan] = useState(null);
   const [activeCompanyCycle, setActiveCompanyCycle] = useState(null);
-  const [activeCompanyName, setActiveCompanyName] = useState(null); // ← nouveau
+  const [activeCompanyName, setActiveCompanyName] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  // ✅ Récupère le prénom et nom depuis le profil mis à jour (sinon depuis user_metadata)
+  const firstName = profile?.first_name || user?.user_metadata?.first_name || '';
+  const lastName = profile?.last_name || user?.user_metadata?.last_name || '';
 
   // Charger le plan, le cycle et le nom de l'entreprise active
   useEffect(() => {
@@ -93,11 +97,11 @@ const Header = ({ user, onLogout }) => {
   );
 
   const getInitials = () => {
-    if (!user) return '?';
-    const firstName = user.user_metadata?.first_name || user.email?.split('@')[0] || '';
-    const lastName = user.user_metadata?.last_name || '';
-    const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
-    return initials || firstName.slice(0, 2).toUpperCase() || '?';
+    if (!user && !profile) return '?';
+    const fn = firstName || user?.email?.split('@')[0] || '';
+    const ln = lastName || '';
+    const initials = (fn.charAt(0) + ln.charAt(0)).toUpperCase();
+    return initials || fn.slice(0, 2).toUpperCase() || '?';
   };
 
   const displayEmail = user?.email || '';
@@ -207,7 +211,7 @@ const Header = ({ user, onLogout }) => {
                   <DropdownMenuContent align="end" sideOffset={8} className="w-56 rounded-2xl border border-slate-200/60 bg-white/95 backdrop-blur-xl p-2 shadow-xl">
                     <div className="px-3 py-2 border-b border-slate-100 mb-1">
                       <p className="text-sm font-medium text-slate-900 truncate">
-                        {user.user_metadata?.first_name || t('header.user.defaultName')}
+                        {firstName || t('header.user.defaultName')}
                       </p>
                       <p className="text-xs text-slate-500 truncate">{displayEmail}</p>
                     </div>
@@ -318,7 +322,7 @@ const Header = ({ user, onLogout }) => {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-900">
-                      {user.user_metadata?.first_name || t('header.user.defaultUser')}
+                      {firstName || t('header.user.defaultUser')}
                     </p>
                     <p className="text-xs text-slate-500">{displayEmail}</p>
                   </div>
