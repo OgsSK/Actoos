@@ -117,12 +117,8 @@ const CandidatePublicProfilePage = () => {
           .from('candidate_profiles').select('*').eq('user_id', id).single();
         if (candidateErr) throw candidateErr;
 
-        let cityName = null;
-        if (userData.city_id) {
-          const { data: city } = await supabase
-            .from('cities').select('name').eq('id', userData.city_id).single();
-          cityName = city?.name || null;
-        }
+        // ✅ La ville est maintenant stockée dans candidate_profiles.city (champ texte libre)
+        const cityName = candidateData.city || null;
 
         setProfile({
           id: userData.id,

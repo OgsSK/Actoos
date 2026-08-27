@@ -730,7 +730,6 @@ const CandidateProfilePage = () => {
 
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [cities, setCities] = useState([]);
   const [countries, setCountries] = useState([]);
   const [selectedPhoneCountry, setSelectedPhoneCountry] = useState(prefs.country || 'US');
   const [errors, setErrors] = useState({});
@@ -739,7 +738,6 @@ const CandidateProfilePage = () => {
     first_name: '',
     last_name: '',
     phone: '',
-    city_id: '',
     avatar_url: '',
   });
 
@@ -754,6 +752,9 @@ const CandidateProfilePage = () => {
     desired_salary_max: '',
     is_visible_in_cv_bank: false,
   });
+
+  // ✅ État pour la ville en saisie libre
+  const [customCity, setCustomCity] = useState('');
 
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState('');
@@ -854,39 +855,11 @@ const CandidateProfilePage = () => {
   };
 
   // --------------------- useEffect initiaux ---------------------
+  // ✅ On ne charge plus les villes depuis la table cities
+  // On charge uniquement les pays pour le téléphone
   useEffect(() => {
-    const fetchCities = async () => {
-      let query = supabase
-        .from('cities')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      // ✅ Filtrer les villes par pays autorisés si restriction active
-      if (isRestricted && allowed.length > 0) {
-        // Récupérer d'abord les IDs des pays autorisés
-        const { data: allowedCountries } = await supabase
-          .from('countries')
-          .select('id')
-          .in('code', allowed);
-        
-        const allowedCountryIds = (allowedCountries || []).map(c => c.id);
-        
-        if (allowedCountryIds.length > 0) {
-          query = query.in('country_id', allowedCountryIds);
-        } else {
-          // Si aucun pays trouvé, ne retourner aucune ville
-          setCities([]);
-          return;
-        }
-      }
-
-      const { data } = await query;
-      setCities(data || []);
-    };
-    fetchCities();
     fetchCountries();
-  }, [isRestricted, allowed]);
+  }, []);
 
   const fetchCountries = async () => {
     const { data } = await supabase
@@ -911,7 +884,6 @@ const CandidateProfilePage = () => {
         first_name: profile.first_name || '',
         last_name: profile.last_name || '',
         phone: local,
-        city_id: profile.city_id || '',
         avatar_url: profile.avatar_url || '',
       });
 
@@ -931,6 +903,9 @@ const CandidateProfilePage = () => {
         desired_salary_max: cp.desired_salary_max ? fromXOF(cp.desired_salary_max) : '',
         is_visible_in_cv_bank: cp.is_visible_in_cv_bank ?? false,
       });
+
+      // ✅ Initialisation de la ville libre depuis le profil
+      setCustomCity(cp.city || '');
 
       setSkills(cp.skills || []);
       setExperiences(cp.experience || []);
@@ -1178,14 +1153,17 @@ const CandidateProfilePage = () => {
 
     setSaving(true);
     try {
+      // Mise à jour de la table profiles (sans city_id)
       const cleanedPersonalInfo = {
-        ...personalInfo,
+        first_name: personalInfo.first_name,
+        last_name: personalInfo.last_name,
         email: user.email,
-        city_id: personalInfo.city_id || null,
         phone: fullPhone,
+        avatar_url: personalInfo.avatar_url,
       };
       await updateProfile(cleanedPersonalInfo);
 
+      // Upsert dans candidate_profiles (avec city en libre)
       const { error } = await supabase.from('candidate_profiles').upsert({
         user_id: user.id,
         title: (candidateInfo.title || '').substring(0, 200),
@@ -1202,6 +1180,7 @@ const CandidateProfilePage = () => {
         education,
         links,
         is_visible_in_cv_bank: candidateInfo.is_visible_in_cv_bank,
+        city: customCity,   // ✅ champ libre pour la ville
       }, { onConflict: 'user_id' });
 
       if (error) throw error;
@@ -1341,16 +1320,17 @@ const CandidateProfilePage = () => {
                     />
                   </div>
                 </div>
+                {/* ✅ Ville en saisie libre (remplace l'ancien select) */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('candidateProfilePage.personalInfo.city')}</label>
-                  <select
-                    value={personalInfo.city_id}
-                    onChange={(e) => setPersonalInfo({ ...personalInfo, city_id: e.target.value })}
-                    className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    <option value="">{t('candidateProfilePage.personalInfo.selectCity')}</option>
-                    {cities.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}
-                  </select>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {t('candidateProfilePage.personalInfo.city')}
+                  </label>
+                  <Input
+                    value={customCity}
+                    onChange={(e) => setCustomCity(e.target.value)}
+                    placeholder={t('candidateProfilePage.personalInfo.cityPlaceholder', 'Votre ville actuelle')}
+                    className="min-h-[44px]"
+                  />
                 </div>
               </div>
             </CardContent>

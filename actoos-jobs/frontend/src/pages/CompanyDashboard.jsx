@@ -657,7 +657,18 @@ const CompanyDashboard = () => {
                   {company?.email && <a href={`mailto:${company.email}`} className="flex items-center gap-2 text-blue-600 hover:underline break-all"><Mail className="w-4 h-4 shrink-0" />{company.email}</a>}
                   {company?.phone && <a href={`tel:${company.phone}`} className="flex items-center gap-2 text-slate-600 hover:text-blue-600 break-all"><Phone className="w-4 h-4 text-slate-400 shrink-0" />{company.phone}</a>}
                   {company?.founded_year && <p className="flex items-center gap-2 text-slate-600"><Calendar className="w-4 h-4 text-slate-400" />{t('companyDashboard.companyProfileCard.founded', { year: company.founded_year })}</p>}
-                  {company?.address && <p className="flex items-center gap-2 text-slate-600"><MapPin className="w-4 h-4 text-slate-400" />{company.address}</p>}
+                  {/* Adresse cliquable */}
+                  {company?.address && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(company.address)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-blue-600 hover:underline break-all"
+                    >
+                      <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                      {company.address}
+                    </a>
+                  )}
                 </div>
                 <Link to="/dashboard/entreprise/profil"><Button variant="outline" className="w-full mt-4 min-h-[44px]">{t('companyDashboard.companyProfileCard.editProfile')}</Button></Link>
               </CardContent>

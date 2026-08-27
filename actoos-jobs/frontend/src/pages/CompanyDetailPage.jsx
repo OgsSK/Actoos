@@ -435,7 +435,14 @@ const CompanyDetailPage = () => {
                   {company.email && <ContactItem icon={<Mail className="w-5 h-5" />} label={t('companyProfile.labels.email')} value={company.email} href={`mailto:${company.email}`} />}
                   {company.phone && <ContactItem icon={<Phone className="w-5 h-5" />} label={t('companyDetail.phone', 'Téléphone')} value={displayPhone} href={telLink} />}
                   {company.website && <ContactItem icon={<Globe className="w-5 h-5" />} label={t('companyDetail.website')} value={company.website} href={company.website} />}
-                  {company.address && <ContactItem icon={<MapPin className="w-5 h-5" />} label={t('companyDetail.address', 'Adresse')} value={company.address} />}
+                  {company.address && (
+                    <ContactItem 
+                      icon={<MapPin className="w-5 h-5" />} 
+                      label={t('companyDetail.address', 'Adresse')} 
+                      value={company.address} 
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(company.address)}`}
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -486,7 +493,7 @@ const ContactItem = ({ icon, label, value, href }) => (
     <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">{icon}</div>
     <div className="min-w-0">
       <p className="text-xs text-slate-400 uppercase tracking-wide">{label}</p>
-      {href ? <a href={href} className="text-blue-600 hover:underline font-medium truncate block">{value}</a> : <p className="text-slate-900 font-medium truncate">{value}</p>}
+      {href ? <a href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noopener noreferrer' : undefined} className="text-blue-600 hover:underline font-medium truncate block">{value}</a> : <p className="text-slate-900 font-medium truncate">{value}</p>}
     </div>
   </div>
 );

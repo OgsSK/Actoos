@@ -506,10 +506,31 @@ const CompanyProfilePage = () => {
                   </select>
                 </div>
               </div>
+
+              {/* 🗺️ Champ Adresse avec bouton Carte */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('companyProfile.labels.address')}</label>
-                <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder={t('companyProfile.placeholders.address')} className="min-h-[44px]" />
+                <div className="flex gap-2">
+                  <Input
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    placeholder={t('companyProfile.placeholders.address')}
+                    className="min-h-[44px] flex-1"
+                  />
+                  {form.address && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.address)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center px-4 py-2 border border-slate-300 rounded-md text-sm text-blue-600 hover:bg-blue-50 min-h-[44px] shrink-0"
+                    >
+                      <MapPin className="w-4 h-4 mr-1" />
+                      {t('common.map', 'Carte')}
+                    </a>
+                  )}
+                </div>
               </div>
+
               <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700 min-h-[44px]" disabled={saving}>
                 {saving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
                 {t('companyProfile.submit')}
