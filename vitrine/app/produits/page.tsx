@@ -1,16 +1,11 @@
 'use client';
 
-import { ArrowLeft, ArrowRight, CheckCircle2, Briefcase } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Briefcase } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../../lib/translations';
 
 export default function ProductsPage() {
   const { language, setLanguage } = useLanguage();
-
-  // Liste des fonctionnalités traduites (pour éviter de la dupliquer)
-  const jobsFeatures = t[language].jobsFeatures
-    ? t[language].jobsFeatures.split('|')
-    : [];
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900">
@@ -65,51 +60,26 @@ export default function ProductsPage() {
         {/* ... (inchangé) */}
 
         {/* Actoos Jobs */}
-        <div className="bg-[#0F172A] rounded-[48px] p-8 md:p-16 mb-16 relative overflow-hidden shadow-2xl">
-          <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] bg-[#2563EB]/10 blur-[120px] rounded-full" />
-          <div className="absolute bottom-[-50px] left-[-50px] w-[300px] h-[300px] bg-[#1D4ED8]/5 blur-[100px] rounded-full" />
-
-          <div className="relative z-10">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Briefcase size={24} className="text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl md:text-3xl font-black text-white">Actoos Jobs</h2>
-                <p className="text-[#3B82F6] text-sm font-bold">{t[language].jobsSubtitle}</p>
-              </div>
-            </div>
-
-            <p className="text-slate-400 text-lg mb-8 max-w-2xl">
-              {t[language].jobsDescription}
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              {jobsFeatures.map((feature, i) => (
-                <div key={i} className="flex items-center space-x-2 text-white/80">
-                  <CheckCircle2 size={16} className="text-[#2563EB] flex-shrink-0" />
-                  <span className="text-sm">{feature}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              <a
-                href="https://jobs.actoos.com"
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:from-blue-500 hover:to-blue-700 transition-all shadow-xl hover:shadow-blue-500/30"
-              >
-                <span>{t[language].jobsButtonAccess}</span>
-                <ArrowRight size={16} />
-              </a>
-              <a
-                href="/contact"
-                className="inline-flex items-center space-x-2 bg-white/10 text-white px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-white/20 transition-all border border-white/10"
-              >
-                <span>{t[language].contactButton}</span>
-              </a>
-            </div>
-          </div>
-        </div>
+<div className="bg-[#0F172A] rounded-3xl p-6 md:p-8 mb-12 max-w-3xl mx-auto shadow-lg">
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+    <div className="flex items-center gap-4">
+      <div className="w-11 h-11 bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20 flex-shrink-0">
+        <Briefcase size={20} className="text-white" />
+      </div>
+      <div>
+        <h2 className="text-xl md:text-2xl font-black text-white leading-tight">Actoos Jobs</h2>
+        <p className="text-[#3B82F6] text-xs font-bold uppercase tracking-wide">{t[language].jobsSubtitle}</p>
+      </div>
+    </div>
+    <a
+      href="https://jobs.actoos.com"
+      className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:from-blue-500 hover:to-blue-700 transition-all shadow-md hover:shadow-blue-500/30 whitespace-nowrap"
+    >
+      <span>{t[language].jobsButtonAccess}</span>
+      <ArrowRight size={14} />
+    </a>
+  </div>
+</div>
 
         {/* Ouverture vers le futur */}
         <div className="text-center">
