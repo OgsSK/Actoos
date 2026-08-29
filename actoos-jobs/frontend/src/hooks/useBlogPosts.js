@@ -30,15 +30,21 @@ export const useBlogPosts = (audience = 'all') => {
     }
 
     setLoading(true);
+
+    // Récupérer les articles traduits depuis i18n (pour tous les utilisateurs)
+    const translatedArticles = t('blogArticles.items', { returnObjects: true }) || [];
+    const translationMap = new Map(
+      translatedArticles.map((article) => [article.slug, article])
+    );
+
     if (!user) {
-      // utilisateur non connecté : articles locaux
-      const rawArticles = t('blogArticles.items', { returnObjects: true }) || [];
-      setPosts(rawArticles.map(ensureSlug));
+      // Utilisateur non connecté : on utilise directement les traductions
+      setPosts(translatedArticles.map(ensureSlug));
       setLoading(false);
       return () => {};
     }
 
-    // utilisateur connecté : API
+    // Utilisateur connecté : on récupère l'API puis on fusionne avec les traductions
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
 
@@ -52,8 +58,14 @@ export const useBlogPosts = (audience = 'all') => {
         return res.json();
       })
       .then((data) => {
+        clearTimeout(timeoutId);
         if (Array.isArray(data)) {
-          setPosts(data.map(ensureSlug));
+          const merged = data.map((article) => {
+            const ensured = ensureSlug(article);
+            // Si une traduction existe pour ce slug, on l'utilise
+            return translationMap.get(ensured.slug) || ensured;
+          });
+          setPosts(merged);
         } else {
           setPosts([]);
         }
@@ -69,7 +81,7 @@ export const useBlogPosts = (audience = 'all') => {
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [user, authLoading, audience, t]);
+  }, [user, authLoading, audience, t, i18n.language]);
 
   useEffect(() => {
     const cleanup = loadPosts();
@@ -77,7 +89,6 @@ export const useBlogPosts = (audience = 'all') => {
       if (cleanup) cleanup();
       loadPosts();
     };
-
     i18n.on('languageChanged', handleLanguageChanged);
     return () => {
       if (cleanup) cleanup();
