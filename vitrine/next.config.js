@@ -8,6 +8,16 @@ const nextConfig = {
   experimental: {
     // Aucune fonctionnalité expérimentale nécessaire
   },
+  // Redirection 301 /actoos-jobs vers jobs.actoos.com
+  async redirects() {
+    return [
+      {
+        source: '/actoos-jobs',
+        destination: 'https://jobs.actoos.com',
+        permanent: true,
+      },
+    ];
+  },
   // Désactiver le cache Vercel pour l'API admin
   async headers() {
     return [
