@@ -15,6 +15,8 @@ from datetime import datetime, timedelta, timezone
 import uuid
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
+import re
+import unicodedata
 
 LOGO_URL = "https://anfamlpwootbrzswnpyp.supabase.co/storage/v1/object/public/logos/actoos.png"
 
@@ -25,6 +27,23 @@ print(f"   STRIPE_SECRET_KEY présente : {'oui' if os.getenv('STRIPE_SECRET_KEY'
 print(f"   RESEND_API_KEY présente : {'oui' if os.getenv('RESEND_API_KEY') else 'non'}")
 print(f"   SUPABASE_URL présente : {'oui' if os.getenv('SUPABASE_URL') else 'non'}")
 print(f"   SUPABASE_SERVICE_ROLE_KEY présente : {'oui' if os.getenv('SUPABASE_SERVICE_ROLE_KEY') else 'non'}")
+
+# ==================== UTILITAIRE SLUG ====================
+def slugify(text: str) -> str:
+    """
+    Transforme un texte en slug : 
+    - supprime les accents
+    - met en minuscules
+    - remplace les caractères non alphanumériques par des tirets
+    - supprime les tirets en début/fin
+    - limite à 80 caractères
+    """
+    text = unicodedata.normalize('NFD', text)
+    text = text.encode('ascii', 'ignore').decode('utf-8')
+    text = text.lower()
+    text = re.sub(r'[^a-z0-9]+', '-', text)
+    text = text.strip('-')
+    return text[:80]
 
 app = FastAPI(title="Actoos Jobs API")
 BUILD_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
@@ -3052,7 +3071,8 @@ async def generate_blog_post(req: BlogGenerateRequest):
                         article["title"] = re.sub(r'\b' + re.escape(term) + r'\b', 'notre plateforme', article["title"], flags=re.IGNORECASE)
                         article["excerpt"] = re.sub(r'\b' + re.escape(term) + r'\b', 'notre plateforme', article["excerpt"], flags=re.IGNORECASE)
                         article["content"] = re.sub(r'\b' + re.escape(term) + r'\b', 'notre plateforme', article["content"], flags=re.IGNORECASE)
-                    slug = req.title.lower().replace(" ", "-")[:80]
+                    # Correction du slug : utilisation de slugify()
+                    slug = slugify(req.title)
                     posts = load_blog_posts()
                     new_id = max([p.get("id", 0) for p in posts], default=0) + 1
                     new_post = {

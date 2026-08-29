@@ -1,4 +1,3 @@
-// src/hooks/useBlogPosts.js
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,21 +19,28 @@ const ensureSlug = (article) => ({
 
 export const useBlogPosts = (audience = 'all') => {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // ← ajout de authLoading
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadPosts = useCallback(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     setLoading(true);
     if (!user) {
+      // utilisateur non connecté : articles locaux
       const rawArticles = t('blogArticles.items', { returnObjects: true }) || [];
       setPosts(rawArticles.map(ensureSlug));
       setLoading(false);
       return;
     }
 
+    // utilisateur connecté : API
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
 
     fetch(`/api/blog/posts?audience=${audience}`, {
       signal: controller.signal,
@@ -55,8 +61,8 @@ export const useBlogPosts = (audience = 'all') => {
       })
       .catch(() => {
         clearTimeout(timeoutId);
-        const rawArticles = t('blogArticles.items', { returnObjects: true }) || [];
-        setPosts(rawArticles.map(ensureSlug));
+        // ne pas retomber sur les articles locaux pour éviter la confusion
+        setPosts([]);
         setLoading(false);
       });
 
@@ -64,16 +70,11 @@ export const useBlogPosts = (audience = 'all') => {
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [user, audience, t]);
+  }, [user, authLoading, audience, t]);
 
   useEffect(() => {
-    // Chargement initial
     loadPosts();
-
-    // Recharger à chaque changement de langue
-    const handleLanguageChanged = () => {
-      loadPosts();
-    };
+    const handleLanguageChanged = () => { loadPosts(); };
     i18n.on('languageChanged', handleLanguageChanged);
     return () => i18n.off('languageChanged', handleLanguageChanged);
   }, [loadPosts, i18n]);
