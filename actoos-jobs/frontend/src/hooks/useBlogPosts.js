@@ -19,14 +19,14 @@ const ensureSlug = (article) => ({
 
 export const useBlogPosts = (audience = 'all') => {
   const { t, i18n } = useTranslation();
-  const { user, loading: authLoading } = useAuth(); // ← ajout de authLoading
+  const { user, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadPosts = useCallback(() => {
     if (authLoading) {
       setLoading(true);
-      return;
+      return () => {};
     }
 
     setLoading(true);
@@ -35,7 +35,7 @@ export const useBlogPosts = (audience = 'all') => {
       const rawArticles = t('blogArticles.items', { returnObjects: true }) || [];
       setPosts(rawArticles.map(ensureSlug));
       setLoading(false);
-      return;
+      return () => {};
     }
 
     // utilisateur connecté : API
@@ -61,7 +61,6 @@ export const useBlogPosts = (audience = 'all') => {
       })
       .catch(() => {
         clearTimeout(timeoutId);
-        // ne pas retomber sur les articles locaux pour éviter la confusion
         setPosts([]);
         setLoading(false);
       });
@@ -73,10 +72,17 @@ export const useBlogPosts = (audience = 'all') => {
   }, [user, authLoading, audience, t]);
 
   useEffect(() => {
-    loadPosts();
-    const handleLanguageChanged = () => { loadPosts(); };
+    const cleanup = loadPosts();
+    const handleLanguageChanged = () => {
+      if (cleanup) cleanup();
+      loadPosts();
+    };
+
     i18n.on('languageChanged', handleLanguageChanged);
-    return () => i18n.off('languageChanged', handleLanguageChanged);
+    return () => {
+      if (cleanup) cleanup();
+      i18n.off('languageChanged', handleLanguageChanged);
+    };
   }, [loadPosts, i18n]);
 
   return { posts, loading };
