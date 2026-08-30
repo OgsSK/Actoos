@@ -28,7 +28,6 @@ const formatCount = (num) => {
   return `${val}K`;
 };
 
-// ✅ Skeleton entreprise
 const CompanySkeleton = () => (
   <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 animate-pulse">
     <div className="bg-gradient-to-br from-slate-700 via-blue-800 to-slate-800 p-6 sm:p-10">
@@ -89,7 +88,6 @@ const CompanyDetailPage = () => {
     return industryFr;
   };
 
-  // ✅ Chargement principal : entreprise + jobs + posts + follow + candidatures
   useEffect(() => {
     if (!id) return;
     window.scrollTo(0, 0);
@@ -99,7 +97,6 @@ const CompanyDetailPage = () => {
 
     const loadAll = async () => {
       try {
-        // 1. Entreprise
         const { data: compData, error: compErr } = await supabase
           .from('companies')
           .select(`*, city:cities(name), country:countries(code, name, phone_code), owner:users!owner_id(is_banned)`)
@@ -115,7 +112,6 @@ const CompanyDetailPage = () => {
           return;
         }
 
-        // 2. Jobs actifs avec salary_period
         const now = new Date().toISOString();
         const { data: jobsData } = await supabase
           .from('jobs')
@@ -126,7 +122,6 @@ const CompanyDetailPage = () => {
           .order('created_at', { ascending: false });
         setJobs(jobsData || []);
 
-        // 3. Posts
         const { data: postsData } = await supabase
           .from('company_posts')
           .select('*')
@@ -134,7 +129,6 @@ const CompanyDetailPage = () => {
           .order('created_at', { ascending: false });
         setCompanyPosts(postsData || []);
 
-        // 4. Statut follow (si connecté)
         if (user) {
           const { data: followData } = await supabase
             .from('company_followers')
@@ -145,7 +139,6 @@ const CompanyDetailPage = () => {
           setIsFollowing(!!followData);
         }
 
-        // 5. Statuts de candidature
         if (user && jobsData?.length) {
           const { data: apps } = await supabase
             .from('applications')
@@ -167,7 +160,6 @@ const CompanyDetailPage = () => {
     loadAll();
   }, [id, user]);
 
-  // ✅ Entreprises similaires (chargées après le principal)
   useEffect(() => {
     if (!company) return;
     setSimilarLoading(true);
@@ -214,7 +206,6 @@ const CompanyDetailPage = () => {
     fetchSimilar();
   }, [company]);
 
-  // ✅ Follow / Unfollow via Supabase direct
   const handleFollow = async () => {
     if (!user) { toast.error(t('common.loginRequired')); return; }
     setFollowLoading(true);
@@ -302,25 +293,32 @@ const CompanyDetailPage = () => {
               <div className="absolute inset-0 opacity-20 bg-cover bg-center" style={{ backgroundImage: `url(${company.cover_url})` }} />
             )}
             <div className="relative z-10 flex flex-col sm:flex-row items-start gap-5 sm:gap-6">
-              <div className="relative shrink-0">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center overflow-hidden ring-1 ring-white/20 shadow-2xl">
-                  {company.logo_url ? (
-                    <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Building2 className="w-12 h-12 sm:w-14 sm:h-14 text-white/40" />
-                  )}
-                </div>
-                {company.is_verified && (
-                  <div className="absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-1.5 ring-2 ring-white">
-                    <CheckCircle className="w-4 h-4" />
-                  </div>
+              {/* Logo sans badge superposé */}
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center overflow-hidden ring-1 ring-white/20 shadow-2xl shrink-0">
+                {company.logo_url ? (
+                  <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Building2 className="w-12 h-12 sm:w-14 sm:h-14 text-white/40" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap mb-2">
-                  <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">{company.name}</h1>
-                  {company.subscription_plan === 'pro' && <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">{t('common.pro')}</Badge>}
-                  {company.subscription_plan === 'business' && <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">⭐ {t('common.premium')}</Badge>}
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                  <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+                    {company.name}
+                    {company.is_verified && (
+                      <CheckCircle className="inline-block w-5 h-5 sm:w-6 sm:h-6 text-green-400 ml-2 align-middle" />
+                    )}
+                  </h1>
+                  {company.subscription_plan === 'pro' && (
+                    <span className="text-xs font-semibold bg-white/20 text-white rounded-full px-2 py-0.5">
+                      Pro
+                    </span>
+                  )}
+                  {company.subscription_plan === 'business' && (
+                    <span className="text-xs font-semibold bg-white/20 text-white rounded-full px-2 py-0.5">
+                      Premium
+                    </span>
+                  )}
                 </div>
                 {company.industry && <p className="text-white/60 text-base sm:text-lg">{getTranslatedIndustry(company.industry)}</p>}
                 <div className="flex flex-wrap items-center gap-3 mt-6">
