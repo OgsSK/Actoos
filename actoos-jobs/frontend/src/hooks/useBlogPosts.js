@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 
+const CACHE_KEY = 'actoos_blog_posts_cache';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 const slugify = (text) => {
   return text
     .toString()
@@ -21,7 +24,7 @@ export const useBlogPosts = (audience = 'all') => {
   const { t, i18n } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // sera mis à false dès qu'on a des données (cache ou locale)
 
   const loadPosts = useCallback(() => {
     if (authLoading) {
@@ -29,59 +32,65 @@ export const useBlogPosts = (audience = 'all') => {
       return () => {};
     }
 
-    setLoading(true);
+    // 1. Essayer de charger depuis le cache local immédiatement
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.timestamp && (Date.now() - parsed.timestamp) < CACHE_DURATION) {
+          setPosts(parsed.data.map(ensureSlug));
+          setLoading(false); // on a des données, on arrête le loader
+        }
+      } catch (e) {}
+    }
 
-    // Récupérer les articles traduits depuis i18n (pour tous les utilisateurs)
+    // 2. Récupérer les traductions i18n
     const translatedArticles = t('blogArticles.items', { returnObjects: true }) || [];
     const translationMap = new Map(
       translatedArticles.map((article) => [article.slug, article])
     );
 
     if (!user) {
-      // Utilisateur non connecté : on utilise directement les traductions
+      // utilisateur non connecté : articles locaux
       setPosts(translatedArticles.map(ensureSlug));
       setLoading(false);
       return () => {};
     }
 
-    // Utilisateur connecté : on récupère l'API puis on fusionne avec les traductions
+    // 3. Lancer la requête API en arrière-plan, sans bloquer l'affichage
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
 
     fetch(`/api/blog/posts?audience=${audience}`, {
       signal: controller.signal,
       headers: { 'Content-Type': 'application/json' },
     })
       .then((res) => {
-        clearTimeout(timeoutId);
         if (!res.ok) throw new Error('Erreur API');
         return res.json();
       })
       .then((data) => {
-        clearTimeout(timeoutId);
         if (Array.isArray(data)) {
           const merged = data.map((article) => {
             const ensured = ensureSlug(article);
-            // Si une traduction existe pour ce slug, on l'utilise
             return translationMap.get(ensured.slug) || ensured;
           });
           setPosts(merged);
-        } else {
-          setPosts([]);
+          // Sauvegarde dans le cache local
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: merged }));
         }
-        setLoading(false);
       })
-      .catch(() => {
-        clearTimeout(timeoutId);
-        setPosts([]);
-        setLoading(false);
+      .catch((err) => {
+        console.error('Erreur blog API:', err);
+        // Ne pas vider les posts existants en cas d'échec
+      })
+      .finally(() => {
+        // Si on n'a toujours pas de posts, on arrête le loader
+        if (posts.length === 0) setLoading(false);
+        else setLoading(false); // déjà arrêté plus haut
       });
 
-    return () => {
-      clearTimeout(timeoutId);
-      controller.abort();
-    };
-  }, [user, authLoading, audience, t, i18n.language]);
+    return () => controller.abort();
+  }, [user, authLoading, audience, t, i18n.language, posts.length]);
 
   useEffect(() => {
     const cleanup = loadPosts();

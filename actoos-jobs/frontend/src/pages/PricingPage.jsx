@@ -32,7 +32,7 @@ const FALLBACK_PRICING = {
 };
 
 const PRICING_CACHE_KEY = 'actoos_jobs_pricing_cache';
-const CACHE_DURATION = 30 * 60 * 1000;
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 // Taux de conversion EUR -> XOF (identique au backend)
 const EUR_TO_XOF = 655.957;
@@ -52,46 +52,50 @@ const PricingPage = () => {
   const [company, setCompany] = useState(null);
   const [companyLoading, setCompanyLoading] = useState(true);
 
-  // Chargement des prix avec cache et fallback
+  // Chargement des prix avec cache local et rafraîchissement en arrière-plan
   useEffect(() => {
     const loadPricing = async () => {
+      // 1. Essayer de charger le cache local immédiatement
       const cached = localStorage.getItem(PRICING_CACHE_KEY);
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
           if (parsed.timestamp && (Date.now() - parsed.timestamp) < CACHE_DURATION) {
             setPricing(parsed.data);
-            setLoading(false);
-            return;
+            setLoading(false); // On a des données, on arrête le loader
           }
         } catch (e) {}
       }
 
-      let fallbackTimer;
+      // 2. Lancer l'appel API en arrière-plan pour rafraîchir les données
       try {
         const controller = new AbortController();
         const data = await Promise.race([
           fetch(`${BASE_URL}/api/pricing`, { signal: controller.signal }).then(res => res.json()),
-          new Promise((_, reject) => fallbackTimer = setTimeout(() => {
+          new Promise((_, reject) => setTimeout(() => {
             controller.abort();
             reject(new Error('timeout'));
           }, 5000))
         ]);
-        clearTimeout(fallbackTimer);
+
+        // Mettre à jour les données et le cache
         setPricing(data);
         localStorage.setItem(PRICING_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
       } catch (err) {
-        console.warn('Pricing API error, using fallback', err);
-        setPricing(FALLBACK_PRICING);
+        console.warn('Pricing API error, using fallback or cache', err);
+        // Si aucun prix chargé (ni cache), on utilise le fallback
+        if (!pricing) {
+          setPricing(FALLBACK_PRICING);
+        }
       } finally {
-        clearTimeout(fallbackTimer);
-        setLoading(false);
+        setLoading(false); // Toujours arrêter le loader
       }
     };
+
     loadPricing();
   }, []);
 
-  // Chargement de l'entreprise
+  // Chargement de l'entreprise (identique à l'original)
   useEffect(() => {
     if (!user) {
       setCompany(null);
@@ -228,7 +232,8 @@ const PricingPage = () => {
     window.location.href = '/dashboard/entreprise';
   };
 
-  if (loading) {
+  // Important : le loader ne doit s'afficher que si on n'a pas encore de données
+  if (loading && !pricing) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 pt-20">
         <Loader2 className="w-12 h-12 animate-spin text-blue-600" />

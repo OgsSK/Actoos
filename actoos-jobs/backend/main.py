@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
 import re
 import unicodedata
+import time  # <--- AJOUT POUR LE CACHE
 
 LOGO_URL = "https://anfamlpwootbrzswnpyp.supabase.co/storage/v1/object/public/logos/actoos.png"
 
@@ -624,6 +625,22 @@ def save_blog_posts(posts):
     BLOG_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(BLOG_FILE, 'w', encoding='utf-8') as f:
         json.dump(posts, f, indent=2, ensure_ascii=False, default=str)
+
+# ==================== CACHE BLOG ====================
+_blog_cache = {
+    "posts": None,
+    "timestamp": 0
+}
+
+def get_blog_posts_cached():
+    # Durée de vie du cache : 5 minutes (300 secondes)
+    if time.time() - _blog_cache["timestamp"] > 300:
+        _blog_cache["posts"] = load_blog_posts()
+        _blog_cache["timestamp"] = time.time()
+    return _blog_cache["posts"]
+
+def invalidate_blog_cache():
+    _blog_cache["timestamp"] = 0
 
 def get_user_language(email=None, request: Request = None):
     if email:
@@ -2999,14 +3016,15 @@ async def activate_free_boost(request: Request, user_id: str = Depends(get_curre
 # ==================== BLOG ====================
 @app.get("/api/blog/posts")
 async def get_blog_posts(audience: Optional[str] = None):
-    posts = load_blog_posts()
+    # Utiliser le cache
+    posts = get_blog_posts_cached()
     if audience and audience != "all":
         posts = [p for p in posts if p.get("audience") == audience or p.get("audience") == "all"]
     return posts
 
 @app.get("/api/blog/posts/{slug}")
 async def get_blog_post(slug: str):
-    posts = load_blog_posts()
+    posts = get_blog_posts_cached()
     for post in posts:
         if post.get("slug") == slug:
             return post
@@ -3071,7 +3089,6 @@ async def generate_blog_post(req: BlogGenerateRequest):
                         article["title"] = re.sub(r'\b' + re.escape(term) + r'\b', 'notre plateforme', article["title"], flags=re.IGNORECASE)
                         article["excerpt"] = re.sub(r'\b' + re.escape(term) + r'\b', 'notre plateforme', article["excerpt"], flags=re.IGNORECASE)
                         article["content"] = re.sub(r'\b' + re.escape(term) + r'\b', 'notre plateforme', article["content"], flags=re.IGNORECASE)
-                    # Correction du slug : utilisation de slugify()
                     slug = slugify(req.title)
                     posts = load_blog_posts()
                     new_id = max([p.get("id", 0) for p in posts], default=0) + 1
@@ -3091,6 +3108,8 @@ async def generate_blog_post(req: BlogGenerateRequest):
                     }
                     posts.append(new_post)
                     save_blog_posts(posts)
+                    # Invalider le cache
+                    invalidate_blog_cache()
                     return new_post
             except Exception as e:
                 print(f"Erreur modèle {model}: {e}")
@@ -3105,6 +3124,8 @@ async def update_blog_post(slug: str, req: BlogUpdateRequest):
             updates = req.dict(exclude_unset=True)
             posts[i].update(updates)
             save_blog_posts(posts)
+            # Invalider le cache
+            invalidate_blog_cache()
             return posts[i]
     raise HTTPException(status_code=404, detail="Article non trouvé")
 
@@ -3116,6 +3137,8 @@ async def delete_blog_post(slug: str):
     if len(posts) == initial_len:
         raise HTTPException(status_code=404, detail="Article non trouvé")
     save_blog_posts(posts)
+    # Invalider le cache
+    invalidate_blog_cache()
     return {"success": True}
 
 # ==================== JOB ALERTS ====================
