@@ -34,6 +34,11 @@ const FALLBACK_PRICING = {
 const PRICING_CACHE_KEY = 'actoos_jobs_pricing_cache';
 const CACHE_DURATION = 30 * 60 * 1000;
 
+// Taux de conversion EUR -> XOF (identique au backend)
+const EUR_TO_XOF = 655.957;
+const LAUNCH_MONTHLY_EUR = 0;        // 0 € pendant 3 mois
+const LAUNCH_ANNUAL_EUR = 49;        // 49 € la première année
+
 const PricingPage = () => {
   const { t } = useTranslation();
   const { user, activeCompanyId, refreshProfile } = useAuth();
@@ -233,6 +238,15 @@ const PricingPage = () => {
 
   const { subscriptions } = pricing;
 
+  const proMonthly = subscriptions?.pro_monthly?.amount || 49000;
+  const proAnnual = subscriptions?.pro_annual?.amount || 470400;
+  const businessMonthly = subscriptions?.business_monthly?.amount || 84618;
+  const businessAnnual = subscriptions?.business_annual?.amount || 812110;
+
+  // Montants de l’offre de lancement en FCFA (pour conversion via `format`)
+  const launchMonthlyPriceFCFA = Math.round(LAUNCH_MONTHLY_EUR * EUR_TO_XOF); // 0
+  const launchAnnualPriceFCFA = Math.round(LAUNCH_ANNUAL_EUR * EUR_TO_XOF);   // 32142
+
   const plans = [
     {
       id: 'free',
@@ -301,11 +315,6 @@ const PricingPage = () => {
       planKey: 'business',
     },
   ];
-
-  const proMonthly = subscriptions?.pro_monthly?.amount || 49000;
-  const proAnnual = subscriptions?.pro_annual?.amount || 470400;
-  const businessMonthly = subscriptions?.business_monthly?.amount || 84618;
-  const businessAnnual = subscriptions?.business_annual?.amount || 812110;
 
   const currentPlan = company?.subscription_plan || 'free';
   const currentBillingCycle = company?.billing_cycle;
@@ -460,7 +469,7 @@ const PricingPage = () => {
                 key={plan.id}
                 className={`relative ${plan.cardBg} border-2 ${plan.borderColor} ${plan.hoverBorderColor} rounded-3xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 ${plan.badge ? 'scale-105 lg:scale-100 lg:hover:scale-105' : ''}`}
               >
-                {plan.badge && (
+                {plan.badge && !(company && currentPlan === plan.planKey) && (
                   <div className={`absolute top-0 right-0 ${plan.badge.color} text-white text-xs font-semibold px-4 py-1 rounded-bl-2xl uppercase tracking-wide shadow-sm`}>
                     {plan.badge.text}
                   </div>
@@ -499,7 +508,7 @@ const PricingPage = () => {
                             {format(annualPrice)}{t('pricing.launchOffer.perYear')}
                           </div>
                           <div className="text-4xl font-extrabold text-blue-600">
-                            {t('pricing.launchOffer.annualPrice')}
+                            {format(launchAnnualPriceFCFA)}
                             <span className="text-lg font-normal text-slate-500 ml-1">{t('pricing.launchOffer.perYear')}</span>
                           </div>
                           <div className="text-sm text-green-600 mt-2 font-medium bg-green-50 inline-block px-3 py-1 rounded-full">
@@ -512,7 +521,7 @@ const PricingPage = () => {
                             {format(monthlyPrice)}{t('pricing.launchOffer.perMonth')}
                           </div>
                           <div className="text-4xl font-extrabold text-blue-600">
-                            {t('pricing.launchOffer.monthlyPrice')}
+                            {format(launchMonthlyPriceFCFA)}
                             <span className="text-lg font-normal text-slate-500 ml-1">{t('pricing.launchOffer.perMonth')}</span>
                           </div>
                           <div className="text-sm text-green-600 mt-2 font-medium bg-green-50 inline-block px-3 py-1 rounded-full">
