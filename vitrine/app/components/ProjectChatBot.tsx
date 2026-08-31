@@ -40,7 +40,7 @@ interface ProjectBrief {
   [key: string]: any;
 }
 
-// ----- UUID v4 universel -----
+// ----- UUID v4 -----
 function generateUUID() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -52,8 +52,43 @@ function generateUUID() {
   });
 }
 
-// ----- Rendu des URLs cliquables -----
+// ----- NETTOYAGE URLS DUPLIQUÉES (frontend) -----
+function cleanUrlsForDisplay(text: string): string {
+  // Séparer les URLs collées (ex: https://a.comhttps://a.com)
+  text = text.replace(/(https?:\/\/[^\s]+?)(?=https?:\/\/)/g, '$1 ');
+  const urlRegex = /https?:\/\/[^\s]+/g;
+  const matches = text.match(urlRegex) || [];
+  if (matches.length === 0) return text;
+
+  // Dédupliquer
+  const uniqueUrls: string[] = [];
+  const seen = new Set<string>();
+  for (const url of matches) {
+    const normalized = url.replace(/[.,;:!?]+$/, '').replace(/\/+$/, '');
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      uniqueUrls.push(normalized);
+    }
+  }
+
+  // Supprimer les URLs du texte et réinsérer les uniques
+  let result = text.replace(/https?:\/\/[^\s]+/g, '');
+  result = result.replace(/\s+/g, ' ').trim();
+  if (uniqueUrls.length > 0) {
+    if (result.endsWith('.') || result.endsWith('!') || result.endsWith('?')) {
+      result = result + ' ' + uniqueUrls.join(', ');
+    } else {
+      result = result + '. ' + uniqueUrls.join(', ');
+    }
+  }
+  return result;
+}
+
+// ----- Rendu des URLs (avec nettoyage anti-doublon) -----
 function renderMessageContent(text: string) {
+  // Nettoyer les URLs dupliquées avant l'affichage
+  text = cleanUrlsForDisplay(text);
+  
   if (text.includes('<a href=')) {
     return <span dangerouslySetInnerHTML={{ __html: text }} />;
   }
@@ -76,7 +111,7 @@ function renderMessageContent(text: string) {
   return <>{elements}</>;
 }
 
-// ----- Persistance intelligente -----
+// ----- Persistance -----
 const STORAGE_KEY = 'actoos-chat-messages';
 
 const isReload = () => {
@@ -104,14 +139,14 @@ const saveMessages = (msgs: Message[]) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs));
   } catch {
-    // plein / indisponible
+    // ignore
   }
 };
 
 const stepOrder = ['decrire', 'ajuster', 'soumettre'] as const;
 type Step = (typeof stepOrder)[number];
 
-// ----- Composant -----
+// ----- Composant principal -----
 export default function ProjectChatBot() {
   const { language } = useLanguage();
 
@@ -123,7 +158,6 @@ export default function ProjectChatBot() {
   const [step, setStep] = useState<Step>('decrire');
   const [isMobile, setIsMobile] = useState(false);
 
-  // Formulaire de soumission
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [submitForm, setSubmitForm] = useState({ name: '', email: '', message: '' });
 
@@ -182,12 +216,12 @@ export default function ProjectChatBot() {
 
   useEffect(() => {
     if (!loading) {
-      const t = window.setTimeout(() => inputRef.current?.focus(), 50);
-      return () => window.clearTimeout(t);
+      const timeout = window.setTimeout(() => inputRef.current?.focus(), 50);
+      return () => window.clearTimeout(timeout);
     }
   }, [loading]);
 
-  // Chargement initial avec message traduit
+  // Chargement initial
   useEffect(() => {
     const saved = loadMessages();
     if (saved.length > 0) {
@@ -244,7 +278,7 @@ export default function ProjectChatBot() {
     return entries;
   }, [currentBrief, language]);
 
-  // ----- Envoi / discussion -----
+  // ----- Envoi (handleSend) -----
   const handleSend = async (content?: string) => {
     const messageContent = content || input.trim();
     if (!messageContent || loading) return;
@@ -269,8 +303,9 @@ export default function ProjectChatBot() {
 
       const data = await res.json();
 
+      // Si le backend renvoie une erreur, on affiche un message d'attente
       if (data.error) {
-        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` }]);
+        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: language === 'en' ? "I'm processing your request, please wait..." : "Je traite votre demande, patientez..." }]);
         return;
       }
 
@@ -301,11 +336,15 @@ export default function ProjectChatBot() {
         handleBriefingResponse(data);
         return;
       }
-      if (rawResponse && !rawResponse.startsWith('{')) {
-        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: rawResponse }]);
+      // Réponse textuelle (même si ready est false ou non)
+      if (data.response) {
+        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: data.response }]);
+        return;
       }
+      // Si rien, message d'attente
+      setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: language === 'en' ? "I'm still thinking..." : "Je réfléchis encore..." }]);
     } catch {
-      setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
+      setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: language === 'en' ? "Connection issue, retrying..." : "Problème de connexion, réessai..." }]);
     } finally {
       setLoading(false);
     }
@@ -423,7 +462,7 @@ export default function ProjectChatBot() {
       const data = await res.json();
 
       if (data.error) {
-        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: `Erreur : ${data.error}` }]);
+        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: language === 'en' ? "I'm processing your request..." : "Je traite votre demande..." }]);
         return;
       }
 
@@ -450,23 +489,23 @@ export default function ProjectChatBot() {
         handleBriefingResponse(briefing);
         return;
       }
-
       if (data.briefing) {
         handleBriefingResponse(data);
         return;
       }
-
-      if (rawResponse && !rawResponse.startsWith('{')) {
-        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: rawResponse }]);
+      if (data.response) {
+        setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: data.response }]);
+        return;
       }
+      setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: language === 'en' ? "I'm still thinking..." : "Je réfléchis encore..." }]);
     } catch {
-      setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: 'Erreur de connexion.' }]);
+      setMessages((prev) => [...prev, { id: generateId(), role: 'assistant', content: language === 'en' ? "Connection issue, retrying..." : "Problème de connexion, réessai..." }]);
     } finally {
       setLoading(false);
     }
   };
 
-  // ----- Soumission finale (sans user_id) -----
+  // ----- Soumission du projet -----
   const handleSubmitProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!submitForm.name.trim() || !submitForm.email.trim()) return;
@@ -494,7 +533,6 @@ export default function ProjectChatBot() {
     }
 
     try {
-      // Email à l'admin
       const adminRes = await fetch('/api/send-project-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -513,7 +551,6 @@ export default function ProjectChatBot() {
       const adminData = await adminRes.json();
 
       if (adminData.success) {
-        // Email au client
         await fetch('/api/send-project-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -726,7 +763,7 @@ export default function ProjectChatBot() {
                 </div>
               )}
 
-              {/* Bouton Valider (sans pré-remplissage) */}
+              {/* Bouton Valider */}
               {currentBrief && !showSubmitForm && step !== 'soumettre' && (
                 <div className="flex justify-center mt-4">
                   <button
@@ -791,7 +828,7 @@ export default function ProjectChatBot() {
                 </div>
               )}
 
-              {/* Bouton Nouveau projet (après soumission) */}
+              {/* Bouton Nouveau projet après soumission */}
               {step === 'soumettre' && (
                 <div className="flex justify-center mt-4">
                   <button
