@@ -150,9 +150,9 @@
    "launchOffer": {
       "badge": "Lanceringsaanbod",
       "monthlyPrice": "€ 0",
-      "monthlyDescription": "3 maanden lang, daarna {{price}}/maand",
+      "monthlyDescription": "3 maanden lang, daarna {price}/maand",
       "annualPrice": "€ 49",
-      "annualDescription": "Het eerste jaar, daarna {{price}}/jaar",
+      "annualDescription": "Het eerste jaar, daarna {price}/jaar",
       "perMonth": "/maand",
       "perYear": "/jaar"
     },
@@ -3483,6 +3483,7 @@
         "sectionDesc": "Portfolio, LinkedIn, persoonlijke website…"
       },
       "salary": {
+         "salaryPeriod": "Salarisperiode",
         "sectionDescBase": "Geef een indicatieve schaal aan",
         "sectionTitle": "Gewenst salaris",
         "sectionDesc": "Geef een indicatieve schaal aan (in FCFA).",

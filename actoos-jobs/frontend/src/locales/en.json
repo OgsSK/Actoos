@@ -3258,6 +3258,7 @@
         "sectionDesc": "Portfolio, LinkedIn, personal website…"
       },
       "salary": {
+        "salaryPeriod": "Salary period",
          "sectionDescBase": "Indicate an indicative range",
         "sectionTitle": "Desired salary",
         "sectionDesc": "Indicate an indicative range (in FCFA).",
@@ -3368,9 +3369,9 @@
       "launchOffer": {
       "badge": "Launch offer",
       "monthlyPrice": "€0",
-      "monthlyDescription": "For 3 months, then {{price}}/month",
+      "monthlyDescription": "For 3 months, then {price}/month",
       "annualPrice": "€49",
-      "annualDescription": "The first year, then {{price}}/year",
+      "annualDescription": "The first year, then {price}/year",
       "perMonth": "/month",
       "perYear": "/year"
     },

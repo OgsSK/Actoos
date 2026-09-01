@@ -3229,6 +3229,7 @@
       "sectionDesc": "Portfolio, LinkedIn, site personnel…"
     },
     "salary": {
+       "salaryPeriod": "Périodicité",
        "sectionDescBase": "Indiquez une fourchette indicative", 
       "sectionTitle": "Salaire souhaité",
       "sectionDesc": "Indiquez une fourchette indicative (en FCFA).",

@@ -150,9 +150,9 @@
     "launchOffer": {
       "badge": "عرض الإطلاق",
       "monthlyPrice": "0 €",
-      "monthlyDescription": "لمدة 3 أشهر، ثم {{price}}/شهر",
+      "monthlyDescription": "لمدة 3 أشهر، ثم {price}/شهر",
       "annualPrice": "49 €",
-      "annualDescription": "السنة الأولى، ثم {{price}}/سنة",
+      "annualDescription": "السنة الأولى، ثم {price}/سنة",
       "perMonth": "/شهر",
       "perYear": "/سنة"
     },
@@ -3411,6 +3411,7 @@
         "sectionDesc": "الموقع الشخصي، LinkedIn، الشبكات…"
       },
       "salary": {
+        "salaryPeriod": "دورية الراتب",
         "sectionDescBase": "حدد نطاقاً تقريبياً",
         "sectionTitle": "الراتب المطلوب",
         "sectionDesc": "حدد نطاقاً تقريبياً (بالفرنك CFA).",

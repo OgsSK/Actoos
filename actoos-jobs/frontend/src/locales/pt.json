@@ -3416,6 +3416,7 @@
         "sectionDesc": "Portfólio, LinkedIn, site pessoal…"
       },
       "salary": {
+        "salaryPeriod": "Periodicidade do salário",
         "sectionDescBase": "Indique uma faixa indicativa",
         "sectionTitle": "Salário pretendido",
         "sectionDesc": "Indique uma faixa salarial (em FCFA).",

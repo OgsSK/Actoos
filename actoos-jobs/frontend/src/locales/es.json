@@ -150,9 +150,9 @@
   "launchOffer": {
       "badge": "Oferta de lanzamiento",
       "monthlyPrice": "0 €",
-      "monthlyDescription": "Durante 3 meses, después {{price}}/mes",
+      "monthlyDescription": "Durante 3 meses, después {price}/mes",
       "annualPrice": "49 €",
-      "annualDescription": "El primer año, después {{price}}/año",
+      "annualDescription": "El primer año, después {price}/año",
       "perMonth": "/mes",
       "perYear": "/año"
     },
@@ -3416,6 +3416,7 @@
         "sectionDesc": "Portafolio, LinkedIn, sitio web personal…"
       },
       "salary": {
+        "salaryPeriod": "Periodicidad del salario",
          "sectionDescBase": "Indique un rango orientativo",
         "sectionTitle": "Salario deseado",
         "sectionDesc": "Indique un rango orientativo (en FCFA).",
