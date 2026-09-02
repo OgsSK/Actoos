@@ -12,7 +12,7 @@ import GeoBanner from './components/GeoBanner';
 import CookieBanner from './components/CookieBanner';
 import CountryGate from './components/CountryGate';
 import CompanyFollowersPage from './pages/CompanyFollowersPage';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Briefcase } from 'lucide-react'; // ✅ import de Briefcase ajouté
 import AcceptInvitationPage from './pages/AcceptInvitationPage';
 import './index.css';
 
@@ -133,6 +133,28 @@ const AppContent = () => {
       toast.error = originalError;
     };
   }, []);
+
+  // ---------- Splash Screen ----------
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 1800); // 1,8 seconde
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplash) {
+    return (
+      <div className="fixed inset-0 bg-blue-950 flex items-center justify-center z-50">
+        <div className="text-center">
+          <div className="w-24 h-24 rounded-3xl bg-blue-600 text-white flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Briefcase className="w-12 h-12" />
+          </div>
+          <h1 className="text-2xl font-bold text-white">Actoos Jobs</h1>
+          <p className="text-blue-200 text-sm mt-2">Chargement…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
