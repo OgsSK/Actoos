@@ -263,6 +263,34 @@ def get_plan_limit_static(plan, attribute):
     plan_data = PLAN_LIMITS_CONFIG.get(plan, PLAN_LIMITS_CONFIG["free"])
     return plan_data.get(attribute, PLAN_LIMITS_CONFIG["free"][attribute])
 
+def email_interview_proposal(candidate_name, job_title, booking_url, company_name=None, message=None, date_start=None, date_end=None, time_start=None, time_end=None):
+    company_info = f" chez {company_name}" if company_name else ""
+    message_block = ""
+    if message:
+        message_block = f"""
+        <div style="background-color:#f9fafb;padding:16px;border-radius:6px;margin:16px 0;">
+            <p style="margin:0;"><strong>Message du recruteur :</strong></p>
+            <p style="margin:8px 0 0;">{message}</p>
+        </div>
+        """
+    date_block = ""
+    if date_start and date_end:
+        date_block = f"<p><strong>📅 Période souhaitée :</strong> {date_start} au {date_end}</p>"
+    if time_start and time_end:
+        date_block += f"<p><strong>🕒 Heures souhaitées :</strong> {time_start} – {time_end}</p>"
+
+    return f"""
+    <h2 style="color:#1a202c;">Bonjour {candidate_name},</h2>
+    {email_info_box(f"Vous êtes invité(e) à choisir un créneau d'entretien pour le poste <strong>{job_title}</strong>{company_info}.", "success")}
+    {message_block}
+    {date_block}
+    <p>Cliquez sur le bouton ci-dessous pour sélectionner le créneau qui vous convient :</p>
+    <div style="text-align:center; margin:24px 0;">{email_button("Choisir mon créneau", booking_url)}</div>
+    <p style="color:#6b7280; font-size:14px;">Si le bouton ne fonctionne pas, copiez ce lien : {booking_url}</p>
+    <p>À bientôt !</p>
+    """
+
+
 # ----- Dépendance : Vérification du compte actif/non banni -----
 async def get_current_active_user(request: Request) -> str:
     auth_header = request.headers.get("authorization")
@@ -608,6 +636,32 @@ class NotifyOtherCandidatesRequest(BaseModel):
     application_id: str
     message: Optional[str] = None
     language: Optional[str] = "fr"
+
+class ProposeInterviewRequest(BaseModel):
+    application_id: str
+    company_id: str
+    duration_minutes: int = 30
+    date_start: str
+    date_end: str
+    time_start: str
+    time_end: str
+    message: Optional[str] = None
+    language: Optional[str] = "fr"
+
+class CancelInterviewRequest(BaseModel):
+    application_id: str
+    company_id: str
+    language: Optional[str] = "fr"
+
+class FinishInterviewRequest(BaseModel):
+    application_id: str
+    company_id: str
+    language: Optional[str] = "fr"
+
+class CalcomBookingWebhook(BaseModel):
+    triggerEvent: str
+    payload: dict
+
 
 def clean_subject(text: str, max_length: int = 50) -> str:
     cleaned = text.replace('\n', ' ').replace('\r', ' ')
@@ -4143,6 +4197,248 @@ async def admin_delete_report(report_id: str):
     if resp.status_code not in (200, 204):
         raise HTTPException(status_code=500, detail="Erreur lors de la suppression du signalement")
     return {"success": True, "message": "Signalement supprimé avec succès"}
+
+
+@app.post("/api/interviews/propose")
+async def propose_interview(req: ProposeInterviewRequest):
+    headers = {"apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}
+
+    # Récupérer la candidature
+    app_resp = httpx.get(
+        f"{SUPABASE_URL}/rest/v1/applications?id=eq.{req.application_id}&select=id,job:jobs(company_id,title,company:companies(name)),candidate:users(email,first_name,last_name)",
+        headers=headers
+    )
+    applications = app_resp.json()
+    if not applications:
+        raise HTTPException(status_code=404, detail="Candidature non trouvée")
+    application = applications[0]
+    job_company_id = application.get("job", {}).get("company_id")
+
+    if str(job_company_id) != str(req.company_id):
+        raise HTTPException(status_code=403, detail="Candidature non liée à cette entreprise")
+
+    # Lire le lien de réservation public
+    booking_url = os.getenv("CALCOM_BOOKING_LINK")
+    if not booking_url:
+        raise HTTPException(status_code=500, detail="Lien de réservation Cal.com non configuré")
+
+    # Mettre à jour la candidature
+    update_resp = httpx.patch(
+        f"{SUPABASE_URL}/rest/v1/applications?id=eq.{req.application_id}",
+        json={"booking_url": booking_url},
+        headers=headers
+    )
+    if update_resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Impossible de mettre à jour la candidature")
+
+    # Préparer les données pour l'email
+    candidate = application["candidate"]
+    candidate_email = candidate.get("email")
+    candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+    job = application.get("job", {})
+    job_title = job.get("title", "poste")
+    company_name = job.get("company", {}).get("name", "")
+
+    # Envoyer l'email professionnel
+    if resend.api_key and candidate_email:
+        lang = req.language or "fr"
+        if lang == "en":
+            subject = f"Interview invitation for {job_title}"
+            html = f"""
+            <h2>Hello {candidate_name},</h2>
+            <p>You are invited to schedule an interview for <strong>{job_title}</strong>.</p>
+            <div style="text-align:center; margin:24px 0;">{email_button("Schedule your interview", booking_url)}</div>
+            <p style="color:#6b7280; font-size:14px;">If the button doesn't work, copy this link: {booking_url}</p>
+            """
+        else:
+            subject = f"Invitation à planifier un entretien pour {job_title}"
+            html = email_interview_proposal(
+    candidate_name=candidate_name,
+    job_title=job_title,
+    booking_url=booking_url,
+    company_name=company_name,
+    message=req.message,
+    date_start=req.date_start,
+    date_end=req.date_end,
+    time_start=req.time_start,
+    time_end=req.time_end,
+)
+        try:
+            resend.Emails.send({
+                "from": "Actoos Jobs <noreply@actoos.com>",
+                "to": [candidate_email],
+                "subject": subject,
+                "html": html
+            })
+        except Exception as e:
+            print(f"Erreur envoi email: {e}")
+
+    return {"success": True, "booking_url": booking_url}
+
+@app.post("/api/interviews/cancel")
+async def cancel_interview(req: CancelInterviewRequest):
+    headers = {"apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}
+
+    # Récupérer la candidature
+    app_resp = httpx.get(
+        f"{SUPABASE_URL}/rest/v1/applications?id=eq.{req.application_id}&select=id,status,booking_url,candidate:users(email,first_name,last_name),job:jobs(title,company_id,company:companies(name))",
+        headers=headers
+    )
+    applications = app_resp.json()
+    if not applications:
+        raise HTTPException(status_code=404, detail="Candidature non trouvée")
+    application = applications[0]
+
+    # Vérifier entreprise
+    job_company_id = application.get("job", {}).get("company_id")
+    if str(job_company_id) != str(req.company_id):
+        raise HTTPException(status_code=403, detail="Accès refusé")
+
+    # Mettre à jour : supprimer le lien et revenir au statut précédent (par exemple shortlisted)
+    update_data = {
+        "booking_url": None,
+        "status": "shortlisted"
+    }
+    update_resp = httpx.patch(
+        f"{SUPABASE_URL}/rest/v1/applications?id=eq.{req.application_id}",
+        json=update_data,
+        headers=headers
+    )
+    if update_resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Impossible de mettre à jour la candidature")
+
+    # Envoyer email d'annulation
+    candidate = application["candidate"]
+    candidate_email = candidate.get("email")
+    candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+    job = application.get("job", {})
+    job_title = job.get("title", "poste")
+    company_name = job.get("company", {}).get("name", "")
+
+    if resend.api_key and candidate_email:
+        lang = req.language or "fr"
+        if lang == "en":
+            subject = f"Interview cancellation for {job_title}"
+            html = f"""
+            <h2>Hello {candidate_name},</h2>
+            <p>The interview scheduling for <strong>{job_title}</strong> has been cancelled.</p>
+            """
+        else:
+            subject = f"Entretien annulé pour {job_title}"
+            html = email_interview_cancelled(
+                candidate_name=candidate_name,
+                job_title=job_title,
+                company_name=company_name,
+                interview_date=None,
+                interview_time=None,
+                reason=None
+            )
+        try:
+            resend.Emails.send({
+                "from": "Actoos Jobs <noreply@actoos.com>",
+                "to": [candidate_email],
+                "subject": subject,
+                "html": html
+            })
+        except Exception as e:
+            print(f"Erreur envoi email annulation: {e}")
+
+    return {"success": True, "message": "Entretien annulé"}
+
+
+
+
+
+@app.post("/api/interviews/finish")
+async def finish_interview(req: FinishInterviewRequest):
+    headers = {"apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}
+
+    # Récupérer la candidature
+    app_resp = httpx.get(
+        f"{SUPABASE_URL}/rest/v1/applications?id=eq.{req.application_id}&select=id,company:jobs(company_id)",
+        headers=headers
+    )
+    applications = app_resp.json()
+    if not applications:
+        raise HTTPException(status_code=404, detail="Candidature non trouvée")
+    application = applications[0]
+    job_company_id = application.get("company", {}).get("company_id")
+    if str(job_company_id) != str(req.company_id):
+        raise HTTPException(status_code=403, detail="Accès refusé")
+
+    update_resp = httpx.patch(
+        f"{SUPABASE_URL}/rest/v1/applications?id=eq.{req.application_id}",
+        json={"booking_url": None},
+        headers=headers
+    )
+    if update_resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Impossible de mettre à jour la candidature")
+
+    return {"success": True, "message": "Entretien terminé"}
+
+@app.post("/api/interviews/booking-confirmed")
+async def calcom_booking_confirmed(req: CalcomBookingWebhook):
+    # Répondre au test de ping de Cal.com
+    if req.triggerEvent == "PING":
+        return {"success": True, "message": "pong"}
+
+    payload = req.payload or {}
+    booking = payload.get("booking", {})
+    if not booking:
+        # Aucune réservation dans le payload → on ignore sans erreur
+        return {"success": True, "message": "Aucune donnée de réservation"}
+
+    booking_uid = booking.get("uid")
+    if not booking_uid:
+        # On ne peut pas identifier la réservation, on ignore
+        return {"success": True, "message": "UID manquant, événement ignoré"}
+
+    meeting_link = booking.get("location", "")
+    start_time = booking.get("startTime", "")
+
+    try:
+        dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+        interview_date = dt.strftime("%Y-%m-%d")
+        interview_time = dt.strftime("%H:%M")
+    except Exception:
+        interview_date = None
+        interview_time = None
+
+    booking_url = booking.get("bookingUrl") or booking.get("booking_url") or ""
+    if not booking_url:
+        # Fallback : on ne peut pas retrouver la candidature
+        return {"success": False, "message": "URL de réservation manquante"}
+
+    headers = {"apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}
+    app_resp = httpx.get(
+        f"{SUPABASE_URL}/rest/v1/applications?booking_url=eq.{booking_url}&select=id",
+        headers=headers
+    )
+    applications = app_resp.json()
+    if not applications:
+        # Candidature introuvable, on loggue et on renvoie 200 pour éviter de bloquer Cal.com
+        print(f"[Webhook] Candidature non trouvée pour booking_url: {booking_url}")
+        return {"success": False, "message": "Candidature introuvable"}
+
+    application_id = applications[0]["id"]
+
+    update_data = {
+        "status": "interview",
+        "meeting_link": meeting_link,
+        "interview_date": interview_date,
+        "interview_time": interview_time,
+    }
+    update_resp = httpx.patch(
+        f"{SUPABASE_URL}/rest/v1/applications?id=eq.{application_id}",
+        json=update_data,
+        headers=headers
+    )
+    if update_resp.status_code not in (200, 204):
+        raise HTTPException(status_code=500, detail="Impossible de mettre à jour la candidature")
+
+    return {"success": True, "message": "Candidature mise à jour"}
+
+
 
 # ==================== MOUNT STATIC ====================
 if os.path.isdir(BUILD_DIR):

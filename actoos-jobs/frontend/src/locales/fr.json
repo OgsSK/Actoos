@@ -2565,6 +2565,7 @@
     }
   },
    "applicationDetail": {
+
     "toasts": {
       "noteSaved": "Note enregistrée",
       "noteDeleted": "Note supprimée",
@@ -2576,6 +2577,24 @@
       "interviewFinished": "Entretien terminé",
       "documentRequestSent": "Demande de documents envoyée"
     },
+
+"interviewCancelled": "Entretien annulé",
+    "interviewFinished": "Entretien terminé",
+    "proposeInterviewTitle": "Proposer des créneaux d'entretien",
+    "duration": "Durée",
+    "dateStart": "Date de début",
+    "dateEnd": "Date de fin",
+    "timeStart": "Heure de début",
+    "timeEnd": "Heure de fin",
+    "message": "Message (optionnel)",
+    "messagePlaceholder": "Ajoutez un message pour le candidat...",
+    "bookingLinkCreated": "Lien de réservation créé avec succès.",
+    "bookingLink": "Lien de réservation",
+    "proposeSlots": "Proposer des créneaux",
+    "modifyBooking": "Modifier la proposition",
+    "cancelProposedConfirm": "Voulez-vous annuler la proposition d'entretien ?",
+    "finishProposedConfirm": "Voulez-vous terminer l'entretien ?",
+    "selectDateRange": "Veuillez sélectionner une plage de dates et d'heures.",
     "selectDateAndTime": "Veuillez sélectionner une date et une heure",
     "pastDateTime": "La date et l'heure ne peuvent pas être dans le passé",
     "cancelInterviewConfirm": "Voulez-vous vraiment annuler cet entretien ?",
@@ -2605,7 +2624,7 @@
     "upgradeForNotes": "Outils d’entretien & recrutement avancés",
     "upgradeForNotesDesc": "Planifiez des entretiens vidéo, générez des questions / réponses / conseils IA et prenez des notes structurées.",
     "viewPlans": "Voir les offres",
-    "receivedAt": "Reçue le {date}",
+    "receivedAt": "Reçue le {{date}}",
     "changeStatus": "Changer le statut",
     "requestDocuments": "Demander des documents",
     "customDocPlaceholder": "Nom du document",
@@ -2963,7 +2982,7 @@
     }
   },
   "common": {
-    
+     "offlineError": "Vous êtes hors ligne. Veuillez réessayer plus tard.",
      "add": "Ajouter",
      "unspecified": "Non spécifié",
     "loadingScores": "Calcul des scores...",

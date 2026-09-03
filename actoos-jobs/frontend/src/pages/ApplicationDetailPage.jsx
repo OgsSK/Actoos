@@ -10,7 +10,7 @@ import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import {
   Loader2, ChevronLeft, Mail, Phone, MapPin, Calendar, Briefcase, User, FileText,
-  ExternalLink, Video, Sparkles, Trash2, Save, MessageSquare, Lightbulb,
+  ExternalLink, Sparkles, Trash2, Save, MessageSquare, Lightbulb,
   CheckCircle, Crown, XCircle, Clock, Plus, Send
 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
@@ -189,13 +189,29 @@ const ApplicationDetailPage = () => {
   const [showOtherCandidatesModal, setShowOtherCandidatesModal] = useState(false);
   const [otherCandidatesMessage, setOtherCandidatesMessage] = useState('');
 
-  // États pour la planification d'entretien
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [interviewDate, setInterviewDate] = useState('');
-  const [interviewTime, setInterviewTime] = useState('');
-  const [scheduling, setScheduling] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-  const [finishing, setFinishing] = useState(false); // Nouvel état
+  // ---- États pour Cal.com ----
+  const [showProposeModal, setShowProposeModal] = useState(false);
+  const [proposal, setProposal] = useState({
+    duration: 30,
+    dateStart: '',
+    dateEnd: '',
+    timeStart: '09:00',
+    timeEnd: '17:00',
+    message: '',
+  });
+  const [proposing, setProposing] = useState(false);
+  const [bookingUrl, setBookingUrl] = useState(null);
+  const [cancellingProposed, setCancellingProposed] = useState(false);
+  const [finishingProposed, setFinishingProposed] = useState(false);
+
+  // Synchroniser bookingUrl quand application change
+  useEffect(() => {
+    if (application?.booking_url) {
+      setBookingUrl(application.booking_url);
+    } else {
+      setBookingUrl(null);
+    }
+  }, [application]);
 
   useEffect(() => {
     if (!activeCompanyId) {
@@ -437,152 +453,83 @@ Profil candidat :
     }
   };
 
-  // Planifier un entretien avec date/heure
-  const handleScheduleInterview = async () => {
-    if (!interviewDate || !interviewTime) {
-      toast.error(t('applicationDetail.selectDateAndTime'));
+  // ---- Planification / proposition de créneaux Cal.com ----
+  const handleProposeSlots = async () => {
+    if (!proposal.dateStart || !proposal.dateEnd || !proposal.timeStart || !proposal.timeEnd) {
+      toast.error(t('applicationDetail.selectDateRange'));
       return;
     }
-
-    // Vérifier si la date/heure est dans le passé
-    const selectedDateTime = new Date(`${interviewDate}T${interviewTime}:00`);
-    if (selectedDateTime < new Date()) {
-      toast.error(t('applicationDetail.pastDateTime'));
-      return;
-    }
-
-    setScheduling(true);
+    setProposing(true);
     try {
-      // Générer le lien Jitsi s'il n'existe pas déjà
-      let meetingLink = application.meeting_link;
-      if (!meetingLink) {
-        meetingLink = `https://meet.jit.si/actoos-interview-${application.id}`;
-      }
-      // Mettre à jour la base de données
-      const { error } = await supabase
-        .from('applications')
-        .update({
-          meeting_link: meetingLink,
-          interview_date: interviewDate,
-          interview_time: interviewTime,
-          status: 'interview',
-        })
-        .eq('id', id);
-      if (error) throw error;
-
-      // Mettre à jour l'état local immédiatement
-      setApplication(prev => ({
-        ...prev,
-        meeting_link: meetingLink,
-        interview_date: interviewDate,
-        interview_time: interviewTime,
-        status: 'interview',
-      }));
-
-      // Fermer le modal et réinitialiser les champs
-      setShowScheduleModal(false);
-      setInterviewDate('');
-      setInterviewTime('');
-
-      // Envoyer l'email avec les détails (en arrière-plan)
-      apiFetch('/api/send-interview-details', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: application.candidate.email,
-          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
-          job_title: application.job.title,
-          meeting_link: meetingLink,
-          interview_date: interviewDate,
-          interview_time: interviewTime,
-          company_name: application.job.company?.name || '',
-          language: i18n.language,
-        }),
-      }).then(() => {
-        toast.success(t('applicationDetail.toasts.interviewScheduled'));
-      }).catch((err) => {
-        const msg = getErrorMessage(err);
-        if (msg) toast.error(msg);
-      });
-
-    } catch (err) {
-      const msg = getErrorMessage(err);
-      if (msg) toast.error(msg);
-    } finally {
-      setScheduling(false);
-    }
-  };
-
-  // Annuler l'entretien
-  const handleCancelInterview = async () => {
-    if (!window.confirm(t('applicationDetail.cancelInterviewConfirm'))) return;
-    
-    // Demander une raison optionnelle via prompt
-    const reason = window.prompt(t('applicationDetail.cancelReasonPrompt'), '');
-    if (reason === null) return; // Annulé par l'utilisateur
-    
-    setCancelling(true);
-    // Sauvegarde de l'état actuel pour restauration en cas d'échec
-    const previousApplication = { ...application };
-    // Mise à jour optimiste immédiate
-    setApplication(prev => ({
-      ...prev,
-      meeting_link: null,
-      interview_date: null,
-      interview_time: null,
-    }));
-    
-    try {
-      await apiFetch('/api/cancel-interview', {
+      const res = await apiFetch('/api/interviews/propose', {
         method: 'POST',
         body: JSON.stringify({
           application_id: application.id,
-          candidate_email: application.candidate.email,
-          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
-          job_title: application.job.title,
-          company_name: application.job.company?.name || '',
+          company_id: activeCompanyId,   // ← ajout
+          duration_minutes: proposal.duration,
+          date_start: proposal.dateStart,
+          date_end: proposal.dateEnd,
+          time_start: proposal.timeStart,
+          time_end: proposal.timeEnd,
+          message: proposal.message,
           language: i18n.language,
-          reason: reason || '',
-          interview_date: previousApplication.interview_date,
-          interview_time: previousApplication.interview_time,
         }),
       });
-      toast.success(t('applicationDetail.toasts.interviewCancelled'));
+      setBookingUrl(res.booking_url);
+      setApplication(prev => ({ ...prev, booking_url: res.booking_url }));
+      setShowProposeModal(false);
+      toast.success(t('applicationDetail.bookingLinkCreated'));
     } catch (err) {
-      // En cas d'échec, restaurer l'état précédent
-      setApplication(previousApplication);
       const msg = getErrorMessage(err);
       if (msg) toast.error(msg);
     } finally {
-      setCancelling(false);
+      setProposing(false);
     }
   };
 
-  // Terminer l'entretien (sans email)
-  const handleFinishInterview = async () => {
-    if (!window.confirm(t('applicationDetail.finishInterviewConfirm'))) return;
-    setFinishing(true);
+  const handleCancelProposedInterview = async () => {
+    if (!window.confirm(t('applicationDetail.cancelProposedConfirm'))) return;
+    setCancellingProposed(true);
     try {
-      const { error } = await supabase
-        .from('applications')
-        .update({
-          meeting_link: null,
-          interview_date: null,
-          interview_time: null,
-        })
-        .eq('id', id);
-      if (error) throw error;
-      setApplication(prev => ({
-        ...prev,
-        meeting_link: null,
-        interview_date: null,
-        interview_time: null,
-      }));
-      toast.success(t('applicationDetail.toasts.interviewFinished'));
+      await apiFetch('/api/interviews/cancel', {
+        method: 'POST',
+        body: JSON.stringify({
+          application_id: application.id,
+          company_id: activeCompanyId, // ← ajout
+          language: i18n.language,
+        }),
+      });
+      setBookingUrl(null);
+      setApplication(prev => ({ ...prev, booking_url: null }));
+      toast.success(t('applicationDetail.interviewCancelled'));
     } catch (err) {
       const msg = getErrorMessage(err);
       if (msg) toast.error(msg);
     } finally {
-      setFinishing(false);
+      setCancellingProposed(false);
+    }
+  };
+
+  const handleFinishProposedInterview = async () => {
+    if (!window.confirm(t('applicationDetail.finishProposedConfirm'))) return;
+    setFinishingProposed(true);
+    try {
+      await apiFetch('/api/interviews/finish', {
+        method: 'POST',
+        body: JSON.stringify({
+          application_id: application.id,
+          company_id: activeCompanyId, // ← ajout
+          language: i18n.language,
+        }),
+      });
+      setBookingUrl(null);
+      setApplication(prev => ({ ...prev, booking_url: null }));
+      toast.success(t('applicationDetail.interviewFinished'));
+    } catch (err) {
+      const msg = getErrorMessage(err);
+      if (msg) toast.error(msg);
+    } finally {
+      setFinishingProposed(false);
     }
   };
 
@@ -817,7 +764,6 @@ Profil candidat :
   const cleanPhone = rawPhone.replace(/\s/g, '');
   const telLink = cleanPhone ? `tel:${cleanPhone}` : null;
 
-  // Pour la validation de date/heure
   const todayStr = new Date().toISOString().split('T')[0];
   const currentTime = new Date().toTimeString().slice(0, 5);
 
@@ -936,6 +882,66 @@ Profil candidat :
               </Card>
             )}
 
+            {/* Section Planifier un entretien (Cal.com) */}
+            {isProOrBusiness && application.status !== 'completed' && (
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                    {t('applicationDetail.scheduleInterview')}
+                  </h3>
+
+                  {bookingUrl ? (
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 rounded-xl p-4">
+                        <p className="text-sm font-medium text-blue-900">
+                          {t('applicationDetail.bookingLinkCreated')}
+                        </p>
+                        <a
+                          href={bookingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 mt-2 text-blue-600 hover:underline"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          {t('applicationDetail.bookingLink')}
+                        </a>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                          variant="outline"
+                          className="w-full sm:flex-1 text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm px-2 sm:px-4"
+                          onClick={handleCancelProposedInterview}
+                          disabled={cancellingProposed}
+                        >
+                          {cancellingProposed ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <XCircle className="w-4 h-4 mr-1" />}
+                          <span className="truncate">{t('applicationDetail.cancelInterview')}</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full sm:flex-1 text-slate-600 border-slate-300 hover:bg-slate-50 text-xs sm:text-sm px-2 sm:px-4"
+                          onClick={handleFinishProposedInterview}
+                          disabled={finishingProposed}
+                        >
+                          {finishingProposed ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
+                          <span className="truncate">{t('applicationDetail.finishInterview')}</span>
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => setShowProposeModal(true)}
+                      className="w-full"
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {t('applicationDetail.proposeSlots')}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Section documents, finalisation, etc. */}
             {application.status === 'accepted' && (
               <Card>
                 <CardContent className="p-6">
@@ -1105,134 +1111,64 @@ Profil candidat :
                 </CardContent>
               </Card>
             )}
-
-            {/* Section Planifier un entretien */}
-            {isProOrBusiness && application.status !== 'completed' ? (
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-600" />
-                    {t('applicationDetail.scheduleInterview')}
-                  </h3>
-
-                  {application.meeting_link && application.interview_date ? (
-                    <div className="space-y-4">
-                      <div className="bg-blue-50 rounded-xl p-4">
-                        <p className="text-sm font-medium text-blue-900">
-                          {t('applicationDetail.interviewScheduled')}
-                        </p>
-                        <p className="text-sm text-blue-700 mt-1">
-                          📅 {application.interview_date} à {application.interview_time}
-                        </p>
-                        {application.meeting_link && (
-                          <a
-                            href={application.meeting_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 mt-2 text-blue-600 hover:underline"
-                          >
-                            <Video className="w-4 h-4" />
-                            {t('applicationDetail.joinMeeting')}
-                          </a>
-                        )}
-                      </div>
-                      {/* CORRECTION : empilement sur mobile, côte à côte sur desktop, texte réduit et tronqué */}
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <Button
-                          variant="outline"
-                          className="w-full sm:flex-1 text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm px-2 sm:px-4"
-                          onClick={handleCancelInterview}
-                          disabled={cancelling || finishing}
-                        >
-                          {cancelling ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <XCircle className="w-4 h-4 mr-1" />}
-                          <span className="truncate">{t('applicationDetail.cancelInterview')}</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="w-full sm:flex-1 text-slate-600 border-slate-300 hover:bg-slate-50 text-xs sm:text-sm px-2 sm:px-4"
-                          onClick={handleFinishInterview}
-                          disabled={finishing || cancelling}
-                        >
-                          {finishing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
-                          <span className="truncate">{t('applicationDetail.finishInterview')}</span>
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={() => setShowScheduleModal(true)}
-                      className="w-full"
-                    >
-                      <Calendar className="w-4 h-4 mr-2" />
-                      {t('applicationDetail.planInterviewButton')}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ) : isProOrBusiness ? (
-              <Card className="border-green-200 bg-green-50/50">
-                <CardContent className="p-6 text-center">
-                  <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                  <p className="font-semibold text-green-900">
-                    {t('applicationDetail.recruitmentCompleted')}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : null}
           </div>
         </div>
       </div>
 
-      {/* Modal pour planifier l'entretien */}
-      {showScheduleModal && (
+      {/* Modal de proposition de créneaux Cal.com */}
+      {showProposeModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">
-              {t('applicationDetail.planInterviewTitle')}
+              {t('applicationDetail.proposeInterviewTitle')}
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  {t('applicationDetail.interviewDate')}
-                </label>
-                <input
-                  type="date"
-                  value={interviewDate}
-                  onChange={(e) => setInterviewDate(e.target.value)}
+                <label className="block text-sm font-medium mb-1">{t('applicationDetail.duration')}</label>
+                <select
+                  value={proposal.duration}
+                  onChange={(e) => setProposal({ ...proposal, duration: parseInt(e.target.value) })}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
-                  min={todayStr}
-                />
+                >
+                  <option value={30}>30 min</option>
+                  <option value={45}>45 min</option>
+                  <option value={60}>60 min</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('applicationDetail.dateStart')}</label>
+                  <input type="date" value={proposal.dateStart} onChange={(e) => setProposal({ ...proposal, dateStart: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" min={todayStr} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('applicationDetail.dateEnd')}</label>
+                  <input type="date" value={proposal.dateEnd} onChange={(e) => setProposal({ ...proposal, dateEnd: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" min={proposal.dateStart || todayStr} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('applicationDetail.timeStart')}</label>
+                  <input type="time" value={proposal.timeStart} onChange={(e) => setProposal({ ...proposal, timeStart: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('applicationDetail.timeEnd')}</label>
+                  <input type="time" value={proposal.timeEnd} onChange={(e) => setProposal({ ...proposal, timeEnd: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  {t('applicationDetail.interviewTime')}
-                </label>
-                <input
-                  type="time"
-                  value={interviewTime}
-                  onChange={(e) => setInterviewTime(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
-                  min={interviewDate === todayStr ? currentTime : undefined}
-                />
+                <label className="block text-sm font-medium mb-1">{t('applicationDetail.message')}</label>
+                <textarea value={proposal.message} onChange={(e) => setProposal({ ...proposal, message: e.target.value })} className="w-full border border-slate-200 rounded-lg p-3 text-sm" rows={3} placeholder={t('applicationDetail.messagePlaceholder')} />
               </div>
             </div>
-            <div className="flex gap-2 justify-end mt-6">
-              <Button variant="ghost" onClick={() => setShowScheduleModal(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button
-                onClick={handleScheduleInterview}
-                disabled={scheduling || !interviewDate || !interviewTime}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {scheduling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {t('common.confirm')}
-              </Button>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="ghost" onClick={() => setShowProposeModal(false)}>{t('common.cancel')}</Button>
+              <Button className="bg-blue-600 text-white" onClick={handleProposeSlots} disabled={proposing}>{proposing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}{t('common.confirm')}</Button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Modal d'acceptation */}
       {showAcceptModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
@@ -1246,6 +1182,7 @@ Profil candidat :
         </div>
       )}
 
+      {/* Modal de finalisation */}
       {showFinalizeModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
@@ -1279,6 +1216,7 @@ Profil candidat :
         </div>
       )}
 
+      {/* Modal d'information des autres candidats */}
       {showOtherCandidatesModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
@@ -1309,6 +1247,7 @@ Profil candidat :
         </div>
       )}
 
+      {/* Modal d'édition de la demande de documents */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
