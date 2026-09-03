@@ -141,14 +141,12 @@ def email_interview_invitation(candidate_name, job_title, meeting_link, company_
 # ---- NOUVEAUX TEMPLATES POUR DÉTAILS ET ANNULATION ----
 def email_interview_details(candidate_name, job_title, meeting_link, interview_date, interview_time, company_name=None):
     company_info = f" chez {company_name}" if company_name else ""
-    date_display = interview_date
-    time_display = interview_time
     return f"""
     <h2 style="color:#1a202c;">Bonjour {candidate_name},</h2>
     {email_info_box(f"Votre entretien pour le poste <strong>{job_title}</strong>{company_info} est planifié.", "success")}
     <div style="background-color:#f9fafb; padding:16px; border-radius:6px; margin:16px 0;">
-        <p style="margin:4px 0;"><strong>📅 Date :</strong> {date_display}</p>
-        <p style="margin:4px 0;"><strong>🕒 Heure :</strong> {time_display}</p>
+        <p style="margin:4px 0;"><strong>📅 Date :</strong> {interview_date}</p>
+        <p style="margin:4px 0;"><strong>🕒 Heure :</strong> {interview_time}</p>
     </div>
     <p>Vous pourrez rejoindre la visioconférence via le lien ci-dessous :</p>
     <div style="text-align:center; margin:24px 0;">{email_button("Rejoindre la visioconférence", meeting_link)}</div>
@@ -4217,7 +4215,6 @@ async def propose_interview(req: ProposeInterviewRequest):
     if str(job_company_id) != str(req.company_id):
         raise HTTPException(status_code=403, detail="Candidature non liée à cette entreprise")
 
-    # Lire le lien de réservation public
     booking_url = os.getenv("CALCOM_BOOKING_LINK")
     if not booking_url:
         raise HTTPException(status_code=500, detail="Lien de réservation Cal.com non configuré")
@@ -4239,39 +4236,28 @@ async def propose_interview(req: ProposeInterviewRequest):
     job_title = job.get("title", "poste")
     company_name = job.get("company", {}).get("name", "")
 
-    # Envoyer l'email professionnel
-    if resend.api_key and candidate_email:
-        lang = req.language or "fr"
-        if lang == "en":
-            subject = f"Interview invitation for {job_title}"
-            html = f"""
-            <h2>Hello {candidate_name},</h2>
-            <p>You are invited to schedule an interview for <strong>{job_title}</strong>.</p>
-            <div style="text-align:center; margin:24px 0;">{email_button("Schedule your interview", booking_url)}</div>
-            <p style="color:#6b7280; font-size:14px;">If the button doesn't work, copy this link: {booking_url}</p>
-            """
-        else:
-            subject = f"Invitation à planifier un entretien pour {job_title}"
-            html = email_interview_proposal(
-    candidate_name=candidate_name,
-    job_title=job_title,
-    booking_url=booking_url,
-    company_name=company_name,
-    message=req.message,
-    date_start=req.date_start,
-    date_end=req.date_end,
-    time_start=req.time_start,
-    time_end=req.time_end,
-)
-        try:
-            resend.Emails.send({
-                "from": "Actoos Jobs <noreply@actoos.com>",
-                "to": [candidate_email],
-                "subject": subject,
-                "html": html
-            })
-        except Exception as e:
-            print(f"Erreur envoi email: {e}")
+    # --- NOUVEAU BLOC D'ENVOI AVEC send_translated_email ---
+    if candidate_email:
+        subject_fr = f"Invitation à planifier un entretien pour {job_title}"
+        html_fr = email_interview_proposal(
+            candidate_name=candidate_name,
+            job_title=job_title,
+            booking_url=booking_url,
+            company_name=company_name,
+            message=req.message,
+            date_start=req.date_start,
+            date_end=req.date_end,
+            time_start=req.time_start,
+            time_end=req.time_end,
+        )
+        await send_translated_email(
+            to_email=candidate_email,
+            subject_fr=subject_fr,
+            html_fr=html_fr,
+            language=req.language or "fr",
+            from_name="Actoos Jobs"
+        )
+    # -------------------------------------------------------
 
     return {"success": True, "booking_url": booking_url}
 
@@ -4289,12 +4275,11 @@ async def cancel_interview(req: CancelInterviewRequest):
         raise HTTPException(status_code=404, detail="Candidature non trouvée")
     application = applications[0]
 
-    # Vérifier entreprise
     job_company_id = application.get("job", {}).get("company_id")
     if str(job_company_id) != str(req.company_id):
         raise HTTPException(status_code=403, detail="Accès refusé")
 
-    # Mettre à jour : supprimer le lien et revenir au statut précédent (par exemple shortlisted)
+    # Mise à jour
     update_data = {
         "booking_url": None,
         "status": "shortlisted"
@@ -4307,7 +4292,7 @@ async def cancel_interview(req: CancelInterviewRequest):
     if update_resp.status_code not in (200, 204):
         raise HTTPException(status_code=500, detail="Impossible de mettre à jour la candidature")
 
-    # Envoyer email d'annulation
+    # Préparer les données pour l'email
     candidate = application["candidate"]
     candidate_email = candidate.get("email")
     candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
@@ -4315,33 +4300,25 @@ async def cancel_interview(req: CancelInterviewRequest):
     job_title = job.get("title", "poste")
     company_name = job.get("company", {}).get("name", "")
 
-    if resend.api_key and candidate_email:
-        lang = req.language or "fr"
-        if lang == "en":
-            subject = f"Interview cancellation for {job_title}"
-            html = f"""
-            <h2>Hello {candidate_name},</h2>
-            <p>The interview scheduling for <strong>{job_title}</strong> has been cancelled.</p>
-            """
-        else:
-            subject = f"Entretien annulé pour {job_title}"
-            html = email_interview_cancelled(
-                candidate_name=candidate_name,
-                job_title=job_title,
-                company_name=company_name,
-                interview_date=None,
-                interview_time=None,
-                reason=None
-            )
-        try:
-            resend.Emails.send({
-                "from": "Actoos Jobs <noreply@actoos.com>",
-                "to": [candidate_email],
-                "subject": subject,
-                "html": html
-            })
-        except Exception as e:
-            print(f"Erreur envoi email annulation: {e}")
+    # --- NOUVEAU BLOC D'ENVOI AVEC send_translated_email ---
+    if candidate_email:
+        subject_fr = f"Entretien annulé pour {job_title}"
+        html_fr = email_interview_cancelled(
+            candidate_name=candidate_name,
+            job_title=job_title,
+            company_name=company_name,
+            interview_date=None,
+            interview_time=None,
+            reason=None
+        )
+        await send_translated_email(
+            to_email=candidate_email,
+            subject_fr=subject_fr,
+            html_fr=html_fr,
+            language=req.language or "fr",
+            from_name="Actoos Jobs"
+        )
+    # -------------------------------------------------------
 
     return {"success": True, "message": "Entretien annulé"}
 
@@ -4385,12 +4362,10 @@ async def calcom_booking_confirmed(req: CalcomBookingWebhook):
     payload = req.payload or {}
     booking = payload.get("booking", {})
     if not booking:
-        # Aucune réservation dans le payload → on ignore sans erreur
         return {"success": True, "message": "Aucune donnée de réservation"}
 
     booking_uid = booking.get("uid")
     if not booking_uid:
-        # On ne peut pas identifier la réservation, on ignore
         return {"success": True, "message": "UID manquant, événement ignoré"}
 
     meeting_link = booking.get("location", "")
@@ -4406,22 +4381,24 @@ async def calcom_booking_confirmed(req: CalcomBookingWebhook):
 
     booking_url = booking.get("bookingUrl") or booking.get("booking_url") or ""
     if not booking_url:
-        # Fallback : on ne peut pas retrouver la candidature
         return {"success": False, "message": "URL de réservation manquante"}
 
     headers = {"apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"}
+
+    # --- RÉCUPÉRATION DES DONNÉES COMPLÈTES DE LA CANDIDATURE ---
     app_resp = httpx.get(
-        f"{SUPABASE_URL}/rest/v1/applications?booking_url=eq.{booking_url}&select=id",
+        f"{SUPABASE_URL}/rest/v1/applications?booking_url=eq.{booking_url}&select=id,candidate:users(email,first_name,last_name,language),job:jobs(title,company_id,company:companies(name,recruiter_email,recruiter_name))",
         headers=headers
     )
     applications = app_resp.json()
     if not applications:
-        # Candidature introuvable, on loggue et on renvoie 200 pour éviter de bloquer Cal.com
         print(f"[Webhook] Candidature non trouvée pour booking_url: {booking_url}")
         return {"success": False, "message": "Candidature introuvable"}
 
-    application_id = applications[0]["id"]
+    application = applications[0]
+    application_id = application["id"]
 
+    # Mise à jour du statut et des dates
     update_data = {
         "status": "interview",
         "meeting_link": meeting_link,
@@ -4436,7 +4413,58 @@ async def calcom_booking_confirmed(req: CalcomBookingWebhook):
     if update_resp.status_code not in (200, 204):
         raise HTTPException(status_code=500, detail="Impossible de mettre à jour la candidature")
 
-    return {"success": True, "message": "Candidature mise à jour"}
+    # --- PRÉPARATION DES DONNÉES POUR LES EMAILS ---
+    candidate = application.get("candidate", {})
+    candidate_email = candidate.get("email")
+    candidate_name = f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip()
+    candidate_language = candidate.get("language") or "fr"
+
+    job = application.get("job", {})
+    job_title = job.get("title", "poste")
+    company_data = job.get("company", {})
+    company_name = company_data.get("name", "")
+    recruiter_email = company_data.get("recruiter_email")
+    recruiter_name = company_data.get("recruiter_name") or "Recruteur"
+
+    # --- ENVOI EMAIL AU CANDIDAT ---
+    if candidate_email:
+        subject_fr = f"Entretien confirmé pour {job_title}"
+        html_fr = email_interview_details(
+            candidate_name=candidate_name,
+            job_title=job_title,
+            meeting_link=meeting_link,
+            interview_date=interview_date,
+            interview_time=interview_time,
+            company_name=company_name
+        )
+        await send_translated_email(
+            to_email=candidate_email,
+            subject_fr=subject_fr,
+            html_fr=html_fr,
+            language=candidate_language,
+            from_name="Actoos Jobs"
+        )
+
+    # --- ENVOI EMAIL AU RECRUTEUR ---
+    if recruiter_email:
+        subject_fr = f"Entretien confirmé avec {candidate_name}"
+        html_fr = email_interview_details(
+            candidate_name=recruiter_name,
+            job_title=job_title,
+            meeting_link=meeting_link,
+            interview_date=interview_date,
+            interview_time=interview_time,
+            company_name=company_name
+        )
+        await send_translated_email(
+            to_email=recruiter_email,
+            subject_fr=subject_fr,
+            html_fr=html_fr,
+            language="fr",  # langue par défaut pour le recruteur
+            from_name="Actoos Jobs"
+        )
+
+    return {"success": True, "message": "Candidature mise à jour et emails envoyés"}
 
 
 

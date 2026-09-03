@@ -882,8 +882,8 @@ Profil candidat :
               </Card>
             )}
 
-            {/* Section Planifier un entretien (Cal.com) */}
-            {isProOrBusiness && application.status !== 'completed' && (
+            {/* Section Planifier un entretien (Cal.com) - MODIFICATION ICI */}
+            {isProOrBusiness && application.status === 'interview' && (
               <Card>
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
