@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
+import useAllowedCountries from '../hooks/useAllowedCountries'; // 👈 NOUVEAU
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -96,6 +97,9 @@ const CompanyProfilePage = () => {
   const navigate = useNavigate();
   const logoInputRef = useRef(null);
 
+  // 👇 Récupération des pays autorisés
+  const { allowed, isRestricted } = useAllowedCountries();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -143,7 +147,6 @@ const CompanyProfilePage = () => {
     const loadAll = async () => {
       setLoading(true);
       try {
-        // Charger pays et entreprise en parallèle
         const [countryResult, companyResult, postsResult] = await Promise.all([
           supabase.from('countries').select('code, name, phone_code').order('name'),
           supabase.from('companies').select('*').eq('id', activeCompanyId).single(),
@@ -494,8 +497,21 @@ const CompanyProfilePage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1"><MapPin className="w-4 h-4 inline mr-1" />{t('companyProfile.labels.country')}</label>
-                  <select value={selectedCountry} onChange={(e) => setSelectedCountry(e.target.value)} className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                    {countries.map(c => <option key={c.code} value={c.code}>{t(`countries.${c.code}`, c.name)}</option>)}
+                  {/* ✅ SÉLECTEUR PAYS CORRIGÉ */}
+                  <select
+                    value={selectedCountry}
+                    onChange={(e) => setSelectedCountry(e.target.value)}
+                    className="w-full h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    {countries.map(c => {
+                      const isDisabled = isRestricted && !allowed.includes(c.code) && c.code !== selectedCountry;
+                      const label = t(`countries.${c.code}`, c.name) + (isDisabled ? ` (${t('common.comingSoon', 'bientôt')})` : '');
+                      return (
+                        <option key={c.code} value={c.code} disabled={isDisabled}>
+                          {label}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div>
