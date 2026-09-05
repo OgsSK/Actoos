@@ -2079,6 +2079,11 @@
       "fixedShort": "(flat rate)"
     },
 "createJob": {
+   "languages": {
+      "languagePlaceholder": "e.g. English",
+      "add": "Add",
+      "alreadyAdded": "Language already added"
+    },
   
    "iaProgress": {
       "analyzing": "Analyzing title...",
@@ -2101,6 +2106,7 @@
         "description": "Your company must be validated before you can publish job offers. You can prepare drafts in the meantime."
       },
       "sections": {
+        "languages": "Required languages",
         "basicInfo": "Basic information",
         "description": "Description",
         "skills": "Skills",
@@ -3115,7 +3121,26 @@
       "desc": "Access our pool of available talents.",
       "browse": "Browse CVs"
     },
+    "languageLevel": {
+      "basic": "Beginner",
+      "intermediate": "Intermediate",
+      "professional": "Professional",
+      "fluent": "Fluent",
+      "native": "Native"
+    },
   "candidateProfilePage": {
+     "languages": {
+      "sectionTitle": "Languages",
+      "sectionDesc": "Languages you speak and your level",
+      "languagePlaceholder": "e.g. French",
+      "add": "Add",
+      "alreadyAdded": "Language already added"
+    },
+    "contractPreferences": {
+      "sectionTitle": "Preferred contracts",
+      "sectionDesc": "Select the types of contract you are interested in"
+    },
+    
     "projects": {
       "sectionTitle": "Projects",
       "sectionDesc": "Showcase your projects to recruit, invest, or collaborate",

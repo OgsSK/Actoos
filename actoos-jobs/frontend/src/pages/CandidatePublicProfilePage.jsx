@@ -8,7 +8,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import ContactFollowerModal from '../components/ContactFollowerModal';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
-import { formatSalaryPeriod } from '../lib/utils';
+import { formatSalaryPeriod, CONTRACT_TYPES } from '../lib/utils';
 import {
   Loader2, ChevronLeft, User, Mail, Phone, MapPin, Briefcase, GraduationCap,
   Award, FileText, Flag, Globe, ExternalLink, AlertTriangle, Clock, Send,
@@ -118,7 +118,6 @@ const CandidatePublicProfilePage = () => {
           .from('candidate_profiles').select('*').eq('user_id', id).single();
         if (candidateErr) throw candidateErr;
 
-        // ✅ La ville est maintenant stockée dans candidate_profiles.city (champ texte libre)
         const cityName = candidateData.city || null;
 
         setProfile({
@@ -137,12 +136,14 @@ const CandidatePublicProfilePage = () => {
           is_open_to_remote: candidateData.is_open_to_remote,
           desired_salary_min: candidateData.desired_salary_min,
           desired_salary_max: candidateData.desired_salary_max,
-          desired_salary_period: candidateData.desired_salary_period || 'monthly', // ✅ NOUVEAU
+          desired_salary_period: candidateData.desired_salary_period || 'monthly',
           skills: candidateData.skills || [],
           experience: candidateData.experience || [],
           education: candidateData.education || [],
           cv_url: candidateData.cv_url,
           links: candidateData.links || [],
+          languages: candidateData.languages || [],
+          preferred_contract_types: candidateData.preferred_contract_types || [],
         });
       } catch (err) {
         console.error(err);
@@ -199,6 +200,12 @@ const CandidatePublicProfilePage = () => {
     if (profile.links?.length > 0) tabs.push({ key: 'links', icon: Globe, label: t('candidateProfilePage.links.sectionTitle') });
     if (candidateDocuments.length > 0) tabs.push({ key: 'documents', icon: File, label: t('candidateProfilePage.documents.sectionTitle') });
     if (candidatePosts.length > 0) tabs.push({ key: 'posts', icon: File, label: t('candidateProfile.posts', 'Actualités') });
+    if (profile.languages?.length > 0) {
+      tabs.push({ key: 'languages', icon: Globe, label: t('candidateProfilePage.languages.sectionTitle', 'Langues') });
+    }
+    if (profile.preferred_contract_types?.length > 0) {
+      tabs.push({ key: 'contracts', icon: Briefcase, label: t('candidateProfilePage.contractPreferences.sectionTitle', 'Contrats recherchés') });
+    }
     return tabs;
   }, [profile, candidateDocuments, candidatePosts, t]);
 
@@ -312,14 +319,56 @@ const CandidatePublicProfilePage = () => {
                 {activeTab === 'about' && (
                   <div className="space-y-6">
                     {profile.bio && <div className="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-100"><h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">{t('companyDetail.about', 'À propos')}</h3><p className="text-slate-700 leading-relaxed text-base">{profile.bio}</p></div>}
+
+                    {/* Salaire souhaité avec titre existant */}
                     {(profile.desired_salary_min || profile.desired_salary_max) && (
-                      <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-xl text-sm font-medium">
-                        💰 {profile.desired_salary_min && profile.desired_salary_max
-                          ? `${format(profile.desired_salary_min)} – ${format(profile.desired_salary_max)}`
-                          : profile.desired_salary_min
-                            ? format(profile.desired_salary_min)
-                            : format(profile.desired_salary_max)}
-                        {formatSalaryPeriod(profile.desired_salary_period, t)}
+                      <div>
+                        <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                          {t('candidateProfilePage.salary.sectionTitle')}
+                        </h4>
+                        <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-xl text-sm font-medium">
+                          💰 {profile.desired_salary_min && profile.desired_salary_max
+                            ? `${format(profile.desired_salary_min)} – ${format(profile.desired_salary_max)}`
+                            : profile.desired_salary_min
+                              ? format(profile.desired_salary_min)
+                              : format(profile.desired_salary_max)}
+                          {formatSalaryPeriod(profile.desired_salary_period, t)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Langues dans l'onglet À propos */}
+                    {profile.languages?.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                          {t('candidateProfilePage.languages.sectionTitle', 'Langues')}
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {profile.languages.map((lang) => (
+                            <Badge key={lang.code} className="bg-white border border-slate-200 text-slate-700 shadow-sm">
+                              {lang.code}
+                              <span className="ml-1 text-xs text-slate-500">
+                                - {t(`languageLevel.${lang.level}`, lang.level)}
+                              </span>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Contrats préférés dans l'onglet À propos */}
+                    {profile.preferred_contract_types?.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                          {t('candidateProfilePage.contractPreferences.sectionTitle', 'Contrats recherchés')}
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {profile.preferred_contract_types.map((contractType) => (
+                            <Badge key={contractType} className="bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
+                              {t(CONTRACT_TYPES[contractType]?.key || contractType)}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -385,6 +434,28 @@ const CandidatePublicProfilePage = () => {
                         {post.image_url && <img src={post.image_url} alt="" className="mt-3 rounded-lg max-h-80 object-cover" />}
                         <p className="text-xs text-slate-400 mt-3">{new Date(post.created_at).toLocaleDateString()}</p>
                       </div>
+                    ))}
+                  </div>
+                )}
+                {/* Onglets dédiés Langues et Contrats */}
+                {activeTab === 'languages' && (
+                  <div className="flex flex-wrap gap-2">
+                    {profile.languages.map((lang) => (
+                      <Badge key={lang.code} className="bg-white border border-slate-200 text-slate-700 shadow-sm">
+                        {lang.code}
+                        <span className="ml-1 text-xs text-slate-500">
+                          - {t(`languageLevel.${lang.level}`, lang.level)}
+                        </span>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                {activeTab === 'contracts' && (
+                  <div className="flex flex-wrap gap-2">
+                    {profile.preferred_contract_types.map((contractType) => (
+                      <Badge key={contractType} className="bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
+                        {t(CONTRACT_TYPES[contractType]?.key || contractType)}
+                      </Badge>
                     ))}
                   </div>
                 )}

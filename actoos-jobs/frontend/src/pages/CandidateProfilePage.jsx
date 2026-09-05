@@ -21,7 +21,7 @@ import {
   Camera, File, ExternalLink, Sparkles, Eye, Flag,
   Image
 } from 'lucide-react';
-import { cn, EXPERIENCE_LEVELS } from '../lib/utils';
+import { cn, EXPERIENCE_LEVELS, CONTRACT_TYPES } from '../lib/utils';
 
 // ---------- Taux de change vers le FCFA ----------
 const RATES = {
@@ -760,6 +760,15 @@ const CandidateProfilePage = () => {
 
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState('');
+
+  // --- Langues ---
+  const [languages, setLanguages] = useState([]);
+  const [newLanguage, setNewLanguage] = useState('');
+  const [newLanguageLevel, setNewLanguageLevel] = useState('intermediate');
+
+  // --- Types de contrat préférés ---
+  const [preferredContractTypes, setPreferredContractTypes] = useState([]);
+
   const [experiences, setExperiences] = useState([]);
   const [education, setEducation] = useState([]);
   const [links, setLinks] = useState([]);
@@ -913,6 +922,8 @@ const CandidateProfilePage = () => {
       setExperiences(cp.experience || []);
       setEducation(cp.education || []);
       setCvUrl(cp.cv_url || '');
+      setLanguages(cp.languages || []);
+      setPreferredContractTypes(cp.preferred_contract_types || []);
     }
   }, [profile, countries, prefs.country, prefs.currency]);
 
@@ -1112,6 +1123,34 @@ const CandidateProfilePage = () => {
 
   const handleRemoveSkill = (skillToRemove) => setSkills(skills.filter(s => s !== skillToRemove));
 
+  // --- Gestion des langues ---
+  const handleAddLanguage = () => {
+    if (!newLanguage.trim()) return;
+    if (languages.some(l => l.code === newLanguage)) {
+      toast.error(t('candidateProfilePage.languages.alreadyAdded', 'Langue déjà ajoutée'));
+      return;
+    }
+    setLanguages([...languages, { code: newLanguage, level: newLanguageLevel }]);
+    setNewLanguage('');
+    setNewLanguageLevel('intermediate');
+  };
+
+  const handleRemoveLanguage = (code) => {
+    setLanguages(languages.filter(l => l.code !== code));
+  };
+
+  const handleLanguageLevelChange = (code, level) => {
+    setLanguages(languages.map(l => l.code === code ? { ...l, level } : l));
+  };
+
+  const handleToggleContractType = (contractType) => {
+    setPreferredContractTypes(prev =>
+      prev.includes(contractType)
+        ? prev.filter(c => c !== contractType)
+        : [...prev, contractType]
+    );
+  };
+
   const handleSaveExperience = (exp) => {
     if (editingExp) {
       setExperiences(experiences.map(e => e.id === editingExp.id ? { ...exp, id: editingExp.id } : e));
@@ -1179,6 +1218,8 @@ const CandidateProfilePage = () => {
         desired_salary_max: toXOF(candidateInfo.desired_salary_max),
         desired_salary_period: candidateInfo.desired_salary_period || 'monthly',
         skills,
+        languages,
+        preferred_contract_types: preferredContractTypes,
         experience: experiences,
         education,
         links,
@@ -1609,6 +1650,99 @@ const CandidateProfilePage = () => {
                     }
                   }}
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Langues */}
+          <Card>
+            <CardContent className="p-6">
+              <SectionHeader
+                icon={Globe}
+                title={t('candidateProfilePage.languages.sectionTitle', 'Langues')}
+                description={t('candidateProfilePage.languages.sectionDesc', 'Les langues que vous parlez et votre niveau')}
+              />
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  value={newLanguage}
+                  onChange={(e) => setNewLanguage(e.target.value)}
+                  placeholder={t('candidateProfilePage.languages.languagePlaceholder', 'Ex: Français')}
+                  className="min-h-[44px] flex-1"
+                />
+                <select
+                  value={newLanguageLevel}
+                  onChange={(e) => setNewLanguageLevel(e.target.value)}
+                  className="h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="basic">{t('languageLevel.basic', 'Débutant')}</option>
+                  <option value="intermediate">{t('languageLevel.intermediate', 'Intermédiaire')}</option>
+                  <option value="professional">{t('languageLevel.professional', 'Professionnel')}</option>
+                  <option value="fluent">{t('languageLevel.fluent', 'Courant')}</option>
+                  <option value="native">{t('languageLevel.native', 'Langue maternelle')}</option>
+                </select>
+                <Button onClick={handleAddLanguage} disabled={!newLanguage.trim()} type="button" className="min-h-[44px] w-full sm:w-auto">
+                  <Plus className="w-4 h-4 mr-1" />{t('candidateProfilePage.languages.add', 'Ajouter')}
+                </Button>
+              </div>
+              {languages.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {languages.map(lang => (
+                    <Badge key={lang.code} className="bg-green-50 text-green-700 border border-green-200 gap-1 pr-1">
+                      {lang.code}
+                      <select
+                        value={lang.level}
+                        onChange={(e) => handleLanguageLevelChange(lang.code, e.target.value)}
+                        className="ml-1 bg-transparent border-0 focus:ring-0 text-xs"
+                      >
+                        <option value="basic">{t('languageLevel.basic', 'Débutant')}</option>
+                        <option value="intermediate">{t('languageLevel.intermediate', 'Intermédiaire')}</option>
+                        <option value="professional">{t('languageLevel.professional', 'Professionnel')}</option>
+                        <option value="fluent">{t('languageLevel.fluent', 'Courant')}</option>
+                        <option value="native">{t('languageLevel.native', 'Langue maternelle')}</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveLanguage(lang.code)}
+                        className="ml-1 hover:bg-green-200 rounded-full p-0.5 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Préférences de contrat */}
+          <Card>
+            <CardContent className="p-6">
+              <SectionHeader
+                icon={Briefcase}
+                title={t('candidateProfilePage.contractPreferences.sectionTitle', 'Contrats recherchés')}
+                description={t('candidateProfilePage.contractPreferences.sectionDesc', 'Sélectionnez les types de contrat qui vous intéressent')}
+              />
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(CONTRACT_TYPES).map(([key, val]) => (
+                  <label key={key} className="cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={preferredContractTypes.includes(key)}
+                      onChange={() => handleToggleContractType(key)}
+                    />
+                    <Badge
+                      className={cn(
+                        'border transition-colors',
+                        preferredContractTypes.includes(key)
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                      )}
+                    >
+                      {t(val.key)}
+                    </Badge>
+                  </label>
+                ))}
               </div>
             </CardContent>
           </Card>

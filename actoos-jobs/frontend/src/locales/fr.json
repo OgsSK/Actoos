@@ -1970,6 +1970,12 @@
     "fixedShort": "(forfait)"
   },
 "createJob": {
+  
+    "languages": {
+      "languagePlaceholder": "Ex: Anglais",
+      "add": "Ajouter",
+      "alreadyAdded": "Langue déjà ajoutée"
+    },
  
   "iaProgress": {
       "analyzing": "Analyse du titre...",
@@ -1993,6 +1999,7 @@
       "description": "Votre entreprise doit être validée avant de pouvoir publier des offres. Vous pouvez préparer vos offres en brouillon en attendant."
     },
     "sections": {
+      "languages": "Langues requises",
       "basicInfo": "Informations de base",
       "description": "Description",
       "skills": "Compétences",
@@ -3087,7 +3094,26 @@
   "desc": "Accédez à notre vivier de talents disponibles.",
   "browse": "Parcourir les CV"
 },
+"languageLevel": {
+    "basic": "Débutant",
+    "intermediate": "Intermédiaire",
+    "professional": "Professionnel",
+    "fluent": "Courant",
+    "native": "Langue maternelle"
+  },
 "candidateProfilePage": {
+  "languages": {
+      "sectionTitle": "Langues",
+      "sectionDesc": "Les langues que vous parlez et votre niveau",
+      "languagePlaceholder": "Ex: Français",
+      "add": "Ajouter",
+      "alreadyAdded": "Langue déjà ajoutée"
+    },
+    "contractPreferences": {
+      "sectionTitle": "Contrats recherchés",
+      "sectionDesc": "Sélectionnez les types de contrat qui vous intéressent"
+    },
+  
 
 "projects": {
     "sectionTitle": "Projets",

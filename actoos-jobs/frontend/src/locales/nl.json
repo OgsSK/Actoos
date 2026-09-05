@@ -2298,6 +2298,11 @@
       "fixedShort": "(vast)"
     },
     "createJob": {
+      "languages": {
+      "languagePlaceholder": "Bijv. Engels",
+      "add": "Toevoegen",
+      "alreadyAdded": "Taal al toegevoegd"
+    },
       
       "iaProgress": {
       "analyzing": "Titel analyseren...",
@@ -2320,6 +2325,7 @@
         "description": "Uw bedrijf moet gevalideerd zijn voordat u vacatures kunt publiceren. U kunt in de tussentijd concepten voorbereiden."
       },
       "sections": {
+        "languages": "Vereiste talen",
         "basicInfo": "Basisinformatie",
         "description": "Beschrijving",
         "skills": "Vaardigheden",
@@ -3340,7 +3346,26 @@
       "desc": "Krijg toegang tot onze pool beschikbare talenten.",
       "browse": "Cv's doorbladeren"
     },
+    "languageLevel": {
+      "basic": "Beginner",
+      "intermediate": "Gemiddeld",
+      "professional": "Professioneel",
+      "fluent": "Vloeiend",
+      "native": "Moedertaal"
+    },
  "candidateProfilePage": {
+  "languages": {
+      "sectionTitle": "Talen",
+      "sectionDesc": "Talen die u spreekt en uw niveau",
+      "languagePlaceholder": "Bijv. Frans",
+      "add": "Toevoegen",
+      "alreadyAdded": "Taal al toegevoegd"
+    },
+    "contractPreferences": {
+      "sectionTitle": "Gezochte contracten",
+      "sectionDesc": "Selecteer de contracttypes die u interesseren"
+    },
+    
   "projects": {
       "sectionTitle": "Projecten",
       "sectionDesc": "Toon uw projecten om te werven, investeren of samenwerken",

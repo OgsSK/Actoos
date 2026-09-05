@@ -2337,6 +2337,11 @@
       "fixedShort": "(Pauschale)"
     },
     "createJob": {
+       "languages": {
+      "languagePlaceholder": "z. B. Englisch",
+      "add": "Hinzufügen",
+      "alreadyAdded": "Sprache bereits hinzugefügt"
+    },
       
        "iaProgress": {
       "analyzing": "Titel wird analysiert...",
@@ -2359,6 +2364,7 @@
         "description": "Ihr Unternehmen muss validiert werden, bevor Sie Stellenanzeigen veröffentlichen können. In der Zwischenzeit können Sie Entwürfe vorbereiten."
       },
       "sections": {
+        "languages": "Erforderliche Sprachen",
         "basicInfo": "Grundinformationen",
         "description": "Beschreibung",
         "skills": "Kompetenzen",
@@ -3379,7 +3385,26 @@
       "desc": "Greifen Sie auf unseren Pool verfügbarer Talente zu.",
       "browse": "CVs durchsuchen"
     },
+    "languageLevel": {
+      "basic": "Anfänger",
+      "intermediate": "Mittelstufe",
+      "professional": "Fachkundig",
+      "fluent": "Fließend",
+      "native": "Muttersprache"
+    },
    "candidateProfilePage": {
+    "languages": {
+      "sectionTitle": "Sprachen",
+      "sectionDesc": "Sprachen, die Sie sprechen, und Ihr Niveau",
+      "languagePlaceholder": "z. B. Französisch",
+      "add": "Hinzufügen",
+      "alreadyAdded": "Sprache bereits hinzugefügt"
+    },
+    "contractPreferences": {
+      "sectionTitle": "Gesuchte Verträge",
+      "sectionDesc": "Wählen Sie die Vertragsarten, die Sie interessieren"
+    },
+    
     "projects": {
       "sectionTitle": "Projekte",
       "sectionDesc": "Präsentieren Sie Ihre Projekte, um zu rekrutieren, zu investieren oder zusammenzuarbeiten",

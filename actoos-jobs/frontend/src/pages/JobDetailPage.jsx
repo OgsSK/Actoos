@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import {
   MapPin, Building2, Banknote, Heart, Loader2, ChevronLeft,
   Briefcase, CheckCircle, Clock, ExternalLink, Send, Share2,
-  Users, GraduationCap
+  Users, GraduationCap, Globe
 } from 'lucide-react';
 import { CONTRACT_TYPES, EXPERIENCE_LEVELS, formatSalaryPeriod } from '../lib/utils';
 
@@ -136,7 +136,6 @@ const JobDetailPage = () => {
   const fetchJob = async () => {
     setLoading(true);
     try {
-      // ✅ MODIFICATION 1 : Ajout de 'address' dans la sélection
       const { data, error } = await supabase
         .from('jobs')
         .select(`*, address, company:companies(*, owner:users(email)), city:cities(name), posted_by_user:users(email, first_name, last_name)`)
@@ -272,7 +271,7 @@ const JobDetailPage = () => {
                   <Badge className="bg-slate-100 text-slate-700 border-0">
                     <MapPin className="w-3.5 h-3.5 mr-1" />{job.city?.name || t('jobDetail.unspecified')}
                   </Badge>
-                  {/* ✅ MODIFICATION 2 : Affichage de l'adresse si présente */}
+                  {/* ✅ Affichage de l'adresse si présente */}
                   {job.address && (
                     <Badge className="bg-slate-50 text-slate-600 border border-slate-200">
                       <MapPin className="w-3.5 h-3.5 mr-1" />
@@ -363,6 +362,26 @@ const JobDetailPage = () => {
                     {job.skills_required.map((skill) => (
                       <Badge key={skill} className="bg-blue-50 text-blue-700 border border-blue-200">
                         {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* ✅ Langues requises (depuis eligibility_criteria) */}
+              {job.eligibility_criteria?.languages?.length > 0 && (
+                <>
+                  <h3 className="text-lg font-semibold text-slate-900 mt-6">
+                    <Globe className="w-5 h-5 inline mr-2 text-blue-600" />
+                    {t('createJob.sections.languages', 'Langues requises')}
+                  </h3>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {job.eligibility_criteria.languages.map((lang) => (
+                      <Badge key={lang.code} className="bg-purple-50 text-purple-700 border border-purple-200">
+                        {lang.code}
+                        <span className="ml-1 text-xs text-purple-500">
+                          - {t(`languageLevel.${lang.level}`, lang.level)}
+                        </span>
                       </Badge>
                     ))}
                   </div>

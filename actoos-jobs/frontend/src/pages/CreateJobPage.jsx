@@ -14,7 +14,7 @@ import { useCities } from '../hooks/useCities';
 import {
   Briefcase, MapPin, DollarSign, Users,
   Plus, X, Save, Loader2, ChevronLeft, Send,
-  GraduationCap, ArrowRight, Building2, Sparkles
+  GraduationCap, ArrowRight, Building2, Sparkles, Globe
 } from 'lucide-react';
 import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
@@ -62,7 +62,7 @@ const CreateJobPage = () => {
     experience_level: '',
     salary_min: '',
     salary_max: '',
-    salary_period: 'monthly', // ✅ NOUVEAU
+    salary_period: 'monthly',
     is_salary_visible: true,
     city_id: '',
     address: '',
@@ -71,10 +71,15 @@ const CreateJobPage = () => {
     positions_count: 1,
     skills_required: [],
     is_urgent: false,
-    status: 'draft'
+    status: 'draft',
+    // ✅ Nouveau champ pour les langues requises
+    required_languages: [],
   });
 
   const [newSkill, setNewSkill] = useState('');
+  // ✅ États pour les langues requises
+  const [newRequiredLanguage, setNewRequiredLanguage] = useState('');
+  const [newRequiredLanguageLevel, setNewRequiredLanguageLevel] = useState('intermediate');
 
   useEffect(() => {
     if (!user?.id || !activeCompanyId) return;
@@ -125,6 +130,12 @@ const CreateJobPage = () => {
       const displaySalaryMin = data.salary_min ? Math.round(data.salary_min / rate) : '';
       const displaySalaryMax = data.salary_max ? Math.round(data.salary_max / rate) : '';
 
+      // Récupération des langues requises depuis eligibility_criteria
+      let requiredLanguages = [];
+      if (data.eligibility_criteria && data.eligibility_criteria.languages) {
+        requiredLanguages = data.eligibility_criteria.languages;
+      }
+
       setForm({
         title: data.title || '',
         description: data.description || '',
@@ -136,7 +147,7 @@ const CreateJobPage = () => {
         experience_level: data.experience_level || '',
         salary_min: displaySalaryMin,
         salary_max: displaySalaryMax,
-        salary_period: data.salary_period || 'monthly', // ✅ NOUVEAU
+        salary_period: data.salary_period || 'monthly',
         is_salary_visible: data.is_salary_visible ?? true,
         city_id: data.city_id || '',
         address: data.address || '',
@@ -145,7 +156,8 @@ const CreateJobPage = () => {
         positions_count: data.positions_count || 1,
         skills_required: data.skills_required || [],
         is_urgent: data.is_urgent || false,
-        status: data.status || 'draft'
+        status: data.status || 'draft',
+        required_languages: requiredLanguages,
       });
     } catch (error) {
       console.error('Error fetching job:', error);
@@ -163,6 +175,40 @@ const CreateJobPage = () => {
 
   const handleRemoveSkill = (skill) => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
+  };
+
+  // ✅ Gestion des langues requises
+  const handleAddRequiredLanguage = () => {
+    if (!newRequiredLanguage.trim()) return;
+    if (form.required_languages.some(l => l.code === newRequiredLanguage)) {
+      toast.error(t('createJob.languages.alreadyAdded', 'Langue déjà ajoutée'));
+      return;
+    }
+    setForm({
+      ...form,
+      required_languages: [
+        ...form.required_languages,
+        { code: newRequiredLanguage, level: newRequiredLanguageLevel }
+      ]
+    });
+    setNewRequiredLanguage('');
+    setNewRequiredLanguageLevel('intermediate');
+  };
+
+  const handleRemoveRequiredLanguage = (code) => {
+    setForm({
+      ...form,
+      required_languages: form.required_languages.filter(l => l.code !== code)
+    });
+  };
+
+  const handleRequiredLanguageLevelChange = (code, level) => {
+    setForm({
+      ...form,
+      required_languages: form.required_languages.map(l =>
+        l.code === code ? { ...l, level } : l
+      )
+    });
   };
 
   // ---------- Génération IA avec détection automatique du salary_period ----------
@@ -225,11 +271,7 @@ const CreateJobPage = () => {
       const generated = JSON.parse(data.result);
       setIaGeneratedData(generated);
 
-      // ✅ Détection automatique du salary_period par l'IA
-      // L'IA peut renvoyer un champ "salary_period" (monthly, daily, hourly, fixed)
-      // Si absent, on déduit à partir du contexte (titre, contrat, etc.)
       let detectedPeriod = generated.salary_period || 'monthly';
-      // Si le titre contient des indices, on surcharge
       const titleLower = form.title.toLowerCase();
       if (titleLower.includes('freelance') || titleLower.includes('consultant') || titleLower.includes('mission')) {
         detectedPeriod = 'daily';
@@ -250,12 +292,13 @@ const CreateJobPage = () => {
         experience_level: generated.experience_level || prev.experience_level,
         salary_min: generated.salary_min ? String(generated.salary_min) : prev.salary_min,
         salary_max: generated.salary_max ? String(generated.salary_max) : prev.salary_max,
-        salary_period: detectedPeriod, // ✅ NOUVEAU
+        salary_period: detectedPeriod,
         is_remote: generated.is_remote ?? prev.is_remote,
         skills_required: generated.skills_required || prev.skills_required,
         category_id: generated.category_slug
           ? categories.find(cat => cat.slug === generated.category_slug)?.id || prev.category_id
           : prev.category_id,
+        // On ne touche pas aux langues requises car l'IA ne les génère pas encore
       }));
 
       toast.success(t('createJob.toasts.iaGenerationSuccess'));
@@ -356,6 +399,11 @@ const CreateJobPage = () => {
         return isNaN(num) ? null : Math.round(num * RATES[currency] || 1);
       };
 
+      // ✅ Construction de eligibility_criteria à partir des langues requises
+      const eligibilityCriteria = form.required_languages.length > 0
+        ? { languages: form.required_languages }
+        : null;
+
       const jobData = {
         company_id: company.id,
         posted_by: user.id,
@@ -371,7 +419,7 @@ const CreateJobPage = () => {
         salary_min: toXOF(form.salary_min),
         salary_max: toXOF(form.salary_max),
         salary_currency: 'XOF',
-        salary_period: form.salary_period, // ✅ NOUVEAU
+        salary_period: form.salary_period,
         is_salary_visible: form.is_salary_visible,
         city_id: form.city_id || null,
         country_id: countryId,
@@ -381,7 +429,8 @@ const CreateJobPage = () => {
         positions_count: parseInt(form.positions_count) || 1,
         skills_required: form.skills_required.length > 0 ? form.skills_required : null,
         is_urgent: form.is_urgent,
-        status: finalStatus
+        status: finalStatus,
+        eligibility_criteria: eligibilityCriteria, // ✅ Nouveau champ
       };
 
       let newJobId = id;
@@ -719,6 +768,67 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
+          {/* ✅ Langues requises */}
+          <Card>
+            <CardContent className="p-4 sm:p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-blue-600" />
+                {t('createJob.sections.languages', 'Langues requises')}
+              </h2>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  value={newRequiredLanguage}
+                  onChange={(e) => setNewRequiredLanguage(e.target.value)}
+                  placeholder={t('createJob.languages.languagePlaceholder', 'Ex: Français')}
+                  className="min-h-[44px] flex-1"
+                  data-testid="job-language-input"
+                />
+                <select
+                  value={newRequiredLanguageLevel}
+                  onChange={(e) => setNewRequiredLanguageLevel(e.target.value)}
+                  className="h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md bg-white"
+                  data-testid="job-language-level-select"
+                >
+                  <option value="basic">{t('languageLevel.basic', 'Débutant')}</option>
+                  <option value="intermediate">{t('languageLevel.intermediate', 'Intermédiaire')}</option>
+                  <option value="professional">{t('languageLevel.professional', 'Professionnel')}</option>
+                  <option value="fluent">{t('languageLevel.fluent', 'Courant')}</option>
+                  <option value="native">{t('languageLevel.native', 'Langue maternelle')}</option>
+                </select>
+                <Button onClick={handleAddRequiredLanguage} disabled={!newRequiredLanguage.trim()} type="button" className="min-h-[44px] w-full sm:w-auto">
+                  <Plus className="w-4 h-4 mr-1" />{t('createJob.languages.add', 'Ajouter')}
+                </Button>
+              </div>
+              {form.required_languages.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {form.required_languages.map(lang => (
+                    <Badge key={lang.code} className="bg-purple-50 text-purple-700 border border-purple-200 gap-1 pr-1">
+                      {lang.code}
+                      <select
+                        value={lang.level}
+                        onChange={(e) => handleRequiredLanguageLevelChange(lang.code, e.target.value)}
+                        className="ml-1 bg-transparent border-0 focus:ring-0 text-xs"
+                      >
+                        <option value="basic">{t('languageLevel.basic', 'Débutant')}</option>
+                        <option value="intermediate">{t('languageLevel.intermediate', 'Intermédiaire')}</option>
+                        <option value="professional">{t('languageLevel.professional', 'Professionnel')}</option>
+                        <option value="fluent">{t('languageLevel.fluent', 'Courant')}</option>
+                        <option value="native">{t('languageLevel.native', 'Langue maternelle')}</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRequiredLanguage(lang.code)}
+                        className="ml-1 hover:bg-purple-200 rounded-full p-0.5 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Localisation */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
@@ -758,7 +868,6 @@ const CreateJobPage = () => {
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2"><DollarSign className="w-5 h-5 text-blue-600" />{t('createJob.sections.salary')}</h2>
 
-              {/* ✅ Sélecteur de périodicité */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.salaryPeriod')}</label>
                 <select

@@ -2231,7 +2231,11 @@
       "fixedShort": "(fixo)"
     },
     "createJob": {
-      
+       "languages": {
+      "languagePlaceholder": "Ex: Inglês",
+      "add": "Adicionar",
+      "alreadyAdded": "Idioma já adicionado"
+    },
       "iaProgress": {
       "analyzing": "Analisando título...",
       "generating": "A gerar...",
@@ -2253,6 +2257,7 @@
         "description": "A sua empresa precisa de ser validada antes de poder publicar ofertas. Pode preparar rascunhos entretanto."
       },
       "sections": {
+        "languages": "Idiomas necessários",
         "basicInfo": "Informações básicas",
         "description": "Descrição",
         "skills": "Competências",
@@ -3273,7 +3278,26 @@
       "desc": "Aceda ao nosso viveiro de talentos disponíveis.",
       "browse": "Percorrer CVs"
     },
+    "languageLevel": {
+      "basic": "Iniciante",
+      "intermediate": "Intermédio",
+      "professional": "Profissional",
+      "fluent": "Fluente",
+      "native": "Nativo"
+    },
     "candidateProfilePage": {
+       "languages": {
+      "sectionTitle": "Idiomas",
+      "sectionDesc": "Idiomas que fala e o seu nível",
+      "languagePlaceholder": "Ex: Francês",
+      "add": "Adicionar",
+      "alreadyAdded": "Idioma já adicionado"
+    },
+    "contractPreferences": {
+      "sectionTitle": "Contratos pretendidos",
+      "sectionDesc": "Selecione os tipos de contrato que lhe interessam"
+    },
+    
       "projects": {
       "sectionTitle": "Projetos",
       "sectionDesc": "Apresente os seus projetos para recrutar, investir ou colaborar",

@@ -2233,7 +2233,11 @@
       "fixedShort": "(forfait)"
     },
     "createJob": {
-       
+       "languages": {
+      "languagePlaceholder": "Es: Inglese",
+      "add": "Aggiungi",
+      "alreadyAdded": "Lingua già aggiunta"
+    },
       "iaProgress": {
       "analyzing": "Analisi del titolo...",
       "generating": "Generazione in corso...",
@@ -2255,6 +2259,7 @@
         "description": "La tua azienda deve essere convalidata prima di poter pubblicare offerte. Puoi preparare le bozze nel frattempo."
       },
       "sections": {
+        "languages": "Lingue richieste",
         "basicInfo": "Informazioni di base",
         "description": "Descrizione",
         "skills": "Competenze",
@@ -3276,7 +3281,26 @@
       "desc": "Accedi al nostro bacino di talenti disponibili.",
       "browse": "Sfoglia i CV"
     },
+    "languageLevel": {
+      "basic": "Principiante",
+      "intermediate": "Intermedio",
+      "professional": "Professionale",
+      "fluent": "Fluente",
+      "native": "Madrelingua"
+    },
  "candidateProfilePage": {
+  "languages": {
+      "sectionTitle": "Lingue",
+      "sectionDesc": "Lingue che parli e il tuo livello",
+      "languagePlaceholder": "Es: Francese",
+      "add": "Aggiungi",
+      "alreadyAdded": "Lingua già aggiunta"
+    },
+    "contractPreferences": {
+      "sectionTitle": "Contratti ricercati",
+      "sectionDesc": "Seleziona i tipi di contratto che ti interessano"
+    },
+    
   "projects": {
       "sectionTitle": "Progetti",
       "sectionDesc": "Mostra i tuoi progetti per reclutare, investire o collaborare",

@@ -13,7 +13,7 @@ import {
   Crown, Download, DollarSign, BookOpen, X, Phone, AlertTriangle, RefreshCw
 } from 'lucide-react';
 import { useCurrencyFormatter } from '../hooks/useCurrencyFormatter';
-import { formatSalaryPeriod } from '../lib/utils';
+import { formatSalaryPeriod, CONTRACT_TYPES } from '../lib/utils';
 
 const PAGE_SIZE = 12;
 
@@ -207,123 +207,126 @@ const CandidateBankPage = () => {
     fetchFilterOptions();
   }, [companyPlan]);
 
-const fetchCandidates = useCallback(async (isFirstLoad = false) => {
-  if (!user || companyPlan !== 'business') return;
+  const fetchCandidates = useCallback(async (isFirstLoad = false) => {
+    if (!user || companyPlan !== 'business') return;
 
-  if (controllerRef.current) controllerRef.current.abort();
-  const controller = new AbortController();
-  controllerRef.current = controller;
+    if (controllerRef.current) controllerRef.current.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
 
-  if (isFirstLoad) {
-    setInitialLoading(true);
-  } else {
-    setLoading(true);
-  }
-  setFetchError(null);
-
-  clearTimeout(timeoutRef.current);
-  timeoutRef.current = setTimeout(() => {
-    if (controllerRef.current === controller) {
-      setFetchError('timeout');
-      setInitialLoading(false);
-      setLoading(false);
-      controller.abort();
+    if (isFirstLoad) {
+      setInitialLoading(true);
+    } else {
+      setLoading(true);
     }
-  }, 8000);
+    setFetchError(null);
 
-  try {
-    let query = supabase
-      .from('candidate_profiles')
-      .select(`*, user:users(id, first_name, last_name, phone, avatar_url, email, city_id, city:cities(name))`, { count: 'exact' })
-      .eq('is_visible_in_cv_bank', true)
-      .order(sortBy === 'name' ? 'user(first_name)' : 'updated_at', { ascending: false })
-      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-
-    if (expLevelFilter) query = query.eq('experience_level', expLevelFilter);
-    if (isAvailableOnly) query = query.eq('is_available', true);
-
-    if (cityFilter) {
-      const { data: userIdsByCity } = await supabase
-        .from('users').select('id').eq('city_id', cityFilter);
-      const ids = (userIdsByCity || []).map(u => u.id);
-      if (ids.length === 0) {
-        setCandidates([]);
-        setTotalCount(0);
-        setTotalPages(0);
-        return;
-      }
-      query = query.in('user_id', ids);
-    }
-
-    if (salaryMinFilter) {
-      const xof = toXOF(salaryMinFilter);
-      if (xof !== null) query = query.gte('desired_salary_min', xof);
-    }
-
-    // ===== RECHERCHE INSENSIBLE AUX ACCENTS VIA RPC =====
-    if (search) {
-      const { data: matchingIds, error: rpcError } = await supabase
-        .rpc('search_candidate_profiles', { search_term: search });
-
-      if (rpcError) throw rpcError;
-
-      const ids = (matchingIds || []).map(item => item.user_id);
-      if (ids.length === 0) {
-        setCandidates([]);
-        setTotalCount(0);
-        setTotalPages(0);
-        return;
-      }
-      query = query.in('user_id', ids);
-    }
-
-    const { data, error, count } = await query;
-
-    if (error) throw error;
-    if (controller.signal.aborted) return;
-
-    const mapped = (data || []).map(c => ({
-      user_id: c.user_id,
-      title: c.title,
-      bio: c.bio,
-      experience_level: c.experience_level,
-      years_of_experience: c.years_of_experience,
-      is_available: c.is_available,
-      is_open_to_remote: c.is_open_to_remote,
-      desired_salary_min: c.desired_salary_min,
-      desired_salary_max: c.desired_salary_max,
-      desired_salary_period: c.desired_salary_period || 'monthly',
-      skills: c.skills || [],
-      experience: c.experience || [],
-      education: c.education || [],
-      cv_url: c.cv_url,
-      user: c.user ? {
-        first_name: c.user.first_name,
-        last_name: c.user.last_name,
-        phone: c.user.phone,
-        avatar_url: c.user.avatar_url,
-        email: c.user.email,
-      } : null,
-      city: c.user?.city || null,
-    }));
-
-    setCandidates(mapped);
-    setTotalCount(count || 0);
-    setTotalPages(Math.ceil((count || 0) / PAGE_SIZE));
-  } catch (err) {
-    if (err.name === 'AbortError') return;
-    console.error(err);
-    setFetchError(err.message);
-    setCandidates([]);
-    setTotalCount(0);
-  } finally {
     clearTimeout(timeoutRef.current);
-    if (controllerRef.current === controller) {
-      setInitialLoading(false);
-      setLoading(false);
+    timeoutRef.current = setTimeout(() => {
+      if (controllerRef.current === controller) {
+        setFetchError('timeout');
+        setInitialLoading(false);
+        setLoading(false);
+        controller.abort();
+      }
+    }, 8000);
+
+    try {
+      let query = supabase
+        .from('candidate_profiles')
+        .select(`*, user:users(id, first_name, last_name, phone, avatar_url, email, city_id, city:cities(name))`, { count: 'exact' })
+        .eq('is_visible_in_cv_bank', true)
+        .order(sortBy === 'name' ? 'user(first_name)' : 'updated_at', { ascending: false })
+        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+
+      if (expLevelFilter) query = query.eq('experience_level', expLevelFilter);
+      if (isAvailableOnly) query = query.eq('is_available', true);
+
+      if (cityFilter) {
+        const { data: userIdsByCity } = await supabase
+          .from('users').select('id').eq('city_id', cityFilter);
+        const ids = (userIdsByCity || []).map(u => u.id);
+        if (ids.length === 0) {
+          setCandidates([]);
+          setTotalCount(0);
+          setTotalPages(0);
+          return;
+        }
+        query = query.in('user_id', ids);
+      }
+
+      if (salaryMinFilter) {
+        const xof = toXOF(salaryMinFilter);
+        if (xof !== null) query = query.gte('desired_salary_min', xof);
+      }
+
+      // ===== RECHERCHE INSENSIBLE AUX ACCENTS VIA RPC =====
+      if (search) {
+        const { data: matchingIds, error: rpcError } = await supabase
+          .rpc('search_candidate_profiles', { search_term: search });
+
+        if (rpcError) throw rpcError;
+
+        const ids = (matchingIds || []).map(item => item.user_id);
+        if (ids.length === 0) {
+          setCandidates([]);
+          setTotalCount(0);
+          setTotalPages(0);
+          return;
+        }
+        query = query.in('user_id', ids);
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+      if (controller.signal.aborted) return;
+
+      const mapped = (data || []).map(c => ({
+        user_id: c.user_id,
+        title: c.title,
+        bio: c.bio,
+        experience_level: c.experience_level,
+        years_of_experience: c.years_of_experience,
+        is_available: c.is_available,
+        is_open_to_remote: c.is_open_to_remote,
+        desired_salary_min: c.desired_salary_min,
+        desired_salary_max: c.desired_salary_max,
+        desired_salary_period: c.desired_salary_period || 'monthly',
+        skills: c.skills || [],
+        experience: c.experience || [],
+        education: c.education || [],
+        cv_url: c.cv_url,
+        user: c.user ? {
+          first_name: c.user.first_name,
+          last_name: c.user.last_name,
+          phone: c.user.phone,
+          avatar_url: c.user.avatar_url,
+          email: c.user.email,
+        } : null,
+        city: c.user?.city || null,
+        // ✅ Nouveaux champs pour langues et contrats
+        languages: c.languages || [],
+        preferred_contract_types: c.preferred_contract_types || [],
+      }));
+
+      setCandidates(mapped);
+      setTotalCount(count || 0);
+      setTotalPages(Math.ceil((count || 0) / PAGE_SIZE));
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.error(err);
+      setFetchError(err.message);
+      setCandidates([]);
+      setTotalCount(0);
+    } finally {
+      clearTimeout(timeoutRef.current);
+      if (controllerRef.current === controller) {
+        setInitialLoading(false);
+        setLoading(false);
+      }
     }
-  }
-}, [user, companyPlan, search, cityFilter, expLevelFilter, salaryMinFilter, isAvailableOnly, sortBy, page]);
+  }, [user, companyPlan, search, cityFilter, expLevelFilter, salaryMinFilter, isAvailableOnly, sortBy, page]);
 
   // ✅ Premier chargement avec initialLoading
   useEffect(() => {
@@ -504,7 +507,42 @@ const fetchCandidates = useCallback(async (isFirstLoad = false) => {
                                     {phone && <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-1 min-w-0"><Phone className="w-3.5 h-3.5 shrink-0 text-slate-400" />{telLink ? <a href={telLink} onClick={(e) => e.stopPropagation()} className="text-blue-600 hover:underline font-mono text-xs truncate">{phone}</a> : <span className="text-slate-600 text-xs font-mono truncate">{phone}</span>}</div>}
                                   </div>
                                 </div>
-                                {c.skills?.length > 0 && <div className="flex flex-wrap gap-2 mb-5">{c.skills.slice(0, 5).map(skill => <Badge key={skill} variant="secondary" className="text-xs bg-slate-100 text-slate-700 border-slate-200/60 px-2.5 py-1 rounded-lg">{skill}</Badge>)}{c.skills.length > 5 && <Badge variant="outline" className="text-xs border-slate-300 text-slate-500 rounded-lg">+{c.skills.length - 5}</Badge>}</div>}
+
+                                {/* Compétences */}
+                                {c.skills?.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mb-5">
+                                    {c.skills.slice(0, 5).map(skill => (
+                                      <Badge key={skill} variant="secondary" className="text-xs bg-slate-100 text-slate-700 border-slate-200/60 px-2.5 py-1 rounded-lg">{skill}</Badge>
+                                    ))}
+                                    {c.skills.length > 5 && <Badge variant="outline" className="text-xs border-slate-300 text-slate-500 rounded-lg">+{c.skills.length - 5}</Badge>}
+                                  </div>
+                                )}
+
+                                {/* ✅ Langues */}
+                                {c.languages?.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mb-3">
+                                    {c.languages.slice(0, 3).map(lang => (
+                                      <Badge key={lang.code} className="bg-slate-50 text-slate-600 border border-slate-200 text-xs px-2.5 py-1 rounded-lg">
+                                        {lang.code}
+                                        <span className="ml-1 text-slate-400">- {t(`languageLevel.${lang.level}`, lang.level)}</span>
+                                      </Badge>
+                                    ))}
+                                    {c.languages.length > 3 && <Badge className="bg-slate-50 text-slate-500 border-slate-200 text-xs px-2.5 py-1 rounded-lg">+{c.languages.length - 3}</Badge>}
+                                  </div>
+                                )}
+
+                                {/* ✅ Contrats préférés */}
+                                {c.preferred_contract_types?.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mb-5">
+                                    {c.preferred_contract_types.slice(0, 3).map(contractType => (
+                                      <Badge key={contractType} className="bg-blue-50 text-blue-700 border border-blue-200 text-xs px-2.5 py-1 rounded-lg">
+                                        {t(CONTRACT_TYPES[contractType]?.key || contractType)}
+                                      </Badge>
+                                    ))}
+                                    {c.preferred_contract_types.length > 3 && <Badge className="bg-blue-50 text-blue-500 border-blue-200 text-xs px-2.5 py-1 rounded-lg">+{c.preferred_contract_types.length - 3}</Badge>}
+                                  </div>
+                                )}
+
                                 <div className="text-sm text-slate-600 space-y-3 mt-auto min-w-0">
                                   {lastExperience && <div className="flex items-center gap-3 min-w-0"><Clock className="w-4 h-4 text-slate-400 shrink-0" /><div className="truncate font-medium">{lastExperience.title} – <span className="text-slate-500">{lastExperience.company}</span></div></div>}
                                   {lastEducation && <div className="flex items-center gap-3 min-w-0"><BookOpen className="w-4 h-4 text-slate-400 shrink-0" /><div className="truncate font-medium">{lastEducation.title} – <span className="text-slate-500">{lastEducation.school || lastEducation.institution}</span></div></div>}
@@ -522,6 +560,7 @@ const fetchCandidates = useCallback(async (isFirstLoad = false) => {
                                     </div>
                                   )}
                                 </div>
+
                                 <div className="flex items-center justify-between mt-5 pt-5 border-t border-slate-100">
                                   <div className="flex items-center gap-2">
                                     {c.is_available ? <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-3 py-1 rounded-lg">{t('common.available')}</Badge> : <Badge className="bg-slate-100 text-slate-500 border-slate-200 text-xs px-3 py-1 rounded-lg">{t('common.unavailable')}</Badge>}

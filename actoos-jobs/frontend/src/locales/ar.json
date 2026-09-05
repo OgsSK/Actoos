@@ -2232,6 +2232,11 @@
       "fixedShort": "(ثابت)"
     },
     "createJob": {
+      "languages": {
+      "languagePlaceholder": "مثال: الإنجليزية",
+      "add": "إضافة",
+      "alreadyAdded": "اللغة مضافة بالفعل"
+    },
       
       "iaProgress": {
       "analyzing": "تحليل العنوان...",
@@ -2254,6 +2259,7 @@
         "description": "يجب التحقق من شركتك قبل أن تتمكن من نشر عروض العمل. يمكنك تحضير مسودات في هذه الأثناء."
       },
       "sections": {
+        "languages": "اللغات المطلوبة",
         "basicInfo": "معلومات أساسية",
         "description": "الوصف",
         "skills": "المهارات",
@@ -3268,7 +3274,26 @@
       "desc": "الوصول إلى مجموعة المواهب المتاحة لدينا.",
       "browse": "تصفح السير الذاتية"
     },
+     "languageLevel": {
+      "basic": "مبتدئ",
+      "intermediate": "متوسط",
+      "professional": "مهني",
+      "fluent": "طلاقة",
+      "native": "اللغة الأم"
+    },
  "candidateProfilePage": {
+  "languages": {
+      "sectionTitle": "اللغات",
+      "sectionDesc": "اللغات التي تتحدثها ومستواك",
+      "languagePlaceholder": "مثال: الفرنسية",
+      "add": "إضافة",
+      "alreadyAdded": "اللغة مضافة بالفعل"
+    },
+    "contractPreferences": {
+      "sectionTitle": "العقود المطلوبة",
+      "sectionDesc": "حدد أنواع العقود التي تهمك"
+    },
+   
     "projects": {
       "sectionTitle": "مشاريع",
       "sectionDesc": "اعرض مشاريعك للتوظيف أو الاستثمار أو التعاون",
