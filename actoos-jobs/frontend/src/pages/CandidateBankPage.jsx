@@ -207,121 +207,123 @@ const CandidateBankPage = () => {
     fetchFilterOptions();
   }, [companyPlan]);
 
-  const fetchCandidates = useCallback(async (isFirstLoad = false) => {
-    if (!user || companyPlan !== 'business') return;
+const fetchCandidates = useCallback(async (isFirstLoad = false) => {
+  if (!user || companyPlan !== 'business') return;
 
-    if (controllerRef.current) controllerRef.current.abort();
-    const controller = new AbortController();
-    controllerRef.current = controller;
+  if (controllerRef.current) controllerRef.current.abort();
+  const controller = new AbortController();
+  controllerRef.current = controller;
 
-    if (isFirstLoad) {
-      setInitialLoading(true);
-    } else {
-      setLoading(true);
+  if (isFirstLoad) {
+    setInitialLoading(true);
+  } else {
+    setLoading(true);
+  }
+  setFetchError(null);
+
+  clearTimeout(timeoutRef.current);
+  timeoutRef.current = setTimeout(() => {
+    if (controllerRef.current === controller) {
+      setFetchError('timeout');
+      setInitialLoading(false);
+      setLoading(false);
+      controller.abort();
     }
-    setFetchError(null);
+  }, 8000);
 
+  try {
+    let query = supabase
+      .from('candidate_profiles')
+      .select(`*, user:users(id, first_name, last_name, phone, avatar_url, email, city_id, city:cities(name))`, { count: 'exact' })
+      .eq('is_visible_in_cv_bank', true)
+      .order(sortBy === 'name' ? 'user(first_name)' : 'updated_at', { ascending: false })
+      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+
+    if (expLevelFilter) query = query.eq('experience_level', expLevelFilter);
+    if (isAvailableOnly) query = query.eq('is_available', true);
+
+    if (cityFilter) {
+      const { data: userIdsByCity } = await supabase
+        .from('users').select('id').eq('city_id', cityFilter);
+      const ids = (userIdsByCity || []).map(u => u.id);
+      if (ids.length === 0) {
+        setCandidates([]);
+        setTotalCount(0);
+        setTotalPages(0);
+        return;
+      }
+      query = query.in('user_id', ids);
+    }
+
+    if (salaryMinFilter) {
+      const xof = toXOF(salaryMinFilter);
+      if (xof !== null) query = query.gte('desired_salary_min', xof);
+    }
+
+    // ===== RECHERCHE INSENSIBLE AUX ACCENTS VIA RPC =====
+    if (search) {
+      const { data: matchingIds, error: rpcError } = await supabase
+        .rpc('search_candidate_profiles', { search_term: search });
+
+      if (rpcError) throw rpcError;
+
+      const ids = (matchingIds || []).map(item => item.user_id);
+      if (ids.length === 0) {
+        setCandidates([]);
+        setTotalCount(0);
+        setTotalPages(0);
+        return;
+      }
+      query = query.in('user_id', ids);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+    if (controller.signal.aborted) return;
+
+    const mapped = (data || []).map(c => ({
+      user_id: c.user_id,
+      title: c.title,
+      bio: c.bio,
+      experience_level: c.experience_level,
+      years_of_experience: c.years_of_experience,
+      is_available: c.is_available,
+      is_open_to_remote: c.is_open_to_remote,
+      desired_salary_min: c.desired_salary_min,
+      desired_salary_max: c.desired_salary_max,
+      desired_salary_period: c.desired_salary_period || 'monthly',
+      skills: c.skills || [],
+      experience: c.experience || [],
+      education: c.education || [],
+      cv_url: c.cv_url,
+      user: c.user ? {
+        first_name: c.user.first_name,
+        last_name: c.user.last_name,
+        phone: c.user.phone,
+        avatar_url: c.user.avatar_url,
+        email: c.user.email,
+      } : null,
+      city: c.user?.city || null,
+    }));
+
+    setCandidates(mapped);
+    setTotalCount(count || 0);
+    setTotalPages(Math.ceil((count || 0) / PAGE_SIZE));
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    console.error(err);
+    setFetchError(err.message);
+    setCandidates([]);
+    setTotalCount(0);
+  } finally {
     clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      if (controllerRef.current === controller) {
-        setFetchError('timeout');
-        setInitialLoading(false);
-        setLoading(false);
-        controller.abort();
-      }
-    }, 8000);
-
-    try {
-      let query = supabase
-        .from('candidate_profiles')
-        .select(`*, user:users(id, first_name, last_name, phone, avatar_url, email, city_id, city:cities(name))`, { count: 'exact' })
-        .eq('is_visible_in_cv_bank', true)
-        .order(sortBy === 'name' ? 'user(first_name)' : 'updated_at', { ascending: false })
-        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-
-      if (expLevelFilter) query = query.eq('experience_level', expLevelFilter);
-      if (isAvailableOnly) query = query.eq('is_available', true);
-
-      if (cityFilter) {
-        const { data: userIdsByCity } = await supabase
-          .from('users').select('id').eq('city_id', cityFilter);
-        const ids = (userIdsByCity || []).map(u => u.id);
-        if (ids.length === 0) {
-          setCandidates([]);
-          setTotalCount(0);
-          setTotalPages(0);
-          return;
-        }
-        query = query.in('user_id', ids);
-      }
-
-      if (salaryMinFilter) {
-        const xof = toXOF(salaryMinFilter);
-        if (xof !== null) query = query.gte('desired_salary_min', xof);
-      }
-
-      if (search) {
-        const { data: matchingUsers } = await supabase
-          .from('users')
-          .select('id')
-          .or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%`);
-        const matchingIds = (matchingUsers || []).map(u => u.id);
-        if (matchingIds.length === 0) {
-          setCandidates([]);
-          setTotalCount(0);
-          setTotalPages(0);
-          return;
-        }
-        query = query.in('user_id', matchingIds);
-      }
-
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-      if (controller.signal.aborted) return;
-
-      const mapped = (data || []).map(c => ({
-        user_id: c.user_id,
-        title: c.title,
-        bio: c.bio,
-        experience_level: c.experience_level,
-        years_of_experience: c.years_of_experience,
-        is_available: c.is_available,
-        is_open_to_remote: c.is_open_to_remote,
-        desired_salary_min: c.desired_salary_min,
-        desired_salary_max: c.desired_salary_max,
-        desired_salary_period: c.desired_salary_period || 'monthly', // ✅ NOUVEAU
-        skills: c.skills || [],
-        experience: c.experience || [],
-        education: c.education || [],
-        cv_url: c.cv_url,
-        user: c.user ? {
-          first_name: c.user.first_name,
-          last_name: c.user.last_name,
-          phone: c.user.phone,
-          avatar_url: c.user.avatar_url,
-          email: c.user.email,
-        } : null,
-        city: c.user?.city || null,
-      }));
-
-      setCandidates(mapped);
-      setTotalCount(count || 0);
-      setTotalPages(Math.ceil((count || 0) / PAGE_SIZE));
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      console.error(err);
-      setFetchError(err.message);
-      setCandidates([]);
-      setTotalCount(0);
-    } finally {
-      clearTimeout(timeoutRef.current);
-      if (controllerRef.current === controller) {
-        setInitialLoading(false);
-        setLoading(false);
-      }
+    if (controllerRef.current === controller) {
+      setInitialLoading(false);
+      setLoading(false);
     }
-  }, [user, companyPlan, search, cityFilter, expLevelFilter, salaryMinFilter, isAvailableOnly, sortBy, page]);
+  }
+}, [user, companyPlan, search, cityFilter, expLevelFilter, salaryMinFilter, isAvailableOnly, sortBy, page]);
 
   // ✅ Premier chargement avec initialLoading
   useEffect(() => {

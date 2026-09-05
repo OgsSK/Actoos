@@ -13,6 +13,11 @@ import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 
+// ✅ Nouvelle fonction pour ignorer les accents et la casse
+const removeAccents = (str = '') => {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+};
+
 // ✅ Fonction de formatage des nombres (10K, 1.2M, etc.)
 const formatCount = (num) => {
   if (!num || num < 10000) return num?.toString() || '0';
@@ -303,7 +308,6 @@ const CompaniesPage = () => {
         .order('name');
 
       if (countryId) query = query.eq('country_id', countryId);
-      if (searchQuery) query = query.ilike('name', `%${searchQuery}%`);
       if (selectedIndustry) {
         const currentIndustries = t('createCompany.industries', { returnObjects: true }) || [];
         const frenchIndustries = i18n.getFixedT('fr')('createCompany.industries', { returnObjects: true }) || [];
@@ -318,8 +322,15 @@ const CompaniesPage = () => {
       const { data, error } = await query.limit(50);
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const companyIds = data.map(c => c.id);
+      // ✅ Filtrage local insensible aux accents
+      let companiesData = data || [];
+      if (searchQuery) {
+        const kw = removeAccents(searchQuery);
+        companiesData = companiesData.filter(c => removeAccents(c.name).includes(kw));
+      }
+
+      if (companiesData.length > 0) {
+        const companyIds = companiesData.map(c => c.id);
         const now = new Date().toISOString();
         const { data: activeJobs } = await supabase
           .from('jobs')
@@ -333,7 +344,7 @@ const CompaniesPage = () => {
           countMap[row.company_id] = (countMap[row.company_id] || 0) + 1;
         });
 
-        let enriched = data.map(company => ({
+        let enriched = companiesData.map(company => ({
           ...company,
           activeJobsCount: countMap[company.id] || 0,
         }));

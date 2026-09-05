@@ -371,12 +371,18 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
                   )}
                 </div>
 
+                {/* ✅ MODIFICATION : Affichage de l'adresse */}
                 <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-slate-500">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
                     {job.city?.name || t('jobs.unspecified')}
                   </span>
-
+                  {job.address && (
+                    <span className="flex items-center gap-1 text-xs text-slate-400">
+                      <MapPin className="w-3 h-3" />
+                      {job.address}
+                    </span>
+                  )}
                   <Badge className={cn(contractInfo.color, 'border-0 rounded-full')}>
                     {t(contractInfo.key)}
                   </Badge>
@@ -708,6 +714,7 @@ const JobsPage = () => {
       setLoading(true);
       try {
         const now = new Date().toISOString();
+        // ✅ MODIFICATION 1 : Ajout de 'address' dans la sélection
         let query = supabase
           .from('jobs')
           .select(`
@@ -716,6 +723,7 @@ const JobsPage = () => {
             is_remote, remote_type, is_urgent, is_featured, skills_required, created_at, status,
             city_id, category_id,
             boosted_until,
+            address,
             company:companies(name, logo_url, is_verified, owner_id, subscription_plan),
             city:cities(name)
           `)

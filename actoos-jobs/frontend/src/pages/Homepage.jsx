@@ -52,18 +52,36 @@ const SearchHero = ({ cities, categories = [] }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
-    if (keyword.trim().length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
+    if (keyword.trim().length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
     const timer = setTimeout(async () => {
       setLoadingSuggestions(true);
-      const { data } = await supabase.from('jobs').select('title').eq('status', 'active')
-        .ilike('title', `%${keyword}%`).limit(5).order('created_at', { ascending: false });
-      if (data) {
-        const unique = [...new Set(data.map(j => j.title))];
-        setSuggestions(unique); setShowSuggestions(unique.length > 0);
+      try {
+        // ✅ Recherche insensible aux accents via RPC
+        const { data, error } = await supabase
+          .rpc('search_job_titles', { search_term: keyword });
+
+        if (error) throw error;
+
+        if (data) {
+          const unique = [...new Set(data.map(j => j.title))];
+          setSuggestions(unique);
+          setShowSuggestions(unique.length > 0);
+        }
+      } catch (err) {
+        console.error('Erreur suggestions:', err);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      } finally {
+        setLoadingSuggestions(false);
       }
-      setLoadingSuggestions(false);
     }, 300);
-    return () => clearInterval(timer);
+
+    return () => clearTimeout(timer);
   }, [keyword]);
 
   const handleSearch = (e) => {
@@ -248,13 +266,22 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
       setLoading(true);
       try {
         const now = new Date().toISOString();
-        let query = supabase.from('jobs').select(`id, title, contract_type, salary_min, salary_max, salary_period, created_at, is_urgent, is_remote, remote_type, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
+        // ✅ MODIFICATION 1 : Ajout de 'address' dans la sélection
+        let query = supabase.from('jobs').select(`id, title, contract_type, salary_min, salary_max, salary_period, created_at, is_urgent, is_remote, remote_type, address, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
           .eq('status', 'active').or(`expires_at.is.null,expires_at.gte.${now}`).in('company_id', activeCompanyIds)
           .order('boosted_until', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(6);
         if (countryId) query = query.eq('country_id', countryId);
         const { data, error } = await query;
         if (error) throw error;
-        const finalJobs = (data || []).map(job => ({ ...job, location: job.city?.name || t('home.jobs.unknownLocation'), company_name: job.company?.name || t('home.jobs.unknownCompany'), company_logo: job.company?.logo_url, owner_id: job.company?.owner_id }));
+        // ✅ MODIFICATION 2 : Ajout de 'address' dans le mapping
+        const finalJobs = (data || []).map(job => ({
+          ...job,
+          location: job.city?.name || t('home.jobs.unknownLocation'),
+          company_name: job.company?.name || t('home.jobs.unknownCompany'),
+          company_logo: job.company?.logo_url,
+          owner_id: job.company?.owner_id,
+          address: job.address,   // ← ajouté
+        }));
         setJobs(finalJobs);
         if (user && finalJobs.length > 0) {
           const { data: apps } = await supabase.from('applications').select('job_id, status').eq('candidate_id', user.id).in('job_id', finalJobs.map(j => j.id));
@@ -330,7 +357,16 @@ const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-slate-500">
-          <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 rounded-full px-3 py-1"><MapPin className="w-3 h-3" />{job.location}</span>
+          <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 rounded-full px-3 py-1">
+            <MapPin className="w-3 h-3" />{job.location}
+          </span>
+          {/* ✅ MODIFICATION 3 : Affichage de l'adresse si présente */}
+          {job.address && (
+            <span className="inline-flex items-center gap-1 text-slate-500 text-xs">
+              <MapPin className="w-3 h-3 text-slate-400" />
+              {job.address}
+            </span>
+          )}
           <Badge className={`${contractInfo.color} border-0 text-xs rounded-full`}>{t(contractInfo.key)}</Badge>
           {job.is_remote && <Badge className="bg-green-50 text-green-600 border-0 text-xs rounded-full">{t('home.jobs.remote')}</Badge>}
         </div>

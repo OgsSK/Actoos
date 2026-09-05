@@ -136,9 +136,10 @@ const JobDetailPage = () => {
   const fetchJob = async () => {
     setLoading(true);
     try {
+      // ✅ MODIFICATION 1 : Ajout de 'address' dans la sélection
       const { data, error } = await supabase
         .from('jobs')
-        .select(`*, company:companies(*, owner:users(email)), city:cities(name), posted_by_user:users(email, first_name, last_name)`)
+        .select(`*, address, company:companies(*, owner:users(email)), city:cities(name), posted_by_user:users(email, first_name, last_name)`)
         .eq('id', id).single();
       if (error) throw error;
       setJob(data);
@@ -271,6 +272,13 @@ const JobDetailPage = () => {
                   <Badge className="bg-slate-100 text-slate-700 border-0">
                     <MapPin className="w-3.5 h-3.5 mr-1" />{job.city?.name || t('jobDetail.unspecified')}
                   </Badge>
+                  {/* ✅ MODIFICATION 2 : Affichage de l'adresse si présente */}
+                  {job.address && (
+                    <Badge className="bg-slate-50 text-slate-600 border border-slate-200">
+                      <MapPin className="w-3.5 h-3.5 mr-1" />
+                      {job.address}
+                    </Badge>
+                  )}
                   <Badge className={`${contractInfo.color} border-0`}>{t(contractInfo.key)}</Badge>
                   {job.salary_min && job.salary_max && (
                     <Badge variant="outline" className="border-slate-200 text-slate-700">

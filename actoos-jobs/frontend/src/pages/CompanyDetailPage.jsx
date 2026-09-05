@@ -113,9 +113,10 @@ const CompanyDetailPage = () => {
         }
 
         const now = new Date().toISOString();
+        // ✅ MODIFICATION 1 : Ajout de 'address' dans la sélection des offres
         const { data: jobsData } = await supabase
           .from('jobs')
-          .select(`id, title, contract_type, salary_min, salary_max, salary_period, created_at, city:cities(name)`)
+          .select(`id, title, contract_type, salary_min, salary_max, salary_period, created_at, address, city:cities(name)`)
           .eq('company_id', id)
           .eq('status', 'active')
           .or(`expires_at.is.null,expires_at.gte.${now}`)
@@ -393,6 +394,13 @@ const CompanyDetailPage = () => {
                               <h3 className="font-semibold text-slate-900 text-lg">{job.title}</h3>
                               <div className="flex flex-wrap items-center gap-2 mt-2 text-sm text-slate-500">
                                 {job.city && <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{job.city.name}</span>}
+                                {/* ✅ MODIFICATION 2 : Affichage de l'adresse si présente */}
+                                {job.address && (
+                                  <span className="flex items-center gap-1 text-xs text-slate-400">
+                                    <MapPin className="w-3 h-3" />
+                                    {job.address}
+                                  </span>
+                                )}
                                 <Badge className={`${contractInfo.color} border-0`}>{t(contractInfo.key)}</Badge>
                                 {job.salary_min && job.salary_max && (
                                   <span className="flex items-center gap-1">
