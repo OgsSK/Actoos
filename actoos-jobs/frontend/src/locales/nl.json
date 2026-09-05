@@ -150,9 +150,9 @@
    "launchOffer": {
       "badge": "Lanceringsaanbod",
       "monthlyPrice": "€ 0",
-      "monthlyDescription": "3 maanden lang, daarna {price}/maand",
+      "monthlyDescription": "3 maanden lang, daarna {{price}}/maand",
       "annualPrice": "€ 49",
-      "annualDescription": "Het eerste jaar, daarna {price}/jaar",
+      "annualDescription": "Het eerste jaar, daarna {{price}}/jaar",
       "perMonth": "/maand",
       "perYear": "/jaar"
     },

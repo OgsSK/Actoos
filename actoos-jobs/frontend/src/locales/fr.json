@@ -3362,9 +3362,9 @@
      "launchOffer": {
       "badge": "Offre de lancement",
       "monthlyPrice": "0 €",
-      "monthlyDescription": "Pendant 3 mois, puis {price}/mois",
+      "monthlyDescription": "Pendant 3 mois, puis {{price}}/mois",
       "annualPrice": "49 €",
-      "annualDescription": "La première année, puis {price}/an",
+      "annualDescription": "La première année, puis {{price}}/an",
       "perMonth": "/mois",
       "perYear": "/an"
     },

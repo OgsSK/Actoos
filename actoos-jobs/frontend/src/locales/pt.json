@@ -150,9 +150,9 @@
    "launchOffer": {
       "badge": "Oferta de lançamento",
       "monthlyPrice": "0 €",
-      "monthlyDescription": "Durante 3 meses, depois {price}/mês",
+      "monthlyDescription": "Durante 3 meses, depois {{price}}/mês",
       "annualPrice": "49 €",
-      "annualDescription": "O primeiro ano, depois {price}/ano",
+      "annualDescription": "O primeiro ano, depois {{price}}/ano",
       "perMonth": "/mês",
       "perYear": "/ano"
     },
