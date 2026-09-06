@@ -149,7 +149,7 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   );
 };
 
-// -------------------- JobCard – version fusionnée (design Homepage + structure fonctionnelle) --------------------
+// -------------------- JobCard – version finale avec badge "Postulé" modernisé --------------------
 const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationStatus }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
@@ -383,9 +383,10 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
         </button>
       )}
 
+      {/* ✅ Badge "Postulé" modernisé – sans emoji, look professionnel */}
       {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
-        <Badge className="absolute top-3 left-3 bg-green-100 text-green-700 text-xs rounded-full">
-          ✅ {t('jobs.alreadyAppliedBadge', 'Postulé')}
+        <Badge className="absolute top-3 left-3 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full px-3 py-1 border border-emerald-200 shadow-sm">
+          {t('jobs.alreadyAppliedBadge', 'Postulé')}
         </Badge>
       )}
 
@@ -595,7 +596,7 @@ const FiltersSidebar = ({
   );
 };
 
-// -------------------- Main Jobs Page (inchangé) --------------------
+// -------------------- Main Jobs Page --------------------
 const ITEMS_PER_PAGE = 10;
 
 const JobsPage = () => {
@@ -631,7 +632,6 @@ const JobsPage = () => {
 
   const conversionRate = RATES[prefs.currency] || 1;
 
-  // Chargement du countryId
   useEffect(() => {
     if (prefs.country) {
       supabase
@@ -653,7 +653,6 @@ const JobsPage = () => {
     }
   }, [prefs.country]);
 
-  // Chargement des jobs
   useEffect(() => {
     if (!countryLoaded) return;
 
@@ -696,7 +695,6 @@ const JobsPage = () => {
     fetchJobs();
   }, [countryId, countryLoaded]);
 
-  // Statuts de candidature
   useEffect(() => {
     if (!user || jobs.length === 0) {
       setAppliedStatuses({});
@@ -714,7 +712,6 @@ const JobsPage = () => {
       });
   }, [user, jobs]);
 
-  // Offres sauvegardées
   useEffect(() => {
     if (user) {
       supabase
@@ -727,17 +724,14 @@ const JobsPage = () => {
     }
   }, [user]);
 
-  // Reset page au changement de filtres
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
 
-  // Scroll to top au changement de page
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
 
-  // -------- Filtrage dynamique des listes --------
   const popularCities = useMemo(() => {
     if (!filteredCities || jobs.length === 0) return [];
     const cityIds = [...new Set(jobs.map(j => j.city_id).filter(Boolean))];
@@ -773,7 +767,6 @@ const JobsPage = () => {
     [experienceLevels]
   );
 
-  // -------- Filtrage des offres --------
   const filteredJobs = useMemo(() => {
     let result = [...jobs];
 
@@ -903,7 +896,6 @@ const JobsPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
-      {/* Barre de recherche sticky */}
       <div className="bg-white border-b border-slate-200 sticky top-16 lg:top-20 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -958,7 +950,6 @@ const JobsPage = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex gap-8">
-          {/* Sidebar filtres desktop */}
           <div className="hidden lg:block w-72 shrink-0">
             <div className="bg-white rounded-3xl border border-slate-200 p-4 sticky top-36">
               <FiltersSidebar
@@ -974,7 +965,6 @@ const JobsPage = () => {
             </div>
           </div>
 
-          {/* Résultats */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div className="min-w-0">
@@ -1123,7 +1113,6 @@ const JobsPage = () => {
         </div>
       </div>
 
-      {/* Filtres mobiles */}
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div

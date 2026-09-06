@@ -9,7 +9,6 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import AIAssistant from '../components/AIAssistant';
 import EditableLinks from '../components/EditableLinks';
 import { toast } from 'sonner';
 import useAllowedCountries from '../hooks/useAllowedCountries';
@@ -18,7 +17,7 @@ import {
   User, Briefcase, FileText, GraduationCap, Award,
   MapPin, Globe, Plus, X, Save, Loader2,
   Upload, Trash2, ChevronLeft, Check, Calendar, Building2, Link,
-  Camera, File, ExternalLink, Sparkles, Eye, Flag,
+  Camera, File, ExternalLink, Eye, Flag,
   Image
 } from 'lucide-react';
 import { cn, EXPERIENCE_LEVELS, CONTRACT_TYPES } from '../lib/utils';
@@ -408,14 +407,6 @@ const ExperienceModal = ({ isOpen, onClose, onSave, experience = null, t }) => {
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
-            <div className="mt-2">
-              <AIAssistant
-                agentId="cv-experience"
-                initialText={form.description}
-                context={`${form.title} chez ${form.company}`}
-                onApply={(newDesc) => setForm({ ...form, description: newDesc })}
-              />
-            </div>
           </div>
 
           {/* Image pour l'expérience */}
@@ -633,44 +624,6 @@ const EducationModal = ({ isOpen, onClose, onSave, education = null, t }) => {
   );
 };
 
-// ---------- CV Analysis Modal ----------
-const CvAnalysisModal = ({ isOpen, onClose, cvText, onTextChange, onAnalyze, analyzing, result, t }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900">{t('candidateProfilePage.cvAnalysis.title')}</h3>
-          <button type="button" onClick={onClose}><X className="w-5 h-5" /></button>
-        </div>
-        <div className="p-6 space-y-4">
-          <p className="text-sm text-slate-600">{t('candidateProfilePage.cvAnalysis.description')}</p>
-          <textarea
-            rows={8}
-            className="w-full border border-slate-200 rounded-xl p-3 text-sm"
-            value={cvText}
-            onChange={(e) => onTextChange(e.target.value)}
-            placeholder={t('candidateProfilePage.cvAnalysis.placeholder')}
-          />
-          {result && (
-            <div className="bg-blue-50 rounded-xl p-4 text-sm whitespace-pre-wrap">
-              <p className="font-medium mb-2">{t('candidateProfilePage.cvAnalysis.suggestions')}</p>
-              {result}
-            </div>
-          )}
-        </div>
-        <div className="p-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
-          <Button variant="outline" type="button" onClick={onClose} className="min-h-[44px] w-full sm:w-auto">{t('candidateProfilePage.cvAnalysis.close')}</Button>
-          <Button type="button" onClick={onAnalyze} disabled={analyzing || !cvText.trim()} className="min-h-[44px] w-full sm:w-auto">
-            {analyzing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            {analyzing ? t('candidateProfilePage.cvAnalysis.analyzing') : t('candidateProfilePage.cvAnalysis.analyze')}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // ---------- Main Component ----------
 const CandidateProfilePage = () => {
   const { t, i18n } = useTranslation();
@@ -680,7 +633,7 @@ const CandidateProfilePage = () => {
   const fileInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
-  // ✅ Récupération des pays autorisés
+  // Récupération des pays autorisés
   const { allowed, isRestricted } = useAllowedCountries();
 
   // ---------- Mapping devise ----------
@@ -710,18 +663,15 @@ const CandidateProfilePage = () => {
   // ---------- Plafond de salaire en FCFA ----------
   const MAX_SALARY_XOF = 2_000_000_000; // 2 milliards
 
-  // ✅ Conversion devise locale → FCFA (pour la sauvegarde)
   const toXOF = (amount) => {
     const num = parseInt(amount);
     if (isNaN(num)) return null;
-    // Si l'utilisateur est déjà en FCFA, on ne fait rien
     if (prefs.currency === 'XOF') return num;
     const rate = RATES[prefs.currency] || 1;
     const xof = Math.round(num * rate);
     return xof > MAX_SALARY_XOF ? MAX_SALARY_XOF : xof;
   };
 
-  // ✅ Conversion FCFA → devise locale (pour l'affichage)
   const fromXOF = (amount) => {
     if (amount == null || amount === '') return '';
     const rate = RATES[prefs.currency] || 1;
@@ -741,7 +691,6 @@ const CandidateProfilePage = () => {
     avatar_url: '',
   });
 
-  // ✅ Ajout de desired_salary_period dans l'état
   const [candidateInfo, setCandidateInfo] = useState({
     title: '',
     bio: '',
@@ -755,7 +704,6 @@ const CandidateProfilePage = () => {
     is_visible_in_cv_bank: false,
   });
 
-  // ✅ État pour la ville en saisie libre
   const [customCity, setCustomCity] = useState('');
 
   const [skills, setSkills] = useState([]);
@@ -778,10 +726,6 @@ const CandidateProfilePage = () => {
 
   const [documents, setDocuments] = useState([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
-  const [showAnalysis, setShowAnalysis] = useState(false);
-  const [cvText, setCvText] = useState('');
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState('');
 
   const [showExpModal, setShowExpModal] = useState(false);
   const [editingExp, setEditingExp] = useState(null);
@@ -797,7 +741,6 @@ const CandidateProfilePage = () => {
   const [posting, setPosting] = useState(false);
   const postImageInputRef = useRef(null);
 
-  // Prévisualisation des documents
   const [previewDoc, setPreviewDoc] = useState(null);
 
   // --------------------- fetchPosts (actualités) ---------------------
@@ -866,8 +809,6 @@ const CandidateProfilePage = () => {
   };
 
   // --------------------- useEffect initiaux ---------------------
-  // ✅ On ne charge plus les villes depuis la table cities
-  // On charge uniquement les pays pour le téléphone
   useEffect(() => {
     fetchCountries();
   }, []);
@@ -915,7 +856,6 @@ const CandidateProfilePage = () => {
         is_visible_in_cv_bank: cp.is_visible_in_cv_bank ?? false,
       });
 
-      // ✅ Initialisation de la ville libre depuis le profil
       setCustomCity(cp.city || '');
 
       setSkills(cp.skills || []);
@@ -1089,31 +1029,6 @@ const CandidateProfilePage = () => {
     }
   };
 
-  const handleAnalyzeCV = async () => {
-    if (!cvText.trim()) {
-      toast.error(t('candidateProfilePage.cvAnalysis.emptyText'));
-      return;
-    }
-    setAnalyzing(true);
-    try {
-      const res = await apiFetch('/api/ai/agent', {
-        method: 'POST',
-        body: JSON.stringify({
-          agent_id: 'cv-analysis',
-          text: cvText,
-          context: candidateInfo.title || '',
-          language: i18n.language,
-        })
-      });
-      setAnalysisResult(res.result);
-      toast.success(t('candidateProfilePage.cvAnalysis.doneToast'));
-    } catch (err) {
-      toast.error(err.message || t('candidateProfilePage.cvAnalysis.errorToast'));
-    } finally {
-      setAnalyzing(false);
-    }
-  };
-
   const handleAddSkill = () => {
     if (newSkill.trim() && !skills.includes(newSkill.trim())) {
       setSkills([...skills, newSkill.trim()]);
@@ -1194,7 +1109,6 @@ const CandidateProfilePage = () => {
 
     setSaving(true);
     try {
-      // Mise à jour de la table profiles (sans city_id)
       const cleanedPersonalInfo = {
         first_name: personalInfo.first_name,
         last_name: personalInfo.last_name,
@@ -1204,7 +1118,6 @@ const CandidateProfilePage = () => {
       };
       await updateProfile(cleanedPersonalInfo);
 
-      // Upsert dans candidate_profiles (avec city en libre)
       const { error } = await supabase.from('candidate_profiles').upsert({
         user_id: user.id,
         title: (candidateInfo.title || '').substring(0, 200),
@@ -1213,7 +1126,6 @@ const CandidateProfilePage = () => {
         years_of_experience: candidateInfo.years_of_experience,
         is_available: candidateInfo.is_available,
         is_open_to_remote: candidateInfo.is_open_to_remote,
-        // ✅ Conversion devise locale → FCFA avant stockage
         desired_salary_min: toXOF(candidateInfo.desired_salary_min),
         desired_salary_max: toXOF(candidateInfo.desired_salary_max),
         desired_salary_period: candidateInfo.desired_salary_period || 'monthly',
@@ -1224,7 +1136,7 @@ const CandidateProfilePage = () => {
         education,
         links,
         is_visible_in_cv_bank: candidateInfo.is_visible_in_cv_bank,
-        city: customCity,   // ✅ champ libre pour la ville
+        city: customCity,
       }, { onConflict: 'user_id' });
 
       if (error) throw error;
@@ -1364,7 +1276,7 @@ const CandidateProfilePage = () => {
                     />
                   </div>
                 </div>
-                {/* ✅ Ville en saisie libre (remplace l'ancien select) */}
+                {/* Ville en saisie libre */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     {t('candidateProfilePage.personalInfo.city')}
@@ -1395,13 +1307,6 @@ const CandidateProfilePage = () => {
                     }}
                     className={cn('min-h-[44px]', errors.title ? 'border-red-500 focus-visible:ring-red-500' : '')}
                   />
-                  <div className="mt-2">
-                    <AIAssistant
-                      agentId="cv-summary"
-                      initialText={candidateInfo.title}
-                      onApply={(newTitle) => setCandidateInfo({ ...candidateInfo, title: newTitle })}
-                    />
-                  </div>
                 </div>
 
                 <div>
@@ -1412,14 +1317,6 @@ const CandidateProfilePage = () => {
                     value={candidateInfo.bio}
                     onChange={(e) => setCandidateInfo({ ...candidateInfo, bio: e.target.value })}
                   />
-                  <div className="mt-2">
-                    <AIAssistant
-                      agentId="cv-summary"
-                      initialText={candidateInfo.bio}
-                      context={candidateInfo.title}
-                      onApply={(newBio) => setCandidateInfo({ ...candidateInfo, bio: newBio })}
-                    />
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1509,11 +1406,6 @@ const CandidateProfilePage = () => {
                   </div>
                 )}
                 <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleCVUpload} className="hidden" />
-              </div>
-              <div className="mt-4 text-center">
-                <Button variant="outline" onClick={() => setShowAnalysis(true)} type="button" className="min-h-[44px]">
-                  <Sparkles className="w-4 h-4 mr-2" /> {t('candidateProfilePage.cv.analyzeButton')}
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -1633,24 +1525,6 @@ const CandidateProfilePage = () => {
               ) : (
                 <p className="text-sm text-slate-500 text-center py-4">{t('candidateProfilePage.skills.empty')}</p>
               )}
-              <div className="mt-2">
-                <AIAssistant
-                  agentId="cv-skills"
-                  initialText={candidateInfo.bio}
-                  onApply={(generatedSkills) => {
-                    const skillsArray = generatedSkills
-                      .split(/[•,\n-]/)
-                      .map(s => s.trim())
-                      .filter(s => s.length > 0 && !skills.includes(s));
-                    if (skillsArray.length > 0) {
-                      setSkills([...skills, ...skillsArray]);
-                      toast.success(t('candidateProfilePage.skills.addedToast', { count: skillsArray.length }));
-                    } else {
-                      toast.info(t('candidateProfilePage.skills.noneFound'));
-                    }
-                  }}
-                />
-              </div>
             </CardContent>
           </Card>
 
@@ -1960,7 +1834,7 @@ const CandidateProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Salaire souhaité – dynamique avec sélecteur de périodicité */}
+          {/* Salaire souhaité */}
           <Card>
             <CardContent className="p-6">
               <SectionHeader
@@ -1969,7 +1843,6 @@ const CandidateProfilePage = () => {
                 description={`${t('candidateProfilePage.salary.sectionDescBase')} (${currentCurrencyLabel})`}
               />
 
-              {/* ✅ Sélecteur de périodicité */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   {t('candidateProfilePage.salary.salaryPeriod')}
@@ -2110,16 +1983,6 @@ const CandidateProfilePage = () => {
         onClose={() => { setShowEduModal(false); setEditingEdu(null); }}
         onSave={handleSaveEducation}
         education={editingEdu}
-        t={t}
-      />
-      <CvAnalysisModal
-        isOpen={showAnalysis}
-        onClose={() => setShowAnalysis(false)}
-        cvText={cvText}
-        onTextChange={setCvText}
-        onAnalyze={handleAnalyzeCV}
-        analyzing={analyzing}
-        result={analysisResult}
         t={t}
       />
     </div>

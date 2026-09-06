@@ -65,6 +65,7 @@ const CompanyDetailPage = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followLoading, setFollowLoading] = useState(false);
+  const [loadingFollow, setLoadingFollow] = useState(true); // ✅ Nouvel état
 
   const [activeTab, setActiveTab] = useState('about');
   const [appliedStatuses, setAppliedStatuses] = useState({});
@@ -113,7 +114,6 @@ const CompanyDetailPage = () => {
         }
 
         const now = new Date().toISOString();
-        // ✅ MODIFICATION 1 : Ajout de 'address' dans la sélection des offres
         const { data: jobsData } = await supabase
           .from('jobs')
           .select(`id, title, contract_type, salary_min, salary_max, salary_period, created_at, address, city:cities(name)`)
@@ -130,15 +130,8 @@ const CompanyDetailPage = () => {
           .order('created_at', { ascending: false });
         setCompanyPosts(postsData || []);
 
-        if (user) {
-          const { data: followData } = await supabase
-            .from('company_followers')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('company_id', id)
-            .maybeSingle();
-          setIsFollowing(!!followData);
-        }
+        // ✅ Le suivi est maintenant géré par un useEffect séparé
+        // On ne le fait plus ici
 
         if (user && jobsData?.length) {
           const { data: apps } = await supabase
@@ -160,6 +153,26 @@ const CompanyDetailPage = () => {
 
     loadAll();
   }, [id, user]);
+
+  // ✅ Récupération du statut de suivi (déclenché dès que user et id sont disponibles)
+  useEffect(() => {
+    if (!user || !id) {
+      setLoadingFollow(false);
+      return;
+    }
+    setLoadingFollow(true);
+    supabase
+      .from('company_followers')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('company_id', id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setIsFollowing(!!data);
+        setLoadingFollow(false);
+      })
+      .catch(() => setLoadingFollow(false));
+  }, [user, id]);
 
   useEffect(() => {
     if (!company) return;
@@ -208,33 +221,43 @@ const CompanyDetailPage = () => {
   }, [company]);
 
   const handleFollow = async () => {
-    if (!user) { toast.error(t('common.loginRequired')); return; }
-    setFollowLoading(true);
-    try {
-      await supabase.from('company_followers').insert({ user_id: user.id, company_id: company.id });
-      setIsFollowing(true);
-      setFollowersCount(prev => prev + 1);
-      toast.success(t('companyDetail.followSuccess'));
-    } catch (err) {
-      toast.error(t('common.error'));
-    } finally {
-      setFollowLoading(false);
-    }
-  };
+  if (!user) { toast.error(t('common.loginRequired')); return; }
+  setFollowLoading(true);
+  try {
+    const { error } = await supabase
+      .from('company_followers')
+      .insert({ user_id: user.id, company_id: company.id });
+    if (error) throw error;
+    setIsFollowing(true);
+    setFollowersCount(prev => prev + 1);
+    toast.success(t('companyDetail.followSuccess'));
+  } catch (err) {
+    console.error('Follow error:', err);
+    toast.error(err.message || t('common.error'));
+  } finally {
+    setFollowLoading(false);
+  }
+};
 
-  const handleUnfollow = async () => {
-    setFollowLoading(true);
-    try {
-      await supabase.from('company_followers').delete().eq('user_id', user.id).eq('company_id', company.id);
-      setIsFollowing(false);
-      setFollowersCount(prev => Math.max(0, prev - 1));
-      toast.success(t('companyDetail.unfollowSuccess'));
-    } catch (err) {
-      toast.error(t('common.error'));
-    } finally {
-      setFollowLoading(false);
-    }
-  };
+const handleUnfollow = async () => {
+  setFollowLoading(true);
+  try {
+    const { error } = await supabase
+      .from('company_followers')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('company_id', company.id);
+    if (error) throw error;
+    setIsFollowing(false);
+    setFollowersCount(prev => Math.max(0, prev - 1));
+    toast.success(t('companyDetail.unfollowSuccess'));
+  } catch (err) {
+    console.error('Unfollow error:', err);
+    toast.error(err.message || t('common.error'));
+  } finally {
+    setFollowLoading(false);
+  }
+};
 
   const isOwner = user?.id && company?.owner_id === user.id;
 
@@ -294,7 +317,6 @@ const CompanyDetailPage = () => {
               <div className="absolute inset-0 opacity-20 bg-cover bg-center" style={{ backgroundImage: `url(${company.cover_url})` }} />
             )}
             <div className="relative z-10 flex flex-col sm:flex-row items-start gap-5 sm:gap-6">
-              {/* Logo sans badge superposé */}
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center overflow-hidden ring-1 ring-white/20 shadow-2xl shrink-0">
                 {company.logo_url ? (
                   <img src={company.logo_url} alt={company.name} className="w-full h-full object-cover" />
@@ -328,11 +350,11 @@ const CompanyDetailPage = () => {
                       variant={isFollowing ? 'outline' : 'default'}
                       size="sm"
                       onClick={isFollowing ? handleUnfollow : handleFollow}
-                      disabled={followLoading}
+                      disabled={followLoading || loadingFollow}
                       className={isFollowing ? 'border-white/30 text-white hover:bg-white/10' : 'bg-white text-blue-900 hover:bg-blue-50 shadow-lg shadow-white/10'}
                     >
-                      {followLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : isFollowing ? <UserCheck className="w-4 h-4 mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-                      {isFollowing ? t('companyDetail.unfollow') : t('companyDetail.follow')}
+                      {followLoading || loadingFollow ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : isFollowing ? <UserCheck className="w-4 h-4 mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
+                      {followLoading || loadingFollow ? '...' : isFollowing ? t('companyDetail.unfollow') : t('companyDetail.follow')}
                     </Button>
                   )}
                   <span className="text-sm text-white/60">{t('companyDetail.followers', { count: formattedFollowers })}</span>
@@ -394,7 +416,6 @@ const CompanyDetailPage = () => {
                               <h3 className="font-semibold text-slate-900 text-lg">{job.title}</h3>
                               <div className="flex flex-wrap items-center gap-2 mt-2 text-sm text-slate-500">
                                 {job.city && <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{job.city.name}</span>}
-                                {/* ✅ MODIFICATION 2 : Affichage de l'adresse si présente */}
                                 {job.address && (
                                   <span className="flex items-center gap-1 text-xs text-slate-400">
                                     <MapPin className="w-3 h-3" />
@@ -409,8 +430,12 @@ const CompanyDetailPage = () => {
                                     {formatSalaryPeriod(job.salary_period, t)}
                                   </span>
                                 )}
+                                {/* ✅ Badge "Postulé" modernisé */}
                                 {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
-                                  <Badge className="bg-green-100 text-green-700 text-xs"><CheckCircle className="w-3 h-3 mr-1" />{t('jobs.alreadyAppliedBadge')}</Badge>
+                                  <Badge className="bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200 shadow-sm px-3 py-1 flex items-center gap-1">
+                                    <CheckCircle className="w-3 h-3" />
+                                    {t('jobs.alreadyAppliedBadge')}
+                                  </Badge>
                                 )}
                               </div>
                             </div>

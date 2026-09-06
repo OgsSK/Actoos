@@ -347,7 +347,6 @@ const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
           <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
             {job.company_logo ? <img src={job.company_logo} alt="" className="w-full h-full object-cover" /> : <Building2 className="w-7 h-7 text-slate-400" />}
           </div>
-          {/* ✅ Padding conditionnel pour éviter le chevauchement du cœur */}
           <div className={`flex-1 min-w-0 ${!isOwner && !isCompany ? 'pr-12' : ''}`}>
             <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 line-clamp-2 leading-snug">{job.title}</h3>
             <p className="text-sm text-slate-600 mt-1">{job.company_name}</p>
@@ -379,13 +378,18 @@ const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
           </div>
           <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{formatRelative(job.created_at)}</span>
         </div>
+        
+        {/* ✅ Badge "Postulé" modernisé */}
+        {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
+          <Badge className="absolute top-3 left-3 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full px-3 py-1 border border-emerald-200 shadow-sm">
+            {t('home.jobs.alreadyAppliedBadge')}
+          </Badge>
+        )}
+        
         {!isOwner && !isCompany && (
           <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSave(job.id); }} className={cn('absolute top-3 right-3 p-2 rounded-xl transition', isSaved ? 'bg-red-50 text-red-500' : 'text-slate-400 hover:bg-red-50 hover:text-red-500')}>
             <Heart className={cn('w-5 h-5', isSaved && 'fill-current')} />
           </button>
-        )}
-        {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
-          <Badge className="absolute top-3 left-3 bg-green-100 text-green-700 text-xs rounded-full">✅ {t('home.jobs.alreadyAppliedBadge')}</Badge>
         )}
         {isOwner && <Badge className="absolute top-3 left-3 bg-blue-600 text-white text-xs rounded-full">{t('home.jobs.yourJob')}</Badge>}
       </div>

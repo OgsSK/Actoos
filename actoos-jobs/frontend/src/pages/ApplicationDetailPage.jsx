@@ -10,32 +10,21 @@ import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import {
   Loader2, ChevronLeft, Mail, Phone, MapPin, Calendar, Briefcase, User, FileText,
-  ExternalLink, Sparkles, Trash2, Save, MessageSquare, Lightbulb,
-  CheckCircle, Crown, XCircle, Clock, Plus, Send
+  ExternalLink, Trash2, Save, MessageSquare, Lightbulb,
+  CheckCircle, XCircle, Clock, Plus, Send
 } from 'lucide-react';
 import { formatRelative } from '../lib/utils';
 import { planHasFeature } from '../lib/planLimits';
 
-/* ---------- Fonction d'extraction de message d'erreur ---------- */
 const getErrorMessage = (error, fallback = 'Une erreur est survenue') => {
   if (!error) return fallback;
-  if (
-    error.name === 'AbortError' ||
-    error.name === 'DOMException' ||
-    (error.message && error.message.toLowerCase().includes('aborted'))
-  ) {
-    return null;
-  }
+  if (error.name === 'AbortError' || error.message?.toLowerCase().includes('aborted')) return null;
   if (typeof error === 'string') return error;
-  if (error.json && typeof error.json === 'function') {
-    return error.statusText || String(error);
-  }
   if (error.message) return error.message;
   if (error.detail) return error.detail;
   return fallback;
 };
 
-/* ---------- Bloc éditable ---------- */
 const EditableBlock = ({ title, icon: Icon, content, onChange, onSave, saving, onDelete, lastSaved, t }) => {
   const editableRef = useRef(null);
   const cursorPosRef = useRef(null);
@@ -135,11 +124,10 @@ const EditableBlock = ({ title, icon: Icon, content, onChange, onSave, saving, o
   );
 };
 
-/* ---------- Onglets ---------- */
 const TABS = [
   { key: 'personal', label: 'Notes personnelles', icon: FileText },
   { key: 'questions', label: 'Questions', icon: MessageSquare },
-  { key: 'answers', label: 'Réponses', icon: Sparkles },
+  { key: 'answers', label: 'Réponses', icon: Lightbulb },
   { key: 'tips', label: 'Conseils', icon: Lightbulb },
 ];
 
@@ -157,10 +145,6 @@ const ApplicationDetailPage = () => {
   const [savingNotes, setSavingNotes] = useState(false);
   const [activeNoteTab, setActiveNoteTab] = useState('personal');
   const [lastSavedMap, setLastSavedMap] = useState({});
-
-  const [generatingQuestions, setGeneratingQuestions] = useState(false);
-  const [generatingAnswers, setGeneratingAnswers] = useState(false);
-  const [generatingTips, setGeneratingTips] = useState(false);
 
   const [companyPlan, setCompanyPlan] = useState('free');
   const [planLoading, setPlanLoading] = useState(true);
@@ -204,13 +188,9 @@ const ApplicationDetailPage = () => {
   const [cancellingProposed, setCancellingProposed] = useState(false);
   const [finishingProposed, setFinishingProposed] = useState(false);
 
-  // Synchroniser bookingUrl quand application change
   useEffect(() => {
-    if (application?.booking_url) {
-      setBookingUrl(application.booking_url);
-    } else {
-      setBookingUrl(null);
-    }
+    if (application?.booking_url) setBookingUrl(application.booking_url);
+    else setBookingUrl(null);
   }, [application]);
 
   useEffect(() => {
@@ -249,7 +229,6 @@ const ApplicationDetailPage = () => {
 
   useEffect(() => {
     if (!user) return;
-
     const fetchData = async () => {
       const { data, error } = await supabase
         .from('applications')
@@ -264,9 +243,7 @@ const ApplicationDetailPage = () => {
           .eq('user_id', data.candidate.id)
           .maybeSingle();
         setCandidateProfile(cp || {});
-
         await reloadDocuments();
-
         const { data: notesData } = await supabase
           .from('application_notes')
           .select('note_type, content, updated_at')
@@ -349,53 +326,7 @@ const ApplicationDetailPage = () => {
     setActiveNoteTab(tab);
   };
 
-  const handleGenerate = async (type) => {
-    const setGen = { questions: setGeneratingQuestions, answers: setGeneratingAnswers, tips: setGeneratingTips }[type];
-    setGen(true);
-    try {
-      let context = buildInterviewContext();
-      if (type === 'answers' && notes.questions?.trim()) {
-        context = `QUESTIONS À POSER :\n${notes.questions}\n\nCONTEXTE :\n${context}`;
-      }
-      const res = await apiFetch('/api/ai/agent', {
-        method: 'POST',
-        body: JSON.stringify({
-          agent_id: `interview-${type}`,
-          text: context,
-          language: i18n.language,
-        }),
-      });
-      const newContent = res.result;
-      setNotes(prev => ({ ...prev, [type]: newContent }));
-      await saveNote(type, newContent);
-      toast.success(t('applicationDetail.toasts.questionsGenerated'));
-    } catch (err) {
-      const msg = getErrorMessage(err);
-      if (msg) toast.error(msg);
-    } finally {
-      setGen(false);
-    }
-  };
-
-  const buildInterviewContext = () => {
-    const job = application?.job;
-    const profile = candidateProfile;
-    if (!job) return '';
-    return `
-Poste : ${job.title || ''}
-Description : ${job.description || ''}
-Exigences : ${job.requirements || ''}
-Missions : ${job.responsibilities || ''}
-Compétences requises : ${(job.skills_required || []).join(', ')}
-
-Profil candidat :
-- Titre : ${profile?.title || ''}
-- Compétences : ${(profile?.skills || []).join(', ')}
-- Expérience : ${(profile?.experience || []).map(e => `${e.title} chez ${e.company}`).join('; ') || 'Non spécifiée'}
-- Formation : ${(profile?.education || []).map(e => e.title).join(', ') || 'Non spécifiée'}
-- Bio : ${profile?.bio || ''}`.trim();
-  };
-
+  // ====================== ACTIONS ======================
   const handleStatusChange = async (newStatus, customMessage = '') => {
     setUpdating(true);
     let reason = null;
@@ -408,7 +339,6 @@ Profil candidat :
       const { error } = await supabase.from('applications').update(updates).eq('id', id);
       if (error) throw error;
       setApplication(prev => ({ ...prev, ...updates }));
-
       try {
         await apiFetch('/api/notify-status-change', {
           method: 'POST',
@@ -422,10 +352,7 @@ Profil candidat :
             language: i18n.language,
           }),
         });
-      } catch (emailError) {
-        console.error("Erreur email notification :", emailError);
-      }
-
+      } catch (emailError) { console.error("Erreur email notification :", emailError); }
       if (newStatus === 'accepted') {
         try {
           await apiFetch('/api/notify-accepted-candidate', {
@@ -439,21 +366,15 @@ Profil candidat :
               language: i18n.language,
             }),
           });
-        } catch (err) {
-          console.error("Erreur email acceptation :", err);
-        }
+        } catch (err) { console.error("Erreur email acceptation :", err); }
       }
-
       toast.success(t('applicationDetail.toasts.statusUpdated'));
     } catch (err) {
       const msg = getErrorMessage(err);
       if (msg) toast.error(msg);
-    } finally {
-      setUpdating(false);
-    }
+    } finally { setUpdating(false); }
   };
 
-  // ---- Planification / proposition de créneaux Cal.com ----
   const handleProposeSlots = async () => {
     if (!proposal.dateStart || !proposal.dateEnd || !proposal.timeStart || !proposal.timeEnd) {
       toast.error(t('applicationDetail.selectDateRange'));
@@ -465,7 +386,7 @@ Profil candidat :
         method: 'POST',
         body: JSON.stringify({
           application_id: application.id,
-          company_id: activeCompanyId,   // ← ajout
+          company_id: activeCompanyId,
           duration_minutes: proposal.duration,
           date_start: proposal.dateStart,
           date_end: proposal.dateEnd,
@@ -482,9 +403,7 @@ Profil candidat :
     } catch (err) {
       const msg = getErrorMessage(err);
       if (msg) toast.error(msg);
-    } finally {
-      setProposing(false);
-    }
+    } finally { setProposing(false); }
   };
 
   const handleCancelProposedInterview = async () => {
@@ -493,21 +412,13 @@ Profil candidat :
     try {
       await apiFetch('/api/interviews/cancel', {
         method: 'POST',
-        body: JSON.stringify({
-          application_id: application.id,
-          company_id: activeCompanyId, // ← ajout
-          language: i18n.language,
-        }),
+        body: JSON.stringify({ application_id: application.id, company_id: activeCompanyId, language: i18n.language }),
       });
       setBookingUrl(null);
       setApplication(prev => ({ ...prev, booking_url: null }));
       toast.success(t('applicationDetail.interviewCancelled'));
-    } catch (err) {
-      const msg = getErrorMessage(err);
-      if (msg) toast.error(msg);
-    } finally {
-      setCancellingProposed(false);
-    }
+    } catch (err) { const msg = getErrorMessage(err); if (msg) toast.error(msg); }
+    finally { setCancellingProposed(false); }
   };
 
   const handleFinishProposedInterview = async () => {
@@ -516,34 +427,19 @@ Profil candidat :
     try {
       await apiFetch('/api/interviews/finish', {
         method: 'POST',
-        body: JSON.stringify({
-          application_id: application.id,
-          company_id: activeCompanyId, // ← ajout
-          language: i18n.language,
-        }),
+        body: JSON.stringify({ application_id: application.id, company_id: activeCompanyId, language: i18n.language }),
       });
       setBookingUrl(null);
       setApplication(prev => ({ ...prev, booking_url: null }));
       toast.success(t('applicationDetail.interviewFinished'));
-    } catch (err) {
-      const msg = getErrorMessage(err);
-      if (msg) toast.error(msg);
-    } finally {
-      setFinishingProposed(false);
-    }
+    } catch (err) { const msg = getErrorMessage(err); if (msg) toast.error(msg); }
+    finally { setFinishingProposed(false); }
   };
 
   const handleRequestDocuments = async () => {
-    const customNames = customDocFields
-      .map(f => f.value.trim())
-      .filter(Boolean);
+    const customNames = customDocFields.map(f => f.value.trim()).filter(Boolean);
     const typesToSend = [...selectedDocTypes, ...customNames];
-
-    if (typesToSend.length === 0) {
-      toast.error(t('applicationDetail.selectAtLeastOneDoc'));
-      return;
-    }
-
+    if (typesToSend.length === 0) { toast.error(t('applicationDetail.selectAtLeastOneDoc')); return; }
     setRequestingDocs(true);
     try {
       await apiFetch('/api/hiring/request-documents', {
@@ -564,23 +460,15 @@ Profil candidat :
       setCustomDocFields([]);
       setRequestDocsMessage('');
       await reloadDocuments();
-    } catch (err) {
-      const msg = getErrorMessage(err);
-      if (msg) toast.error(msg);
-    } finally {
-      setRequestingDocs(false);
-    }
+    } catch (err) { const msg = getErrorMessage(err); if (msg) toast.error(msg); }
+    finally { setRequestingDocs(false); }
   };
 
   const handleDeleteDocumentRequest = async (docId) => {
     if (!window.confirm(t('applicationDetail.deleteRequest'))) return;
     const { error } = await supabase.from('hiring_documents').delete().eq('id', docId);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success(t('applicationDetail.confirmDeleteRequest'));
-      await reloadDocuments();
-    }
+    if (error) toast.error(error.message);
+    else { toast.success(t('applicationDetail.confirmDeleteRequest')); await reloadDocuments(); }
   };
 
   const openEditModal = () => {
@@ -589,11 +477,7 @@ Profil candidat :
     const standardSelected = standard.filter(t => types.includes(t));
     const customNames = types
       .filter(t => !standard.includes(t))
-      .map(name => {
-        const id = editDocIdRef.current++;
-        return { id, value: name };
-      });
-
+      .map(name => { const id = editDocIdRef.current++; return { id, value: name }; });
     setEditSelectedDocTypes(standardSelected);
     setEditCustomDocFields(customNames);
     setEditMessage('');
@@ -601,15 +485,9 @@ Profil candidat :
   };
 
   const handleEditDocuments = async () => {
-    const customNames = editCustomDocFields
-      .map(f => f.value.trim())
-      .filter(Boolean);
+    const customNames = editCustomDocFields.map(f => f.value.trim()).filter(Boolean);
     const typesToSend = [...editSelectedDocTypes, ...customNames];
-
-    if (typesToSend.length === 0) {
-      toast.error(t('applicationDetail.selectAtLeastOneDoc'));
-      return;
-    }
+    if (typesToSend.length === 0) { toast.error(t('applicationDetail.selectAtLeastOneDoc')); return; }
     setShowEditModal(false);
     try {
       await supabase.from('hiring_documents').delete().eq('application_id', application.id);
@@ -628,63 +506,35 @@ Profil candidat :
       });
       toast.success(t('applicationDetail.requestModified'));
       await reloadDocuments();
-    } catch (err) {
-      const msg = getErrorMessage(err);
-      if (msg) toast.error(msg);
-    }
+    } catch (err) { const msg = getErrorMessage(err); if (msg) toast.error(msg); }
   };
 
   const handleValidateDocument = async (docId, docType) => {
     try {
-      const { error } = await supabase
-        .from('hiring_documents')
-        .update({ status: 'validated' })
-        .eq('id', docId);
+      const { error } = await supabase.from('hiring_documents').update({ status: 'validated' }).eq('id', docId);
       if (error) throw error;
       toast.success(t('applicationDetail.documentValidated'));
       await reloadDocuments();
       apiFetch('/api/notify-document-validated', {
         method: 'POST',
-        body: JSON.stringify({
-          candidate_email: application.candidate.email,
-          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
-          document_type: docType,
-          language: i18n.language,
-        }),
+        body: JSON.stringify({ candidate_email: application.candidate.email, candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`, document_type: docType, language: i18n.language }),
       }).catch(console.error);
-    } catch (err) {
-      const msg = getErrorMessage(err);
-      if (msg) toast.error(msg);
-    }
+    } catch (err) { const msg = getErrorMessage(err); if (msg) toast.error(msg); }
   };
 
   const handleRejectDocument = async (docId, docType) => {
     const reason = window.prompt(t('applicationDetail.rejectionReasonPrompt', 'Raison (optionnelle) :'));
     if (reason === null) return;
-
     try {
-      const { error } = await supabase
-        .from('hiring_documents')
-        .update({ status: 'rejected' })
-        .eq('id', docId);
+      const { error } = await supabase.from('hiring_documents').update({ status: 'rejected' }).eq('id', docId);
       if (error) throw error;
-
       toast.success(t('applicationDetail.documentRejected'));
       await reloadDocuments();
-
       apiFetch('/api/notify-document-rejected', {
         method: 'POST',
-        body: JSON.stringify({
-          candidate_email: application.candidate.email,
-          candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`,
-          document_type: docType,
-          reason: reason || '',
-          language: i18n.language,
-        }),
+        body: JSON.stringify({ candidate_email: application.candidate.email, candidate_name: `${application.candidate.first_name} ${application.candidate.last_name}`, document_type: docType, reason: reason || '', language: i18n.language }),
       }).catch(console.error);
-    } catch (err) {
-      toast.error(err.message);
-    }
+    } catch (err) { toast.error(err.message); }
   };
 
   const handleFinalizeHiring = async (message) => {
@@ -692,21 +542,13 @@ Profil candidat :
     try {
       await apiFetch('/api/hiring/finalize', {
         method: 'POST',
-        body: JSON.stringify({
-          application_id: application.id,
-          message: message,
-          language: i18n.language,
-        }),
+        body: JSON.stringify({ application_id: application.id, message: message, language: i18n.language }),
       });
       setApplication(prev => ({ ...prev, status: 'completed' }));
       toast.success(t('applicationDetail.finalizeSuccess', 'Recrutement finalisé !'));
       setFinalizeMessage('');
-    } catch (err) {
-      const msg = getErrorMessage(err);
-      if (msg) toast.error(msg);
-    } finally {
-      setFinalizingHiring(false);
-    }
+    } catch (err) { const msg = getErrorMessage(err); if (msg) toast.error(msg); }
+    finally { setFinalizingHiring(false); }
   };
 
   const handleNotifyOtherCandidates = async (message) => {
@@ -714,23 +556,12 @@ Profil candidat :
     try {
       const res = await apiFetch('/api/notify-other-candidates', {
         method: 'POST',
-        body: JSON.stringify({
-          application_id: application.id,
-          message: message,
-          language: i18n.language,
-        }),
+        body: JSON.stringify({ application_id: application.id, message: message, language: i18n.language }),
       });
-      toast.success(
-        t('applicationDetail.othersNotified', { count: res.count }, `${res.count} candidat(s) notifié(s)`)
-      );
+      toast.success(t('applicationDetail.othersNotified', { count: res.count }, `${res.count} candidat(s) notifié(s)`));
       setOtherCandidatesMessage('');
-    } catch (err) {
-      const msg = getErrorMessage(err);
-      if (msg) toast.error(msg);
-    } finally {
-      setNotifyingOthers(false);
-      setShowOtherCandidatesModal(false);
-    }
+    } catch (err) { const msg = getErrorMessage(err); if (msg) toast.error(msg); }
+    finally { setNotifyingOthers(false); setShowOtherCandidatesModal(false); }
   };
 
   if (loading || planLoading) return <div className="pt-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
@@ -763,9 +594,7 @@ Profil candidat :
   const rawPhone = candidate?.phone || '';
   const cleanPhone = rawPhone.replace(/\s/g, '');
   const telLink = cleanPhone ? `tel:${cleanPhone}` : null;
-
   const todayStr = new Date().toISOString().split('T')[0];
-  const currentTime = new Date().toTimeString().slice(0, 5);
 
   return (
     <div className="min-h-0 bg-slate-50 pt-20">
@@ -815,54 +644,28 @@ Profil candidat :
             {application.cover_letter && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.coverLetter')}</h2><p className="text-slate-600 whitespace-pre-wrap">{application.cover_letter}</p></CardContent></Card>}
             {candidateProfile?.cv_url && <Card><CardContent className="p-6"><h2 className="text-lg font-semibold text-slate-900 mb-2">{t('applicationDetail.cv')}</h2><a href={candidateProfile.cv_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl hover:bg-blue-100"><FileText className="w-4 h-4" /> {t('applicationDetail.viewCV')}</a></CardContent></Card>}
 
-            {/* Bloc Notes d'entretien (version Pro/Business) */}
-            {isProOrBusiness ? (
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><FileText className="w-5 h-5 text-blue-600" />{t('applicationDetail.interviewNotes')}</h3>
-                  <div className="flex flex-wrap gap-2 mb-4 border-b border-slate-200 pb-px">
-                    {TABS.map(tab => (
-                      <button key={tab.key} onClick={() => handleTabChange(tab.key)} className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${activeNoteTab === tab.key ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>
-                        <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1" />{t(`notes.${tab.key}`)}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="max-h-[60vh] overflow-y-auto">
-                    {activeNoteTab === 'personal' && <EditableBlock title={t('notes.personal')} icon={FileText} content={notes.personal} onChange={(val) => setNotes(prev => ({ ...prev, personal: val }))} onSave={() => handleSaveNote('personal')} saving={savingNotes} onDelete={() => handleDeleteNote('personal')} lastSaved={lastSavedMap['personal']} t={t} />}
-                    {activeNoteTab === 'questions' && (
-                      <div className="space-y-3"><div className="flex justify-end"><Button variant="outline" size="sm" onClick={() => handleGenerate('questions')} disabled={generatingQuestions}>{generatingQuestions ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}{t('applicationDetail.generateQuestions')}</Button></div><EditableBlock title={t('notes.questions')} icon={MessageSquare} content={notes.questions} onChange={(val) => setNotes(prev => ({ ...prev, questions: val }))} onSave={() => handleSaveNote('questions')} saving={savingNotes} onDelete={() => handleDeleteNote('questions')} lastSaved={lastSavedMap['questions']} t={t} /></div>
-                    )}
-                    {activeNoteTab === 'answers' && (
-                      <div className="space-y-3"><div className="flex justify-end"><Button variant="outline" size="sm" onClick={() => handleGenerate('answers')} disabled={generatingAnswers || !notes.questions}>{generatingAnswers ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}{t('applicationDetail.generateAnswers')}</Button></div><EditableBlock title={t('notes.answers')} icon={Sparkles} content={notes.answers} onChange={(val) => setNotes(prev => ({ ...prev, answers: val }))} onSave={() => handleSaveNote('answers')} saving={savingNotes} onDelete={() => handleDeleteNote('answers')} lastSaved={lastSavedMap['answers']} t={t} /></div>
-                    )}
-                    {activeNoteTab === 'tips' && (
-                      <div className="space-y-3"><div className="flex justify-end"><Button variant="outline" size="sm" onClick={() => handleGenerate('tips')} disabled={generatingTips}>{generatingTips ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}{t('applicationDetail.generateTips')}</Button></div><EditableBlock title={t('notes.tips')} icon={Lightbulb} content={notes.tips} onChange={(val) => setNotes(prev => ({ ...prev, tips: val }))} onSave={() => handleSaveNote('tips')} saving={savingNotes} onDelete={() => handleDeleteNote('tips')} lastSaved={lastSavedMap['tips']} t={t} /></div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-               <Card className="border-amber-200 bg-amber-50">
-                <CardContent className="p-6 text-center">
-                  <Crown className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-                  <p className="text-amber-800 font-medium">
-                    {t('applicationDetail.upgradeForNotes', 'Outils d’entretien & recrutement avancés')}
-                  </p>
-                  <p className="text-sm text-amber-700 mt-2">
-                    {t('applicationDetail.upgradeForNotesDesc',
-                      'Planifiez des entretiens vidéo, générez des questions / réponses / conseils IA et prenez des notes structurées.')}
-                  </p>
-                  <Link to="/tarifs">
-                    <Button className="mt-4 bg-amber-600 hover:bg-amber-700 text-white">
-                      {t('applicationDetail.viewPlans')}
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
+            {/* Bloc Notes d'entretien (toujours visible) */}
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><FileText className="w-5 h-5 text-blue-600" />{t('applicationDetail.interviewNotes')}</h3>
+                <div className="flex flex-wrap gap-2 mb-4 border-b border-slate-200 pb-px">
+                  {TABS.map(tab => (
+                    <button key={tab.key} onClick={() => handleTabChange(tab.key)} className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${activeNoteTab === tab.key ? 'bg-white text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'}`}>
+                      <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1" />{t(`notes.${tab.key}`)}
+                    </button>
+                  ))}
+                </div>
+                <div className="max-h-[60vh] overflow-y-auto">
+                  {activeNoteTab === 'personal' && <EditableBlock title={t('notes.personal')} icon={FileText} content={notes.personal} onChange={(val) => setNotes(prev => ({ ...prev, personal: val }))} onSave={() => handleSaveNote('personal')} saving={savingNotes} onDelete={() => handleDeleteNote('personal')} lastSaved={lastSavedMap['personal']} t={t} />}
+                  {activeNoteTab === 'questions' && <EditableBlock title={t('notes.questions')} icon={MessageSquare} content={notes.questions} onChange={(val) => setNotes(prev => ({ ...prev, questions: val }))} onSave={() => handleSaveNote('questions')} saving={savingNotes} onDelete={() => handleDeleteNote('questions')} lastSaved={lastSavedMap['questions']} t={t} />}
+                  {activeNoteTab === 'answers' && <EditableBlock title={t('notes.answers')} icon={Lightbulb} content={notes.answers} onChange={(val) => setNotes(prev => ({ ...prev, answers: val }))} onSave={() => handleSaveNote('answers')} saving={savingNotes} onDelete={() => handleDeleteNote('answers')} lastSaved={lastSavedMap['answers']} t={t} />}
+                  {activeNoteTab === 'tips' && <EditableBlock title={t('notes.tips')} icon={Lightbulb} content={notes.tips} onChange={(val) => setNotes(prev => ({ ...prev, tips: val }))} onSave={() => handleSaveNote('tips')} saving={savingNotes} onDelete={() => handleDeleteNote('tips')} lastSaved={lastSavedMap['tips']} t={t} />}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Colonne de droite */}
+          {/* Colonne droite */}
           <div className="space-y-6">
             <Card><CardContent className="p-6 text-center"><Badge className={`${statusColor} text-sm px-4 py-2`}>{statusLabel}</Badge><p className="text-xs text-slate-500 mt-2">{t('applicationDetail.receivedAt', { date: formatRelative(application.created_at) })}</p></CardContent></Card>
 
@@ -882,7 +685,6 @@ Profil candidat :
               </Card>
             )}
 
-            {/* Section Planifier un entretien (Cal.com) - MODIFICATION ICI */}
             {isProOrBusiness && application.status === 'interview' && (
               <Card>
                 <CardContent className="p-6">
@@ -941,7 +743,6 @@ Profil candidat :
               </Card>
             )}
 
-            {/* Section documents, finalisation, etc. */}
             {application.status === 'accepted' && (
               <Card>
                 <CardContent className="p-6">
@@ -1115,50 +916,27 @@ Profil candidat :
         </div>
       </div>
 
-      {/* Modal de proposition de créneaux Cal.com */}
+      {/* Modales */}
       {showProposeModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">
-              {t('applicationDetail.proposeInterviewTitle')}
-            </h3>
+            <h3 className="text-lg font-semibold mb-4">{t('applicationDetail.proposeInterviewTitle')}</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">{t('applicationDetail.duration')}</label>
-                <select
-                  value={proposal.duration}
-                  onChange={(e) => setProposal({ ...proposal, duration: parseInt(e.target.value) })}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value={30}>30 min</option>
-                  <option value={45}>45 min</option>
-                  <option value={60}>60 min</option>
+                <select value={proposal.duration} onChange={(e) => setProposal({ ...proposal, duration: parseInt(e.target.value) })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                  <option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>60 min</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t('applicationDetail.dateStart')}</label>
-                  <input type="date" value={proposal.dateStart} onChange={(e) => setProposal({ ...proposal, dateStart: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" min={todayStr} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t('applicationDetail.dateEnd')}</label>
-                  <input type="date" value={proposal.dateEnd} onChange={(e) => setProposal({ ...proposal, dateEnd: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" min={proposal.dateStart || todayStr} />
-                </div>
+                <div><label className="block text-sm font-medium mb-1">{t('applicationDetail.dateStart')}</label><input type="date" value={proposal.dateStart} onChange={(e) => setProposal({ ...proposal, dateStart: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" min={todayStr} /></div>
+                <div><label className="block text-sm font-medium mb-1">{t('applicationDetail.dateEnd')}</label><input type="date" value={proposal.dateEnd} onChange={(e) => setProposal({ ...proposal, dateEnd: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" min={proposal.dateStart || todayStr} /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t('applicationDetail.timeStart')}</label>
-                  <input type="time" value={proposal.timeStart} onChange={(e) => setProposal({ ...proposal, timeStart: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t('applicationDetail.timeEnd')}</label>
-                  <input type="time" value={proposal.timeEnd} onChange={(e) => setProposal({ ...proposal, timeEnd: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
-                </div>
+                <div><label className="block text-sm font-medium mb-1">{t('applicationDetail.timeStart')}</label><input type="time" value={proposal.timeStart} onChange={(e) => setProposal({ ...proposal, timeStart: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" /></div>
+                <div><label className="block text-sm font-medium mb-1">{t('applicationDetail.timeEnd')}</label><input type="time" value={proposal.timeEnd} onChange={(e) => setProposal({ ...proposal, timeEnd: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" /></div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t('applicationDetail.message')}</label>
-                <textarea value={proposal.message} onChange={(e) => setProposal({ ...proposal, message: e.target.value })} className="w-full border border-slate-200 rounded-lg p-3 text-sm" rows={3} placeholder={t('applicationDetail.messagePlaceholder')} />
-              </div>
+              <div><label className="block text-sm font-medium mb-1">{t('applicationDetail.message')}</label><textarea value={proposal.message} onChange={(e) => setProposal({ ...proposal, message: e.target.value })} className="w-full border border-slate-200 rounded-lg p-3 text-sm" rows={3} placeholder={t('applicationDetail.messagePlaceholder')} /></div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Button variant="ghost" onClick={() => setShowProposeModal(false)}>{t('common.cancel')}</Button>
@@ -1168,7 +946,6 @@ Profil candidat :
         </div>
       )}
 
-      {/* Modal d'acceptation */}
       {showAcceptModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
@@ -1182,72 +959,32 @@ Profil candidat :
         </div>
       )}
 
-      {/* Modal de finalisation */}
       {showFinalizeModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">
-              {t('applicationDetail.finalizeModalTitle', 'Message au candidat')}
-            </h3>
-            <textarea
-              value={finalizeMessage}
-              onChange={(e) => setFinalizeMessage(e.target.value)}
-              placeholder={t('applicationDetail.finalizeMessagePlaceholder', 'Votre message personnalisé (optionnel) – ex : Présentez-vous demain à 8h...')}
-              className="w-full border border-slate-200 rounded-lg p-3 text-sm mb-4"
-              rows={4}
-            />
+            <h3 className="text-lg font-semibold mb-4">{t('applicationDetail.finalizeModalTitle', 'Message au candidat')}</h3>
+            <textarea value={finalizeMessage} onChange={(e) => setFinalizeMessage(e.target.value)} placeholder={t('applicationDetail.finalizeMessagePlaceholder', 'Votre message personnalisé (optionnel) – ex : Présentez-vous demain à 8h...')} className="w-full border border-slate-200 rounded-lg p-3 text-sm mb-4" rows={4} />
             <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setShowFinalizeModal(false)}>
-                {t('common.cancel', 'Annuler')}
-              </Button>
-              <Button
-                className="bg-green-600 hover:bg-green-700 text-white"
-                disabled={finalizingHiring}
-                onClick={() => {
-                  setShowFinalizeModal(false);
-                  handleFinalizeHiring(finalizeMessage);
-                }}
-              >
-                {finalizingHiring ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {t('common.confirm', 'Confirmer')}
-              </Button>
+              <Button variant="ghost" onClick={() => setShowFinalizeModal(false)}>{t('common.cancel', 'Annuler')}</Button>
+              <Button className="bg-green-600 hover:bg-green-700 text-white" disabled={finalizingHiring} onClick={() => { setShowFinalizeModal(false); handleFinalizeHiring(finalizeMessage); }}>{finalizingHiring ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}{t('common.confirm', 'Confirmer')}</Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal d'information des autres candidats */}
       {showOtherCandidatesModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">
-              {t('applicationDetail.otherCandidatesModalTitle', 'Message aux autres candidats')}
-            </h3>
-            <textarea
-              value={otherCandidatesMessage}
-              onChange={(e) => setOtherCandidatesMessage(e.target.value)}
-              placeholder={t('applicationDetail.otherCandidatesMessagePlaceholder', 'Ajouter un message personnalisé (optionnel)')}
-              className="w-full border border-slate-200 rounded-lg p-3 text-sm mb-4"
-              rows={4}
-            />
+            <h3 className="text-lg font-semibold mb-4">{t('applicationDetail.otherCandidatesModalTitle', 'Message aux autres candidats')}</h3>
+            <textarea value={otherCandidatesMessage} onChange={(e) => setOtherCandidatesMessage(e.target.value)} placeholder={t('applicationDetail.otherCandidatesMessagePlaceholder', 'Ajouter un message personnalisé (optionnel)')} className="w-full border border-slate-200 rounded-lg p-3 text-sm mb-4" rows={4} />
             <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={() => setShowOtherCandidatesModal(false)}>
-                {t('common.cancel', 'Annuler')}
-              </Button>
-              <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={notifyingOthers}
-                onClick={() => handleNotifyOtherCandidates(otherCandidatesMessage)}
-              >
-                {notifyingOthers ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {t('applicationDetail.sendNotifications', 'Envoyer')}
-              </Button>
+              <Button variant="ghost" onClick={() => setShowOtherCandidatesModal(false)}>{t('common.cancel', 'Annuler')}</Button>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white" disabled={notifyingOthers} onClick={() => handleNotifyOtherCandidates(otherCandidatesMessage)}>{notifyingOthers ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}{t('applicationDetail.sendNotifications', 'Envoyer')}</Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal d'édition de la demande de documents */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">

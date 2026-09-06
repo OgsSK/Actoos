@@ -51,14 +51,13 @@ const JobHeaderSkeleton = () => (
   </div>
 );
 
-/* ---------- Carte offre similaire – version corrigée (salaire) ---------- */
+/* ---------- Carte offre similaire – avec salaire formaté ---------- */
 const SimpleJobCard = ({ job, t, format, applicationStatus }) => {
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   return (
     <Link to={`/emplois/${job.id}`} className="block group w-full h-full relative">
       {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
-        <Badge className="absolute top-2 left-2 bg-green-100 text-green-700 text-xs z-10">
-          <CheckCircle className="w-3 h-3 mr-1" />
+        <Badge className="absolute top-2 left-2 bg-emerald-50 text-emerald-700 text-xs font-medium z-10 rounded-full px-3 py-1 border border-emerald-200 shadow-sm">
           {t('jobs.alreadyAppliedBadge', 'Postulé')}
         </Badge>
       )}
@@ -85,7 +84,6 @@ const SimpleJobCard = ({ job, t, format, applicationStatus }) => {
                   </span>
                 )}
                 <Badge className={`${contractInfo.color} text-xs shrink-0`}>{t(contractInfo.key)}</Badge>
-                {/* ✅ Salaire corrigé : bien formaté, sans débordement */}
                 {job.salary_min && job.salary_max && (
                   <span className="font-medium text-slate-700 text-[11px] sm:text-sm flex flex-wrap items-center gap-0.5">
                     {format(job.salary_min)} – {format(job.salary_max)}
@@ -103,7 +101,7 @@ const SimpleJobCard = ({ job, t, format, applicationStatus }) => {
   );
 };
 
-// ---------- Composant principal (inchangé) ----------
+// ---------- Composant principal ----------
 const JobDetailPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -114,6 +112,7 @@ const JobDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState(null);
+  const [loadingApplication, setLoadingApplication] = useState(false); // ✅ Nouvel état
   const [similarJobs, setSimilarJobs] = useState([]);
   const [similarLoading, setSimilarLoading] = useState(false);
   const [similarApplications, setSimilarApplications] = useState({});
@@ -156,8 +155,18 @@ const JobDetailPage = () => {
   };
 
   const checkExistingApplication = async () => {
-    const { data } = await supabase.from('applications').select('status').eq('job_id', job.id).eq('candidate_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (!user) return;
+    setLoadingApplication(true); // ✅ On démarre le chargement
+    const { data } = await supabase
+      .from('applications')
+      .select('status')
+      .eq('job_id', job.id)
+      .eq('candidate_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
     setApplicationStatus(data ? data.status : null);
+    setLoadingApplication(false); // ✅ Terminé
   };
 
   const checkIfSaved = async () => {
@@ -300,14 +309,23 @@ const JobDetailPage = () => {
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0">
                 {!isOwner && !isCompany && !isAdmin && (
                   <>
-                    {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' ? (
-                      <Badge className="bg-green-100 text-green-700 whitespace-nowrap px-3 py-1 text-xs font-medium">
-                        <CheckCircle className="w-3.5 h-3.5 mr-1 inline" />
+                    {/* ✅ Affichage conditionnel : loader, badge ou bouton */}
+                    {user && loadingApplication ? (
+                      <div className="flex items-center justify-center w-28 h-9">
+                        <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                      </div>
+                    ) : applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' ? (
+                      <Badge className="bg-emerald-50 text-emerald-700 whitespace-nowrap px-3 py-1 text-xs font-medium rounded-full border border-emerald-200 shadow-sm">
+                        <CheckCircle className="w-3 h-3 mr-1 inline" />
                         {t('jobDetail.alreadyApplied')}
                       </Badge>
                     ) : (
-                      <Button onClick={handleApply} className="bg-blue-600 hover:bg-blue-700 text-white" size="sm">
-                        <Send className="w-4 h-4 mr-1" />
+                      <Button 
+                        onClick={handleApply} 
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200 rounded-xl" 
+                        size="sm"
+                      >
+                        <Send className="w-4 h-4 mr-1.5" />
                         {applicationStatus ? t('jobDetail.reapply', 'Repostuler') : t('jobDetail.apply', 'Postuler')}
                       </Button>
                     )}

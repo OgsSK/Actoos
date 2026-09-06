@@ -6,21 +6,16 @@ import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import {
-  Loader2, Sparkles, Briefcase, User, Lightbulb, Target, FileText, MessageSquare, Save, Trash2,
+  Loader2, Briefcase, User, Lightbulb, Target, FileText, MessageSquare, Save, Trash2,
   CheckCircle, ChevronLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const BASE_URL = window.location.hostname === 'localhost'
-  ? 'http://localhost:8001'
-  : 'https://actoos-jobs-api.onrender.com';
 
 /* ---------- Bloc éditable avec gestion du curseur ---------- */
 const EditableBlock = ({ title, icon: Icon, content, onChange, onSave, saving, onDelete, lastSaved, placeholder, t }) => {
   const editableRef = useRef(null);
   const cursorPosRef = useRef(null);
 
-  // Sauvegarde la position du curseur avant chaque modification
   const saveCursorPosition = () => {
     const el = editableRef.current;
     if (!el) return;
@@ -34,7 +29,6 @@ const EditableBlock = ({ title, icon: Icon, content, onChange, onSave, saving, o
     }
   };
 
-  // Restaure la position du curseur après le re‑render
   useEffect(() => {
     const el = editableRef.current;
     if (!el || cursorPosRef.current === null) return;
@@ -122,7 +116,7 @@ const EditableBlock = ({ title, icon: Icon, content, onChange, onSave, saving, o
 /* ---------- Onglets ---------- */
 const TABS = [
   { key: 'questions', label: 'Questions', icon: MessageSquare },
-  { key: 'answers', label: 'Réponses', icon: Sparkles },
+  { key: 'answers', label: 'Réponses', icon: Lightbulb },
   { key: 'tips', label: 'Conseils', icon: Lightbulb },
 ];
 
@@ -139,8 +133,6 @@ const InterviewPrep = () => {
   const [activeTab, setActiveTab] = useState('questions');
   const [saving, setSaving] = useState(false);
   const [lastSavedMap, setLastSavedMap] = useState({});
-  const [generating, setGenerating] = useState({ questions: false, answers: false, tips: false });
-  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     if (jobId) {
@@ -216,80 +208,6 @@ const InterviewPrep = () => {
     handleSaveContent(activeTab);
     setActiveTab(tab);
   };
-
-  // ✅ Génération IA avec fetch() natif et AbortController
-  const handleGenerate = async (type) => {
-    if (!jobDescription.trim()) {
-      toast.error(t('interviewPrep.toast.needJobDescription'));
-      return;
-    }
-
-    // Annuler la requête précédente
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    setGenerating(prev => ({ ...prev, [type]: true }));
-    try {
-      let context = `
-Poste : ${jobDescription}
-
-Profil candidat :
-${candidateProfile || 'Non spécifié'}
-`.trim();
-
-      if (type === 'answers' && contents.questions?.trim()) {
-        context = `QUESTIONS À POSER :\n${contents.questions}\n\nCONTEXTE :\n${context}`;
-      }
-
-      const res = await fetch(`${BASE_URL}/api/ai/agent`, {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agent_id: `interview-${type}`,
-          text: context,
-          language: i18n.language,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Erreur lors de la génération');
-      }
-
-      const data = await res.json();
-      const newContent = data.result;
-      const updatedContents = { ...contents, [type]: newContent };
-      setContents(updatedContents);
-      await saveToCache({
-        jobDescription,
-        candidateProfile,
-        contents: updatedContents,
-        lastSavedMap: { ...lastSavedMap, [type]: new Date().toLocaleTimeString() }
-      });
-      toast.success(t('interviewPrep.toast.generated'));
-    } catch (err) {
-      if (err.name === 'AbortError') return; // annulation silencieuse
-      toast.error(err.message || t('interviewPrep.toast.error'));
-    } finally {
-      if (abortControllerRef.current === controller) {
-        setGenerating(prev => ({ ...prev, [type]: false }));
-      }
-    }
-  };
-
-  // Nettoyage au démontage
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
@@ -387,21 +305,6 @@ ${candidateProfile || 'Non spécifié'}
                 {TABS.map(tab => (
                   activeTab === tab.key && (
                     <div key={tab.key} className="space-y-3">
-                      <div className="flex justify-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleGenerate(tab.key)}
-                          disabled={generating[tab.key]}
-                        >
-                          {generating[tab.key] ? (
-                            <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                          ) : (
-                            <Sparkles className="w-4 h-4 mr-1" />
-                          )}
-                          {t('interviewPrep.generateButton')}
-                        </Button>
-                      </div>
                       <EditableBlock
                         title={t(`interviewPrep.${tab.key}.title`)}
                         icon={tab.icon}

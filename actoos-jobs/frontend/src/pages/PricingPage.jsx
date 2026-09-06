@@ -34,10 +34,9 @@ const FALLBACK_PRICING = {
 const PRICING_CACHE_KEY = 'actoos_jobs_pricing_cache';
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-// Taux de conversion EUR -> XOF (identique au backend)
 const EUR_TO_XOF = 655.957;
-const LAUNCH_MONTHLY_EUR = 0;        // 0 € pendant 3 mois
-const LAUNCH_ANNUAL_EUR = 49;        // 49 € la première année
+const LAUNCH_MONTHLY_EUR = 0;
+const LAUNCH_ANNUAL_EUR = 49;
 
 const PricingPage = () => {
   const { t } = useTranslation();
@@ -52,22 +51,19 @@ const PricingPage = () => {
   const [company, setCompany] = useState(null);
   const [companyLoading, setCompanyLoading] = useState(true);
 
-  // Chargement des prix avec cache local et rafraîchissement en arrière-plan
   useEffect(() => {
     const loadPricing = async () => {
-      // 1. Essayer de charger le cache local immédiatement
       const cached = localStorage.getItem(PRICING_CACHE_KEY);
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
           if (parsed.timestamp && (Date.now() - parsed.timestamp) < CACHE_DURATION) {
             setPricing(parsed.data);
-            setLoading(false); // On a des données, on arrête le loader
+            setLoading(false);
           }
         } catch (e) {}
       }
 
-      // 2. Lancer l'appel API en arrière-plan pour rafraîchir les données
       try {
         const controller = new AbortController();
         const data = await Promise.race([
@@ -77,25 +73,21 @@ const PricingPage = () => {
             reject(new Error('timeout'));
           }, 5000))
         ]);
-
-        // Mettre à jour les données et le cache
         setPricing(data);
         localStorage.setItem(PRICING_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
       } catch (err) {
         console.warn('Pricing API error, using fallback or cache', err);
-        // Si aucun prix chargé (ni cache), on utilise le fallback
         if (!pricing) {
           setPricing(FALLBACK_PRICING);
         }
       } finally {
-        setLoading(false); // Toujours arrêter le loader
+        setLoading(false);
       }
     };
 
     loadPricing();
   }, []);
 
-  // Chargement de l'entreprise (identique à l'original)
   useEffect(() => {
     if (!user) {
       setCompany(null);
@@ -130,7 +122,6 @@ const PricingPage = () => {
     fetchCompany();
   }, [user, activeCompanyId]);
 
-  // Rafraîchissement quand l'onglet redevient visible
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && user) {
@@ -232,7 +223,6 @@ const PricingPage = () => {
     window.location.href = '/dashboard/entreprise';
   };
 
-  // Important : le loader ne doit s'afficher que si on n'a pas encore de données
   if (loading && !pricing) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 pt-20">
@@ -248,9 +238,8 @@ const PricingPage = () => {
   const businessMonthly = subscriptions?.business_monthly?.amount || 84618;
   const businessAnnual = subscriptions?.business_annual?.amount || 812110;
 
-  // Montants de l’offre de lancement en FCFA (pour conversion via `format`)
-  const launchMonthlyPriceFCFA = Math.round(LAUNCH_MONTHLY_EUR * EUR_TO_XOF); // 0
-  const launchAnnualPriceFCFA = Math.round(LAUNCH_ANNUAL_EUR * EUR_TO_XOF);   // 32142
+  const launchMonthlyPriceFCFA = Math.round(LAUNCH_MONTHLY_EUR * EUR_TO_XOF);
+  const launchAnnualPriceFCFA = Math.round(LAUNCH_ANNUAL_EUR * EUR_TO_XOF);
 
   const plans = [
     {
@@ -260,11 +249,10 @@ const PricingPage = () => {
       features: [
         { icon: Briefcase, text: t('pricing.plans.free.features.0', { count: PLAN_LIMITS.free.jobs }) },
         { icon: Clock, text: t('pricing.plans.free.features.expiration', { days: PLAN_LIMITS.free.expirationDays }) },
+        { icon: FileText, text: t('pricing.plans.free.features.interviewTools') },
         { icon: Shield, text: t('pricing.plans.free.features.2') },
       ],
       limitations: [
-        t('pricing.plans.free.limitations.noInterviewTools'),
-        t('pricing.plans.free.limitations.noAiNotes'),
         t('pricing.plans.free.limitations.noCvBank'),
         t('pricing.plans.free.limitations.noMultiCompany'),
       ],
@@ -283,7 +271,6 @@ const PricingPage = () => {
         { icon: Briefcase, text: t('pricing.plans.pro.features.0', { count: PLAN_LIMITS.pro.jobs }) },
         { icon: Clock, text: t('pricing.plans.pro.features.expiration', { days: PLAN_LIMITS.pro.expirationDays }) },
         { icon: FileText, text: t('pricing.plans.pro.features.interviewTools') },
-        { icon: Sparkles, text: t('pricing.plans.pro.features.aiNotes') },
         { icon: Shield, text: t('pricing.plans.pro.features.verifiedProfile') },
       ],
       limitations: [
@@ -305,7 +292,6 @@ const PricingPage = () => {
         { icon: Briefcase, text: t('pricing.plans.business.features.0') },
         { icon: Clock, text: t('pricing.plans.business.features.expiration', { days: PLAN_LIMITS.business.expirationDays }) },
         { icon: FileText, text: t('pricing.plans.business.features.interviewTools') },
-        { icon: Sparkles, text: t('pricing.plans.business.features.aiNotes') },
         { icon: Sparkles, text: t('pricing.plans.business.features.freeBoost') },
         { icon: Search, text: t('pricing.plans.business.features.cvBank') },
         { icon: Users, text: t('pricing.plans.business.features.multiCompany') },
@@ -321,7 +307,8 @@ const PricingPage = () => {
     },
   ];
 
-  const currentPlan = company?.subscription_plan || 'free';
+  // currentPlan vaut null tant que company n'est pas chargé
+  const currentPlan = company?.subscription_plan ?? null;
   const currentBillingCycle = company?.billing_cycle;
 
   const handleFreePlan = () => {
@@ -346,8 +333,7 @@ const PricingPage = () => {
       pro: t('pricing.comparison.values.days', { count: PLAN_LIMITS.pro.expirationDays }),
       business: t('pricing.comparison.values.days', { count: PLAN_LIMITS.business.expirationDays }),
     },
-    { key: 'interviewTools', free: '-', pro: '✓', business: '✓' },
-    { key: 'aiNotes', free: '-', pro: '✓', business: '✓' },
+    { key: 'interviewTools', free: '✓', pro: '✓', business: '✓' },
     { key: 'cvBank', free: '-', pro: '-', business: '✓' },
     { key: 'multiCompany', free: '-', pro: '-', business: '✓' },
     { key: 'freeBoost', free: '-', pro: '-', business: t('pricing.comparison.values.perMonth') },
@@ -479,7 +465,9 @@ const PricingPage = () => {
                     {plan.badge.text}
                   </div>
                 )}
-                {companyLoading ? (
+
+                {/* 🔥 Spinner affiché uniquement pour les plans payants pendant le chargement */}
+                {companyLoading && plan.planKey !== 'free' ? (
                   <div className="absolute top-4 left-4 bg-slate-100 text-slate-500 text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
                     <Loader2 className="w-3 h-3 animate-spin" />
                     {t('pricing.loading')}
@@ -489,6 +477,7 @@ const PricingPage = () => {
                     {t('pricing.currentPlan')}
                   </div>
                 ) : null}
+
                 <CardHeader className="text-center pt-10 pb-0">
                   <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-inner">
                     <plan.icon className="w-8 h-8 text-blue-600" />

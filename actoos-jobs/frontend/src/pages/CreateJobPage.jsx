@@ -7,14 +7,13 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import AIAssistant from '../components/AIAssistant';
 import { toast } from 'sonner';
 import { usePreferencesContext } from '../contexts/PreferencesContext';
 import { useCities } from '../hooks/useCities';
 import {
   Briefcase, MapPin, DollarSign, Users,
   Plus, X, Save, Loader2, ChevronLeft, Send,
-  GraduationCap, ArrowRight, Building2, Sparkles, Globe
+  GraduationCap, ArrowRight, Building2, Globe
 } from 'lucide-react';
 import { cn, slugify, CONTRACT_TYPES, EXPERIENCE_LEVELS } from '../lib/utils';
 import { getPlanLimit, getExpirationDays } from '../lib/planLimits';
@@ -42,10 +41,6 @@ const CreateJobPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [iaLoading, setIaLoading] = useState(false);
-  const [iaProgressText, setIaProgressText] = useState('');
-  const [iaAbortController, setIaAbortController] = useState(null);
-  const [iaGeneratedData, setIaGeneratedData] = useState(null);
   const [company, setCompany] = useState(null);
   const [categories, setCategories] = useState([]);
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -72,12 +67,10 @@ const CreateJobPage = () => {
     skills_required: [],
     is_urgent: false,
     status: 'draft',
-    // ✅ Nouveau champ pour les langues requises
     required_languages: [],
   });
 
   const [newSkill, setNewSkill] = useState('');
-  // ✅ États pour les langues requises
   const [newRequiredLanguage, setNewRequiredLanguage] = useState('');
   const [newRequiredLanguageLevel, setNewRequiredLanguageLevel] = useState('intermediate');
 
@@ -130,7 +123,6 @@ const CreateJobPage = () => {
       const displaySalaryMin = data.salary_min ? Math.round(data.salary_min / rate) : '';
       const displaySalaryMax = data.salary_max ? Math.round(data.salary_max / rate) : '';
 
-      // Récupération des langues requises depuis eligibility_criteria
       let requiredLanguages = [];
       if (data.eligibility_criteria && data.eligibility_criteria.languages) {
         requiredLanguages = data.eligibility_criteria.languages;
@@ -177,7 +169,7 @@ const CreateJobPage = () => {
     setForm({ ...form, skills_required: form.skills_required.filter(s => s !== skill) });
   };
 
-  // ✅ Gestion des langues requises
+  // Gestion des langues requises
   const handleAddRequiredLanguage = () => {
     if (!newRequiredLanguage.trim()) return;
     if (form.required_languages.some(l => l.code === newRequiredLanguage)) {
@@ -211,129 +203,7 @@ const CreateJobPage = () => {
     });
   };
 
-  // ---------- Génération IA avec détection automatique du salary_period ----------
-  const handleGenerateWithIA = async () => {
-    if (!form.title.trim()) {
-      toast.error(t('createJob.toasts.titleRequiredForIA'));
-      return;
-    }
-
-    if (company?.subscription_plan !== 'business') {
-      toast.error(t('createJob.toasts.iaBusinessOnly'));
-      return;
-    }
-
-    const controller = new AbortController();
-    setIaAbortController(controller);
-
-    setIaLoading(true);
-    setIaProgressText(t('createJob.iaProgress.analyzing'));
-
-    const progressSteps = [
-      'createJob.iaProgress.analyzing',
-      'createJob.iaProgress.generating',
-      'createJob.iaProgress.formatting',
-    ];
-
-    let stepIndex = 0;
-    const progressInterval = setInterval(() => {
-      if (stepIndex < progressSteps.length) {
-        setIaProgressText(t(progressSteps[stepIndex]));
-        stepIndex++;
-      }
-    }, 1500);
-
-    try {
-      const res = await fetch(`${BASE_URL}/api/ai/agent`, {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agent_id: 'job-full-generation',
-          text: form.title,
-          context: {
-            country: prefs.country || 'FR',
-            currency: prefs.currency || 'XOF',
-            categories: categories.map(cat => cat.slug),
-          },
-          language: i18n.language || 'fr',
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Erreur IA');
-      }
-
-      const data = await res.json();
-      clearInterval(progressInterval);
-
-      const generated = JSON.parse(data.result);
-      setIaGeneratedData(generated);
-
-      let detectedPeriod = generated.salary_period || 'monthly';
-      const titleLower = form.title.toLowerCase();
-      if (titleLower.includes('freelance') || titleLower.includes('consultant') || titleLower.includes('mission')) {
-        detectedPeriod = 'daily';
-      } else if (titleLower.includes('temps partiel') || titleLower.includes('hour') || titleLower.includes('horaire')) {
-        detectedPeriod = 'hourly';
-      } else if (titleLower.includes('forfait') || titleLower.includes('projet') || titleLower.includes('prestation')) {
-        detectedPeriod = 'fixed';
-      }
-
-      setForm(prev => ({
-        ...prev,
-        title: generated.title || prev.title,
-        description: generated.description || prev.description,
-        requirements: generated.requirements || prev.requirements,
-        responsibilities: generated.responsibilities || prev.responsibilities,
-        benefits: generated.benefits || prev.benefits,
-        contract_type: generated.contract_type || prev.contract_type,
-        experience_level: generated.experience_level || prev.experience_level,
-        salary_min: generated.salary_min ? String(generated.salary_min) : prev.salary_min,
-        salary_max: generated.salary_max ? String(generated.salary_max) : prev.salary_max,
-        salary_period: detectedPeriod,
-        is_remote: generated.is_remote ?? prev.is_remote,
-        skills_required: generated.skills_required || prev.skills_required,
-        category_id: generated.category_slug
-          ? categories.find(cat => cat.slug === generated.category_slug)?.id || prev.category_id
-          : prev.category_id,
-        // On ne touche pas aux langues requises car l'IA ne les génère pas encore
-      }));
-
-      toast.success(t('createJob.toasts.iaGenerationSuccess'));
-
-      const descriptionTextarea = document.getElementById('job-description-textarea');
-      if (descriptionTextarea) {
-        descriptionTextarea.classList.add('ring-2', 'ring-blue-300');
-        setTimeout(() => {
-          descriptionTextarea.classList.remove('ring-2', 'ring-blue-300');
-        }, 2000);
-      }
-    } catch (err) {
-      clearInterval(progressInterval);
-      if (err.name === 'AbortError') {
-        console.log('Génération IA annulée');
-      } else {
-        console.error('Erreur génération IA:', err);
-        toast.error(t('createJob.toasts.iaGenerationError'));
-      }
-    } finally {
-      setIaLoading(false);
-      setIaProgressText('');
-      setIaAbortController(null);
-    }
-  };
-
-  const handleCancelIA = () => {
-    if (iaAbortController) {
-      iaAbortController.abort();
-      setIaAbortController(null);
-      toast.info(t('createJob.toasts.iaGenerationCancelled'));
-    }
-  };
-
-  // ---------- Sauvegarde / Publication ----------
+  // Sauvegarde / Publication
   const handleSave = async (publish = false) => {
     if (!company?.is_active) {
       toast.error(t('createJob.toasts.companySuspended'));
@@ -399,7 +269,6 @@ const CreateJobPage = () => {
         return isNaN(num) ? null : Math.round(num * RATES[currency] || 1);
       };
 
-      // ✅ Construction de eligibility_criteria à partir des langues requises
       const eligibilityCriteria = form.required_languages.length > 0
         ? { languages: form.required_languages }
         : null;
@@ -430,7 +299,7 @@ const CreateJobPage = () => {
         skills_required: form.skills_required.length > 0 ? form.skills_required : null,
         is_urgent: form.is_urgent,
         status: finalStatus,
-        eligibility_criteria: eligibilityCriteria, // ✅ Nouveau champ
+        eligibility_criteria: eligibilityCriteria,
       };
 
       let newJobId = id;
@@ -454,59 +323,6 @@ const CreateJobPage = () => {
         newJobId = insertedJob.id;
       }
 
-      // --- Enregistrement des corrections IA ---
-      if (iaGeneratedData && user) {
-        const mapping = {
-          title: 'title', description: 'description', requirements: 'requirements',
-          responsibilities: 'responsibilities', benefits: 'benefits', contract_type: 'contract_type',
-          experience_level: 'experience_level', salary_min: 'salary_min', salary_max: 'salary_max',
-          is_remote: 'is_remote', skills_required: 'skills_required',
-        };
-
-        const correctedFields = {};
-
-        for (const [iaKey, formKey] of Object.entries(mapping)) {
-          const originalValue = iaGeneratedData[iaKey];
-          const finalValue = form[formKey];
-          const normOriginal = Array.isArray(originalValue) ? [...originalValue].sort().join(',') : String(originalValue ?? '');
-          const normFinal = Array.isArray(finalValue) ? [...finalValue].sort().join(',') : String(finalValue ?? '');
-          if (normOriginal !== normFinal) {
-            correctedFields[formKey] = { original: originalValue, corrected: finalValue };
-          }
-        }
-
-        const generatedSlug = iaGeneratedData.category_slug;
-        if (generatedSlug) {
-          const generatedCatId = categories.find(cat => cat.slug === generatedSlug)?.id;
-          if (generatedCatId && generatedCatId !== form.category_id) {
-            correctedFields.category_id = { original: generatedCatId, corrected: form.category_id };
-          }
-        }
-
-        if (Object.keys(correctedFields).length > 0) {
-          await supabase.from('ai_corrections').insert({
-            agent_id: 'job-full-generation',
-            user_id: user.id,
-            original: iaGeneratedData,
-            corrected: correctedFields,
-            context: {
-              country: prefs.country || null,
-              currency: prefs.currency || 'XOF',
-              category_slug: categories.find(cat => cat.id === form.category_id)?.slug || null,
-              category_name: categories.find(cat => cat.id === form.category_id)?.name || null,
-              experience_level: form.experience_level || null,
-              contract_type: form.contract_type || null,
-              city_id: form.city_id || null,
-              is_remote: form.is_remote || false,
-            },
-          }).then(({ error }) => {
-            if (error) console.error('Erreur insertion corrections IA:', error);
-          });
-        }
-
-        setIaGeneratedData(null);
-      }
-
       if (publish) {
         if (finalStatus === 'pending') {
           toast.success(t('createJob.toasts.submittedForValidation'));
@@ -517,7 +333,6 @@ const CreateJobPage = () => {
         toast.success(t('createJob.toasts.draftSaved'));
       }
 
-      // Notifications non bloquantes en arrière-plan
       setTimeout(async () => {
         if (publish && finalStatus === 'pending') {
           try { await fetch(`${BASE_URL}/api/send-job-alerts`, { method: 'POST' }); } catch (err) { console.warn('Alertes emploi échouées:', err); }
@@ -567,7 +382,6 @@ const CreateJobPage = () => {
     return saving;
   };
 
-  // ✅ Options de périodicité
   const salaryPeriodOptions = [
     { value: 'monthly', label: t('salaryPeriod.monthly') },
     { value: 'daily', label: t('salaryPeriod.daily') },
@@ -606,7 +420,7 @@ const CreateJobPage = () => {
           </div>
         )}
 
-        {/* En-tête avec boutons Save, IA, Submit */}
+        {/* En-tête sans bouton IA */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
           <div className="flex items-center gap-2 sm:gap-4">
             <Button variant="ghost" onClick={() => navigate('/dashboard/entreprise')} className="-ml-2 shrink-0" type="button">
@@ -635,23 +449,6 @@ const CreateJobPage = () => {
               <span className="truncate">{t('createJob.save')}</span>
             </Button>
 
-            {company?.subscription_plan === 'business' && (
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleGenerateWithIA} disabled={iaLoading} className="gap-2 relative" type="button">
-                  {iaLoading ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /><span>{iaProgressText || t('createJob.iaProgress.generating')}</span></>
-                  ) : (
-                    <><Sparkles className="w-4 h-4" />{t('createJob.iaGenerate')}</>
-                  )}
-                </Button>
-                {iaLoading && (
-                  <Button variant="ghost" size="sm" onClick={handleCancelIA} className="text-red-500" type="button">
-                    <X className="w-4 h-4 mr-1" />{t('createJob.iaCancel')}
-                  </Button>
-                )}
-              </div>
-            )}
-
             <Button onClick={() => handleSave(true)} disabled={isPublishDisabled()} className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed flex-1 sm:flex-none overflow-hidden px-3 sm:px-4" data-testid="publish-job-btn" type="button">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" /> : <Send className="w-4 h-4 mr-2 shrink-0" />}
               <span className="truncate">{getPublishButtonText()}</span>
@@ -672,9 +469,6 @@ const CreateJobPage = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.title')}</label>
                 <Input value={form.title} onChange={(e) => { setForm({ ...form, title: e.target.value }); if (errors.title) setErrors(prev => ({ ...prev, title: false })); }} placeholder={t('createJob.placeholders.title')} required className={inputErrorClass('title')} data-testid="job-title-input" />
-                <div className="mt-2">
-                  <AIAssistant agentId="job-title" initialText={form.title} onApply={(newTitle) => setForm({ ...form, title: newTitle.substring(0, 200) })} />
-                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -725,19 +519,16 @@ const CreateJobPage = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.description')}</label>
                 <textarea id="job-description-textarea" value={form.description} onChange={(e) => { setForm({ ...form, description: e.target.value }); if (errors.description) setErrors(prev => ({ ...prev, description: false })); }} rows={6} className={cn('w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 resize-none transition-all', errors.description ? 'border border-red-500 focus:ring-red-500' : 'border border-slate-200 focus:ring-blue-500')} placeholder={t('createJob.placeholders.description')} required data-testid="job-description-textarea" />
-                <div className="mt-2"><AIAssistant agentId="job-description" initialText={form.description} context={form.title} onApply={(newDesc) => setForm({ ...form, description: newDesc })} /></div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.missions')}</label>
                 <textarea value={form.responsibilities} onChange={(e) => setForm({ ...form, responsibilities: e.target.value })} rows={4} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder={t('createJob.placeholders.missions')} data-testid="job-responsibilities-textarea" />
-                <div className="mt-2"><AIAssistant agentId="job-missions" initialText={form.responsibilities} context={form.title} onApply={(newMissions) => setForm({ ...form, responsibilities: newMissions })} /></div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.requirements')}</label>
                 <textarea value={form.requirements} onChange={(e) => setForm({ ...form, requirements: e.target.value })} rows={4} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder={t('createJob.placeholders.requirements')} data-testid="job-requirements-textarea" />
-                <div className="mt-2"><AIAssistant agentId="job-requirements" initialText={form.requirements} context={form.title} onApply={(newReqs) => setForm({ ...form, requirements: newReqs })} /></div>
               </div>
 
               <div>
@@ -768,7 +559,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* ✅ Langues requises */}
+          {/* Langues requises */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -776,19 +567,8 @@ const CreateJobPage = () => {
                 {t('createJob.sections.languages', 'Langues requises')}
               </h2>
               <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  value={newRequiredLanguage}
-                  onChange={(e) => setNewRequiredLanguage(e.target.value)}
-                  placeholder={t('createJob.languages.languagePlaceholder', 'Ex: Français')}
-                  className="min-h-[44px] flex-1"
-                  data-testid="job-language-input"
-                />
-                <select
-                  value={newRequiredLanguageLevel}
-                  onChange={(e) => setNewRequiredLanguageLevel(e.target.value)}
-                  className="h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md bg-white"
-                  data-testid="job-language-level-select"
-                >
+                <Input value={newRequiredLanguage} onChange={(e) => setNewRequiredLanguage(e.target.value)} placeholder={t('createJob.languages.languagePlaceholder', 'Ex: Français')} className="min-h-[44px] flex-1" data-testid="job-language-input" />
+                <select value={newRequiredLanguageLevel} onChange={(e) => setNewRequiredLanguageLevel(e.target.value)} className="h-10 min-h-[44px] px-3 py-2 border border-slate-200 rounded-md bg-white" data-testid="job-language-level-select">
                   <option value="basic">{t('languageLevel.basic', 'Débutant')}</option>
                   <option value="intermediate">{t('languageLevel.intermediate', 'Intermédiaire')}</option>
                   <option value="professional">{t('languageLevel.professional', 'Professionnel')}</option>
@@ -804,24 +584,14 @@ const CreateJobPage = () => {
                   {form.required_languages.map(lang => (
                     <Badge key={lang.code} className="bg-purple-50 text-purple-700 border border-purple-200 gap-1 pr-1">
                       {lang.code}
-                      <select
-                        value={lang.level}
-                        onChange={(e) => handleRequiredLanguageLevelChange(lang.code, e.target.value)}
-                        className="ml-1 bg-transparent border-0 focus:ring-0 text-xs"
-                      >
+                      <select value={lang.level} onChange={(e) => handleRequiredLanguageLevelChange(lang.code, e.target.value)} className="ml-1 bg-transparent border-0 focus:ring-0 text-xs">
                         <option value="basic">{t('languageLevel.basic', 'Débutant')}</option>
                         <option value="intermediate">{t('languageLevel.intermediate', 'Intermédiaire')}</option>
                         <option value="professional">{t('languageLevel.professional', 'Professionnel')}</option>
                         <option value="fluent">{t('languageLevel.fluent', 'Courant')}</option>
                         <option value="native">{t('languageLevel.native', 'Langue maternelle')}</option>
                       </select>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveRequiredLanguage(lang.code)}
-                        className="ml-1 hover:bg-purple-200 rounded-full p-0.5 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+                      <button type="button" onClick={() => handleRemoveRequiredLanguage(lang.code)} className="ml-1 hover:bg-purple-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
                     </Badge>
                   ))}
                 </div>
@@ -863,25 +633,16 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Salaire avec périodicité */}
+          {/* Salaire */}
           <Card>
             <CardContent className="p-4 sm:p-6 space-y-4">
               <h2 className="font-semibold text-slate-900 flex items-center gap-2"><DollarSign className="w-5 h-5 text-blue-600" />{t('createJob.sections.salary')}</h2>
-
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.salaryPeriod')}</label>
-                <select
-                  value={form.salary_period}
-                  onChange={(e) => setForm({ ...form, salary_period: e.target.value })}
-                  className="w-full sm:w-auto h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  data-testid="job-salary-period-select"
-                >
-                  {salaryPeriodOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
+                <select value={form.salary_period} onChange={(e) => setForm({ ...form, salary_period: e.target.value })} className="w-full sm:w-auto h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" data-testid="job-salary-period-select">
+                  {salaryPeriodOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('createJob.labels.salaryMin')}</label>
@@ -899,7 +660,7 @@ const CreateJobPage = () => {
             </CardContent>
           </Card>
 
-          {/* Boutons du bas */}
+          {/* Boutons finaux */}
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2 sm:pt-4">
             <Button variant="outline" onClick={() => handleSave(false)} disabled={saving || showSuspendedBanner} type="button" className="w-full sm:w-auto overflow-hidden px-3 sm:px-4">
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" /> : <Save className="w-4 h-4 mr-2 shrink-0" />}
@@ -914,7 +675,7 @@ const CreateJobPage = () => {
         </div>
       </div>
 
-      {/* Modal limite d'offres */}
+      {/* Modal limite */}
       {showLimitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 sm:p-8 text-center">
