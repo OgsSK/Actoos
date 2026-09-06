@@ -61,7 +61,6 @@ const SearchHero = ({ cities, categories = [] }) => {
     const timer = setTimeout(async () => {
       setLoadingSuggestions(true);
       try {
-        // ✅ Recherche insensible aux accents via RPC
         const { data, error } = await supabase
           .rpc('search_job_titles', { search_term: keyword });
 
@@ -266,21 +265,19 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
       setLoading(true);
       try {
         const now = new Date().toISOString();
-        // ✅ MODIFICATION 1 : Ajout de 'address' dans la sélection
         let query = supabase.from('jobs').select(`id, title, contract_type, salary_min, salary_max, salary_period, created_at, is_urgent, is_remote, remote_type, address, boosted_until, company:companies(name, logo_url, owner_id), city:cities(name)`)
           .eq('status', 'active').or(`expires_at.is.null,expires_at.gte.${now}`).in('company_id', activeCompanyIds)
           .order('boosted_until', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(6);
         if (countryId) query = query.eq('country_id', countryId);
         const { data, error } = await query;
         if (error) throw error;
-        // ✅ MODIFICATION 2 : Ajout de 'address' dans le mapping
         const finalJobs = (data || []).map(job => ({
           ...job,
           location: job.city?.name || t('home.jobs.unknownLocation'),
           company_name: job.company?.name || t('home.jobs.unknownCompany'),
           company_logo: job.company?.logo_url,
           owner_id: job.company?.owner_id,
-          address: job.address,   // ← ajouté
+          address: job.address,
         }));
         setJobs(finalJobs);
         if (user && finalJobs.length > 0) {
@@ -302,7 +299,6 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
           <Link to="/emplois" className="hidden sm:inline-flex items-center text-blue-600 hover:text-blue-700 font-medium">{t('home.jobs.viewAll')} <ArrowRight className="w-4 h-4 ml-1" /></Link>
         </div>
         
-        {/* ✅ Squelettes pendant le chargement */}
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[1, 2, 3, 4, 5, 6].map(i => (
@@ -334,7 +330,7 @@ const RecentJobsSection = ({ countryId, activeCompanyIds }) => {
 };
 
 /* ===================================================================
-   Carte d'offre modernisée
+   Carte d'offre modernisée avec padding conditionnel
    =================================================================== */
 const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
   const { t } = useTranslation();
@@ -351,7 +347,8 @@ const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
           <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
             {job.company_logo ? <img src={job.company_logo} alt="" className="w-full h-full object-cover" /> : <Building2 className="w-7 h-7 text-slate-400" />}
           </div>
-          <div className="flex-1 min-w-0">
+          {/* ✅ Padding conditionnel pour éviter le chevauchement du cœur */}
+          <div className={`flex-1 min-w-0 ${!isOwner && !isCompany ? 'pr-12' : ''}`}>
             <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 line-clamp-2 leading-snug">{job.title}</h3>
             <p className="text-sm text-slate-600 mt-1">{job.company_name}</p>
           </div>
@@ -360,7 +357,6 @@ const JobCard = ({ job, user, onSave, isSaved, applicationStatus }) => {
           <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 rounded-full px-3 py-1">
             <MapPin className="w-3 h-3" />{job.location}
           </span>
-          {/* ✅ MODIFICATION 3 : Affichage de l'adresse si présente */}
           {job.address && (
             <span className="inline-flex items-center gap-1 text-slate-500 text-xs">
               <MapPin className="w-3 h-3 text-slate-400" />
