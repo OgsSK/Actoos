@@ -41,7 +41,7 @@ const RATES = {
   XOF: 1, EUR: 655.957, USD: 603.5, MAD: 60.5,
   GBP: 754.2, BRL: 115.3, ARS: 0.72, NGN: 0.4, ZAR: 32.5,
   SAR: 160.9, AED: 164.3, EGP: 19.5, DZD: 4.48, TND: 194.5,
-  CHF: 722.3, XAF: 1, GNF: 0.07, CDF: 0.22, MGA: 0.15
+  CHF: 722.3, XAF: 1, GNF: 0.07, CDF: 0.22, MGA: 0.15,
 };
 
 // -------------------- Local UI components --------------------
@@ -75,11 +75,13 @@ const Button = React.forwardRef(
 Button.displayName = 'Button';
 
 const Card = ({ children, className = '' }) => (
-  <div className={cn('bg-white border border-slate-200 rounded-3xl', className)}>{children}</div>
+  <div className={cn('bg-white border border-slate-200 rounded-3xl shadow-sm hover:shadow-xl transition-shadow duration-300', className)}>
+    {children}
+  </div>
 );
 
 const CardContent = ({ children, className = '' }) => (
-  <div className={cn('p-4 sm:p-5', className)}>{children}</div>
+  <div className={cn('p-5 sm:p-6', className)}>{children}</div>
 );
 
 const Badge = ({ children, className = '', ...props }) => (
@@ -147,7 +149,7 @@ const SalaryInput = ({ placeholder, value, onApply, conversionRate }) => {
   );
 };
 
-// -------------------- Job Card --------------------
+// -------------------- JobCard – version fusionnée (design Homepage + structure fonctionnelle) --------------------
 const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationStatus }) => {
   const { t } = useTranslation();
   const { format } = useCurrencyFormatter();
@@ -267,10 +269,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
               </button>
             ) : null}
 
-            <button
-              onClick={handleDelete}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-slate-50"
-            >
+            <button onClick={handleDelete} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-slate-50">
               <Trash2 className="w-4 h-4" />
               {t('jobs.delete')}
             </button>
@@ -285,183 +284,131 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
   const getRemoteLabel = () => {
     if (!job.is_remote) return null;
     switch (job.remote_type) {
-      case 'full':
-        return t('jobs.remoteFull', '100% télétravail');
-      case 'partial':
-        return t('jobs.remoteHybrid', 'Hybride');
-      case 'occasional':
-        return t('jobs.remoteOccasional', 'Occasionnel');
-      default:
-        return t('jobs.remote', 'Télétravail');
+      case 'full': return t('jobs.remoteFull', '100% télétravail');
+      case 'partial': return t('jobs.remoteHybrid', 'Hybride');
+      case 'occasional': return t('jobs.remoteOccasional', 'Occasionnel');
+      default: return t('jobs.remote', 'Télétravail');
     }
   };
 
   return (
-    <Card
-      className={cn(
-        'group relative overflow-visible bg-white transition-all duration-300 hover:shadow-xl border-slate-200 rounded-3xl',
-        job.is_featured && 'ring-2 ring-blue-500 ring-offset-2'
-      )}
-    >
-      {isOwner && (
-        <div className="absolute top-3 left-3 z-20">
-          <Badge className="bg-blue-600 text-white text-xs">{t('jobs.yourOffer')}</Badge>
+    <Card className="relative overflow-hidden group transition-all duration-300 hover:shadow-xl border-slate-200 rounded-3xl">
+      {job.is_urgent && (
+        <div className="absolute -top-px inset-x-0 bg-red-500 text-white text-xs font-medium px-3 py-1 text-center rounded-t-2xl">
+          {t('jobs.urgent')}
         </div>
       )}
 
       <Link to={`/emplois/${job.id}`} className="block">
-        <CardContent className="p-0">
-          <div className="flex flex-wrap gap-2 p-3 pb-0">
-            {job.is_featured && (
-              <Badge className="bg-blue-600 text-white rounded-full">{t('jobs.featured')}</Badge>
+        <CardContent>
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+              {job.company?.logo_url ? (
+                <img src={job.company.logo_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <Building2 className="w-7 h-7 text-slate-400" />
+              )}
+            </div>
+
+            <div className={`flex-1 min-w-0 ${!isOwner && !isCompany ? 'pr-12' : ''}`}>
+              <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 line-clamp-2 leading-snug">
+                {job.title}
+              </h3>
+              <p className="text-sm text-slate-600 mt-1">{job.company?.name}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 mt-4 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 rounded-full px-3 py-1">
+              <MapPin className="w-3 h-3" />
+              {job.city?.name || t('jobs.unspecified')}
+            </span>
+            {job.address && (
+              <span className="inline-flex items-center gap-1 text-slate-500 text-xs">
+                <MapPin className="w-3 h-3 text-slate-400" />
+                {job.address}
+              </span>
             )}
-            {job.is_urgent && (
-              <Badge className="bg-red-500 text-white rounded-full">{t('jobs.urgent')}</Badge>
-            )}
+            <Badge className={`${contractInfo.color} border-0 text-xs rounded-full`}>
+              {t(contractInfo.key)}
+            </Badge>
             {job.is_remote && (
-              <Badge className="border border-green-500 text-green-600 rounded-full bg-white">
-                {getRemoteLabel()}
-              </Badge>
-            )}
-            {isBoosted && (
-              <Badge className="bg-purple-100 text-purple-700 border border-purple-200">
-                🚀 {t('jobs.boosted')}
-              </Badge>
-            )}
-            {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
-              <Badge className="bg-green-100 text-green-700 rounded-full">
-                ✅ {t('jobs.alreadyAppliedBadge', 'Postulé')}
+              <Badge className="bg-green-50 text-green-600 border-0 text-xs rounded-full">
+                {getRemoteLabel() || t('jobs.remote')}
               </Badge>
             )}
           </div>
 
-          <div className="p-4 sm:p-5 pt-3">
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0">
-                {job.company?.logo_url ? (
-                  <img
-                    src={job.company.logo_url}
-                    alt={job.company.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Building2 className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400" />
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0 pr-16">
-                <h3
-                  className="font-semibold text-base sm:text-lg text-slate-900 group-hover:text-blue-600"
-                  style={{
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {job.title}
-                </h3>
-
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-slate-700 font-medium line-clamp-1">{job.company?.name}</span>
-                  {job.company?.is_verified && (
-                    <Badge className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
-                      {t('jobs.verified')}
-                    </Badge>
-                  )}
-                </div>
-
-                {/* ✅ MODIFICATION : Affichage de l'adresse */}
-                <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-slate-500">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {job.city?.name || t('jobs.unspecified')}
-                  </span>
-                  {job.address && (
-                    <span className="flex items-center gap-1 text-xs text-slate-400">
-                      <MapPin className="w-3 h-3" />
-                      {job.address}
-                    </span>
-                  )}
-                  <Badge className={cn(contractInfo.color, 'border-0 rounded-full')}>
-                    {t(contractInfo.key)}
-                  </Badge>
-
-                  {job.salary_min && job.salary_max && (
-                    <span className="flex items-center gap-1">
-                      <Banknote className="w-4 h-4" />
-                      {format(job.salary_min)} – {format(job.salary_max)}
-                      {formatSalaryPeriod(job.salary_period, t)}
-                    </span>
-                  )}
-                </div>
-
-                {job.skills_required && job.skills_required.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {job.skills_required.slice(0, 4).map((skill) => (
-                      <span
-                        key={skill}
-                        className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-xl"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                    {job.skills_required.length > 4 && (
-                      <span className="text-xs text-slate-400">
-                        +{job.skills_required.length - 4}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
+          {job.skills_required && job.skills_required.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {job.skills_required.slice(0, 4).map((skill) => (
+                <span key={skill} className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-xl">
+                  {skill}
+                </span>
+              ))}
+              {job.skills_required.length > 4 && (
+                <span className="text-xs text-slate-400">+{job.skills_required.length - 4}</span>
+              )}
             </div>
+          )}
 
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-              <span className="text-xs text-slate-400 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {formatRelative(job.created_at)}
-              </span>
-              <span className="text-blue-600 text-sm font-medium flex items-center gap-1">
-                {t('jobs.viewOffer')} <ExternalLink className="w-4 h-4" />
-              </span>
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+            <div className="text-sm">
+              {job.salary_min && job.salary_max ? (
+                <span className="font-semibold text-slate-800">
+                  {format(job.salary_min)} – {format(job.salary_max)}
+                  {formatSalaryPeriod(job.salary_period, t)}
+                </span>
+              ) : (
+                <span className="text-slate-500 text-sm">{t('jobs.unspecified')}</span>
+              )}
             </div>
+            <span className="text-xs text-slate-400 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {formatRelative(job.created_at)}
+            </span>
           </div>
         </CardContent>
       </Link>
 
       {!isOwner && !isCompany && (
         <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onSave && onSave(job.id);
-          }}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSave && onSave(job.id); }}
           className={cn(
-            'absolute top-3 right-3 p-2 rounded-xl transition-all z-30',
-            isSaved
-              ? 'bg-red-100 text-red-500'
-              : 'bg-white/90 text-slate-400 hover:bg-red-50 hover:text-red-500'
+            'absolute top-3 right-3 p-2 rounded-xl transition',
+            isSaved ? 'bg-red-50 text-red-500' : 'text-slate-400 hover:bg-red-50 hover:text-red-500'
           )}
         >
           <Heart className={cn('w-5 h-5', isSaved && 'fill-current')} />
         </button>
       )}
 
+      {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
+        <Badge className="absolute top-3 left-3 bg-green-100 text-green-700 text-xs rounded-full">
+          ✅ {t('jobs.alreadyAppliedBadge', 'Postulé')}
+        </Badge>
+      )}
+
       {isOwner && (
-        <div className="absolute top-2 right-2 z-40">
-          <Button
-            variant="ghost"
-            size="icon"
-            ref={menuButtonRef}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              openMenu();
-            }}
-          >
-            <MoreVertical className="w-5 h-5" />
-          </Button>
-        </div>
+        <>
+          <Badge className="absolute top-3 left-3 bg-blue-600 text-white text-xs rounded-full">
+            {t('jobs.yourOffer')}
+          </Badge>
+          <div className="absolute top-2 right-2 z-40">
+            <Button
+              variant="ghost"
+              size="icon"
+              ref={menuButtonRef}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openMenu();
+              }}
+            >
+              <MoreVertical className="w-5 h-5" />
+            </Button>
+          </div>
+        </>
       )}
 
       {menu}
@@ -469,7 +416,7 @@ const JobCard = ({ job, user, isCompany, onSave, isSaved, onEdit, applicationSta
   );
 };
 
-// -------------------- Filters Sidebar --------------------
+// -------------------- Filters Sidebar (inchangé) --------------------
 const FiltersSidebar = ({
   filters,
   onChange,
@@ -648,7 +595,7 @@ const FiltersSidebar = ({
   );
 };
 
-// -------------------- Main Jobs Page --------------------
+// -------------------- Main Jobs Page (inchangé) --------------------
 const ITEMS_PER_PAGE = 10;
 
 const JobsPage = () => {
@@ -714,7 +661,6 @@ const JobsPage = () => {
       setLoading(true);
       try {
         const now = new Date().toISOString();
-        // ✅ MODIFICATION 1 : Ajout de 'address' dans la sélection
         let query = supabase
           .from('jobs')
           .select(`
