@@ -21,7 +21,7 @@ const BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:8001'
   : 'https://actoos-jobs-api.onrender.com';
 
-// ✅ Skeleton pour l'en-tête de l'offre
+// Skeleton pour l'en-tête
 const JobHeaderSkeleton = () => (
   <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 animate-pulse">
     <div className="p-6 sm:p-8 border-b border-slate-100">
@@ -51,20 +51,20 @@ const JobHeaderSkeleton = () => (
   </div>
 );
 
-/* ---------- Carte offre similaire ---------- */
+/* ---------- Carte offre similaire – version corrigée (salaire) ---------- */
 const SimpleJobCard = ({ job, t, format, applicationStatus }) => {
   const contractInfo = CONTRACT_TYPES[job.contract_type] || CONTRACT_TYPES.cdi;
   return (
-    <Link to={`/emplois/${job.id}`} className="block group h-full relative">
+    <Link to={`/emplois/${job.id}`} className="block group w-full h-full relative">
       {applicationStatus && applicationStatus !== 'rejected' && applicationStatus !== 'withdrawn' && (
         <Badge className="absolute top-2 left-2 bg-green-100 text-green-700 text-xs z-10">
           <CheckCircle className="w-3 h-3 mr-1" />
           {t('jobs.alreadyAppliedBadge', 'Postulé')}
         </Badge>
       )}
-      <Card className="hover:shadow-md transition-shadow h-full">
-        <CardContent className="p-4 flex flex-col h-full">
-          <div className="flex items-start gap-3">
+      <Card className="hover:shadow-md transition-shadow h-full overflow-hidden">
+        <CardContent className="p-3 sm:p-4 flex flex-col h-full min-w-0">
+          <div className="flex items-start gap-3 min-w-0">
             <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 overflow-hidden">
               {job.company?.logo_url ? (
                 <img src={job.company.logo_url} alt="" className="w-full h-full object-cover" />
@@ -73,17 +73,25 @@ const SimpleJobCard = ({ job, t, format, applicationStatus }) => {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <h4 className="font-medium text-slate-900 truncate group-hover:text-blue-600">{job.title}</h4>
-              <p className="text-sm text-slate-500 truncate">{job.company?.name}</p>
-              <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-slate-500">
+              <h4 className="font-medium text-slate-900 group-hover:text-blue-600 text-sm sm:text-base truncate">
+                {job.title}
+              </h4>
+              <p className="text-xs sm:text-sm text-slate-500 truncate">{job.company?.name}</p>
+              <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1.5 text-xs text-slate-500">
                 {job.city?.name && (
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" />{job.city.name}</span>
+                  <span className="flex items-center gap-0.5 truncate max-w-[60px] sm:max-w-none">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{job.city.name}</span>
+                  </span>
                 )}
                 <Badge className={`${contractInfo.color} text-xs shrink-0`}>{t(contractInfo.key)}</Badge>
+                {/* ✅ Salaire corrigé : bien formaté, sans débordement */}
                 {job.salary_min && job.salary_max && (
-                  <span className="font-medium text-slate-700 whitespace-nowrap">
+                  <span className="font-medium text-slate-700 text-[11px] sm:text-sm flex flex-wrap items-center gap-0.5">
                     {format(job.salary_min)} – {format(job.salary_max)}
-                    {formatSalaryPeriod(job.salary_period, t)}
+                    <span className="text-[10px] sm:text-xs text-slate-400 whitespace-nowrap">
+                      {formatSalaryPeriod(job.salary_period, t)}
+                    </span>
                   </span>
                 )}
               </div>
@@ -95,6 +103,7 @@ const SimpleJobCard = ({ job, t, format, applicationStatus }) => {
   );
 };
 
+// ---------- Composant principal (inchangé) ----------
 const JobDetailPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -156,14 +165,16 @@ const JobDetailPage = () => {
     setIsSaved(!!data);
   };
 
-  // Offres similaires
   useEffect(() => {
     if (!job) return;
     setSimilarLoading(true);
     const fetchSimilar = async () => {
       try {
         const skills = job.skills_required || [], categoryId = job.category_id, contractType = job.contract_type;
-        let query = supabase.from('jobs').select('id, title, contract_type, salary_min, salary_max, salary_period, company:companies(name, logo_url), city:cities(name)').eq('status', 'active').neq('id', job.id).order('boosted_until', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(6);
+        let query = supabase.from('jobs').select('id, title, contract_type, salary_min, salary_max, salary_period, company:companies(name, logo_url), city:cities(name)')
+          .eq('status', 'active').neq('id', job.id)
+          .order('boosted_until', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false }).limit(6);
         const conditions = [];
         if (categoryId) conditions.push(`category_id.eq.${categoryId}`);
         if (skills.length > 0) conditions.push(`skills_required.ov.{${skills.join(',')}}`);
@@ -200,8 +211,6 @@ const JobDetailPage = () => {
       }
       setApplicationStatus('pending');
       toast.success(t('jobDetail.applicationSent'));
-      
-      // ✅ Notification non bloquante en arrière-plan
       setTimeout(async () => {
         const recruiterEmail = job.posted_by_user?.email || job.company?.owner?.email;
         const recruiterName = job.posted_by_user?.first_name ? `${job.posted_by_user.first_name} ${job.posted_by_user.last_name || ''}` : 'Recruteur';
@@ -247,9 +256,8 @@ const JobDetailPage = () => {
           {t('jobDetail.backToJobs')}
         </Link>
 
-        {/* Carte principale avec en-tête premium */}
+        {/* Carte principale */}
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
-          {/* En-tête avec logo entreprise et badges */}
           <div className="p-6 sm:p-8 border-b border-slate-100">
             <div className="flex flex-col sm:flex-row items-start gap-5">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
@@ -271,7 +279,6 @@ const JobDetailPage = () => {
                   <Badge className="bg-slate-100 text-slate-700 border-0">
                     <MapPin className="w-3.5 h-3.5 mr-1" />{job.city?.name || t('jobDetail.unspecified')}
                   </Badge>
-                  {/* ✅ Affichage de l'adresse si présente */}
                   {job.address && (
                     <Badge className="bg-slate-50 text-slate-600 border border-slate-200">
                       <MapPin className="w-3.5 h-3.5 mr-1" />
@@ -290,7 +297,6 @@ const JobDetailPage = () => {
                 </div>
               </div>
 
-              {/* Boutons d'action */}
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0">
                 {!isOwner && !isCompany && !isAdmin && (
                   <>
@@ -321,13 +327,11 @@ const JobDetailPage = () => {
               </div>
             </div>
 
-            {/* Barre de partage */}
             <div className="mt-4 pt-4 border-t border-slate-100">
               <ShareButton url={window.location.origin + `/emplois/${job.id}`} title={job.title} text={t('jobDetail.shareText', { title: job.title, company: job.company?.name })} />
             </div>
           </div>
 
-          {/* Description et contenu */}
           <div className="p-6 sm:p-8 space-y-8">
             <div className="prose prose-slate max-w-none">
               <h2 className="text-xl font-semibold text-slate-900">{t('jobDetail.descriptionTitle')}</h2>
@@ -352,23 +356,17 @@ const JobDetailPage = () => {
                 </>
               )}
 
-              {/* Compétences requises */}
               {job.skills_required && job.skills_required.length > 0 && (
                 <>
-                  <h3 className="text-lg font-semibold text-slate-900 mt-6">
-                    {t('createJob.sections.skills')}
-                  </h3>
+                  <h3 className="text-lg font-semibold text-slate-900 mt-6">{t('createJob.sections.skills')}</h3>
                   <div className="flex flex-wrap gap-2 mt-3">
                     {job.skills_required.map((skill) => (
-                      <Badge key={skill} className="bg-blue-50 text-blue-700 border border-blue-200">
-                        {skill}
-                      </Badge>
+                      <Badge key={skill} className="bg-blue-50 text-blue-700 border border-blue-200">{skill}</Badge>
                     ))}
                   </div>
                 </>
               )}
 
-              {/* ✅ Langues requises (depuis eligibility_criteria) */}
               {job.eligibility_criteria?.languages?.length > 0 && (
                 <>
                   <h3 className="text-lg font-semibold text-slate-900 mt-6">
@@ -379,46 +377,34 @@ const JobDetailPage = () => {
                     {job.eligibility_criteria.languages.map((lang) => (
                       <Badge key={lang.code} className="bg-purple-50 text-purple-700 border border-purple-200">
                         {lang.code}
-                        <span className="ml-1 text-xs text-purple-500">
-                          - {t(`languageLevel.${lang.level}`, lang.level)}
-                        </span>
+                        <span className="ml-1 text-xs text-purple-500">- {t(`languageLevel.${lang.level}`, lang.level)}</span>
                       </Badge>
                     ))}
                   </div>
                 </>
               )}
 
-              {/* Nombre de postes */}
               {job.positions_count > 0 && (
                 <div className="flex items-center gap-2 mt-6 text-slate-700">
                   <Users className="w-5 h-5 text-blue-600" />
-                  <span className="font-medium">
-                    {t('createJob.labels.positionsCount')} : {job.positions_count}
-                  </span>
+                  <span className="font-medium">{t('createJob.labels.positionsCount')} : {job.positions_count}</span>
                 </div>
               )}
 
-              {/* Niveau d'expérience */}
               {job.experience_level && (
                 <div className="flex items-center gap-2 mt-6 text-slate-700">
                   <GraduationCap className="w-5 h-5 text-blue-600" />
-                  <span className="font-medium">
-                    {t('createJob.labels.experienceLevel')} : {t(EXPERIENCE_LEVELS[job.experience_level]?.key || job.experience_level)}
-                  </span>
+                  <span className="font-medium">{t('createJob.labels.experienceLevel')} : {t(EXPERIENCE_LEVELS[job.experience_level]?.key || job.experience_level)}</span>
                 </div>
               )}
 
-              {/* Télétravail */}
               {job.is_remote && (
                 <div className="flex items-center gap-2 mt-6 text-slate-700">
                   <MapPin className="w-5 h-5 text-blue-600" />
-                  <span className="font-medium">
-                    {t('createJob.labels.remote')} : {job.remote_type === 'full' ? t('createJob.options.remoteFull') : job.remote_type === 'partial' ? t('createJob.options.remoteHybrid') : t('createJob.options.remoteOccasional')}
-                  </span>
+                  <span className="font-medium">{t('createJob.labels.remote')} : {job.remote_type === 'full' ? t('createJob.options.remoteFull') : job.remote_type === 'partial' ? t('createJob.options.remoteHybrid') : t('createJob.options.remoteOccasional')}</span>
                 </div>
               )}
 
-              {/* Offre urgente */}
               {job.is_urgent && (
                 <div className="flex items-center gap-2 mt-6 text-red-600">
                   <Clock className="w-5 h-5" />
@@ -435,7 +421,7 @@ const JobDetailPage = () => {
         ) : similarJobs.length > 0 ? (
           <div className="mt-12">
             <h2 className="text-2xl font-bold text-slate-900 mb-6">{t('jobDetail.similarJobs', 'Offres similaires')}</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {similarJobs.map(simJob => (
                 <SimpleJobCard key={simJob.id} job={simJob} t={t} format={format} applicationStatus={similarApplications[simJob.id] || null} />
               ))}
